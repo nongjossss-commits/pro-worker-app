@@ -16,7 +16,7 @@
     preselectedExternalEmployeeIds: @json(session('preselected_external_employee_ids', []))
 })">
 
-    <h2 class="mb-4">สร้างตั๋วงานใหม่ (Admin/Staff)</h2>
+    <h2 class="mb-4">{{ __('สร้างตั๋วงานใหม่ (Admin/Staff)') }}</h2>
 
     {{-- Error Display --}}
     @if (session('danger'))
@@ -24,8 +24,7 @@
             {{ session('danger') }}
         </div>
     @endif
-    @if ($errors->any())
-        <div class="alert alert-danger mb-4">
+    @if ($errors->{{ __('any())') }}<div class="alert alert-danger mb-4">
             <strong>พบข้อผิดพลาด:</strong>
             <ul>
                 @foreach ($errors->all() as $error)
@@ -50,12 +49,12 @@
             {{-- Column 1: Main Information (Left Side) --}}
             <div class="col-lg-7">
                 <div class="card mb-4">
-                    <div class="card-header">รายละเอียดคำขอ</div>
+                    <div class="card-header">{{ __('รายละเอียดคำขอ') }}</div>
                     <div class="card-body">
 
                         {{-- V2.4-S12: Employer Selection Dropdown --}}
                         <div class="mb-3">
-                            <label for="employer_user_id" class="form-label">เลือกนายจ้าง <span class="text-danger">*</span></label>
+                            <label for="employer_user_id" class="form-label">{{ __('เลือกนายจ้าง') }}<span class="text-danger">*</span></label>
                             <select
                                 class="form-select @error('employer_user_id') is-invalid @enderror"
                                 id="employer_user_id"
@@ -68,7 +67,7 @@
                                 --}}
                                 x-model="contextEmployerId"
                                 @change="handleEmployerChange($event.target.value)">
-                                <option value="">-- กรุณาเลือกนายจ้าง --</option>
+                                <option value="">{{ __('-- กรุณาเลือกนายจ้าง --') }}</option>
                                 @foreach($employers as $employerUser)
                                     {{-- The option value is the user ID, matching the backend validation --}}
                                     <option value="{{ $employerUser->id }}" {{ old('employer_user_id') == $employerUser->id ? 'selected' : '' }}>
@@ -82,7 +81,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="subject" class="form-label">หัวเรื่อง <span class="text-danger">*</span></label>
+                            <label for="subject" class="form-label">{{ __('หัวเรื่อง') }}<span class="text-danger">*</span></label>
                             <input type="text" class="form-control @error('subject') is-invalid @enderror" id="subject" name="subject" value="{{ old('subject') }}" required>
                             @error('subject')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -90,7 +89,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="message" class="form-label">ข้อความ/รายละเอียดเพิ่มเติม <span class="text-danger">*</span></label>
+                            <label for="message" class="form-label">{{ __('ข้อความ/รายละเอียดเพิ่มเติม') }}<span class="text-danger">*</span></label>
                             <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="8" required>{{ old('message') }}</textarea>
                              @error('message')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -103,14 +102,13 @@
             {{-- Column 2: Attachment Basket (Right Side) --}}
             <div class="col-lg-5">
                 <div class="card mb-4 sticky-top" style="top: 20px;">
-                    <div class="card-header">สิ่งที่แนบมา (Attachment Basket)</div>
+                    <div class="card-header">{{ __('สิ่งที่แนบมา (Attachment Basket)') }}</div>
                     <div class="card-body">
 
                         {{-- Upload Progress Bar --}}
                         <div x-show="isUploading" class="mb-3">
                             <div class="progress" style="height: 25px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-secondary" role="progressbar" :style="'width: ' + uploadProgress + '%'">
-                                    กำลังอัปโหลด (<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-secondary" role="progressbar" :style="'width: ' + uploadProgress + '%'">{{ __('กำลังอัปโหลด (') }}<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
                                 </div>
                             </div>
                         </div>
@@ -118,33 +116,28 @@
                         {{-- V2.4-S13: Attachment buttons are now disabled if no employer is selected --}}
                         <div class="d-grid gap-2 mb-3" :class="{ 'opacity-50': isUploading || !contextEmployerId }">
                             <button type="button" class="btn btn-outline-primary" @click="openExistingEmployeeModal" :disabled="isUploading || !contextEmployerId" title="กรุณาเลือกนายจ้างก่อน">
-                                <i class="bi bi-person-check me-2"></i> แนบลูกจ้างที่มีอยู่
-                            </button>
+                                <i class="bi bi-person-check me-2"></i>{{ __('แนบลูกจ้างที่มีอยู่') }}</button>
 
                             {{-- V2.5-S17: New Button for External Employees --}}
                             <button type="button" class="btn btn-outline-warning text-dark" @click="openGlobalEmployeeSearch" :disabled="isUploading" title="ค้นหาลูกจ้างทั้งระบบ">
-                                <i class="bi bi-search me-2"></i> แนบลูกจ้างภายนอก
-                            </button>
+                                <i class="bi bi-search me-2"></i>{{ __('แนบลูกจ้างภายนอก') }}</button>
 
                             <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading || !contextEmployerId" title="กรุณาเลือกนายจ้างก่อน">
-                                <i class="bi bi-person-plus me-2"></i> แจ้งเข้าลูกจ้างใหม่
-                            </button>
+                                <i class="bi bi-person-plus me-2"></i>{{ __('แจ้งเข้าลูกจ้างใหม่') }}</button>
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerScanner" :disabled="isUploading" title="สแกนเอกสาร">
-                                    <i class="bi bi-camera me-2"></i> สแกน
-                                </button>
+                                <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerScanner" :disabled="isUploading" title="{{ __('สแกนเอกสาร') }}">
+                                    <i class="bi bi-camera me-2"></i>{{ __('สแกน') }}</button>
                                 <button type="button" class="btn btn-outline-secondary flex-grow-1" @click="triggerFileInput" :disabled="isUploading" title="แนบไฟล์ทั่วไป">
-                                    <i class="bi bi-file-earmark-arrow-up me-2"></i> ไฟล์
-                                </button>
+                                    <i class="bi bi-file-earmark-arrow-up me-2"></i>{{ __('ไฟล์') }}</button>
                             </div>
                         </div>
                         <hr>
 
                         {{-- Basket Display Area --}}
-                        <h6 class="mb-2">รายการที่แนบ (<span x-text="totalItemsCount()"></span> รายการ)</h6>
+                        <h6 class="mb-2">{{ __('รายการที่แนบ (') }}<span x-text="totalItemsCount()"></span>{{ __('รายการ)') }}</h6>
                         <div class="list-group" style="max-height: 300px; overflow-y: auto;">
                             <template x-if="totalItemsCount() === 0">
-                                <div class="text-muted fst-italic text-center py-3">ยังไม่มีรายการที่แนบ</div>
+                                <div class="text-muted fst-italic text-center py-3">{{ __('ยังไม่มีรายการที่แนบ') }}</div>
                             </template>
                             {{-- Templates for existing_employees, external_employees, new_employees, and files --}}
                             @include('tickets.partials._basket_display_templates')
@@ -155,10 +148,10 @@
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg" :disabled="isUploading">
                                 <template x-if="!isUploading">
-                                    <span><i class="bi bi-send-fill me-2"></i> สร้างตั๋วงาน</span>
+                                    <span><i class="bi bi-send-fill me-2"></i>{{ __('สร้างตั๋วงาน') }}</span>
                                 </template>
                                 <template x-if="isUploading">
-                                    <span><span class="spinner-border spinner-border-sm me-2"></span>กำลังดำเนินการ...</span>
+                                    <span><span class="spinner-border spinner-border-sm me-2"></span>{{ __('กำลังดำเนินการ...') }}</span>
                                 </template>
                             </button>
                         </div>

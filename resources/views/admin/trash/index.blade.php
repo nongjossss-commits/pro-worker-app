@@ -4,7 +4,7 @@
 
 @section('header')
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-    <h1 class="mb-3 mb-md-0">Central Trash</h1>
+    <h1 class="mb-3 mb-md-0">{{ __('Central Trash') }}</h1>
 </div>
 @endsection
 
@@ -33,16 +33,16 @@
                         }
                     @endphp
                     <input type="hidden" name="tab" id="active-tab-input" value="{{ $initActiveTab }}">
-                    <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
-                    <button type="submit" class="btn btn-primary">Search</button>
+                    <input type="text" name="search" class="form-control" placeholder="{{ __('Search in trash...') }}" value="{{ $search ?? '' }}">
+                    <button type="submit" class="btn btn-primary">{{ __('Search') }}</button>
 
                     <select name="per_page" class="form-select w-auto" onchange="this.form.submit()">
-                        <option value="25" {{ ($perPage ?? 25) == 25 ? 'selected' : '' }}>25 items</option>
-                        <option value="50" {{ ($perPage ?? 25) == 50 ? 'selected' : '' }}>50 items</option>
-                        <option value="100" {{ ($perPage ?? 25) == 100 ? 'selected' : '' }}>100 items</option>
+                        <option value="25" {{ ($perPage ?? 25) == 25 ? 'selected' : '' }}>{{ __('25 items') }}</option>
+                        <option value="50" {{ ($perPage ?? 25) == 50 ? 'selected' : '' }}>{{ __('50 items') }}</option>
+                        <option value="100" {{ ($perPage ?? 25) == 100 ? 'selected' : '' }}>{{ __('100 items') }}</option>
                     </select>
 
-                    <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">Export</a>
+                    <a href="{{ route('admin.trash.export', request()->query()) }}" class="btn btn-info">{{ __('Export') }}</a>
                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#trashSettingsModal">
                         <i class="bi bi-gear"></i>
                     </button>
@@ -59,8 +59,7 @@
                 </div>
             </div>
 
-            @if(collect($trashedData)->every(fn($items) => $items->isEmpty()))
-                <div class="alert alert-info text-center">
+            @if(collect($trashedData)->every(fn($items) => $items->{{ __('isEmpty()))') }}<div class="alert alert-info text-center">
                     <i class="bi bi-trash3 me-2"></i> The trash is currently empty{{ $search ? ' for your search query' : '' }}.
                 </div>
             @else
@@ -89,8 +88,7 @@
 
                 <ul class="nav nav-tabs" id="trashTabs" role="tablist">
                     @foreach($trashedData as $modelName => $items)
-                        @if($items->isNotEmpty())
-                            <li class="nav-item" role="presentation">
+                        @if($items->{{ __('isNotEmpty())') }}<li class="nav-item" role="presentation">
                                 <button class="nav-link {{ $modelName === $activeTab ? 'active' : '' }}" id="{{ $modelName }}-tab" data-bs-toggle="tab" data-bs-target="#{{ $modelName }}-pane" type="button" role="tab" aria-controls="{{ $modelName }}-pane" aria-selected="{{ $modelName === $activeTab ? 'true' : 'false' }}">
                                     {{ Str::plural(ucfirst(str_replace('_', ' ', $modelName))) }} ({{ $items->count() }})
                                 </button>
@@ -101,8 +99,7 @@
 
                 <div class="tab-content pt-3" id="trashTabsContent">
                     @foreach($trashedData as $modelName => $items)
-                        @if($items->isNotEmpty())
-                            <div class="tab-pane fade {{ $modelName === $activeTab ? 'show active' : '' }}" id="{{ $modelName }}-pane" role="tabpanel" aria-labelledby="{{ $modelName }}-tab" tabindex="0">
+                        @if($items->{{ __('isNotEmpty())') }}<div class="tab-pane fade {{ $modelName === $activeTab ? 'show active' : '' }}" id="{{ $modelName }}-pane" role="tabpanel" aria-labelledby="{{ $modelName }}-tab" tabindex="0">
 
                                 {{-- CARD VIEW --}}
                                 @if($currentView === 'card')
@@ -138,13 +135,13 @@
                                     <table class="table table-striped table-hover align-middle">
                                         <thead>
                                             <tr>
-                                                <th style="width: 40%;">Identifier</th>
+                                                <th style="width: 40%;">{{ __('Identifier') }}</th>
                                                 @if($modelName === 'employees')
-                                                    <th>Nationality</th>
-                                                    <th>Employer</th>
+                                                    <th>{{ __('Nationality') }}</th>
+                                                    <th>{{ __('Employer') }}</th>
                                                 @endif
-                                                <th>Deleted At</th>
-                                                <th class="text-end">Actions</th>
+                                                <th>{{ __('Deleted At') }}</th>
+                                                <th class="text-end">{{ __('Actions') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -201,7 +198,7 @@
                                                                 {{-- FIX: Added method="POST" to prevent 405 error from Brief 17 --}}
                                                                 <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-grid d-md-inline restore-form">
                                                                     @csrf
-                                                                    <button type="submit" class="btn btn-sm btn-outline-success">Restore</button>
+                                                                    <button type="submit" class="btn btn-sm btn-outline-success">{{ __('Restore') }}</button>
                                                                 </form>
                                                             @endif
 
@@ -210,9 +207,7 @@
                                                                 <form action="{{ route('admin.trash.forceDelete', ['model' => $modelName, 'id' => $item->id]) }}" method="POST" class="d-grid d-md-inline delete-form">
                                                                     @csrf
                                                                     @method('DELETE')
-                                                                    <button type="submit" class="btn btn-sm btn-danger">
-                                                                        Force Delete
-                                                                    </button>
+                                                                    <button type="submit" class="btn btn-sm btn-danger">{{ __('Force Delete') }}</button>
                                                                 </form>
                                                             @endif
                                                         </div>
@@ -334,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (response.ok) {
                 Swal.fire({
-                    title: 'Success!',
+                    title: '{{ __('Success!') }}',
                     text: data.success || 'Action completed successfully.',
                     icon: 'success',
                     timer: 2000,
@@ -353,19 +348,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Attach to Restore forms
     attachSweetAlert('.restore-form', {
-        title: 'Are you sure?',
-        text: "This item will be restored from the trash.",
+        title: '{{ __('Are you sure?') }}',
+        text: "{{ __('This item will be restored from the trash.') }}",
         icon: 'question',
-        confirmButtonText: 'Yes, restore it!'
+        confirmButtonText: '{{ __('Yes, restore it!') }}'
     });
 
     // Attach to Force Delete forms
     attachSweetAlert('.delete-form', {
-        title: 'Are you sure?',
-        text: "This action is permanent and cannot be undone!",
+        title: '{{ __('Are you sure?') }}',
+        text: "{{ __('This action is permanent and cannot be undone!') }}",
         icon: 'warning',
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, permanently delete it!'
+        confirmButtonText: '{{ __('Yes, permanently delete it!') }}'
     });
 });
 </script>

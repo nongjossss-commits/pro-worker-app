@@ -7,11 +7,10 @@
     @if(isset($employer) && $employer)
         <h2 class="mb-4">เพิ่มพนักงาน (Renewal) สำหรับ {{ $employer->employerNameTh }}</h2>
     @else
-        <h2 class="mb-4">เพิ่มพนักงาน (Renewal)</h2>
+        <h2 class="mb-4">{{ __('เพิ่มพนักงาน (Renewal)') }}</h2>
     @endif
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
+    @if ($errors->{{ __('any())') }}<div class="alert alert-danger">
             <ul class="mb-0">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -27,8 +26,8 @@
         @include('employees.partials.create_form_partial_content')
 
         <div class="mt-4 d-flex justify-content-end">
-            <a href="{{ route('production.renewal.index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
-            <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน (Renewal)</button>
+            <a href="{{ route('production.renewal.index') }}" class="btn btn-secondary me-2">{{ __('ยกเลิก') }}</a>
+            <button type="submit" class="btn btn-primary">{{ __('บันทึกข้อมูลพนักงาน (Renewal)') }}</button>
         </div>
     </form>
 </div>

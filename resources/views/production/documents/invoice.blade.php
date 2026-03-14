@@ -6,17 +6,16 @@
 @section('content')
 <div class="mb-4">
     <div class="text-sm">
-        <strong>Payment For:</strong> Installments / Project Balance
-    </div>
+        <strong>Payment For:</strong>{{ __('Installments / Project Balance') }}</div>
 </div>
 
 <table>
     <thead>
         <tr>
             <th style="width: 5%;">#</th>
-            <th style="width: 50%;">Description</th>
-            <th class="text-center" style="width: 15%;">Due Date</th>
-            <th class="text-right" style="width: 15%;">Amount</th>
+            <th style="width: 50%;">{{ __('Description') }}</th>
+            <th class="text-center" style="width: 15%;">{{ __('Due Date') }}</th>
+            <th class="text-right" style="width: 15%;">{{ __('Amount') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -59,8 +58,7 @@
                 <td>{{ $index + 1 }}</td>
                 <td>
                     <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
-                    @if($t->notes)
-                        <br><span class="text-sm text-muted">{{ $t->notes }}</span>
+                    @if($t->{{ __('notes)') }}<br><span class="text-sm text-muted">{{ $t->notes }}</span>
                     @endif
 
                     {{-- If this is a Full Payment, show Tier Details --}}
@@ -82,7 +80,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="4" class="text-center py-4 text-muted">No items selected.</td>
+                <td colspan="4" class="text-center py-4 text-muted">{{ __('No items selected.') }}</td>
             </tr>
         @endforelse
     </tbody>
@@ -127,7 +125,7 @@
         <!-- Subtotal -->
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right text-muted">Subtotal</td>
+            <td class="text-right text-muted">{{ __('Subtotal') }}</td>
             <td class="amount">{{ number_format($subtotalDisplay, 2) }}</td>
         </tr>
 
@@ -135,7 +133,7 @@
         @if($displayDiscount > 0)
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right text-danger">Discount</td>
+            <td class="text-right text-danger">{{ __('Discount') }}</td>
             <td class="amount text-danger">-{{ number_format($displayDiscount, 2) }}</td>
         </tr>
         @endif
@@ -143,7 +141,7 @@
         <!-- Net Before VAT -->
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right text-muted">Net Amount</td>
+            <td class="text-right text-muted">{{ __('Net Amount') }}</td>
             <td class="amount">{{ number_format($netBase, 2) }}</td>
         </tr>
 
@@ -157,7 +155,7 @@
         <!-- Grand Total -->
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right font-bold text-primary" style="font-size: 1.1em;">Grand Total</td>
+            <td class="text-right font-bold text-primary" style="font-size: 1.1em;">{{ __('Grand Total') }}</td>
             <td class="amount font-bold text-primary" style="font-size: 1.1em;">{{ number_format($grandTotal, 2) }}</td>
         </tr>
 
@@ -170,7 +168,7 @@
         </tr>
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right font-bold text-success">Net Payable</td>
+            <td class="text-right font-bold text-success">{{ __('Net Payable') }}</td>
             <td class="amount font-bold text-success">{{ number_format($grandTotal - $whtAmount, 2) }}</td>
         </tr>
         @endif
@@ -185,7 +183,7 @@
 </table>
 
 <div class="mt-8">
-    <h4 class="text-sm font-bold mb-2">Payment Information</h4>
+    <h4 class="text-sm font-bold mb-2">{{ __('Payment Information') }}</h4>
     <div class="p-4" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px;">
         <div class="text-sm">
             <strong>Bank Name:</strong> {{ $company->bank_name ?? 'KBANK' }}<br>

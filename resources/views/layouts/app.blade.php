@@ -257,15 +257,14 @@
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="sidebarLabel">
                     <a href="{{ route('dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none text-reset">
-                        <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
-                    </a>
+                        <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;">{{ __('Proworker labour') }}</a>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column p-0">
             <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="{{ route('dashboard') }}">
                 <img src="{{ asset('images/logo_new.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
-                <span style="line-height: 1.2;">Proworker labour</span>
+                <span style="line-height: 1.2;">{{ __('Proworker labour') }}</span>
             </a>
             <div class="list-group" id="main-nav">
                 @include('partials.sidebar-menu')
@@ -282,8 +281,7 @@
 
                     {{-- Download Center Button (Fixed for better visibility) --}}
                     <button class="btn btn-outline-secondary d-none d-md-block" onclick="openDownloadCenter()">
-                        <i class="bi bi-cloud-download-fill me-1"></i> Download Center
-                    </button>
+                        <i class="bi bi-cloud-download-fill me-1"></i>{{ __('Download Center') }}</button>
 
                     {{-- Drag to Split Button --}}
                     <a href="{{ request()->fullUrl() }}"
@@ -291,8 +289,7 @@
                        draggable="true"
                        ondragstart="event.dataTransfer.setData('text/plain', this.href); event.dataTransfer.setData('text/uri-list', this.href);"
                        title="ลากเพื่อแยกหน้าจอ (Drag to Split)">
-                        <i class="bi bi-grid-3x2-gap-fill me-1"></i> ลากเพื่อแยก
-                    </a>
+                        <i class="bi bi-grid-3x2-gap-fill me-1"></i>{{ __('ลากเพื่อแยก') }}</a>
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">
@@ -370,8 +367,7 @@
                 </script>
             @endif
 
-            @if ($errors->any())
-                <div class="alert alert-danger">
+            @if ($errors->{{ __('any())') }}<div class="alert alert-danger">
                     <ul class="mb-0">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -398,7 +394,7 @@
 
                             {{-- Field for Pink Card Number (Only for pink_card_missing) --}}
                             <div class="mb-3 d-none" id="pink_card_number_group">
-                                <label for="pink_card_number" class="form-label">เลขบัตรชมพู <span class="text-danger">*</span></label>
+                                <label for="pink_card_number" class="form-label">{{ __('เลขบัตรชมพู') }}<span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="pink_card_number" name="pink_card_number">
                             </div>
 
@@ -1856,7 +1852,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="scroll-to-top right" id="scrollToTopRight"><i class="bi bi-chevron-up"></i></div>
 
 <!-- Side Drawer Handle -->
-<div id="drawer-handle" class="drawer-handle" title="Open Menu">
+<div id="drawer-handle" class="drawer-handle" title="{{ __('Open Menu') }}">
     <i class="bi bi-chevron-right"></i>
 </div>
 

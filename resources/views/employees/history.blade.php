@@ -12,43 +12,42 @@
 <div class="card p-3 mb-3">
     <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
         <form method="GET" action="{{ route('employees.history') }}" class="d-flex flex-wrap align-items-center gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('ค้นหา...') }}" value="{{ request('search') }}" style="width: 200px;">
             <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- ทุกสัญชาติ --</option>
-                <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
-                <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
-                <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
-                <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
+                <option value="">{{ __('-- ทุกสัญชาติ --') }}</option>
+                <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>{{ __('เมียนมา') }}</option>
+                <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>{{ __('ลาว') }}</option>
+                <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>{{ __('กัมพูชา') }}</option>
+                <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>{{ __('เวียดนาม') }}</option>
             </select>
             <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- ทุกประเภท มติ. --</option>
-                <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
-                <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
-                <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
-                <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
+                <option value="">{{ __('-- ทุกประเภท มติ. --') }}</option>
+                <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>{{ __('MOU') }}</option>
+                <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>{{ __('มติต่ออายุในประเทศ') }}</option>
+                <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>{{ __('มติขึ้นทะเบียน') }}</option>
+                <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>{{ __('อื่นๆ') }}</option>
             </select>
             <select name="pink_card" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- บัตรชมพู --</option>
-                <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>มีบัตรชมพู</option>
-                <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>ไม่มีบัตรชมพู</option>
+                <option value="">{{ __('-- บัตรชมพู --') }}</option>
+                <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>{{ __('มีบัตรชมพู') }}</option>
+                <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>{{ __('ไม่มีบัตรชมพู') }}</option>
             </select>
             <select name="passport_type" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- ประเภทพาสปอร์ต --</option>
-                <option value="CI" {{ request('passport_type') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
-                <option value="PJ" {{ request('passport_type') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
-                <option value="TD" {{ request('passport_type') == 'TD' ? 'selected' : '' }}>เล่ม TD</option>
-                <option value="International" {{ request('passport_type') == 'International' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+                <option value="">{{ __('-- ประเภทพาสปอร์ต --') }}</option>
+                <option value="CI" {{ request('passport_type') == 'CI' ? 'selected' : '' }}>{{ __('เล่ม CI') }}</option>
+                <option value="PJ" {{ request('passport_type') == 'PJ' ? 'selected' : '' }}>{{ __('เล่ม PJ') }}</option>
+                <option value="TD" {{ request('passport_type') == 'TD' ? 'selected' : '' }}>{{ __('เล่ม TD') }}</option>
+                <option value="International" {{ request('passport_type') == 'International' ? 'selected' : '' }}>{{ __('เล่มอินเตอร์') }}</option>
             </select>
-            <button type="submit" class="btn btn-sm btn-primary">กรอง</button>
-            <a href="{{ route('employees.history') }}" class="btn btn-sm btn-secondary">ล้างค่า</a>
+            <button type="submit" class="btn btn-sm btn-primary">{{ __('กรอง') }}</button>
+            <a href="{{ route('employees.history') }}" class="btn btn-sm btn-secondary">{{ __('ล้างค่า') }}</a>
         </form>
         <div class="d-flex align-items-center gap-2">
             <a href="{{ route('employees.export', array_merge(request()->query(), ['history' => 1])) }}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
-            </a>
+                <i class="bi bi-file-earmark-excel me-1"></i>{{ __('Export CSV') }}</a>
             <div class="btn-group btn-group-sm">
-                <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
-                <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
+                <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('การ์ด') }}</a>
+                <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('ตาราง') }}</a>
             </div>
             <div class="btn-group btn-group-sm">
                 @foreach($perPageOptions as $option)
@@ -80,7 +79,7 @@
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
                 </div>
             @empty
-                <p class="text-center text-muted">ไม่พบประวัติการจ้างงาน</p>
+                <p class="text-center text-muted">{{ __('ไม่พบประวัติการจ้างงาน') }}</p>
             @endforelse
         </div>
     @else
@@ -90,11 +89,11 @@
                     <tr>
                         <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="history-select-all-checkbox-table"></th>
                         <th style="width: 1%;"></th>
-                        <th scope="col">Employee</th>
-                        <th scope="col">Employer</th>
-                        <th scope="col">Terminated Date</th>
-                        <th scope="col">Reason</th>
-                        <th scope="col">Actions</th>
+                        <th scope="col">{{ __('Employee') }}</th>
+                        <th scope="col">{{ __('Employer') }}</th>
+                        <th scope="col">{{ __('Terminated Date') }}</th>
+                        <th scope="col">{{ __('Reason') }}</th>
+                        <th scope="col">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody id="historyTableBody">
@@ -129,14 +128,14 @@
                         </td>
                         <td>{{ $employee->termination_reason ?: '-' }}</td>
                         <td class="text-nowrap">
-                            <button class="btn btn-sm btn-success btn-reinstate" title="Restore" data-employee-id="{{ $employee->id }}"><i class="bi bi-arrow-counterclockwise"></i></button>
+                            <button class="btn btn-sm btn-success btn-reinstate" title="{{ __('Restore') }}" data-employee-id="{{ $employee->id }}"><i class="bi bi-arrow-counterclockwise"></i></button>
                             <button class="btn btn-sm btn-danger btn-move-to-trash" title="Move to Trash" data-employee-id="{{ $employee->id }}"><i class="bi bi-trash3-fill"></i></button>
                             <button class="btn btn-sm btn-info btn-transfer-employee" title="Transfer Employer" data-employee-id="{{ $employee->id }}" data-employee-name="{{ $employee->employeeFullName }}"><i class="bi bi-person-up"></i></button>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted">ไม่พบประวัติการจ้างงาน</td>
+                        <td colspan="6" class="text-center text-muted">{{ __('ไม่พบประวัติการจ้างงาน') }}</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -279,14 +278,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const employeeId = target.dataset.employeeId;
 
             if (target.classList.contains('btn-reinstate')) {
-                Swal.fire({ title: 'ยืนยันการคืนสถานะ', text: "ลูกจ้างจะถูกย้ายกลับไปอยู่ในรายชื่อลูกจ้างปัจจุบัน", icon: 'question', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+                Swal.fire({ title: '{{ __('ยืนยันการคืนสถานะ') }}', text: "{{ __('ลูกจ้างจะถูกย้ายกลับไปอยู่ในรายชื่อลูกจ้างปัจจุบัน') }}", icon: 'question', showCancelButton: true, confirmButtonText: '{{ __('ยืนยัน') }}', cancelButtonText: '{{ __('ยกเลิก') }}' })
                     .then(result => {
                         if (result.isConfirmed) {
                             performAction(`/employees/${employeeId}/reinstate`);
                         }
                     });
             } else if (target.classList.contains('btn-move-to-trash')) {
-                Swal.fire({ title: 'ยืนยันการย้ายไปถังขยะ', text: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33' })
+                Swal.fire({ title: '{{ __('ยืนยันการย้ายไปถังขยะ') }}', text: "{{ __('ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง') }}", icon: 'warning', showCancelButton: true, confirmButtonText: '{{ __('ยืนยัน') }}', cancelButtonText: '{{ __('ยกเลิก') }}', confirmButtonColor: '#d33' })
                     .then(result => {
                         if (result.isConfirmed) {
                             performAction(`/employees/${employeeId}`, { _method: 'DELETE' });
@@ -344,12 +343,12 @@ document.addEventListener('DOMContentLoaded', () => {
             employerSearchResultsDiv.innerHTML = '';
             return;
         }
-        employerSearchResultsDiv.innerHTML = '<p class="text-muted p-2">กำลังค้นหา...</p>';
+        employerSearchResultsDiv.innerHTML = '<p class="text-muted p-2">{{ __('กำลังค้นหา...') }}</p>';
 
         fetch(`/api-web/employers/list?search=${encodeURIComponent(searchTerm)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Network response was not ok'))
             .then(data => {
-                employerSearchResultsDiv.innerHTML = data.length === 0 ? '<p class="text-muted p-2">ไม่พบข้อมูลนายจ้าง</p>' : '';
+                employerSearchResultsDiv.innerHTML = data.length === 0 ? '<p class="text-muted p-2">{{ __('ไม่พบข้อมูลนายจ้าง') }}</p>' : '';
                 data.forEach(employer => {
                     const item = document.createElement('button');
                     item.type = 'button';
@@ -362,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(error => {
                 console.error('Error fetching employers:', error);
-                employerSearchResultsDiv.innerHTML = '<p class="text-danger p-2">เกิดข้อผิดพลาดในการค้นหา</p>';
+                employerSearchResultsDiv.innerHTML = '<p class="text-danger p-2">{{ __('เกิดข้อผิดพลาดในการค้นหา') }}</p>';
             });
     }, 300);
 
@@ -392,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
                 : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
 
-            Swal.fire({ title: 'ยืนยันการย้ายนายจ้าง', html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+            Swal.fire({ title: '{{ __('ยืนยันการย้ายนายจ้าง') }}', html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: '{{ __('ยืนยัน') }}', cancelButtonText: '{{ __('ยกเลิก') }}' })
                 .then(result => {
                     if (result.isConfirmed) {
                         if (isBulkTransfer) {

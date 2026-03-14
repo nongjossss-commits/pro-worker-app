@@ -56,14 +56,12 @@
                     <button type="button" class="btn btn-sm btn-outline-info btn-preview"
                             data-model-type="employee"
                             data-model-id="{{ $notification->employee_id }}">
-                        <i class="bi bi-search"></i> พรีวิว
-                    </button>
+                        <i class="bi bi-search"></i>{{ __('พรีวิว') }}</button>
                 @endif
 
                 {{-- Link to highlight notification --}}
                 <a href="{{ $notification->url ?? '#' }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-box-arrow-up-right"></i> ไปยังการแจ้งเตือน
-                </a>
+                    <i class="bi bi-box-arrow-up-right"></i>{{ __('ไปยังการแจ้งเตือน') }}</a>
             </div>
         </div>
     </div>

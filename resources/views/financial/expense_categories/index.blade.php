@@ -111,7 +111,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label>{{ __('Name') }} *</label>
-                        <input type="text" name="name" class="form-control" required placeholder="e.g., Visa Fee, Office Supplies">
+                        <input type="text" name="name" class="form-control" required placeholder="{{ __('e.g., Visa Fee, Office Supplies') }}">
                     </div>
                     <div class="mb-3">
                         <label>{{ __('Description') }}</label>

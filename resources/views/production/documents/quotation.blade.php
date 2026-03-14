@@ -8,10 +8,10 @@
     <thead>
         <tr>
             <th style="width: 5%;">#</th>
-            <th style="width: 50%;">Description</th>
-            <th class="text-center" style="width: 15%;">Quantity</th>
-            <th class="text-right" style="width: 15%;">Unit Price</th>
-            <th class="text-right" style="width: 15%;">Amount</th>
+            <th style="width: 50%;">{{ __('Description') }}</th>
+            <th class="text-center" style="width: 15%;">{{ __('Quantity') }}</th>
+            <th class="text-right" style="width: 15%;">{{ __('Unit Price') }}</th>
+            <th class="text-right" style="width: 15%;">{{ __('Amount') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -59,7 +59,7 @@
              @endphp
              <tr>
                 <td>1</td>
-                <td><strong>Service Fee</strong></td>
+                <td><strong>{{ __('Service Fee') }}</strong></td>
                 <td class="text-center">{{ $count }} Person(s)</td>
                 <td class="amount">{{ number_format($unitPrice, 2) }}</td>
                 <td class="amount">{{ number_format($lineTotal, 2) }}</td>
@@ -73,7 +73,7 @@
                     <strong>Project Fee: {{ $production->project_name }}</strong><br>
                     <span class="text-sm text-muted">{{ $production->description }}</span>
                 </td>
-                <td class="text-center">1 Job</td>
+                <td class="text-center">{{ __('1 Job') }}</td>
                 <td class="amount">{{ number_format($fixedTotal, 2) }}</td>
                 <td class="amount">{{ number_format($fixedTotal, 2) }}</td>
             </tr>
@@ -114,14 +114,14 @@
         <!-- Subtotal -->
         <tr>
             <td colspan="3" style="border: none;"></td>
-            <td class="text-right text-muted">Subtotal</td>
+            <td class="text-right text-muted">{{ __('Subtotal') }}</td>
             <td class="amount">{{ number_format($subtotalGross, 2) }}</td>
         </tr>
 
         @if($discount > 0)
         <tr>
             <td colspan="3" style="border: none;"></td>
-            <td class="text-right text-danger">Discount</td>
+            <td class="text-right text-danger">{{ __('Discount') }}</td>
             <td class="amount text-danger">-{{ number_format($discount, 2) }}</td>
         </tr>
         @endif
@@ -130,7 +130,7 @@
         @if($vatIncluded)
         <tr>
             <td colspan="3" style="border: none;"></td>
-            <td class="text-right text-muted">Base Amount (Ex-VAT)</td>
+            <td class="text-right text-muted">{{ __('Base Amount (Ex-VAT)') }}</td>
             <td class="amount">{{ number_format($realBase, 2) }}</td>
         </tr>
         @endif
@@ -145,7 +145,7 @@
         <!-- Grand Total -->
         <tr>
             <td colspan="3" style="border: none;"></td>
-            <td class="text-right font-bold text-primary" style="font-size: 1.1em;">Grand Total</td>
+            <td class="text-right font-bold text-primary" style="font-size: 1.1em;">{{ __('Grand Total') }}</td>
             <td class="amount font-bold text-primary" style="font-size: 1.1em;">{{ number_format($totalIncVat, 2) }}</td>
         </tr>
 
@@ -158,7 +158,7 @@
          </tr>
          <tr>
              <td colspan="3" style="border: none;"></td>
-             <td class="text-right font-bold text-success">Net Payable</td>
+             <td class="text-right font-bold text-success">{{ __('Net Payable') }}</td>
              <td class="amount font-bold text-success">{{ number_format($totalIncVat - $whtAmount, 2) }}</td>
          </tr>
          @endif
@@ -172,16 +172,16 @@
 </table>
 
 <div class="mt-8">
-    <h4 class="text-sm font-bold mb-2">Terms & Conditions</h4>
+    <h4 class="text-sm font-bold mb-2">{{ __('Terms & Conditions') }}</h4>
     <ul class="text-sm text-muted" style="padding-left: 20px;">
-        <li>This quotation is valid for 30 days.</li>
-        <li>Payment terms as agreed in the contract.</li>
+        <li>{{ __('This quotation is valid for 30 days.') }}</li>
+        <li>{{ __('Payment terms as agreed in the contract.') }}</li>
     </ul>
 
     <div class="mt-8 grid-2">
          <div>
             <div style="border-bottom: 1px solid #ccc; height: 30px; margin-bottom: 5px; width: 80%;"></div>
-            <div class="text-sm text-muted">Customer Acceptance</div>
+            <div class="text-sm text-muted">{{ __('Customer Acceptance') }}</div>
          </div>
     </div>
 </div>

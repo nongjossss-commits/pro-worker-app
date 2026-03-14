@@ -10,7 +10,7 @@
         modalBody.innerHTML = `
             <div class="d-flex justify-content-center align-items-center py-5">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">{{ __('Loading...') }}</span>
                 </div>
             </div>
         `;
@@ -147,10 +147,7 @@
             /*
                 <div>
                     <div class="fw-bold text-dark">...</div>
-                    <div class="text-muted small">...</div> (Thai Name)
-                    <div class="small text-muted mt-1">...</div> (DOB/Age)
-                    <div class="small text-muted mt-1">...</div> (Passport/Flag)
-                </div>
+                    <div class="text-muted small">...</div>{{ __('(Thai Name)') }}<div class="small text-muted mt-1">...</div>{{ __('(DOB/Age)') }}<div class="small text-muted mt-1">...</div>{{ __('(Passport/Flag)') }}</div>
             */
            // Select by order to be safe or text content match? Structure is safer if consistent.
            // Since we have reference to `nameDiv`, the next sibling is Thai Name.
@@ -160,7 +157,7 @@
         }
 
         // 2. Update Age / DOB
-        const dobDiv = card.querySelector('div.small.text-muted.mt-1 span[title="Date of Birth"]');
+        const dobDiv = card.querySelector('div.small.text-muted.mt-1 span[title="{{ __('Date of Birth') }}"]');
         // Or generic selector: third div in info container
         if (dobDiv) {
             // We need to format date. JS doesn't have Laravel's format.

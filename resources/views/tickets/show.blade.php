@@ -44,8 +44,7 @@
     @if (session('success'))
         <div class="alert alert-success mb-4">{{ session('success') }}</div>
     @endif
-    @if ($errors->any())
-        <div class="alert alert-danger mb-4">
+    @if ($errors->{{ __('any())') }}<div class="alert alert-danger mb-4">
             <strong>พบข้อผิดพลาด:</strong>
             <ul>
                 @foreach ($errors->all() as $error)
@@ -68,16 +67,14 @@
         <div class="col-lg-8">
 
             {{-- Section 1: Triage (Attachments Summary) --}}
-            @if($attachments->existing_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->isNotEmpty())
-            <div class="card mb-4 border-info">
+            @if($attachments->existing_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->{{ __('isNotEmpty())') }}<div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>{{ __('Attachments') }} (Attachments Triage)</h5>
                 </div>
                 <div class="card-body">
 
                     {{-- 1.1 Existing Employees --}}
-                    @if($attachments->existing_employees->isNotEmpty())
-                        <h6 class="text-primary mt-3">{{ __('Existing Employees') }} ({{ $attachments->existing_employees->count() }} คน)</h6>
+                    @if($attachments->existing_employees->{{ __('isNotEmpty())') }}<h6 class="text-primary mt-3">{{ __('Existing Employees') }} ({{ $attachments->existing_employees->count() }} คน)</h6>
 
                         <x-bulk-action-bar id="ticket-employer-existing-employees-bar">
                             <li><a class="dropdown-item" href="#" id="ticket-existing-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
@@ -95,8 +92,7 @@
                                         <strong>{{ $employee->employeeNameTh }}</strong>
                                         <small class="text-muted">({{ $employee->employeePassport }})</small>
                                     </span>
-                                    @if($employee->trashed())
-                                        <span class="badge bg-danger me-2">{{ __('Deleted/Terminated') }}</span>
+                                    @if($employee->{{ __('trashed())') }}<span class="badge bg-danger me-2">{{ __('Deleted/Terminated') }}</span>
                                     @endif
                                     <div class="ms-auto btn-group align-items-center">
                                         {{-- Preview Button --}}
@@ -135,8 +131,7 @@
                     @endif
 
                     {{-- 1.1.5 External Employees (Non-Affiliated) --}}
-                    @if($attachments->external_employees->isNotEmpty())
-                        <h6 class="text-warning text-dark mt-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>ลูกจ้างภายนอก (External) ({{ $attachments->external_employees->count() }} คน)</h6>
+                    @if($attachments->external_employees->{{ __('isNotEmpty())') }}<h6 class="text-warning text-dark mt-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>ลูกจ้างภายนอก (External) ({{ $attachments->external_employees->count() }} คน)</h6>
                         <div class="list-group mb-3 border border-warning rounded">
                             @foreach($attachments->external_employees as $item)
                                 @php $employee = $item->employee; @endphp
@@ -144,7 +139,7 @@
                                     {{-- External employees don't have bulk actions for now --}}
                                     <div class="position-relative">
                                         <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">Ext</span>
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">{{ __('Ext') }}</span>
                                     </div>
                                     <span class="flex-grow-1">
                                         <strong class="text-dark">{{ $employee->employeeNameTh }}</strong>
@@ -190,8 +185,7 @@
                     @endif
 
                     {{-- 1.2 New Employees --}}
-                    @if($attachments->new_employees->isNotEmpty())
-                        <h6 class="text-success mt-3">{{ __('New Employees') }} ({{ $attachments->new_employees->count() }} คน)</h6>
+                    @if($attachments->new_employees->{{ __('isNotEmpty())') }}<h6 class="text-success mt-3">{{ __('New Employees') }} ({{ $attachments->new_employees->count() }} คน)</h6>
                         <div class="list-group mb-3">
                             <script>
                                 // Initialize the global map if it doesn't exist
@@ -214,8 +208,7 @@
                                     <div class="flex-grow-1">
                                         {{-- Display Both Thai and English names --}}
                                         <strong>{{ $newEmployee->employeeTitleTh ?? '' }}{{ $newEmployee->employeeNameTh }}</strong>
-                                        @if(!empty($newEmployee->employeeNameEn))
-                                            <span class="text-muted">/ {{ $newEmployee->employeeTitleEn ?? '' }}{{ $newEmployee->employeeNameEn }}</span>
+                                        @if(!empty($newEmployee->{{ __('employeeNameEn))') }}<span class="text-muted">/ {{ $newEmployee->employeeTitleEn ?? '' }}{{ $newEmployee->employeeNameEn }}</span>
                                         @endif
                                         <small class="d-block text-muted">Passport: {{ $newEmployee->employeePassport ?? 'N/A' }}</small>
 
@@ -289,15 +282,13 @@
                     @endif
 
                     {{-- 1.3 General Files --}}
-                    @if($attachments->files->isNotEmpty())
-                        <h6 class="text-secondary mt-3">{{ __('General Files') }} ({{ $attachments->files->count() }} ไฟล์)</h6>
+                    @if($attachments->files->{{ __('isNotEmpty())') }}<h6 class="text-secondary mt-3">{{ __('General Files') }} ({{ $attachments->files->count() }} ไฟล์)</h6>
                         <div class="list-group mb-3">
                             @foreach($attachments->files as $item)
                                 @php $file = $item->data; @endphp
                                 <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2">
                                     <a href="{{ $file->url ?? '#' }}" @if($file->url) target="_blank" @endif class="text-decoration-none text-body flex-grow-1">
-                                        @if($file->url)
-                                            <span><i class="bi bi-file-earmark-text me-2"></i> {{ $file->name }}</span>
+                                        @if($file->{{ __('url)') }}<span><i class="bi bi-file-earmark-text me-2"></i> {{ $file->name }}</span>
                                         @else
                                             <span class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i> {{ $file->name }} (ไฟล์สูญหาย)</span>
                                         @endif
@@ -392,7 +383,7 @@
                     @endforeach
 
                     @if(!$hasConversation)
-                        <p class="text-center text-muted py-4">ยังไม่มีการสนทนา</p>
+                        <p class="text-center text-muted py-4">{{ __('ยังไม่มีการสนทนา') }}</p>
                     @endif
                 </div>
             </div>
@@ -546,8 +537,7 @@
                                     data-swal-icon="success"
                                     data-swal-confirm-text="ใช่, ปิดตั๋วเลย"
                                     {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-check-circle-fill me-2"></i> Mark as Resolved
-                            </button>
+                                <i class="bi bi-check-circle-fill me-2"></i>{{ __('Mark as Resolved') }}</button>
                         </form>
 
                         {{-- Reject Ticket Button --}}
@@ -559,8 +549,7 @@
                                     data-swal-icon="warning"
                                     data-swal-confirm-text="ใช่, ปฏิเสธตั๋ว"
                                     {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-x-octagon-fill me-2"></i> Reject Ticket
-                            </button>
+                                <i class="bi bi-x-octagon-fill me-2"></i>{{ __('Reject Ticket') }}</button>
                         </form>
                         {{-- Forward to P-Workflow Button --}}
                         <form id="forward-form" action="{{ route('admin.tickets.forward', $ticket) }}" method="POST" class="d-grid">
@@ -571,14 +560,11 @@
                                     data-swal-icon="info"
                                     data-swal-confirm-text="ใช่, ส่งต่อเลย"
                                     {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-arrow-right-circle-fill me-2"></i>
-                                Forward to P-Workflow
-                            </button>
+                                <i class="bi bi-arrow-right-circle-fill me-2"></i>{{ __('Forward to P-Workflow') }}</button>
                         </form>
                         {{-- Change Assignment Button --}}
                         <button type="button" class="btn btn-outline-secondary d-grid" data-bs-toggle="modal" data-bs-target="#changeAssignmentModal" {{ $isClosed ? 'disabled' : '' }}>
-                            <i class="bi bi-person-fill-gear me-2"></i> Change Assignment
-                        </button>
+                            <i class="bi bi-person-fill-gear me-2"></i>{{ __('Change Assignment') }}</button>
                     </div>
                 @endif
             </div>
@@ -602,7 +588,7 @@
             <form action="{{ route('admin.tickets.updateAssignment', $ticket) }}" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title" id="changeAssignmentModalLabel">Change Ticket Assignment</h5>
+                    <h5 class="modal-title" id="changeAssignmentModalLabel">{{ __('Change Ticket Assignment') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -610,7 +596,7 @@
                     <div class="mb-3">
                         <label for="assigned_to_user_id" class="form-label">Assign to New Staff:</label>
                         <select class="form-select" id="assigned_to_user_id" name="assigned_to_user_id" required>
-                            <option value="">-- Select Staff --</option>
+                            <option value="">{{ __('-- Select Staff --') }}</option>
                             @foreach($staffAndAdmins ?? [] as $user)
                                 <option value="{{ $user->id }}" {{ $ticket->assigned_to_user_id == $user->id ? 'selected' : '' }}>
                                     {{ $user->name }}
@@ -620,8 +606,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
                 </div>
             </form>
         </div>
@@ -676,7 +662,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: confirmText,
-                cancelButtonText: 'ยกเลิก'
+                cancelButtonText: '{{ __('ยกเลิก') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit(); // สั่ง submit form เมื่อผู้ใช้ยืนยัน

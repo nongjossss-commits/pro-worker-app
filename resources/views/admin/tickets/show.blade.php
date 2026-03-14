@@ -44,8 +44,7 @@
     @if (session('success'))
         <div class="alert alert-success mb-4">{{ session('success') }}</div>
     @endif
-    @if ($errors->any())
-        <div class="alert alert-danger mb-4">
+    @if ($errors->{{ __('any())') }}<div class="alert alert-danger mb-4">
             <strong>พบข้อผิดพลาด:</strong>
             <ul>
                 @foreach ($errors->all() as $error)
@@ -68,16 +67,14 @@
         <div class="col-lg-8">
 
             {{-- Section 1: Triage (Attachments Summary) --}}
-            @if($attachments->existing_employees->isNotEmpty() || $attachments->external_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->isNotEmpty())
-            <div class="card mb-4 border-info">
+            @if($attachments->existing_employees->isNotEmpty() || $attachments->external_employees->isNotEmpty() || $attachments->new_employees->isNotEmpty() || $attachments->files->{{ __('isNotEmpty())') }}<div class="card mb-4 border-info">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>สิ่งที่แนบมา (Attachments Triage)</h5>
+                    <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>{{ __('สิ่งที่แนบมา (Attachments Triage)') }}</h5>
                 </div>
                 <div class="card-body">
 
                     {{-- 1.1 Existing Employees (Affiliated) --}}
-                    @if($attachments->existing_employees->isNotEmpty())
-                        <h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
+                    @if($attachments->existing_employees->{{ __('isNotEmpty())') }}<h6 class="text-primary mt-3">ลูกจ้างที่มีอยู่ ({{ $attachments->existing_employees->count() }} คน)</h6>
 
                         <div class="list-group mb-3">
                             {{-- Bulk Action Header --}}
@@ -115,8 +112,7 @@
                                         <strong>{{ $employee->employeeNameTh }}</strong>
                                         <small class="text-muted">({{ $employee->employeePassport }})</small>
                                     </span>
-                                    @if($employee->trashed())
-                                        <span class="badge bg-danger me-2">ลบ/จำหน่ายแล้ว</span>
+                                    @if($employee->{{ __('trashed())') }}<span class="badge bg-danger me-2">{{ __('ลบ/จำหน่ายแล้ว') }}</span>
                                     @endif
                                     <div class="ms-auto btn-group align-items-center">
                                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}">
@@ -157,8 +153,7 @@
                     @endif
 
                     {{-- 1.1.5 External Employees (Non-Affiliated) --}}
-                    @if($attachments->external_employees->isNotEmpty())
-                        <h6 class="text-warning text-dark mt-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>ลูกจ้างภายนอก (External) ({{ $attachments->external_employees->count() }} คน)</h6>
+                    @if($attachments->external_employees->{{ __('isNotEmpty())') }}<h6 class="text-warning text-dark mt-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>ลูกจ้างภายนอก (External) ({{ $attachments->external_employees->count() }} คน)</h6>
                         <div class="list-group mb-3 border border-warning rounded">
                             @foreach($attachments->external_employees as $item)
                                 @php $employee = $item->employee; @endphp
@@ -167,7 +162,7 @@
                                     {{-- External employees don't have bulk actions for now --}}
                                     <div class="position-relative">
                                         <img src="{{ $employee->photo_url }}" alt="Photo" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">Ext</span>
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">{{ __('Ext') }}</span>
                                     </div>
                                     <span class="flex-grow-1">
                                         <strong class="text-dark">{{ $employee->employeeNameTh }}</strong>
@@ -216,8 +211,7 @@
                     @endif
 
                     {{-- 1.2 New Employees --}}
-                    @if($attachments->new_employees->isNotEmpty())
-                        <h6 class="text-success mt-3">ลูกจ้างใหม่/แจ้งเข้า ({{ $attachments->new_employees->count() }} คน)</h6>
+                    @if($attachments->new_employees->{{ __('isNotEmpty())') }}<h6 class="text-success mt-3">ลูกจ้างใหม่/แจ้งเข้า ({{ $attachments->new_employees->count() }} คน)</h6>
                         <div class="list-group mb-3">
                             <script>
                                 // Initialize the global map if it doesn't exist
@@ -240,8 +234,7 @@
                                     <div class="flex-grow-1">
                                         {{-- V2.5-S4: Display Both Thai and English names --}}
                                         <strong>{{ $newEmployee->employeeTitleTh ?? '' }}{{ $newEmployee->employeeNameTh }}</strong>
-                                        @if(!empty($newEmployee->employeeNameEn))
-                                            <span class="text-muted">/ {{ $newEmployee->employeeTitleEn ?? '' }}{{ $newEmployee->employeeNameEn }}</span>
+                                        @if(!empty($newEmployee->{{ __('employeeNameEn))') }}<span class="text-muted">/ {{ $newEmployee->employeeTitleEn ?? '' }}{{ $newEmployee->employeeNameEn }}</span>
                                         @endif
                                         <small class="d-block text-muted">Passport: {{ $newEmployee->employeePassport ?? 'N/A' }}</small>
 
@@ -315,15 +308,13 @@
                     @endif
 
                     {{-- 1.3 General Files --}}
-                    @if($attachments->files->isNotEmpty())
-                        <h6 class="text-secondary mt-3">ไฟล์แนบทั่วไป ({{ $attachments->files->count() }} ไฟล์)</h6>
+                    @if($attachments->files->{{ __('isNotEmpty())') }}<h6 class="text-secondary mt-3">ไฟล์แนบทั่วไป ({{ $attachments->files->count() }} ไฟล์)</h6>
                         <div class="list-group mb-3">
                             @foreach($attachments->files as $item)
                                 @php $file = $item->data; @endphp
                                 <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2">
                                     <a href="{{ $file->url ?? '#' }}" @if($file->url) target="_blank" @endif class="text-decoration-none text-body flex-grow-1">
-                                        @if($file->url)
-                                            <span><i class="bi bi-file-earmark-text me-2"></i> {{ $file->name }}</span>
+                                        @if($file->{{ __('url)') }}<span><i class="bi bi-file-earmark-text me-2"></i> {{ $file->name }}</span>
                                         @else
                                             <span class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i> {{ $file->name }} (ไฟล์สูญหาย)</span>
                                         @endif
@@ -366,7 +357,7 @@
             {{-- Section 2: Communication History (Chat View) --}}
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>ประวัติการสนทนา</h5>
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>{{ __('ประวัติการสนทนา') }}</h5>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                     @php $hasConversation = false; @endphp
@@ -415,7 +406,7 @@
                                                     return view('tickets.partials._chat_notification_card', ['notification' => $notificationData])->render();
                                                 }
                                                 // If JSON is invalid, return a placeholder or the raw content
-                                                return '<div class="alert alert-danger">ไม่สามารถแสดงข้อมูลการแจ้งเตือนได้</div>';
+                                                return '<div class="alert alert-danger">{{ __('ไม่สามารถแสดงข้อมูลการแจ้งเตือนได้') }}</div>';
                                             }, $body);
 
                                             // Convert remaining text line breaks to <br> tags, ensuring HTML is not escaped
@@ -437,7 +428,7 @@
                     @endforeach
 
                     @if(!$hasConversation)
-                        <p class="text-center text-muted py-4">ยังไม่มีการสนทนา</p>
+                        <p class="text-center text-muted py-4">{{ __('ยังไม่มีการสนทนา') }}</p>
                     @endif
                 </div>
             </div>
@@ -447,7 +438,7 @@
             {{-- Section 3: Reply Box (V2.4-S11 Implementation - Major Overhaul) --}}
             @if(!$isClosed)
                 <div class="card mb-4" id="reply-box" @dragover.prevent @drop.prevent="handleDrop($event)">
-                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i> ตอบกลับ / ส่งข้อความ</h5></div>
+                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-send me-2"></i>{{ __('ตอบกลับ / ส่งข้อความ') }}</h5></div>
                     <div class="card-body">
                         {{-- Hidden File Input --}}
                         {{-- V2.5-S4 Bug Fix: Use the correct x-ref to match the trigger function --}}
@@ -462,7 +453,7 @@
                             {{-- Text Area --}}
                             <div class="mb-3">
                                 <label for="message" class="form-label">ข้อความ:</label>
-                                <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" placeholder="พิมพ์ข้อความตอบกลับของคุณที่นี่...">{{ old('message') }}</textarea>
+                                <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" placeholder="{{ __('พิมพ์ข้อความตอบกลับของคุณที่นี่...') }}">{{ old('message') }}</textarea>
                                 @error('message')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -475,8 +466,7 @@
                                 </button>
                                 @if(auth()->user()->can('manage-tickets'))
                                 <button type="button" class="btn btn-outline-warning text-dark" @click="openGlobalEmployeeSearch" :disabled="isUploading">
-                                    <i class="bi bi-search"></i> แนบลูกจ้างภายนอก
-                                </button>
+                                    <i class="bi bi-search"></i>{{ __('แนบลูกจ้างภายนอก') }}</button>
                                 @endif
                                 <button type="button" class="btn btn-outline-success" @click="openNewEmployeeModal" :disabled="isUploading">
                                     <i class="bi bi-person-plus me-2"></i> {{ __('Attach New Employee/Register') }}
@@ -488,20 +478,19 @@
 
                             {{-- Attachment Basket --}}
                             <div class="mb-3">
-                                <label class="form-label">สิ่งที่แนบมา (<span x-text="totalItemsCount()"></span> รายการ):</label>
+                                <label class="form-label">{{ __('สิ่งที่แนบมา (') }}<span x-text="totalItemsCount()"></span> รายการ):</label>
 
                                 {{-- V2.4-S11: Upload Progress Bar --}}
                                 <div x-show="isUploading" class="mb-2">
                                     <div class="progress" style="height: 25px;">
-                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-secondary" role="progressbar" :style="'width: ' + uploadProgress + '%'" :aria-valuenow="uploadProgress" aria-valuemin="0" aria-valuemax="100">
-                                            กำลังอัปโหลด (<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-secondary" role="progressbar" :style="'width: ' + uploadProgress + '%'" :aria-valuenow="uploadProgress" aria-valuemin="0" aria-valuemax="100">{{ __('กำลังอัปโหลด (') }}<span x-text="filesUploadedCount"></span> / <span x-text="filesToUploadCount"></span>)...
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="list-group" style="max-height: 250px; overflow-y: auto;">
                                     <template x-if="totalItemsCount() === 0">
-                                        <div class="list-group-item text-muted fst-italic">ยังไม่มีรายการที่แนบ</div>
+                                        <div class="list-group-item text-muted fst-italic">{{ __('ยังไม่มีรายการที่แนบ') }}</div>
                                     </template>
                                     {{-- 1. Display Existing Employees --}}
                                     {{-- NOTE: This part is for the REPLY box, using JS templates from hybrid-attachment-scripts. Using drag there is tricky but can be done if templates support it. --}}
@@ -524,10 +513,10 @@
                                                     <i class="bi bi-person-check me-1 text-primary"></i>
                                                     <a :href="item.url || '#'" x-text="item.employeeNameTh" :target="item.url ? '_blank' : '_self'" class="text-decoration-none text-dark fw-bold"></a>
                                                     <span class="text-muted" x-text="item.employeeNameEn ? '(' + item.employeeNameEn + ')' : ''"></span>
-                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-id="item.id" data-model-type="employee">Preview</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-id="item.id" data-model-type="employee">{{ __('Preview') }}</button>
                                                 </span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">{{ __('ลบ') }}</button>
                                             <input type="hidden" :name="'attachments[existing_employees][' + index + '][id]'" :value="item.id">
                                             <input type="hidden" :name="'attachments[existing_employees][' + index + '][url]'" :value="item.url || ''">
                                         </div>
@@ -548,10 +537,10 @@
                                                     <i class="bi bi-search me-1 text-warning"></i>
                                                     <a :href="item.url || '#'" x-text="item.employeeNameTh" :target="item.url ? '_blank' : '_self'" class="text-decoration-none text-dark fw-bold"></a>
                                                     <span class="text-muted" x-text="'(Ext)'"></span>
-                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-id="item.id" data-model-type="employee">Preview</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info btn-preview ms-2" :data-model-id="item.id" data-model-type="employee">{{ __('Preview') }}</button>
                                                 </span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('external_employees', index, item.employeeNameTh)">ลบ</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('external_employees', index, item.employeeNameTh)">{{ __('ลบ') }}</button>
                                             <input type="hidden" :name="'attachments[external_employees][' + index + '][id]'" :value="item.id">
                                             <input type="hidden" :name="'attachments[external_employees][' + index + '][url]'" :value="item.url || ''">
                                         </div>
@@ -572,7 +561,7 @@
                                                     <small class="text-muted d-block" x-text="'Passport: ' + item.employeePassport"></small>
                                                 </span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">ลบ</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">{{ __('ลบ') }}</button>
                                             <input type="hidden" :name="'attachments[new_employees][' + index + ']'" :value="JSON.stringify(item)">
                                         </div>
                                     </template>
@@ -593,7 +582,7 @@
                                                     <small class="text-muted d-block" x-text="formatBytes(item.size)"></small>
                                                 </span>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">ลบ</button>
+                                            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">{{ __('ลบ') }}</button>
                                             <input type="hidden" :name="'attachments[files][' + index + '][path]'" :value="item.path">
                                             <input type="hidden" :name="'attachments[files][' + index + '][name]'" :value="item.name">
                                             <input type="hidden" :name="'attachments[files][' + index + '][size]'" :value="item.size">
@@ -635,7 +624,7 @@
         <div class="col-lg-4">
             <div class="card sticky-top" style="top: 20px;">
                 <div class="card-header">
-                    <h5 class="mb-0">ข้อมูลตั๋วงาน</h5>
+                    <h5 class="mb-0">{{ __('ข้อมูลตั๋วงาน') }}</h5>
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">
@@ -668,7 +657,7 @@
                 {{-- Admin Action Buttons (Placeholder for V2.4-S11) --}}
                 @if($isAdminView)
                     <div class="card-body d-grid gap-2">
-                         <h5 class="mb-3">การจัดการ (Admin/Staff)</h5>
+                         <h5 class="mb-3">{{ __('การจัดการ (Admin/Staff)') }}</h5>
                         {{-- Mark as Resolved Button --}}
 <form id="resolve-form" action="{{ route('admin.tickets.resolve', $ticket) }}" method="POST" class="d-grid">
                             @csrf
@@ -678,8 +667,7 @@
             data-swal-icon="success"
             data-swal-confirm-text="ใช่, ปิดตั๋วเลย"
             {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-check-circle-fill me-2"></i> Mark as Resolved
-                            </button>
+                                <i class="bi bi-check-circle-fill me-2"></i>{{ __('Mark as Resolved') }}</button>
                         </form>
 
                         {{-- Reject Ticket Button --}}
@@ -691,8 +679,7 @@
             data-swal-icon="warning"
             data-swal-confirm-text="ใช่, ปฏิเสธตั๋ว"
             {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-x-octagon-fill me-2"></i> Reject Ticket
-                            </button>
+                                <i class="bi bi-x-octagon-fill me-2"></i>{{ __('Reject Ticket') }}</button>
                         </form>
                         {{-- Accept Job / In Progress Button (New) --}}
                         <form id="in-progress-form" action="{{ route('admin.tickets.in_progress', $ticket) }}" method="POST" class="d-grid">
@@ -703,20 +690,17 @@
                                     data-swal-icon="info"
                                     data-swal-confirm-text="ใช่, ดำเนินการ"
                                     {{ $isClosed ? 'disabled' : '' }}>
-                                <i class="bi bi-hourglass-split me-2"></i>
-                                กำลังดำเนินการ (In Progress)
-                            </button>
+                                <i class="bi bi-hourglass-split me-2"></i>{{ __('กำลังดำเนินการ (In Progress)') }}</button>
                         </form>
 
                         {{-- Forward to P-Workflow Button --}}
                         <a href="{{ route('production.create', ['ticket_id' => $ticket->id, 'employer_id' => optional($ticket->employerUser->employer)->id]) }}"
                            class="btn btn-outline-primary d-grid {{ $isClosed ? 'disabled' : '' }}">
-                           <span><i class="bi bi-arrow-right-circle-fill me-2"></i> Forward to P-Workflow</span>
+                           <span><i class="bi bi-arrow-right-circle-fill me-2"></i>{{ __('Forward to P-Workflow') }}</span>
                         </a>
                         {{-- Change Assignment Button --}}
                         <button type="button" class="btn btn-outline-secondary d-grid" data-bs-toggle="modal" data-bs-target="#changeAssignmentModal" {{ $isClosed ? 'disabled' : '' }}>
-                            <i class="bi bi-person-fill-gear me-2"></i> Change Assignment
-                        </button>
+                            <i class="bi bi-person-fill-gear me-2"></i>{{ __('Change Assignment') }}</button>
                     </div>
                 @endif
             </div>
@@ -739,7 +723,7 @@
             <form action="{{ route('admin.tickets.updateAssignment', $ticket) }}" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title" id="changeAssignmentModalLabel">Change Ticket Assignment</h5>
+                    <h5 class="modal-title" id="changeAssignmentModalLabel">{{ __('Change Ticket Assignment') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -747,7 +731,7 @@
                     <div class="mb-3">
                         <label for="assigned_to_user_id" class="form-label">Assign to New Staff:</label>
                         <select class="form-select" id="assigned_to_user_id" name="assigned_to_user_id" required>
-                            <option value="">-- Select Staff --</option>
+                            <option value="">{{ __('-- Select Staff --') }}</option>
                             @foreach($staffAndAdmins ?? [] as $user)
                                 <option value="{{ $user->id }}" {{ $ticket->assigned_to_user_id == $user->id ? 'selected' : '' }}>
                                     {{ $user->name }}
@@ -757,8 +741,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
                 </div>
             </form>
         </div>
@@ -787,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (ticketSelectAll && ticketCheckboxes.length > 0) {
             ticketSelectAll.checked = (checkedCount > 0 && checkedCount === ticketCheckboxes.length);
-            ticketSelectAll.indeterminate = (checkedCount > 0 && checkedCount < ticketCheckboxes.length);
+            ticketSelectAll.indeterminate = (checkedCount >{{ __('0 && checkedCount') }}< ticketCheckboxes.length);
         }
     }
 
@@ -863,7 +847,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: confirmText,
-                cancelButtonText: 'ยกเลิก'
+                cancelButtonText: '{{ __('ยกเลิก') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit(); // สั่ง submit form เมื่อผู้ใช้ยืนยัน

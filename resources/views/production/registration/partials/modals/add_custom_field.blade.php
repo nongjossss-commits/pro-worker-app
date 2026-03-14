@@ -2,7 +2,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Custom Field</h5>
+                <h5 class="modal-title">{{ __('Add Custom Field') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -11,41 +11,41 @@
                     <!-- Action URL will be set via JS -->
 
                     <div class="mb-3">
-                        <label class="form-label">Field Name (Label)</label>
-                        <input type="text" name="field_name" class="form-control" required placeholder="e.g. Additional Note, Medical Cert">
+                        <label class="form-label">{{ __('Field Name (Label)') }}</label>
+                        <input type="text" name="field_name" class="form-control" required placeholder="{{ __('e.g. Additional Note, Medical Cert') }}">
                     </div>
 
                     <div class="mb-3">
-                         <label class="form-label">Field Type</label>
+                         <label class="form-label">{{ __('Field Type') }}</label>
                          <select name="field_type" class="form-select" onchange="toggleModalInputs(this)">
-                             <option value="text">Text Box</option>
-                             <option value="date">Date</option>
-                             <option value="file">File Attachment</option>
+                             <option value="text">{{ __('Text Box') }}</option>
+                             <option value="date">{{ __('Date') }}</option>
+                             <option value="file">{{ __('File Attachment') }}</option>
                          </select>
                     </div>
 
                     {{-- Dynamic Inputs --}}
                     <div class="mb-3 input-group-text-type">
-                        <label class="form-label">Value</label>
+                        <label class="form-label">{{ __('Value') }}</label>
                         <textarea name="field_value" class="form-control" rows="3"></textarea>
                     </div>
 
                     <div class="mb-3 input-group-date-type d-none">
-                        <label class="form-label">Select Date</label>
+                        <label class="form-label">{{ __('Select Date') }}</label>
                         <input type="date" name="field_date_value" class="form-control">
                     </div>
 
                     <div class="mb-3 input-group-file-type d-none">
-                        <label class="form-label">Select File</label>
+                        <label class="form-label">{{ __('Select File') }}</label>
                         <input type="file" name="field_file" class="form-control" multiple>
                         <div class="mt-2">
-                            <label class="form-label small">Description (Optional)</label>
-                            <input type="text" name="field_value_desc" class="form-control form-control-sm" placeholder="File description...">
+                            <label class="form-label small">{{ __('Description (Optional)') }}</label>
+                            <input type="text" name="field_value_desc" class="form-control form-control-sm" placeholder="{{ __('File description...') }}">
                         </div>
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-add-field">Add Field</button>
+                        <button type="submit" class="btn btn-primary btn-add-field">{{ __('Add Field') }}</button>
                     </div>
                 </form>
             </div>

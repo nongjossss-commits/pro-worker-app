@@ -184,8 +184,7 @@
                         </div>
 
                         {{-- Employer Info (Requested Feature) --}}
-                        @if($order && $order->employer)
-                        <div class="small text-primary mt-1">
+                        @if($order && $order->{{ __('employer)') }}<div class="small text-primary mt-1">
                              <i class="bi bi-building me-1"></i> {{ $order->employer->employerNameTh ?? $order->employer->employerNameEn }}
                              <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
                                 style="text-decoration: none;"
@@ -327,20 +326,20 @@
 
                         <!-- Appt Updated By -->
                         <div x-show="updatedByName" class="mt-1 text-end" style="font-size: 0.65rem;" x-cloak>
-                            <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
+                            <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span>{{ __('โดย') }}<span x-text="updatedByName"></span></span>
                         </div>
 
                         <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
-                             <label class="small fw-bold">Date & Time</label>
+                             <label class="small fw-bold">{{ __('Date & Time') }}</label>
                              <div>
-                                <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
+                                <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="{{ __('Date...') }}">
                              </div>
 
-                             <label class="small fw-bold mt-1">Location</label>
-                             <input x-model="locationValue" type="text" class="form-control form-control-sm" placeholder="e.g. Office, Site A">
+                             <label class="small fw-bold mt-1">{{ __('Location') }}</label>
+                             <input x-model="locationValue" type="text" class="form-control form-control-sm" placeholder="{{ __('e.g. Office, Site A') }}">
 
                              <div class="d-flex gap-1 mt-2">
-                                <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> Save</button>
+                                <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i>{{ __('Save') }}</button>
                                 <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
                              </div>
                         </div>
@@ -428,8 +427,8 @@
 
                     {{-- Edit Mode --}}
                     <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" :class="{ 'd-flex': isEditing }" style="display: none; min-width: 220px;">
-                        <input x-model="email" type="text" class="form-control form-control-sm" placeholder="Email">
-                        <input x-model="outsource_code" type="text" class="form-control form-control-sm" placeholder="Outsource Code">
+                        <input x-model="email" type="text" class="form-control form-control-sm" placeholder="{{ __('Email') }}">
+                        <input x-model="outsource_code" type="text" class="form-control form-control-sm" placeholder="{{ __('Outsource Code') }}">
                         <div class="d-flex gap-1 mt-1">
                             <button @click="save()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i></button>
                             <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
@@ -472,7 +471,7 @@
                                         toast: true,
                                         position: 'top-end',
                                         icon: 'success',
-                                        title: 'บันทึกหมายเหตุสำเร็จ',
+                                        title: '{{ __('บันทึกหมายเหตุสำเร็จ') }}',
                                         showConfirmButton: false,
                                         timer: 1500
                                     });
@@ -489,7 +488,7 @@
                         }
                     }">
                         <div>
-                            <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
+                            <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">{{ __('หมายเหตุ') }}</small>
 
                             <div class="d-flex align-items-start gap-1">
                                 <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
@@ -502,7 +501,7 @@
                                 </div>
 
                                 <div x-cloak :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
-                                    <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="กรอกข้อความหมายเหตุ..."></textarea>
+                                    <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="{{ __('กรอกข้อความหมายเหตุ...') }}"></textarea>
                                     <div class="d-flex gap-1">
                                         <button @click="saveRemark()" :disabled="isSaving" class="btn btn-sm btn-success flex-grow-1">
                                             <i class="bi bi-check-lg" x-show="!isSaving"></i>
@@ -616,14 +615,14 @@
                         <div class="d-flex align-items-end gap-2">
                             {{-- Field 1: Name List (Renamed to RA) --}}
                             <div style="flex-grow: 1;">
-                                <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
+                                <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลข RA จากระบบ outsource') }}</small>
                                 <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                                     <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
                                     <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                         <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                     </button>
                                 </div>
-                                <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
+                                <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="{{ __('RA No.') }}">
                             </div>
 
                             {{-- Action Buttons --}}
@@ -642,26 +641,26 @@
 
                         {{-- Field 2: Request No --}}
                         <div style="width: 100%;">
-                            <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
+                            <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลขที่คำขอ') }}</small>
                             <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                                 <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
                                 <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                     <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                 </button>
                             </div>
-                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
+                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="{{ __('Request No.') }}">
                         </div>
 
                         {{-- Field 3: Ref ID --}}
                         <div style="width: 100%;">
-                            <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
+                            <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลขอ้างอิงคนงาน') }}</small>
                             <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                                 <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
                                 <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                     <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                 </button>
                             </div>
-                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
+                            <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="{{ __('Ref ID') }}">
                         </div>
                     </div>
                 </div>
@@ -704,14 +703,14 @@
                     @if($empId)
                         <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
                             onclick="openEditEmployeeModal({{ $empId }}, {{ $item->id }})"
-                            title="Edit Employee">
+                            title="{{ __('Edit Employee') }}">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                     @else
                         {{-- Temp Employee (Edit not fully linked yet, but button visible as requested) --}}
                         <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
                             onclick="Swal.fire('{{ __('Notice') }}', '{{ __('Please register this employee first to edit full details.') }}', 'info')"
-                            title="Edit Employee">
+                            title="{{ __('Edit Employee') }}">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                     @endif
@@ -720,7 +719,7 @@
                  <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
                     data-model-type="employee"
                     data-model-id="{{ $empId ?? 0 }}"
-                    title="Preview">
+                    title="{{ __('Preview') }}">
                     <i class="bi bi-eye-fill"></i>
                 </button>
 
@@ -796,7 +795,7 @@
 
                 {{-- Delete (Soft) --}}
                 @if($canDelete)
-                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteItem({{ $item->id }})">
+                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="{{ __('Delete') }}" onclick="deleteItem({{ $item->id }})">
                     <i class="bi bi-trash-fill"></i>
                 </button>
                 @endif

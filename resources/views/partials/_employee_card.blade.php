@@ -120,8 +120,7 @@
             @if($employee->teams && $employee->teams->count() > 0 && !($hideTeamTags ?? false))
                 <div class="position-absolute top-0 end-0 mt-0 me-2 d-flex flex-wrap justify-content-end gap-1" style="max-width: 250px;">
                     @foreach($employee->teams as $team)
-                        @if($team->group)
-                        <a href="{{ route('groups.locate_member', ['group' => $team->group->id, 'employee' => $employee->id]) }}"
+                        @if($team->{{ __('group)') }}<a href="{{ route('groups.locate_member', ['group' => $team->group->id, 'employee' => $employee->id]) }}"
                            class="badge text-decoration-none"
                            style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-weight: normal; font-size: 0.75rem;"
                            title="{{ __('Group') }}: {{ $team->group->name }} | {{ __('Team') }}: {{ $team->name }}"
@@ -176,8 +175,7 @@
                         <span class="text-primary small fw-bold">{{ $label }}</span>
                     @endforeach
                 @endif
-                @if($employee->employer)
-                <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
+                @if($employee->{{ __('employer)') }}<button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
                     <i class="bi bi-search"></i>
                 </button>
                 @endif

@@ -51,8 +51,7 @@
                         <td class="text-end">{{ number_format($order->billed_amount, 2) }}</td>
                         <td class="text-end text-warning fw-bold">{{ number_format($order->pending_amount, 2) }}</td>
                         <td class="text-center">
-                            @if($order->employer)
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadFinancialTabModal('{{ route('production.registration.finance.tab', $order->employer->id) }}', '{{ $order->employer->employerNameTh }}')">
+                            @if($order->{{ __('employer)') }}<button type="button" class="btn btn-sm btn-outline-primary" onclick="loadFinancialTabModal('{{ route('production.registration.finance.tab', $order->employer->id) }}', '{{ $order->employer->employerNameTh }}')">
                                     <i class="bi bi-wallet2"></i> {{ __('Manage Finance') }}
                                 </button>
                             @endif
@@ -83,7 +82,7 @@
             <div class="modal-body" id="financialTabModalBody">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
                     </div>
                 </div>
             </div>
@@ -101,7 +100,7 @@
         document.getElementById('financialTabModalBody').innerHTML = `
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">{{ __('Loading...') }}</span>
                 </div>
             </div>
         `;
@@ -133,9 +132,7 @@
         .catch(error => {
             console.error('Error fetching financial tab:', error);
             document.getElementById('financialTabModalBody').innerHTML = `
-                <div class="alert alert-danger">
-                    Error loading financial data. Please try again or check your permissions.
-                </div>
+                <div class="alert alert-danger">{{ __('Error loading financial data. Please try again or check your permissions.') }}</div>
             `;
         });
     }

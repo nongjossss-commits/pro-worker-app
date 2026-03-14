@@ -3,11 +3,10 @@
 @section('content')
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-2xl font-bold text-gray-800">PDF Templates</h2>
+        <h2 class="text-2xl font-bold text-gray-800">{{ __('PDF Templates') }}</h2>
         @can('create-pdf-templates')
         <a href="{{ route('admin.pdf-templates.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-2"></i>Create New Template
-        </a>
+            <i class="bi bi-plus-lg me-2"></i>{{ __('Create New Template') }}</a>
         @endcan
     </div>
 
@@ -17,7 +16,7 @@
         <div class="card-body bg-light rounded">
             <form action="{{ route('admin.pdf-templates.index') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-5">
-                    <label class="form-label fw-bold">Filter by Employer / Type</label>
+                    <label class="form-label fw-bold">{{ __('Filter by Employer / Type') }}</label>
                     {{-- Reusing the searchable dropdown pattern --}}
                     @php
                         $selectedId = request('employer_id');
@@ -55,7 +54,7 @@
                                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                                 <input type="text"
                                        class="form-control border-start-0 ps-0"
-                                       placeholder="Type to search employer or select Global..."
+                                       placeholder="{{ __('Type to search employer or select Global...') }}"
                                        x-model="search"
                                        @focus="open = true"
                                        @keydown.escape="open = false"
@@ -82,9 +81,7 @@
                                             <i class="bi bi-check2 text-primary" x-show="selectedId == opt.id"></i>
                                         </li>
                                     </template>
-                                    <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">
-                                        No results found
-                                    </li>
+                                    <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">{{ __('No results found') }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -92,13 +89,10 @@
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-filter me-1"></i> Filter
-                    </button>
+                        <i class="bi bi-filter me-1"></i>{{ __('Filter') }}</button>
                 </div>
                 <div class="col-md-2">
-                    <a href="{{ route('admin.pdf-templates.index') }}" class="btn btn-outline-secondary w-100">
-                        Reset
-                    </a>
+                    <a href="{{ route('admin.pdf-templates.index') }}" class="btn btn-outline-secondary w-100">{{ __('Reset') }}</a>
                 </div>
             </form>
         </div>
@@ -145,12 +139,12 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="ps-4">Template Name</th>
-                            <th>Type</th>
-                            <th>Owner (Employer)</th>
-                            <th>Created By</th>
-                            <th>Created At</th>
-                            <th class="text-end pe-4">Actions</th>
+                            <th class="ps-4">{{ __('Template Name') }}</th>
+                            <th>{{ __('Type') }}</th>
+                            <th>{{ __('Owner (Employer)') }}</th>
+                            <th>{{ __('Created By') }}</th>
+                            <th>{{ __('Created At') }}</th>
+                            <th class="text-end pe-4">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -161,9 +155,9 @@
                             </td>
                             <td>
                                 @if($template->type === 'global')
-                                    <span class="badge bg-success">Global</span>
+                                    <span class="badge bg-success">{{ __('Global') }}</span>
                                 @else
-                                    <span class="badge bg-info">Employer</span>
+                                    <span class="badge bg-info">{{ __('Employer') }}</span>
                                 @endif
                             </td>
                             <td>
@@ -173,23 +167,20 @@
                             <td>{{ $template->created_at->format('d/m/Y H:i') }}</td>
                             <td class="text-end pe-4">
                                 <a href="{{ route('admin.pdf-templates.builder', $template) }}" class="btn btn-sm btn-outline-primary me-2">
-                                    <i class="bi bi-pencil-square"></i> Builder
-                                </a>
+                                    <i class="bi bi-pencil-square"></i>{{ __('Builder') }}</a>
 
                                 <a href="{{ route('admin.pdf-templates.preview', $template->id) }}" class="btn btn-sm btn-outline-info me-2" title="Download Preview">
-                                    <i class="bi bi-eye"></i> Preview
-                                </a>
+                                    <i class="bi bi-eye"></i>{{ __('Preview') }}</a>
 
                                 <a href="{{ route('admin.pdf-templates.file', ['pdf_template' => $template->id, 'download' => 1]) }}" class="btn btn-sm btn-outline-secondary me-2" title="Download Original">
-                                    <i class="bi bi-download"></i> Original
-                                </a>
+                                    <i class="bi bi-download"></i>{{ __('Original') }}</a>
 
                                 @can('delete-pdf-templates', $template)
                                 <form action="{{ route('admin.pdf-templates.destroy', $template) }}" method="POST" class="d-inline delete-form">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                            data-swal-title="Are you sure?"
+                                            data-swal-title="{{ __('Are you sure?') }}"
                                             data-swal-text="This template will be deleted permanently.">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -199,17 +190,14 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                No templates found. Create one to get started.
-                            </td>
+                            <td colspan="6" class="text-center py-5 text-muted">{{ __('No templates found. Create one to get started.') }}</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-        @if($templates->hasPages())
-        <div class="card-footer bg-white border-top-0 py-3">
+        @if($templates->{{ __('hasPages())') }}<div class="card-footer bg-white border-top-0 py-3">
             {{ $templates->links() }}
         </div>
         @endif
@@ -233,7 +221,7 @@
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Yes, delete it!'
+                    confirmButtonText: '{{ __('Yes, delete it!') }}'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         form.submit();

@@ -177,20 +177,20 @@ function hybridAttachmentManager(config = {}) {
         removeConfirm(type, index, itemName) {
             Swal.fire({
                 title: `ลบ ${itemName}?`,
-                text: "คุณต้องการนำรายการนี้ออกจากสิ่งที่แนบมาใช่หรือไม่?",
+                text: "{{ __('คุณต้องการนำรายการนี้ออกจากสิ่งที่แนบมาใช่หรือไม่?') }}",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#d33",
                 cancelButtonColor: "#3085d6",
-                confirmButtonText: "ใช่, ลบออก",
-                cancelButtonText: "ยกเลิก"
+                confirmButtonText: "{{ __('ใช่, ลบออก') }}",
+                cancelButtonText: "{{ __('ยกเลิก') }}"
             }).then((result) => {
                 if (result.isConfirmed) {
                     if (this.basket[type] && this.basket[type][index]) {
                         this.basket[type].splice(index, 1);
                         Swal.fire({
                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-                           icon: 'success', title: 'ลบรายการสำเร็จ'
+                           icon: 'success', title: '{{ __('ลบรายการสำเร็จ') }}'
                         });
                     }
                 }
@@ -322,7 +322,7 @@ function hybridAttachmentManager(config = {}) {
         // Open Modal for Existing Employees (Affiliated)
         openExistingEmployeeModal() {
              if (this.isContextAdminCreate && !this.contextEmployerId) {
-                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างหลักสำหรับตั๋วก่อนทำการแนบลูกจ้าง' });
+                Swal.fire({ icon: 'warning', title: '{{ __('กรุณาเลือกนายจ้าง') }}', text: '{{ __('โปรดเลือกนายจ้างหลักสำหรับตั๋วก่อนทำการแนบลูกจ้าง') }}' });
                 return;
             }
 
@@ -411,7 +411,7 @@ function hybridAttachmentManager(config = {}) {
 
         openNewEmployeeModal() {
             if (this.isContextAdminCreate && !this.contextEmployerId) {
-                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างก่อนทำการเพิ่มลูกจ้างใหม่' });
+                Swal.fire({ icon: 'warning', title: '{{ __('กรุณาเลือกนายจ้าง') }}', text: '{{ __('โปรดเลือกนายจ้างก่อนทำการเพิ่มลูกจ้างใหม่') }}' });
                 return;
             }
             this.resetNewEmployeeForm();
@@ -468,7 +468,7 @@ function hybridAttachmentManager(config = {}) {
                 status.error = error.message;
                 this.newEmployeeForm[fieldName] = null;
                 event.target.value = null; // Clear the input
-                Swal.fire({ icon: 'error', title: 'อัปโหลดล้มเหลว', text: error.message });
+                Swal.fire({ icon: 'error', title: '{{ __('อัปโหลดล้มเหลว') }}', text: error.message });
             } finally {
                 status.loading = false;
             }
@@ -632,7 +632,7 @@ function hybridAttachmentManager(config = {}) {
                      this.fetchPreselectedEmployees();
                 } else {
                     // Optional: Toast saying "Already attached" but we still allow the card paste above
-                    // Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, icon: 'info', title: 'ลูกจ้างนี้ถูกเลือกแล้ว' });
+                    // Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, icon: 'info', title: '{{ __('ลูกจ้างนี้ถูกเลือกแล้ว') }}' });
                 }
 
                 return;

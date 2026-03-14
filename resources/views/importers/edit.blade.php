@@ -4,9 +4,8 @@
 
 @section('content')
 <div class="content-section">
-    <h2 class="mb-4">แก้ไขข้อมูลบริษัทนำเข้า</h2>
-    @if ($errors->any())
-        <div class="alert alert-danger">
+    <h2 class="mb-4">{{ __('แก้ไขข้อมูลบริษัทนำเข้า') }}</h2>
+    @if ($errors->{{ __('any())') }}<div class="alert alert-danger">
             <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -19,41 +18,41 @@
         @method('PUT')
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerNameTh" class="form-label">ชื่อ บนจ. (ไทย)</label>
+                <label for="importerNameTh" class="form-label">{{ __('ชื่อ บนจ. (ไทย)') }}</label>
                 <input type="text" class="form-control" id="importerNameTh" name="importerNameTh" value="{{ $importer->importerNameTh }}" required>
             </div>
             <div class="col-md-6">
-                <label for="importerNameEn" class="form-label">ชื่อ บนจ. (อังกฤษ)</label>
+                <label for="importerNameEn" class="form-label">{{ __('ชื่อ บนจ. (อังกฤษ)') }}</label>
                 <input type="text" class="form-control" id="importerNameEn" name="importerNameEn" value="{{ old('importerNameEn', $importer->importerNameEn) }}">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerId" class="form-label">เลขประจำตัว</label>
+                <label for="importerId" class="form-label">{{ __('เลขประจำตัว') }}</label>
                 <input type="text" class="form-control" id="importerId" name="importerId" value="{{ old('importerId', $importer->importerId) }}">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="importerLicenseNo" class="form-label">เลขที่ใบอนุญาต</label>
+                <label for="importerLicenseNo" class="form-label">{{ __('เลขที่ใบอนุญาต') }}</label>
                 <input type="text" class="form-control" id="importerLicenseNo" name="importerLicenseNo" value="{{ old('importerLicenseNo', $importer->importerLicenseNo) }}">
             </div>
             <div class="col-md-4">
-                <label for="importerLicenseIssueDate" class="form-label">วันที่ออกใบอนุญาต</label>
+                <label for="importerLicenseIssueDate" class="form-label">{{ __('วันที่ออกใบอนุญาต') }}</label>
                 <input type="date" class="form-control" id="importerLicenseIssueDate" name="importerLicenseIssueDate" value="{{ old('importerLicenseIssueDate', $importer->importerLicenseIssueDate) }}">
             </div>
             <div class="col-md-4">
-                <label for="importerLicenseExpiryDate" class="form-label">วันสิ้นสุดใบอนุญาต</label>
+                <label for="importerLicenseExpiryDate" class="form-label">{{ __('วันสิ้นสุดใบอนุญาต') }}</label>
                 <input type="date" class="form-control" id="importerLicenseExpiryDate" name="importerLicenseExpiryDate" value="{{ old('importerLicenseExpiryDate', $importer->importerLicenseExpiryDate) }}">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerSignerTh" class="form-label">คนเซ็น (ไทย)</label>
+                <label for="importerSignerTh" class="form-label">{{ __('คนเซ็น (ไทย)') }}</label>
                 <input type="text" class="form-control" id="importerSignerTh" name="importerSignerTh" value="{{ old('importerSignerTh', $importer->importerSignerTh) }}">
             </div>
             <div class="col-md-6">
-                <label for="importerSignerEn" class="form-label">คนเซ็น (อังกฤษ)</label>
+                <label for="importerSignerEn" class="form-label">{{ __('คนเซ็น (อังกฤษ)') }}</label>
                 <input type="text" class="form-control" id="importerSignerEn" name="importerSignerEn" value="{{ old('importerSignerEn', $importer->importerSignerEn) }}">
             </div>
         </div>
@@ -64,7 +63,7 @@
             @for($i=1; $i<=3; $i++)
             @php $field = "importer_doc_other_$i"; $descField = "importer_doc_other_{$i}_desc"; @endphp
             <div class="col-md-4">
-                <label for="{{ $field }}" class="form-label">{{ $i }}. {{ __('Other Document') }} {{ $i }} <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="{{ $field }}" class="form-label">{{ $i }}. {{ __('Other Document') }} {{ $i }} <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm mb-2">
                     <input type="file" class="form-control form-control-sm" id="{{ $field }}" name="{{ $field }}" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $field }}' } }))">
@@ -74,11 +73,9 @@
                 @if($importer->$field)
                 <div class="mb-2">
                     <a href="{{ route('importers.documents.pdf', ['importer' => $importer->id, 'field' => $field]) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Preview PDF">
-                        <i class="bi bi-file-earmark-pdf"></i> Preview
-                    </a>
+                        <i class="bi bi-file-earmark-pdf"></i>{{ __('Preview') }}</a>
                     <a href="{{ route('importers.documents.pdf', ['importer' => $importer->id, 'field' => $field]) }}?disposition=attachment" class="btn btn-sm btn-outline-secondary" title="Download PDF">
-                        <i class="bi bi-download"></i> Download
-                    </a>
+                        <i class="bi bi-download"></i>{{ __('Download') }}</a>
                 </div>
                 @endif
                 <input type="text" class="form-control form-control-sm" id="{{ $descField }}" name="{{ $descField }}" value="{{ old($descField, $importer->$descField) }}" placeholder="{{ __('Specify description...') }}">
@@ -152,8 +149,8 @@
         </div>
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary">บันทึกการแก้ไข</button>
-            <a href="{{ route('importers.index') }}" class="btn btn-secondary">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary">{{ __('บันทึกการแก้ไข') }}</button>
+            <a href="{{ route('importers.index') }}" class="btn btn-secondary">{{ __('ยกเลิก') }}</a>
         </div>
     </form>
 </div>

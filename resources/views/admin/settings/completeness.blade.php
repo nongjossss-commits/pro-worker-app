@@ -4,15 +4,15 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col">
-            <h1 class="h3 mb-0 text-gray-800">Employee Data Completeness Settings</h1>
+            <h1 class="h3 mb-0 text-gray-800">{{ __('Employee Data Completeness Settings') }}</h1>
             <p class="text-muted">Select fields that are mandatory. Employees missing these fields will appear in the "Incomplete Data" list.</p>
         </div>
     </div>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Mandatory Fields Checklist</h6>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false)">Uncheck All</button>
+            <h6 class="m-0 font-weight-bold text-primary">{{ __('Mandatory Fields Checklist') }}</h6>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="document.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false)">{{ __('Uncheck All') }}</button>
         </div>
         <div class="card-body">
             <form action="{{ route('admin.settings.completeness.store') }}" method="POST">
@@ -48,8 +48,7 @@
                 <div class="row mt-4">
                     <div class="col-12 d-flex justify-content-end">
                         <button type="submit" class="btn btn-primary btn-lg px-5">
-                            <i class="bi bi-save me-2"></i> Save Settings
-                        </button>
+                            <i class="bi bi-save me-2"></i>{{ __('Save Settings') }}</button>
                     </div>
                 </div>
             </form>

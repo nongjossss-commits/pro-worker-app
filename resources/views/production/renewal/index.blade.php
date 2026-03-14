@@ -504,8 +504,7 @@
                             </div>
 
                             {{-- Job Owner --}}
-                            @if($employer->jobOwner)
-                                <div class="text-muted small border-start ps-3">
+                            @if($employer->{{ __('jobOwner)') }}<div class="text-muted small border-start ps-3">
                                     <i class="bi bi-person-badge me-1"></i>
                                     <a href="{{ route('production.renewal.index', ['search' => $employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
                                         {{ $employer->jobOwner->name }}
@@ -656,7 +655,7 @@
                          <div class="employee-list" id="employee-list-{{ $employer->id }}">
                             <div class="d-flex justify-content-center align-items-center py-5">
                                 <div class="spinner-border text-primary" role="status"></div>
-                                <span class="ms-2 small text-muted">Loading employees...</span>
+                                <span class="ms-2 small text-muted">{{ __('Loading employees...') }}</span>
                             </div>
                          </div>
                     </div>
@@ -778,10 +777,10 @@
                     <label class="form-label fw-bold">{{ __('Auto MOU Group (Work Type)') }}</label>
                     <select class="form-select" id="autoMouInput">
                         <option value="">-- {{ __('No Auto Update') }} --</option>
-                        <option value="MOU" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'MOU' ? 'selected' : '' }}>MOU</option>
-                        <option value="มติต่ออายุในประเทศ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
-                        <option value="มติขึ้นทะเบียน" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
-                        <option value="อื่นๆ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
+                        <option value="MOU" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'MOU' ? 'selected' : '' }}>{{ __('MOU') }}</option>
+                        <option value="มติต่ออายุในประเทศ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>{{ __('มติต่ออายุในประเทศ') }}</option>
+                        <option value="มติขึ้นทะเบียน" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>{{ __('มติขึ้นทะเบียน') }}</option>
+                        <option value="อื่นๆ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'อื่นๆ' ? 'selected' : '' }}>{{ __('อื่นๆ') }}</option>
                     </select>
                 </div>
             </div>
@@ -920,7 +919,7 @@
                             <div class="card-body p-3 flex-grow-1 d-flex flex-column">
                                 {{-- Calendar Grid --}}
                                 <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
-                                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                                    <div>{{ __('Sun') }}</div><div>{{ __('Mon') }}</div><div>{{ __('Tue') }}</div><div>{{ __('Wed') }}</div><div>{{ __('Thu') }}</div><div>{{ __('Fri') }}</div><div>{{ __('Sat') }}</div>
                                 </div>
                                 <div class="d-grid flex-grow-1" style="grid-template-columns: repeat(7, 1fr); gap: 5px; min-height: 0;">
                                     <template x-for="day in days" :key="day.dateStr">
@@ -1312,7 +1311,7 @@
 
         const container = document.getElementById(`employee-list-${employerId}`);
         if(pageUrl) {
-            container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div><span class="ms-2 small text-muted">Loading employees...</span></div>';
+            container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div><span class="ms-2 small text-muted">{{ __('Loading employees...') }}</span></div>';
         }
 
         // Base URL for the new AJAX route
@@ -1345,7 +1344,7 @@
             }
         })
         .catch(err => {
-            container.innerHTML = `<div class="text-danger p-3">Failed to load employees. <button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">Retry</button></div>`;
+            container.innerHTML = `<div class="text-danger p-3">{{ __('Failed to load employees.') }}<button class="btn btn-sm btn-outline-primary" onclick="window.loadedEmployers[${employerId}]=false; loadEmployees(${employerId})">{{ __('Retry') }}</button></div>`;
             console.error(err);
         });
     }
@@ -1392,7 +1391,7 @@
                 body.innerHTML = html;
             })
             .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load data.</div>';
+                body.innerHTML = '<div class="text-danger text-center p-4">{{ __('Failed to load data.') }}</div>';
                 console.error(err);
             });
     }
@@ -1611,7 +1610,7 @@
                 body.innerHTML = html;
             })
             .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>';
+                body.innerHTML = '<div class="text-danger text-center p-4">{{ __('Failed to load history.') }}</div>';
             });
     }
 
@@ -2569,7 +2568,7 @@
                 body.innerHTML = html;
             })
             .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load trash.</div>';
+                body.innerHTML = '<div class="text-danger text-center p-4">{{ __('Failed to load trash.') }}</div>';
             });
     }
 

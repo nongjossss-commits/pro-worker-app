@@ -39,7 +39,7 @@
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>ID</th>
+                    <th>{{ __('ID') }}</th>
                     <th style="width: 1%;"></th>
                     <th>{{ __('Subject') }}</th>
                     <th>{{ __('Company/Employer') }}</th>
@@ -100,7 +100,7 @@
                                 <i class="bi bi-eye"></i> {{ __('View Details') }}
                                 @if($ticket->admin_unread_count > 0)
                                     <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
-                                        <span class="visually-hidden">Unread</span>
+                                        <span class="visually-hidden">{{ __('Unread') }}</span>
                                     </span>
                                 @endif
                             </a>

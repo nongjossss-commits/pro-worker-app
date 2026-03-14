@@ -3,10 +3,10 @@
 @section('content')
 <div class="container-fluid" x-data="profileBuilder()">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-person-badge"></i> Financial Profiles Builder</h2>
+        <h2><i class="bi bi-person-badge"></i>{{ __('Financial Profiles Builder') }}</h2>
         <div>
-            <button class="btn btn-outline-secondary me-2" @click="loadProfiles('biller')">Manage Biller Profiles</button>
-            <button class="btn btn-outline-secondary" @click="loadProfiles('customer')">Manage Customer Profiles</button>
+            <button class="btn btn-outline-secondary me-2" @click="loadProfiles('biller')">{{ __('Manage Biller Profiles') }}</button>
+            <button class="btn btn-outline-secondary" @click="loadProfiles('customer')">{{ __('Manage Customer Profiles') }}</button>
         </div>
     </div>
 
@@ -16,8 +16,8 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between">
                     <h5 class="mb-0" x-text="currentMode === 'list' ? (currentType === 'biller' ? 'Biller Profiles' : 'Customer Profiles') : (editingProfileId ? 'Edit Profile' : 'New Profile')"></h5>
-                    <button x-show="currentMode === 'list'" class="btn btn-sm btn-light" @click="createNewProfile()"><i class="bi bi-plus-circle"></i> Create</button>
-                    <button x-show="currentMode === 'form'" class="btn btn-sm btn-light" @click="currentMode = 'list'">Cancel</button>
+                    <button x-show="currentMode === 'list'" class="btn btn-sm btn-light" @click="createNewProfile()"><i class="bi bi-plus-circle"></i>{{ __('Create') }}</button>
+                    <button x-show="currentMode === 'form'" class="btn btn-sm btn-light" @click="currentMode = 'list'">{{ __('Cancel') }}</button>
                 </div>
 
                 <!-- List Mode -->
@@ -35,7 +35,7 @@
                                 </div>
                             </div>
                         </template>
-                        <div x-show="profiles.length === 0" class="text-muted p-3 text-center">No profiles found.</div>
+                        <div x-show="profiles.length === 0" class="text-muted p-3 text-center">{{ __('No profiles found.') }}</div>
                     </div>
                 </div>
 
@@ -43,10 +43,10 @@
                 <div class="card-body" x-show="currentMode === 'form'">
                     <form @submit.prevent="saveProfile" id="profileForm">
                         <div class="mb-3">
-                            <label class="form-label">Profile Type</label>
+                            <label class="form-label">{{ __('Profile Type') }}</label>
                             <select class="form-select" x-model="formData.type" :disabled="editingProfileId">
-                                <option value="biller">Biller (Issuer)</option>
-                                <option value="customer">Customer (Client)</option>
+                                <option value="biller">{{ __('Biller (Issuer)') }}</option>
+                                <option value="customer">{{ __('Customer (Client)') }}</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -55,31 +55,31 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label">Tax ID</label>
+                                <label class="form-label">{{ __('Tax ID') }}</label>
                                 <input type="text" class="form-control" x-model="formData.tax_id">
                             </div>
                             <div class="col-6">
-                                <label class="form-label">Branch</label>
+                                <label class="form-label">{{ __('Branch') }}</label>
                                 <input type="text" class="form-control" x-model="formData.branch">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Address</label>
+                            <label class="form-label">{{ __('Address') }}</label>
                             <textarea class="form-control" x-model="formData.address" rows="2"></textarea>
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label">Phone</label>
+                                <label class="form-label">{{ __('Phone') }}</label>
                                 <input type="text" class="form-control" x-model="formData.phone">
                             </div>
                             <div class="col-6">
-                                <label class="form-label">Email</label>
+                                <label class="form-label">{{ __('Email') }}</label>
                                 <input type="email" class="form-control" x-model="formData.email">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Authorized Signatory Name</label>
-                            <input type="text" class="form-control" x-model="formData.authorized_signatory_name" placeholder="Name of person signing (replaces company name)">
+                            <label class="form-label">{{ __('Authorized Signatory Name') }}</label>
+                            <input type="text" class="form-control" x-model="formData.authorized_signatory_name" placeholder="{{ __('Name of person signing (replaces company name)') }}">
                         </div>
 
                         <hr>
@@ -87,7 +87,7 @@
 
                         <!-- Logo -->
                         <div class="mb-3">
-                            <label class="form-label">Logo (Top Corner)</label>
+                            <label class="form-label">{{ __('Logo (Top Corner)') }}</label>
                             <div class="d-flex gap-2 align-items-center">
                                 <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="logoInput" @change="previewAsset($event, 'logo')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.logo_url" @click="removeAsset('logo')"><i class="bi bi-x"></i></button>
@@ -96,17 +96,17 @@
 
                         <!-- Signature -->
                         <div class="mb-3">
-                            <label class="form-label">Signature Image</label>
+                            <label class="form-label">{{ __('Signature Image') }}</label>
                             <div class="d-flex gap-2 align-items-center">
                                 <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="signatureInput" @change="previewAsset($event, 'signature')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.signature_url" @click="removeAsset('signature')"><i class="bi bi-x"></i></button>
                             </div>
-                            <div class="small text-muted mt-1">Upload and drag on the document to the right.</div>
+                            <div class="small text-muted mt-1">{{ __('Upload and drag on the document to the right.') }}</div>
                         </div>
 
                         <!-- Stamp -->
                         <div class="mb-3">
-                            <label class="form-label">Company Stamp Image</label>
+                            <label class="form-label">{{ __('Company Stamp Image') }}</label>
                             <div class="d-flex gap-2 align-items-center">
                                 <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="stampInput" @change="previewAsset($event, 'stamp')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.stamp_url" @click="removeAsset('stamp')"><i class="bi bi-x"></i></button>
@@ -115,8 +115,8 @@
 
                         <div class="d-grid mt-4">
                             <button type="submit" class="btn btn-success" :disabled="isSaving">
-                                <span x-show="!isSaving"><i class="bi bi-save"></i> Save Profile</span>
-                                <span x-show="isSaving">Saving...</span>
+                                <span x-show="!isSaving"><i class="bi bi-save"></i>{{ __('Save Profile') }}</span>
+                                <span x-show="isSaving">{{ __('Saving...') }}</span>
                             </button>
                         </div>
                     </form>
@@ -129,7 +129,7 @@
             <div class="card">
                 <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                     <span>1:1 Document Placement Preview</span>
-                    <span class="badge bg-dark">A4 Format</span>
+                    <span class="badge bg-dark">{{ __('A4 Format') }}</span>
                 </div>
                 <div class="card-body bg-light overflow-auto p-4 d-flex justify-content-center" style="max-height: 80vh;">
 
@@ -138,7 +138,7 @@
                         <!-- Dummy Invoice Template Background -->
                         <div class="p-5" style="opacity: 0.6; pointer-events: none; font-family: 'Sarabun', sans-serif;">
                             <div class="text-end mb-4">
-                                <h2 class="text-primary mb-0">INVOICE / RECEIPT</h2>
+                                <h2 class="text-primary mb-0">{{ __('INVOICE / RECEIPT') }}</h2>
                                 <div>No: INV-00001</div>
                                 <div>Date: {{ date('Y-m-d') }}</div>
                             </div>
@@ -150,33 +150,30 @@
                                     Tax ID: <span x-text="formData.tax_id || '1234567890123'"></span>
                                 </div>
                                 <div class="col-6 text-end">
-                                    <strong>To:</strong><br>
-                                    Customer Name<br>
-                                    Customer Address
-                                </div>
+                                    <strong>To:</strong><br>{{ __('Customer Name') }}<br>{{ __('Customer Address') }}</div>
                             </div>
                             <table class="table table-bordered mb-5">
                                 <thead>
                                     <tr class="bg-light">
-                                        <th>Description</th>
-                                        <th class="text-end">Amount</th>
+                                        <th>{{ __('Description') }}</th>
+                                        <th class="text-end">{{ __('Amount') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Consulting Services</td><td class="text-end">1,500.00</td></tr>
-                                    <tr><td>Processing Fee</td><td class="text-end">500.00</td></tr>
-                                    <tr><th class="text-end">Total</th><th class="text-end">2,000.00</th></tr>
+                                    <tr><td>{{ __('Consulting Services') }}</td><td class="text-end">1,500.00</td></tr>
+                                    <tr><td>{{ __('Processing Fee') }}</td><td class="text-end">500.00</td></tr>
+                                    <tr><th class="text-end">{{ __('Total') }}</th><th class="text-end">2,000.00</th></tr>
                                 </tbody>
                             </table>
 
                             <div class="row" style="position: absolute; bottom: 80px; left: 40px; right: 40px;">
                                 <div class="col-6 text-center" style="position: relative;">
-                                    <div style="font-weight: bold; margin-bottom: 40px;">Received By <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ ผู้รับเงิน</span></div>
+                                    <div style="font-weight: bold; margin-bottom: 40px;">{{ __('Received By') }}<span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">{{ __('/ ผู้รับเงิน') }}</span></div>
                                     <div style="border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%;"></div>
-                                    <div style="font-size: 14px; color: #555;">Date <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ วันที่</span>: ____/____/______</div>
+                                    <div style="font-size: 14px; color: #555;">{{ __('Date') }}<span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">{{ __('/ วันที่') }}</span>: ____/____/______</div>
                                 </div>
                                 <div class="col-6 text-center" style="position: relative;">
-                                    <div style="font-weight: bold; margin-bottom: 40px;">Authorized Signature <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ ผู้มีอำนาจลงนาม</span></div>
+                                    <div style="font-weight: bold; margin-bottom: 40px;">{{ __('Authorized Signature') }}<span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">{{ __('/ ผู้มีอำนาจลงนาม') }}</span></div>
                                     <div style="border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%;"></div>
                                     <div style="font-size: 14px; color: #555;" x-text="formData.authorized_signatory_name || formData.name || 'Company Name'"></div>
                                 </div>
@@ -200,8 +197,8 @@
             </div>
 
             <div class="alert alert-info mt-3" x-show="currentMode === 'form'">
-                <i class="bi bi-info-circle"></i> <strong>Tip:</strong> You can Drag, Resize, and Rotate the Signature and Stamp images directly on the document preview above. They will be printed in exactly these positions. <br>
-                <small><strong>Note:</strong> To rotate, scroll your mouse wheel while hovering over the image.</small>
+                <i class="bi bi-info-circle"></i> <strong>Tip:</strong>{{ __('You can Drag, Resize, and Rotate the Signature and Stamp images directly on the document preview above. They will be printed in exactly these positions.') }}<br>
+                <small><strong>Note:</strong>{{ __('To rotate, scroll your mouse wheel while hovering over the image.') }}</small>
             </div>
         </div>
     </div>
@@ -359,7 +356,7 @@ document.addEventListener('alpine:init', () => {
                     }
 
                     Swal.fire({
-                        title: 'Success',
+                        title: '{{ __('Success') }}',
                         text: `${type} image loaded. You can now drag, resize, and rotate it on the document.`,
                         icon: 'success',
                         toast: true,
@@ -452,7 +449,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async deleteProfile(id) {
-            if (await Swal.fire({ title: 'Are you sure?', icon: 'warning', showCancelButton: true }).then(r => !r.isConfirmed)) return;
+            if (await Swal.fire({ title: '{{ __('Are you sure?') }}', icon: 'warning', showCancelButton: true }).then(r => !r.isConfirmed)) return;
 
             try {
                 await fetch(`/finance/api/profiles/${id}`, {

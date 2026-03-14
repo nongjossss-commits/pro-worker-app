@@ -6,9 +6,8 @@
     <div class="bg-white border-b px-4 py-3 flex justify-between items-center shadow-sm z-30 sticky top-0">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.pdf-templates.index') }}" class="text-gray-500 hover:text-gray-700">
-                <i class="bi bi-arrow-left"></i> Back
-            </a>
-            <h1 class="text-lg font-bold text-gray-800"><span x-text="templateName"></span> <span class="text-sm font-normal text-gray-500">(Builder Mode)</span></h1>
+                <i class="bi bi-arrow-left"></i>{{ __('Back') }}</a>
+            <h1 class="text-lg font-bold text-gray-800"><span x-text="templateName"></span> <span class="text-sm font-normal text-gray-500">{{ __('(Builder Mode)') }}</span></h1>
         </div>
         <div class="flex items-center gap-3">
             <!-- Page Navigation -->
@@ -19,19 +18,17 @@
                         <option :value="p" x-text="p"></option>
                     </template>
                 </select>
-                <span class="text-sm text-gray-500">of <span x-text="totalPages"></span></span>
+                <span class="text-sm text-gray-500">{{ __('of') }}<span x-text="totalPages"></span></span>
             </div>
 
             <div class="border-l h-6 mx-2"></div>
 
             <button type="button" @click="openTemplateSettings()" class="btn btn-outline-secondary btn-sm flex items-center gap-2">
-                <i class="bi bi-sliders"></i> Settings
-            </button>
+                <i class="bi bi-sliders"></i>{{ __('Settings') }}</button>
 
             <button @click="saveMapping()" class="btn btn-primary btn-sm flex items-center gap-2" :disabled="isSaving">
                 <span x-show="isSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <i class="bi bi-save" x-show="!isSaving"></i> Save Template
-            </button>
+                <i class="bi bi-save" x-show="!isSaving"></i>{{ __('Save Template') }}</button>
         </div>
     </div>
 
@@ -41,7 +38,7 @@
             <div class="p-4 border-b bg-white flex flex-col gap-3 shadow-sm z-10 relative">
                 <div>
                     <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-bold text-gray-700 m-0">Data Fields</h3>
+                        <h3 class="font-bold text-gray-700 m-0">{{ __('Data Fields') }}</h3>
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-gray-500" title="Employees per page">Slots:</span>
                             <div class="btn-group btn-group-sm">
@@ -51,7 +48,7 @@
                             </div>
                         </div>
                     </div>
-                    <input type="text" x-model="searchQuery" placeholder="Search fields..." class="form-control form-control-sm">
+                    <input type="text" x-model="searchQuery" placeholder="{{ __('Search fields...') }}" class="form-control form-control-sm">
                 </div>
 
                 <!-- Employee Slots Tabs -->
@@ -67,28 +64,28 @@
                     </template>
                 </div>
                 <div x-show="(metaData.employees_per_page || 1) > 1" class="text-[10px] text-orange-600 bg-orange-50 p-1.5 rounded border border-orange-100 mt-1 leading-tight text-center">
-                    <i class="bi bi-info-circle me-1"></i> Dragging fields will assign them to <strong>Emp <span x-text="currentEmployeeSlot"></span></strong>.
+                    <i class="bi bi-info-circle me-1"></i>{{ __('Dragging fields will assign them to') }}<strong>{{ __('Emp') }}<span x-text="currentEmployeeSlot"></span></strong>.
                 </div>
             </div>
 
             <div class="p-3 space-y-4 flex-1 bg-gray-50">
                 <!-- Tools Section -->
                 <div>
-                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 border-b pb-1">Tools</h4>
+                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 border-b pb-1">{{ __('Tools') }}</h4>
                     <div class="grid grid-cols-2 gap-2">
                         <!-- Static Text -->
                         <div class="bg-white p-2 border rounded shadow-sm cursor-grab hover:bg-orange-50 transition-colors flex flex-col items-center justify-center gap-1 text-center"
                              draggable="true"
                              @dragstart="dragStart($event, {type: 'static', label: 'Static Text'})">
                             <i class="bi bi-type text-xl text-gray-600"></i>
-                            <span class="text-xs font-medium">Text</span>
+                            <span class="text-xs font-medium">{{ __('Text') }}</span>
                         </div>
                         <!-- Signature -->
                         <div class="bg-white p-2 border rounded shadow-sm cursor-grab hover:bg-orange-50 transition-colors flex flex-col items-center justify-center gap-1 text-center"
                              draggable="true"
                              @dragstart="dragStart($event, {type: 'signature', label: 'Signature Box'})">
                             <i class="bi bi-pen text-xl text-gray-600"></i>
-                            <span class="text-xs font-medium">Signature</span>
+                            <span class="text-xs font-medium">{{ __('Signature') }}</span>
                         </div>
 
                         <!-- Stamp -->
@@ -96,7 +93,7 @@
                              draggable="true"
                              @dragstart="dragStart($event, {type: 'stamp', label: 'Employer Stamp'})">
                             <i class="bi bi-vinyl text-xl text-gray-600"></i>
-                            <span class="text-xs font-medium">Stamp</span>
+                            <span class="text-xs font-medium">{{ __('Stamp') }}</span>
                         </div>
                     </div>
                 </div>
@@ -130,8 +127,7 @@
                          :style="pageDimensions[pageNum] ? `width: ${pageDimensions[pageNum].width}px; height: ${pageDimensions[pageNum].height}px;` : 'min-height: 200px;'">
 
                         <!-- Page Label -->
-                        <div class="absolute -top-6 left-0 text-sm font-bold text-gray-500">
-                            Page <span x-text="pageNum"></span>
+                        <div class="absolute -top-6 left-0 text-sm font-bold text-gray-500">{{ __('Page') }}<span x-text="pageNum"></span>
                         </div>
 
                         <!-- PDF Canvas -->
@@ -158,13 +154,11 @@
                                     <template x-if="item.type === 'stamp'">
                                         <div class="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none relative">
                                             <!-- SVG Stamp Placeholder -->
-                                            <div class="w-16 h-16 rounded-full border-4 border-red-500/50 flex items-center justify-center text-red-500/50 font-bold rotate-12 bg-white/30">
-                                                STAMP
-                                            </div>
+                                            <div class="w-16 h-16 rounded-full border-4 border-red-500/50 flex items-center justify-center text-red-500/50 font-bold rotate-12 bg-white/30">{{ __('STAMP') }}</div>
 
                                             <!-- Label Overlay -->
                                             <div class="absolute bottom-0 right-0 bg-white/80 text-[10px] px-1 rounded border border-red-200 text-red-800 font-bold flex gap-1">
-                                                <span>(Employer Stamp)</span>
+                                                <span>{{ __('(Employer Stamp)') }}</span>
                                             </div>
                                         </div>
                                     </template>
@@ -221,7 +215,7 @@
                                     <!-- Controls -->
                                     <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-white shadow-lg rounded border flex gap-1 p-1 hidden group-hover:flex z-50">
                                         <!-- Settings Button (Context Aware) -->
-                                        <button @click.stop="openSettings(index)" class="p-1 hover:bg-gray-100 rounded text-gray-600" title="Settings">
+                                        <button @click.stop="openSettings(index)" class="p-1 hover:bg-gray-100 rounded text-gray-600" title="{{ __('Settings') }}">
                                             <i class="bi bi-gear"></i>
                                         </button>
 
@@ -244,14 +238,14 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" x-data="{ currentItem: {} }">
                 <div class="modal-header">
-                    <h5 class="modal-title">Item Settings</h5>
+                    <h5 class="modal-title">{{ __('Item Settings') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" x-show="editingIndex !== null">
                     <!-- Static Text Edit -->
                     <template x-if="items[editingIndex]?.type === 'static'">
                         <div class="mb-3">
-                            <label class="form-label">Text Content</label>
+                            <label class="form-label">{{ __('Text Content') }}</label>
                             <input type="text" x-model="items[editingIndex].text" class="form-control">
                         </div>
                     </template>
@@ -260,7 +254,7 @@
                     <template x-if="items[editingIndex]?.type === 'signature'">
                         <div>
                             <div class="mb-3" x-show="(metaData.employees_per_page || 1) > 1 && items[editingIndex].signatureGroup === 'employee'">
-                                <label class="form-label text-orange-600 font-bold">Employee Slot Assignment</label>
+                                <label class="form-label text-orange-600 font-bold">{{ __('Employee Slot Assignment') }}</label>
                                 <select x-model="items[editingIndex].employeeIndex" class="form-select border-orange-300 bg-orange-50">
                                     <template x-for="i in (metaData.employees_per_page || 1)" :key="i">
                                         <option :value="i" x-text="'Employee ' + i"></option>
@@ -268,15 +262,15 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Signature Group</label>
+                                <label class="form-label">{{ __('Signature Group') }}</label>
                                 <select x-model="items[editingIndex].signatureGroup" class="form-select">
-                                    <option value="employee">Employee</option>
-                                    <option value="employer">Employer 1 (Signer 1)</option>
-                                    <option value="employer_2">Employer 2 (Signer 2)</option>
-                                    <option value="witness_1">Witness 1</option>
-                                    <option value="witness_2">Witness 2</option>
-                                    <option value="witness_3">Witness 3</option>
-                                    <option value="witness_4">Witness 4</option>
+                                    <option value="employee">{{ __('Employee') }}</option>
+                                    <option value="employer">{{ __('Employer 1 (Signer 1)') }}</option>
+                                    <option value="employer_2">{{ __('Employer 2 (Signer 2)') }}</option>
+                                    <option value="witness_1">{{ __('Witness 1') }}</option>
+                                    <option value="witness_2">{{ __('Witness 2') }}</option>
+                                    <option value="witness_3">{{ __('Witness 3') }}</option>
+                                    <option value="witness_4">{{ __('Witness 4') }}</option>
                                 </select>
                             </div>
                         </div>
@@ -286,7 +280,7 @@
                     <template x-if="items[editingIndex]?.type === 'db' || items[editingIndex]?.type === 'static'">
                         <div>
                              <div class="mb-3" x-show="(metaData.employees_per_page || 1) > 1 && items[editingIndex]?.type === 'db'">
-                                <label class="form-label text-orange-600 font-bold">Employee Slot Assignment</label>
+                                <label class="form-label text-orange-600 font-bold">{{ __('Employee Slot Assignment') }}</label>
                                 <select x-model="items[editingIndex].employeeIndex" class="form-select border-orange-300 bg-orange-50">
                                     <template x-for="i in (metaData.employees_per_page || 1)" :key="i">
                                         <option :value="i" x-text="'Employee ' + i"></option>
@@ -295,35 +289,33 @@
                             </div>
 
                              <div class="mb-3">
-                                <label class="form-label">Alignment</label>
+                                <label class="form-label">{{ __('Alignment') }}</label>
                                 <select x-model="items[editingIndex].align" class="form-select">
-                                    <option value="left">Left (Default)</option>
-                                    <option value="center">Center</option>
-                                    <option value="right">Right</option>
+                                    <option value="left">{{ __('Left (Default)') }}</option>
+                                    <option value="center">{{ __('Center') }}</option>
+                                    <option value="right">{{ __('Right') }}</option>
                                 </select>
                             </div>
 
                             <div class="mb-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="autoFitToggle" x-model="items[editingIndex].autoFit">
-                                    <label class="form-check-label" for="autoFitToggle">Auto-fit / Fit to Height</label>
+                                    <label class="form-check-label" for="autoFitToggle">{{ __('Auto-fit / Fit to Height') }}</label>
                                 </div>
-                                <div class="form-text text-xs text-muted">
-                                    If enabled, font size will adjust to fit the box height.
-                                </div>
+                                <div class="form-text text-xs text-muted">{{ __('If enabled, font size will adjust to fit the box height.') }}</div>
                             </div>
                         </div>
                     </template>
                      <template x-if="(items[editingIndex]?.type === 'db' || items[editingIndex]?.type === 'static') && !items[editingIndex]?.autoFit">
                         <div class="mb-3">
-                             <label class="form-label">Font Size (pt)</label>
+                             <label class="form-label">{{ __('Font Size (pt)') }}</label>
                              <input type="number" x-model="items[editingIndex].fontSize" class="form-control" min="8" max="72">
                         </div>
                     </template>
 
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ __('Done') }}</button>
                 </div>
             </div>
         </div>
@@ -334,34 +326,30 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Template Settings</h5>
+                    <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>{{ __('Template Settings') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info border-0 d-flex align-items-center mb-4">
                         <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-                        <div>
-                            These settings apply globally to this template when generating documents.
-                        </div>
+                        <div>{{ __('These settings apply globally to this template when generating documents.') }}</div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Template Name</label>
-                        <input type="text" x-model="templateName" class="form-control" placeholder="Enter template name">
+                        <label class="form-label fw-bold">{{ __('Template Name') }}</label>
+                        <input type="text" x-model="templateName" class="form-control" placeholder="{{ __('Enter template name') }}">
                     </div>
 
                     <div class="form-check form-switch p-3 border rounded bg-light mb-3">
                         <input class="form-check-input" type="checkbox" id="autoPrefixToggle" x-model="metaData.auto_prefix_titles">
-                        <label class="form-check-label fw-bold" for="autoPrefixToggle">
-                            Auto-Prefix Titles
-                        </label>
+                        <label class="form-check-label fw-bold" for="autoPrefixToggle">{{ __('Auto-Prefix Titles') }}</label>
                         <div class="text-muted small mt-1">
                             Automatically add "Mr./Ms." or "นาย/นาง/นางสาว" to names if missing.
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                 </div>
             </div>
         </div>
@@ -933,13 +921,13 @@
 
             deleteItem(index) {
                 Swal.fire({
-                    title: 'Remove Field?',
-                    text: 'Are you sure you want to remove this field from the template?',
+                    title: '{{ __('Remove Field?') }}',
+                    text: '{{ __('Are you sure you want to remove this field from the template?') }}',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#ef4444',
                     cancelButtonColor: '#6b7280',
-                    confirmButtonText: 'Yes, remove it!'
+                    confirmButtonText: '{{ __('Yes, remove it!') }}'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         this.items.splice(index, 1);

@@ -103,8 +103,7 @@
                 <div class="d-flex align-items-center gap-3 {{ $overlayClass }}" id="info-container-{{ $employee->id }}">
                     {{-- Avatar --}}
                     <div class="avatar-container position-relative">
-                        @if($employee->employeePhoto)
-                            <img src="{{ Storage::disk('public')->url($employee->employeePhoto) }}" class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                        @if($employee->{{ __('employeePhoto)') }}<img src="{{ Storage::disk('public')->url($employee->employeePhoto) }}" class="rounded-circle shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
                         @else
                             <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 50px; height: 50px; font-size: 1.2rem;">
                                 {{ substr($employee->employeeNameEn ?? 'U', 0, 1) }}
@@ -237,17 +236,17 @@
                     navigator.clipboard.writeText(text).then(() => {
                         showToast('คัดลอก ' + fieldName + ' สำเร็จ', 'success');
                     }).catch(err => {
-                        console.error('Failed to copy text: ', err);
+                        console.error('Failed to copy text: '{{ __(', err);
                     });
                 }
-            }">
+            }') }}">
                 <div style="min-width: 250px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;"><i class="bi bi-lock-fill"></i> {{ __('ข้อมูลการเข้าสู่ระบบ Outsource') }}</small>
 
                     <div x-show="!isEditing" class="d-flex align-items-center gap-2 position-relative">
                          <div class="small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center w-100" style="min-height: 38px;">
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <span class="fw-bold text-primary">Login Info</span>
+                                <span class="fw-bold text-primary">{{ __('Login Info') }}</span>
                                 <i class="bi bi-pencil-fill text-muted cursor-pointer" style="font-size: 0.7rem;" @click="isEditing = true"></i>
                             </div>
 
@@ -276,14 +275,14 @@
 
                     <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-2 p-2 bg-white border rounded shadow-sm position-absolute" style="display: none; z-index: 1060; min-width: 250px;">
 
-                         <label class="small fw-bold mt-1">อีเมล</label>
-                         <input type="text" class="form-control form-control-sm" x-model="email" placeholder="Email">
+                         <label class="small fw-bold mt-1">{{ __('อีเมล') }}</label>
+                         <input type="text" class="form-control form-control-sm" x-model="email" placeholder="{{ __('Email') }}">
 
-                         <label class="small fw-bold mt-1">รหัสสำหรับอีเมล</label>
-                         <input type="text" class="form-control form-control-sm" x-model="password" placeholder="Password">
+                         <label class="small fw-bold mt-1">{{ __('รหัสสำหรับอีเมล') }}</label>
+                         <input type="text" class="form-control form-control-sm" x-model="password" placeholder="{{ __('Password') }}">
 
-                         <label class="small fw-bold mt-1">รหัสสำหรับระบบ Outsource</label>
-                         <input type="text" class="form-control form-control-sm" x-model="outsource_code" placeholder="Outsource Code">
+                         <label class="small fw-bold mt-1">{{ __('รหัสสำหรับระบบ Outsource') }}</label>
+                         <input type="text" class="form-control form-control-sm" x-model="outsource_code" placeholder="{{ __('Outsource Code') }}">
 
                          <div class="d-flex gap-1 mt-2">
                             <button @click="saveOutsourceLogin()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> {{ __('Save') }}</button>
@@ -455,7 +454,7 @@
                                 toast: true,
                                 position: 'top-end',
                                 icon: 'success',
-                                title: 'บันทึกหมายเหตุสำเร็จ',
+                                title: '{{ __('บันทึกหมายเหตุสำเร็จ') }}',
                                 showConfirmButton: false,
                                 timer: 1500
                             });
@@ -472,7 +471,7 @@
                 }
             }">
                 <div style="min-width: 140px; max-width: 250px;">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
+                    <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">{{ __('หมายเหตุ') }}</small>
 
                     <div class="d-flex align-items-start gap-1 mb-2">
                         <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
@@ -485,7 +484,7 @@
                         </div>
 
                         <div x-cloak :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
-                            <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="กรอกข้อความหมายเหตุ..."></textarea>
+                            <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="{{ __('กรอกข้อความหมายเหตุ...') }}"></textarea>
                             <div class="d-flex gap-1">
                                 <button @click="saveRemark()" :disabled="isSaving" class="btn btn-sm btn-success flex-grow-1">
                                     <i class="bi bi-check-lg" x-show="!isSaving"></i>
@@ -624,14 +623,14 @@
                 <div class="d-flex align-items-center gap-2">
                     {{-- Field 1: Name List (Renamed to RA) --}}
                     <div style="min-width: 140px; max-width: 250px; flex-grow: 1;">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลข RA จากระบบ outsource') }}</small>
                         <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                             <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
                             <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                 <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                             </button>
                         </div>
-                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="RA No.">
+                        <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="nameList" placeholder="{{ __('RA No.') }}">
                     </div>
 
                     {{-- Action Buttons --}}
@@ -650,26 +649,26 @@
 
                 {{-- Field 2: Request No --}}
                 <div style="min-width: 140px; max-width: 250px;">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลขที่คำขอ') }}</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
                         <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                             <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                         </button>
                     </div>
-                    <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="Request No.">
+                    <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="reqNo" placeholder="{{ __('Request No.') }}">
                 </div>
 
                 {{-- Field 3: Ref ID --}}
                 <div style="min-width: 140px; max-width: 250px;">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลขอ้างอิงคนงาน') }}</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
                         <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                             <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                         </button>
                     </div>
-                    <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="Ref ID">
+                    <input x-show="isEditing" type="text" class="form-control form-control-sm" x-model="refId" placeholder="{{ __('Ref ID') }}">
                 </div>
             </div>
 
@@ -718,7 +717,7 @@
                         });
                     }
                  }">
-                    <span class="me-2 text-muted" style="font-size: 0.75rem;">Check</span>
+                    <span class="me-2 text-muted" style="font-size: 0.75rem;">{{ __('Check') }}</span>
                     <div class="form-check form-switch mb-0" title="Enable Daily Check">
                         <input class="form-check-input" type="checkbox" role="switch"
                             :checked="dailyCheckEnabled"
@@ -765,18 +764,18 @@
                  <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
                     data-model-type="employee"
                     data-model-id="{{ $employee->id }}"
-                    title="Preview">
+                    title="{{ __('Preview') }}">
                     <i class="bi bi-eye-fill"></i>
                 </button>
 
                  @can('edit-employees')
                  {{-- Inline Drawer Toggle --}}
-                 <button class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Custom Fields"
+                 <button class="btn btn-sm btn-outline-primary rounded-pill px-3" title="{{ __('Custom Fields') }}"
                     onclick="toggleInlineDrawer({{ $employee->id }}, {{ json_encode($employee) }})">
                     <i class="bi bi-layout-text-window-reverse"></i> {{ __('Fields') }}
                 </button>
 
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3" title="Edit"
+                <button class="btn btn-sm btn-outline-warning rounded-pill px-3" title="{{ __('Edit') }}"
                     onclick="openEditEmployeeModal({{ $employee->id }})">
                     <i class="bi bi-pencil-fill"></i>
                 </button>
@@ -811,7 +810,7 @@
                     </button>
 
                     {{-- Delete (Soft) --}}
-                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }}, {{ $employee->production_item->id }})">
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="{{ __('Delete') }}" onclick="deleteEmployee({{ $employee->id }}, {{ $employee->production_item->id }})">
                         <i class="bi bi-trash-fill"></i>
                     </button>
                 @else
@@ -848,7 +847,7 @@
                     </button>
 
                     {{-- Delete (Soft) --}}
-                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }})">
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="{{ __('Delete') }}" onclick="deleteEmployee({{ $employee->id }})">
                         <i class="bi bi-trash-fill"></i>
                     </button>
                 @endif
@@ -975,7 +974,7 @@
                 <div id="drawer-content-{{ $employee->id }}" class="position-relative" style="min-height: 100px;">
                     <div class="d-flex justify-content-center align-items-center h-100 py-3">
                          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                         <span class="ms-2 small text-muted">Loading fields...</span>
+                         <span class="ms-2 small text-muted">{{ __('Loading fields...') }}</span>
                     </div>
                 </div>
             </div>

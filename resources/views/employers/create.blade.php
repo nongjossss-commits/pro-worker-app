@@ -8,8 +8,7 @@
     <form id="saveEmployerForm" action="{{ route('employers.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
-        @if ($errors->any())
-            <div class="alert alert-danger">
+        @if ($errors->{{ __('any())') }}<div class="alert alert-danger">
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -85,7 +84,7 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="employerId" class="form-label">{{ __('Employer ID') }}</label>
-                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="" placeholder="สร้างอัตโนมัติเมื่อบันทึก" readonly>
+                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="" placeholder="{{ __('สร้างอัตโนมัติเมื่อบันทึก') }}" readonly>
                 @error('employerId')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -149,7 +148,7 @@
  </div>
 
  <!-- System Access Group -->
- <h5 class="mb-3 text-primary mt-4">System Access & Outsource</h5>
+ <h5 class="mb-3 text-primary mt-4">{{ __('System Access & Outsource') }}</h5>
 <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
@@ -256,7 +255,7 @@
         <h5>{{ __('Employer Attachments') }}</h5>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }} <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="employer_doc_company" class="form-label">1. {{ __('Company Certificate / ID Card') }} <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('employer_doc_company') is-invalid @enderror" id="employer_doc_company" name="employer_doc_company" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_company' } }))">
@@ -277,7 +276,7 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }} <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="employer_doc_lease" class="form-label">2. {{ __('Lease Agreement / House Registration') }} <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('employer_doc_lease') is-invalid @enderror" id="employer_doc_lease" name="employer_doc_lease" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_lease' } }))">
@@ -289,7 +288,7 @@
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }} <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="employer_doc_construction" class="form-label">3. {{ __('Construction Contract / Map') }} <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('employer_doc_construction') is-invalid @enderror" id="employer_doc_construction" name="employer_doc_construction" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_construction' } }))">
@@ -303,7 +302,7 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="employer_doc_other_1" class="form-label">4. {{ __('Other Document') }} 1 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('employer_doc_other_1') is-invalid @enderror" id="employer_doc_other_1" name="employer_doc_other_1" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_1' } }))">
@@ -316,7 +315,7 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="employer_doc_other_2" class="form-label">5. {{ __('Other Document') }} 2 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('employer_doc_other_2') is-invalid @enderror" id="employer_doc_other_2" name="employer_doc_other_2" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_2' } }))">
@@ -329,7 +328,7 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="employer_doc_other_3" class="form-label">6. {{ __('Other Document') }} 3 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('employer_doc_other_3') is-invalid @enderror" id="employer_doc_other_3" name="employer_doc_other_3" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'employer_doc_other_3' } }))">

@@ -26,8 +26,7 @@
                         <div class="small text-muted">{{ $item->order?->employer?->employerNameTh ?? '-' }}</div>
                     </td>
                     <td>
-                        @if($item->employee)
-                            <div class="d-flex align-items-center gap-3">
+                        @if($item->{{ __('employee)') }}<div class="d-flex align-items-center gap-3">
                                 @php
                                     $empPhoto = $item->employee->employeePhoto ? asset('storage/' . $item->employee->employeePhoto) : 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
                                 @endphp

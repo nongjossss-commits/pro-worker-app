@@ -99,8 +99,8 @@
                 </div>
             </div>
             <div class="btn-group btn-group-sm">
-                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-outline-primary" title="{{ __('แก้ไข') }}"><i class="bi bi-pencil-fill"></i></a>
+                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="{{ __('ลบ') }}"><i class="bi bi-trash-fill"></i></button>
             </div>
         </div>
     </div>

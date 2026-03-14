@@ -5,11 +5,11 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="centralDeleteConfirmationModalLabel">ยืนยันการดำเนินการ</h5>
+                <h5 class="modal-title" id="centralDeleteConfirmationModalLabel">{{ __('ยืนยันการดำเนินการ') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p id="central-delete-modal-message">คุณแน่ใจหรือไม่ที่จะดำเนินการนี้?</p>
+                <p id="central-delete-modal-message">{{ __('คุณแน่ใจหรือไม่ที่จะดำเนินการนี้?') }}</p>
             </div>
             <div class="modal-footer">
                 <form id="central-delete-form" method="POST" action="">
@@ -17,9 +17,9 @@
                     {{-- The method will be dynamically set, defaulting to DELETE for soft deletes --}}
                     <input type="hidden" name="_method" value="DELETE" id="central-delete-form-method">
 
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ยกเลิก') }}</button>
                     {{-- The button's text and class will be set dynamically --}}
-                    <button type="submit" class="btn" id="central-delete-confirm-btn">ยืนยัน</button>
+                    <button type="submit" class="btn" id="central-delete-confirm-btn">{{ __('ยืนยัน') }}</button>
                 </form>
             </div>
         </div>
@@ -47,13 +47,13 @@ document.addEventListener('DOMContentLoaded', function () {
         terminateForm.addEventListener('submit', function (e) {
             e.preventDefault();
             Swal.fire({
-                title: 'Are you sure?',
-                text: "Do you really want to terminate this employee?",
+                title: '{{ __('Are you sure?') }}',
+                text: "{{ __('Do you really want to terminate this employee?') }}",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, terminate them!'
+                confirmButtonText: '{{ __('Yes, terminate them!') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     e.target.submit();
@@ -70,12 +70,12 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="employmentHistoryModalLabel">ประวัติการจ้างงาน</h5>
+                <h5 class="modal-title" id="employmentHistoryModalLabel">{{ __('ประวัติการจ้างงาน') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-between mb-3">
-                    <input type="text" id="history-search-input" class="form-control" style="max-width: 300px;" placeholder="ค้นหาตามชื่อ หรือ เลขพาสปอร์ต...">
+                    <input type="text" id="history-search-input" class="form-control" style="max-width: 300px;" placeholder="{{ __('ค้นหาตามชื่อ หรือ เลขพาสปอร์ต...') }}">
                 </div>
 
                 {{-- REPLACED: Use the component instead of manual HTML --}}
@@ -93,10 +93,10 @@ document.addEventListener('DOMContentLoaded', function () {
                             <tr>
                                 <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="history-select-all-checkbox-table"></th>
                                 <th>#</th>
-                                <th style="width: 40%;">พนักงาน</th>
-                                <th>วันที่แจ้งออก</th>
-                                <th>เหตุผล</th>
-                                <th>จัดการ</th>
+                                <th style="width: 40%;">{{ __('พนักงาน') }}</th>
+                                <th>{{ __('วันที่แจ้งออก') }}</th>
+                                <th>{{ __('เหตุผล') }}</th>
+                                <th>{{ __('จัดการ') }}</th>
                             </tr>
                         </thead>
                         <tbody id="historyTableBody">
@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ปิด') }}</button>
             </div>
         </div>
     </div>
@@ -118,15 +118,15 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="transferEmployeeModalLabel">ย้ายนายจ้างสำหรับลูกจ้าง</h5>
+                <h5 class="modal-title" id="transferEmployeeModalLabel">{{ __('ย้ายนายจ้างสำหรับลูกจ้าง') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="employee-to-transfer-id">
                 <p>คุณกำลังจะย้ายลูกจ้าง: <strong id="employee-to-transfer-name"></strong></p>
                 <div class="mb-3">
-                    <label for="employer-search-input" class="form-label">ค้นหานายจ้างใหม่</label>
-                    <input type="text" id="employer-search-input" class="form-control" placeholder="พิมพ์เพื่อค้นหาชื่อนายจ้าง...">
+                    <label for="employer-search-input" class="form-label">{{ __('ค้นหานายจ้างใหม่') }}</label>
+                    <input type="text" id="employer-search-input" class="form-control" placeholder="{{ __('พิมพ์เพื่อค้นหาชื่อนายจ้าง...') }}">
                 </div>
                 <div id="employer-search-results" class="list-group mb-3" style="max-height: 250px; overflow-y: auto;">
                     {{-- Employer search results will be populated here --}}
@@ -136,8 +136,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" id="confirm-transfer-btn" disabled>ยืนยันการย้าย</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ยกเลิก') }}</button>
+                <button type="button" class="btn btn-primary" id="confirm-transfer-btn" disabled>{{ __('ยืนยันการย้าย') }}</button>
             </div>
         </div>
     </div>
@@ -150,24 +150,24 @@ document.addEventListener('DOMContentLoaded', function () {
             <form id="terminateEmployeeForm" method="POST" action="">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title" id="terminateEmployeeModalLabel">Terminate Employee</h5>
+                    <h5 class="modal-title" id="terminateEmployeeModalLabel">{{ __('Terminate Employee') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to terminate <strong id="terminateEmployeeName"></strong>?</p>
+                    <p>{{ __('Are you sure you want to terminate') }}<strong id="terminateEmployeeName"></strong>?</p>
                     <input type="hidden" id="terminate_employee_id" name="employee_id">
                     <div class="mb-3">
-                        <label for="termination_date" class="form-label">Termination Date</label>
+                        <label for="termination_date" class="form-label">{{ __('Termination Date') }}</label>
                         <input type="date" class="form-control" id="termination_date" name="termination_date" required>
                     </div>
                     <div class="mb-3">
-                        <label for="termination_reason" class="form-label">Reason for Termination</label>
+                        <label for="termination_reason" class="form-label">{{ __('Reason for Termination') }}</label>
                         <textarea class="form-control" id="termination_reason" name="termination_reason" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Terminate</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-danger">{{ __('Terminate') }}</button>
                 </div>
             </form>
         </div>

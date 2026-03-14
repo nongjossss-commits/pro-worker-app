@@ -174,8 +174,7 @@
                                     <span class="badge bg-info text-dark">{{ $employee->employeeNationality ?? 'N/A' }}</span>
                                 </div>
 
-                                @if($employee->employer)
-                                    <span class="badge bg-light text-dark border me-3 d-none d-md-inline-block">
+                                @if($employee->{{ __('employer)') }}<span class="badge bg-light text-dark border me-3 d-none d-md-inline-block">
                                         <i class="bi bi-building"></i> {{ $employee->employer->employerNameTh }}
                                     </span>
                                 @endif

@@ -4,8 +4,8 @@
 <div class="container">
     <div class="row">
         <div class="col-md-12">
-            <h1>ตั้งค่าการแจ้งเตือน</h1>
-            <p>กำหนดจำนวนวันล่วงหน้าก่อนถึงวันหมดอายุสำหรับเอกสารประเภทต่างๆ</p>
+            <h1>{{ __('ตั้งค่าการแจ้งเตือน') }}</h1>
+            <p>{{ __('กำหนดจำนวนวันล่วงหน้าก่อนถึงวันหมดอายุสำหรับเอกสารประเภทต่างๆ') }}</p>
 
             @if (session('success'))
                 <div class="alert alert-success">
@@ -13,8 +13,7 @@
                 </div>
             @endif
 
-            @if ($errors->any())
-                <div class="alert alert-danger">
+            @if ($errors->{{ __('any())') }}<div class="alert alert-danger">
                     <ul>
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
@@ -30,8 +29,8 @@
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>ประเภทการแจ้งเตือน</th>
-                                    <th>การตั้งค่า</th>
+                                    <th>{{ __('ประเภทการแจ้งเตือน') }}</th>
+                                    <th>{{ __('การตั้งค่า') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -55,7 +54,7 @@
                                                            name="settings[{{ $type }}][is_enabled]"
                                                            value="1"
                                                            x-model="enabled">
-                                                    <label class="form-check-label" for="switch_{{ $type }}">เปิดใช้งานการแจ้งเตือน</label>
+                                                    <label class="form-check-label" for="switch_{{ $type }}">{{ __('เปิดใช้งานการแจ้งเตือน') }}</label>
                                                 </div>
 
                                                 @if (!$isMissingDataType)
@@ -68,7 +67,7 @@
                                                                min="0"
                                                                required
                                                                :disabled="!enabled">
-                                                        <span class="input-group-text">วัน</span>
+                                                        <span class="input-group-text">{{ __('วัน') }}</span>
                                                     </div>
                                                 @endif
                                             </div>
@@ -79,7 +78,7 @@
                         </table>
                     </div>
                     <div class="card-footer text-end">
-                        <button type="submit" class="btn btn-primary">บันทึกการตั้งค่า</button>
+                        <button type="submit" class="btn btn-primary">{{ __('บันทึกการตั้งค่า') }}</button>
                     </div>
                 </div>
             </form>

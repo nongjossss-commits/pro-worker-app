@@ -14,8 +14,7 @@
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
             <div class="p-6 bg-white border-b border-gray-200" x-data="{ selectedRole: '{{ old('role_name', 'staff') }}', showPassword: false, showConfirmPassword: false }">
 
-                @if ($errors->any())
-                    <div class="mb-4">
+                @if ($errors->{{ __('any())') }}<div class="mb-4">
                         <div class="font-medium text-red-600">{{ __('Whoops! Something went wrong.') }}</div>
 
                         <ul class="mt-3 list-disc list-inside text-sm text-red-600">

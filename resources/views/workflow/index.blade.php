@@ -170,8 +170,7 @@
                         <span class="fw-bold text-dark fs-6">{{ $step->name }}</span>
                     </div>
                 @endforeach
-                @if($steps->isEmpty())
-                    <p class="text-muted small mb-0">{{ __('No steps configured.') }}</p>
+                @if($steps->{{ __('isEmpty())') }}<p class="text-muted small mb-0">{{ __('No steps configured.') }}</p>
                 @endif
             </div>
         </div>
@@ -383,12 +382,10 @@
                                             @endforeach
                                         @endif
                                     </h5>
-                                    @if($order->employer && $order->employer->employerNameEn)
-                                        <div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
+                                    @if($order->employer && $order->employer->{{ __('employerNameEn)') }}<div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
                                     @endif
 
-                                    @if($order->employer && $order->employer->jobOwner)
-                                        <div class="text-muted small border-start ps-2 mt-1 ms-1">
+                                    @if($order->employer && $order->employer->{{ __('jobOwner)') }}<div class="text-muted small border-start ps-2 mt-1 ms-1">
                                             <i class="bi bi-person-badge me-1"></i>
                                             <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
                                                 {{ $order->employer->jobOwner->name }}
@@ -397,13 +394,11 @@
                                     @endif
 
                                     <div class="text-muted small mt-1">
-                                        @if($order->updater)
-                                            <i class="bi bi-clock-history me-1"></i>
+                                        @if($order->{{ __('updater)') }}<i class="bi bi-clock-history me-1"></i>
                                             <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->updater->name]) }}" class="text-decoration-none text-secondary" title="{{ __('Last Modified By') }}">
                                                 {{ $order->updater->name }}
                                             </a>
-                                        @elseif($order->creator)
-                                            <i class="bi bi-person-circle me-1"></i>
+                                        @elseif($order->{{ __('creator)') }}<i class="bi bi-person-circle me-1"></i>
                                             <a href="{{ route('workflow.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->creator->name]) }}" class="text-decoration-none text-secondary" title="{{ __('Created By') }}">
                                                 {{ $order->creator->name }}
                                             </a>
@@ -433,22 +428,22 @@
                                     {{-- Total --}}
                                     <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
                                         <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
-                                        <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
+                                        <span class="text-muted small" style="font-size: 0.65rem;">{{ __('TOTAL') }}</span>
                                     </span>
                                     {{-- Not Started --}}
                                     <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;">
                                          <span class="fw-bold" id="order-{{ $order->id }}-pending">{{ $computed['not_started'] }}</span>
-                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">PENDING</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">{{ __('PENDING') }}</span>
                                     </span>
                                     {{-- Completed --}}
                                     <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
                                          <span class="fw-bold" id="order-{{ $order->id }}-completed">{{ $computed['completed'] }}</span>
-                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">DONE</span>
+                                         <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">{{ __('DONE') }}</span>
                                     </span>
                                     {{-- Cancelled --}}
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
                                         <span class="fw-bold" id="order-{{ $order->id }}-cancelled">{{ $computed['cancelled'] }}</span>
-                                        <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">CANCEL</span>
+                                        <span class="small ms-1 opacity-75" style="font-size: 0.65rem;">{{ __('CANCEL') }}</span>
                                     </span>
                                  </div>
 
@@ -850,7 +845,7 @@
                     if(window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
                 })
                 .catch(err => {
-                    container.innerHTML = '<div class="text-danger text-center py-3">Failed to load items.</div>';
+                    container.innerHTML = '<div class="text-danger text-center py-3">{{ __('Failed to load items.') }}</div>';
                 });
             } else {
                  if(window.refreshGlobalSelectionUI) setTimeout(window.refreshGlobalSelectionUI, 100);
@@ -1304,7 +1299,7 @@ window.loadBatchStats = function() {
                 body.innerHTML = html;
             })
             .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>';
+                body.innerHTML = '<div class="text-danger text-center p-4">{{ __('Failed to load history.') }}</div>';
             });
     }
 
@@ -1741,7 +1736,7 @@ window.loadBatchStats = function() {
                 body.innerHTML = html;
             })
             .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load trash.</div>';
+                body.innerHTML = '<div class="text-danger text-center p-4">{{ __('Failed to load trash.') }}</div>';
             });
     }
 

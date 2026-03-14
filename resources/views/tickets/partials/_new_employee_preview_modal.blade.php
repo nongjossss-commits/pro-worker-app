@@ -4,8 +4,7 @@
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="newEmployeePreviewModalLabel">
-                    <i class="bi bi-person-plus-fill me-2"></i>รายละเอียดแจ้งเข้าลูกจ้างใหม่ (Preview)
-                </h5>
+                    <i class="bi bi-person-plus-fill me-2"></i>{{ __('รายละเอียดแจ้งเข้าลูกจ้างใหม่ (Preview)') }}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -16,12 +15,12 @@
                             <img id="preview_employeePhoto" src="" alt="No Photo" class="img-fluid" style="max-height: 100%; display: none;">
                             <i id="preview_employeePhoto_placeholder" class="bi bi-person-bounding-box fs-1 text-secondary"></i>
                         </div>
-                        <div class="mt-2 small text-muted">รูปถ่ายคนงาน</div>
+                        <div class="mt-2 small text-muted">{{ __('รูปถ่ายคนงาน') }}</div>
                     </div>
 
                     {{-- Personal Info Section --}}
                     <div class="col-md-9">
-                        <h6 class="text-primary border-bottom pb-2 mb-3">1. ข้อมูลส่วนตัว</h6>
+                        <h6 class="text-primary border-bottom pb-2 mb-3">{{ __('1. ข้อมูลส่วนตัว') }}</h6>
                         <div class="row g-2 mb-3">
                             <div class="col-md-6">
                                 <label class="fw-bold small">ชื่อ-นามสกุล (ไทย):</label>
@@ -52,7 +51,7 @@
                                 <div id="preview_mother_name" class="text-dark"></div>
                             </div>
                         </div>
-                        <h6 class="text-primary border-bottom pb-2 mb-3">2. ข้อมูลการติดต่อ</h6>
+                        <h6 class="text-primary border-bottom pb-2 mb-3">{{ __('2. ข้อมูลการติดต่อ') }}</h6>
                          <div class="row g-2 mb-3">
                             <div class="col-md-6">
                                 <label class="fw-bold small">เบอร์โทรศัพท์:</label>
@@ -71,7 +70,7 @@
                 </div>
 
                 {{-- Passport & Visa Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">3. ข้อมูลหนังสือเดินทาง & วีซ่า</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('3. ข้อมูลหนังสือเดินทาง & วีซ่า') }}</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
                         <label class="fw-bold small">สัญชาติ:</label>
@@ -108,7 +107,7 @@
                 </div>
 
                 {{-- Work Permit Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">4. ข้อมูลใบอนุญาตทำงาน</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('4. ข้อมูลใบอนุญาตทำงาน') }}</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-6">
                         <label class="fw-bold small">ตำแหน่งงาน:</label>
@@ -168,7 +167,7 @@
                 </div>
 
                 {{-- Insurance Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">5. ข้อมูลประกัน</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('5. ข้อมูลประกัน') }}</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
                         <label class="fw-bold small">ประเภทประกัน:</label>
@@ -181,14 +180,14 @@
                 </div>
 
                 {{-- Documents Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">6. เอกสารแนบ</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('6. เอกสารแนบ') }}</h6>
                 <div class="row g-2" id="preview_documents_container">
                     {{-- Links will be injected here via JS --}}
                 </div>
 
             </div>
             <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ปิดหน้าต่าง') }}</button>
             </div>
         </div>
     </div>
@@ -346,7 +345,7 @@
         }
 
         if (!hasDocs) {
-            docsContainer.innerHTML = '<div class="col-12 text-muted fst-italic">- ไม่มีเอกสารแนบ -</div>';
+            docsContainer.innerHTML = '<div class="col-12 text-muted fst-italic">{{ __('- ไม่มีเอกสารแนบ -') }}</div>';
         }
 
         // Show Modal

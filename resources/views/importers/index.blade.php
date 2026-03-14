@@ -10,10 +10,10 @@
         </div>
     @endif
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-         <h2 class="mb-3 mb-md-0">รายการข้อมูลบริษัทนำเข้า</h2>
+         <h2 class="mb-3 mb-md-0">{{ __('รายการข้อมูลบริษัทนำเข้า') }}</h2>
          <div class="d-flex flex-column flex-md-row gap-2">
-            <input type="text" id="importer-search-input" class="form-control form-control-sm" placeholder="ค้นหา...">
-            <a href="{{ route('importers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+            <input type="text" id="importer-search-input" class="form-control form-control-sm" placeholder="{{ __('ค้นหา...') }}">
+            <a href="{{ route('importers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>{{ __('เพิ่มข้อมูลใหม่') }}</a>
          </div>
     </div>
     <div class="table-responsive">
@@ -21,10 +21,10 @@
             <thead class="table-light">
                 <tr>
                     <th>#</th>
-                    <th>ชื่อบริษัทนำเข้า (ไทย)</th>
-                    <th>รหัสบริษัทนำเข้า</th>
-                    <th>เลขที่ใบอนุญาต</th>
-                    <th class="text-center">จัดการ</th>
+                    <th>{{ __('ชื่อบริษัทนำเข้า (ไทย)') }}</th>
+                    <th>{{ __('รหัสบริษัทนำเข้า') }}</th>
+                    <th>{{ __('เลขที่ใบอนุญาต') }}</th>
+                    <th class="text-center">{{ __('จัดการ') }}</th>
                 </tr>
             </thead>
             <tbody id="importer-table-body">
@@ -37,13 +37,13 @@
                         <td class="text-center">
                             <div class="d-flex flex-column flex-md-row justify-content-center gap-2">
                             @can('edit-importers')
-                            <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">{{ __('แก้ไข') }}</a>
                             @endcan
                             @can('delete-importers')
                             <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-grid d-md-inline delete-form">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">{{ __('ลบ') }}</button>
                             </form>
                             @endcan
                             </div>
@@ -51,7 +51,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted">ไม่พบข้อมูลบริษัทนำเข้า</td>
+                        <td colspan="5" class="text-center text-muted">{{ __('ไม่พบข้อมูลบริษัทนำเข้า') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -78,14 +78,14 @@
         form.addEventListener('submit', function(event) {
             event.preventDefault();
             Swal.fire({
-                title: 'คุณแน่ใจหรือไม่?',
-                text: "คุณจะไม่สามารถย้อนกลับสิ่งนี้ได้!",
+                title: '{{ __('คุณแน่ใจหรือไม่?') }}',
+                text: "{{ __('คุณจะไม่สามารถย้อนกลับสิ่งนี้ได้!') }}",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'ใช่, ลบเลย!',
-                cancelButtonText: 'ยกเลิก'
+                confirmButtonText: '{{ __('ใช่, ลบเลย!') }}',
+                cancelButtonText: '{{ __('ยกเลิก') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(form.action, {

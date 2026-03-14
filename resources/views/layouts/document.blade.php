@@ -109,10 +109,9 @@
         <!-- Company Header -->
         <div class="flex justify-between mb-8">
             <div class="flex">
-                @if($company && $company->logo)
-                    <img src="{{ asset('storage/' . $company->logo) }}" alt="Logo" style="width: 80px; height: auto; max-height: 80px;" class="mr-4">
+                @if($company && $company->{{ __('logo)') }}<img src="{{ asset('storage/' . $company->logo) }}" alt="Logo" style="width: 80px; height: auto; max-height: 80px;" class="mr-4">
                 @else
-                    <div class="logo-placeholder mr-4">Logo</div>
+                    <div class="logo-placeholder mr-4">{{ __('Logo') }}</div>
                 @endif
                 <div style="margin-left: 1rem;">
                     <h2 class="text-primary">{{ $company->name ?? 'Company Name' }}</h2>
@@ -137,7 +136,7 @@
         <!-- Customer & Project Info -->
         <div class="grid-2 mb-8">
             <div>
-                <h4 class="mb-2 text-muted text-sm uppercase">Bill To</h4>
+                <h4 class="mb-2 text-muted text-sm uppercase">{{ __('Bill To') }}</h4>
                 <div class="font-bold text-lg">{{ $billTo->employerNameTh ?? 'Client Name' }}</div>
                 <div class="text-sm text-muted">
                     {{ $billTo->employerAddress ?? 'Address' }}<br>
@@ -146,7 +145,7 @@
                 </div>
             </div>
             <div class="text-right">
-                <h4 class="mb-2 text-muted text-sm uppercase">Project Details</h4>
+                <h4 class="mb-2 text-muted text-sm uppercase">{{ __('Project Details') }}</h4>
                 <div class="font-bold">{{ $production->project_name }}</div>
                 <div class="text-sm text-muted">{{ $production->description }}</div>
                 <div class="mt-2 text-sm">
@@ -163,19 +162,17 @@
             <div class="grid-2">
                 <div class="text-center">
                     <div style="border-bottom: 1px solid #ccc; height: 30px; margin-bottom: 5px; width: 80%; margin: 0 auto;"></div>
-                    <div class="text-sm text-muted">Receiver Signature</div>
+                    <div class="text-sm text-muted">{{ __('Receiver Signature') }}</div>
                     <div class="text-sm text-muted">Date: ____/____/____</div>
                 </div>
                 <div class="text-center">
                     <div style="border-bottom: 1px solid #ccc; height: 30px; margin-bottom: 5px; width: 80%; margin: 0 auto;"></div>
-                    <div class="text-sm text-muted">Authorized Signature</div>
+                    <div class="text-sm text-muted">{{ __('Authorized Signature') }}</div>
                     <div class="text-sm text-muted">{{ $company->name ?? 'Company' }}</div>
                 </div>
             </div>
 
-            <div class="text-center mt-8 text-xs text-muted">
-                Thank you for your business!
-            </div>
+            <div class="text-center mt-8 text-xs text-muted">{{ __('Thank you for your business!') }}</div>
         </div>
     </div>
 

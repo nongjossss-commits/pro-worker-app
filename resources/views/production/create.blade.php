@@ -10,8 +10,8 @@
     </style>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 fw-bold">Create New Project</h1>
-        <a href="{{ route('production.index') }}" class="btn btn-outline-secondary">Back</a>
+        <h1 class="h3 fw-bold">{{ __('Create New Project') }}</h1>
+        <a href="{{ route('production.index') }}" class="btn btn-outline-secondary">{{ __('Back') }}</a>
     </div>
 
     <div class="card shadow-sm">
@@ -28,11 +28,11 @@
 
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold">Project Name</label>
-                        <input type="text" name="project_name" class="form-control" placeholder="e.g. Visa Renewal Batch #101" required>
+                        <label class="form-label fw-bold">{{ __('Project Name') }}</label>
+                        <input type="text" name="project_name" class="form-control" placeholder="{{ __('e.g. Visa Renewal Batch #101') }}" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold">Project Type</label>
+                        <label class="form-label fw-bold">{{ __('Project Type') }}</label>
                         <div class="d-flex gap-3 mt-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="type" id="typeEmployer" value="employer"
@@ -45,9 +45,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="type" id="typeIndependent" value="independent"
                                     {{ $isIndependent ? 'checked' : '' }}>
-                                <label class="form-check-label" for="typeIndependent">
-                                    Independent (Multiple/No Employer)
-                                </label>
+                                <label class="form-check-label" for="typeIndependent">{{ __('Independent (Multiple/No Employer)') }}</label>
                             </div>
                         </div>
                     </div>
@@ -55,9 +53,9 @@
 
                 {{-- Employer Selection (Only visible if Standard) --}}
                 <div class="mb-4" id="employerSelectionDiv" style="{{ $isIndependent ? 'display:none;' : '' }}">
-                    <label class="form-label fw-bold">Select Employer</label>
+                    <label class="form-label fw-bold">{{ __('Select Employer') }}</label>
                     <select name="employer_id" class="form-select" {{ $isIndependent ? '' : 'required' }}>
-                        <option value="">-- Choose Employer --</option>
+                        <option value="">{{ __('-- Choose Employer --') }}</option>
                         @if($preSelectedEmployees->isNotEmpty() && $employerId)
                              <option value="{{ $employerId }}" selected>
                                  {{ $preSelectedEmployees->first()->employer->employerNameTh ?? $preSelectedEmployees->first()->employer->employerNameEn ?? 'Selected Employer' }}
@@ -70,19 +68,18 @@
                             @endforeach
                         @endif
                     </select>
-                    <div class="form-text">For Standard projects, all employees must belong to this employer.</div>
+                    <div class="form-text">{{ __('For Standard projects, all employees must belong to this employer.') }}</div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold">Description / Note</label>
+                    <label class="form-label fw-bold">{{ __('Description / Note') }}</label>
                     <textarea name="description" class="form-control" rows="3"></textarea>
                 </div>
 
                 <hr>
 
                 <h5 class="fw-bold mb-3">Selected Employees ({{ $preSelectedEmployees->count() }})</h5>
-                @if($preSelectedEmployees->isNotEmpty())
-                    <div class="employee-list bg-light p-3 rounded border" style="max-height: 500px; overflow-y: auto;">
+                @if($preSelectedEmployees->{{ __('isNotEmpty())') }}<div class="employee-list bg-light p-3 rounded border" style="max-height: 500px; overflow-y: auto;">
                         @php
                             $groupedEmployees = $preSelectedEmployees->groupBy('employer_id');
                         @endphp
@@ -108,11 +105,11 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="alert alert-warning">No employees selected. You can add them in the next step.</div>
+                    <div class="alert alert-warning">{{ __('No employees selected. You can add them in the next step.') }}</div>
                 @endif
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
-                    <button type="submit" class="btn btn-primary px-4">Create Project</button>
+                    <button type="submit" class="btn btn-primary px-4">{{ __('Create Project') }}</button>
                 </div>
             </form>
         </div>

@@ -6,7 +6,7 @@
 <div class="content-section container">
     <div class="row">
         <div class="col-md-12">
-            <h2 class="mb-4">Edit Delegate</h2>
+            <h2 class="mb-4">{{ __('Edit Delegate') }}</h2>
             <hr>
             <form id="saveDelegateForm" action="{{ route('delegates.update', $delegate->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -14,7 +14,7 @@
 
                 <div class="row mb-4">
                     <div class="col-md-12 text-center">
-                        <label class="form-label d-block text-muted mb-2">Photo</label>
+                        <label class="form-label d-block text-muted mb-2">{{ __('Photo') }}</label>
                         <div class="mb-3">
                             <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control" accept="image/*" onchange="previewImage(event, 'photoPreview')">
                         </div>
@@ -29,13 +29,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateNameTh">Name (TH)</label>
+                            <label for="delegateNameTh">{{ __('Name (TH)') }}</label>
                             <input type="text" name="delegateNameTh" id="delegateNameTh" class="form-control" value="{{ $delegate->delegateNameTh }}" required>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateNameEn">Name (EN)</label>
+                            <label for="delegateNameEn">{{ __('Name (EN)') }}</label>
                             <input type="text" name="delegateNameEn" id="delegateNameEn" class="form-control" value="{{ $delegate->delegateNameEn }}">
                         </div>
                     </div>
@@ -43,13 +43,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateId">National ID</label>
+                            <label for="delegateId">{{ __('National ID') }}</label>
                             <input type="text" name="delegateId" id="delegateId" class="form-control" value="{{ $delegate->delegateId }}">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateEmployeeId">Employee ID</label>
+                            <label for="delegateEmployeeId">{{ __('Employee ID') }}</label>
                             <input type="text" name="delegateEmployeeId" id="delegateEmployeeId" class="form-control" value="{{ $delegate->delegateEmployeeId }}">
                         </div>
                     </div>
@@ -57,13 +57,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateIssueDate">Issue Date</label>
+                            <label for="delegateIssueDate">{{ __('Issue Date') }}</label>
                             <input type="date" name="delegateIssueDate" id="delegateIssueDate" class="form-control" value="{{ $delegate->delegateIssueDate }}">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateExpiryDate">Expiry Date</label>
+                            <label for="delegateExpiryDate">{{ __('Expiry Date') }}</label>
                             <input type="date" name="delegateExpiryDate" id="delegateExpiryDate" class="form-control" value="{{ $delegate->delegateExpiryDate }}">
                         </div>
                     </div>
@@ -71,13 +71,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegatePhone">Phone</label>
+                            <label for="delegatePhone">{{ __('Phone') }}</label>
                             <input type="text" name="delegatePhone" id="delegatePhone" class="form-control" value="{{ $delegate->delegatePhone }}">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateEmail">Email</label>
+                            <label for="delegateEmail">{{ __('Email') }}</label>
                             <input type="email" name="delegateEmail" id="delegateEmail" class="form-control" value="{{ $delegate->delegateEmail }}">
                         </div>
                     </div>
@@ -89,7 +89,7 @@
                     @for($i=1; $i<=3; $i++)
                     @php $field = "delegate_doc_other_$i"; $descField = "delegate_doc_other_{$i}_desc"; @endphp
                     <div class="col-md-4">
-                        <label for="{{ $field }}" class="form-label">{{ $i }}. {{ __('Other Document') }} {{ $i }} <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                        <label for="{{ $field }}" class="form-label">{{ $i }}. {{ __('Other Document') }} {{ $i }} <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                         <div class="input-group input-group-sm mb-2">
                             <input type="file" class="form-control form-control-sm" id="{{ $field }}" name="{{ $field }}" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $field }}' } }))">
@@ -99,11 +99,9 @@
                         @if($delegate->$field)
                         <div class="mb-2">
                             <a href="{{ route('delegates.documents.pdf', ['delegate' => $delegate->id, 'field' => $field]) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Preview PDF">
-                                <i class="bi bi-file-earmark-pdf"></i> Preview
-                            </a>
+                                <i class="bi bi-file-earmark-pdf"></i>{{ __('Preview') }}</a>
                             <a href="{{ route('delegates.documents.pdf', ['delegate' => $delegate->id, 'field' => $field]) }}?disposition=attachment" class="btn btn-sm btn-outline-secondary" title="Download PDF">
-                                <i class="bi bi-download"></i> Download
-                            </a>
+                                <i class="bi bi-download"></i>{{ __('Download') }}</a>
                         </div>
                         @endif
                         <input type="text" class="form-control form-control-sm" id="{{ $descField }}" name="{{ $descField }}" value="{{ old($descField, $delegate->$descField) }}" placeholder="{{ __('Specify description...') }}">
@@ -177,7 +175,7 @@
                 </div>
 
                 <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">Update Delegate</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Update Delegate') }}</button>
                     <a href="{{ route('delegates.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
                 </div>
             </form>

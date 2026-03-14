@@ -4,9 +4,8 @@
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="{{ route('workflow.show', $item->production_order_id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Board
-        </a>
-        <h1 class="h3 mb-0">Item Details</h1>
+            <i class="bi bi-arrow-left"></i>{{ __('Back to Board') }}</a>
+        <h1 class="h3 mb-0">{{ __('Item Details') }}</h1>
     </div>
 
     <div class="row">
@@ -14,19 +13,18 @@
         <div class="col-md-4">
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
-                    @if($item->employee)
-                        <img src="{{ $item->employee->avatar_url }}" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;">
+                    @if($item->{{ __('employee)') }}<img src="{{ $item->employee->avatar_url }}" class="rounded-circle mb-3" width="100" height="100" style="object-fit: cover;">
                         <h5 class="fw-bold">{{ $item->employee->fullname_th }}</h5>
                         <p class="text-muted">{{ $item->employee->employer->name_th ?? 'Unknown Employer' }}</p>
                     @else
                         <img src="{{ asset('/images/default-avatar.png') }}" class="rounded-circle mb-3" width="100" height="100">
                         <h5 class="fw-bold">{{ $item->new_employee_data['name_th'] ?? 'New Employee' }}</h5>
-                        <span class="badge bg-info text-dark">New Entry</span>
+                        <span class="badge bg-info text-dark">{{ __('New Entry') }}</span>
                     @endif
                 </div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">
-                        <span class="text-muted">Order ID</span>
+                        <span class="text-muted">{{ __('Order ID') }}</span>
                         <span>#{{ $item->order->id }}</span>
                     </li>
                 </ul>
@@ -37,10 +35,9 @@
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Progress Tracker</h5>
+                    <h5 class="mb-0">{{ __('Progress Tracker') }}</h5>
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addStepModal">
-                        <i class="bi bi-plus"></i> Add Field
-                    </button>
+                        <i class="bi bi-plus"></i>{{ __('Add Field') }}</button>
                 </div>
                 <div class="card-body">
                     @if($item->steps->count() > 0)
@@ -63,7 +60,7 @@
                                             @elseif($step->step_type === 'date')
                                                 {{ $step->value_date ? \Carbon\Carbon::parse($step->value_date)->format('d/m/Y') : '-' }}
                                             @else
-                                                <a href="#" class="text-decoration-none">View File</a>
+                                                <a href="#" class="text-decoration-none">{{ __('View File') }}</a>
                                             @endif
                                         </div>
                                         <small class="text-muted">Added {{ $step->created_at->diffForHumans() }}</small>
@@ -73,9 +70,7 @@
                         </div>
                     @else
                         <div class="text-center py-5 text-muted">
-                            <i class="bi bi-clipboard-x display-4 mb-3 d-block"></i>
-                            No fields or steps added yet.
-                        </div>
+                            <i class="bi bi-clipboard-x display-4 mb-3 d-block"></i>{{ __('No fields or steps added yet.') }}</div>
                     @endif
                 </div>
             </div>
@@ -89,30 +84,30 @@
                 <form action="{{ route('workflow.item.step.store', $item->id) }}" method="POST">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title">Add New Field</h5>
+                        <h5 class="modal-title">{{ __('Add New Field') }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Type</label>
+                            <label class="form-label">{{ __('Type') }}</label>
                             <select name="step_type" class="form-select" x-data="{ type: 'text' }" x-model="type" @change="$dispatch('type-change', type)">
-                                <option value="text">Text / Note</option>
-                                <option value="date">Date</option>
-                                <option value="file">File Attachment</option>
+                                <option value="text">{{ __('Text / Note') }}</option>
+                                <option value="date">{{ __('Date') }}</option>
+                                <option value="file">{{ __('File Attachment') }}</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Label</label>
-                            <input type="text" name="label" class="form-control" placeholder="e.g. Visa Submission" required>
+                            <label class="form-label">{{ __('Label') }}</label>
+                            <input type="text" name="label" class="form-control" placeholder="{{ __('e.g. Visa Submission') }}" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Value (Initial)</label>
+                            <label class="form-label">{{ __('Value (Initial)') }}</label>
                             <input type="text" name="value" class="form-control">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Add Field</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('Add Field') }}</button>
                     </div>
                 </form>
             </div>

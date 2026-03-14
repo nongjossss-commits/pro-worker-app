@@ -3,10 +3,9 @@
 @section('content')
 <div class="container py-4" x-data="financialSettings({{ json_encode($profiles) }})">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Bill Header Settings</h2>
+        <h2>{{ __('Bill Header Settings') }}</h2>
         <button class="btn btn-primary" @click="openAddModal()">
-            <i class="bi bi-plus-lg"></i> Add New Profile
-        </button>
+            <i class="bi bi-plus-lg"></i>{{ __('Add New Profile') }}</button>
     </div>
 
     @if(session('success'))
@@ -24,11 +23,11 @@
                                     <img :src="'/storage/' + profile.logo_path" style="height: 40px; object-fit: contain;">
                                 </template>
                                 <template x-if="!profile.logo_path">
-                                    <div class="bg-light p-2 rounded text-muted small">No Logo</div>
+                                    <div class="bg-light p-2 rounded text-muted small">{{ __('No Logo') }}</div>
                                 </template>
                             </div>
                             <template x-if="profile.is_default">
-                                <span class="badge bg-primary">Default</span>
+                                <span class="badge bg-primary">{{ __('Default') }}</span>
                             </template>
                         </div>
                         <h5 class="card-title fw-bold" x-text="profile.name"></h5>
@@ -37,8 +36,7 @@
 
                         <div class="mt-3 pt-2 border-top d-flex justify-content-end">
                             <button class="btn btn-sm btn-outline-secondary" @click="openEditModal(profile)">
-                                <i class="bi bi-pencil"></i> Configure
-                            </button>
+                                <i class="bi bi-pencil"></i>{{ __('Configure') }}</button>
                         </div>
                     </div>
                 </div>
@@ -61,10 +59,10 @@
                         <!-- Tabs -->
                         <ul class="nav nav-tabs mb-3" role="tablist">
                             <li class="nav-item">
-                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general" type="button">General Info</button>
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general" type="button">{{ __('General Info') }}</button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-signatures" type="button">Signatures & Stamps</button>
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-signatures" type="button">{{ __('Signatures & Stamps') }}</button>
                             </li>
                         </ul>
 
@@ -72,31 +70,31 @@
                             <!-- GENERAL TAB -->
                             <div class="tab-pane fade show active" id="tab-general">
                                 <div class="mb-3">
-                                    <label class="form-label">Company Name</label>
+                                    <label class="form-label">{{ __('Company Name') }}</label>
                                     <input type="text" name="name" class="form-control" x-model="form.name" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Address</label>
+                                    <label class="form-label">{{ __('Address') }}</label>
                                     <textarea name="address" class="form-control" rows="3" x-model="form.address"></textarea>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Tax ID</label>
+                                        <label class="form-label">{{ __('Tax ID') }}</label>
                                         <input type="text" name="tax_id" class="form-control" x-model="form.tax_id">
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Phone</label>
+                                        <label class="form-label">{{ __('Phone') }}</label>
                                         <input type="text" name="phone" class="form-control" x-model="form.phone">
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Logo</label>
+                                    <label class="form-label">{{ __('Logo') }}</label>
                                     <input type="file" name="logo" class="form-control" accept="image/*">
                                     <div class="form-text small" x-show="form.logo_path">Current: <span x-text="form.logo_path"></span></div>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="is_default" value="1" id="isDefault" x-model="form.is_default">
-                                    <label class="form-check-label" for="isDefault">Set as Default Profile</label>
+                                    <label class="form-check-label" for="isDefault">{{ __('Set as Default Profile') }}</label>
                                 </div>
                             </div>
 
@@ -105,18 +103,18 @@
                                 <div class="row">
                                     <!-- Controls -->
                                     <div class="col-md-5 border-end">
-                                        <h6 class="fw-bold mb-3">Configuration</h6>
+                                        <h6 class="fw-bold mb-3">{{ __('Configuration') }}</h6>
 
                                         <!-- Signature Config -->
                                         <div class="card mb-3 bg-light border-0">
                                             <div class="card-body p-2">
                                                 <div class="form-check form-switch mb-2">
                                                     <input class="form-check-input" type="checkbox" name="use_signature" id="useSig" x-model="form.use_signature">
-                                                    <label class="form-check-label fw-bold" for="useSig">Show Signature</label>
+                                                    <label class="form-check-label fw-bold" for="useSig">{{ __('Show Signature') }}</label>
                                                 </div>
                                                 <div x-show="form.use_signature">
                                                     <div class="mb-2">
-                                                        <label class="form-label small mb-0">Signature Image (PNG transparent)</label>
+                                                        <label class="form-label small mb-0">{{ __('Signature Image (PNG transparent)') }}</label>
                                                         <input type="file" name="signature" class="form-control form-control-sm" accept="image/*" @change="previewImage($event, 'sigPreview')">
                                                     </div>
 
@@ -135,11 +133,11 @@
                                             <div class="card-body p-2">
                                                 <div class="form-check form-switch mb-2">
                                                     <input class="form-check-input" type="checkbox" name="use_stamp" id="useStamp" x-model="form.use_stamp">
-                                                    <label class="form-check-label fw-bold" for="useStamp">Show Stamp</label>
+                                                    <label class="form-check-label fw-bold" for="useStamp">{{ __('Show Stamp') }}</label>
                                                 </div>
                                                 <div x-show="form.use_stamp">
                                                     <div class="mb-2">
-                                                        <label class="form-label small mb-0">Stamp Image</label>
+                                                        <label class="form-label small mb-0">{{ __('Stamp Image') }}</label>
                                                         <input type="file" name="stamp" class="form-control form-control-sm" accept="image/*" @change="previewImage($event, 'stampPreview')">
                                                     </div>
 
@@ -161,10 +159,9 @@
 
                                     <!-- Simulator / Preview -->
                                     <div class="col-md-7">
-                                        <h6 class="fw-bold mb-2">A4 Footer Simulation</h6>
+                                        <h6 class="fw-bold mb-2">{{ __('A4 Footer Simulation') }}</h6>
                                         <div class="alert alert-info py-1 small">
-                                            <i class="bi bi-info-circle"></i> Drag sliders to position elements.
-                                        </div>
+                                            <i class="bi bi-info-circle"></i>{{ __('Drag sliders to position elements.') }}</div>
 
                                         <div class="border shadow-sm position-relative bg-white mx-auto overflow-hidden"
                                              style="width: 100%; padding-bottom: 141.4%; /* A4 Aspect Ratio */ transform-origin: top left;">
@@ -190,11 +187,11 @@
                                             <div class="position-absolute w-100 d-flex justify-content-between px-5" style="bottom: 15%; pointer-events: none;">
                                                 <div class="text-center" style="width: 40%;">
                                                     <div style="border-bottom: 1px solid #ccc; height: 30px;"></div>
-                                                    <div class="small text-muted">Received By</div>
+                                                    <div class="small text-muted">{{ __('Received By') }}</div>
                                                 </div>
                                                 <div class="text-center" style="width: 40%;">
                                                     <div style="border-bottom: 1px solid #ccc; height: 30px;"></div>
-                                                    <div class="small text-muted">Authorized Signature</div>
+                                                    <div class="small text-muted">{{ __('Authorized Signature') }}</div>
                                                 </div>
                                             </div>
 
@@ -208,7 +205,7 @@
                                                  style="cursor: move;">
                                                 <img :src="sigPreview || (form.signature_path ? '/storage/' + form.signature_path : 'https://via.placeholder.com/150?text=Signature')"
                                                      class="w-100 d-block" style="pointer-events: none;">
-                                                <div class="position-absolute top-0 start-0 bg-primary text-white px-1" style="font-size: 10px;">Sig</div>
+                                                <div class="position-absolute top-0 start-0 bg-primary text-white px-1" style="font-size: 10px;">{{ __('Sig') }}</div>
                                             </div>
 
                                             <!-- Draggable Stamp -->
@@ -221,7 +218,7 @@
                                                  style="cursor: move;">
                                                 <img :src="stampPreview || (form.stamp_path ? '/storage/' + form.stamp_path : 'https://via.placeholder.com/150?text=Stamp')"
                                                      class="w-100 d-block" style="pointer-events: none; opacity: 0.8;">
-                                                <div class="position-absolute top-0 start-0 bg-danger text-white px-1" style="font-size: 10px;">Stamp</div>
+                                                <div class="position-absolute top-0 start-0 bg-danger text-white px-1" style="font-size: 10px;">{{ __('Stamp') }}</div>
                                             </div>
 
                                         </div>
@@ -231,8 +228,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
                     </div>
                 </div>
             </form>

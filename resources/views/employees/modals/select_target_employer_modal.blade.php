@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                     resultsContainer.style.display = 'block';
                 } else {
-                    resultsContainer.innerHTML = '<div class="list-group-item text-muted">No employers found</div>';
+                    resultsContainer.innerHTML = '<div class="list-group-item text-muted">{{ __('No employers found') }}</div>';
                     resultsContainer.style.display = 'block';
                 }
             })

@@ -284,13 +284,13 @@
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="actionModalTitle">Edit</h5>
+                <h5 class="modal-title" id="actionModalTitle">{{ __('Edit') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="actionModalBody">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
                     </div>
                 </div>
             </div>

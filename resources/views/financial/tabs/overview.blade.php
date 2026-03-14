@@ -77,17 +77,17 @@
             <div class="col-md-2">
                 <select name="status" class="form-select">
                     <option value="">{{ __('All Statuses') }}</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                    <option value="partial" {{ request('status') == 'partial' ? 'selected' : '' }}>Partial</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>{{ __('Pending') }}</option>
+                    <option value="partial" {{ request('status') == 'partial' ? 'selected' : '' }}>{{ __('Partial') }}</option>
                     <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Paid</option>
-                    <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>Overdue</option>
+                    <option value="overdue" {{ request('status') == 'overdue' ? 'selected' : '' }}>{{ __('Overdue') }}</option>
                 </select>
             </div>
             <div class="col-md-2">
-                <input type="date" name="date_from" class="form-control" placeholder="From Date" value="{{ request('date_from') }}">
+                <input type="date" name="date_from" class="form-control" placeholder="{{ __('From Date') }}" value="{{ request('date_from') }}">
             </div>
             <div class="col-md-2">
-                <input type="date" name="date_to" class="form-control" placeholder="To Date" value="{{ request('date_to') }}">
+                <input type="date" name="date_to" class="form-control" placeholder="{{ __('To Date') }}" value="{{ request('date_to') }}">
             </div>
             <div class="col-md-2 d-grid">
                 <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> {{ __('Filter') }}</button>
@@ -126,8 +126,7 @@
                             </a>
                         </td>
                         <td>
-                            @if($txn->productionOrder && $txn->productionOrder->employer)
-                                <div class="fw-bold">{{ $txn->productionOrder->employer->employerNameTh }}</div>
+                            @if($txn->productionOrder && $txn->productionOrder->{{ __('employer)') }}<div class="fw-bold">{{ $txn->productionOrder->employer->employerNameTh }}</div>
                                 <div class="small text-muted">{{ $txn->productionOrder->project_name }}</div>
                             @else
                                 <span class="text-muted">{{ __('Unknown') }}</span>
@@ -153,11 +152,11 @@
                             <span class="badge bg-{{ $statusClass }}">{{ ucfirst($txn->status) }}</span>
                         </td>
                         <td class="text-center">
-                            <a href="{{ route('production.edit', ['production' => $txn->production_order_id, 'tab' => 'financial']) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                            <a href="{{ route('production.edit', ['production' => $txn->production_order_id, 'tab' => 'financial']) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View Details') }}">
                                 <i class="bi bi-eye"></i>
                             </a>
                             @if($txn->slip_path)
-                                <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $txn->slip_path) }}', 'View Slip')" class="btn btn-sm btn-outline-secondary" title="View Slip">
+                                <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $txn->slip_path) }}', 'View Slip')" class="btn btn-sm btn-outline-secondary" title="{{ __('View Slip') }}">
                                     <i class="bi bi-receipt"></i>
                                 </a>
                             @endif

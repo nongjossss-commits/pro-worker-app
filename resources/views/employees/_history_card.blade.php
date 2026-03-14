@@ -6,8 +6,7 @@
 @endphp
 
 <div id="history-row-{{ $employee->id }}" class="list-group-item list-group-item-action position-relative">
-    @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
-        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded"
+    @if(isset($employee->active_workflows) && $employee->active_workflows->{{ __('isNotEmpty())') }}<div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded"
              style="background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107; z-index: 10; pointer-events: none;">
              <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
                 @foreach($employee->active_workflows as $wf)
@@ -80,10 +79,10 @@
                 <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-info" title="ไปที่ข้อมูลนายจ้าง">
                     <i class="bi bi-geo-alt-fill"></i>
                 </a>
-                <button type="button" class="btn btn-sm btn-outline-primary" title="Create Job (Coming Soon)" disabled>
+                <button type="button" class="btn btn-sm btn-outline-primary" title="{{ __('Create Job (Coming Soon)') }}" disabled>
                     <i class="bi bi-briefcase-fill"></i>
                 </button>
-                 <button class="btn btn-sm btn-outline-success btn-reinstate" title="Restore" data-employee-id="{{ $employee->id }}"><i class="bi bi-arrow-counterclockwise"></i></button>
+                 <button class="btn btn-sm btn-outline-success btn-reinstate" title="{{ __('Restore') }}" data-employee-id="{{ $employee->id }}"><i class="bi bi-arrow-counterclockwise"></i></button>
                 <button class="btn btn-sm btn-outline-danger btn-move-to-trash" title="Move to Trash" data-employee-id="{{ $employee->id }}"><i class="bi bi-trash3-fill"></i></button>
                 <button class="btn btn-sm btn-outline-info btn-transfer-employee" title="Transfer Employer" data-employee-id="{{ $employee->id }}" data-employee-name="{{ $employee->employeeNameTh }}"><i class="bi bi-person-up"></i></button>
             </div>

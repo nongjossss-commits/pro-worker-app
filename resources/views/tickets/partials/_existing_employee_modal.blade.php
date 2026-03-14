@@ -4,16 +4,16 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="existingEmployeeModalLabel">เลือกลูกจ้างที่มีอยู่</h5>
+                <h5 class="modal-title" id="existingEmployeeModalLabel">{{ __('เลือกลูกจ้างที่มีอยู่') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 {{-- Loading State --}}
                 <div x-show="isLoading" class="text-center py-5">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
                     </div>
-                    <p class="mt-2">กำลังโหลดข้อมูลลูกจ้าง...</p>
+                    <p class="mt-2">{{ __('กำลังโหลดข้อมูลลูกจ้าง...') }}</p>
                 </div>
                 {{-- Content State --}}
                 <div x-show="!isLoading">
@@ -31,8 +31,7 @@
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" id="globalSearchCheck" x-model="isGlobalSearch">
                             <label class="form-check-label text-primary fw-bold" for="globalSearchCheck">
-                                <i class="bi bi-globe me-1"></i> ค้นหาจากทั้งหมด (ลูกจ้างภายนอก)
-                            </label>
+                                <i class="bi bi-globe me-1"></i>{{ __('ค้นหาจากทั้งหมด (ลูกจ้างภายนอก)') }}</label>
                         </div>
                         @endcan
                     </div>
@@ -81,12 +80,11 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <span class="me-auto">เลือกแล้ว <strong x-text="selectedEmployeeIds.length"></strong> รายการ</span>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <span class="me-auto">{{ __('เลือกแล้ว') }}<strong x-text="selectedEmployeeIds.length"></strong>{{ __('รายการ') }}</span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ยกเลิก') }}</button>
                 {{-- Confirm Selection Button --}}
                 <button type="button" class="btn btn-primary" @click="confirmSelection()">
-                    <i class="bi bi-check-circle me-1"></i> ยืนยันการเลือก
-                </button>
+                    <i class="bi bi-check-circle me-1"></i>{{ __('ยืนยันการเลือก') }}</button>
             </div>
         </div>
     </div>

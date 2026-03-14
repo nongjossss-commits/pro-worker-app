@@ -6,7 +6,7 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold">Upload New PDF Template</h5>
+                    <h5 class="mb-0 fw-bold">{{ __('Upload New PDF Template') }}</h5>
                 </div>
                 <div class="card-body p-4"
                      x-data="{
@@ -50,25 +50,25 @@
                         @csrf
 
                         <div class="mb-3">
-                            <label class="form-label">Template Name</label>
-                            <input type="text" name="name" class="form-control" required value="{{ old('name') }}" placeholder="e.g. Work Permit Application Form">
+                            <label class="form-label">{{ __('Template Name') }}</label>
+                            <input type="text" name="name" class="form-control" required value="{{ old('name') }}" placeholder="{{ __('e.g. Work Permit Application Form') }}">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Template Type</label>
+                            <label class="form-label">{{ __('Template Type') }}</label>
                             <select name="type" class="form-select" x-model="type">
-                                <option value="global">Global (All Employers)</option>
+                                <option value="global">{{ __('Global (All Employers)') }}</option>
                                 @if(auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
-                                    <option value="employer">Specific Employer</option>
+                                    <option value="employer">{{ __('Specific Employer') }}</option>
                                 @elseif(auth()->user()->hasRole('employer'))
-                                    <option value="employer" {{ old('type') == 'employer' ? 'selected' : '' }}>My Organization</option>
+                                    <option value="employer" {{ old('type') == 'employer' ? 'selected' : '' }}>{{ __('My Organization') }}</option>
                                 @endif
                             </select>
                         </div>
 
                         @if(auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff'))
                         <div class="mb-3" x-show="type === 'employer'" style="display: none;" x-transition>
-                            <label class="form-label">Select Employer</label>
+                            <label class="form-label">{{ __('Select Employer') }}</label>
 
                             <!-- Hidden Input for Form Submission -->
                             <input type="hidden" name="employer_id" :value="employerId">
@@ -79,7 +79,7 @@
                                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                                     <input type="text"
                                            class="form-control"
-                                           placeholder="Type to search employer..."
+                                           placeholder="{{ __('Type to search employer...') }}"
                                            x-model="search"
                                            @focus="open = true; search = ''"
                                            @keydown.escape="open = false"
@@ -99,9 +99,7 @@
                                                 <span x-text="emp.name"></span>
                                             </li>
                                         </template>
-                                        <li class="list-group-item text-muted text-center" x-show="filteredEmployers.length === 0">
-                                            No employers found
-                                        </li>
+                                        <li class="list-group-item text-muted text-center" x-show="filteredEmployers.length === 0">{{ __('No employers found') }}</li>
                                     </ul>
                                 </div>
                             </div>
@@ -114,14 +112,14 @@
                         @endif
 
                         <div class="mb-4">
-                            <label class="form-label">Upload PDF File</label>
+                            <label class="form-label">{{ __('Upload PDF File') }}</label>
                             <input type="file" name="file" class="form-control" accept="application/pdf" required>
                             <div class="form-text">Max size: 10MB. Must be a valid PDF file.</div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('admin.pdf-templates.index') }}" class="btn btn-light">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Upload & Go to Builder</button>
+                            <a href="{{ route('admin.pdf-templates.index') }}" class="btn btn-light">{{ __('Cancel') }}</a>
+                            <button type="submit" class="btn btn-primary">{{ __('Upload & Go to Builder') }}</button>
                         </div>
                     </form>
                 </div>

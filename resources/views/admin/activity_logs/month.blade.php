@@ -6,7 +6,7 @@
         <div class="col-12">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('admin.activity-logs.index') }}">Activity Logs</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.activity-logs.index') }}">{{ __('Activity Logs') }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('admin.activity-logs.year', $year) }}">{{ $year }}</a></li>
                     <li class="breadcrumb-item active" aria-current="page">Month {{ $month }}</li>
                 </ol>
@@ -43,7 +43,7 @@
                 </div>
             @else
                 <div class="text-center py-5">
-                    <p class="text-muted">ไม่มีข้อมูลสำหรับเดือนนี้</p>
+                    <p class="text-muted">{{ __('ไม่มีข้อมูลสำหรับเดือนนี้') }}</p>
                 </div>
             @endif
         </div>

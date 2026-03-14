@@ -3,32 +3,26 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="downloadOptionsModalLabel">Download Employee Files</h5>
+                <h5 class="modal-title" id="downloadOptionsModalLabel">{{ __('Download Employee Files') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="downloadOptionsForm">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Download Mode</label>
+                        <label class="form-label fw-bold">{{ __('Download Mode') }}</label>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="download_type" id="dlTypeZip" value="zip" checked>
-                            <label class="form-check-label" for="dlTypeZip">
-                                Separate Files (ZIP)
-                                <small class="d-block text-muted">Creates folders for each employee with individual files.</small>
+                            <label class="form-check-label" for="dlTypeZip">{{ __('Separate Files (ZIP)') }}<small class="d-block text-muted">{{ __('Creates folders for each employee with individual files.') }}</small>
                             </label>
                         </div>
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="radio" name="download_type" id="dlTypePdf" value="pdf">
-                            <label class="form-check-label" for="dlTypePdf">
-                                Merged PDF
-                                <small class="d-block text-muted">Combines all selected files into a single PDF per employee (or one giant PDF).</small>
+                            <label class="form-check-label" for="dlTypePdf">{{ __('Merged PDF') }}<small class="d-block text-muted">{{ __('Combines all selected files into a single PDF per employee (or one giant PDF).') }}</small>
                             </label>
                         </div>
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="radio" name="download_type" id="dlTypeZipSingle" value="zip_single">
-                            <label class="form-check-label" for="dlTypeZipSingle">
-                                Single Folder (ZIP)
-                                <small class="d-block text-muted">Combines all files from all selected employees into one single folder.</small>
+                            <label class="form-check-label" for="dlTypeZipSingle">{{ __('Single Folder (ZIP)') }}<small class="d-block text-muted">{{ __('Combines all files from all selected employees into one single folder.') }}</small>
                             </label>
                         </div>
                     </div>
@@ -36,96 +30,96 @@
                     <hr>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Select Files to Include</label>
+                        <label class="form-label fw-bold">{{ __('Select Files to Include') }}</label>
                         <div class="row">
                             <!-- Column 1 -->
                             <div class="col-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="photo" id="chkPhoto" checked>
-                                    <label class="form-check-label" for="chkPhoto">รูปถ่าย (Photo)</label>
+                                    <label class="form-check-label" for="chkPhoto">{{ __('รูปถ่าย (Photo)') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="insurance" id="chkInsurance" checked>
-                                    <label class="form-check-label" for="chkInsurance">ไฟล์แนบประกัน (Insurance)</label>
+                                    <label class="form-check-label" for="chkInsurance">{{ __('ไฟล์แนบประกัน (Insurance)') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="passport" id="chkPassport" checked>
-                                    <label class="form-check-label" for="chkPassport">1. พาสปอร์ต (Passport)</label>
+                                    <label class="form-check-label" for="chkPassport">{{ __('1. พาสปอร์ต (Passport)') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="visa" id="chkVisa" checked>
-                                    <label class="form-check-label" for="chkVisa">2. วีซ่า (Visa)</label>
+                                    <label class="form-check-label" for="chkVisa">{{ __('2. วีซ่า (Visa)') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="work_permit" id="chkWorkPermit" checked>
-                                    <label class="form-check-label" for="chkWorkPermit">3. ใบอนุญาต Work Permit</label>
+                                    <label class="form-check-label" for="chkWorkPermit">{{ __('3. ใบอนุญาต Work Permit') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="pink_card" id="chkPinkCard" checked>
-                                    <label class="form-check-label" for="chkPinkCard">4. บัตรชมพู (Pink Card)</label>
+                                    <label class="form-check-label" for="chkPinkCard">{{ __('4. บัตรชมพู (Pink Card)') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="tor_ror_38" id="chkTorRor38">
-                                    <label class="form-check-label" for="chkTorRor38">5. ทร. 38</label>
+                                    <label class="form-check-label" for="chkTorRor38">{{ __('5. ทร. 38') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="medical_certificate" id="chkMedicalCertificate" checked>
-                                    <label class="form-check-label" for="chkMedicalCertificate">ใบรับรองแพทย์ (Medical Certificate)</label>
+                                    <label class="form-check-label" for="chkMedicalCertificate">{{ __('ใบรับรองแพทย์ (Medical Certificate)') }}</label>
                                 </div>
                             </div>
                             <!-- Column 2 -->
                             <div class="col-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="report_90_day" id="chkReport90Day">
-                                    <label class="form-check-label" for="chkReport90Day">6. รายงานตัว 90 วัน</label>
+                                    <label class="form-check-label" for="chkReport90Day">{{ __('6. รายงานตัว 90 วัน') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="residence_notification" id="chkResidenceNotification">
-                                    <label class="form-check-label" for="chkResidenceNotification">7. ใบแจ้งที่พักอาศัย</label>
+                                    <label class="form-check-label" for="chkResidenceNotification">{{ __('7. ใบแจ้งที่พักอาศัย') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="hometown_doc" id="chkHometownDoc">
-                                    <label class="form-check-label" for="chkHometownDoc">8. เอกสารบ้านเกิด</label>
+                                    <label class="form-check-label" for="chkHometownDoc">{{ __('8. เอกสารบ้านเกิด') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_1" id="chkOther1">
-                                    <label class="form-check-label" for="chkOther1">9. เอกสารอื่นๆ 1</label>
+                                    <label class="form-check-label" for="chkOther1">{{ __('9. เอกสารอื่นๆ 1') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_2" id="chkOther2">
-                                    <label class="form-check-label" for="chkOther2">10. เอกสารอื่นๆ 2</label>
+                                    <label class="form-check-label" for="chkOther2">{{ __('10. เอกสารอื่นๆ 2') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_3" id="chkOther3">
-                                    <label class="form-check-label" for="chkOther3">11. เอกสารอื่นๆ 3</label>
+                                    <label class="form-check-label" for="chkOther3">{{ __('11. เอกสารอื่นๆ 3') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_4" id="chkOther4">
-                                    <label class="form-check-label" for="chkOther4">12. เอกสารอื่นๆ 4</label>
+                                    <label class="form-check-label" for="chkOther4">{{ __('12. เอกสารอื่นๆ 4') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_5" id="chkOther5">
-                                    <label class="form-check-label" for="chkOther5">13. เอกสารอื่นๆ 5</label>
+                                    <label class="form-check-label" for="chkOther5">{{ __('13. เอกสารอื่นๆ 5') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_6" id="chkOther6">
-                                    <label class="form-check-label" for="chkOther6">14. เอกสารอื่นๆ 6</label>
+                                    <label class="form-check-label" for="chkOther6">{{ __('14. เอกสารอื่นๆ 6') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_7" id="chkOther7">
-                                    <label class="form-check-label" for="chkOther7">15. เอกสารอื่นๆ 7</label>
+                                    <label class="form-check-label" for="chkOther7">{{ __('15. เอกสารอื่นๆ 7') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_8" id="chkOther8">
-                                    <label class="form-check-label" for="chkOther8">16. เอกสารอื่นๆ 8</label>
+                                    <label class="form-check-label" for="chkOther8">{{ __('16. เอกสารอื่นๆ 8') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_9" id="chkOther9">
-                                    <label class="form-check-label" for="chkOther9">17. เอกสารอื่นๆ 9</label>
+                                    <label class="form-check-label" for="chkOther9">{{ __('17. เอกสารอื่นๆ 9') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_10" id="chkOther10">
-                                    <label class="form-check-label" for="chkOther10">18. เอกสารอื่นๆ 10</label>
+                                    <label class="form-check-label" for="chkOther10">{{ __('18. เอกสารอื่นๆ 10') }}</label>
                                 </div>
                             </div>
                         </div>
@@ -134,8 +128,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnConfirmDownload">Start Download</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmDownload">{{ __('Start Download') }}</button>
             </div>
         </div>
     </div>
@@ -146,7 +140,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="downloadCenterModalLabel">Download Center</h5>
+                <h5 class="modal-title" id="downloadCenterModalLabel">{{ __('Download Center') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -155,22 +149,22 @@
                     <table class="table table-sm table-hover">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Type</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th>{{ __('ID') }}</th>
+                                <th>{{ __('Type') }}</th>
+                                <th>{{ __('Date') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Action') }}</th>
                             </tr>
                         </thead>
                         <tbody id="downloadTasksTableBody">
-                            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                            <tr><td colspan="5" class="text-center">{{ __('Loading...') }}</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-outline-primary" id="btnRefreshDownloads">Refresh</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-outline-primary" id="btnRefreshDownloads">{{ __('Refresh') }}</button>
             </div>
         </div>
     </div>
@@ -277,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const tbody = document.getElementById('downloadTasksTableBody');
             // Only show loading if empty, to avoid flickering on refresh
             if (!tbody.innerHTML.trim() || tbody.innerText.includes('Loading') || tbody.innerText.includes('No tasks')) {
-                 tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+                 tbody.innerHTML = '<tr><td colspan="5" class="text-center">{{ __('Loading...') }}</td></tr>';
             }
 
             fetch('{{ route("admin.downloads.index") }}')
@@ -285,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(tasks => {
                 tbody.innerHTML = '';
                 if (tasks.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No tasks found.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">{{ __('No tasks found.') }}</td></tr>';
                     return;
                 }
                 tasks.forEach(task => {
@@ -297,14 +291,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     let actionBtn = '';
                     if (task.status === 'completed') {
                         const url = '{{ route("admin.downloads.download", ":id") }}'.replace(':id', task.id);
-                        actionBtn = `<a href="${url}" class="btn btn-sm btn-success" download><i class="bi bi-download"></i> Download</a>`;
+                        actionBtn = `<a href="${url}" class="btn btn-sm btn-success" download><i class="bi bi-download"></i>{{ __('Download') }}</a>`;
                     } else if (task.status === 'failed') {
                         actionBtn = `
-                            <span class="text-danger fw-bold">Failed</span>
+                            <span class="text-danger fw-bold">{{ __('Failed') }}</span>
                             <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" title="${task.error_message}"></i>
                         `;
                     } else {
-                        actionBtn = `<span class="text-muted spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span class="text-muted">Processing...</span>`;
+                        actionBtn = `<span class="text-muted spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span class="text-muted">{{ __('Processing...') }}</span>`;
                     }
 
                     const date = new Date(task.created_at).toLocaleString('th-TH');
@@ -333,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error(err);
                 // Only show error if list is empty, otherwise keep old list
                 if(tbody.children.length === 1 && tbody.innerText.includes('Loading')) {
-                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading tasks.</td></tr>';
+                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">{{ __('Error loading tasks.') }}</td></tr>';
                 }
             });
         }

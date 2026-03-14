@@ -35,8 +35,7 @@
         @method('PUT')
         <input type="hidden" id="return_url" name="return_url" value="{{ request('return_url', route('employers.index')) }}">
 
-        @if ($errors->any())
-            <div class="alert alert-danger">
+        @if ($errors->{{ __('any())') }}<div class="alert alert-danger">
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -160,7 +159,7 @@
  </div>
 
  <!-- System Access Group -->
- <h5 class="mb-3 text-primary mt-4">System Access & Outsource</h5>
+ <h5 class="mb-3 text-primary mt-4">{{ __('System Access & Outsource') }}</h5>
         <div class="row mb-3">
  <div class="col-md-6">
  <label for="employerEmail" class="form-label">{{ __('Employer Email') }}</label>
@@ -198,7 +197,7 @@
         <!-- Signer 1 -->
         <div class="card bg-light mb-3" x-data="signatureField('signature_1', '{{ $employer->signature_1_path ? Storage::url($employer->signature_1_path) : '' }}')">
             <div class="card-body">
-                <h6 class="card-title text-muted fw-bold">Signer 1</h6>
+                <h6 class="card-title text-muted fw-bold">{{ __('Signer 1') }}</h6>
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="signerNameTh" class="form-label">{{ __('Name (Thai)') }}</label>
@@ -246,7 +245,7 @@
         <!-- Signer 2 -->
         <div class="card bg-light mb-3" x-data="signatureField('signature_2', '{{ $employer->signature_2_path ? Storage::url($employer->signature_2_path) : '' }}')">
             <div class="card-body">
-                <h6 class="card-title text-muted fw-bold">Signer 2 (Optional)</h6>
+                <h6 class="card-title text-muted fw-bold">{{ __('Signer 2 (Optional)') }}</h6>
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label for="signer_2_name_th" class="form-label">{{ __('Name (Thai)') }}</label>
@@ -353,7 +352,7 @@
                 <x-file-input-group
                     id="employer_doc_company"
                     name="employer_doc_company"
-                    label="1. {{ __('Company Certificate / ID Card') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="1. {{ __('Company Certificate / ID Card') }} <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_company"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company'])"
                 />
@@ -371,7 +370,7 @@
                 <x-file-input-group
                     id="employer_doc_lease"
                     name="employer_doc_lease"
-                    label="2. {{ __('Lease Agreement / House Registration') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="2. {{ __('Lease Agreement / House Registration') }} <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_lease"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease'])"
                 />
@@ -380,7 +379,7 @@
                 <x-file-input-group
                     id="employer_doc_construction"
                     name="employer_doc_construction"
-                    label="3. {{ __('Construction Contract / Map') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="3. {{ __('Construction Contract / Map') }} <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_construction"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction'])"
                 />
@@ -391,7 +390,7 @@
                 <x-file-input-group
                     id="employer_doc_other_1"
                     name="employer_doc_other_1"
-                    label="4. {{ __('Other Document') }} 1 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="4. {{ __('Other Document') }} 1 <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_other_1"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1'])"
                     description="employer_doc_other_1_desc"
@@ -402,7 +401,7 @@
                 <x-file-input-group
                     id="employer_doc_other_2"
                     name="employer_doc_other_2"
-                    label="5. {{ __('Other Document') }} 2 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="5. {{ __('Other Document') }} 2 <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_other_2"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2'])"
                     description="employer_doc_other_2_desc"
@@ -413,7 +412,7 @@
                 <x-file-input-group
                     id="employer_doc_other_3"
                     name="employer_doc_other_3"
-                    label="6. {{ __('Other Document') }} 3 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="6. {{ __('Other Document') }} 3 <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_other_3"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3'])"
                     description="employer_doc_other_3_desc"
@@ -563,17 +562,17 @@
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}" style="width: 200px;">
                 <select name="nationality" class="form-select form-select-sm" style="width: auto;">
                      <option value="">-- {{ __('All Nationalities') }} --</option>
-                    <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>เมียนมา</option>
-                    <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>ลาว</option>
-                    <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>กัมพูชา</option>
-                    <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>เวียดนาม</option>
+                    <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>{{ __('เมียนมา') }}</option>
+                    <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>{{ __('ลาว') }}</option>
+                    <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>{{ __('กัมพูชา') }}</option>
+                    <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>{{ __('เวียดนาม') }}</option>
                 </select>
                 <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('All MOU Types') }} --</option>
-                    <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
-                    <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
-                    <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
-                    <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
+                    <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>{{ __('MOU') }}</option>
+                    <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>{{ __('มติต่ออายุในประเทศ') }}</option>
+                    <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>{{ __('มติขึ้นทะเบียน') }}</option>
+                    <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>{{ __('อื่นๆ') }}</option>
                 </select>
                 <select name="insurance_type" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('Insurance Type') }} --</option>
@@ -594,13 +593,13 @@
                 </select>
                 <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
-                    <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
-                    <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
+                    <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>{{ __('เล่ม CI') }}</option>
+                    <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>{{ __('เล่ม PJ') }}</option>
                 </select>
                 <select name="passport_type_cambodia" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('Passport Type (Cambodia)') }} --</option>
-                    <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>เล่ม TD</option>
-                    <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+                    <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>{{ __('เล่ม TD') }}</option>
+                    <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('เล่มอินเตอร์') }}</option>
                 </select>
                 <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
                 <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
@@ -608,8 +607,7 @@
             </form>
             <div class="d-flex align-items-center gap-2">
                 <a href="{{ route('employers.exportEmployees', ['employer' => $employer->id] + request()->query()) }}" class="btn btn-sm btn-outline-success">
-                     <i class="bi bi-file-earmark-excel me-1"></i> Export
-                </a>
+                     <i class="bi bi-file-earmark-excel me-1"></i>{{ __('Export') }}</a>
                 <div class="btn-group btn-group-sm">
                     <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
                     <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
@@ -662,10 +660,10 @@
                             <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="table-select-all-checkbox"></th>
                             <th style="width: 1%;"></th>
                             <th style="width: 5%;">#</th>
-                            <th style="width: 10%;">Photo</th>
-                            <th style="width: 25%;">Name (EN)</th>
-                            <th style="width: 25%;">Name (TH)</th>
-                            <th style="width: 15%;">Passport</th>
+                            <th style="width: 10%;">{{ __('Photo') }}</th>
+                            <th style="width: 25%;">{{ __('Name (EN)') }}</th>
+                            <th style="width: 25%;">{{ __('Name (TH)') }}</th>
+                            <th style="width: 15%;">{{ __('Passport') }}</th>
                             <th style="width: 10%;">{{ __('Status') }}</th>
                             <th style="width: 10%;">{{ __('Actions') }}</th>
                         </tr>
@@ -696,8 +694,7 @@
                                 </td>
                                 <td>{{ $employees->firstItem() + $loop->index }}</td>
                                 <td class="align-middle text-center" style="width: 60px;">
-                                    @if($employee->employeePhoto)
-                                        <img src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Photo" class="img-fluid rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                    @if($employee->{{ __('employeePhoto)') }}<img src="{{ asset('storage/' . $employee->employeePhoto) }}" alt="Photo" class="img-fluid rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                                     @else
                                         <div class="bg-secondary rounded-circle d-flex justify-content-center align-items-center text-white" style="width: 40px; height: 40px;">
                                             <i class="bi bi-person-fill"></i>
@@ -1103,7 +1100,7 @@
                             title: '{{ __("Success") }}',
                             text: data.message || '{{ __("Employer updated successfully.") }}',
                             showConfirmButton: true,
-                            confirmButtonText: 'OK'
+                            confirmButtonText: '{{ __('OK') }}'
                         }).then((result) => {
                              if (result.isConfirmed || result.isDismissed) {
                                  const returnUrl = document.getElementById('return_url').value;
@@ -1143,7 +1140,7 @@
                     } else {
                         Swal.fire({
                             icon: 'error',
-                            title: 'Error',
+                            title: '{{ __('Error') }}',
                             text: error.data?.message || '{{ __("An error occurred while saving.") }}'
                         });
                     }
@@ -1482,7 +1479,7 @@
                 // For now, a toast + reload is safest to ensure visual consistency.
                 Swal.fire({
                     icon: 'success',
-                    title: 'Updated',
+                    title: '{{ __('Updated') }}',
                     text: data.message,
                     timer: 1500,
                     showConfirmButton: false

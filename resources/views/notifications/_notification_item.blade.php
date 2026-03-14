@@ -173,7 +173,7 @@
                 </p>
                 <p class="mb-0 small">
                     @if($isMissingDataType)
-                        <strong>สถานะ:</strong> <span class="text-danger">ข้อมูลยังไม่ครบถ้วน</span>
+                        <strong>สถานะ:</strong> <span class="text-danger">{{ __('ข้อมูลยังไม่ครบถ้วน') }}</span>
                     @else
                         <strong>วันครบกำหนด:</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}
                     @endif
@@ -196,7 +196,7 @@
                             <form id="restore-form-{{ $notification->id }}" action="{{ route('notifications.restore', $notification->id) }}" method="POST" style="display: none;">
                                 @csrf
                             </form>
-                            <button type="submit" form="restore-form-{{ $notification->id }}" class="btn btn-sm btn-outline-info" title="กู้คืน">
+                            <button type="submit" form="restore-form-{{ $notification->id }}" class="btn btn-sm btn-outline-info" title="{{ __('กู้คืน') }}">
                                 <i class="bi bi-arrow-counterclockwise"></i>
                             </button>
 
@@ -208,7 +208,7 @@
                                 <i class="bi bi-trash3-fill"></i>
                             </button>
                         @else
-                            <a href="#" class="btn btn-sm btn-outline-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
+                            <a href="#" class="btn btn-sm btn-outline-info" title="{{ __('สร้างงาน') }}"><i class="bi bi-rocket-takeoff-fill"></i></a>
 
                             {{-- Update/Renew Button --}}
                             <a href="#" class="btn btn-sm btn-outline-success"
@@ -224,7 +224,7 @@
                             @if($employee)
                                 <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-sm btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                             @endif
-                            <a href="#" class="btn btn-sm btn-outline-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+                            <a href="#" class="btn btn-sm btn-outline-warning" title="{{ __('ยกเลิก') }}" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
 
                             {{-- Drag Handle --}}
                             <a href="#" class="btn btn-sm btn-light border cursor-grab"

@@ -115,7 +115,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label>{{ __('Bank Name') }} *</label>
-                        <input type="text" name="bank_name" class="form-control" required placeholder="e.g., KBank, SCB, Cash in Register">
+                        <input type="text" name="bank_name" class="form-control" required placeholder="{{ __('e.g., KBank, SCB, Cash in Register') }}">
                     </div>
                     <div class="mb-3">
                         <label>{{ __('Account Name') }}</label>

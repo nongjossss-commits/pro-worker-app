@@ -14,9 +14,9 @@
     <!-- Loading Overlay for OpenCV -->
     <div x-show="isLoading" class="absolute inset-0 z-[10000] flex flex-col items-center justify-center bg-black bg-opacity-80 text-white">
         <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">Loading...</span>
+            <span class="visually-hidden">{{ __('Loading...') }}</span>
         </div>
-        <div x-text="loadingMessage">Loading Scanner Resources...</div>
+        <div x-text="loadingMessage">{{ __('Loading Scanner Resources...') }}</div>
     </div>
 
     <div class="bg-white w-full h-full md:w-[90%] md:h-[90%] md:rounded-lg shadow-xl flex flex-col relative overflow-hidden">
@@ -25,7 +25,7 @@
         <div class="bg-dark text-white p-3 flex justify-between items-center shrink-0">
             <h5 class="m-0 flex items-center gap-2">
                 <i class="bi bi-camera-fill"></i>
-                <span x-text="getHeaderTitle()">Document Scanner</span>
+                <span x-text="getHeaderTitle()">{{ __('Document Scanner') }}</span>
             </h5>
             <button @click="closeScanner()" class="btn btn-sm btn-outline-light border-0">
                 <i class="bi bi-x-lg text-lg"></i>
@@ -62,14 +62,11 @@
                     <div class="bg-black/50 rounded-full p-1 flex shadow-lg border border-white/20">
                          <button @click="setMode('document')"
                                  :class="scanMode === 'document' ? 'bg-primary text-white shadow-sm' : 'text-gray-300 hover:text-white'"
-                                 class="px-4 py-1.5 rounded-full text-sm font-medium transition-all">
-                            เอกสารทั่วไป
-                         </button>
+                                 class="px-4 py-1.5 rounded-full text-sm font-medium transition-all">{{ __('เอกสารทั่วไป') }}</button>
                          <button @click="setMode('id_card')"
                                  :class="scanMode === 'id_card' ? 'bg-primary text-white shadow-sm' : 'text-gray-300 hover:text-white'"
                                  class="px-4 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1">
-                            <i class="bi bi-person-badge-fill"></i> บัตรประชาชน
-                         </button>
+                            <i class="bi bi-person-badge-fill"></i>{{ __('บัตรประชาชน') }}</button>
                     </div>
                 </div>
 
@@ -79,8 +76,8 @@
                      x-transition:enter="opacity-0 scale-95"
                      x-transition:enter-end="opacity-100 scale-100">
                     <span class="bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-bold border border-white/20 shadow-lg">
-                        <span x-show="capturedImages.length === 0"><i class="bi bi-person-bounding-box me-1"></i> ถ่ายด้านหน้า (Front)</span>
-                        <span x-show="capturedImages.length === 1"><i class="bi bi-card-text me-1"></i> ถ่ายด้านหลัง (Back)</span>
+                        <span x-show="capturedImages.length === 0"><i class="bi bi-person-bounding-box me-1"></i>{{ __('ถ่ายด้านหน้า (Front)') }}</span>
+                        <span x-show="capturedImages.length === 1"><i class="bi bi-card-text me-1"></i>{{ __('ถ่ายด้านหลัง (Back)') }}</span>
                     </span>
                 </div>
 
@@ -104,7 +101,7 @@
                                 style="width: 50px; height: 50px;"
                                 title="นำเข้าไฟล์ (Images/PDF)">
                             <i class="bi bi-file-earmark-plus text-xl mb-0"></i>
-                            <span class="text-[10px] leading-none opacity-80 group-hover:opacity-100">นำเข้า</span>
+                            <span class="text-[10px] leading-none opacity-80 group-hover:opacity-100">{{ __('นำเข้า') }}</span>
                         </button>
 
                         <div class="text-white text-sm cursor-pointer hover:underline" @click="if(capturedImages.length > 0) view = 'review'">
@@ -130,8 +127,7 @@
                     <div class="min-w-[80px] flex justify-end">
                         <button @click="finishCapture()"
                                 class="btn btn-success text-white fw-bold px-4 rounded-pill shadow-lg border border-white/20"
-                                x-show="canFinish()">
-                            เสร็จสิ้น <i class="bi bi-check-lg"></i>
+                                x-show="canFinish()">{{ __('เสร็จสิ้น') }}<i class="bi bi-check-lg"></i>
                         </button>
                     </div>
                 </div>
@@ -155,25 +151,25 @@
                         <!-- 1 Image Options -->
                         <template x-if="selectedIndices.length === 1">
                             <div class="flex gap-1">
-                                <button @click="generateLayout('full')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-arrows-fullscreen"></i> เต็ม A4</button>
+                                <button @click="generateLayout('full')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-arrows-fullscreen"></i>{{ __('เต็ม A4') }}</button>
                                 <button @click="generateLayout('70')" class="btn btn-sm btn-outline-primary whitespace-nowrap">70%</button>
-                                <button @click="generateLayout('passport')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-person-bounding-box"></i> Passport</button>
-                                <button @click="generateLayout('card')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-credit-card"></i> ขนาดบัตร</button>
+                                <button @click="generateLayout('passport')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-person-bounding-box"></i>{{ __('Passport') }}</button>
+                                <button @click="generateLayout('card')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-credit-card"></i>{{ __('ขนาดบัตร') }}</button>
                             </div>
                         </template>
 
                         <!-- 2 Image Options -->
                         <template x-if="selectedIndices.length === 2">
                             <div class="flex gap-1">
-                                <button @click="generateLayout('half_v')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-split"></i> บน-ล่าง</button>
-                                <button @click="generateLayout('half_h')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-sidebar"></i> ซ้าย-ขวา</button>
-                                <button @click="generateLayout('id_card_pair')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-person-badge"></i> หน้า-หลังบัตร</button>
+                                <button @click="generateLayout('half_v')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-split"></i>{{ __('บน-ล่าง') }}</button>
+                                <button @click="generateLayout('half_h')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-layout-sidebar"></i>{{ __('ซ้าย-ขวา') }}</button>
+                                <button @click="generateLayout('id_card_pair')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-person-badge"></i>{{ __('หน้า-หลังบัตร') }}</button>
                             </div>
                         </template>
 
                         <!-- 3+ Options -->
                         <template x-if="selectedIndices.length >= 3">
-                            <button @click="generateLayout('grid')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-grid-3x3"></i> Grid Layout</button>
+                            <button @click="generateLayout('grid')" class="btn btn-sm btn-outline-primary whitespace-nowrap"><i class="bi bi-grid-3x3"></i>{{ __('Grid Layout') }}</button>
                         </template>
 
                         <div class="w-px h-6 bg-gray-300 mx-1"></div>
@@ -186,25 +182,20 @@
                     <div class="flex justify-between items-center mb-3 px-1">
                         <div x-show="scanMode === 'id_card'">
                              <span class="badge bg-primary fs-6">
-                                <i class="bi bi-info-circle me-1"></i> เลือกรูปภาพเพื่อจัดวางรูปแบบ
-                             </span>
+                                <i class="bi bi-info-circle me-1"></i>{{ __('เลือกรูปภาพเพื่อจัดวางรูปแบบ') }}</span>
                         </div>
                         <div x-show="scanMode !== 'id_card'" class="flex gap-2 w-full justify-end">
                             <button x-show="!isSorting" @click="startSorting()" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                <i class="bi bi-sort-numeric-down"></i> จัดลำดับหน้า
-                            </button>
+                                <i class="bi bi-sort-numeric-down"></i>{{ __('จัดลำดับหน้า') }}</button>
 
                             <div x-show="isSorting" class="flex gap-2 items-center bg-white p-1 rounded-pill shadow-sm border">
-                                <span class="text-xs font-bold text-primary px-2">โหมดจัดลำดับ</span>
+                                <span class="text-xs font-bold text-primary px-2">{{ __('โหมดจัดลำดับ') }}</span>
                                 <button @click="resetSorting()" class="btn btn-xs btn-light rounded-circle" title="รีเซ็ต">
                                     <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
                                 <button @click="applySorting()" class="btn btn-xs btn-success text-white rounded-pill px-3">
-                                    <i class="bi bi-check-lg"></i> ยืนยัน
-                                </button>
-                                <button @click="cancelSorting()" class="btn btn-xs btn-secondary rounded-pill px-2">
-                                    ยกเลิก
-                                </button>
+                                    <i class="bi bi-check-lg"></i>{{ __('ยืนยัน') }}</button>
+                                <button @click="cancelSorting()" class="btn btn-xs btn-secondary rounded-pill px-2">{{ __('ยกเลิก') }}</button>
                             </div>
                         </div>
                     </div>
@@ -245,8 +236,7 @@
                                 </div>
                                 <div class="absolute bottom-1 right-1 z-10" x-show="!isSorting">
                                      <button @click.stop="startEdit(index)" class="btn btn-sm btn-primary shadow-sm py-1 px-2 text-xs rounded-pill">
-                                        <i class="bi bi-crop"></i> ปรับแต่ง
-                                    </button>
+                                        <i class="bi bi-crop"></i>{{ __('ปรับแต่ง') }}</button>
                                 </div>
 
                                 <!-- Sequence Number Display (Normal Mode) -->
@@ -259,23 +249,21 @@
                         <!-- Add More Button (Universal - Hidden in sort mode) -->
                         <div x-show="!isSorting" @click="view = 'camera'; startCamera()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-plus-lg text-3xl mb-1"></i>
-                            <span class="text-sm">ถ่ายเพิ่ม</span>
+                            <span class="text-sm">{{ __('ถ่ายเพิ่ม') }}</span>
                         </div>
 
                         <!-- Import Button (Universal - Hidden in sort mode) -->
                         <div x-show="!isSorting" @click="$refs.fileInput.click()" class="static-item flex flex-col items-center justify-center h-40 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition-colors">
                             <i class="bi bi-file-earmark-plus text-3xl mb-1"></i>
-                            <span class="text-sm">นำเข้าไฟล์</span>
+                            <span class="text-sm">{{ __('นำเข้าไฟล์') }}</span>
                         </div>
                     </div>
                 </div>
                 <div class="p-3 bg-white border-t flex justify-between items-center z-30 relative">
                      <button @click="view = 'camera'; startCamera()" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> กลับไปถ่ายภาพ
-                    </button>
+                        <i class="bi bi-arrow-left"></i>{{ __('กลับไปถ่ายภาพ') }}</button>
                     <button @click="finalizeProcess()" class="btn btn-primary px-4" :disabled="!canFinish()">
-                        <i class="bi bi-save"></i> บันทึกข้อมูล
-                        <span>(<span x-text="capturedImages.length"></span>)</span>
+                        <i class="bi bi-save"></i>{{ __('บันทึกข้อมูล') }}<span>(<span x-text="capturedImages.length"></span>)</span>
                     </button>
                 </div>
             </div>
@@ -286,8 +274,8 @@
                 <!-- Sidebar: Order Controls -->
                 <div class="w-full md:w-80 bg-white border-r flex flex-col shadow-lg z-10">
                     <div class="p-3 border-b bg-gray-50">
-                        <h6 class="m-0 font-bold text-gray-700"><i class="bi bi-sort-numeric-down"></i> จัดลำดับรูปภาพ</h6>
-                        <small class="text-gray-500">ลากหรือกดลูกศรเพื่อย้ายตำแหน่ง</small>
+                        <h6 class="m-0 font-bold text-gray-700"><i class="bi bi-sort-numeric-down"></i>{{ __('จัดลำดับรูปภาพ') }}</h6>
+                        <small class="text-gray-500">{{ __('ลากหรือกดลูกศรเพื่อย้ายตำแหน่ง') }}</small>
                     </div>
 
                     <div class="flex-grow overflow-y-auto p-2 space-y-2">
@@ -312,11 +300,9 @@
 
                     <div class="p-3 border-t bg-gray-50 flex justify-between">
                          <button @click="cancelLayout()" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> กลับ
-                        </button>
+                            <i class="bi bi-arrow-left"></i>{{ __('กลับ') }}</button>
                         <button @click="confirmLayout()" class="btn btn-success text-white">
-                            <i class="bi bi-check-circle"></i> ยืนยัน
-                        </button>
+                            <i class="bi bi-check-circle"></i>{{ __('ยืนยัน') }}</button>
                     </div>
                 </div>
 
@@ -325,9 +311,7 @@
                     <div class="absolute inset-0 flex items-center justify-center p-4 overflow-auto">
                         <div class="bg-white shadow-2xl relative transition-all duration-300">
                              <img :src="layoutPreviewImage" class="max-w-full max-h-[80vh] border border-gray-300 block" style="min-width: 200px;">
-                             <div class="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 shadow-sm">
-                                Preview (A4)
-                             </div>
+                             <div class="absolute top-0 right-0 bg-primary text-white text-xs px-2 py-1 shadow-sm">{{ __('Preview (A4)') }}</div>
                         </div>
                     </div>
                 </div>
@@ -366,29 +350,22 @@
                 <!-- Filter Toolbar -->
                 <div class="bg-black/90 p-2 flex justify-center gap-2 overflow-x-auto shrink-0 border-b border-gray-700">
                     <button @click="activeFilter = 'original'" :class="activeFilter === 'original' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
-                        <i class="bi bi-image"></i> ต้นฉบับ
-                    </button>
+                        <i class="bi bi-image"></i>{{ __('ต้นฉบับ') }}</button>
                     <button @click="activeFilter = 'magic'" :class="activeFilter === 'magic' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
-                        <i class="bi bi-magic"></i> สแกนสี (Magic)
-                    </button>
+                        <i class="bi bi-magic"></i>{{ __('สแกนสี (Magic)') }}</button>
                     <button @click="activeFilter = 'scan_doc'" :class="activeFilter === 'scan_doc' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
-                        <i class="bi bi-file-earmark-check"></i> สแกนเอกสาร
-                    </button>
+                        <i class="bi bi-file-earmark-check"></i>{{ __('สแกนเอกสาร') }}</button>
                     <button @click="activeFilter = 'high_contrast'" :class="activeFilter === 'high_contrast' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
-                        <i class="bi bi-brightness-high"></i> เพิ่มความคมชัด
-                    </button>
+                        <i class="bi bi-brightness-high"></i>{{ __('เพิ่มความคมชัด') }}</button>
                     <button @click="activeFilter = 'bw'" :class="activeFilter === 'bw' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
-                        <i class="bi bi-file-earmark-text"></i> ขาวดำ (B/W)
-                    </button>
+                        <i class="bi bi-file-earmark-text"></i>{{ __('ขาวดำ (B/W)') }}</button>
                     <button @click="activeFilter = 'gray'" :class="activeFilter === 'gray' ? 'bg-primary text-white' : 'bg-dark text-gray-400 border-secondary'" class="btn btn-sm border flex items-center gap-1 whitespace-nowrap">
-                        <i class="bi bi-circle-half"></i> เทา
-                    </button>
+                        <i class="bi bi-circle-half"></i>{{ __('เทา') }}</button>
                 </div>
 
                 <div class="p-3 bg-black/80 flex justify-between items-center shrink-0 gap-2">
                     <button @click="cancelCrop()" class="btn btn-secondary">
-                        <i class="bi bi-x-lg"></i> ยกเลิก
-                    </button>
+                        <i class="bi bi-x-lg"></i>{{ __('ยกเลิก') }}</button>
 
                     <!-- Rotation Controls -->
                      <div class="flex items-center gap-2">
@@ -402,10 +379,10 @@
 
                     <div class="flex items-center gap-2">
                          <button @click="resetToFull()" class="btn btn-outline-light">
-                            <i class="bi bi-arrows-fullscreen"></i> <span class="hidden sm:inline">เต็มรูป</span>
+                            <i class="bi bi-arrows-fullscreen"></i> <span class="hidden sm:inline">{{ __('เต็มรูป') }}</span>
                         </button>
                         <button @click="saveCropEdit()" class="btn btn-primary">
-                            <i class="bi bi-check-lg"></i> <span class="hidden sm:inline">บันทึก</span>
+                            <i class="bi bi-check-lg"></i> <span class="hidden sm:inline">{{ __('บันทึก') }}</span>
                         </button>
                     </div>
                 </div>

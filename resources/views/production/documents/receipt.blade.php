@@ -8,9 +8,9 @@
     <thead>
         <tr>
             <th style="width: 5%;">#</th>
-            <th style="width: 50%;">Description</th>
-            <th class="text-center" style="width: 15%;">Paid Date</th>
-            <th class="text-right" style="width: 15%;">Amount Paid</th>
+            <th style="width: 50%;">{{ __('Description') }}</th>
+            <th class="text-center" style="width: 15%;">{{ __('Paid Date') }}</th>
+            <th class="text-right" style="width: 15%;">{{ __('Amount Paid') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -34,14 +34,14 @@
                 <td>{{ $index + 1 }}</td>
                 <td>
                     <strong>{{ ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
-                    @if($t->notes) <br><span class="text-sm text-muted">{{ $t->notes }}</span> @endif
+                    @if($t->{{ __('notes)') }}<br><span class="text-sm text-muted">{{ $t->notes }}</span> @endif
                 </td>
                 <td class="text-center">{{ $t->updated_at ? date('d/m/Y', strtotime($t->updated_at)) : '-' }}</td>
                 <td class="amount">{{ number_format($t->paid_amount, 2) }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="4" class="text-center py-4 text-muted">No completed payments selected.</td>
+                <td colspan="4" class="text-center py-4 text-muted">{{ __('No completed payments selected.') }}</td>
             </tr>
         @endforelse
     </tbody>
@@ -109,7 +109,7 @@
         <!-- Breakdown -->
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right text-muted">Base Amount</td>
+            <td class="text-right text-muted">{{ __('Base Amount') }}</td>
             <td class="amount">{{ number_format($realBase, 2) }}</td>
         </tr>
         <tr>
@@ -119,7 +119,7 @@
         </tr>
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right font-bold text-primary">Total Invoice Value</td>
+            <td class="text-right font-bold text-primary">{{ __('Total Invoice Value') }}</td>
             <td class="amount font-bold text-primary">{{ number_format($fullInvoiceValue, 2) }}</td>
         </tr>
 
@@ -131,7 +131,7 @@
         </tr>
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right font-bold text-success" style="font-size: 1.1em;">Net Received</td>
+            <td class="text-right font-bold text-success" style="font-size: 1.1em;">{{ __('Net Received') }}</td>
             <td class="amount font-bold text-success" style="font-size: 1.1em;">{{ number_format($grandTotal, 2) }}</td>
         </tr>
         @endif

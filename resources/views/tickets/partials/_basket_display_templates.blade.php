@@ -17,7 +17,7 @@
             </span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">ลบ</button>
+            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('existing_employees', index, item.employeeNameTh)">{{ __('ลบ') }}</button>
             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                draggable="true"
                @dragstart="startDragGlobal($event, 'employee', {
@@ -37,9 +37,7 @@
         <div class="d-flex align-items-center gap-3">
              <div class="position-relative">
                 <img :src="item.photo_url" alt="Photo" class="rounded-circle" style="width: 35px; height: 35px; object-fit: cover;">
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">
-                    Ext
-                </span>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="font-size: 0.6em;">{{ __('Ext') }}</span>
             </div>
             <span>
                 <div class="d-flex align-items-center">
@@ -54,7 +52,7 @@
             </span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('external_employees', index, item.employeeNameTh)">ลบ</button>
+            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('external_employees', index, item.employeeNameTh)">{{ __('ลบ') }}</button>
             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                draggable="true"
                @dragstart="startDragGlobal($event, 'employee', {
@@ -79,7 +77,7 @@
             </span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">ลบ</button>
+            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('new_employees', index, item.employeeNameTh)">{{ __('ลบ') }}</button>
             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                draggable="true"
                @dragstart="startDragGlobal($event, 'new_employee_draft', {
@@ -103,7 +101,7 @@
             </span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">ลบ</button>
+            <button type="button" class="btn btn-sm btn-danger" @click="removeConfirm('files', index, item.name)">{{ __('ลบ') }}</button>
             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                draggable="true"
                @dragstart="startDragGlobal($event, 'file', {

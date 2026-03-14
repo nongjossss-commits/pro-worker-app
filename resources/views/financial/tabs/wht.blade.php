@@ -26,8 +26,7 @@
                             </a>
                         </td>
                         <td>
-                            @if($txn->productionOrder && $txn->productionOrder->employer)
-                                <div class="fw-bold">{{ $txn->productionOrder->employer->employerNameTh }}</div>
+                            @if($txn->productionOrder && $txn->productionOrder->{{ __('employer)') }}<div class="fw-bold">{{ $txn->productionOrder->employer->employerNameTh }}</div>
                             @else
                                 <span class="text-muted">{{ __('Unknown') }}</span>
                             @endif
@@ -37,9 +36,8 @@
                         </td>
                         <td class="text-end">{{ number_format($txn->amount, 2) }}</td>
                         <td class="text-center">
-                            <a href="{{ route('production.edit', ['production' => $txn->production_order_id, 'tab' => 'financial']) }}" class="btn btn-sm btn-outline-primary" title="View Details">
-                                <i class="bi bi-eye"></i> Upload WHT Doc
-                            </a>
+                            <a href="{{ route('production.edit', ['production' => $txn->production_order_id, 'tab' => 'financial']) }}" class="btn btn-sm btn-outline-primary" title="{{ __('View Details') }}">
+                                <i class="bi bi-eye"></i>{{ __('Upload WHT Doc') }}</a>
                         </td>
                     </tr>
                     @empty

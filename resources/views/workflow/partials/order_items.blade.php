@@ -4,8 +4,7 @@
     $steps = $steps ?? $order->workType->workflowSteps ?? collect();
 @endphp
 
-@if($groupedItems->isEmpty())
-    <div class="text-center py-4 text-muted">
+@if($groupedItems->{{ __('isEmpty())') }}<div class="text-center py-4 text-muted">
         <i class="bi bi-inbox fs-1 d-block mb-2"></i>
         {{ __('No employees in this job yet.') }}
     </div>

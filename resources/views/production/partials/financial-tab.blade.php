@@ -150,7 +150,7 @@ class="row">
                                                 </button>
                                             </div>
                                         </td>
-                                        <td><input type="text" class="form-control form-control-sm" x-model="tier.note" placeholder="Opt."></td>
+                                        <td><input type="text" class="form-control form-control-sm" x-model="tier.note" placeholder="{{ __('Opt.') }}"></td>
                                         <td class="text-center align-middle">
                                             <button class="btn btn-sm btn-link text-danger p-0" @click="removeTier(index)">
                                                 <i class="bi bi-x-circle"></i>
@@ -189,8 +189,7 @@ class="row">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label mb-0 fw-bold small text-primary">{{ __('Advance Payments / Expenses') }}</label>
                         <button class="btn btn-sm btn-outline-primary py-0" style="font-size: 10px;" @click="addAdvanceItem()">
-                            <i class="bi bi-plus"></i> Add Item
-                        </button>
+                            <i class="bi bi-plus"></i>{{ __('Add Item') }}</button>
                     </div>
                     <div class="table-responsive border rounded p-2 mb-2 bg-light">
                         <table class="table table-sm table-borderless mb-0">
@@ -205,7 +204,7 @@ class="row">
                             <tbody>
                                 <template x-for="(item, index) in advanceItems" :key="index">
                                     <tr>
-                                        <td><input type="text" class="form-control form-control-sm" x-model="item.description" placeholder="Visa, Medical..."></td>
+                                        <td><input type="text" class="form-control form-control-sm" x-model="item.description" placeholder="{{ __('Visa, Medical...') }}"></td>
                                         <td><input type="number" class="form-control form-control-sm px-1" x-model="item.quantity" @input="updateTotal()"></td>
                                         <td><input type="number" class="form-control form-control-sm px-1" x-model="item.unit_price" @input="updateTotal()"></td>
                                         <td>
@@ -216,7 +215,7 @@ class="row">
                                     </tr>
                                 </template>
                                 <tr x-show="advanceItems.length === 0">
-                                    <td colspan="4" class="text-center text-muted small fst-italic py-2">No advance payments added.</td>
+                                    <td colspan="4" class="text-center text-muted small fst-italic py-2">{{ __('No advance payments added.') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -241,7 +240,7 @@ class="row">
                             <label class="form-check-label small" :for="'vatIncluded_' + productionId">{{ __('Price Includes VAT') }}</label>
                         </div>
                         <div class="input-group input-group-sm" style="width: 120px;">
-                            <span class="input-group-text">VAT</span>
+                            <span class="input-group-text">{{ __('VAT') }}</span>
                             <input type="number" step="0.1" class="form-control text-end" x-model="vatRate" @input="updateTotal()">
                             <span class="input-group-text">%</span>
                         </div>
@@ -254,7 +253,7 @@ class="row">
                             <label class="form-check-label small" :for="'whtEnabled_' + productionId">{{ __('Withholding Tax (WHT)') }}</label>
                         </div>
                         <div class="input-group input-group-sm" style="width: 160px;" x-show="whtEnabled">
-                            <span class="input-group-text">WHT</span>
+                            <span class="input-group-text">{{ __('WHT') }}</span>
                             <input type="number" step="0.1" class="form-control text-end" x-model="whtRate" @input="updateTotal()">
                             <span class="input-group-text">%</span>
                         </div>
@@ -289,7 +288,7 @@ class="row">
                     <span x-text="formatCurrency(subtotalAmount)"></span>
                 </div>
                 <div class="d-flex justify-content-between mb-1">
-                    <span class="text-muted">VAT (<span x-text="vatRate"></span>%):</span>
+                    <span class="text-muted">{{ __('VAT (') }}<span x-text="vatRate"></span>%):</span>
                     <span x-text="formatCurrency(vatAmount)"></span>
                 </div>
 
@@ -305,7 +304,7 @@ class="row">
                 </div>
 
                 <div x-show="whtEnabled" class="d-flex justify-content-between mb-1 text-danger small">
-                    <span>Less WHT (<span x-text="whtRate"></span>%):</span>
+                    <span>{{ __('Less WHT (') }}<span x-text="whtRate"></span>%):</span>
                     <span>- <span x-text="formatCurrency(whtAmount)"></span></span>
                 </div>
 
@@ -348,7 +347,7 @@ class="row">
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <label class="form-label small text-muted">Active Profile</label>
+                    <label class="form-label small text-muted">{{ __('Active Profile') }}</label>
                     <div class="d-flex align-items-center gap-2">
                         <div x-show="useCustomHeader" class="badge bg-warning text-dark">{{ __('Custom Override') }}</div>
                         <div x-show="!useCustomHeader" class="badge bg-secondary">{{ __('System Profile') }}</div>
@@ -467,7 +466,7 @@ class="row">
                                         <div class="fw-bold" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
                                         <div x-show="t.slip_path" class="mt-1">
-                                            <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
+                                            <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">{{ __('View Slip') }}</a>
                                         </div>
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
@@ -478,10 +477,10 @@ class="row">
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-success py-0" @click="openPayModal(t)" title="Update Payment">
+                                            <button class="btn btn-sm btn-outline-success py-0" @click="openPayModal(t)" title="{{ __('Update Payment') }}">
                                                 <i class="bi bi-cash"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="Delete">
+                                            <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="{{ __('Delete') }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -489,7 +488,7 @@ class="row">
                                 </tr>
                             </template>
                             <tr x-show="incomeTransactions.length === 0">
-                                <td colspan="6" class="text-center py-4 text-muted">No income transactions recorded.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">{{ __('No income transactions recorded.') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -516,7 +515,7 @@ class="row">
                                         <div class="fw-bold text-primary" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
                                         <div x-show="t.slip_path" class="mt-1">
-                                            <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
+                                            <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">{{ __('View Slip') }}</a>
                                         </div>
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
@@ -527,10 +526,10 @@ class="row">
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-success py-0" @click="openPayModal(t)" title="Update Payment">
+                                            <button class="btn btn-sm btn-outline-success py-0" @click="openPayModal(t)" title="{{ __('Update Payment') }}">
                                                 <i class="bi bi-cash"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="Delete">
+                                            <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="{{ __('Delete') }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -538,7 +537,7 @@ class="row">
                                 </tr>
                             </template>
                             <tr x-show="advanceTransactions.length === 0">
-                                <td colspan="6" class="text-center py-4 text-muted">No reserve fund transactions.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">{{ __('No reserve fund transactions.') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -555,22 +554,20 @@ class="row">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Document Header Settings</h5>
+                    <h5 class="modal-title">{{ __('Document Header Settings') }}</h5>
                     <button type="button" class="btn-close" @click="showCustomHeaderModal = false"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info py-2 px-3 small border-0 bg-opacity-10 d-flex align-items-center mb-4 rounded-3">
                         <i class="bi bi-info-circle-fill me-2 fs-6"></i>
-                        <div>
-                            Select a saved profile to automatically apply logos, signatures, and stamps.
-                            <a href="{{ route('finance.profiles.builder') }}" target="_blank" class="alert-link fw-bold ms-1">Manage Profiles</a>
+                        <div>{{ __('Select a saved profile to automatically apply logos, signatures, and stamps.') }}<a href="{{ route('finance.profiles.builder') }}" target="_blank" class="alert-link fw-bold ms-1">{{ __('Manage Profiles') }}</a>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Select Biller Profile (Issuer)</label>
+                        <label class="form-label small fw-semibold text-secondary">{{ __('Select Biller Profile (Issuer)') }}</label>
                         <select class="form-select form-select-sm" x-model="customHeader.biller_profile_id">
-                            <option value="">-- Use Default System Profile --</option>
+                            <option value="">{{ __('-- Use Default System Profile --') }}</option>
                             @foreach(\App\Models\FinancialProfile::where('type', 'biller')->latest()->get() as $p)
                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
                             @endforeach
@@ -578,9 +575,9 @@ class="row">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Select Customer Profile (Client)</label>
+                        <label class="form-label small fw-semibold text-secondary">{{ __('Select Customer Profile (Client)') }}</label>
                         <select class="form-select form-select-sm" x-model="customHeader.customer_profile_id">
-                            <option value="">-- Use Default Client Data --</option>
+                            <option value="">{{ __('-- Use Default Client Data --') }}</option>
                             @foreach(\App\Models\FinancialProfile::where('type', 'customer')->latest()->get() as $p)
                                 <option value="{{ $p->id }}">{{ $p->name }}</option>
                             @endforeach
@@ -591,33 +588,33 @@ class="row">
 
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" :id="'useCustomHeaderToggle-' + productionId" x-model="useCustomHeader">
-                        <label class="form-check-label fw-bold text-danger" :for="'useCustomHeaderToggle-' + productionId">Manual Override Data (Without Profile)</label>
+                        <label class="form-check-label fw-bold text-danger" :for="'useCustomHeaderToggle-' + productionId">{{ __('Manual Override Data (Without Profile)') }}</label>
                     </div>
 
                     <div x-show="useCustomHeader" class="bg-light p-3 border rounded">
                         <div class="mb-2">
-                            <label class="form-label small">Company Name</label>
+                            <label class="form-label small">{{ __('Company Name') }}</label>
                             <input type="text" class="form-control form-control-sm" x-model="customHeader.name">
                         </div>
                         <div class="mb-2">
-                            <label class="form-label small">Address</label>
+                            <label class="form-label small">{{ __('Address') }}</label>
                             <textarea class="form-control form-control-sm" rows="3" x-model="customHeader.address"></textarea>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
-                                <label class="form-label small">Tax ID</label>
+                                <label class="form-label small">{{ __('Tax ID') }}</label>
                                 <input type="text" class="form-control form-control-sm" x-model="customHeader.tax_id">
                             </div>
                             <div class="col-6">
-                                <label class="form-label small">Phone</label>
+                                <label class="form-label small">{{ __('Phone') }}</label>
                                 <input type="text" class="form-control form-control-sm" x-model="customHeader.phone">
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" @click="showCustomHeaderModal = false">Close</button>
-                    <button type="button" class="btn btn-primary btn-sm" @click="saveFinancialData(); showCustomHeaderModal = false;">Save & Apply</button>
+                    <button type="button" class="btn btn-secondary btn-sm" @click="showCustomHeaderModal = false">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-primary btn-sm" @click="saveFinancialData(); showCustomHeaderModal = false;">{{ __('Save & Apply') }}</button>
                 </div>
             </div>
         </div>
@@ -630,16 +627,16 @@ class="row">
         <div class="modal-dialog modal-dialog-scrollable modal-lg">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h5 class="modal-title fs-6 fw-bold">Assign Employees to Price Tier</h5>
+                    <h5 class="modal-title fs-6 fw-bold">{{ __('Assign Employees to Price Tier') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-2">
                     <div class="mb-2 d-flex gap-2">
-                        <input type="text" class="form-control form-control-sm" placeholder="Search employee..." x-model="modalSearch">
+                        <input type="text" class="form-control form-control-sm" placeholder="{{ __('Search employee...') }}" x-model="modalSearch">
                         <button class="btn btn-sm btn-outline-secondary" @click="selectAllForModal()" title="Select All Visible">
                             <i class="bi bi-check-all"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary" @click="deselectAllForModal()" title="Clear Selection">
+                        <button class="btn btn-sm btn-outline-secondary" @click="deselectAllForModal()" title="{{ __('Clear Selection') }}">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
@@ -667,7 +664,7 @@ class="row">
                                                       x-text="item.insurance_type"></span>
                                             </template>
                                             <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
-                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
+                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
                                             </template>
                                             <!-- Passport Badge -->
                                             <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'">
@@ -692,8 +689,7 @@ class="row">
 
                                 <!-- Indicator if assigned to another tier -->
                                 <template x-if="getTierForItem(item.id) && activeTierIndex !== null && pricingTiers.indexOf(getTierForItem(item.id)) !== activeTierIndex">
-                                    <span class="badge bg-warning text-dark ms-auto fw-normal" style="font-size: 0.7em;">
-                                        In <span x-text="getTierForItem(item.id).price"></span>
+                                    <span class="badge bg-warning text-dark ms-auto fw-normal" style="font-size: 0.7em;">{{ __('In') }}<span x-text="getTierForItem(item.id).price"></span>
                                     </span>
                                 </template>
 
@@ -703,7 +699,7 @@ class="row">
                                 </template>
                             </label>
                         </template>
-                        <div x-show="allEmployeesForTier.length === 0" class="p-3 text-center text-muted">No employees found.</div>
+                        <div x-show="allEmployeesForTier.length === 0" class="p-3 text-center text-muted">{{ __('No employees found.') }}</div>
                     </div>
                 </div>
                 <div class="modal-footer py-1 bg-light">
@@ -712,8 +708,8 @@ class="row">
                             Selected: <strong x-text="modalSelectedIds.length"></strong>
                         </div>
                         <div>
-                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-primary btn-sm" @click="saveTierSelection()">Save Changes</button>
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="button" class="btn btn-primary btn-sm" @click="saveTierSelection()">{{ __('Save Changes') }}</button>
                         </div>
                      </div>
                 </div>
@@ -726,7 +722,7 @@ class="row">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Bill To (Customer) Settings</h5>
+                    <h5 class="modal-title">{{ __('Bill To (Customer) Settings') }}</h5>
                     <button type="button" class="btn-close" @click="showCustomCustomerModal = false"></button>
                 </div>
                 <div class="modal-body">
@@ -735,7 +731,7 @@ class="row">
                         <label class="form-label small fw-bold">Quick Load: From Employer Addresses</label>
                         <div class="input-group input-group-sm">
                             <select class="form-select" x-model="selectedEmployerAddressId" @change="loadEmployerData()">
-                                <option value="">-- Select Address --</option>
+                                <option value="">{{ __('-- Select Address --') }}</option>
                                 @foreach($production->employer->addresses ?? [] as $address)
                                     <option value="{{ $address->id }}"
                                             data-name-th="{{ $production->employer->employerNameTh }}"
@@ -749,7 +745,7 @@ class="row">
                                     </option>
                                 @endforeach
                             </select>
-                            <button class="btn btn-outline-secondary" type="button" @click="loadEmployerData()">Load</button>
+                            <button class="btn btn-outline-secondary" type="button" @click="loadEmployerData()">{{ __('Load') }}</button>
                         </div>
                     </div>
 
@@ -760,7 +756,7 @@ class="row">
                         <label class="form-label small fw-bold">Quick Load: From Agent</label>
                         <div class="input-group input-group-sm">
                             <select class="form-select" x-model="selectedAgentId" @change="loadAgentData()">
-                                <option value="">-- Select Agent --</option>
+                                <option value="">{{ __('-- Select Agent --') }}</option>
                                 @foreach(\App\Models\Agent::all() as $agent)
                                     <option value="{{ $agent->id }}"
                                             data-name="{{ $agent->agentNameEn }}"
@@ -768,7 +764,7 @@ class="row">
                                             >{{ $agent->agentNameEn }}</option>
                                 @endforeach
                             </select>
-                            <button class="btn btn-outline-secondary" type="button" @click="loadAgentData()">Load</button>
+                            <button class="btn btn-outline-secondary" type="button" @click="loadAgentData()">{{ __('Load') }}</button>
                         </div>
                     </div>
 
@@ -776,33 +772,33 @@ class="row">
 
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" :id="'useCustomCustomerToggle-' + productionId" x-model="useCustomCustomer">
-                        <label class="form-check-label fw-bold" :for="'useCustomCustomerToggle-' + productionId">Override Default (Employer)</label>
+                        <label class="form-check-label fw-bold" :for="'useCustomCustomerToggle-' + productionId">{{ __('Override Default (Employer)') }}</label>
                     </div>
 
                     <div x-show="useCustomCustomer">
                         <div class="mb-2">
-                            <label class="form-label small">Client Name</label>
+                            <label class="form-label small">{{ __('Client Name') }}</label>
                             <input type="text" class="form-control form-control-sm" x-model="customCustomerData.name">
                         </div>
                         <div class="mb-2">
-                            <label class="form-label small">Address</label>
+                            <label class="form-label small">{{ __('Address') }}</label>
                             <textarea class="form-control form-control-sm" rows="3" x-model="customCustomerData.address"></textarea>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
-                                <label class="form-label small">Tax ID</label>
+                                <label class="form-label small">{{ __('Tax ID') }}</label>
                                 <input type="text" class="form-control form-control-sm" x-model="customCustomerData.tax_id">
                             </div>
                             <div class="col-6">
-                                <label class="form-label small">Phone</label>
+                                <label class="form-label small">{{ __('Phone') }}</label>
                                 <input type="text" class="form-control form-control-sm" x-model="customCustomerData.phone">
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" @click="showCustomCustomerModal = false">Close</button>
-                    <button type="button" class="btn btn-primary btn-sm" @click="saveFinancialData(); showCustomCustomerModal = false;">Save & Apply</button>
+                    <button type="button" class="btn btn-secondary btn-sm" @click="showCustomCustomerModal = false">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-primary btn-sm" @click="saveFinancialData(); showCustomCustomerModal = false;">{{ __('Save & Apply') }}</button>
                 </div>
             </div>
         </div>
@@ -823,12 +819,12 @@ class="row">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-2">
-                                    <label class="form-label small">Type</label>
+                                    <label class="form-label small">{{ __('Type') }}</label>
                                     <select class="form-select form-select-sm" x-model="newTransaction.type" required>
-                                        <option value="installment">Installment (งวดงาน)</option>
-                                        <option value="down_payment">Down Payment (มัดจำ)</option>
-                                        <option value="full_payment">Full Payment (จ่ายเต็ม)</option>
-                                        <option value="advance_payment">Advance Payment (เงินสำรองจ่าย)</option>
+                                        <option value="installment">{{ __('Installment (งวดงาน)') }}</option>
+                                        <option value="down_payment">{{ __('Down Payment (มัดจำ)') }}</option>
+                                        <option value="full_payment">{{ __('Full Payment (จ่ายเต็ม)') }}</option>
+                                        <option value="advance_payment">{{ __('Advance Payment (เงินสำรองจ่าย)') }}</option>
                                     </select>
                                 </div>
                                 <div class="mb-2">
@@ -841,20 +837,20 @@ class="row">
                                     <input type="date" class="form-control form-control-sm" x-model="newTransaction.due_date">
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Notes</label>
+                                    <label class="form-label small">{{ __('Notes') }}</label>
                                     <textarea class="form-control form-control-sm" x-model="newTransaction.notes" rows="2"></textarea>
                                 </div>
                             </div>
                             <div class="col-md-6 border-start">
-                                <label class="form-label small fw-bold mb-1">Select Employees</label>
+                                <label class="form-label small fw-bold mb-1">{{ __('Select Employees') }}</label>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div class="small text-muted" style="font-size: 0.75rem;">
                                         Selected: <span x-text="selectedTransactionItems.length"></span>
-                                        <span x-show="pricingMode === 'per_head'">(Auto-calc active)</span>
+                                        <span x-show="pricingMode === 'per_head'">{{ __('(Auto-calc active)') }}</span>
                                     </div>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectAllAvailable()">All</button>
-                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="deselectAllTransactionItems()">None</button>
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectAllAvailable()">{{ __('All') }}</button>
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="deselectAllTransactionItems()">{{ __('None') }}</button>
                                     </div>
                                 </div>
                                 <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
@@ -880,7 +876,7 @@ class="row">
                                                                     x-text="item.insurance_type"></span>
                                                             </template>
                                                             <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
-                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
+                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
                                                             </template>
                                                             <!-- Passport Badge -->
                                                             <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'">
@@ -904,16 +900,14 @@ class="row">
                                                 </div>
                                             </label>
                                         </template>
-                                        <div x-show="availableItems.length === 0" class="p-2 text-center text-muted small">
-                                            No available employees.
-                                        </div>
+                                        <div x-show="availableItems.length === 0" class="p-2 text-center text-muted small">{{ __('No available employees.') }}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="d-flex gap-2 mt-3">
-                             <button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1" @click="if($el.closest('form').reportValidity()) { addTransaction(true); }" :disabled="isSavingTransaction">Save & Close</button>
-                             <button type="submit" class="btn btn-primary btn-sm flex-grow-1" :disabled="isSavingTransaction">Save & Add Another</button>
+                             <button type="button" class="btn btn-outline-secondary btn-sm flex-grow-1" @click="if($el.closest('form').reportValidity()) { addTransaction(true); }" :disabled="isSavingTransaction">{{ __('Save & Close') }}</button>
+                             <button type="submit" class="btn btn-primary btn-sm flex-grow-1" :disabled="isSavingTransaction">{{ __('Save & Add Another') }}</button>
                         </div>
                     </form>
                 </div>
@@ -926,7 +920,7 @@ class="row">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h6 class="modal-title">Update Payment & Items</h6>
+                    <h6 class="modal-title">{{ __('Update Payment & Items') }}</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -934,7 +928,7 @@ class="row">
                         <div class="row">
                              <div class="col-md-6">
                                 <div class="mb-2">
-                                    <label class="form-label small">Paid Amount</label>
+                                    <label class="form-label small">{{ __('Paid Amount') }}</label>
                                     <input type="number" step="0.01" class="form-control form-control-sm" x-model="editingTransaction.paid_amount">
                                     <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 0.75rem;">
                                          <span>Total: <span x-text="formatCurrency(editingTransaction.amount)"></span></span>
@@ -946,15 +940,15 @@ class="row">
                                 <div class="mb-2">
                                     <label class="form-label small">Status</label>
                                     <select class="form-select form-select-sm" x-model="editingTransaction.status">
-                                        <option value="pending">Pending</option>
-                                        <option value="partial">Partial</option>
+                                        <option value="pending">{{ __('Pending') }}</option>
+                                        <option value="partial">{{ __('Partial') }}</option>
                                         <option value="paid">Paid</option>
                                     </select>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Receive to Account</label>
+                                    <label class="form-label small">{{ __('Receive to Account') }}</label>
                                     <select class="form-select form-select-sm" x-model="editingTransaction.bank_account_id">
-                                        <option value="">-- Select Account --</option>
+                                        <option value="">{{ __('-- Select Account --') }}</option>
                                         @foreach(\App\Models\BankAccount::where('is_active', true)->get() as $bank)
                                             <option value="{{ $bank->id }}">{{ $bank->bank_name }} {{ $bank->account_number ? '('.$bank->account_number.')' : '' }}</option>
                                         @endforeach
@@ -963,15 +957,15 @@ class="row">
                                 <div class="mb-2" x-show="editingTransaction.type !== 'advance_payment' && editingTransaction.type !== 'advance_receipt'">
                                     <label class="form-label small">WHT (หัก ณ ที่จ่าย 3%)</label>
                                     <select class="form-select form-select-sm mb-1" x-model="editingTransaction.wht_status">
-                                        <option value="not_required">Not Required</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="received">Received</option>
+                                        <option value="not_required">{{ __('Not Required') }}</option>
+                                        <option value="pending">{{ __('Pending') }}</option>
+                                        <option value="received">{{ __('Received') }}</option>
                                     </select>
-                                    <input type="number" step="0.01" class="form-control form-control-sm mt-1" x-model="editingTransaction.withholding_tax_amount" placeholder="WHT Amount" x-show="editingTransaction.wht_status !== 'not_required'">
+                                    <input type="number" step="0.01" class="form-control form-control-sm mt-1" x-model="editingTransaction.withholding_tax_amount" placeholder="{{ __('WHT Amount') }}" x-show="editingTransaction.wht_status !== 'not_required'">
 
                                     <!-- WHT Upload Area -->
                                     <div class="mt-2" x-show="editingTransaction.wht_status !== 'not_required'">
-                                        <label class="form-label small text-muted">WHT Document (50 ทวิ)</label>
+                                        <label class="form-label small text-muted">{{ __('WHT Document (50 ทวิ)') }}</label>
                                         <input type="file" class="d-none" :id="'whtInput-' + editingTransaction.id" @change="handleWhtFileSelect" accept=".pdf,image/*">
                                         <div class="btn-group w-100">
                                             <button type="button" class="btn btn-outline-secondary btn-sm" @click="document.getElementById('whtInput-' + editingTransaction.id).click()">
@@ -984,11 +978,11 @@ class="row">
                                     </div>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Notes</label>
+                                    <label class="form-label small">{{ __('Notes') }}</label>
                                     <textarea class="form-control form-control-sm" x-model="editingTransaction.notes" rows="2"></textarea>
                                 </div>
                                 <div class="mb-2">
-                                    <label class="form-label small">Proof of Payment / Slip</label>
+                                    <label class="form-label small">{{ __('Proof of Payment / Slip') }}</label>
                                     <!-- Hidden Input -->
                                     <input type="file" class="d-none" :id="'slipInput-' + editingTransaction.id" @change="handleFileSelect" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
 
@@ -1006,14 +1000,14 @@ class="row">
 
                                             <!-- View -->
                                             <template x-if="editingTransaction.slip_path">
-                                                <a href="#" @click.prevent="viewPDF('/storage/' + editingTransaction.slip_path, 'View Slip')" class="btn btn-outline-secondary btn-sm" title="View">
+                                                <a href="#" @click.prevent="viewPDF('/storage/' + editingTransaction.slip_path, 'View Slip')" class="btn btn-outline-secondary btn-sm" title="{{ __('View') }}">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             </template>
 
                                             <!-- Download -->
                                             <template x-if="editingTransaction.slip_path">
-                                                <a :href="'/storage/' + editingTransaction.slip_path" download class="btn btn-outline-secondary btn-sm" title="Download">
+                                                <a :href="'/storage/' + editingTransaction.slip_path" download class="btn btn-outline-secondary btn-sm" title="{{ __('Download') }}">
                                                     <i class="bi bi-download"></i>
                                                 </a>
                                             </template>
@@ -1028,7 +1022,7 @@ class="row">
                                 </div>
                              </div>
                              <div class="col-md-6 border-start">
-                                <label class="form-label small fw-bold mb-1">Edit Employees</label>
+                                <label class="form-label small fw-bold mb-1">{{ __('Edit Employees') }}</label>
                                 <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
                                     <div class="list-group list-group-flush">
                                         <!-- Show ALL items for edit (Available + Currently Attached) -->
@@ -1052,7 +1046,7 @@ class="row">
                                                                     x-text="item.insurance_type"></span>
                                                             </template>
                                                             <template x-if="!item.insurance_type || item.insurance_type === '-' || item.insurance_type === 'No' || item.insurance_type === 'ไม่มี'">
-                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">None</span>
+                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
                                                             </template>
                                                             <!-- Passport Badge -->
                                                             <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'">
@@ -1074,14 +1068,14 @@ class="row">
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <span x-show="isItemAttached(item.id)" class="badge bg-success ms-auto flex-shrink-0" style="font-size: 0.6em;">Linked</span>
+                                                <span x-show="isItemAttached(item.id)" class="badge bg-success ms-auto flex-shrink-0" style="font-size: 0.6em;">{{ __('Linked') }}</span>
                                             </label>
                                         </template>
                                     </div>
                                 </div>
                              </div>
                         </div>
-                        <button type="submit" class="btn btn-success btn-sm w-100 mt-3">Update</button>
+                        <button type="submit" class="btn btn-success btn-sm w-100 mt-3">{{ __('Update') }}</button>
                     </form>
                 </div>
             </div>
@@ -1093,7 +1087,7 @@ class="row">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h6 class="modal-title">Select Items</h6>
+                    <h6 class="modal-title">{{ __('Select Items') }}</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -1108,21 +1102,15 @@ class="row">
                                 </div>
                             </label>
                         </template>
-                        <div x-show="modalFilteredTransactions.length === 0" class="text-center text-muted py-3">
-                            No transactions available for this type.
-                        </div>
+                        <div x-show="modalFilteredTransactions.length === 0" class="text-center text-muted py-3">{{ __('No transactions available for this type.') }}</div>
                     </div>
 
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" :id="'includeEmployeeList-' + productionId" x-model="includeEmployeeList">
-                        <label class="form-check-label small fw-bold" :for="'includeEmployeeList-' + productionId">
-                            แนบตารางรายชื่อพนักงาน / Include Employee List
-                        </label>
+                        <label class="form-check-label small fw-bold" :for="'includeEmployeeList-' + productionId">{{ __('แนบตารางรายชื่อพนักงาน / Include Employee List') }}</label>
                     </div>
 
-                    <button class="btn btn-primary btn-sm w-100" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
-                        Generate
-                    </button>
+                    <button class="btn btn-primary btn-sm w-100" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">{{ __('Generate') }}</button>
                 </div>
             </div>
         </div>

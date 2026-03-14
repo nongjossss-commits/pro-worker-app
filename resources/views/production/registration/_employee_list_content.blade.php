@@ -23,8 +23,7 @@
     ])
 @endforeach
 
-@if($employees instanceof \Illuminate\Pagination\LengthAwarePaginator && $employees->hasPages())
-    <div class="d-flex justify-content-end align-items-center mt-3 employer-pagination">
+@if($employees instanceof \Illuminate\Pagination\LengthAwarePaginator && $employees->{{ __('hasPages())') }}<div class="d-flex justify-content-end align-items-center mt-3 employer-pagination">
         {{ $employees->links() }}
     </div>
 @endif

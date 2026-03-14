@@ -16,11 +16,11 @@
                 <table class="table table-striped table-hover align-middle">
                     <thead class="table-dark">
                         <tr>
-                            <th>Menu Name</th>
-                            <th>Key</th>
-                            <th class="text-center">Visibility</th>
-                            <th class="text-center">Access Password</th>
-                            <th class="text-end">Actions</th>
+                            <th>{{ __('Menu Name') }}</th>
+                            <th>{{ __('Key') }}</th>
+                            <th class="text-center">{{ __('Visibility') }}</th>
+                            <th class="text-center">{{ __('Access Password') }}</th>
+                            <th class="text-end">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -48,15 +48,14 @@
                                 </td>
                                 <td class="text-center">
                                     @if($hasPassword)
-                                        <span class="badge bg-warning text-dark"><i class="bi bi-lock-fill me-1"></i> Protected</span>
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-lock-fill me-1"></i>{{ __('Protected') }}</span>
                                     @else
-                                        <span class="badge bg-light text-dark border"><i class="bi bi-unlock me-1"></i> None</span>
+                                        <span class="badge bg-light text-dark border"><i class="bi bi-unlock me-1"></i>{{ __('None') }}</span>
                                     @endif
                                 </td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editMenuModal-{{ $key }}">
-                                        <i class="bi bi-gear-fill"></i> Configure
-                                    </button>
+                                        <i class="bi bi-gear-fill"></i>{{ __('Configure') }}</button>
                                 </td>
                             </tr>
 
@@ -76,33 +75,31 @@
 
                                                 <!-- Password Setting -->
                                                 <div class="mb-3">
-                                                    <label class="form-label fw-bold">Access Password (Optional)</label>
+                                                    <label class="form-label fw-bold">{{ __('Access Password (Optional)') }}</label>
                                                     <div class="input-group mb-2">
                                                         <span class="input-group-text"><i class="bi bi-key"></i></span>
-                                                        <input type="password" class="form-control" name="password" placeholder="Set new password">
+                                                        <input type="password" class="form-control" name="password" placeholder="{{ __('Set new password') }}">
                                                     </div>
                                                     <div class="input-group">
                                                         <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
-                                                        <input type="password" class="form-control" name="password_confirmation" placeholder="Confirm password">
+                                                        <input type="password" class="form-control" name="password_confirmation" placeholder="{{ __('Confirm password') }}">
                                                     </div>
-                                                    <div class="form-text">Leave blank to keep existing password (if any).</div>
+                                                    <div class="form-text">{{ __('Leave blank to keep existing password (if any).') }}</div>
                                                 </div>
 
                                                 @if($hasPassword)
                                                 <div class="mb-3">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" name="remove_password" value="1" id="removePassword-{{ $key }}">
-                                                        <label class="form-check-label text-danger" for="removePassword-{{ $key }}">
-                                                            Remove current password protection
-                                                        </label>
+                                                        <label class="form-check-label text-danger" for="removePassword-{{ $key }}">{{ __('Remove current password protection') }}</label>
                                                     </div>
                                                 </div>
                                                 @endif
 
                                             </div>
                                             <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                                                <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
                                             </div>
                                         </div>
                                     </form>

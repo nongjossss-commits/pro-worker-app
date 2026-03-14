@@ -2,8 +2,8 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <h1 class="h3 mb-4 text-gray-800">Global Witnesses Management</h1>
-    <p class="text-muted mb-4">Manage the 4 default witnesses used in PDF generation. Signatures set here will be available globally.</p>
+    <h1 class="h3 mb-4 text-gray-800">{{ __('Global Witnesses Management') }}</h1>
+    <p class="text-muted mb-4">{{ __('Manage the 4 default witnesses used in PDF generation. Signatures set here will be available globally.') }}</p>
 
     <div class="row">
         @foreach($witnesses as $witness)
@@ -12,9 +12,9 @@
                 <div class="card-header bg-white font-weight-bold text-primary d-flex justify-content-between align-items-center">
                     <span>{{ ucfirst(str_replace('_', ' ', $witness->alias)) }}</span>
                     @if($witness->signature_path)
-                        <span class="badge bg-success">Signature Set</span>
+                        <span class="badge bg-success">{{ __('Signature Set') }}</span>
                     @else
-                        <span class="badge bg-secondary">No Signature</span>
+                        <span class="badge bg-secondary">{{ __('No Signature') }}</span>
                     @endif
                 </div>
                 <div class="card-body">
@@ -23,19 +23,19 @@
                         @method('PUT')
 
                         <div class="mb-3">
-                            <label class="form-label">Name (Thai)</label>
+                            <label class="form-label">{{ __('Name (Thai)') }}</label>
                             <input type="text" name="name_th" class="form-control" value="{{ old('name_th', $witness->name_th) }}" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Name (English)</label>
+                            <label class="form-label">{{ __('Name (English)') }}</label>
                             <input type="text" name="name_en" class="form-control" value="{{ old('name_en', $witness->name_en) }}" required>
                         </div>
 
                         <hr>
 
                         <div class="mb-3" x-data="{ action: 'keep' }">
-                            <label class="form-label font-weight-bold">Signature</label>
+                            <label class="form-label font-weight-bold">{{ __('Signature') }}</label>
 
                             <!-- Current Signature Preview -->
                             @if($witness->signature_path)
@@ -46,13 +46,13 @@
 
                             <div class="btn-group w-100 mb-3" role="group">
                                 <input type="radio" class="btn-check" name="signature_action" id="sig_keep_{{ $witness->id }}" value="keep" x-model="action" checked>
-                                <label class="btn btn-outline-secondary" for="sig_keep_{{ $witness->id }}">Keep Current</label>
+                                <label class="btn btn-outline-secondary" for="sig_keep_{{ $witness->id }}">{{ __('Keep Current') }}</label>
 
                                 <input type="radio" class="btn-check" name="signature_action" id="sig_gen_{{ $witness->id }}" value="generate" x-model="action">
-                                <label class="btn btn-outline-primary" for="sig_gen_{{ $witness->id }}">Auto Generate</label>
+                                <label class="btn btn-outline-primary" for="sig_gen_{{ $witness->id }}">{{ __('Auto Generate') }}</label>
 
                                 <input type="radio" class="btn-check" name="signature_action" id="sig_upload_{{ $witness->id }}" value="upload" x-model="action">
-                                <label class="btn btn-outline-info" for="sig_upload_{{ $witness->id }}">Upload File</label>
+                                <label class="btn btn-outline-info" for="sig_upload_{{ $witness->id }}">{{ __('Upload File') }}</label>
                             </div>
 
                             <div x-show="action === 'upload'" class="mt-2">
@@ -61,12 +61,11 @@
                             </div>
 
                             <div x-show="action === 'generate'" class="mt-2 alert alert-info py-2">
-                                <i class="bi bi-magic"></i> A new unique signature will be generated upon saving.
-                            </div>
+                                <i class="bi bi-magic"></i>{{ __('A new unique signature will be generated upon saving.') }}</div>
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="submit" class="btn btn-primary">{{ __('Save Changes') }}</button>
                         </div>
                     </form>
                 </div>

@@ -97,7 +97,7 @@
                 </div>
             </div>
         @else
-            <div class="text-muted">เอกสารนายจ้าง</div>
+            <div class="text-muted">{{ __('เอกสารนายจ้าง') }}</div>
         @endif
     </td>
     <td>
@@ -112,7 +112,7 @@
                 </span>
             @endif
         @else
-            <span class="text-muted">N/A</span>
+            <span class="text-muted">{{ __('N/A') }}</span>
         @endif
     </td>
     <td>
@@ -139,7 +139,7 @@
             @if($notification->status === 'cancelled')
                 <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-grid d-md-inline">
                     @csrf
-                    <button type="submit" class="btn btn-info btn-sm" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
+                    <button type="submit" class="btn btn-info btn-sm" title="{{ __('กู้คืน') }}"><i class="bi bi-arrow-counterclockwise"></i>{{ __('กู้คืน') }}</button>
                 </form>
                  <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
                     @csrf
@@ -147,12 +147,12 @@
                     <button type="submit" class="btn btn-danger btn-sm" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
                 </form>
             @else
-                <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
+                <a href="#" class="btn btn-info" title="{{ __('สร้างงาน') }}"><i class="bi bi-rocket-takeoff-fill"></i></a>
                 <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
                 @if($employee)
                     <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                 @endif
-                <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+                <a href="#" class="btn btn-warning" title="{{ __('ยกเลิก') }}" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
             @endif
         </div>
     </td>

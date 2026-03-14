@@ -7,10 +7,10 @@
     <div class="row">
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h1>Delegates</h1>
+                <h1>{{ __('Delegates') }}</h1>
                 <div class="d-flex gap-2">
-                    <input type="text" id="delegate-search-input" class="form-control form-control-sm" placeholder="Search...">
-                    <a href="{{ route('delegates.create') }}" class="btn btn-primary">Add Delegate</a>
+                    <input type="text" id="delegate-search-input" class="form-control form-control-sm" placeholder="{{ __('Search...') }}">
+                    <a href="{{ route('delegates.create') }}" class="btn btn-primary">{{ __('Add Delegate') }}</a>
                 </div>
             </div>
             <hr>
@@ -22,31 +22,30 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>Photo</th>
-                        <th>Name (TH)</th>
-                        <th>National ID</th>
-                        <th>Actions</th>
+                        <th>{{ __('Photo') }}</th>
+                        <th>{{ __('Name (TH)') }}</th>
+                        <th>{{ __('National ID') }}</th>
+                        <th>{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody id="delegate-table-body">
                     @foreach ($delegates as $delegate)
                     <tr>
                         <td>
-                            @if ($delegate->delegatePhoto)
-                                <img src="{{ asset('storage/' . $delegate->delegatePhoto) }}" alt="{{ $delegate->delegateNameEn }}" width="50">
+                            @if ($delegate->{{ __('delegatePhoto)') }}<img src="{{ asset('storage/' . $delegate->delegatePhoto) }}" alt="{{ $delegate->delegateNameEn }}" width="50">
                             @endif
                         </td>
                         <td>{{ $delegate->delegateNameTh }}</td>
                         <td>{{ $delegate->delegateId }}</td>
                         <td>
                             @can('edit-delegates')
-                            <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                            <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">{{ __('Edit') }}</a>
                             @endcan
                             @can('delete-delegates')
                             <form action="{{ route('delegates.destroy', $delegate->id) }}" method="POST" style="display:inline-block;" class="delete-form">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                <button type="submit" class="btn btn-sm btn-danger">{{ __('Delete') }}</button>
                             </form>
                             @endcan
                         </td>
@@ -77,13 +76,13 @@
         form.addEventListener('submit', function(event) {
             event.preventDefault();
             Swal.fire({
-                title: 'Are you sure?',
-                text: "You won't be able to revert this!",
+                title: '{{ __('Are you sure?') }}',
+                text: "{{ __('You won') }}'t be able to revert this!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, delete it!'
+                confirmButtonText: '{{ __('Yes, delete it!') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(form.action, {

@@ -105,17 +105,17 @@
                 <div class="col-md-2">
                     <select name="passport_type_myanmar" class="form-select">
                         <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
-                        <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>PJ</option>
-                        <option value="PV" {{ request('passport_type_myanmar') == 'PV' ? 'selected' : '' }}>PV</option>
-                        <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>CI</option>
-                        <option value="CC" {{ request('passport_type_myanmar') == 'CC' ? 'selected' : '' }}>CC</option>
-                        <option value="T.D." {{ request('passport_type_myanmar') == 'T.D.' ? 'selected' : '' }}>T.D.</option>
+                        <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>{{ __('PJ') }}</option>
+                        <option value="PV" {{ request('passport_type_myanmar') == 'PV' ? 'selected' : '' }}>{{ __('PV') }}</option>
+                        <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>{{ __('CI') }}</option>
+                        <option value="CC" {{ request('passport_type_myanmar') == 'CC' ? 'selected' : '' }}>{{ __('CC') }}</option>
+                        <option value="T.D." {{ request('passport_type_myanmar') == 'T.D.' ? 'selected' : '' }}>{{ __('T.D.') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <select name="passport_type_cambodia" class="form-select">
                         <option value="">-- {{ __('Passport Type (Cambodia)') }} --</option>
-                        <option value="TD" {{ request('passport_type_cambodia') == 'TD' ? 'selected' : '' }}>TD</option>
+                        <option value="TD" {{ request('passport_type_cambodia') == 'TD' ? 'selected' : '' }}>{{ __('TD') }}</option>
                         <option value="P" {{ request('passport_type_cambodia') == 'P' ? 'selected' : '' }}>P</option>
                     </select>
                 </div>
@@ -165,8 +165,7 @@
                title="{{ __('Drag') }}"></i>
         </li>
         @endforeach
-        @if($allGroups->isEmpty())
-        <li class="nav-item">
+        @if($allGroups->{{ __('isEmpty())') }}<li class="nav-item">
             <span class="nav-link disabled">{{ __('No Groups Created Yet') }}</span>
         </li>
         @endif

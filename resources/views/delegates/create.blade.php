@@ -6,14 +6,14 @@
 <div class="content-section container">
     <div class="row">
         <div class="col-md-12">
-            <h2 class="mb-4">Add Delegate</h2>
+            <h2 class="mb-4">{{ __('Add Delegate') }}</h2>
             <hr>
             <form id="saveDelegateForm" action="{{ route('delegates.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="row mb-4">
                     <div class="col-md-12 text-center">
-                        <label class="form-label d-block text-muted mb-2">Photo</label>
+                        <label class="form-label d-block text-muted mb-2">{{ __('Photo') }}</label>
                         <div class="mb-3">
                             <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control" accept="image/*" onchange="previewImage(event, 'photoPreview')">
                         </div>
@@ -24,13 +24,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateNameTh">Name (TH)</label>
+                            <label for="delegateNameTh">{{ __('Name (TH)') }}</label>
                             <input type="text" name="delegateNameTh" id="delegateNameTh" class="form-control" required>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateNameEn">Name (EN)</label>
+                            <label for="delegateNameEn">{{ __('Name (EN)') }}</label>
                             <input type="text" name="delegateNameEn" id="delegateNameEn" class="form-control">
                         </div>
                     </div>
@@ -38,13 +38,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateId">National ID</label>
+                            <label for="delegateId">{{ __('National ID') }}</label>
                             <input type="text" name="delegateId" id="delegateId" class="form-control">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateEmployeeId">Employee ID</label>
+                            <label for="delegateEmployeeId">{{ __('Employee ID') }}</label>
                             <input type="text" name="delegateEmployeeId" id="delegateEmployeeId" class="form-control">
                         </div>
                     </div>
@@ -52,13 +52,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateIssueDate">Issue Date</label>
+                            <label for="delegateIssueDate">{{ __('Issue Date') }}</label>
                             <input type="date" name="delegateIssueDate" id="delegateIssueDate" class="form-control">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateExpiryDate">Expiry Date</label>
+                            <label for="delegateExpiryDate">{{ __('Expiry Date') }}</label>
                             <input type="date" name="delegateExpiryDate" id="delegateExpiryDate" class="form-control">
                         </div>
                     </div>
@@ -66,13 +66,13 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegatePhone">Phone</label>
+                            <label for="delegatePhone">{{ __('Phone') }}</label>
                             <input type="text" name="delegatePhone" id="delegatePhone" class="form-control">
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="delegateEmail">Email</label>
+                            <label for="delegateEmail">{{ __('Email') }}</label>
                             <input type="email" name="delegateEmail" id="delegateEmail" class="form-control">
                         </div>
                     </div>
@@ -82,7 +82,7 @@
                 <h5>{{ __('Other Documents') }}</h5>
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label for="delegate_doc_other_1" class="form-label">1. {{ __('Other Document') }} 1 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                        <label for="delegate_doc_other_1" class="form-label">1. {{ __('Other Document') }} 1 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                         <div class="input-group input-group-sm">
                             <input type="file" class="form-control form-control-sm @error('delegate_doc_other_1') is-invalid @enderror" id="delegate_doc_other_1" name="delegate_doc_other_1" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'delegate_doc_other_1' } }))">
@@ -95,7 +95,7 @@
                         @enderror
                     </div>
                     <div class="col-md-4">
-                        <label for="delegate_doc_other_2" class="form-label">2. {{ __('Other Document') }} 2 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                        <label for="delegate_doc_other_2" class="form-label">2. {{ __('Other Document') }} 2 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                         <div class="input-group input-group-sm">
                             <input type="file" class="form-control form-control-sm @error('delegate_doc_other_2') is-invalid @enderror" id="delegate_doc_other_2" name="delegate_doc_other_2" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'delegate_doc_other_2' } }))">
@@ -108,7 +108,7 @@
                         @enderror
                     </div>
                     <div class="col-md-4">
-                        <label for="delegate_doc_other_3" class="form-label">3. {{ __('Other Document') }} 3 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                        <label for="delegate_doc_other_3" class="form-label">3. {{ __('Other Document') }} 3 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                         <div class="input-group input-group-sm">
                             <input type="file" class="form-control form-control-sm @error('delegate_doc_other_3') is-invalid @enderror" id="delegate_doc_other_3" name="delegate_doc_other_3" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'delegate_doc_other_3' } }))">
@@ -161,7 +161,7 @@
                 <input type="hidden" name="workplace_addresses" id="workplace_addresses_json">
 
                 <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">Add Delegate</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Add Delegate') }}</button>
                     <a href="{{ route('delegates.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
                 </div>
             </form>

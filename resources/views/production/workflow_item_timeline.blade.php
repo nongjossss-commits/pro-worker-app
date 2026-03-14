@@ -7,8 +7,7 @@
         <div>
             <div class="text-muted small">
                 <a href="{{ route('production.show', $item->production_order_id) }}" class="text-decoration-none text-muted">
-                    <i class="bi bi-arrow-left me-1"></i>Back to Project
-                </a>
+                    <i class="bi bi-arrow-left me-1"></i>{{ __('Back to Project') }}</a>
             </div>
             <h3 class="fw-bold mt-2">
                 {{ $item->employee->fullname_th ?? 'Unknown Name' }}
@@ -28,7 +27,7 @@
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Timeline & Documents</h5>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>{{ __('Timeline & Documents') }}</h5>
                 </div>
                 <div class="card-body bg-light">
                     <div class="timeline">
@@ -38,13 +37,13 @@
                                     <div class="d-flex justify-content-between mb-2">
                                         <div>
                                             @if($step->step_type === 'text')
-                                                <span class="badge bg-info mb-1">Note</span>
+                                                <span class="badge bg-info mb-1">{{ __('Note') }}</span>
                                                 <h6 class="fw-bold mb-0">{{ $step->label ?? 'Note' }}</h6>
                                             @elseif($step->step_type === 'date')
-                                                <span class="badge bg-warning text-dark mb-1">Date</span>
+                                                <span class="badge bg-warning text-dark mb-1">{{ __('Date') }}</span>
                                                 <h6 class="fw-bold mb-0">{{ $step->label ?? 'Important Date' }}</h6>
                                             @elseif($step->step_type === 'file')
-                                                <span class="badge bg-primary mb-1">File Attachment</span>
+                                                <span class="badge bg-primary mb-1">{{ __('File Attachment') }}</span>
                                                 <h6 class="fw-bold mb-0">{{ $step->label ?? 'Document' }}</h6>
                                             @endif
                                         </div>
@@ -71,9 +70,7 @@
                                                 <div class="flex-grow-1 text-truncate">
                                                     {{ $step->value_text ?? 'Attached File' }}
                                                 </div>
-                                                <a href="#" onclick="event.preventDefault(); viewPDF('{{ Storage::url($step->file_path) }}', 'View Document')" class="btn btn-sm btn-outline-primary">
-                                                    View
-                                                </a>
+                                                <a href="#" onclick="event.preventDefault(); viewPDF('{{ Storage::url($step->file_path) }}', 'View Document')" class="btn btn-sm btn-outline-primary">{{ __('View') }}</a>
                                             </div>
                                         @endif
                                     </div>
@@ -81,9 +78,7 @@
                             </div>
                         @empty
                             <div class="text-center py-5 text-muted">
-                                <i class="bi bi-hourglass-split fs-1 d-block mb-3"></i>
-                                No activity recorded yet. Start by adding a step on the right.
-                            </div>
+                                <i class="bi bi-hourglass-split fs-1 d-block mb-3"></i>{{ __('No activity recorded yet. Start by adding a step on the right.') }}</div>
                         @endforelse
                     </div>
                 </div>
@@ -94,19 +89,16 @@
         <div class="col-lg-4">
             <div class="card shadow-sm border-0 sticky-top" style="top: 20px; z-index: 100;">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold">Update Tracking</h5>
+                    <h5 class="mb-0 fw-bold">{{ __('Update Tracking') }}</h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <button class="btn btn-outline-primary text-start" data-bs-toggle="modal" data-bs-target="#addTextModal">
-                            <i class="bi bi-chat-left-text me-2"></i>Add Note / Text
-                        </button>
+                            <i class="bi bi-chat-left-text me-2"></i>{{ __('Add Note / Text') }}</button>
                         <button class="btn btn-outline-warning text-dark text-start" data-bs-toggle="modal" data-bs-target="#addDateModal">
-                            <i class="bi bi-calendar-check me-2"></i>Add Key Date
-                        </button>
+                            <i class="bi bi-calendar-check me-2"></i>{{ __('Add Key Date') }}</button>
                         <button class="btn btn-outline-secondary text-start" data-bs-toggle="modal" data-bs-target="#addFileModal">
-                            <i class="bi bi-paperclip me-2"></i>Attach Document
-                        </button>
+                            <i class="bi bi-paperclip me-2"></i>{{ __('Attach Document') }}</button>
                     </div>
                 </div>
             </div>
@@ -124,21 +116,21 @@
             <input type="hidden" name="step_type" value="text">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Note</h5>
+                    <h5 class="modal-title">{{ __('Add Note') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Label (Optional)</label>
-                        <input type="text" name="label" class="form-control" placeholder="e.g. Note from Officer">
+                        <label class="form-label">{{ __('Label (Optional)') }}</label>
+                        <input type="text" name="label" class="form-control" placeholder="{{ __('e.g. Note from Officer') }}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Content</label>
+                        <label class="form-label">{{ __('Content') }}</label>
                         <textarea name="value_text" class="form-control" rows="4" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Save Note</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save Note') }}</button>
                 </div>
             </div>
         </form>
@@ -153,25 +145,25 @@
             <input type="hidden" name="step_type" value="date">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Date</h5>
+                    <h5 class="modal-title">{{ __('Add Date') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Label</label>
-                        <input type="text" name="label" class="form-control" placeholder="e.g. Appointment Date, Expiry Date" required>
+                        <label class="form-label">{{ __('Label') }}</label>
+                        <input type="text" name="label" class="form-control" placeholder="{{ __('e.g. Appointment Date, Expiry Date') }}" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Select Date</label>
+                        <label class="form-label">{{ __('Select Date') }}</label>
                         <input type="date" name="value_date" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Note (Optional)</label>
-                        <input type="text" name="value_text" class="form-control" placeholder="e.g. at Ministry of Labor">
+                        <label class="form-label">{{ __('Note (Optional)') }}</label>
+                        <input type="text" name="value_text" class="form-control" placeholder="{{ __('e.g. at Ministry of Labor') }}">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-warning">Save Date</button>
+                    <button type="submit" class="btn btn-warning">{{ __('Save Date') }}</button>
                 </div>
             </div>
         </form>
@@ -186,13 +178,13 @@
             <input type="hidden" name="step_type" value="file">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Attach File</h5>
+                    <h5 class="modal-title">{{ __('Attach File') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Document Type / Label</label>
-                        <input type="text" name="label" class="form-control" placeholder="e.g. Receipt, Signed Form" required>
+                        <label class="form-label">{{ __('Document Type / Label') }}</label>
+                        <input type="text" name="label" class="form-control" placeholder="{{ __('e.g. Receipt, Signed Form') }}" required>
                     </div>
                     <div class="mb-3">
                         <x-file-input-group
@@ -204,7 +196,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-secondary">Upload</button>
+                    <button type="submit" class="btn btn-secondary">{{ __('Upload') }}</button>
                 </div>
             </div>
         </form>

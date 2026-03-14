@@ -13,8 +13,7 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    @if($errors->any())
-        <div class="alert alert-danger">
+    @if($errors->{{ __('any())') }}<div class="alert alert-danger">
             <ul class="mb-0">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -46,19 +45,17 @@
                                 <td>{{ $expense->category ? $expense->category->name : 'N/A' }}</td>
                                 <td>
                                     {{ Str::limit($expense->description, 50) }}
-                                    @if($expense->financialProfile)
-                                        <div class="small text-muted mt-1"><i class="bi bi-building"></i> {{ $expense->financialProfile->name }}</div>
+                                    @if($expense->{{ __('financialProfile)') }}<div class="small text-muted mt-1"><i class="bi bi-building"></i> {{ $expense->financialProfile->name }}</div>
                                     @endif
-                                    @if($expense->productionOrder)
-                                        <div class="small text-info mt-1"><i class="bi bi-briefcase"></i> Job: {{ $expense->productionOrder->project_name }}</div>
+                                    @if($expense->{{ __('productionOrder)') }}<div class="small text-info mt-1"><i class="bi bi-briefcase"></i> Job: {{ $expense->productionOrder->project_name }}</div>
                                     @endif
                                 </td>
                                 <td>{{ $expense->bankAccount ? $expense->bankAccount->bank_name : 'N/A' }}</td>
                                 <td class="text-center">
                                     @if($expense->is_tax_deductible)
-                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i> Yes</span>
+                                        <span class="badge bg-success"><i class="bi bi-check-circle"></i>{{ __('Yes') }}</span>
                                     @else
-                                        <span class="badge bg-secondary"><i class="bi bi-dash-circle"></i> No</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-dash-circle"></i>{{ __('No') }}</span>
                                     @endif
                                 </td>
                                 <td class="text-end text-danger fw-bold">
@@ -85,7 +82,7 @@
                                     <form action="{{ route('finance.expenses.destroy', $expense) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this expense? The bank balance will be restored.') }}');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

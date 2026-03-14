@@ -72,8 +72,7 @@
         </div>
     </div>
 
-    @if($employees->isEmpty())
-        <div class="alert alert-success d-flex align-items-center" role="alert">
+    @if($employees->{{ __('isEmpty())') }}<div class="alert alert-success d-flex align-items-center" role="alert">
             <i class="bi bi-check-circle-fill flex-shrink-0 me-2" style="font-size: 1.5rem;"></i>
             <div>
                 <strong>{{ __('Great job!') }}</strong> {{ __('No employees found matching your criteria (or no missing data).') }}
@@ -187,8 +186,7 @@
                                             <div class="text-primary small fw-bold">{{ $label }}</div>
                                         @endforeach
                                     @endif
-                                    @if($employee->employer)
-                                        <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                    @if($employee->{{ __('employer)') }}<button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
                                                 data-model-type="employer"
                                                 data-model-id="{{ $employee->employer->id }}"
                                                 title="{{ __('Preview Employer') }}">

@@ -1021,7 +1021,7 @@
                         this.newGroupForm.avatar = null;
                         this.newGroupPreviewUrl = null;
                         this.fetchContacts(); // Refresh list to show new group
-                        Swal.fire({ icon: 'success', title: 'Group Created', timer: 1500, showConfirmButton: false });
+                        Swal.fire({ icon: 'success', title: '{{ __('Group Created') }}', timer: 1500, showConfirmButton: false });
                     }
                 })
                 .catch(error => {
@@ -1083,7 +1083,7 @@
                              chat.avatar_url = data.group.avatar_url;
                          }
                          this.fetchContacts();
-                         Swal.fire({ icon: 'success', title: 'Group Updated', timer: 1500, showConfirmButton: false });
+                         Swal.fire({ icon: 'success', title: '{{ __('Group Updated') }}', timer: 1500, showConfirmButton: false });
                     }
                 })
                 .catch(error => {

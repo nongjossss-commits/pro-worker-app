@@ -30,8 +30,7 @@
 
             @if($pdfRoute)
                 <a href="{{ $pdfRoute }}" download class="btn btn-danger btn-sm text-white">
-                    <i class="bi bi-file-earmark-pdf-fill"></i> PDF
-                </a>
+                    <i class="bi bi-file-earmark-pdf-fill"></i>{{ __('PDF') }}</a>
             @endif
 
             <!-- EDIT BUTTON -->

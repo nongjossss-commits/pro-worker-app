@@ -5,16 +5,15 @@
 
 @section('content')
 <div class="mb-4 p-4 bg-gray-50 border rounded text-sm">
-    <strong>Reason for Adjustment:</strong> Refund for difference between Paid Head Count and Actual Delivered Head Count.
-</div>
+    <strong>Reason for Adjustment:</strong>{{ __('Refund for difference between Paid Head Count and Actual Delivered Head Count.') }}</div>
 
 <table>
     <thead>
         <tr>
-            <th style="width: 50%;">Description</th>
-            <th class="text-center" style="width: 15%;">Head Count</th>
-            <th class="text-right" style="width: 15%;">Unit Price</th>
-            <th class="text-right" style="width: 20%;">Amount</th>
+            <th style="width: 50%;">{{ __('Description') }}</th>
+            <th class="text-center" style="width: 15%;">{{ __('Head Count') }}</th>
+            <th class="text-right" style="width: 15%;">{{ __('Unit Price') }}</th>
+            <th class="text-right" style="width: 20%;">{{ __('Amount') }}</th>
         </tr>
     </thead>
     <tbody>
@@ -55,8 +54,8 @@
 
         <tr>
             <td>
-                <strong>Paid Amount / Head Count</strong><br>
-                <span class="text-muted text-sm">Total amount received from customer</span>
+                <strong>{{ __('Paid Amount / Head Count') }}</strong><br>
+                <span class="text-muted text-sm">{{ __('Total amount received from customer') }}</span>
             </td>
             <td class="text-center">{{ $paidHeads }}</td>
             <td class="amount">{{ number_format($unitPrice, 2) }}</td>
@@ -65,8 +64,8 @@
 
         <tr>
             <td>
-                <strong>Actual Delivered Head Count</strong><br>
-                <span class="text-muted text-sm">Final count of employees processed</span>
+                <strong>{{ __('Actual Delivered Head Count') }}</strong><br>
+                <span class="text-muted text-sm">{{ __('Final count of employees processed') }}</span>
             </td>
             <td class="text-center">{{ $actualCount }}</td>
             <td class="amount">{{ number_format($unitPrice, 2) }}</td>
@@ -75,7 +74,7 @@
 
         <tr style="background-color: #fff1f2;">
             <td>
-                <strong class="text-danger">Refund / Credit Adjustment</strong><br>
+                <strong class="text-danger">{{ __('Refund / Credit Adjustment') }}</strong><br>
                 <span class="text-muted text-sm">Return for {{ $diffHeads }} person(s)</span>
             </td>
             <td class="text-center text-danger font-bold">-{{ $diffHeads }}</td>
@@ -87,7 +86,7 @@
         <!-- Refund Breakdown -->
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right text-muted">Refund Subtotal</td>
+            <td class="text-right text-muted">{{ __('Refund Subtotal') }}</td>
             <td class="amount text-danger">{{ number_format($refundSubtotal, 2) }}</td>
         </tr>
         <tr>
@@ -97,7 +96,7 @@
         </tr>
         <tr>
             <td colspan="2" style="border: none;"></td>
-            <td class="text-right font-bold text-danger" style="font-size: 1.1em;">Total Refund</td>
+            <td class="text-right font-bold text-danger" style="font-size: 1.1em;">{{ __('Total Refund') }}</td>
             <td class="amount font-bold text-danger" style="font-size: 1.1em;">{{ number_format($refundAmount, 2) }}</td>
         </tr>
          <tr>
@@ -109,18 +108,18 @@
 </table>
 
 <div class="mt-8">
-    <h4 class="text-sm font-bold mb-2">Refund Method</h4>
+    <h4 class="text-sm font-bold mb-2">{{ __('Refund Method') }}</h4>
     <div class="flex items-center mb-2">
         <div style="width: 20px; height: 20px; border: 1px solid #ccc; margin-right: 10px;"></div>
-        <span class="text-sm">Cash</span>
+        <span class="text-sm">{{ __('Cash') }}</span>
     </div>
     <div class="flex items-center mb-2">
         <div style="width: 20px; height: 20px; border: 1px solid #ccc; margin-right: 10px;"></div>
-        <span class="text-sm">Bank Transfer</span>
+        <span class="text-sm">{{ __('Bank Transfer') }}</span>
     </div>
     <div class="flex items-center">
         <div style="width: 20px; height: 20px; border: 1px solid #ccc; margin-right: 10px;"></div>
-        <span class="text-sm">Credit Balance (Next Job)</span>
+        <span class="text-sm">{{ __('Credit Balance (Next Job)') }}</span>
     </div>
 </div>
 @endsection

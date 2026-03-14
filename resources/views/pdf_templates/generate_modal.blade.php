@@ -6,14 +6,12 @@
         <div class="col-md-8">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3">
-                    <h5 class="mb-0 fw-bold">Generate Automated PDF</h5>
+                    <h5 class="mb-0 fw-bold">{{ __('Generate Automated PDF') }}</h5>
                 </div>
                 <div class="card-body p-4" x-data="pdfGenerator()">
 
                     <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle me-2"></i>
-                        You have selected <strong>{{ count($employees) }}</strong> employees.
-                    </div>
+                        <i class="bi bi-info-circle me-2"></i>{{ __('You have selected') }}<strong>{{ count($employees) }}</strong>{{ __('employees.') }}</div>
 
                     <form action="{{ route('admin.pdf-templates.generate.process') }}" method="POST" id="generateForm" @submit.prevent="handleSubmit">
                         @csrf
@@ -59,7 +57,7 @@
                         {{-- Section 1: Select Employer (For Filtering Templates) --}}
                         @if(isset($employers) && $employers->count() > 0)
                         <div class="mb-4">
-                            <label class="form-label fw-bold">1. Select Employer (Owner of Template)</label>
+                            <label class="form-label fw-bold">{{ __('1. Select Employer (Owner of Template)') }}</label>
 
                             <div x-data="employerSelector()" @click.outside="open = false; search = selectedName">
                                 <div class="position-relative">
@@ -67,7 +65,7 @@
                                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                                         <input type="text"
                                                class="form-control"
-                                               placeholder="Type to search employer or select Global..."
+                                               placeholder="{{ __('Type to search employer or select Global...') }}"
                                                x-model="search"
                                                @focus="open = true; search = ''"
                                                @keydown.escape="open = false"
@@ -90,9 +88,7 @@
                                                     <i class="bi bi-check2 text-primary" x-show="selectedEmployerId == opt.id"></i>
                                                 </li>
                                             </template>
-                                            <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">
-                                                No results found
-                                            </li>
+                                            <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">{{ __('No results found') }}</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -102,28 +98,27 @@
 
                         <!-- Section 2: Template Selection -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">2. Select Template</label>
+                            <label class="form-label fw-bold">{{ __('2. Select Template') }}</label>
                             <div class="input-group">
                                 <select name="template_id" class="form-select" required x-model="selectedTemplateId" :disabled="isLoadingTemplates">
-                                    <option value="">-- Choose Template --</option>
+                                    <option value="">{{ __('-- Choose Template --') }}</option>
                                     <template x-for="t in templates" :key="t.id">
                                         <option :value="t.id" x-text="t.name + (t.type === 'global' ? ' (Global)' : '')"></option>
                                     </template>
                                 </select>
-                                <button type="button" class="btn btn-outline-secondary" @click="fetchTemplates()" title="Refresh">
+                                <button type="button" class="btn btn-outline-secondary" @click="fetchTemplates()" title="{{ __('Refresh') }}">
                                     <i class="bi" :class="isLoadingTemplates ? 'bi-hourglass-split' : 'bi-arrow-clockwise'"></i>
                                 </button>
                             </div>
-                            <div class="form-text text-muted" x-show="isLoadingTemplates">Loading templates...</div>
+                            <div class="form-text text-muted" x-show="isLoadingTemplates">{{ __('Loading templates...') }}</div>
                         </div>
 
                         <!-- Section 2.5: Target Employer Selection (Only for Global) -->
                         @if(isset($employers) && $employers->count() > 0)
                         <div class="mb-4" x-show="selectedTemplateType === 'global'" x-transition>
-                            <label class="form-label fw-bold text-primary">2.5 Target Employer (For Document Data)</label>
+                            <label class="form-label fw-bold text-primary">{{ __('2.5 Target Employer (For Document Data)') }}</label>
                             <p class="text-sm text-muted mb-2">
-                                <i class="bi bi-info-circle"></i>
-                                Since you selected a <strong>Global Template</strong>, you can optionally choose which employer's data to insert.
+                                <i class="bi bi-info-circle"></i>{{ __('Since you selected a') }}<strong>{{ __('Global Template') }}</strong>, you can optionally choose which employer's data to insert.
                                 If left blank, employer fields will be empty.
                             </p>
 
@@ -136,13 +131,13 @@
                                         <span class="input-group-text"><i class="bi bi-building"></i></span>
                                         <input type="text"
                                                class="form-control"
-                                               placeholder="Type to search Target Employer..."
+                                               placeholder="{{ __('Type to search Target Employer...') }}"
                                                x-model="search"
                                                @focus="open = true; search = ''"
                                                @keydown.escape="open = false"
                                                autocomplete="off">
                                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
-                                        <button class="btn btn-outline-danger" type="button" @click="clearSelection()" title="Clear Selection" x-show="selectedEmployerId">
+                                        <button class="btn btn-outline-danger" type="button" @click="clearSelection()" title="{{ __('Clear Selection') }}" x-show="selectedEmployerId">
                                             <i class="bi bi-x"></i>
                                         </button>
                                     </div>
@@ -162,9 +157,7 @@
                                                     <i class="bi bi-check2 text-primary" x-show="selectedEmployerId == opt.id"></i>
                                                 </li>
                                             </template>
-                                            <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">
-                                                No results found
-                                            </li>
+                                            <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">{{ __('No results found') }}</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -174,15 +167,13 @@
 
                         <!-- Section 2.6: Target Importer Selection (Auto-detected) -->
                         <div class="mb-4" x-show="needsImporter" x-transition>
-                            <label class="form-label fw-bold text-success">Target Importer (บริษัทนำเข้า)</label>
+                            <label class="form-label fw-bold text-success">{{ __('Target Importer (บริษัทนำเข้า)') }}</label>
                             <p class="text-sm text-muted mb-2">
-                                <i class="bi bi-info-circle"></i>
-                                This template contains Importer fields. Please select an Importer.
-                            </p>
+                                <i class="bi bi-info-circle"></i>{{ __('This template contains Importer fields. Please select an Importer.') }}</p>
 
                             <input type="hidden" name="target_importer_id" x-model="targetImporterId">
                             <select class="form-select" x-model="targetImporterId">
-                                <option value="">-- Leave Blank --</option>
+                                <option value="">{{ __('-- Leave Blank --') }}</option>
                                 @foreach($importers as $importer)
                                     <option value="{{ $importer->id }}">{{ $importer->importerNameTh }}</option>
                                 @endforeach
@@ -191,15 +182,13 @@
 
                         <!-- Section 2.7: Target Delegate Selection (Auto-detected) -->
                         <div class="mb-4" x-show="needsDelegate" x-transition>
-                            <label class="form-label fw-bold text-info">Target Company Employee (พนักงานบริษัท / Delegate)</label>
+                            <label class="form-label fw-bold text-info">{{ __('Target Company Employee (พนักงานบริษัท / Delegate)') }}</label>
                             <p class="text-sm text-muted mb-2">
-                                <i class="bi bi-info-circle"></i>
-                                This template contains Delegate fields. Please select a Company Employee.
-                            </p>
+                                <i class="bi bi-info-circle"></i>{{ __('This template contains Delegate fields. Please select a Company Employee.') }}</p>
 
                             <input type="hidden" name="target_delegate_id" x-model="targetDelegateId">
                             <select class="form-select" x-model="targetDelegateId">
-                                <option value="">-- Leave Blank --</option>
+                                <option value="">{{ __('-- Leave Blank --') }}</option>
                                 @foreach($delegates as $delegate)
                                     <option value="{{ $delegate->id }}">{{ $delegate->delegateNameTh }}</option>
                                 @endforeach
@@ -208,33 +197,29 @@
 
                         <!-- Section 3: Output Option -->
                         <div class="mb-4">
-                            <label class="form-label fw-bold">3. Output Destination</label>
+                            <label class="form-label fw-bold">{{ __('3. Output Destination') }}</label>
                             <div class="d-flex gap-4">
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="output_type" id="outputDownload" value="download" x-model="outputType">
-                                    <label class="form-check-label" for="outputDownload">
-                                        Download immediately (Zip/PDF)
-                                    </label>
+                                    <label class="form-check-label" for="outputDownload">{{ __('Download immediately (Zip/PDF)') }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="output_type" id="outputSlot" value="save_to_slot" x-model="outputType">
-                                    <label class="form-check-label" for="outputSlot">
-                                        Save to Employee Record (Attachment Slot)
-                                    </label>
+                                    <label class="form-check-label" for="outputSlot">{{ __('Save to Employee Record (Attachment Slot)') }}</label>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Slot Name Configuration -->
                         <div class="mb-4 p-3 bg-light rounded border" x-show="outputType === 'save_to_slot'" x-transition>
-                            <label class="form-label fw-bold">Select Attachment Slot</label>
+                            <label class="form-label fw-bold">{{ __('Select Attachment Slot') }}</label>
                             <p class="text-sm text-gray-500 mb-2">
                                 Choose where to attach this document on the record.
                                 Note: This will overwrite any existing file in the selected slot.
                             </p>
 
                             <select name="slot_name" class="form-select" :required="outputType === 'save_to_slot'" x-model="slotName">
-                                <option value="">-- Select Slot --</option>
+                                <option value="">{{ __('-- Select Slot --') }}</option>
                                 <optgroup label="Employee Documents (เอกสารลูกจ้าง)">
                                     @for($i = 1; $i <= 10; $i++)
                                         @php $dbIndex = $i + 8; @endphp
@@ -250,10 +235,9 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <a href="{{ $redirect_url }}" class="btn btn-light">Cancel</a>
+                            <a href="{{ $redirect_url }}" class="btn btn-light">{{ __('Cancel') }}</a>
                             <button type="submit" class="btn btn-primary" :disabled="isProcessing">
-                                <i class="bi bi-file-earmark-pdf me-2"></i>Generate Documents
-                            </button>
+                                <i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Generate Documents') }}</button>
                         </div>
                     </form>
                 </div>
@@ -269,23 +253,23 @@
                 <div class="modal-body text-center p-5">
                     <div class="mb-4">
                         <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                            <span class="visually-hidden">Loading...</span>
+                            <span class="visually-hidden">{{ __('Loading...') }}</span>
                         </div>
                     </div>
-                    <h5 class="modal-title fw-bold mb-3">Processing Documents...</h5>
+                    <h5 class="modal-title fw-bold mb-3">{{ __('Processing Documents...') }}</h5>
 
                     <div class="progress mb-2" style="height: 20px;">
                         <div id="saveProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
                     </div>
 
-                    <p class="text-muted mb-0" id="saveProgressText">Preparing...</p>
+                    <p class="text-muted mb-0" id="saveProgressText">{{ __('Preparing...') }}</p>
 
                     <div class="mt-3 d-none" id="saveErrorDetails">
                         <div class="alert alert-danger text-start small">
                             <strong>Errors occurred:</strong>
                             <ul id="errorList" class="mb-0 ps-3"></ul>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()">Reload Page</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()">{{ __('Reload Page') }}</button>
                     </div>
                 </div>
             </div>
@@ -379,12 +363,12 @@
                 // Logic: Global Template + Empty Target
                 if (this.selectedTemplateType === 'global' && !this.targetEmployerId) {
                      Swal.fire({
-                         title: 'No Target Employer Selected',
-                         text: 'You have selected a Global Template but no Target Employer. The employer fields in the document will be left blank. Are you sure?',
+                         title: '{{ __('No Target Employer Selected') }}',
+                         text: '{{ __('You have selected a Global Template but no Target Employer. The employer fields in the document will be left blank. Are you sure?') }}',
                          icon: 'warning',
                          showCancelButton: true,
-                         confirmButtonText: 'Yes, leave blank',
-                         cancelButtonText: 'No, let me select'
+                         confirmButtonText: '{{ __('Yes, leave blank') }}',
+                         cancelButtonText: '{{ __('No, let me select') }}'
                      }).then((result) => {
                          if (result.isConfirmed) {
                              this.checkImporterAndDelegate(form);
@@ -407,12 +391,12 @@
 
                 if (warnings.length > 0) {
                     Swal.fire({
-                         title: 'Missing Selection',
+                         title: '{{ __('Missing Selection') }}',
                          text: `This template requires ${warnings.join(' and ')} information, but you left it blank. Are you sure you want to proceed?`,
                          icon: 'warning',
                          showCancelButton: true,
-                         confirmButtonText: 'Yes, leave blank',
-                         cancelButtonText: 'No, let me select'
+                         confirmButtonText: '{{ __('Yes, leave blank') }}',
+                         cancelButtonText: '{{ __('No, let me select') }}'
                      }).then((result) => {
                          if (result.isConfirmed) {
                              this.processSubmit(form);

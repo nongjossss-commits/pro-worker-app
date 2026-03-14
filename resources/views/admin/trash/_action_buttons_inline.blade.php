@@ -19,8 +19,7 @@ and is designed to be intercepted by SweetAlert for confirmation.
         <form action="{{ route('admin.trash.restore', ['model' => $modelName, 'id' => $itemId]) }}" method="POST" class="d-inline restore-form">
             @csrf
             <button type="submit" class="btn btn-sm btn-outline-success" title="Restore this item">
-                <i class="bi bi-arrow-counterclockwise"></i> Restore
-            </button>
+                <i class="bi bi-arrow-counterclockwise"></i>{{ __('Restore') }}</button>
         </form>
     @endcan
 
@@ -30,8 +29,7 @@ and is designed to be intercepted by SweetAlert for confirmation.
             @csrf
             @method('DELETE')
             <button type="submit" class="btn btn-sm btn-danger" title="Permanently delete this item">
-                <i class="bi bi-trash3-fill"></i> Delete
-            </button>
+                <i class="bi bi-trash3-fill"></i>{{ __('Delete') }}</button>
         </form>
     @endcan
 </div>

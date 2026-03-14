@@ -65,8 +65,7 @@
                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-event me-2"></i>{{ __('Upcoming Appointments (Short Term)') }}</h5>
                 </div>
                 <div class="card-body p-0">
-                    @if($upcomingAppointments->isEmpty())
-                        <div class="text-center py-5 text-muted">
+                    @if($upcomingAppointments->{{ __('isEmpty())') }}<div class="text-center py-5 text-muted">
                             <i class="bi bi-calendar-check fs-1 opacity-25"></i>
                             <p class="mt-2">{{ __('No upcoming appointments found in the next few days.') }}</p>
                             <small>{{ __('Check notification settings in each Work Type tab.') }}</small>
@@ -94,7 +93,7 @@
                                             <td class="ps-4">
                                                 <div class="{{ $colorClass }}">
                                                     <i class="bi bi-clock me-1"></i> {{ $formatted }}
-                                                    @if($isToday) <span class="badge bg-danger ms-1">TODAY</span> @endif
+                                                    @if($isToday) <span class="badge bg-danger ms-1">{{ __('TODAY') }}</span> @endif
                                                 </div>
                                                 <div class="small text-muted">{{ $date->diffForHumans() }}</div>
                                             </td>
@@ -102,8 +101,7 @@
                                                 <div class="fw-bold">{{ $item->employee->employeeNameEn ?? $item->new_employee_data['name_en'] ?? 'New Employee' }}</div>
                                                 <div class="small text-muted">
                                                     {{ $item->order->employer->employerNameTh ?? $item->order->employer->employerNameEn ?? '-' }}
-                                                    @if($item->order->employer)
-                                                    <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                                    @if($item->order->{{ __('employer)') }}<button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
                                                         data-model-type="employer"
                                                         data-model-id="{{ $item->order->employer->id }}"
                                                         title="Preview Employer">
@@ -146,7 +144,7 @@
                 <div class="card-body p-3">
                     {{-- Calendar Grid --}}
                     <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
-                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                        <div>{{ __('Sun') }}</div><div>{{ __('Mon') }}</div><div>{{ __('Tue') }}</div><div>{{ __('Wed') }}</div><div>{{ __('Thu') }}</div><div>{{ __('Fri') }}</div><div>{{ __('Sat') }}</div>
                     </div>
                     <div class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 5px;">
                         <template x-for="day in days" :key="day.dateStr">
@@ -263,7 +261,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="cropperModalLabel">ครอบตัดรูปภาพ</h5>
+                <h5 class="modal-title" id="cropperModalLabel">{{ __('ครอบตัดรูปภาพ') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -282,8 +280,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" id="cropImageBtn">ครอบตัดและบันทึก</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ยกเลิก') }}</button>
+                <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('ครอบตัดและบันทึก') }}</button>
             </div>
         </div>
     </div>

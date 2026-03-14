@@ -32,22 +32,17 @@
             {{-- Bulk Actions Toolbar --}}
             <div class="btn-group" role="group" x-show="selectedItems.length > 0" x-transition>
                 <button type="button" class="btn btn-outline-primary" @click="openBulkStepModal('text')">
-                    <i class="bi bi-fonts"></i> Text
-                </button>
+                    <i class="bi bi-fonts"></i>{{ __('Text') }}</button>
                 <button type="button" class="btn btn-outline-primary" @click="openBulkStepModal('date')">
-                    <i class="bi bi-calendar"></i> Date
-                </button>
+                    <i class="bi bi-calendar"></i>{{ __('Date') }}</button>
                 <button type="button" class="btn btn-outline-primary" @click="openBulkStepModal('file')">
-                    <i class="bi bi-paperclip"></i> File
-                </button>
-                <button type="button" class="btn btn-outline-secondary" @click="clearSelection()">
-                    Clear (<span x-text="selectedItems.length"></span>)
+                    <i class="bi bi-paperclip"></i>{{ __('File') }}</button>
+                <button type="button" class="btn btn-outline-secondary" @click="clearSelection()">{{ __('Clear (') }}<span x-text="selectedItems.length"></span>)
                 </button>
             </div>
 
             <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-                <i class="bi bi-person-plus"></i> Add Employee
-            </button>
+                <i class="bi bi-person-plus"></i>{{ __('Add Employee') }}</button>
         </div>
     </div>
 
@@ -60,7 +55,7 @@
                         <i class="bi bi-people-fill text-primary fs-4"></i>
                     </div>
                     <div>
-                        <h6 class="text-muted mb-0">Total Employees</h6>
+                        <h6 class="text-muted mb-0">{{ __('Total Employees') }}</h6>
                         <h3 class="fw-bold mb-0" x-text="items.length">0</h3>
                     </div>
                 </div>
@@ -125,7 +120,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ __('Field Name (Label)') }}</label>
-                        <input type="text" class="form-control" x-model="bulkStepLabel" placeholder="e.g. Submission Date">
+                        <input type="text" class="form-control" x-model="bulkStepLabel" placeholder="{{ __('e.g. Submission Date') }}">
                     </div>
 
                     <template x-if="bulkStepType === 'text'">

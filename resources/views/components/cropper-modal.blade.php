@@ -9,7 +9,7 @@
                 <!-- Loading Overlay -->
                 <div id="cropperLoadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75 d-flex flex-column justify-content-center align-items-center d-none" style="z-index: 20;">
                     <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
                     </div>
                     <div id="cropperLoadingText" class="mt-2 text-primary fw-bold">{{ __('Processing...') }}</div>
                     <button type="button" id="cancelProcessingBtn" class="btn btn-danger btn-sm mt-3">
@@ -98,7 +98,7 @@
                 <div class="mt-3 border-top pt-3" id="bgToolbarContainer">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label fw-bold mb-0 text-primary"><i class="bi bi-magic"></i> {{ __('Smart Background Tools') }}</label>
-                        <small class="text-muted" style="font-size: 0.8em;">Powered by AI</small>
+                        <small class="text-muted" style="font-size: 0.8em;">{{ __('Powered by AI') }}</small>
                     </div>
                     <div class="d-flex gap-2 flex-wrap align-items-center" id="bgToolbar">
                         <button type="button" class="btn btn-outline-secondary btn-sm" data-bg-action="original">

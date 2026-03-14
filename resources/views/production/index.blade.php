@@ -239,8 +239,7 @@
                         <span class="fw-bold text-dark fs-6">{{ $step->name }}</span>
                     </div>
                  @endforeach
-                 @if($steps->isEmpty())
-                    <span class="text-muted small">{{ __('No preparation steps configured.') }}</span>
+                 @if($steps->{{ __('isEmpty())') }}<span class="text-muted small">{{ __('No preparation steps configured.') }}</span>
                  @endif
             </div>
         </div>
@@ -380,12 +379,10 @@
                                             @endforeach
                                         @endif
                                     </h5>
-                                    @if($order->employer && $order->employer->employerNameEn)
-                                        <div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
+                                    @if($order->employer && $order->employer->{{ __('employerNameEn)') }}<div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
                                     @endif
 
-                                    @if($order->employer && $order->employer->jobOwner)
-                                        <div class="text-muted small border-start ps-2 mt-1 ms-1">
+                                    @if($order->employer && $order->employer->{{ __('jobOwner)') }}<div class="text-muted small border-start ps-2 mt-1 ms-1">
                                             <i class="bi bi-person-badge me-1"></i>
                                             <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
                                                 {{ $order->employer->jobOwner->name }}
@@ -394,13 +391,11 @@
                                     @endif
 
                                     <div class="text-muted small mt-1">
-                                        @if($order->updater)
-                                            <i class="bi bi-clock-history me-1"></i>
+                                        @if($order->{{ __('updater)') }}<i class="bi bi-clock-history me-1"></i>
                                             <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->updater->name]) }}" class="text-decoration-none text-secondary" title="{{ __('Last Modified By') }}">
                                                 {{ $order->updater->name }}
                                             </a>
-                                        @elseif($order->creator)
-                                            <i class="bi bi-person-circle me-1"></i>
+                                        @elseif($order->{{ __('creator)') }}<i class="bi bi-person-circle me-1"></i>
                                             <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null, 'search' => $order->creator->name]) }}" class="text-decoration-none text-secondary" title="{{ __('Created By') }}">
                                                 {{ $order->creator->name }}
                                             </a>
@@ -429,7 +424,7 @@
                                  <div class="d-flex align-items-center gap-2 me-xl-3">
                                     <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 80px;">
                                         <span class="fw-bold" id="order-{{ $order->id }}-total">{{ $computed['total'] }}</span>
-                                        <span class="text-muted small" style="font-size: 0.65rem;">TOTAL</span>
+                                        <span class="text-muted small" style="font-size: 0.65rem;">{{ __('TOTAL') }}</span>
                                     </span>
                                  </div>
 
@@ -1702,7 +1697,7 @@
                 body.innerHTML = html;
             })
             .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load trash.</div>';
+                body.innerHTML = '<div class="text-danger text-center p-4">{{ __('Failed to load trash.') }}</div>';
             });
     }
 

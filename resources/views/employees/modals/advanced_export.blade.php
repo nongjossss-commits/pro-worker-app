@@ -212,7 +212,7 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="name_list_number" id="col_namelist">
-                                        <label class="form-check-label" for="col_namelist">เลข RA จากระบบ outsource</label>
+                                        <label class="form-check-label" for="col_namelist">{{ __('เลข RA จากระบบ outsource') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
@@ -248,13 +248,13 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="bank_name" id="col_bank_name">
-                                        <label class="form-check-label" for="col_bank_name">ชื่อธนาคาร</label>
+                                        <label class="form-check-label" for="col_bank_name">{{ __('ชื่อธนาคาร') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="bank_account_number" id="col_bank_account_number">
-                                        <label class="form-check-label" for="col_bank_account_number">เลขบัญชีธนาคาร</label>
+                                        <label class="form-check-label" for="col_bank_account_number">{{ __('เลขบัญชีธนาคาร') }}</label>
                                     </div>
                                 </div>
                             </div>
@@ -279,13 +279,13 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="sso_issue_date" id="col_ss_issue">
-                                        <label class="form-check-label" for="col_ss_issue">SS Issue Date</label>
+                                        <label class="form-check-label" for="col_ss_issue">{{ __('SS Issue Date') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="sso_expiry_date" id="col_ss_exp">
-                                        <label class="form-check-label" for="col_ss_exp">SS Expiry Date</label>
+                                        <label class="form-check-label" for="col_ss_exp">{{ __('SS Expiry Date') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
@@ -334,13 +334,13 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="password" id="col_password">
-                                        <label class="form-check-label" for="col_password">รหัสสำหรับอีเมล</label>
+                                        <label class="form-check-label" for="col_password">{{ __('รหัสสำหรับอีเมล') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="outsource_code" id="col_outsource_code">
-                                        <label class="form-check-label" for="col_outsource_code">รหัสสำหรับระบบ Outsource</label>
+                                        <label class="form-check-label" for="col_outsource_code">{{ __('รหัสสำหรับระบบ Outsource') }}</label>
                                     </div>
                                 </div>
                             </div>

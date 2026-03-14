@@ -3,7 +3,7 @@
 @section('content')
 <div class="content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-3 mb-md-0">กล่องตั๋วงานทั้งหมด</h2>
+        <h2 class="mb-3 mb-md-0">{{ __('กล่องตั๋วงานทั้งหมด') }}</h2>
 
         {{-- Control Bar (Search, View Toggle, Per Page) --}}
         <div class="d-flex flex-column flex-md-row gap-2">
@@ -14,7 +14,7 @@
                 {{-- Search Input --}}
                 <div class="input-group input-group-sm" style="width: 250px;">
                     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                    <input type="text" name="search" class="form-control border-start-0" placeholder="ค้นหานายจ้าง..." value="{{ $search }}">
+                    <input type="text" name="search" class="form-control border-start-0" placeholder="{{ __('ค้นหานายจ้าง...') }}" value="{{ $search }}">
                 </div>
 
                 {{-- Hidden Toggle Button (New) --}}
@@ -76,7 +76,7 @@
 
                                 <div class="mt-auto pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span class="text-muted small">ตั๋วงานทั้งหมด</span>
+                                        <span class="text-muted small">{{ __('ตั๋วงานทั้งหมด') }}</span>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
                                             {{-- V2.5.1: Hide/Unhide Button --}}
@@ -113,9 +113,7 @@
             @empty
                 <div class="col-12">
                     <div class="text-center py-5 text-muted">
-                        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                        ยังไม่มีข้อมูลตั๋วงาน
-                    </div>
+                        <i class="bi bi-inbox fs-1 d-block mb-3"></i>{{ __('ยังไม่มีข้อมูลตั๋วงาน') }}</div>
                 </div>
             @endforelse
         </div>
@@ -127,11 +125,11 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 50px;">#</th>
-                            <th>นายจ้าง/บริษัท</th>
-                            <th class="text-center">ข้อความใหม่</th>
-                            <th class="text-center">ตั๋วงานทั้งหมด</th>
-                            <th>อัปเดตล่าสุด</th>
-                            <th class="text-end">จัดการ</th>
+                            <th>{{ __('นายจ้าง/บริษัท') }}</th>
+                            <th class="text-center">{{ __('ข้อความใหม่') }}</th>
+                            <th class="text-center">{{ __('ตั๋วงานทั้งหมด') }}</th>
+                            <th>{{ __('อัปเดตล่าสุด') }}</th>
+                            <th class="text-end">{{ __('จัดการ') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -169,8 +167,7 @@
                                 <td class="text-end">
                                     <div class="d-flex justify-content-end align-items-center gap-2">
                                         <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
-                                        </a>
+                                            <i class="bi bi-eye me-1"></i>{{ __('ดูตั๋วงาน') }}</a>
                                         {{-- V2.5.1: Hide/Unhide Button --}}
                                         @if($user->is_ticket_hidden)
                                             <form action="{{ route('admin.tickets.unhideEmployer', $user->id) }}" method="POST" class="d-inline">
@@ -201,9 +198,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                                    ยังไม่มีข้อมูลตั๋วงาน
-                                </td>
+                                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>{{ __('ยังไม่มีข้อมูลตั๋วงาน') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -267,7 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: confirmText,
-                cancelButtonText: 'ยกเลิก'
+                cancelButtonText: '{{ __('ยกเลิก') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

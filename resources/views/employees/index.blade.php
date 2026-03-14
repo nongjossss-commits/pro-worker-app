@@ -17,7 +17,7 @@
                 <i class="bi bi-plus-circle me-2"></i>{{ __('Add New') }}
             </a>
             <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                <span class="visually-hidden">Toggle Dropdown</span>
+                <span class="visually-hidden">{{ __('Toggle Dropdown') }}</span>
             </button>
             <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="{{ route('employees.create') }}"><i class="bi bi-person-plus me-2"></i>{{ __('Create Manually') }}</a></li>
@@ -75,9 +75,9 @@
                 <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('Inter Book') }}</option>
             </select>
             <select name="bank_account_status" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- สถานะบัญชีธนาคาร --</option>
-                <option value="opened" {{ request('bank_account_status') == 'opened' ? 'selected' : '' }}>เปิดบัญชีแล้ว</option>
-                <option value="not_opened" {{ request('bank_account_status') == 'not_opened' ? 'selected' : '' }}>ยังไม่เปิดบัญชี</option>
+                <option value="">{{ __('-- สถานะบัญชีธนาคาร --') }}</option>
+                <option value="opened" {{ request('bank_account_status') == 'opened' ? 'selected' : '' }}>{{ __('เปิดบัญชีแล้ว') }}</option>
+                <option value="not_opened" {{ request('bank_account_status') == 'not_opened' ? 'selected' : '' }}>{{ __('ยังไม่เปิดบัญชี') }}</option>
             </select>
             <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
             <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
@@ -232,8 +232,7 @@
                                     <div class="text-primary small fw-bold">{{ $label }}</div>
                                 @endforeach
                             @endif
-                            @if($employee->employer)
-                                <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
+                            @if($employee->{{ __('employer)') }}<button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
                                     <i class="bi bi-search"></i>
                                 </button>
                             @endif

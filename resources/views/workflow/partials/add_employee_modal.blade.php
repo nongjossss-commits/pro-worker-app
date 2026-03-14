@@ -420,7 +420,7 @@
                         const container = document.getElementById('resigned-results');
                         container.innerHTML = '';
                         if(data.length === 0) {
-                            container.innerHTML = '<div class="text-center text-muted py-2">No employees found.</div>';
+                            container.innerHTML = '<div class="text-center text-muted py-2">{{ __('No employees found.') }}</div>';
                             return;
                         }
                         data.forEach(emp => {
@@ -428,8 +428,8 @@
                             item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer';
 
                                 const statusBadge = emp.terminated_at ?
-                                    '<span class="badge bg-danger ms-2">Terminated</span>' :
-                                    '<span class="badge bg-success ms-2">Active</span>';
+                                    '<span class="badge bg-danger ms-2">{{ __('Terminated') }}</span>' :
+                                    '<span class="badge bg-success ms-2">{{ __('Active') }}</span>';
 
                             item.innerHTML = `
                                 <input class="form-check-input flex-shrink-0" type="checkbox" name="employee_ids[]" value="${emp.id}">
@@ -462,7 +462,7 @@
                         const container = document.getElementById('global-results');
                         container.innerHTML = '';
                         if(data.length === 0) {
-                            container.innerHTML = '<div class="text-center text-muted py-2">No employees found.</div>';
+                            container.innerHTML = '<div class="text-center text-muted py-2">{{ __('No employees found.') }}</div>';
                             return;
                         }
                         data.forEach(emp => {

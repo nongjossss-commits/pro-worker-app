@@ -40,7 +40,7 @@
         <div class="d-flex justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
                 <h5 class="alert-heading mb-1">{{ $employee->employeeNameTh ?? 'N/A' }}</h5>
-                @if(isset($employee->employer))<p class="mb-1"><strong>นายจ้าง:</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>@endif
+                @if(isset($employee->{{ __('employer))') }}<p class="mb-1"><strong>นายจ้าง:</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>@endif
                 <p class="mb-0 small"><strong>วันหมดอายุ {{ $label }}:</strong> {{ $notification->due_date ? \Carbon\Carbon::parse($notification->due_date)->format('d/m/Y') : 'N/A' }}</p>
             </div>
             <div class="text-end flex-shrink-0 ms-2">
@@ -48,7 +48,7 @@
                 <div class="btn-group btn-group-sm">
                     <button type="button" class="btn btn-info" title="ดูข้อมูล"><i class="bi bi-search"></i></button>
                     <button type="button" class="btn btn-success" title="ต่ออายุ"><i class="bi bi-calendar-check"></i></button>
-                    <button type="button" class="btn btn-warning" title="ยกเลิก"><i class="bi bi-x-circle"></i></button>
+                    <button type="button" class="btn btn-warning" title="{{ __('ยกเลิก') }}"><i class="bi bi-x-circle"></i></button>
                 </div>
             </div>
         </div>
