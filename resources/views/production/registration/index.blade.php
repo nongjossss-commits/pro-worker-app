@@ -539,30 +539,30 @@
                         <div class="col-12 col-xl text-xl-end">
                             <div class="d-flex align-items-center justify-content-xl-end gap-2 flex-wrap">
                                  {{-- Stats Badges (Fixed Widths for Alignment) --}}
-                                 <div class="d-flex align-items-center gap-2 me-xl-3">
+                                 <div class="d-flex flex-wrap align-items-center gap-2 me-xl-3">
                                     {{-- Total --}}
-                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="{{ __('Total Employees') }}">
+                                    <span class="badge bg-light text-dark border d-flex align-items-center justify-content-center gap-2 px-2 py-1"  title="{{ __('Total Employees') }}">
                                         <i class="bi bi-people-fill text-muted"></i>
                                         <span class="fw-bold" id="employer-total-{{ $employer->id }}">{{ $employer->activeEmployeesCount ?? 0 }}</span>
                                         <span class="text-muted small ms-1" style="font-size: 0.70rem;">{{ __('TOTAL') }}</span>
                                     </span>
                                     {{-- Not Started --}}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 100px;" title="{{ __('Pending') }}">
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger d-flex align-items-center justify-content-center gap-2 px-2 py-1"  title="{{ __('Pending') }}">
                                          <span class="fw-bold" id="employer-not-started-{{ $employer->id }}">{{ $employer->notStartedCount ?? 0 }}</span>
                                          <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">{{ __('PENDING') }}</span>
                                     </span>
                                     {{-- Saved --}}
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 90px;" title="{{ __('Saved') }}">
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center gap-2 px-2 py-1"  title="{{ __('Saved') }}">
                                          <span class="fw-bold" id="employer-saved-{{ $employer->id }}">{{ $employer->savedCount ?? 0 }}</span>
                                          <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">{{ __('SAVED') }}</span>
                                     </span>
                                     {{-- Cancelled --}}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 95px;" title="{{ __('Cancelled') }}">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary d-flex align-items-center justify-content-center gap-2 px-2 py-1"  title="{{ __('Cancelled') }}">
                                         <span class="fw-bold" id="employer-cancelled-{{ $employer->id }}">{{ $employer->cancelledCount ?? 0 }}</span>
                                         <span class="small ms-1 opacity-75" style="font-size: 0.70rem;">{{ __('CANCEL') }}</span>
                                     </span>
                                     {{-- Biometrics --}}
-                                    <span class="badge bg-info bg-opacity-10 text-info border border-info d-flex align-items-center justify-content-center gap-2 px-2 py-1" style="min-width: 95px;" title="{{ __('Biometrics Collected') }}">
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info d-flex align-items-center justify-content-center gap-2 px-2 py-1"  title="{{ __('Biometrics Collected') }}">
                                         <i class="bi bi-fingerprint"></i>
                                         <span class="fw-bold" id="employer-biometrics-collected-{{ $employer->id }}">{{ $employer->biometricsCollectedCount ?? 0 }}</span>
                                     </span>
