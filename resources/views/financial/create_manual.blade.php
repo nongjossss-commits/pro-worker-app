@@ -39,7 +39,7 @@
                             <div class="col-md-6 mb-3">
                                 <label for="amount" class="form-label">{{ __('Initial Amount (Optional)') }}</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">฿</span>
+                                    <span class="input-group-text">{{ __('฿') }}</span>
                                     <input type="number" step="0.01" class="form-control" id="amount" name="amount" value="{{ old('amount') }}" placeholder="0.00">
                                 </div>
                                 <div class="form-text">{{ __('If entered, a pending transaction will be created immediately.') }}</div>

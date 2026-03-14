@@ -171,12 +171,12 @@
 
                             <div class="row" style="position: absolute; bottom: 80px; left: 40px; right: 40px;">
                                 <div class="col-6 text-center" style="position: relative;">
-                                    <div style="font-weight: bold; margin-bottom: 40px;">Received By <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ ผู้รับเงิน</span></div>
+                                    <div style="font-weight: bold; margin-bottom: 40px;">Received By <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">{{ __('/ ผู้รับเงิน') }}</span></div>
                                     <div style="border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%;"></div>
-                                    <div style="font-size: 14px; color: #555;">Date <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ วันที่</span>: ____/____/______</div>
+                                    <div style="font-size: 14px; color: #555;">Date <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">{{ __('/ วันที่') }}</span>: ____/____/______</div>
                                 </div>
                                 <div class="col-6 text-center" style="position: relative;">
-                                    <div style="font-weight: bold; margin-bottom: 40px;">Authorized Signature <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">/ ผู้มีอำนาจลงนาม</span></div>
+                                    <div style="font-weight: bold; margin-bottom: 40px;">Authorized Signature <span style="color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px;">{{ __('/ ผู้มีอำนาจลงนาม') }}</span></div>
                                     <div style="border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%;"></div>
                                     <div style="font-size: 14px; color: #555;" x-text="formData.authorized_signatory_name || formData.name || 'Company Name'"></div>
                                 </div>

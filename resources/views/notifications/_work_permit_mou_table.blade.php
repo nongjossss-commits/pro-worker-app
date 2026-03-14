@@ -11,19 +11,19 @@
             <tr>
                 <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-mou1"></th>
                 <th style="width: 1%;">#</th>
-                <th>ชื่อลูกจ้าง</th>
-                <th>สัญชาติ</th>
-                <th>นายจ้าง</th>
-                <th>วันที่ครบกำหนด</th>
-                <th>สถานะ / วันคงเหลือ</th>
-                <th class="text-center">จัดการ</th>
+                <th>{{ __('ชื่อลูกจ้าง') }}</th>
+                <th>{{ __('สัญชาติ') }}</th>
+                <th>{{ __('นายจ้าง') }}</th>
+                <th>{{ __('วันที่ครบกำหนด') }}</th>
+                <th>{{ __('สถานะ / วันคงเหลือ') }}</th>
+                <th class="text-center">{{ __('จัดการ') }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($forRenewal as $notification)
                 @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $loop->iteration])
             @empty
-                <tr><td colspan="8" class="text-center text-muted">ไม่มีรายการที่ต้องดำเนินการ</td></tr>
+                <tr><td colspan="8" class="text-center text-muted">{{ __('ไม่มีรายการที่ต้องดำเนินการ') }}</td></tr>
             @endforelse
         </tbody>
 
@@ -33,19 +33,19 @@
              <tr>
                 <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications-mou2"></th>
                 <th style="width: 1%;">#</th>
-                <th>ชื่อลูกจ้าง</th>
-                <th>สัญชาติ</th>
-                <th>นายจ้าง</th>
-                <th>วันที่ครบกำหนด</th>
-                <th>สถานะ / วันคงเหลือ</th>
-                <th class="text-center">จัดการ</th>
+                <th>{{ __('ชื่อลูกจ้าง') }}</th>
+                <th>{{ __('สัญชาติ') }}</th>
+                <th>{{ __('นายจ้าง') }}</th>
+                <th>{{ __('วันที่ครบกำหนด') }}</th>
+                <th>{{ __('สถานะ / วันคงเหลือ') }}</th>
+                <th class="text-center">{{ __('จัดการ') }}</th>
             </tr>
         </thead>
         <tbody>
             @forelse($forNewApplication as $notification)
                 @include('notifications._notification_table_row', ['notification' => $notification, 'itemNumber' => $loop->iteration])
             @empty
-                <tr><td colspan="8" class="text-center text-muted">ไม่มีรายการที่หมดอายุ</td></tr>
+                <tr><td colspan="8" class="text-center text-muted">{{ __('ไม่มีรายการที่หมดอายุ') }}</td></tr>
             @endforelse
         </tbody>
     </table>

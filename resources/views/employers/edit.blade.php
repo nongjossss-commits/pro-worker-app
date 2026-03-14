@@ -353,7 +353,7 @@
                 <x-file-input-group
                     id="employer_doc_company"
                     name="employer_doc_company"
-                    label="1. {{ __('Company Certificate / ID Card') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="1. {{ __('Company Certificate / ID Card') }} <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_company"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company'])"
                 />
@@ -371,7 +371,7 @@
                 <x-file-input-group
                     id="employer_doc_lease"
                     name="employer_doc_lease"
-                    label="2. {{ __('Lease Agreement / House Registration') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="2. {{ __('Lease Agreement / House Registration') }} <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_lease"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease'])"
                 />
@@ -380,7 +380,7 @@
                 <x-file-input-group
                     id="employer_doc_construction"
                     name="employer_doc_construction"
-                    label="3. {{ __('Construction Contract / Map') }} <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="3. {{ __('Construction Contract / Map') }} <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_construction"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction'])"
                 />
@@ -391,7 +391,7 @@
                 <x-file-input-group
                     id="employer_doc_other_1"
                     name="employer_doc_other_1"
-                    label="4. {{ __('Other Document') }} 1 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="4. {{ __('Other Document') }} 1 <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_other_1"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1'])"
                     description="employer_doc_other_1_desc"
@@ -402,7 +402,7 @@
                 <x-file-input-group
                     id="employer_doc_other_2"
                     name="employer_doc_other_2"
-                    label="5. {{ __('Other Document') }} 2 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="5. {{ __('Other Document') }} 2 <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_other_2"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2'])"
                     description="employer_doc_other_2_desc"
@@ -413,7 +413,7 @@
                 <x-file-input-group
                     id="employer_doc_other_3"
                     name="employer_doc_other_3"
-                    label="6. {{ __('Other Document') }} 3 <span class='text-muted small'>(รองรับไฟล์สูงสุด 5 MB)</span>"
+                    label="6. {{ __('Other Document') }} 3 <span class='text-muted small'>{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span>"
                     :value="$employer->employer_doc_other_3"
                     :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3'])"
                     description="employer_doc_other_3_desc"
@@ -563,18 +563,18 @@
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}" style="width: 200px;">
                 <select name="nationality" class="form-select form-select-sm" style="width: auto;">
                      <option value="">-- {{ __('All Nationalities') }} --</option>
-                    <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>เมียนมา</option>
-                    <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>ลาว</option>
-                    <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>กัมพูชา</option>
-                    <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>เวียดนาม</option>
+                    <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>{{ __('เมียนมา') }}</option>
+                    <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>{{ __('ลาว') }}</option>
+                    <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>{{ __('กัมพูชา') }}</option>
+                    <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>{{ __('เวียดนาม') }}</option>
                 </select>
                 <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('All MOU Types') }} --</option>
                     <option value="MOU" @if(request('mou_group') == 'MOU') selected @endif>MOU</option>
-                    <option value="MOU 2 ปีหลัง" @if(request('mou_group') == 'MOU 2 ปีหลัง') selected @endif>MOU 2 ปีหลัง</option>
-                    <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>มติต่ออายุในประเทศ</option>
-                    <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>มติขึ้นทะเบียน</option>
-                    <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>อื่นๆ</option>
+                    <option value="MOU 2 ปีหลัง" @if(request('mou_group') == 'MOU 2 ปีหลัง') selected @endif>{{ __('MOU 2 ปีหลัง') }}</option>
+                    <option value="มติต่ออายุในประเทศ" @if(request('mou_group') == 'มติต่ออายุในประเทศ') selected @endif>{{ __('มติต่ออายุในประเทศ') }}</option>
+                    <option value="มติขึ้นทะเบียน" @if(request('mou_group') == 'มติขึ้นทะเบียน') selected @endif>{{ __('มติขึ้นทะเบียน') }}</option>
+                    <option value="อื่นๆ" @if(request('mou_group') == 'อื่นๆ') selected @endif>{{ __('อื่นๆ') }}</option>
                 </select>
                 <select name="insurance_type" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('Insurance Type') }} --</option>
@@ -595,13 +595,13 @@
                 </select>
                 <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
-                    <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
-                    <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
+                    <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>{{ __('เล่ม CI') }}</option>
+                    <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>{{ __('เล่ม PJ') }}</option>
                 </select>
                 <select name="passport_type_cambodia" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('Passport Type (Cambodia)') }} --</option>
-                    <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>เล่ม TD</option>
-                    <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+                    <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>{{ __('เล่ม TD') }}</option>
+                    <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('เล่มอินเตอร์') }}</option>
                 </select>
                 <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
                 <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>

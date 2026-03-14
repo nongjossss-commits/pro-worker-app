@@ -27,15 +27,15 @@
 
     // V2.5-S20: Enhanced payload for rich chat messages
     $notificationTypeLabels = [
-        'ninety_day_report' => 'ครบกำหนดรายงานตัว 90 วัน',
-        'work_permit_expiry' => 'ใบอนุญาตทำงานหมดอายุ',
-        'visa_expiry' => 'วีซ่าหมดอายุ',
-        'passport_expiry' => 'หนังสือเดินทางหมดอายุ',
-        'pink_card_missing' => 'ไม่มีข้อมูลบัตรชมพู',
-        'residence_permit_missing' => 'ไม่มีข้อมูลใบอนุญาตพำนัก',
+        'ninety_day_report' => __('ครบกำหนดรายงานตัว 90 วัน'),
+        'work_permit_expiry' => __('ใบอนุญาตทำงานหมดอายุ'),
+        'visa_expiry' => __('วีซ่าหมดอายุ'),
+        'passport_expiry' => __('หนังสือเดินทางหมดอายุ'),
+        'pink_card_missing' => __('ไม่มีข้อมูลบัตรชมพู'),
+        'residence_permit_missing' => __('ไม่มีข้อมูลใบอนุญาตพำนัก'),
         'work_permit_mou' => 'Work Permit (MOU)',
-        'employer_document_expiry' => 'เอกสารนายจ้างหมดอายุ',
-        'insurance_expiry' => 'ประกันหมดอายุ'
+        'employer_document_expiry' => __('เอกสารนายจ้างหมดอายุ'),
+        'insurance_expiry' => __('ประกันหมดอายุ')
     ];
     $notification_title_th = $notificationTypeLabels[$notification->type] ?? ucfirst(str_replace('_', ' ', $notification->type));
 
@@ -141,7 +141,7 @@
                         <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
                             {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('พรีวิวข้อมูล') }}"> <i class="bi bi-search"></i> </button>
                         @if(optional($employee)->employeeNationality)
                             @php
                                 $flagCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
@@ -161,21 +161,21 @@
                     <p class="mb-1 small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }}</p>
                 @endif
                 <p class="mb-1 small">
-                    <strong>นายจ้าง:</strong> {{ $employer?->employerNameTh ?? 'N/A' }}
+                    <strong>{{ __('นายจ้าง:') }}</strong> {{ $employer?->employerNameTh ?? 'N/A' }}
                     @if(request('addrProvince') && $employer)
                         @foreach($employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
                             <span class="text-primary small fw-bold ms-1">{{ $label }}</span>
                         @endforeach
                     @endif
                     @if($employer)
-                    <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                    <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="{{ __('พรีวิวข้อมูล') }}"> <i class="bi bi-search"></i> </button>
                     @endif
                 </p>
                 <p class="mb-0 small">
                     @if($isMissingDataType)
-                        <strong>สถานะ:</strong> <span class="text-danger">ข้อมูลยังไม่ครบถ้วน</span>
+                        <strong>{{ __('สถานะ:') }}</strong> <span class="text-danger">{{ __('ข้อมูลยังไม่ครบถ้วน') }}</span>
                     @else
-                        <strong>วันครบกำหนด:</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}
+                        <strong>{{ __('วันครบกำหนด:') }}</strong> {{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d F Y') }}
                     @endif
                 </p>
             </div>
@@ -196,19 +196,19 @@
                             <form id="restore-form-{{ $notification->id }}" action="{{ route('notifications.restore', $notification->id) }}" method="POST" style="display: none;">
                                 @csrf
                             </form>
-                            <button type="submit" form="restore-form-{{ $notification->id }}" class="btn btn-sm btn-outline-info" title="กู้คืน">
+                            <button type="submit" form="restore-form-{{ $notification->id }}" class="btn btn-sm btn-outline-info" title="{{ __('กู้คืน') }}">
                                 <i class="bi bi-arrow-counterclockwise"></i>
                             </button>
 
-                            <form id="force-delete-form-{{ $notification->id }}" action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');" style="display: none;">
+                            <form id="force-delete-form-{{ $notification->id }}" action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" onsubmit="return confirm('{{ __('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?') }}'));" style="display: none;">
                                 @csrf
                                 @method('DELETE')
                             </form>
-                            <button type="submit" form="force-delete-form-{{ $notification->id }}" class="btn btn-sm btn-outline-danger" title="ลบถาวร">
+                            <button type="submit" form="force-delete-form-{{ $notification->id }}" class="btn btn-sm btn-outline-danger" title="{{ __('ลบถาวร') }}">
                                 <i class="bi bi-trash3-fill"></i>
                             </button>
                         @else
-                            <a href="#" class="btn btn-sm btn-outline-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
+                            <a href="#" class="btn btn-sm btn-outline-info" title="{{ __('สร้างงาน') }}"><i class="bi bi-rocket-takeoff-fill"></i></a>
 
                             {{-- Update/Renew Button --}}
                             <a href="#" class="btn btn-sm btn-outline-success"
@@ -222,9 +222,9 @@
 
                             {{-- Only show the 'Locate' button if there is an employee --}}
                             @if($employee)
-                                <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-sm btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+                                <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-sm btn-outline-primary" title="{{ __('ค้นหาตำแหน่ง') }}"><i class="bi bi-geo-alt-fill"></i></a>
                             @endif
-                            <a href="#" class="btn btn-sm btn-outline-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+                            <a href="#" class="btn btn-sm btn-outline-warning" title="{{ __('ยกเลิก') }}" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
 
                             {{-- Drag Handle --}}
                             <a href="#" class="btn btn-sm btn-light border cursor-grab"

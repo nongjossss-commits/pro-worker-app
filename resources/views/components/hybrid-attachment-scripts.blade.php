@@ -177,20 +177,20 @@ function hybridAttachmentManager(config = {}) {
         removeConfirm(type, index, itemName) {
             Swal.fire({
                 title: `ลบ ${itemName}?`,
-                text: "คุณต้องการนำรายการนี้ออกจากสิ่งที่แนบมาใช่หรือไม่?",
+                text("{{ __('คุณต้องการนำรายการนี้ออกจากสิ่งที่แนบมาใช่หรือไม่?') }}"),
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#d33",
                 cancelButtonColor: "#3085d6",
-                confirmButtonText: "ใช่, ลบออก",
-                cancelButtonText: "ยกเลิก"
+                confirmButtonText('{{ __('ใช่, ลบออก') }}'),
+                cancelButtonText('{{ __('ยกเลิก') }}')
             }).then((result) => {
                 if (result.isConfirmed) {
                     if (this.basket[type] && this.basket[type][index]) {
                         this.basket[type].splice(index, 1);
                         Swal.fire({
                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-                           icon: 'success', title: 'ลบรายการสำเร็จ'
+                           icon: 'success', title('{{ __('ลบรายการสำเร็จ') }}')
                         });
                     }
                 }
@@ -214,7 +214,7 @@ function hybridAttachmentManager(config = {}) {
                 idMap.forEach((_, id) => params.append('ids[]', id));
 
 
-                const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
+                const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`{{ __(');
                 if (!response.ok) throw new Error('Network response was not ok');
 
                 const employees = await response.json();
@@ -262,7 +262,7 @@ function hybridAttachmentManager(config = {}) {
                 const params = new URLSearchParams();
                 ids.forEach(id => params.append('ids[]', id));
 
-                const response = await fetch(`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
+                const response = await fetch(') }}`{{ route('api-web.employer.employees.index') }}?${params.toString()}`);
                 if (!response.ok) throw new Error('Network response was not ok');
 
                 const employees = await response.json();
@@ -322,7 +322,7 @@ function hybridAttachmentManager(config = {}) {
         // Open Modal for Existing Employees (Affiliated)
         openExistingEmployeeModal() {
              if (this.isContextAdminCreate && !this.contextEmployerId) {
-                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างหลักสำหรับตั๋วก่อนทำการแนบลูกจ้าง' });
+                Swal.fire({ icon: 'warning', title('{{ __('กรุณาเลือกนายจ้าง') }}'), text('{{ __('โปรดเลือกนายจ้างหลักสำหรับตั๋วก่อนทำการแนบลูกจ้าง') }}') });
                 return;
             }
 
@@ -411,7 +411,7 @@ function hybridAttachmentManager(config = {}) {
 
         openNewEmployeeModal() {
             if (this.isContextAdminCreate && !this.contextEmployerId) {
-                Swal.fire({ icon: 'warning', title: 'กรุณาเลือกนายจ้าง', text: 'โปรดเลือกนายจ้างก่อนทำการเพิ่มลูกจ้างใหม่' });
+                Swal.fire({ icon: 'warning', title('{{ __('กรุณาเลือกนายจ้าง') }}'), text('{{ __('โปรดเลือกนายจ้างก่อนทำการเพิ่มลูกจ้างใหม่') }}') });
                 return;
             }
             this.resetNewEmployeeForm();
@@ -468,7 +468,7 @@ function hybridAttachmentManager(config = {}) {
                 status.error = error.message;
                 this.newEmployeeForm[fieldName] = null;
                 event.target.value = null; // Clear the input
-                Swal.fire({ icon: 'error', title: 'อัปโหลดล้มเหลว', text: error.message });
+                Swal.fire({ icon: 'error', title('{{ __('อัปโหลดล้มเหลว') }}'), text: error.message });
             } finally {
                 status.loading = false;
             }
@@ -586,7 +586,7 @@ function hybridAttachmentManager(config = {}) {
             // 1. SPECIAL CASE: Notification Card dropped into message box
             if (data.type === 'notification' && data.render_as === 'employee_card' && messageBox) {
                 // Create a special formatted string with the rich payload
-                const textToAppend = `[[--NOTIFICATION_CARD--]]${JSON.stringify(data)}[[--/NOTIFICATION_CARD--]]`;
+                const textToAppend = `[[--NOTIFICATION_CARD--]]${JSON.stringify(data)}[[--/NOTIFICATION_CARD--]]`{{ __(';
 
                 // Append it to the message box
                 const currentVal = messageBox.value;
@@ -611,7 +611,7 @@ function hybridAttachmentManager(config = {}) {
                     url: data.url // The source URL for highlighting
                 };
 
-                const textToAppend = `[[--NOTIFICATION_CARD--]]${JSON.stringify(richCardPayload)}[[--/NOTIFICATION_CARD--]]`;
+                const textToAppend = ') }}`[[--NOTIFICATION_CARD--]]${JSON.stringify(richCardPayload)}[[--/NOTIFICATION_CARD--]]`;
 
                 // Append it to the message box if it exists
                 if (messageBox) {
@@ -632,7 +632,7 @@ function hybridAttachmentManager(config = {}) {
                      this.fetchPreselectedEmployees();
                 } else {
                     // Optional: Toast saying "Already attached" but we still allow the card paste above
-                    // Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, icon: 'info', title: 'ลูกจ้างนี้ถูกเลือกแล้ว' });
+                    // Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, icon: 'info', title('{{ __('ลูกจ้างนี้ถูกเลือกแล้ว') }}') });
                 }
 
                 return;

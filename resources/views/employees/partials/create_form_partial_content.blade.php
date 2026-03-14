@@ -9,7 +9,7 @@
 @else
     <div class="row mb-4">
         <div class="col-md-12" x-data="employerSelector()" @click.outside="open = false" @set-employer-id.window="setFromEvent($event.detail)">
-            <label for="employer_id" class="form-label">เลือกนายจ้าง <span class="text-danger">*</span></label>
+            <label for="employer_id" class="form-label">{{ __('เลือกนายจ้าง') }} <span class="text-danger">*</span></label>
 
             {{-- Hidden Input for Form Submission --}}
             <input type="hidden" name="employer_id" :value="selectedId" required>
@@ -20,7 +20,7 @@
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
                     <input type="text"
                            class="form-control"
-                           placeholder="พิมพ์เพื่อค้นหาชื่อนายจ้าง..."
+                           placeholder="{{ __('พิมพ์เพื่อค้นหาชื่อนายจ้าง...') }}"
                            x-model="search"
                            @focus="open = true"
                            @input="open = true; selectedId = ''; selectedName = ''"
@@ -52,7 +52,7 @@
                      x-show="open && filteredEmployers.length === 0"
                      x-transition>
                      <div class="list-group list-group-flush">
-                        <div class="list-group-item text-muted text-center">ไม่พบข้อมูล</div>
+                        <div class="list-group-item text-muted text-center">{{ __('ไม่พบข้อมูล') }}</div>
                      </div>
                 </div>
             </div>
@@ -120,22 +120,22 @@
 @endif
 
 {{-- Category 1: Personal Information --}}
-<h5><i class="bi bi-person-badge"></i> 1. ข้อมูลส่วนตัว (Personal Information)</h5>
+<h5><i class="bi bi-person-badge"></i> {{ __('1. ข้อมูลส่วนตัว (Personal Information)') }}</h5>
 <hr class="mb-4">
 <div class="row">
     {{-- Left Column --}}
     <div class="col-md-8">
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label for="employeeTitleTh" class="form-label">คำนำหน้าชื่อ (ไทย)</label>
+                <label for="employeeTitleTh" class="form-label">{{ __('คำนำหน้าชื่อ (ไทย)') }}</label>
                 <select class="form-select" id="employeeTitleTh" name="employeeTitleTh">
-                    <option value="นาย" {{ old('employeeTitleTh') == 'นาย' ? 'selected' : '' }}>นาย</option>
-                    <option value="นางสาว" {{ old('employeeTitleTh') == 'นางสาว' ? 'selected' : '' }}>นางสาว</option>
-                    <option value="นาง" {{ old('employeeTitleTh') == 'นาง' ? 'selected' : '' }}>นาง</option>
+                    <option value="นาย" {{ old('employeeTitleTh') == 'นาย' ? 'selected' : '' }}>{{ __('นาย') }}</option>
+                    <option value="นางสาว" {{ old('employeeTitleTh') == 'นางสาว' ? 'selected' : '' }}>{{ __('นางสาว') }}</option>
+                    <option value="นาง" {{ old('employeeTitleTh') == 'นาง' ? 'selected' : '' }}>{{ __('นาง') }}</option>
                 </select>
             </div>
             <div class="col-md-6 mb-3">
-                <label for="employeeNameTh" class="form-label">ชื่อ-สกุล (ไทย)</label>
+                <label for="employeeNameTh" class="form-label">{{ __('ชื่อ-สกุล (ไทย)') }}</label>
                 <input type="text" class="form-control" id="employeeNameTh" name="employeeNameTh" value="{{ old('employeeNameTh') }}">
             </div>
         </div>
@@ -168,37 +168,37 @@
 
             <div class="row">
             <div class="col-md-6 mb-3">
-                <label for="father_name" class="form-label">ชื่อพ่อ</label>
+                <label for="father_name" class="form-label">{{ __('ชื่อพ่อ') }}</label>
                 <input type="text" class="form-control" id="father_name" name="father_name" value="{{ old('father_name') }}">
             </div>
             <div class="col-md-6 mb-3">
-                <label for="mother_name" class="form-label">ชื่อแม่</label>
+                <label for="mother_name" class="form-label">{{ __('ชื่อแม่') }}</label>
                 <input type="text" class="form-control" id="mother_name" name="mother_name" value="{{ old('mother_name') }}">
             </div>
         </div>
 
         <div class="row">
                 <div class="col-md-4 mb-3">
-                <label for="employeeGender" class="form-label">เพศ</label>
+                <label for="employeeGender" class="form-label">{{ __('เพศ') }}</label>
                 <input type="text" class="form-control" id="employeeGender" name="employeeGender" value="{{ old('employeeGender') }}" readonly>
                 </div>
                 <div class="col-md-5 mb-3">
-                <label for="employeeDob" class="form-label">วันเดือนปีเกิด</label>
+                <label for="employeeDob" class="form-label">{{ __('วันเดือนปีเกิด') }}</label>
                 <input type="date" class="form-control" id="employeeDob" name="employeeDob" value="{{ old('employeeDob') }}">
             </div>
             <div class="col-md-3 mb-3">
-                <label for="employeeAge" class="form-label">อายุ</label>
+                <label for="employeeAge" class="form-label">{{ __('อายุ') }}</label>
                 <input type="text" class="form-control" id="employeeAge" name="employeeAge" value="{{ old('employeeAge') }}" readonly>
             </div>
         </div>
     </div>
     {{-- Right Column --}}
     <div class="col-md-4 d-flex flex-column justify-content-center align-items-center">
-        <label class="form-label">รูปภาพพนักงาน</label>
+        <label class="form-label">{{ __('รูปภาพพนักงาน') }}</label>
         <img id="employeePhotoPreview" src="https://placehold.co/150x180/f8fafc/6c757d?text=Photo" class="img-thumbnail mb-3" style="width: 150px; height: 180px; object-fit: cover;">
         <div class="d-grid gap-2 w-75">
-            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('triggerFile').click();"><i class="bi bi-file-earmark-image me-1"></i> เลือกจากไฟล์</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('triggerCamera').click();"><i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ</button>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('triggerFile').click();"><i class="bi bi-file-earmark-image me-1"></i> {{ __('เลือกจากไฟล์') }}</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('triggerCamera').click();"><i class="bi bi-camera-fill me-1"></i> {{ __('ถ่ายภาพ') }}</button>
         </div>
         {{-- Hidden file inputs --}}
         <input type="file" class="d-none" id="triggerFile" accept="image/*">
@@ -210,47 +210,47 @@
 
 
 {{-- Category 2: Contact & Nationality --}}
-<h5 class="mt-4"><i class="bi bi-telephone-fill"></i> 2. ข้อมูลการติดต่อและสัญชาติ (Contact & Nationality)</h5>
+<h5 class="mt-4"><i class="bi bi-telephone-fill"></i> {{ __('2. ข้อมูลการติดต่อและสัญชาติ (Contact & Nationality)') }}</h5>
 <hr class="mb-4">
 <div class="row">
     <div class="col-md-4 mb-3">
-        <label for="employeePhone" class="form-label">เบอร์โทรศัพท์</label>
+        <label for="employeePhone" class="form-label">{{ __('เบอร์โทรศัพท์') }}</label>
         <input type="tel" class="form-control" id="employeePhone" name="employeePhone" value="{{ old('employeePhone') }}">
     </div>
     <div class="col-md-4 mb-3">
-        <label for="employeeNationality" class="form-label">สัญชาติ</label>
+        <label for="employeeNationality" class="form-label">{{ __('สัญชาติ') }}</label>
         <select class="form-select" id="employeeNationality" name="employeeNationality">
-            <option value="">-- เลือกสัญชาติ --</option>
-            <option value="เมียนมา" {{ old('employeeNationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
-            <option value="ลาว" {{ old('employeeNationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
-            <option value="กัมพูชา" {{ old('employeeNationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
-            <option value="เวียดนาม" {{ old('employeeNationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
+            <option value="">{{ __('-- เลือกสัญชาติ --') }}</option>
+            <option value="เมียนมา" {{ old('employeeNationality') == 'เมียนมา' ? 'selected' : '' }}>{{ __('เมียนมา') }}</option>
+            <option value="ลาว" {{ old('employeeNationality') == 'ลาว' ? 'selected' : '' }}>{{ __('ลาว') }}</option>
+            <option value="กัมพูชา" {{ old('employeeNationality') == 'กัมพูชา' ? 'selected' : '' }}>{{ __('กัมพูชา') }}</option>
+            <option value="เวียดนาม" {{ old('employeeNationality') == 'เวียดนาม' ? 'selected' : '' }}>{{ __('เวียดนาม') }}</option>
         </select>
     </div>
         <div class="col-md-4 mb-3 d-none" id="passportTypeContainer">
-        <label for="passportType" class="form-label">ประเภทหนังสือเดินทาง (สำหรับเมียนมา)</label>
+        <label for="passportType" class="form-label">{{ __('ประเภทหนังสือเดินทาง (สำหรับเมียนมา)') }}</label>
         <select class="form-select" id="passportType" name="passportType">
-            <option value="">-- เลือกประเภท --</option>
-            <option value="PJ" {{ old('passportType') == 'PJ' ? 'selected' : '' }}>เล่ม PJ</option>
-            <option value="CI" {{ old('passportType') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
+            <option value="">{{ __('-- เลือกประเภท --') }}</option>
+            <option value="PJ" {{ old('passportType') == 'PJ' ? 'selected' : '' }}>{{ __('เล่ม PJ') }}</option>
+            <option value="CI" {{ old('passportType') == 'CI' ? 'selected' : '' }}>{{ __('เล่ม CI') }}</option>
         </select>
     </div>
     <div class="col-md-4 mb-3 d-none" id="passportTypeCambodiaContainer">
-        <label for="passport_type_cambodia" class="form-label">ประเภทหนังสือเดินทาง (สำหรับกัมพูชา)</label>
+        <label for="passport_type_cambodia" class="form-label">{{ __('ประเภทหนังสือเดินทาง (สำหรับกัมพูชา)') }}</label>
         <select class="form-select" id="passport_type_cambodia" name="passport_type_cambodia">
-            <option value="">-- เลือกประเภท --</option>
-            <option value="เล่ม TD" {{ old('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>เล่ม TD</option>
-            <option value="เล่มอินเตอร์" {{ old('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>เล่มอินเตอร์</option>
+            <option value="">{{ __('-- เลือกประเภท --') }}</option>
+            <option value="เล่ม TD" {{ old('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>{{ __('เล่ม TD') }}</option>
+            <option value="เล่มอินเตอร์" {{ old('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('เล่มอินเตอร์') }}</option>
         </select>
     </div>
 </div>
 
 {{-- Category 3: Passport & Visa --}}
-<h5 class="mt-4"><i class="bi bi-passport"></i> 3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)</h5>
+<h5 class="mt-4"><i class="bi bi-passport"></i> {{ __('3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)') }}</h5>
 <hr class="mb-4">
 <div class="row">
     <div class="col-md-3 mb-3">
-        <label for="employeePassport" class="form-label">เลขพาสปอร์ต</label>
+        <label for="employeePassport" class="form-label">{{ __('เลขพาสปอร์ต') }}</label>
         <input type="text" class="form-control" id="employeePassport" name="employeePassport" value="{{ old('employeePassport') }}">
     </div>
     <div class="col-md-3 mb-3">
@@ -258,21 +258,21 @@
         <input type="text" class="form-control" id="passport_issue_place" name="passport_issue_place" value="{{ old('passport_issue_place') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="passport_issue_date" class="form-label">วันออกพาสปอร์ต</label>
+        <label for="passport_issue_date" class="form-label">{{ __('วันออกพาสปอร์ต') }}</label>
         <input type="date" class="form-control" id="passport_issue_date" name="passport_issue_date" value="{{ old('passport_issue_date') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="passportExpiryDate" class="form-label">วันหมดอายุพาสปอร์ต</label>
+        <label for="passportExpiryDate" class="form-label">{{ __('วันหมดอายุพาสปอร์ต') }}</label>
         <input type="date" class="form-control" id="passportExpiryDate" name="passportExpiryDate" value="{{ old('passportExpiryDate') }}">
     </div>
 </div>
 <div class="row">
     <div class="col-md-3 mb-3">
-        <label for="pinkCardNo" class="form-label">เลขบัตรชมพู</label>
+        <label for="pinkCardNo" class="form-label">{{ __('เลขบัตรชมพู') }}</label>
         <input type="text" class="form-control" id="pinkCardNo" name="pinkCardNo" value="{{ old('pinkCardNo') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="visaType" class="form-label">ประเภทวีซ่า</label>
+        <label for="visaType" class="form-label">{{ __('ประเภทวีซ่า') }}</label>
         <input type="text" class="form-control" id="visaType" name="visaType" value="{{ old('visaType') }}">
     </div>
     <div class="col-md-3 mb-3">
@@ -280,25 +280,25 @@
         <input type="text" class="form-control" id="visa_issue_place" name="visa_issue_place" value="{{ old('visa_issue_place') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="visaExpiryDate" class="form-label">วันหมดอายุวีซ่า</label>
+        <label for="visaExpiryDate" class="form-label">{{ __('วันหมดอายุวีซ่า') }}</label>
         <input type="date" class="form-control" id="visaExpiryDate" name="visaExpiryDate" value="{{ old('visaExpiryDate') }}">
     </div>
 </div>
 
 {{-- Category 4: Employment & Work IDs --}}
-<h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> 4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)</h5>
+<h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> {{ __('4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)') }}</h5>
 <hr class="mb-4">
 <div class="row">
     <div class="col-md-3 mb-3">
-        <label for="job_title" class="form-label">ตำแหน่งงาน</label>
+        <label for="job_title" class="form-label">{{ __('ตำแหน่งงาน') }}</label>
         <input type="text" class="form-control" id="job_title" name="job_title" value="{{ old('job_title') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="job_description" class="form-label">ลักษณะงาน</label>
+        <label for="job_description" class="form-label">{{ __('ลักษณะงาน') }}</label>
         <input type="text" class="form-control" id="job_description" name="job_description" value="{{ old('job_description') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="startDate" class="form-label">วันที่เริ่มงาน</label>
+        <label for="startDate" class="form-label">{{ __('วันที่เริ่มงาน') }}</label>
         <input type="date" class="form-control" id="startDate" name="startDate" value="{{ old('startDate') }}">
     </div>
     <div class="col-md-3 mb-3">
@@ -308,59 +308,59 @@
 </div>
 <div class="row">
     <div class="col-md-4 mb-3">
-        <label for="employeeWorkPermit" class="form-label">เลข Work Permit</label>
+        <label for="employeeWorkPermit" class="form-label">{{ __('เลข Work Permit') }}</label>
         <input type="text" class="form-control" id="employeeWorkPermit" name="employeeWorkPermit" value="{{ old('employeeWorkPermit') }}">
     </div>
     <div class="col-md-4 mb-3">
-        <label for="workPermitExpiryDate" class="form-label">วันหมดอายุ Work Permit</label>
+        <label for="workPermitExpiryDate" class="form-label">{{ __('วันหมดอายุ Work Permit') }}</label>
         <input type="date" class="form-control" id="workPermitExpiryDate" name="workPermitExpiryDate" value="{{ old('workPermitExpiryDate') }}">
     </div>
         <div class="col-md-4 mb-3">
-        <label for="ninetyDayReportDate" class="form-label">วันรายงานตัว 90 วัน</label>
+        <label for="ninetyDayReportDate" class="form-label">{{ __('วันรายงานตัว 90 วัน') }}</label>
         <input type="date" class="form-control" id="ninetyDayReportDate" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate') }}">
     </div>
 </div>
 <div class="row">
         <div class="col-md-6 mb-3">
-        <label for="workPermitType" class="form-label">ประเภทใบอนุญาตทำงาน</label>
+        <label for="workPermitType" class="form-label">{{ __('ประเภทใบอนุญาตทำงาน') }}</label>
         <select class="form-select" id="workPermitMOUGroup" name="workPermitMOUGroup">
-            <option value="">-- กรุณาเลือก --</option>
+            <option value="">{{ __('-- กรุณาเลือก --') }}</option>
             <option value="MOU" {{ old('workPermitMOUGroup') == 'MOU' ? 'selected' : '' }}>MOU</option>
-            <option value="MOU 2 ปีหลัง" {{ old('workPermitMOUGroup') == 'MOU 2 ปีหลัง' ? 'selected' : '' }}>MOU 2 ปีหลัง</option>
-            <option value="มติต่ออายุในประเทศ" {{ old('workPermitMOUGroup') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
-            <option value="มติขึ้นทะเบียน" {{ old('workPermitMOUGroup') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
-            <option value="อื่นๆ" {{ old('workPermitMOUGroup') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ ระบุ..</option>
+            <option value="MOU 2 ปีหลัง" {{ old('workPermitMOUGroup') == 'MOU 2 ปีหลัง' ? 'selected' : '' }}>{{ __('MOU 2 ปีหลัง') }}</option>
+            <option value="มติต่ออายุในประเทศ" {{ old('workPermitMOUGroup') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>{{ __('มติต่ออายุในประเทศ') }}</option>
+            <option value="มติขึ้นทะเบียน" {{ old('workPermitMOUGroup') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>{{ __('มติขึ้นทะเบียน') }}</option>
+            <option value="อื่นๆ" {{ old('workPermitMOUGroup') == 'อื่นๆ' ? 'selected' : '' }}>{{ __('อื่นๆ ระบุ..') }}</option>
         </select>
     </div>
     <div class="col-md-6 mb-3 d-none" id="workPermitMOUGroupOtherContainer">
-        <label for="workPermitMOUGroupOther" class="form-label">ระบุประเภทอื่นๆ</label>
+        <label for="workPermitMOUGroupOther" class="form-label">{{ __('ระบุประเภทอื่นๆ') }}</label>
             <input type="text" class="form-control" id="workPermitMOUGroupOther" name="workPermitMOUGroupOther" value="{{ old('workPermitMOUGroupOther') }}">
     </div>
 </div>
 <div class="row">
-            <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">เลข RA จากระบบ outsource</label><input type="text" class="form-control" id="name_list_number" name="name_list_number" value="{{ old('name_list_number') }}"></div>
-        <div class="col-md-4 mb-3"><label for="request_number" class="form-label">เลขที่คำขอ</label><input type="text" class="form-control" id="request_number" name="request_number" value="{{ old('request_number') }}"></div>
-        <div class="col-md-4 mb-3"><label for="employee_id_number" class="form-label">เลขประจำตัว</label><input type="text" class="form-control" id="employee_id_number" name="employee_id_number" value="{{ old('employee_id_number') }}"></div>
-        <div class="col-md-4 mb-3"><label for="tax_id_number" class="form-label">เลขประจำตัวผู้เสียภาษี</label><input type="text" class="form-control" id="tax_id_number" name="tax_id_number" value="{{ old('tax_id_number') }}"></div>
-        <div class="col-md-4 mb-3"><label for="employer_employee_id" class="form-label">รหัสคนงาน - ของนายจ้าง</label><input type="text" class="form-control" id="employer_employee_id" name="employer_employee_id" value="{{ old('employer_employee_id') }}"></div>
+            <div class="col-md-4 mb-3"><label for="name_list_number" class="form-label">{{ __('เลข RA จากระบบ outsource') }}</label><input type="text" class="form-control" id="name_list_number" name="name_list_number" value="{{ old('name_list_number') }}"></div>
+        <div class="col-md-4 mb-3"><label for="request_number" class="form-label">{{ __('เลขที่คำขอ') }}</label><input type="text" class="form-control" id="request_number" name="request_number" value="{{ old('request_number') }}"></div>
+        <div class="col-md-4 mb-3"><label for="employee_id_number" class="form-label">{{ __('เลขประจำตัว') }}</label><input type="text" class="form-control" id="employee_id_number" name="employee_id_number" value="{{ old('employee_id_number') }}"></div>
+        <div class="col-md-4 mb-3"><label for="tax_id_number" class="form-label">{{ __('เลขประจำตัวผู้เสียภาษี') }}</label><input type="text" class="form-control" id="tax_id_number" name="tax_id_number" value="{{ old('tax_id_number') }}"></div>
+        <div class="col-md-4 mb-3"><label for="employer_employee_id" class="form-label">{{ __('รหัสคนงาน - ของนายจ้าง') }}</label><input type="text" class="form-control" id="employer_employee_id" name="employer_employee_id" value="{{ old('employer_employee_id') }}"></div>
         <div class="col-md-4 mb-3"><label for="department" class="form-label">{{ __('Department') }}</label><input type="text" class="form-control" id="department" name="department" value="{{ old('department') }}"></div>
-        <div class="col-md-4 mb-3"><label for="employee_reference_id" class="form-label">เลขอ้างอิงคนงาน</label><input type="text" class="form-control" id="employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id') }}"></div>
-        <div class="col-md-4 mb-3"><label for="bank_name" class="form-label">ชื่อธนาคาร</label><input type="text" class="form-control" id="bank_name" name="bank_name" value="{{ old('bank_name') }}"></div>
-        <div class="col-md-4 mb-3"><label for="bank_account_number" class="form-label">เลขบัญชีธนาคาร</label><input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ old('bank_account_number') }}"></div>
+        <div class="col-md-4 mb-3"><label for="employee_reference_id" class="form-label">{{ __('เลขอ้างอิงคนงาน') }}</label><input type="text" class="form-control" id="employee_reference_id" name="employee_reference_id" value="{{ old('employee_reference_id') }}"></div>
+        <div class="col-md-4 mb-3"><label for="bank_name" class="form-label">{{ __('ชื่อธนาคาร') }}</label><input type="text" class="form-control" id="bank_name" name="bank_name" value="{{ old('bank_name') }}"></div>
+        <div class="col-md-4 mb-3"><label for="bank_account_number" class="form-label">{{ __('เลขบัญชีธนาคาร') }}</label><input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ old('bank_account_number') }}"></div>
 </div>
 
 
 {{-- Category 5: Health Insurance --}}
-<h5 class="mt-4"><i class="bi bi-heart-pulse"></i> 5. ข้อมูลประกันสุขภาพ (Health Insurance)</h5>
+<h5 class="mt-4"><i class="bi bi-heart-pulse"></i> {{ __('5. ข้อมูลประกันสุขภาพ (Health Insurance)') }}</h5>
 <hr class="mb-4">
 <div class="row">
     <div class="col-md-4 mb-3">
-        <label for="insurance_type" class="form-label">ประเภทประกัน</label>
+        <label for="insurance_type" class="form-label">{{ __('ประเภทประกัน') }}</label>
         <select class="form-select" id="insurance_type" name="insurance_type">
-            <option value="">-- เลือกประเภท --</option>
-            <option value="ประกันสังคม" {{ old('insurance_type') == 'ประกันสังคม' ? 'selected' : '' }}>ประกันสังคม</option>
-            <option value="ประกันโรงพยาบาล" {{ old('insurance_type') == 'ประกันโรงพยาบาล' ? 'selected' : '' }}>ประกันโรงพยาบาล</option>
-            <option value="ประกันเอกชน" {{ old('insurance_type') == 'ประกันเอกชน' ? 'selected' : '' }}>ประกันเอกชน</option>
+            <option value="">{{ __('-- เลือกประเภท --') }}</option>
+            <option value="ประกันสังคม" {{ old('insurance_type') == 'ประกันสังคม' ? 'selected' : '' }}>{{ __('ประกันสังคม') }}</option>
+            <option value="ประกันโรงพยาบาล" {{ old('insurance_type') == 'ประกันโรงพยาบาล' ? 'selected' : '' }}>{{ __('ประกันโรงพยาบาล') }}</option>
+            <option value="ประกันเอกชน" {{ old('insurance_type') == 'ประกันเอกชน' ? 'selected' : '' }}>{{ __('ประกันเอกชน') }}</option>
         </select>
     </div>
 </div>
@@ -370,11 +370,11 @@
         <x-file-input-group
             id="medical_certificate_path"
             name="medical_certificate_path"
-            label="ใบรับรองแพทย์ (Medical Certificate)"
+            label="{{ __('ใบรับรองแพทย์ (Medical Certificate)') }}"
         />
     </div>
     <div class="col-md-6 mb-3">
-        <label for="medical_hospital_name" class="form-label">โรงพยาบาลที่ตรวจโรค (Hospital Name)</label>
+        <label for="medical_hospital_name" class="form-label">{{ __('โรงพยาบาลที่ตรวจโรค (Hospital Name)') }}</label>
         <input type="text" class="form-control" id="medical_hospital_name" name="medical_hospital_name" value="{{ old('medical_hospital_name') }}">
     </div>
 </div>
@@ -383,26 +383,26 @@
 <div id="insuranceSocialSecurity" class="d-none">
         <div class="row">
         <div class="col-md-4 mb-3">
-            <label for="social_security_number" class="form-label">เลขประกันสังคม</label>
+            <label for="social_security_number" class="form-label">{{ __('เลขประกันสังคม') }}</label>
             <input type="text" class="form-control" id="social_security_number" name="social_security_number" value="{{ old('social_security_number') }}">
         </div>
         <div class="col-md-4 mb-3">
-            <label for="insurance_detail_social" class="form-label">สิทธิ์โรงพยาบาล</label>
+            <label for="insurance_detail_social" class="form-label">{{ __('สิทธิ์โรงพยาบาล') }}</label>
             <input type="text" class="form-control" name="insurance_detail_social" value="{{ old('insurance_detail_social') }}">
         </div>
         <div class="col-md-4 mb-3">
             <x-file-input-group
                 id="insurance_document_path_social"
                 name="insurance_document_path_social"
-                label="แนบไฟล์เอกสารประกัน"
+                label="{{ __('แนบไฟล์เอกสารประกัน') }}"
             />
         </div>
         <div class="col-md-4 mb-3">
-            <label for="sso_issue_date" class="form-label">วันที่ออกบัตร (Issue Date)</label>
+            <label for="sso_issue_date" class="form-label">{{ __('วันที่ออกบัตร (Issue Date)') }}</label>
             <input type="date" class="form-control" id="sso_issue_date" name="sso_issue_date" value="{{ old('sso_issue_date') }}">
         </div>
         <div class="col-md-4 mb-3">
-            <label for="sso_expiry_date" class="form-label">วันหมดอายุ (Expiry Date)</label>
+            <label for="sso_expiry_date" class="form-label">{{ __('วันหมดอายุ (Expiry Date)') }}</label>
             <input type="date" class="form-control" id="sso_expiry_date" name="sso_expiry_date" value="{{ old('sso_expiry_date') }}">
         </div>
         </div>
@@ -411,18 +411,18 @@
 <div id="insuranceHospital" class="d-none">
     <div class="row">
         <div class="col-md-4 mb-3">
-            <label for="insurance_detail_hospital" class="form-label">ชื่อโรงพยาบาล</label>
+            <label for="insurance_detail_hospital" class="form-label">{{ __('ชื่อโรงพยาบาล') }}</label>
             <input type="text" class="form-control" name="insurance_detail_hospital" value="{{ old('insurance_detail_hospital') }}">
         </div>
         <div class="col-md-4 mb-3">
-            <label for="insurance_expiry_date_hospital" class="form-label">วันหมดอายุประกัน</label>
+            <label for="insurance_expiry_date_hospital" class="form-label">{{ __('วันหมดอายุประกัน') }}</label>
             <input type="date" class="form-control" name="insurance_expiry_date_hospital" value="{{ old('insurance_expiry_date_hospital') }}">
         </div>
             <div class="col-md-4 mb-3">
             <x-file-input-group
                 id="insurance_document_path_hospital"
                 name="insurance_document_path_hospital"
-                label="แนบไฟล์เอกสารประกัน"
+                label="{{ __('แนบไฟล์เอกสารประกัน') }}"
             />
         </div>
     </div>
@@ -431,18 +431,18 @@
 <div id="insurancePrivate" class="d-none">
     <div class="row">
         <div class="col-md-4 mb-3">
-            <label for="insurance_detail_private" class="form-label">บริษัทประกัน</label>
+            <label for="insurance_detail_private" class="form-label">{{ __('บริษัทประกัน') }}</label>
             <input type="text" class="form-control" name="insurance_detail_private" value="{{ old('insurance_detail_private') }}">
         </div>
         <div class="col-md-4 mb-3">
-            <label for="insurance_expiry_date_private" class="form-label">วันหมดอายุประกัน</label>
+            <label for="insurance_expiry_date_private" class="form-label">{{ __('วันหมดอายุประกัน') }}</label>
             <input type="date" class="form-control" name="insurance_expiry_date_private" value="{{ old('insurance_expiry_date_private') }}">
         </div>
             <div class="col-md-4 mb-3">
             <x-file-input-group
                 id="insurance_document_path_private"
                 name="insurance_document_path_private"
-                label="แนบไฟล์เอกสารประกัน"
+                label="{{ __('แนบไฟล์เอกสารประกัน') }}"
             />
         </div>
     </div>
@@ -450,25 +450,25 @@
 
 
 {{-- Category 6: Login Information --}}
-<h5 class="mt-4"><i class="bi bi-lock-fill"></i> 6. ข้อมูลการเข้าสู่ระบบ (Login Information)</h5>
+<h5 class="mt-4"><i class="bi bi-lock-fill"></i> {{ __('6. ข้อมูลการเข้าสู่ระบบ (Login Information)') }}</h5>
 <hr class="mb-4">
 <div class="row">
     <div class="col-md-4 mb-3">
-        <label for="employeeEmail" class="form-label">อีเมล</label>
+        <label for="employeeEmail" class="form-label">{{ __('อีเมล') }}</label>
         <input type="text" class="form-control" id="employeeEmail" name="employeeEmail" value="{{ old('employeeEmail') }}">
     </div>
     <div class="col-md-4 mb-3">
-        <label for="employeePassword" class="form-label">รหัสสำหรับอีเมล</label>
+        <label for="employeePassword" class="form-label">{{ __('รหัสสำหรับอีเมล') }}</label>
         <input type="text" class="form-control" id="employeePassword" name="employeePassword">
     </div>
     <div class="col-md-4 mb-3">
-        <label for="outsource_code" class="form-label">รหัสสำหรับระบบ Outsource</label>
+        <label for="outsource_code" class="form-label">{{ __('รหัสสำหรับระบบ Outsource') }}</label>
         <input type="text" class="form-control" id="outsource_code" name="outsource_code" value="{{ old('outsource_code') }}">
     </div>
 </div>
 
 {{-- Category 7: File Attachments --}}
-<h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
+<h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> {{ __('7. ส่วนแนบไฟล์เอกสาร (File Attachments)') }}</h5>
 <hr class="mb-4">
 <div class="row">
     @php

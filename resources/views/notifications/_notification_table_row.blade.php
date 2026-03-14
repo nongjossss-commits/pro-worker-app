@@ -61,7 +61,7 @@
                         <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
                             {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                        <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('พรีวิวข้อมูล') }}"> <i class="bi bi-search"></i> </button>
 
                         @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
                             @foreach($employee->active_workflows as $wf)
@@ -97,7 +97,7 @@
                 </div>
             </div>
         @else
-            <div class="text-muted">เอกสารนายจ้าง</div>
+            <div class="text-muted">{{ __('เอกสารนายจ้าง') }}</div>
         @endif
     </td>
     <td>
@@ -123,7 +123,7 @@
             @endforeach
         @endif
         @if($employer)
-            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $employer->id }}" title="{{ __('พรีวิวข้อมูล') }}"> <i class="bi bi-search"></i> </button>
         @endif
     </td>
     <td class="text-nowrap">{{ \Carbon\Carbon::parse($notification->due_date)->translatedFormat('d M Y') }}</td>
@@ -139,20 +139,20 @@
             @if($notification->status === 'cancelled')
                 <form action="{{ route('notifications.restore', $notification->id) }}" method="POST" class="d-grid d-md-inline">
                     @csrf
-                    <button type="submit" class="btn btn-info btn-sm" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
+                    <button type="submit" class="btn btn-info btn-sm" title="{{ __('กู้คืน') }}"><i class="bi bi-arrow-counterclockwise"></i> {{ __('กู้คืน') }}</button>
                 </form>
-                 <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
+                 <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" onsubmit="return confirm('{{ __('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?') }}'));">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-danger btn-sm" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
+                    <button type="submit" class="btn btn-danger btn-sm" title="{{ __('ลบถาวร') }}"><i class="bi bi-trash3-fill"></i></button>
                 </form>
             @else
-                <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
-                <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
+                <a href="#" class="btn btn-info" title="{{ __('สร้างงาน') }}"><i class="bi bi-rocket-takeoff-fill"></i></a>
+                <a href="#" class="btn btn-success" title="{{ __('ต่ออายุ') }}" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
                 @if($employee)
-                    <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+                    <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="{{ __('ค้นหาตำแหน่ง') }}"><i class="bi bi-geo-alt-fill"></i></a>
                 @endif
-                <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
+                <a href="#" class="btn btn-warning" title="{{ __('ยกเลิก') }}" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
             @endif
         </div>
     </td>

@@ -863,10 +863,10 @@
                     <select class="form-select" id="autoMouInput">
                         <option value="">-- {{ __('No Auto Update') }} --</option>
                         <option value="MOU" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'MOU' ? 'selected' : '' }}>MOU</option>
-                        <option value="MOU 2 ปีหลัง" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'MOU 2 ปีหลัง' ? 'selected' : '' }}>MOU 2 ปีหลัง</option>
-                        <option value="มติต่ออายุในประเทศ" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
-                        <option value="มติขึ้นทะเบียน" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
-                        <option value="อื่นๆ" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
+                        <option value="MOU 2 ปีหลัง" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'MOU 2 ปีหลัง' ? 'selected' : '' }}>{{ __('MOU 2 ปีหลัง') }}</option>
+                        <option value="มติต่ออายุในประเทศ" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>{{ __('มติต่ออายุในประเทศ') }}</option>
+                        <option value="มติขึ้นทะเบียน" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>{{ __('มติขึ้นทะเบียน') }}</option>
+                        <option value="อื่นๆ" {{ ($resolutionSettings['registration_auto_mou_group'] ?? '') == 'อื่นๆ' ? 'selected' : '' }}>{{ __('อื่นๆ') }}</option>
                     </select>
                 </div>
             </div>

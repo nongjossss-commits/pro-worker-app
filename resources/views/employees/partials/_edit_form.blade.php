@@ -5,7 +5,7 @@
     <input type="hidden" name="employer_id" value="{{ $employee->employer_id }}">
 
     {{-- Category 1: Personal Information --}}
-    <h5><i class="bi bi-person-badge"></i> 1. ข้อมูลส่วนตัว (Personal Information)</h5>
+    <h5><i class="bi bi-person-badge"></i> {{ __('1. ข้อมูลส่วนตัว (Personal Information)') }}</h5>
     <hr class="mb-4">
     <div class="row">
         {{-- Left Column --}}
@@ -16,9 +16,9 @@
                         @if(isset($missingFields) && in_array('employeeTitleTh', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
                     </label>
                     <select class="form-select" id="edit_employeeTitleTh" name="employeeTitleTh">
-                        <option value="นาย" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาย')>นาย</option>
-                        <option value="นางสาว" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นางสาว')>นางสาว</option>
-                        <option value="นาง" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาง')>นาง</option>
+                        <option value="นาย" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาย')>{{ __('นาย') }}</option>
+                        <option value="นางสาว" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นางสาว')>{{ __('นางสาว') }}</option>
+                        <option value="นาง" @selected(old('employeeTitleTh', $employee->employeeTitleTh) == 'นาง')>{{ __('นาง') }}</option>
                     </select>
                 </div>
                 <div class="col-md-6 mb-3">
@@ -80,7 +80,7 @@
 
             <div class="row">
                     <div class="col-md-4 mb-3">
-                    <label for="edit_employeeGender" class="form-label">เพศ</label>
+                    <label for="edit_employeeGender" class="form-label">{{ __('เพศ') }}</label>
                     <input type="text" class="form-control" id="edit_employeeGender" name="employeeGender" value="{{ old('employeeGender', $employee->employeeGender) }}" readonly>
                     </div>
                     <div class="col-md-5 mb-3">
@@ -90,7 +90,7 @@
                     <input type="date" class="form-control" id="edit_employeeDob" name="employeeDob" value="{{ old('employeeDob', optional($employee->employeeDob)->format('Y-m-d')) }}">
                 </div>
                 <div class="col-md-3 mb-3">
-                    <label for="edit_employeeAge" class="form-label">อายุ</label>
+                    <label for="edit_employeeAge" class="form-label">{{ __('อายุ') }}</label>
                     <input type="text" class="form-control" id="edit_employeeAge" name="employeeAge" value="{{ old('employeeAge', $employee->employeeAge) }}" readonly>
                 </div>
             </div>
@@ -102,12 +102,12 @@
             </label>
             <img id="edit_employeePhotoPreview" src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : 'https://placehold.co/150x180/f8fafc/6c757d?text=Photo' }}" class="img-thumbnail mb-3" style="width: 150px; height: 180px; object-fit: cover;">
             <div class="d-grid gap-2 w-75">
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('edit_triggerFile').click();"><i class="bi bi-file-earmark-image me-1"></i> เลือกจากไฟล์</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('edit_triggerCamera').click();"><i class="bi bi-camera-fill me-1"></i> ถ่ายภาพ</button>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('edit_triggerFile').click();"><i class="bi bi-file-earmark-image me-1"></i> {{ __('เลือกจากไฟล์') }}</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('edit_triggerCamera').click();"><i class="bi bi-camera-fill me-1"></i> {{ __('ถ่ายภาพ') }}</button>
                 @if($employee->employeePhoto)
                 <button type="button" class="btn btn-sm btn-warning"
                         onclick="window.openCropperWithUrl('{{ asset('storage/' . $employee->employeePhoto) }}', 'edit_employeePhotoInput', 'edit_employeePhotoPreview')">
-                    <i class="bi bi-pencil-square me-1"></i> แก้ไขรูปภาพ
+                    <i class="bi bi-pencil-square me-1"></i> {{ __('แก้ไขรูปภาพ') }}
                 </button>
                 @endif
             </div>
@@ -121,7 +121,7 @@
 
 
     {{-- Category 2: Contact & Nationality --}}
-    <h5 class="mt-4"><i class="bi bi-telephone-fill"></i> 2. ข้อมูลการติดต่อและสัญชาติ (Contact & Nationality)</h5>
+    <h5 class="mt-4"><i class="bi bi-telephone-fill"></i> {{ __('2. ข้อมูลการติดต่อและสัญชาติ (Contact & Nationality)') }}</h5>
     <hr class="mb-4">
     <div class="row">
         <div class="col-md-4 mb-3">
@@ -135,11 +135,11 @@
                 @if(isset($missingFields) && in_array('employeeNationality', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <select class="form-select" id="edit_employeeNationality" name="employeeNationality">
-                <option value="">-- เลือกสัญชาติ --</option>
-                <option value="เมียนมา" @selected(old('employeeNationality', $employee->employeeNationality) == 'เมียนมา')>เมียนมา</option>
-                <option value="ลาว" @selected(old('employeeNationality', $employee->employeeNationality) == 'ลาว')>ลาว</option>
-                <option value="กัมพูชา" @selected(old('employeeNationality', $employee->employeeNationality) == 'กัมพูชา')>กัมพูชา</option>
-                <option value="เวียดนาม" @selected(old('employeeNationality', $employee->employeeNationality) == 'เวียดนาม')>เวียดนาม</option>
+                <option value="">{{ __('-- เลือกสัญชาติ --') }}</option>
+                <option value="เมียนมา" @selected(old('employeeNationality', $employee->employeeNationality) == 'เมียนมา')>{{ __('เมียนมา') }}</option>
+                <option value="ลาว" @selected(old('employeeNationality', $employee->employeeNationality) == 'ลาว')>{{ __('ลาว') }}</option>
+                <option value="กัมพูชา" @selected(old('employeeNationality', $employee->employeeNationality) == 'กัมพูชา')>{{ __('กัมพูชา') }}</option>
+                <option value="เวียดนาม" @selected(old('employeeNationality', $employee->employeeNationality) == 'เวียดนาม')>{{ __('เวียดนาม') }}</option>
             </select>
         </div>
             <div class="col-md-4 mb-3 d-none" id="edit_passportTypeContainer">
@@ -147,9 +147,9 @@
                 @if(isset($missingFields) && in_array('passportType', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <select class="form-select" id="edit_passportType" name="passportType">
-                <option value="">-- เลือกประเภท --</option>
-                <option value="PJ" @selected(old('passportType', $employee->passportType) == 'PJ')>เล่ม PJ</option>
-                <option value="CI" @selected(old('passportType', $employee->passportType) == 'CI')>เล่ม CI</option>
+                <option value="">{{ __('-- เลือกประเภท --') }}</option>
+                <option value="PJ" @selected(old('passportType', $employee->passportType) == 'PJ')>{{ __('เล่ม PJ') }}</option>
+                <option value="CI" @selected(old('passportType', $employee->passportType) == 'CI')>{{ __('เล่ม CI') }}</option>
             </select>
         </div>
         <div class="col-md-4 mb-3 d-none" id="edit_passportTypeCambodiaContainer">
@@ -157,15 +157,15 @@
                 @if(isset($missingFields) && in_array('passport_type_cambodia', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <select class="form-select" id="edit_passport_type_cambodia" name="passport_type_cambodia">
-                <option value="">-- เลือกประเภท --</option>
-                <option value="เล่ม TD" @selected(old('passport_type_cambodia', $employee->passport_type_cambodia) == 'เล่ม TD')>เล่ม TD</option>
-                <option value="เล่มอินเตอร์" @selected(old('passport_type_cambodia', $employee->passport_type_cambodia) == 'เล่มอินเตอร์')>เล่มอินเตอร์</option>
+                <option value="">{{ __('-- เลือกประเภท --') }}</option>
+                <option value="เล่ม TD" @selected(old('passport_type_cambodia', $employee->passport_type_cambodia) == 'เล่ม TD')>{{ __('เล่ม TD') }}</option>
+                <option value="เล่มอินเตอร์" @selected(old('passport_type_cambodia', $employee->passport_type_cambodia) == 'เล่มอินเตอร์')>{{ __('เล่มอินเตอร์') }}</option>
             </select>
         </div>
     </div>
 
     {{-- Category 3: Passport & Visa --}}
-    <h5 class="mt-4"><i class="bi bi-passport"></i> 3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)</h5>
+    <h5 class="mt-4"><i class="bi bi-passport"></i> {{ __('3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)') }}</h5>
     <hr class="mb-4">
     <div class="row">
         <div class="col-md-3 mb-3">
@@ -221,7 +221,7 @@
     </div>
 
     {{-- Category 4: Employment & Work IDs --}}
-    <h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> 4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)</h5>
+    <h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> {{ __('4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)') }}</h5>
     <hr class="mb-4">
     <div class="row">
         <div class="col-md-3 mb-3">
@@ -273,12 +273,12 @@
                 @if(isset($missingFields) && in_array('workPermitMOUGroup', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <select class="form-select" id="edit_workPermitMOUGroup" name="workPermitMOUGroup">
-                <option value="">-- กรุณาเลือก --</option>
+                <option value="">{{ __('-- กรุณาเลือก --') }}</option>
                 <option value="MOU" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'MOU')>MOU</option>
-                <option value="MOU 2 ปีหลัง" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'MOU 2 ปีหลัง')>MOU 2 ปีหลัง</option>
-                <option value="มติต่ออายุในประเทศ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติต่ออายุในประเทศ')>มติต่ออายุในประเทศ</option>
-                <option value="มติขึ้นทะเบียน" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติขึ้นทะเบียน')>มติขึ้นทะเบียน</option>
-                <option value="อื่นๆ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'อื่นๆ')>อื่นๆ ระบุ..</option>
+                <option value="MOU 2 ปีหลัง" @selected(old('workPermitMOUGroup', $employee->{{ __('workPermitMOUGroup) == 'MOU 2 ปีหลัง')>MOU 2 ปีหลัง') }}</option>
+                <option value="มติต่ออายุในประเทศ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติต่ออายุในประเทศ')>{{ __('มติต่ออายุในประเทศ') }}</option>
+                <option value="มติขึ้นทะเบียน" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติขึ้นทะเบียน')>{{ __('มติขึ้นทะเบียน') }}</option>
+                <option value="อื่นๆ" @selected(old('workPermitMOUGroup', $employee->{{ __('workPermitMOUGroup) == 'อื่นๆ')>อื่นๆ ระบุ..') }}</option>
             </select>
         </div>
         <div class="col-md-6 mb-3 d-none" id="edit_workPermitMOUGroupOtherContainer">
@@ -320,7 +320,7 @@
 
 
     {{-- Category 5: Health Insurance --}}
-    <h5 class="mt-4"><i class="bi bi-heart-pulse"></i> 5. ข้อมูลประกันสุขภาพ (Health Insurance)</h5>
+    <h5 class="mt-4"><i class="bi bi-heart-pulse"></i> {{ __('5. ข้อมูลประกันสุขภาพ (Health Insurance)') }}</h5>
     <hr class="mb-4">
     <div class="row">
         <div class="col-md-4 mb-3">
@@ -328,10 +328,10 @@
                 @if(isset($missingFields) && in_array('insurance_type', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <select class="form-select" id="edit_insurance_type" name="insurance_type">
-                <option value="">-- เลือกประเภท --</option>
-                <option value="ประกันสังคม" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันสังคม')>ประกันสังคม</option>
-                <option value="ประกันโรงพยาบาล" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันโรงพยาบาล')>ประกันโรงพยาบาล</option>
-                <option value="ประกันเอกชน" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันเอกชน')>ประกันเอกชน</option>
+                <option value="">{{ __('-- เลือกประเภท --') }}</option>
+                <option value="ประกันสังคม" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันสังคม')>{{ __('ประกันสังคม') }}</option>
+                <option value="ประกันโรงพยาบาล" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันโรงพยาบาล')>{{ __('ประกันโรงพยาบาล') }}</option>
+                <option value="ประกันเอกชน" @selected(old('insurance_type', $employee->insurance_type) == 'ประกันเอกชน')>{{ __('ประกันเอกชน') }}</option>
             </select>
         </div>
     </div>
@@ -341,13 +341,13 @@
             <x-file-input-group
                 id="edit_medical_certificate_path"
                 name="medical_certificate_path"
-                label="ใบรับรองแพทย์ (Medical Certificate)"
+                label="{{ __('ใบรับรองแพทย์ (Medical Certificate)') }}"
                 :value="$employee->medical_certificate_path"
                 :pdfRoute="route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path'])"
             />
         </div>
         <div class="col-md-6 mb-3">
-            <label for="edit_medical_hospital_name" class="form-label">โรงพยาบาลที่ตรวจโรค (Hospital Name)</label>
+            <label for="edit_medical_hospital_name" class="form-label">{{ __('โรงพยาบาลที่ตรวจโรค (Hospital Name)') }}</label>
             <input type="text" class="form-control" id="edit_medical_hospital_name" name="medical_hospital_name" value="{{ old('medical_hospital_name', $employee->medical_hospital_name) }}">
         </div>
     </div>
@@ -368,11 +368,11 @@
                 <input type="text" class="form-control" id="edit_insurance_detail" name="insurance_detail" value="{{ old('insurance_detail', $employee->insurance_detail) }}">
             </div>
             <div class="col-md-4 mb-3">
-                <label for="edit_sso_issue_date" class="form-label">วันที่ออกบัตร (Issue Date)</label>
+                <label for="edit_sso_issue_date" class="form-label">{{ __('วันที่ออกบัตร (Issue Date)') }}</label>
                 <input type="date" class="form-control" id="edit_sso_issue_date" name="sso_issue_date" value="{{ old('sso_issue_date', optional($employee->sso_issue_date)->format('Y-m-d')) }}">
             </div>
             <div class="col-md-4 mb-3">
-                <label for="edit_sso_expiry_date" class="form-label">วันหมดอายุ (Expiry Date)</label>
+                <label for="edit_sso_expiry_date" class="form-label">{{ __('วันหมดอายุ (Expiry Date)') }}</label>
                 <input type="date" class="form-control" id="edit_sso_expiry_date" name="sso_expiry_date" value="{{ old('sso_expiry_date', optional($employee->sso_expiry_date)->format('Y-m-d')) }}">
             </div>
             </div>
@@ -416,7 +416,7 @@
             <x-file-input-group
                 id="edit_insurance_document_path_private"
                 name="insurance_document_path_private"
-                label="แนบไฟล์เอกสารประกัน"
+                label="{{ __('แนบไฟล์เอกสารประกัน') }}"
                 :value="$employee->insurance_document_path_private"
                 :pdfRoute="route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private'])"
             />
@@ -424,7 +424,7 @@
     </div>
 
     {{-- Category 6: Login Information --}}
-    <h5 class="mt-4"><i class="bi bi-lock-fill"></i> 6. ข้อมูลการเข้าสู่ระบบ (Login Information)</h5>
+    <h5 class="mt-4"><i class="bi bi-lock-fill"></i> {{ __('6. ข้อมูลการเข้าสู่ระบบ (Login Information)') }}</h5>
     <hr class="mb-4">
     <div class="row">
         <div class="col-md-4 mb-3">
@@ -438,7 +438,7 @@
                 @if(isset($missingFields) && in_array('password', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="edit_password" name="password"
-                    value="{{ $employee->password }}" placeholder="กรอกรหัสผ่าน">
+                    value="{{ $employee->password }}" placeholder="{{ __('กรอกรหัสผ่าน') }}">
             {{-- Note: type="text" creates a plain text box as requested --}}
         </div>
         <div class="col-md-4 mb-3">
@@ -450,7 +450,7 @@
     </div>
 
     {{-- Category 7: File Attachments --}}
-    <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
+    <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> {{ __('7. ส่วนแนบไฟล์เอกสาร (File Attachments)') }}</h5>
     <hr class="mb-4">
     @php
         $docSlots = [
@@ -484,7 +484,7 @@
 
 
     <div class="mt-4 d-flex justify-content-end">
-        <button type="button" class="btn btn-secondary me-2 btn-cancel-edit">ยกเลิก</button>
-        <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน</button>
+        <button type="button" class="btn btn-secondary me-2 btn-cancel-edit">{{ __('ยกเลิก') }}</button>
+        <button type="submit" class="btn btn-primary">{{ __('บันทึกข้อมูลพนักงาน') }}</button>
     </div>
 </form>

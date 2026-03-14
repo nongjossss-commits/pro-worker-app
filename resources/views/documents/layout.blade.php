@@ -196,7 +196,7 @@
                             <td>{{ $doc_number ?? 'DRAFT' }}</td>
                         </tr>
                         <tr>
-                            <td class="meta-label">Date <span class="en-label">/ วันที่</span>:</td>
+                            <td class="meta-label">Date <span class="en-label">{{ __('/ วันที่') }}</span>:</td>
                             <td>{{ date('d/m/Y') }}</td>
                         </tr>
                         <tr>
@@ -210,7 +210,7 @@
 
         <!-- Client Info -->
         <div class="client-box">
-            <div class="client-label">Bill To <span class="en-label">/ ลูกค้า</span></div>
+            <div class="client-label">Bill To <span class="en-label">{{ __('/ ลูกค้า') }}</span></div>
             @if(isset($customerProfile))
                  <div class="client-name">{{ $customerProfile->name }}</div>
                  <div>{!! nl2br(e($customerProfile->address)) !!}</div>
@@ -370,10 +370,10 @@
             <thead>
                 <tr>
                     <th style="width: 5%;" class="text-center">#</th>
-                    <th style="width: 60%;">Description <span class="en-label">/ รายการ</span></th>
-                    <th style="width: 10%;" class="text-center">Qty <span class="en-label">/ จำนวน</span></th>
-                    <th style="width: 10%;" class="text-right">Unit Price <span class="en-label">/ ราคา</span></th>
-                    <th style="width: 15%;" class="text-right">Amount <span class="en-label">/ รวม</span></th>
+                    <th style="width: 60%;">Description <span class="en-label">{{ __('/ รายการ') }}</span></th>
+                    <th style="width: 10%;" class="text-center">Qty <span class="en-label">{{ __('/ จำนวน') }}</span></th>
+                    <th style="width: 10%;" class="text-right">Unit Price <span class="en-label">{{ __('/ ราคา') }}</span></th>
+                    <th style="width: 15%;" class="text-right">Amount <span class="en-label">{{ __('/ รวม') }}</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -381,7 +381,7 @@
                 @if($showService)
                     @if($hasSpecificTransactions || ($mode !== 'service_only'))
                         <tr>
-                            <td colspan="5" class="section-header">Service Charges (ค่าบริการ)</td>
+                            <td colspan="5" class="section-header">{{ __('Service Charges (ค่าบริการ)') }}</td>
                         </tr>
                     @endif
 
@@ -499,7 +499,7 @@
                 @if($showAdvance)
                     @if($advanceTransactions->isNotEmpty())
                          <tr>
-                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย)</td>
+                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">{{ __('Advance Payments (เงินสำรองจ่าย)') }}</td>
                         </tr>
                         @foreach($advanceTransactions as $index => $t)
                             @php
@@ -522,7 +522,7 @@
 
                     @elseif(!$hasSpecificTransactions && isset($advanceItems) && $advanceItems->isNotEmpty())
                         <tr>
-                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
+                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">{{ __('Advance Payments (เงินสำรองจ่าย)') }}<span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
                         </tr>
                         @foreach($advanceItems as $index => $item)
                             <tr>
@@ -543,7 +543,7 @@
             <table class="totals-table">
                 @if($showService)
                     <tr>
-                        <td class="total-label"><strong>Service Base <span class="en-label">/ มูลค่าบริการ (ก่อน VAT)</span></strong></td>
+                        <td class="total-label"><strong>Service Base <span class="en-label">{{ __('/ มูลค่าบริการ (ก่อน VAT)') }}</span></strong></td>
                         <td class="total-value">{{ number_format($serviceBase, 2) }}</td>
                     </tr>
                     @if($vatRate > 0)
@@ -553,14 +553,14 @@
                     </tr>
                     @endif
                     <tr>
-                        <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total <span class="en-label">/ รวมค่าบริการ (รวม VAT)</span></td>
+                        <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total <span class="en-label">{{ __('/ รวมค่าบริการ (รวม VAT)') }}</span></td>
                         <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
                     </tr>
                 @endif
 
                 @if($showAdvance && $advanceTotal > 0)
                     <tr>
-                        <td class="total-label" style="color: #ea580c;"><strong>Total Advance Payments <span class="en-label">/ รวมเงินสำรองจ่าย</span></strong></td>
+                        <td class="total-label" style="color: #ea580c;"><strong>Total Advance Payments <span class="en-label">{{ __('/ รวมเงินสำรองจ่าย') }}</span></strong></td>
                         <td class="total-value" style="color: #ea580c;">{{ number_format($advanceTotal, 2) }}</td>
                     </tr>
                 @endif
@@ -572,7 +572,7 @@
                 @endphp
 
                 <tr class="grand-total-row">
-                    <td>Grand Total <span class="en-label">/ รวมทั้งสิ้น</span></td>
+                    <td>Grand Total <span class="en-label">{{ __('/ รวมทั้งสิ้น') }}</span></td>
                     <td class="total-value">{{ number_format($grandTotal, 2) }}</td>
                 </tr>
 
@@ -582,7 +582,7 @@
                     <td class="total-value">-{{ number_format($whtAmount, 2) }}</td>
                 </tr>
                 <tr style="font-weight: bold; border-top: 1px dashed #ccc;">
-                    <td class="total-label" style="padding-top: 5px;">Net Payable <span class="en-label">/ ยอดสุทธิ</span></td>
+                    <td class="total-label" style="padding-top: 5px;">Net Payable <span class="en-label">{{ __('/ ยอดสุทธิ') }}</span></td>
                     <td class="total-value" style="padding-top: 5px;">{{ number_format($netPayable, 2) }}</td>
                 </tr>
                 @endif
@@ -598,13 +598,13 @@
             <!-- Signatures Section -->
             <div class="signatures">
                 <div class="sig-block">
-                    <div class="sig-title">Received By <span class="en-label">/ ผู้รับเงิน</span></div>
+                    <div class="sig-title">Received By <span class="en-label">{{ __('/ ผู้รับเงิน') }}</span></div>
                     <div class="sig-line"></div>
-                    <div class="sig-text">Date <span class="en-label">/ วันที่</span>: ____/____/______</div>
+                    <div class="sig-text">Date <span class="en-label">{{ __('/ วันที่') }}</span>: ____/____/______</div>
                 </div>
 
                 <div class="sig-block">
-                    <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
+                    <div class="sig-title">Authorized Signature <span class="en-label">{{ __('/ ผู้มีอำนาจลงนาม') }}</span></div>
 
                     <div style="position: relative; display: flex; justify-content: center; align-items: end; height: 50px; margin-bottom: 10px;">
                         @if(isset($billerProfile))
@@ -655,16 +655,16 @@
 
     @if(!empty($includeEmployeeList) && $includeEmployeeList)
     <div class="page" style="page-break-before: always; margin-top: 20px;">
-        <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px;">ตารางรายชื่อพนักงาน / Employee List</h2>
+        <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px;">{{ __('ตารางรายชื่อพนักงาน / Employee List') }}</h2>
         <table class="items-table" style="font-size: 12px;">
             <thead>
                 <tr>
-                    <th style="width: 5%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
-                    <th style="width: 15%; text-align: center;">รูปถ่าย<br><span class="en-label">Photo</span></th>
-                    <th style="width: 15%;">รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
-                    <th style="width: 35%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
-                    <th style="width: 15%; text-align: center;">สัญชาติ<br><span class="en-label">Nationality</span></th>
-                    <th style="width: 15%; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
+                    <th style="width: 5%; text-align: center;">{{ __('ลำดับ') }}<br><span class="en-label">No.</span></th>
+                    <th style="width: 15%; text-align: center;">{{ __('รูปถ่าย') }}<br><span class="en-label">Photo</span></th>
+                    <th style="width: 15%;">{{ __('รหัสลูกจ้าง') }}<br><span class="en-label">Employee ID</span></th>
+                    <th style="width: 35%;">{{ __('ชื่อ-นามสกุล') }}<br><span class="en-label">Name</span></th>
+                    <th style="width: 15%; text-align: center;">{{ __('สัญชาติ') }}<br><span class="en-label">Nationality</span></th>
+                    <th style="width: 15%; text-align: right;">{{ __('ราคาต่อหัว') }}<br><span class="en-label">Price</span></th>
                 </tr>
             </thead>
             <tbody>

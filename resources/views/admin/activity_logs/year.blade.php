@@ -37,7 +37,7 @@
                 </div>
             @else
                 <div class="text-center py-5">
-                    <p class="text-muted">ไม่มีข้อมูลสำหรับปีนี้</p>
+                    <p class="text-muted">{{ __('ไม่มีข้อมูลสำหรับปีนี้') }}</p>
                 </div>
             @endif
         </div>

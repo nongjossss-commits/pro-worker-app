@@ -356,8 +356,7 @@
                             Auto-Prefix Titles
                         </label>
                         <div class="text-muted small mt-1">
-                            Automatically add "Mr./Ms." or "นาย/นาง/นางสาว" to names if missing.
-                        </div>
+                            {{ __('Automatically add "Mr./Ms." or "นาย/นาง/นางสาว" to names if missing.') }}</div>
                     </div>
                 </div>
                 <div class="modal-footer">

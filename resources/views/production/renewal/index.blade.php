@@ -280,9 +280,9 @@
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => null])) }}">{{ __('All Types') }}</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันสังคม'])) }}">{{ __('ประกันสังคม') }}</a></li>
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันเอกชน'])) }}">{{ __('ประกันเอกชน') }}</a></li>
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'ประกันโรงพยาบาล'])) }}">{{ __('ประกันโรงพยาบาล') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => __('ประกันสังคม')])) }}">{{ __('ประกันสังคม') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => __('ประกันเอกชน')])) }}">{{ __('ประกันเอกชน') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => __('ประกันโรงพยาบาล')])) }}">{{ __('ประกันโรงพยาบาล') }}</a></li>
                         <li><a class="dropdown-item text-muted" href="{{ route('production.renewal.index', array_merge(request()->query(), ['insurance_filter' => 'none'])) }}">{{ __('No Insurance') }}</a></li>
                     </ul>
                 </div>
@@ -779,10 +779,10 @@
                     <select class="form-select" id="autoMouInput">
                         <option value="">-- {{ __('No Auto Update') }} --</option>
                         <option value="MOU" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'MOU' ? 'selected' : '' }}>MOU</option>
-                        <option value="MOU 2 ปีหลัง" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'MOU 2 ปีหลัง' ? 'selected' : '' }}>MOU 2 ปีหลัง</option>
-                        <option value="มติต่ออายุในประเทศ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
-                        <option value="มติขึ้นทะเบียน" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
-                        <option value="อื่นๆ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ</option>
+                        <option value="MOU 2 ปีหลัง" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'MOU 2 ปีหลัง' ? 'selected' : '' }}>{{ __('MOU 2 ปีหลัง') }}</option>
+                        <option value="มติต่ออายุในประเทศ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>{{ __('มติต่ออายุในประเทศ') }}</option>
+                        <option value="มติขึ้นทะเบียน" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>{{ __('มติขึ้นทะเบียน') }}</option>
+                        <option value="อื่นๆ" {{ ($resolutionSettings['renewal_auto_mou_group'] ?? '') == 'อื่นๆ' ? 'selected' : '' }}>{{ __('อื่นๆ') }}</option>
                     </select>
                 </div>
             </div>

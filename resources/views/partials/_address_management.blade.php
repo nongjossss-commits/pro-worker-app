@@ -2,7 +2,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addressModalLabel">เพิ่ม/แก้ไขที่อยู่</h5>
+                <h5 class="modal-title" id="addressModalLabel">{{ __('เพิ่ม/แก้ไขที่อยู่') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -20,7 +20,7 @@
                     {{-- Row 1: No --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrNo" class="form-label">บ้านเลขที่ (ไทย)</label>
+                            <label for="addrNo" class="form-label">{{ __('บ้านเลขที่ (ไทย)') }}</label>
                             <input type="text" class="form-control" id="addrNo" name="addrNo">
                             <div class="invalid-feedback" id="addrNoError"></div>
                         </div>
@@ -33,7 +33,7 @@
                     {{-- Row 2: Moo --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrMoo" class="form-label">หมู่ (ไทย)</label>
+                            <label for="addrMoo" class="form-label">{{ __('หมู่ (ไทย)') }}</label>
                             <input type="text" class="form-control" id="addrMoo" name="addrMoo">
                              <div class="invalid-feedback" id="addrMooError"></div>
                         </div>
@@ -46,7 +46,7 @@
                     {{-- Row 3: Soi --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrSoi" class="form-label">ซอย (ไทย)</label>
+                            <label for="addrSoi" class="form-label">{{ __('ซอย (ไทย)') }}</label>
                             <input type="text" class="form-control" id="addrSoi" name="addrSoi">
                              <div class="invalid-feedback" id="addrSoiError"></div>
                         </div>
@@ -59,7 +59,7 @@
                     {{-- Row 4: Road --}}
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrRoad" class="form-label">ถนน (ไทย)</label>
+                            <label for="addrRoad" class="form-label">{{ __('ถนน (ไทย)') }}</label>
                             <input type="text" class="form-control" id="addrRoad" name="addrRoad">
                              <div class="invalid-feedback" id="addrRoadError"></div>
                         </div>
@@ -72,10 +72,10 @@
                     {{-- Row 5: Province --}}
                     <div class="row mb-3">
                         <div class="col-md-6" x-data="searchableSelect('addrProvince')">
-                            <label for="addrProvince" class="form-label">จังหวัด (Thai)</label>
+                            <label for="addrProvince" class="form-label">{{ __('จังหวัด (Thai)') }}</label>
                             <div class="position-relative">
                                 <select class="form-select d-none" name="addrProvince" id="addrProvince" x-ref="select">
-                                    <option selected disabled value="">-- เลือกจังหวัด --</option>
+                                    <option selected disabled value="">{{ __('-- เลือกจังหวัด --') }}</option>
                                 </select>
                                 <div class="dropdown">
                                     <input type="text"
@@ -86,7 +86,7 @@
                                            @input="filter()"
                                            @keydown.escape="close()"
                                            @click.outside="close()"
-                                           placeholder="-- เลือกจังหวัด --"
+                                           placeholder="{{ __('-- เลือกจังหวัด --') }}"
                                            :class="{'is-invalid': hasError}"
                                            :disabled="isDisabled"
                                     >
@@ -104,7 +104,7 @@
                                                         x-text="option.text"></button>
                                             </li>
                                         </template>
-                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">ไม่พบข้อมูล (No results)</li>
+                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">{{ __('ไม่พบข้อมูล (No results)') }}</li>
                                     </ul>
                                 </div>
                             </div>
@@ -118,10 +118,10 @@
                     {{-- Row 6: District --}}
                     <div class="row mb-3">
                         <div class="col-md-6" x-data="searchableSelect('addrDistrict')">
-                            <label for="addrDistrict" class="form-label">อำเภอ/เขต (Thai)</label>
+                            <label for="addrDistrict" class="form-label">{{ __('อำเภอ/เขต (Thai)') }}</label>
                             <div class="position-relative">
                                 <select class="form-select d-none" name="addrDistrict" id="addrDistrict" x-ref="select" disabled>
-                                    <option selected disabled value="">-- เลือกอำเภอ/เขต --</option>
+                                    <option selected disabled value="">{{ __('-- เลือกอำเภอ/เขต --') }}</option>
                                 </select>
                                 <div class="dropdown">
                                     <input type="text"
@@ -132,7 +132,7 @@
                                            @input="filter()"
                                            @keydown.escape="close()"
                                            @click.outside="close()"
-                                           placeholder="-- เลือกอำเภอ/เขต --"
+                                           placeholder="{{ __('-- เลือกอำเภอ/เขต --') }}"
                                            :class="{'is-invalid': hasError}"
                                            :disabled="isDisabled"
                                     >
@@ -150,7 +150,7 @@
                                                         x-text="option.text"></button>
                                             </li>
                                         </template>
-                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">ไม่พบข้อมูล (No results)</li>
+                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">{{ __('ไม่พบข้อมูล (No results)') }}</li>
                                     </ul>
                                 </div>
                             </div>
@@ -164,10 +164,10 @@
                     {{-- Row 7: SubDistrict --}}
                     <div class="row mb-3">
                         <div class="col-md-6" x-data="searchableSelect('addrSubDistrict')">
-                            <label for="addrSubDistrict" class="form-label">ตำบล/แขวง (Thai)</label>
+                            <label for="addrSubDistrict" class="form-label">{{ __('ตำบล/แขวง (Thai)') }}</label>
                             <div class="position-relative">
                                 <select class="form-select d-none" name="addrSubDistrict" id="addrSubDistrict" x-ref="select" disabled>
-                                    <option selected disabled value="">-- เลือกตำบล/แขวง --</option>
+                                    <option selected disabled value="">{{ __('-- เลือกตำบล/แขวง --') }}</option>
                                 </select>
                                 <div class="dropdown">
                                     <input type="text"
@@ -178,7 +178,7 @@
                                            @input="filter()"
                                            @keydown.escape="close()"
                                            @click.outside="close()"
-                                           placeholder="-- เลือกตำบล/แขวง --"
+                                           placeholder="{{ __('-- เลือกตำบล/แขวง --') }}"
                                            :class="{'is-invalid': hasError}"
                                            :disabled="isDisabled"
                                     >
@@ -196,7 +196,7 @@
                                                         x-text="option.text"></button>
                                             </li>
                                         </template>
-                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">ไม่พบข้อมูล (No results)</li>
+                                        <li x-show="filteredOptions.length === 0" class="p-2 text-muted text-center small">{{ __('ไม่พบข้อมูล (No results)') }}</li>
                                     </ul>
                                 </div>
                             </div>
@@ -209,7 +209,7 @@
                     </div>
                      <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="addrZipCode" class="form-label">รหัสไปรษณีย์</label>
+                            <label for="addrZipCode" class="form-label">{{ __('รหัสไปรษณีย์') }}</label>
                             <input type="text" class="form-control" id="addrZipCode" name="addrZipCode" readonly>
                              <div class="invalid-feedback" id="addrZipCodeError"></div>
                         </div>
@@ -217,9 +217,9 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ปิด') }}</button>
                 {{-- Changed to type="submit" and linked to the form --}}
-                <button type="submit" class="btn btn-primary" id="saveAddressBtn" form="addressForm">บันทึก</button>
+                <button type="submit" class="btn btn-primary" id="saveAddressBtn" form="addressForm">{{ __('บันทึก') }}</button>
             </div>
         </div>
     </div>

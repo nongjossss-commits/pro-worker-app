@@ -54,7 +54,7 @@
 
         } catch (error) {
             console.error('Error loading image for cropping:', error);
-            alert('ไม่สามารถโหลดรูปภาพได้: ' + error.message);
+            alert('{{ __('ไม่สามารถโหลดรูปภาพได้: ') }}') + error.message);
         }
     };
 
@@ -87,7 +87,7 @@
         // --- Helper: Init Cropper Instance ---
         function initCropperInstance() {
             if (typeof Cropper === 'undefined') {
-                alert('ไม่สามารถโหลดเครื่องมือตัดภาพได้ (Cropper.js) กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+                alert('{{ __('ไม่สามารถโหลดเครื่องมือตัดภาพได้ (Cropper.js) กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต') }}'));
                 return;
             }
 
@@ -113,7 +113,7 @@
                 });
             } catch (err) {
                 console.error(err);
-                alert('เกิดข้อผิดพลาดในการเริ่มทำงาน Cropper: ' + err.message);
+                alert('{{ __('เกิดข้อผิดพลาดในการเริ่มทำงาน Cropper: ') }}') + err.message);
             }
         }
 
@@ -265,7 +265,7 @@
             const originalFile = window.cropperManager.originalFile;
 
             if (!cropper) {
-                alert('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่');
+                alert('{{ __('กรุณารอให้เครื่องมือตัดภาพทำงาน หรือลองเลือกไฟล์ใหม่') }}'));
                 return;
             }
 
@@ -278,7 +278,7 @@
             });
 
             if (!canvas) {
-                alert('เกิดข้อผิดพลาดในการตัดภาพ (Canvas creation failed). กรุณาลองใหม่อีกครั้ง');
+                alert('{{ __('เกิดข้อผิดพลาดในการตัดภาพ (Canvas creation failed). กรุณาลองใหม่อีกครั้ง') }}'));
                 return;
             }
 
@@ -477,7 +477,7 @@
 
                 } catch (err) {
                     console.error("Enhancement Error:", err);
-                    alert("การปรับความชัดล้มเหลว: " + err.message);
+                    alert("{{ __('การปรับความชัดล้มเหลว: ') }}") + err.message);
                 } finally {
                     if (loadingOverlay) loadingOverlay.classList.add('d-none');
                 }

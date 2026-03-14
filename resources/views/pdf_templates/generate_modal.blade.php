@@ -33,9 +33,9 @@
                                 $filterEmployerOptions = collect([
                                     [
                                         'id' => 'global',
-                                        'name_th' => 'Global Templates Only (ส่วนกลาง)',
+                                        'name_th' => __('Global Templates Only (ส่วนกลาง)'),
                                         'name_en' => 'Global',
-                                        'search_str' => 'global templates only ส่วนกลาง'
+                                        'search_str' => __('global templates only ส่วนกลาง')
                                     ]
                                 ])->merge(
                                     $employers->map(fn($e) => [
@@ -174,7 +174,7 @@
 
                         <!-- Section 2.6: Target Importer Selection (Auto-detected) -->
                         <div class="mb-4" x-show="needsImporter" x-transition>
-                            <label class="form-label fw-bold text-success">Target Importer (บริษัทนำเข้า)</label>
+                            <label class="form-label fw-bold text-success">{{ __('Target Importer (บริษัทนำเข้า)') }}</label>
                             <p class="text-sm text-muted mb-2">
                                 <i class="bi bi-info-circle"></i>
                                 This template contains Importer fields. Please select an Importer.
@@ -191,7 +191,7 @@
 
                         <!-- Section 2.7: Target Delegate Selection (Auto-detected) -->
                         <div class="mb-4" x-show="needsDelegate" x-transition>
-                            <label class="form-label fw-bold text-info">Target Company Employee (พนักงานบริษัท / Delegate)</label>
+                            <label class="form-label fw-bold text-info">{{ __('Target Company Employee (พนักงานบริษัท / Delegate)') }}</label>
                             <p class="text-sm text-muted mb-2">
                                 <i class="bi bi-info-circle"></i>
                                 This template contains Delegate fields. Please select a Company Employee.
@@ -235,13 +235,13 @@
 
                             <select name="slot_name" class="form-select" :required="outputType === 'save_to_slot'" x-model="slotName">
                                 <option value="">-- Select Slot --</option>
-                                <optgroup label="Employee Documents (เอกสารลูกจ้าง)">
+                                <optgroup label="{{ __('Employee Documents (เอกสารลูกจ้าง)') }}">
                                     @for($i = 1; $i <= 10; $i++)
                                         @php $dbIndex = $i + 8; @endphp
                                         <option value="employee_doc_{{ $dbIndex }}">Employee Other Document {{ $i }} (เอกสารอื่นๆ {{ $i }})</option>
                                     @endfor
                                 </optgroup>
-                                <optgroup label="Employer Documents (เอกสารนายจ้าง)">
+                                <optgroup label="{{ __('Employer Documents (เอกสารนายจ้าง)') }}">
                                     @for($i = 1; $i <= 3; $i++)
                                         <option value="employer_doc_other_{{ $i }}">Employer Other Document {{ $i }} (เอกสารอื่นๆ {{ $i }})</option>
                                     @endfor

@@ -47,7 +47,7 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="subject" class="form-label">{{ __('Subject') }} <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('subject') is-invalid @enderror" id="subject" name="subject" value="{{ old('subject') }}" required placeholder="เช่น แจ้งเข้าพนักงานใหม่ 2 คน, แก้ไขเอกสาร Passport">
+                            <input type="text" class="form-control @error('subject') is-invalid @enderror" id="subject" name="subject" value="{{ old('subject') }}" required placeholder="{{ __('เช่น แจ้งเข้าพนักงานใหม่ 2 คน, แก้ไขเอกสาร Passport') }}">
                             @error('subject')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -99,7 +99,7 @@
                         <hr>
 
                         {{-- Basket Display Area --}}
-                        <h6 class="mb-2">{{ __('Attached Items') }} (<span x-text="totalItemsCount()"></span> รายการ)</h6>
+                        <h6 class="mb-2">{{ __('Attached Items') }} (<span x-text="totalItemsCount()"></span> {{ __('รายการ)') }}</h6>
                         <div class="list-group" style="max-height: 300px; overflow-y: auto;">
                             <template x-if="totalItemsCount() === 0">
                                 <div class="text-muted fst-italic text-center py-3">{{ __('No items attached') }}</div>

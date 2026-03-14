@@ -138,7 +138,7 @@
                         @endif
                     @endif
                 </h5>
-                <small class="text-muted" title="นายจ้าง">
+                <small class="text-muted" title="{{ __('นายจ้าง') }}">
                     {{ $employerName }}
                     @if(request('addrProvince') && $employee->employer)
                         @foreach($employee->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
@@ -167,9 +167,9 @@
         {{-- Action Buttons --}}
         <div class="ms-auto ps-3">
              <div class="btn-group-vertical btn-group-sm">
-                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                 <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง"><i class="bi bi-geo-alt-fill"></i></a>
-                 <button type="button" class="btn btn-outline-danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="{{ __('แก้ไข') }}"><i class="bi bi-pencil-fill"></i></a>
+                 <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="{{ __('ไปที่ข้อมูลนายจ้าง') }}"><i class="bi bi-geo-alt-fill"></i></a>
+                 <button type="button" class="btn btn-outline-danger" title="{{ __('ลบ') }}"><i class="bi bi-trash-fill"></i></button>
              </div>
         </div>
     </div>

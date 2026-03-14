@@ -189,7 +189,7 @@
        // Let's find the container that holds passport info
        const passportSpan = card.querySelector('.bi-passport')?.closest('span');
        if (passportSpan) {
-           passportSpan.innerHTML = `<i class="bi bi-passport text-primary me-1"></i> ${emp.employeePassport || '-'}`;
+           passportSpan.innerHTML = `<i class="bi bi-passport text-primary me-1"></i> ${emp.employeePassport || '-'}`{{ __(';
        }
 
        const nationalitySpan = card.querySelector('.bi-geo-alt-fill')?.closest('span');
@@ -202,7 +202,7 @@
            const code = natMap[emp.employeeNationality] || '';
            let imgHtml = '';
            if (code) {
-               imgHtml = `<img src="/images/flags/${code}.png" alt="${code}" style="width: 16px; height: 12px; margin-right: 5px;">`;
+               imgHtml = ') }}`<img src="/images/flags/${code}.png" alt="${code}" style="width: 16px; height: 12px; margin-right: 5px;">`;
            }
            nationalitySpan.innerHTML = `<i class="bi bi-geo-alt-fill text-danger me-1"></i> ${imgHtml} ${emp.employeeNationality || '-'}`;
        }

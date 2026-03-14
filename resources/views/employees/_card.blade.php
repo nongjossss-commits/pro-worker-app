@@ -23,7 +23,7 @@
                         @endif
                     </p>
                     <p class="mb-1 text-muted small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}</p>
-                    <p class="mb-1 text-muted small"><strong>นายจ้าง:</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>
+                    <p class="mb-1 text-muted small"><strong>{{ __('นายจ้าง:') }}</strong> {{ $employee->employer->employerNameTh ?? 'N/A' }}</p>
                     {{-- START: Full Details --}}
                     <p class="mb-1 text-muted small">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-' }})</p>
                     <p class="mb-1 text-muted small">Work Permit: {{ $employee->employeeWorkPermit ?? '-' }} (หมดอายุ: {{ $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-' }})</p>
@@ -32,9 +32,9 @@
                 </div>
             </div>
             <div class="btn-group btn-group-sm">
-                <a href="{{ route('employees.locate', $employee->id) }}" class="btn btn-outline-info" title="ดูข้อมูลนายจ้าง"><i class="bi bi-geo-alt-fill"></i></a>
-                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                <a href="{{ route('employees.locate', $employee->id) }}" class="btn btn-outline-info" title="{{ __('ดูข้อมูลนายจ้าง') }}"><i class="bi bi-geo-alt-fill"></i></a>
+                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-outline-primary" title="{{ __('แก้ไข') }}"><i class="bi bi-pencil-fill"></i></a>
+                <button type="button" class="btn btn-outline-danger delete-employee-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="{{ route('employees.destroy', $employee->id) }}" title="{{ __('ลบ') }}"><i class="bi bi-trash-fill"></i></button>
             </div>
         </div>
     </div>

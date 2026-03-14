@@ -3,7 +3,7 @@
 @section('content')
 <div class="content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <h2 class="mb-3 mb-md-0">กล่องตั๋วงานทั้งหมด</h2>
+        <h2 class="mb-3 mb-md-0">{{ __('กล่องตั๋วงานทั้งหมด') }}</h2>
 
         {{-- Control Bar (Search, View Toggle, Per Page) --}}
         <div class="d-flex flex-column flex-md-row gap-2">
@@ -14,7 +14,7 @@
                 {{-- Search Input --}}
                 <div class="input-group input-group-sm" style="width: 250px;">
                     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                    <input type="text" name="search" class="form-control border-start-0" placeholder="ค้นหานายจ้าง..." value="{{ $search }}">
+                    <input type="text" name="search" class="form-control border-start-0" placeholder="{{ __('ค้นหานายจ้าง...') }}" value="{{ $search }}">
                 </div>
 
                 {{-- Hidden Toggle Button (New) --}}
@@ -76,15 +76,15 @@
 
                                 <div class="mt-auto pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span class="text-muted small">ตั๋วงานทั้งหมด</span>
+                                        <span class="text-muted small">{{ __('ตั๋วงานทั้งหมด') }}</span>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="badge bg-secondary rounded-pill">{{ $user->total_tickets }}</span>
                                             {{-- V2.5.1: Hide/Unhide Button --}}
                                             @if($user->is_ticket_hidden)
                                                 <form action="{{ route('admin.tickets.unhideEmployer', $user->id) }}" method="POST" class="d-inline">
                                                     @csrf
-                                                    <button type="button" class="btn btn-sm btn-outline-success border-0 p-0 btn-submit-swal" title="ยกเลิกการซ่อน"
-                                                            data-swal-title="ยืนยันการยกเลิก"
+                                                    <button type="button" class="btn btn-sm btn-outline-success border-0 p-0 btn-submit-swal" title="{{ __('ยกเลิกการซ่อน') }}"
+                                                            data-swal-title="{{ __('ยืนยันการยกเลิก') }}"
                                                             data-swal-text="ต้องการนำกล่องตั๋วงานนี้กลับมาแสดงในรายการหลัก?"
                                                             data-swal-icon="question"
                                                             data-swal-confirm-text="ใช่, นำกลับมา">
@@ -94,8 +94,8 @@
                                             @else
                                                 <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
                                                     @csrf
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-0 btn-submit-swal" title="ซ่อน"
-                                                            data-swal-title="ยืนยันการซ่อน"
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 p-0 btn-submit-swal" title="{{ __('ซ่อน') }}"
+                                                            data-swal-title="{{ __('ยืนยันการซ่อน') }}"
                                                             data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
                                                             data-swal-icon="warning"
                                                             data-swal-confirm-text="ใช่, ซ่อนเลย">
@@ -114,7 +114,7 @@
                 <div class="col-12">
                     <div class="text-center py-5 text-muted">
                         <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                        ยังไม่มีข้อมูลตั๋วงาน
+                        {{ __('ยังไม่มีข้อมูลตั๋วงาน') }}
                     </div>
                 </div>
             @endforelse
@@ -127,11 +127,11 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 50px;">#</th>
-                            <th>นายจ้าง/บริษัท</th>
-                            <th class="text-center">ข้อความใหม่</th>
-                            <th class="text-center">ตั๋วงานทั้งหมด</th>
-                            <th>อัปเดตล่าสุด</th>
-                            <th class="text-end">จัดการ</th>
+                            <th>{{ __('นายจ้าง/บริษัท') }}</th>
+                            <th class="text-center">{{ __('ข้อความใหม่') }}</th>
+                            <th class="text-center">{{ __('ตั๋วงานทั้งหมด') }}</th>
+                            <th>{{ __('อัปเดตล่าสุด') }}</th>
+                            <th class="text-end">{{ __('จัดการ') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -169,14 +169,14 @@
                                 <td class="text-end">
                                     <div class="d-flex justify-content-end align-items-center gap-2">
                                         <a href="{{ route('admin.tickets.index', ['employer_id' => $user->id]) }}" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-eye me-1"></i> ดูตั๋วงาน
+                                            <i class="bi bi-eye me-1"></i> {{ __('ดูตั๋วงาน') }}
                                         </a>
                                         {{-- V2.5.1: Hide/Unhide Button --}}
                                         @if($user->is_ticket_hidden)
                                             <form action="{{ route('admin.tickets.unhideEmployer', $user->id) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="button" class="btn btn-sm btn-outline-success btn-submit-swal" title="ยกเลิกการซ่อน"
-                                                        data-swal-title="ยืนยันการยกเลิก"
+                                                <button type="button" class="btn btn-sm btn-outline-success btn-submit-swal" title="{{ __('ยกเลิกการซ่อน') }}"
+                                                        data-swal-title="{{ __('ยืนยันการยกเลิก') }}"
                                                         data-swal-text="ต้องการนำกล่องตั๋วงานนี้กลับมาแสดงในรายการหลัก?"
                                                         data-swal-icon="question"
                                                         data-swal-confirm-text="ใช่, นำกลับมา">
@@ -186,8 +186,8 @@
                                         @else
                                             <form action="{{ route('admin.tickets.hideEmployer', $user->id) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-submit-swal" title="ซ่อน"
-                                                        data-swal-title="ยืนยันการซ่อน"
+                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-submit-swal" title="{{ __('ซ่อน') }}"
+                                                        data-swal-title="{{ __('ยืนยันการซ่อน') }}"
                                                         data-swal-text="ซ่อนกล่องตั๋วงานนี้? (จะแสดงใหม่เมื่อมีการอัปเดต)"
                                                         data-swal-icon="warning"
                                                         data-swal-confirm-text="ใช่, ซ่อนเลย">
@@ -202,7 +202,7 @@
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                                    ยังไม่มีข้อมูลตั๋วงาน
+                                    {{ __('ยังไม่มีข้อมูลตั๋วงาน') }}
                                 </td>
                             </tr>
                         @endforelse
@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: confirmText,
-                cancelButtonText: 'ยกเลิก'
+                cancelButtonText('{{ __('ยกเลิก') }}')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();
