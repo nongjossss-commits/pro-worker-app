@@ -275,10 +275,10 @@
             <select class="form-select" id="edit_workPermitMOUGroup" name="workPermitMOUGroup">
                 <option value="">{{ __('-- กรุณาเลือก --') }}</option>
                 <option value="MOU" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'MOU')>MOU</option>
-                <option value="MOU 2 ปีหลัง" @selected(old('workPermitMOUGroup', $employee->{{ __('workPermitMOUGroup) == 'MOU 2 ปีหลัง')>MOU 2 ปีหลัง') }}</option>
+                <option value="MOU 2 ปีหลัง" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'MOU 2 ปีหลัง')>{{ __('MOU 2 ปีหลัง') }}</option>
                 <option value="มติต่ออายุในประเทศ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติต่ออายุในประเทศ')>{{ __('มติต่ออายุในประเทศ') }}</option>
                 <option value="มติขึ้นทะเบียน" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติขึ้นทะเบียน')>{{ __('มติขึ้นทะเบียน') }}</option>
-                <option value="อื่นๆ" @selected(old('workPermitMOUGroup', $employee->{{ __('workPermitMOUGroup) == 'อื่นๆ')>อื่นๆ ระบุ..') }}</option>
+                <option value="อื่นๆ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'อื่นๆ')>{{ __('อื่นๆ ระบุ..') }}</option>
             </select>
         </div>
         <div class="col-md-6 mb-3 d-none" id="edit_workPermitMOUGroupOtherContainer">

@@ -189,7 +189,7 @@
        // Let's find the container that holds passport info
        const passportSpan = card.querySelector('.bi-passport')?.closest('span');
        if (passportSpan) {
-           passportSpan.innerHTML = `<i class="bi bi-passport text-primary me-1"></i> ${emp.employeePassport || '-'}`{{ __(';
+           passportSpan.innerHTML = `<i class="bi bi-passport text-primary me-1"></i> ${emp.employeePassport || '-'}`;
        }
 
        const nationalitySpan = card.querySelector('.bi-geo-alt-fill')?.closest('span');
