@@ -919,7 +919,7 @@
                 return this.liveCorners.map(c => {
                     const dispX = (c.x * this.videoDisplayScale.x) + this.videoOffset.x;
                     const dispY = (c.y * this.videoDisplayScale.y) + this.videoOffset.y;
-                    return `${dispX},${dispY}`{{ __(';
+                    return `${dispX},${dispY}`;
                 }).join(' ');
             },
 

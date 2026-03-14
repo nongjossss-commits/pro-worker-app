@@ -586,7 +586,7 @@ function hybridAttachmentManager(config = {}) {
             // 1. SPECIAL CASE: Notification Card dropped into message box
             if (data.type === 'notification' && data.render_as === 'employee_card' && messageBox) {
                 // Create a special formatted string with the rich payload
-                const textToAppend = `[[--NOTIFICATION_CARD--]]${JSON.stringify(data)}[[--/NOTIFICATION_CARD--]]`{{ __(';
+                const textToAppend = `[[--NOTIFICATION_CARD--]]${JSON.stringify(data)}[[--/NOTIFICATION_CARD--]]`;
 
                 // Append it to the message box
                 const currentVal = messageBox.value;
