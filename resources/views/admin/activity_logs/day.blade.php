@@ -18,13 +18,13 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h2 class="fw-bold mb-1">บันทึกประจำวัน: {{ $fullDate }}</h2>
-                    <p class="text-muted mb-0">แสดงรายการแก้ไขอัพเดตและเปลี่ยนแปลงทุกย่างก้าว</p>
+                    <p class="text-muted mb-0">{{ __('แสดงรายการแก้ไขอัพเดตและเปลี่ยนแปลงทุกย่างก้าว') }}</p>
                 </div>
                 <div>
                     <form action="{{ route('admin.activity-logs.day', ['year' => $year, 'month' => $month, 'day' => $day]) }}" method="GET" class="d-flex align-items-center gap-2">
-                        <label for="user_id" class="text-nowrap fw-bold">กรองตามผู้ใช้:</label>
+                        <label for="user_id" class="text-nowrap fw-bold">{{ __('กรองตามผู้ใช้:') }}</label>
                         <select name="user_id" id="user_id" class="form-select" onchange="this.form.submit()">
-                            <option value="">-- แสดงทุกคน (All Users) --</option>
+                            <option value="">{{ __('-- แสดงทุกคน (All Users) --') }}</option>
                             @foreach($users as $u)
                                 <option value="{{ $u->id }}" {{ $userId == $u->id ? 'selected' : '' }}>
                                     {{ $u->name }} ({{ $u->email }})
@@ -43,11 +43,11 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th style="width: 150px;">เวลา (Time)</th>
-                            <th style="width: 200px;">ผู้ดำเนินการ (User)</th>
-                            <th style="width: 120px;">การกระทำ</th>
-                            <th>รายละเอียด (Description)</th>
-                            <th>ข้อมูลการเปลี่ยนแปลง (Changes)</th>
+                            <th style="width: 150px;">{{ __('เวลา (Time)') }}</th>
+                            <th style="width: 200px;">{{ __('ผู้ดำเนินการ (User)') }}</th>
+                            <th style="width: 120px;">{{ __('การกระทำ') }}</th>
+                            <th>{{ __('รายละเอียด (Description)') }}</th>
+                            <th>{{ __('ข้อมูลการเปลี่ยนแปลง (Changes)') }}</th>
                             <th style="width: 150px;">IP / Device</th>
                         </tr>
                     </thead>
@@ -92,7 +92,7 @@
                                                 type="button"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#changesModal-{{ $log->id }}">
-                                            <i class="bi bi-eye"></i> ดูการเปลี่ยนแปลง
+                                            <i class="bi bi-eye"></i> {{ __('ดูการเปลี่ยนแปลง') }}
                                         </button>
 
                                         <!-- Modal for Changes -->
@@ -115,24 +115,24 @@
                                                                 @endforeach
                                                             </ul>
                                                         @else
-                                                            <p class="text-muted">ไม่มีข้อมูลการเปลี่ยนแปลงที่สำคัญ หรือไม่สามารถระบุได้</p>
+                                                            <p class="text-muted">{{ __('ไม่มีข้อมูลการเปลี่ยนแปลงที่สำคัญ หรือไม่สามารถระบุได้') }}</p>
 
                                                             <div class="accordion mt-3" id="accordionRaw{{ $log->id }}">
                                                                 <div class="accordion-item">
                                                                     <h2 class="accordion-header" id="headingRaw{{ $log->id }}">
                                                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRaw{{ $log->id }}" aria-expanded="false" aria-controls="collapseRaw{{ $log->id }}">
-                                                                            ดูข้อมูลดิบ (Raw Data)
+                                                                            {{ __('ดูข้อมูลดิบ (Raw Data)') }}
                                                                         </button>
                                                                     </h2>
                                                                     <div id="collapseRaw{{ $log->id }}" class="accordion-collapse collapse" aria-labelledby="headingRaw{{ $log->id }}" data-bs-parent="#accordionRaw{{ $log->id }}">
                                                                         <div class="accordion-body">
                                                                             @if(isset($log->properties['old']))
-                                                                                <h6 class="fw-bold text-danger">ค่าเดิม (Old):</h6>
+                                                                                <h6 class="fw-bold text-danger">{{ __('ค่าเดิม (Old):') }}</h6>
                                                                                 <pre class="bg-light p-2 rounded">@json($log->properties['old'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</pre>
                                                                             @endif
 
                                                                             @if(isset($log->properties['attributes']))
-                                                                                <h6 class="fw-bold text-success mt-3">ค่าใหม่ (New):</h6>
+                                                                                <h6 class="fw-bold text-success mt-3">{{ __('ค่าใหม่ (New):') }}</h6>
                                                                                 <pre class="bg-light p-2 rounded">@json($log->properties['attributes'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</pre>
                                                                             @endif
                                                                         </div>
@@ -158,7 +158,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-muted">
-                                    ไม่พบรายการบันทึกสำหรับตัวกรองนี้
+                                    {{ __('ไม่พบรายการบันทึกสำหรับตัวกรองนี้') }}
                                 </td>
                             </tr>
                         @endforelse

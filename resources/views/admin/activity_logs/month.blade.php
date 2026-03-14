@@ -43,7 +43,7 @@
                 </div>
             @else
                 <div class="text-center py-5">
-                    <p class="text-muted">ไม่มีข้อมูลสำหรับเดือนนี้</p>
+                    <p class="text-muted">{{ __('ไม่มีข้อมูลสำหรับเดือนนี้') }}</p>
                 </div>
             @endif
         </div>

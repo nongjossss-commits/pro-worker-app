@@ -263,7 +263,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="cropperModalLabel">ครอบตัดรูปภาพ</h5>
+                <h5 class="modal-title" id="cropperModalLabel">{{ __('ครอบตัดรูปภาพ') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -282,8 +282,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" id="cropImageBtn">ครอบตัดและบันทึก</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ยกเลิก') }}</button>
+                <button type="button" class="btn btn-primary" id="cropImageBtn">{{ __('ครอบตัดและบันทึก') }}</button>
             </div>
         </div>
     </div>

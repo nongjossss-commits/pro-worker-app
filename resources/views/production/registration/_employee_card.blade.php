@@ -255,34 +255,34 @@
                                 <span class="text-muted text-truncate" style="max-width: 150px;">
                                     <i class="bi bi-envelope me-1"></i><span x-text="email || '-'"></span>
                                 </span>
-                                <button x-show="email" @click="copyToClipboard(email, 'อีเมล')" class="btn btn-sm btn-link p-0 text-secondary" title="คัดลอกอีเมล"><i class="bi bi-clipboard"></i></button>
+                                <button x-show="email" @click="copyToClipboard(email, 'อีเมล')" class="btn btn-sm btn-link p-0 text-secondary" title="{{ __('คัดลอกอีเมล') }}"><i class="bi bi-clipboard"></i></button>
                             </div>
 
                             <div class="d-flex align-items-center justify-content-between mt-1" style="font-size: 0.75rem;">
                                 <span class="text-muted text-truncate" style="max-width: 150px;">
                                     <i class="bi bi-key me-1"></i><span x-text="password || '-'"></span>
                                 </span>
-                                <button x-show="password" @click="copyToClipboard(password, 'รหัสสำหรับอีเมล')" class="btn btn-sm btn-link p-0 text-secondary" title="คัดลอกรหัสผ่าน"><i class="bi bi-clipboard"></i></button>
+                                <button x-show="password" @click="copyToClipboard(password, 'รหัสสำหรับอีเมล')" class="btn btn-sm btn-link p-0 text-secondary" title="{{ __('คัดลอกรหัสผ่าน') }}"><i class="bi bi-clipboard"></i></button>
                             </div>
 
                             <div class="d-flex align-items-center justify-content-between mt-1" style="font-size: 0.75rem;">
                                 <span class="text-muted text-truncate" style="max-width: 150px;">
                                     <i class="bi bi-shield-lock me-1"></i><span x-text="outsource_code || '-'"></span>
                                 </span>
-                                <button x-show="outsource_code" @click="copyToClipboard(outsource_code, 'รหัส Outsource')" class="btn btn-sm btn-link p-0 text-secondary" title="คัดลอกรหัส Outsource"><i class="bi bi-clipboard"></i></button>
+                                <button x-show="outsource_code" @click="copyToClipboard(outsource_code, 'รหัส Outsource')" class="btn btn-sm btn-link p-0 text-secondary" title="{{ __('คัดลอกรหัส Outsource') }}"><i class="bi bi-clipboard"></i></button>
                             </div>
                          </div>
                     </div>
 
                     <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-2 p-2 bg-white border rounded shadow-sm position-absolute" style="display: none; z-index: 1060; min-width: 250px;">
 
-                         <label class="small fw-bold mt-1">อีเมล</label>
+                         <label class="small fw-bold mt-1">{{ __('อีเมล') }}</label>
                          <input type="text" class="form-control form-control-sm" x-model="email" placeholder="Email">
 
-                         <label class="small fw-bold mt-1">รหัสสำหรับอีเมล</label>
+                         <label class="small fw-bold mt-1">{{ __('รหัสสำหรับอีเมล') }}</label>
                          <input type="text" class="form-control form-control-sm" x-model="password" placeholder="Password">
 
-                         <label class="small fw-bold mt-1">รหัสสำหรับระบบ Outsource</label>
+                         <label class="small fw-bold mt-1">{{ __('รหัสสำหรับระบบ Outsource') }}</label>
                          <input type="text" class="form-control form-control-sm" x-model="outsource_code" placeholder="Outsource Code">
 
                          <div class="d-flex gap-1 mt-2">
@@ -455,7 +455,7 @@
                                 toast: true,
                                 position: 'top-end',
                                 icon: 'success',
-                                title: 'บันทึกหมายเหตุสำเร็จ',
+                                title('{{ __('บันทึกหมายเหตุสำเร็จ') }}'),
                                 showConfirmButton: false,
                                 timer: 1500
                             });
@@ -472,20 +472,20 @@
                 }
             }">
                 <div style="min-width: 140px; max-width: 250px;">
-                    <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
+                    <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">{{ __('หมายเหตุ') }}</small>
 
                     <div class="d-flex align-items-start gap-1 mb-2">
                         <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
                             <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
                                 <span x-text="remarkText || '-'"></span>
                             </div>
-                            <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
+                            <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="{{ __('แก้ไขหมายเหตุ') }}">
                                 <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
                             </button>
                         </div>
 
                         <div x-cloak :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
-                            <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="กรอกข้อความหมายเหตุ..."></textarea>
+                            <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="{{ __('กรอกข้อความหมายเหตุ...') }}"></textarea>
                             <div class="d-flex gap-1">
                                 <button @click="saveRemark()" :disabled="isSaving" class="btn btn-sm btn-success flex-grow-1">
                                     <i class="bi bi-check-lg" x-show="!isSaving"></i>
@@ -624,7 +624,7 @@
                 <div class="d-flex align-items-center gap-2">
                     {{-- Field 1: Name List (Renamed to RA) --}}
                     <div style="min-width: 140px; max-width: 250px; flex-grow: 1;">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลข RA จากระบบ outsource') }}</small>
                         <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                             <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
                             <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
@@ -650,7 +650,7 @@
 
                 {{-- Field 2: Request No --}}
                 <div style="min-width: 140px; max-width: 250px;">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลขที่คำขอ') }}</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
                         <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
@@ -662,7 +662,7 @@
 
                 {{-- Field 3: Ref ID --}}
                 <div style="min-width: 140px; max-width: 250px;">
-                    <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
+                    <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('เลขอ้างอิงคนงาน') }}</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
                         <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">

@@ -123,7 +123,7 @@
                                                         </div>
                                                         <div class="card-footer bg-transparent border-0 text-end pb-3">
                                                             @if($modelName === 'employers')
-                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="{{ __('พรีวิวข้อมูล') }}"> <i class="bi bi-search"></i> </button>
                                                             @endif
                                                             @include('admin.trash._action_buttons', ['modelName' => $modelName, 'item' => $item])
                                                         </div>
@@ -192,9 +192,9 @@
                                                     <td class="text-end">
                                                         <div class="d-flex flex-column flex-md-row justify-content-end gap-2">
                                                             @if($modelName === 'employees')
-                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                                <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $item->id }}" title="{{ __('พรีวิวข้อมูล') }}"> <i class="bi bi-search"></i> </button>
                                                             @elseif($modelName === 'employers')
-                                                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
+                                                                 <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employer" data-model-id="{{ $item->id }}" title="{{ __('พรีวิวข้อมูล') }}"> <i class="bi bi-search"></i> </button>
                                                             @endif
                                                             {{-- RESTORE BUTTON (Permission-Protected) --}}
                                                             @if(($modelName === 'tickets' && auth()->user()->can('manage-tickets')) || auth()->user()->can('restore-' . $modelName))

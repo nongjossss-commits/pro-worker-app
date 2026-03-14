@@ -175,10 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!target) return;
             const employeeId = target.dataset.employeeId;
             if (target.classList.contains('btn-reinstate')) {
-                Swal.fire({ title: 'ยืนยันการคืนสถานะ', text: "ลูกจ้างจะถูกย้ายกลับไปอยู่ในรายชื่อลูกจ้างปัจจุบัน", icon: 'question', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+                Swal.fire({ title: window.trans('ยืนยันการคืนสถานะ'), text: window.trans('ลูกจ้างจะถูกย้ายกลับไปอยู่ในรายชื่อลูกจ้างปัจจุบัน'), icon: 'question', showCancelButton: true, confirmButtonText: window.trans('ยืนยัน'), cancelButtonText: window.trans('ยกเลิก') })
                     .then(result => result.isConfirmed && performAction(`/employees/${employeeId}/reinstate`));
             } else if (target.classList.contains('btn-move-to-trash')) {
-                Swal.fire({ title: 'ยืนยันการย้ายไปถังขยะ', text: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33' })
+                Swal.fire({ title: window.trans('ยืนยันการย้ายไปถังขยะ'), text: window.trans('ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง'), icon: 'warning', showCancelButton: true, confirmButtonText: window.trans('ยืนยัน'), cancelButtonText: window.trans('ยกเลิก'), confirmButtonColor: '#d33' })
                     .then(result => result.isConfirmed && performAction(`/employees/${employeeId}`, { _method: 'DELETE' }));
             } else if (target.classList.contains('btn-transfer-employee')) {
                 isBulkTransfer = false;
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                employerSearchResultsDiv.innerHTML = data.length === 0 ? '<p class="text-muted p-2">ไม่พบข้อมูลนายจ้าง</p>' : '';
+                employerSearchResultsDiv.innerHTML = data.length === 0 ? '' + window.trans('ไม่พบข้อมูลนายจ้าง') + '' : '';
                 data.forEach(employer => {
                     const item = document.createElement('button');
                     item.type = 'button';
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(error => {
                 console.error('Error fetching employers:', error);
-                employerSearchResultsDiv.innerHTML = '<p class="text-danger p-2">เกิดข้อผิดพลาดในการค้นหา</p>';
+                employerSearchResultsDiv.innerHTML = '' + window.trans('เกิดข้อผิดพลาดในการค้นหา') + '';
             });
     }, 300);
 
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(confirmTransferBtn) {
         confirmTransferBtn.addEventListener('click', () => {
             if (!selectedEmployer) {
-                showToast('กรุณาเลือกนายจ้างใหม่ก่อน', 'danger');
+                showToast(window.trans('กรุณาเลือกนายจ้างใหม่ก่อน'), 'danger');
                 return;
             }
 
@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
                 : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
 
-            Swal.fire({ title: 'ยืนยันการย้ายนายจ้าง', html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+            Swal.fire({ title: window.trans('ยืนยันการย้ายนายจ้าง'), html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: window.trans('ยืนยัน'), cancelButtonText: window.trans('ยกเลิก') })
                 .then(result => {
                     if (result.isConfirmed) {
                         if (isBulkTransfer) {

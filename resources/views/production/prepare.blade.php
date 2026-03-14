@@ -315,9 +315,9 @@
                     <div class="mb-3">
                         <label class="form-label">Title</label>
                         <select name="title" class="form-select">
-                            <option value="นาย">Mr. (นาย)</option>
-                            <option value="นาง">Mrs. (นาง)</option>
-                            <option value="นางสาว">Miss (นางสาว)</option>
+                            <option value="นาย">{{ __('Mr. (นาย)') }}</option>
+                            <option value="นาง">{{ __('Mrs. (นาง)') }}</option>
+                            <option value="นางสาว">{{ __('Miss (นางสาว)') }}</option>
                         </select>
                     </div>
                     <div class="row g-2 mb-3">

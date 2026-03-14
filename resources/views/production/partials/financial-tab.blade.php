@@ -108,7 +108,7 @@ class="row">
                 <div x-show="pricingMode === 'fixed'" class="mb-3">
                     <label class="form-label">{{ __('Total Project Value') }} <span x-show="!vatIncluded">{{ __('(Excl. VAT)') }}</span><span x-show="vatIncluded">{{ __('(Incl. VAT)') }}</span></label>
                     <div class="input-group">
-                        <span class="input-group-text">฿</span>
+                        <span class="input-group-text">{{ __('฿') }}</span>
                         <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
                     </div>
                 </div>
@@ -179,7 +179,7 @@ class="row">
                 <div class="mb-3">
                     <label class="form-label">{{ __('Discount (From Total)') }}</label>
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text">฿</span>
+                        <span class="input-group-text">{{ __('฿') }}</span>
                         <input type="number" class="form-control" x-model="discount" @input="updateTotal()">
                     </div>
                 </div>
@@ -825,10 +825,10 @@ class="row">
                                 <div class="mb-2">
                                     <label class="form-label small">Type</label>
                                     <select class="form-select form-select-sm" x-model="newTransaction.type" required>
-                                        <option value="installment">Installment (งวดงาน)</option>
-                                        <option value="down_payment">Down Payment (มัดจำ)</option>
-                                        <option value="full_payment">Full Payment (จ่ายเต็ม)</option>
-                                        <option value="advance_payment">Advance Payment (เงินสำรองจ่าย)</option>
+                                        <option value="installment">{{ __('Installment (งวดงาน)') }}</option>
+                                        <option value="down_payment">{{ __('Down Payment (มัดจำ)') }}</option>
+                                        <option value="full_payment">{{ __('Full Payment (จ่ายเต็ม)') }}</option>
+                                        <option value="advance_payment">{{ __('Advance Payment (เงินสำรองจ่าย)') }}</option>
                                     </select>
                                 </div>
                                 <div class="mb-2">
@@ -961,7 +961,7 @@ class="row">
                                     </select>
                                 </div>
                                 <div class="mb-2" x-show="editingTransaction.type !== 'advance_payment' && editingTransaction.type !== 'advance_receipt'">
-                                    <label class="form-label small">WHT (หัก ณ ที่จ่าย 3%)</label>
+                                    <label class="form-label small">{{ __('WHT (หัก ณ ที่จ่าย 3%)') }}</label>
                                     <select class="form-select form-select-sm mb-1" x-model="editingTransaction.wht_status">
                                         <option value="not_required">Not Required</option>
                                         <option value="pending">Pending</option>
@@ -971,7 +971,7 @@ class="row">
 
                                     <!-- WHT Upload Area -->
                                     <div class="mt-2" x-show="editingTransaction.wht_status !== 'not_required'">
-                                        <label class="form-label small text-muted">WHT Document (50 ทวิ)</label>
+                                        <label class="form-label small text-muted">{{ __('WHT Document (50 ทวิ)') }}</label>
                                         <input type="file" class="d-none" :id="'whtInput-' + editingTransaction.id" @change="handleWhtFileSelect" accept=".pdf,image/*">
                                         <div class="btn-group w-100">
                                             <button type="button" class="btn btn-outline-secondary btn-sm" @click="document.getElementById('whtInput-' + editingTransaction.id).click()">
@@ -1116,7 +1116,7 @@ class="row">
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" :id="'includeEmployeeList-' + productionId" x-model="includeEmployeeList">
                         <label class="form-check-label small fw-bold" :for="'includeEmployeeList-' + productionId">
-                            แนบตารางรายชื่อพนักงาน / Include Employee List
+                            {{ __('แนบตารางรายชื่อพนักงาน / Include Employee List') }}
                         </label>
                     </div>
 

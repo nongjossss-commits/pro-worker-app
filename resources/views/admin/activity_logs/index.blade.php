@@ -4,8 +4,8 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
-            <h2 class="fw-bold mb-3">Activity Logs (บันทึกการปฏิบัติงาน)</h2>
-            <p class="text-muted">เลือกปีเพื่อดูบันทึกข้อมูลการทำงาน หรือค้นหาวันที่โดยตรง</p>
+            <h2 class="fw-bold mb-3">{{ __('Activity Logs (บันทึกการปฏิบัติงาน)') }}</h2>
+            <p class="text-muted">{{ __('เลือกปีเพื่อดูบันทึกข้อมูลการทำงาน หรือค้นหาวันที่โดยตรง') }}</p>
         </div>
     </div>
 
@@ -14,16 +14,16 @@
         <div class="col-md-4 mb-4">
             <div class="card h-100 shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="bi bi-search me-2 text-primary"></i>ค้นหาตามวันที่</h5>
+                    <h5 class="mb-0"><i class="bi bi-search me-2 text-primary"></i>{{ __('ค้นหาตามวันที่') }}</h5>
                 </div>
                 <div class="card-body d-flex flex-column justify-content-center">
                     <form action="{{ route('admin.activity-logs.search') }}" method="GET">
                         <div class="mb-3">
-                            <label for="date" class="form-label">เลือกวันที่ต้องการดู</label>
+                            <label for="date" class="form-label">{{ __('เลือกวันที่ต้องการดู') }}</label>
                             <input type="date" class="form-control" id="date" name="date" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
-                            ไปที่วันที่เลือก
+                            {{ __('ไปที่วันที่เลือก') }}
                         </button>
                     </form>
                 </div>
@@ -34,7 +34,7 @@
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="bi bi-folder me-2 text-warning"></i>เลือกปี (Year)</h5>
+                    <h5 class="mb-0"><i class="bi bi-folder me-2 text-warning"></i>{{ __('เลือกปี (Year)') }}</h5>
                 </div>
                 <div class="card-body">
                     @if($years->count() > 0)
@@ -55,7 +55,7 @@
                     @else
                         <div class="text-center py-5">
                             <i class="bi bi-inbox text-muted display-1"></i>
-                            <p class="mt-3 text-muted">ยังไม่มีบันทึกกิจกรรม</p>
+                            <p class="mt-3 text-muted">{{ __('ยังไม่มีบันทึกกิจกรรม') }}</p>
                         </div>
                     @endif
                 </div>

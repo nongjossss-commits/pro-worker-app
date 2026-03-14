@@ -908,10 +908,10 @@ if (typeof window.financialManager === 'undefined') {
             formatDate(date) { return date ? new Date(date).toLocaleDateString('th-TH') : '-'; },
             formatType(type) {
                 const map = {
-                    installment: 'Installment (งวดงาน)',
-                    down_payment: 'Down Payment (มัดจำ)',
-                    full_payment: 'Full Payment (จ่ายเต็ม)',
-                    advance_payment: 'Advance Payment (เงินสำรองจ่าย)'
+                    installment: window.trans('Installment (งวดงาน)'),
+                    down_payment: window.trans('Down Payment (มัดจำ)'),
+                    full_payment: window.trans('Full Payment (จ่ายเต็ม)'),
+                    advance_payment: window.trans('Advance Payment (เงินสำรองจ่าย)')
                 };
                 return map[type] || type;
             },

@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     const populateProvinces = () => {
-        resetSelect(provinceSelect, '-- เลือกจังหวัด --');
+        resetSelect(provinceSelect, window.trans('-- เลือกจังหวัด --'));
         // Extract unique provinces
         const uniqueProvinces = [...new Map(thaiAddressData.map(item => [item.province_th.trim(), item])).values()];
         // Sort alphabetically
@@ -68,8 +68,8 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
     document.getElementById('address_type').value = '';
 
     // Clear dropdowns
-    resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
-    resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
+    resetSelect(districtSelect, window.trans('-- เลือกอำเภอ/เขต --'));
+    resetSelect(subDistrictSelect, window.trans('-- เลือกตำบล/แขวง --'));
     clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
 
     // Repopulate provinces if data is ready
@@ -84,7 +84,7 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
 
         if (addressId) {
             // ----- WE ARE EDITING -----
-            if(modalTitle) modalTitle.textContent = 'แก้ไขที่อยู่';
+            if(modalTitle) modalTitle.textContent = window.trans('แก้ไขที่อยู่');
             document.getElementById('address_id').value = addressId;
 
             // Show loading state (optional, but good practice)
@@ -131,7 +131,7 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
 
         } else if (addressableId) {
             // ----- WE ARE CREATING -----
-            if(modalTitle) modalTitle.textContent = 'เพิ่มที่อยู่ใหม่';
+            if(modalTitle) modalTitle.textContent = window.trans('เพิ่มที่อยู่ใหม่');
             document.getElementById('addressable_id').value = addressableId;
             document.getElementById('address_type').value = addressType;
         }
@@ -141,8 +141,8 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
 
     provinceSelect.addEventListener('change', function () {
         // Always start by resetting downstream dependencies. This disables them.
-        resetSelect(districtSelect, '-- เลือกอำเภอ/เขต --');
-        resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
+        resetSelect(districtSelect, window.trans('-- เลือกอำเภอ/เขต --'));
+        resetSelect(subDistrictSelect, window.trans('-- เลือกตำบล/แขวง --'));
         clearInputs(provinceEnInput, districtEnInput, subDistrictEnInput, zipCodeInput);
 
         const selectedProvinceName = this.value;
@@ -173,7 +173,7 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
 
     districtSelect.addEventListener('change', function () {
         // Always start by resetting downstream dependencies.
-        resetSelect(subDistrictSelect, '-- เลือกตำบล/แขวง --');
+        resetSelect(subDistrictSelect, window.trans('-- เลือกตำบล/แขวง --'));
         clearInputs(districtEnInput, subDistrictEnInput, zipCodeInput);
 
         const selectedDistrictName = this.value;
@@ -263,7 +263,7 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
                     handleValidationErrors(data.errors);
                     // Re-enable the button
                     saveButton.disabled = false;
-                    saveButton.innerHTML = 'บันทึก';
+                    saveButton.innerHTML = window.trans('บันทึก');
                 });
             }
             if (!response.ok) {
@@ -294,7 +294,7 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
             }
             // Re-enable the button
             saveButton.disabled = false;
-            saveButton.innerHTML = 'บันทึก';
+            saveButton.innerHTML = window.trans('บันทึก');
         });
     });
 
@@ -324,7 +324,7 @@ addressModalEl.addEventListener('show.bs.modal', function (event) {
         document.getElementById('addressFormMethod').value = '';
         const saveButton = document.getElementById('saveAddressBtn');
         saveButton.disabled = false;
-        saveButton.innerHTML = 'บันทึก';
+        saveButton.innerHTML = window.trans('บันทึก');
     });
 
 // START: Add Delete Functionality (Bootstrap Modal Version)

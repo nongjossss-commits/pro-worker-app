@@ -74,10 +74,10 @@
         {{-- Action Buttons --}}
         <div class="ms-auto ps-3 d-flex align-items-center">
             <div class="d-flex flex-column flex-md-row gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล">
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('พรีวิวข้อมูล') }}">
                     <i class="bi bi-search"></i>
                 </button>
-                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-info" title="ไปที่ข้อมูลนายจ้าง">
+                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-info" title="{{ __('ไปที่ข้อมูลนายจ้าง') }}">
                     <i class="bi bi-geo-alt-fill"></i>
                 </a>
                 <button type="button" class="btn btn-sm btn-outline-primary" title="Create Job (Coming Soon)" disabled>

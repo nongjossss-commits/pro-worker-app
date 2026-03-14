@@ -5,10 +5,10 @@
 @section('content')
 <div class="content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-         <h2 class="mb-3 mb-md-0">รายการข้อมูลเอเจนซี่</h2>
+         <h2 class="mb-3 mb-md-0">{{ __('รายการข้อมูลเอเจนซี่') }}</h2>
          <div class="d-flex gap-2">
-            <input type="text" id="agent-search-input" class="form-control form-control-sm" placeholder="ค้นหา...">
-            <a href="{{ route('agents.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+            <input type="text" id="agent-search-input" class="form-control form-control-sm" placeholder="{{ __('ค้นหา...') }}">
+            <a href="{{ route('agents.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> {{ __('เพิ่มข้อมูลใหม่') }}</a>
          </div>
     </div>
     <div class="table-responsive">
@@ -16,10 +16,10 @@
             <thead class="table-light">
                 <tr>
                     <th>#</th>
-                    <th>ชื่อเอเจนซี่</th>
+                    <th>{{ __('ชื่อเอเจนซี่') }}</th>
                     <th>License</th>
-                    <th>เบอร์โทรศัพท์</th>
-                    <th class="text-center">จัดการ</th>
+                    <th>{{ __('เบอร์โทรศัพท์') }}</th>
+                    <th class="text-center">{{ __('จัดการ') }}</th>
                 </tr>
             </thead>
             <tbody id="agent-table-body">
@@ -31,20 +31,20 @@
                         <td>{{ $agent->agentPhone }}</td>
                         <td class="text-center">
                             @can('edit-agents')
-                            <a href="{{ route('agents.edit', $agent) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            <a href="{{ route('agents.edit', $agent) }}" class="btn btn-sm btn-outline-primary">{{ __('แก้ไข') }}</a>
                             @endcan
                             @can('delete-agents')
                             <form action="{{ route('agents.destroy', $agent) }}" method="POST" class="d-inline delete-form">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">{{ __('ลบ') }}</button>
                             </form>
                             @endcan
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted">ไม่พบข้อมูลเอเจนซี่</td>
+                        <td colspan="5" class="text-center text-muted">{{ __('ไม่พบข้อมูลเอเจนซี่') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -71,14 +71,14 @@
         form.addEventListener('submit', function(event) {
             event.preventDefault();
             Swal.fire({
-                title: 'คุณแน่ใจหรือไม่?',
-                text: "คุณจะไม่สามารถย้อนกลับสิ่งนี้ได้!",
+                title('{{ __('คุณแน่ใจหรือไม่?') }}'),
+                text("{{ __('คุณจะไม่สามารถย้อนกลับสิ่งนี้ได้!') }}"),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'ใช่, ลบเลย!',
-                cancelButtonText: 'ยกเลิก'
+                confirmButtonText('{{ __('ใช่, ลบเลย!') }}'),
+                cancelButtonText('{{ __('ยกเลิก') }}')
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(form.action, {

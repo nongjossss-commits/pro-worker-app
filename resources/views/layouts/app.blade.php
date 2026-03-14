@@ -290,8 +290,8 @@
                        class="btn btn-outline-secondary d-none d-md-block ms-2"
                        draggable="true"
                        ondragstart="event.dataTransfer.setData('text/plain', this.href); event.dataTransfer.setData('text/uri-list', this.href);"
-                       title="ลากเพื่อแยกหน้าจอ (Drag to Split)">
-                        <i class="bi bi-grid-3x2-gap-fill me-1"></i> ลากเพื่อแยก
+                       title="{{ __('ลากเพื่อแยกหน้าจอ (Drag to Split)') }}">
+                        <i class="bi bi-grid-3x2-gap-fill me-1"></i> {{ __('ลากเพื่อแยก') }}
                     </a>
                 </div>
 
@@ -306,7 +306,7 @@
                             @endswitch
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">🇹🇭 ไทย (Thai)</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">{{ __('🇹🇭 ไทย (Thai)') }}</a></li>
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'en') }}">🇺🇸 English</a></li>
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
                         </ul>
@@ -398,7 +398,7 @@
 
                             {{-- Field for Pink Card Number (Only for pink_card_missing) --}}
                             <div class="mb-3 d-none" id="pink_card_number_group">
-                                <label for="pink_card_number" class="form-label">เลขบัตรชมพู <span class="text-danger">*</span></label>
+                                <label for="pink_card_number" class="form-label">{{ __('เลขบัตรชมพู') }} <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="pink_card_number" name="pink_card_number">
                             </div>
 

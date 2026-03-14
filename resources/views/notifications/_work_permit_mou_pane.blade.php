@@ -16,7 +16,7 @@
             @forelse($forRenewal as $notification)
                 @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $loop->iteration])
             @empty
-                <p class="text-muted">ไม่มีรายการที่ต้องดำเนินการ</p>
+                <p class="text-muted">{{ __('ไม่มีรายการที่ต้องดำเนินการ') }}</p>
             @endforelse
         </div>
     </div>
@@ -28,7 +28,7 @@
             @forelse($forNewApplication as $notification)
                  @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $loop->iteration])
             @empty
-                 <p class="text-muted">ไม่มีรายการที่หมดอายุ</p>
+                 <p class="text-muted">{{ __('ไม่มีรายการที่หมดอายุ') }}</p>
             @endforelse
         </div>
     </div>

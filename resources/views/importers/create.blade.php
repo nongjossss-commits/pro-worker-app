@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="content-section">
-    <h2 class="mb-4">เพิ่มข้อมูลบริษัทนำเข้า</h2>
+    <h2 class="mb-4">{{ __('เพิ่มข้อมูลบริษัทนำเข้า') }}</h2>
     @if ($errors->any())
         <div class="alert alert-danger">
             <ul>
@@ -18,41 +18,41 @@
         @csrf
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerNameTh" class="form-label">ชื่อ บนจ. (ไทย)</label>
+                <label for="importerNameTh" class="form-label">{{ __('ชื่อ บนจ. (ไทย)') }}</label>
                 <input type="text" class="form-control" id="importerNameTh" name="importerNameTh" required>
             </div>
             <div class="col-md-6">
-                <label for="importerNameEn" class="form-label">ชื่อ บนจ. (อังกฤษ)</label>
+                <label for="importerNameEn" class="form-label">{{ __('ชื่อ บนจ. (อังกฤษ)') }}</label>
                 <input type="text" class="form-control" id="importerNameEn" name="importerNameEn">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerId" class="form-label">เลขประจำตัว</label>
+                <label for="importerId" class="form-label">{{ __('เลขประจำตัว') }}</label>
                 <input type="text" class="form-control" id="importerId" name="importerId">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="importerLicenseNo" class="form-label">เลขที่ใบอนุญาต</label>
+                <label for="importerLicenseNo" class="form-label">{{ __('เลขที่ใบอนุญาต') }}</label>
                 <input type="text" class="form-control" id="importerLicenseNo" name="importerLicenseNo">
             </div>
             <div class="col-md-4">
-                <label for="importerLicenseIssueDate" class="form-label">วันที่ออกใบอนุญาต</label>
+                <label for="importerLicenseIssueDate" class="form-label">{{ __('วันที่ออกใบอนุญาต') }}</label>
                 <input type="date" class="form-control" id="importerLicenseIssueDate" name="importerLicenseIssueDate">
             </div>
             <div class="col-md-4">
-                <label for="importerLicenseExpiryDate" class="form-label">วันสิ้นสุดใบอนุญาต</label>
+                <label for="importerLicenseExpiryDate" class="form-label">{{ __('วันสิ้นสุดใบอนุญาต') }}</label>
                 <input type="date" class="form-control" id="importerLicenseExpiryDate" name="importerLicenseExpiryDate">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerSignerTh" class="form-label">คนเซ็น (ไทย)</label>
+                <label for="importerSignerTh" class="form-label">{{ __('คนเซ็น (ไทย)') }}</label>
                 <input type="text" class="form-control" id="importerSignerTh" name="importerSignerTh">
             </div>
             <div class="col-md-6">
-                <label for="importerSignerEn" class="form-label">คนเซ็น (อังกฤษ)</label>
+                <label for="importerSignerEn" class="form-label">{{ __('คนเซ็น (อังกฤษ)') }}</label>
                 <input type="text" class="form-control" id="importerSignerEn" name="importerSignerEn">
             </div>
         </div>
@@ -61,7 +61,7 @@
         <h5>{{ __('Other Documents') }}</h5>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="importer_doc_other_1" class="form-label">1. {{ __('Other Document') }} 1 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="importer_doc_other_1" class="form-label">1. {{ __('Other Document') }} 1 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('importer_doc_other_1') is-invalid @enderror" id="importer_doc_other_1" name="importer_doc_other_1" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'importer_doc_other_1' } }))">
@@ -74,7 +74,7 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="importer_doc_other_2" class="form-label">2. {{ __('Other Document') }} 2 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="importer_doc_other_2" class="form-label">2. {{ __('Other Document') }} 2 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('importer_doc_other_2') is-invalid @enderror" id="importer_doc_other_2" name="importer_doc_other_2" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'importer_doc_other_2' } }))">
@@ -87,7 +87,7 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="importer_doc_other_3" class="form-label">3. {{ __('Other Document') }} 3 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="importer_doc_other_3" class="form-label">3. {{ __('Other Document') }} 3 <span class="text-muted small">{{ __('(รองรับไฟล์สูงสุด 5 MB)') }}</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('importer_doc_other_3') is-invalid @enderror" id="importer_doc_other_3" name="importer_doc_other_3" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'importer_doc_other_3' } }))">
@@ -140,8 +140,8 @@
         <input type="hidden" name="workplace_addresses" id="workplace_addresses_json">
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary">บันทึก</button>
-            <a href="{{ route('importers.index') }}" class="btn btn-secondary">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary">{{ __('บันทึก') }}</button>
+            <a href="{{ route('importers.index') }}" class="btn btn-secondary">{{ __('ยกเลิก') }}</a>
         </div>
     </form>
 </div>

@@ -7,7 +7,7 @@
     @if(isset($employer) && $employer)
         <h2 class="mb-4">เพิ่มพนักงานสำหรับ {{ $employer->employerNameTh }}</h2>
     @else
-        <h2 class="mb-4">เพิ่มพนักงานใหม่</h2>
+        <h2 class="mb-4">{{ __('เพิ่มพนักงานใหม่') }}</h2>
     @endif
 
     @if ($errors->any())
@@ -30,8 +30,8 @@
         @include('employees.partials.create_form_partial_content')
 
         <div class="mt-4 d-flex justify-content-end">
-            <a href="{{ isset($employer) ? route('employers.edit', $employer->id) : route('employees.index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
-            <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน</button>
+            <a href="{{ isset($employer) ? route('employers.edit', $employer->id) : route('employees.index') }}" class="btn btn-secondary me-2">{{ __('ยกเลิก') }}</a>
+            <button type="submit" class="btn btn-primary">{{ __('บันทึกข้อมูลพนักงาน') }}</button>
         </div>
     </form>
 </div>

@@ -33,9 +33,9 @@
                         $employerOptions = collect([
                             [
                                 'id' => 'global',
-                                'name_th' => 'Global Templates Only (ส่วนกลาง)',
+                                'name_th' => __('Global Templates Only (ส่วนกลาง)'),
                                 'name_en' => 'Global',
-                                'search_str' => 'global templates only ส่วนกลาง'
+                                'search_str' => __('global templates only ส่วนกลาง')
                             ]
                         ])->merge(
                             $employers->map(fn($e) => [

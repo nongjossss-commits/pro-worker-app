@@ -4,7 +4,7 @@
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="newEmployeePreviewModalLabel">
-                    <i class="bi bi-person-plus-fill me-2"></i>รายละเอียดแจ้งเข้าลูกจ้างใหม่ (Preview)
+                    <i class="bi bi-person-plus-fill me-2"></i>{{ __('รายละเอียดแจ้งเข้าลูกจ้างใหม่ (Preview)') }}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -16,15 +16,15 @@
                             <img id="preview_employeePhoto" src="" alt="No Photo" class="img-fluid" style="max-height: 100%; display: none;">
                             <i id="preview_employeePhoto_placeholder" class="bi bi-person-bounding-box fs-1 text-secondary"></i>
                         </div>
-                        <div class="mt-2 small text-muted">รูปถ่ายคนงาน</div>
+                        <div class="mt-2 small text-muted">{{ __('รูปถ่ายคนงาน') }}</div>
                     </div>
 
                     {{-- Personal Info Section --}}
                     <div class="col-md-9">
-                        <h6 class="text-primary border-bottom pb-2 mb-3">1. ข้อมูลส่วนตัว</h6>
+                        <h6 class="text-primary border-bottom pb-2 mb-3">{{ __('1. ข้อมูลส่วนตัว') }}</h6>
                         <div class="row g-2 mb-3">
                             <div class="col-md-6">
-                                <label class="fw-bold small">ชื่อ-นามสกุล (ไทย):</label>
+                                <label class="fw-bold small">{{ __('ชื่อ-นามสกุล (ไทย):') }}</label>
                                 <div id="preview_name_th" class="text-dark"></div>
                             </div>
                             <div class="col-md-6">
@@ -32,38 +32,38 @@
                                 <div id="preview_name_en" class="text-dark"></div>
                             </div>
                             <div class="col-md-4">
-                                <label class="fw-bold small">เพศ:</label>
+                                <label class="fw-bold small">{{ __('เพศ:') }}</label>
                                 <div id="preview_gender" class="text-dark"></div>
                             </div>
                             <div class="col-md-4">
-                                <label class="fw-bold small">วันเกิด:</label>
+                                <label class="fw-bold small">{{ __('วันเกิด:') }}</label>
                                 <div id="preview_dob" class="text-dark"></div>
                             </div>
                             <div class="col-md-4">
-                                <label class="fw-bold small">อายุ:</label>
+                                <label class="fw-bold small">{{ __('อายุ:') }}</label>
                                 <div id="preview_age" class="text-dark"></div>
                             </div>
                             <div class="col-md-6">
-                                <label class="fw-bold small">ชื่อบิดา:</label>
+                                <label class="fw-bold small">{{ __('ชื่อบิดา:') }}</label>
                                 <div id="preview_father_name" class="text-dark"></div>
                             </div>
                             <div class="col-md-6">
-                                <label class="fw-bold small">ชื่อมารดา:</label>
+                                <label class="fw-bold small">{{ __('ชื่อมารดา:') }}</label>
                                 <div id="preview_mother_name" class="text-dark"></div>
                             </div>
                         </div>
-                        <h6 class="text-primary border-bottom pb-2 mb-3">2. ข้อมูลการติดต่อ</h6>
+                        <h6 class="text-primary border-bottom pb-2 mb-3">{{ __('2. ข้อมูลการติดต่อ') }}</h6>
                          <div class="row g-2 mb-3">
                             <div class="col-md-6">
-                                <label class="fw-bold small">เบอร์โทรศัพท์:</label>
+                                <label class="fw-bold small">{{ __('เบอร์โทรศัพท์:') }}</label>
                                 <div id="preview_phone" class="text-dark"></div>
                             </div>
                              <div class="col-md-6">
-                                <label class="fw-bold small">อีเมล:</label>
+                                <label class="fw-bold small">{{ __('อีเมล:') }}</label>
                                 <div id="preview_email" class="text-dark"></div>
                             </div>
                              <div class="col-md-6">
-                                <label class="fw-bold small">รหัสผ่าน (สำหรับเข้าสู่ระบบ):</label>
+                                <label class="fw-bold small">{{ __('รหัสผ่าน (สำหรับเข้าสู่ระบบ):') }}</label>
                                 <div id="preview_password" class="text-dark"></div>
                             </div>
                         </div>
@@ -71,124 +71,124 @@
                 </div>
 
                 {{-- Passport & Visa Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">3. ข้อมูลหนังสือเดินทาง & วีซ่า</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('3. ข้อมูลหนังสือเดินทาง & วีซ่า') }}</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
-                        <label class="fw-bold small">สัญชาติ:</label>
+                        <label class="fw-bold small">{{ __('สัญชาติ:') }}</label>
                         <div id="preview_nationality" class="text-dark"></div>
                     </div>
                      <div class="col-md-4">
-                        <label class="fw-bold small">เลขที่พาสปอร์ต:</label>
+                        <label class="fw-bold small">{{ __('เลขที่พาสปอร์ต:') }}</label>
                         <div id="preview_passport_no" class="text-dark"></div>
                     </div>
                     <div class="col-md-4">
-                        <label class="fw-bold small">ประเภทพาสปอร์ต:</label>
+                        <label class="fw-bold small">{{ __('ประเภทพาสปอร์ต:') }}</label>
                         <div id="preview_passport_type" class="text-dark"></div>
                     </div>
                     <div class="col-md-4">
-                        <label class="fw-bold small">วันที่ออก:</label>
+                        <label class="fw-bold small">{{ __('วันที่ออก:') }}</label>
                         <div id="preview_passport_issue" class="text-dark"></div>
                     </div>
                     <div class="col-md-4">
-                        <label class="fw-bold small">วันหมดอายุ:</label>
+                        <label class="fw-bold small">{{ __('วันหมดอายุ:') }}</label>
                         <div id="preview_passport_expiry" class="text-dark"></div>
                     </div>
                     <div class="col-md-4">
-                        <label class="fw-bold small">บัตรสีชมพู:</label>
+                        <label class="fw-bold small">{{ __('บัตรสีชมพู:') }}</label>
                         <div id="preview_pink_card" class="text-dark"></div>
                     </div>
                      <div class="col-md-6">
-                        <label class="fw-bold small">ประเภทวีซ่า:</label>
+                        <label class="fw-bold small">{{ __('ประเภทวีซ่า:') }}</label>
                         <div id="preview_visa_type" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="fw-bold small">วีซ่าหมดอายุ:</label>
+                        <label class="fw-bold small">{{ __('วีซ่าหมดอายุ:') }}</label>
                         <div id="preview_visa_expiry" class="text-dark"></div>
                     </div>
                 </div>
 
                 {{-- Work Permit Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">4. ข้อมูลใบอนุญาตทำงาน</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('4. ข้อมูลใบอนุญาตทำงาน') }}</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-6">
-                        <label class="fw-bold small">ตำแหน่งงาน:</label>
+                        <label class="fw-bold small">{{ __('ตำแหน่งงาน:') }}</label>
                         <div id="preview_job_title" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="fw-bold small">ลักษณะงาน:</label>
+                        <label class="fw-bold small">{{ __('ลักษณะงาน:') }}</label>
                         <div id="preview_job_description" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="fw-bold small">วันที่เริ่มงาน:</label>
+                        <label class="fw-bold small">{{ __('วันที่เริ่มงาน:') }}</label>
                         <div id="preview_start_date" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="fw-bold small">เลขที่ใบอนุญาต:</label>
+                        <label class="fw-bold small">{{ __('เลขที่ใบอนุญาต:') }}</label>
                         <div id="preview_work_permit" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="fw-bold small">วันหมดอายุใบอนุญาต:</label>
+                        <label class="fw-bold small">{{ __('วันหมดอายุใบอนุญาต:') }}</label>
                         <div id="preview_work_permit_expiry" class="text-dark"></div>
                     </div>
                      <div class="col-md-6">
-                        <label class="fw-bold small">รายงานตัว 90 วัน:</label>
+                        <label class="fw-bold small">{{ __('รายงานตัว 90 วัน:') }}</label>
                         <div id="preview_90_day" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
-                        <label class="fw-bold small">ประเภทใบอนุญาต (MOU/อื่นๆ):</label>
+                        <label class="fw-bold small">{{ __('ประเภทใบอนุญาต (MOU/อื่นๆ):') }}</label>
                         <div id="preview_mou_group" class="text-dark"></div>
                     </div>
                 </div>
                 {{-- Additional Work Permit Info --}}
                  <div class="row g-2 mb-3 bg-light p-2 rounded">
                     <div class="col-md-4">
-                        <label class="fw-bold small">เลข RA จากระบบ outsource:</label>
+                        <label class="fw-bold small">{{ __('เลข RA จากระบบ outsource:') }}</label>
                         <div id="preview_name_list" class="text-dark"></div>
                     </div>
                      <div class="col-md-4">
-                        <label class="fw-bold small">เลขที่คำขอ:</label>
+                        <label class="fw-bold small">{{ __('เลขที่คำขอ:') }}</label>
                         <div id="preview_request_number" class="text-dark"></div>
                     </div>
                      <div class="col-md-4">
-                        <label class="fw-bold small">เลขประจำตัว:</label>
+                        <label class="fw-bold small">{{ __('เลขประจำตัว:') }}</label>
                         <div id="preview_id_number" class="text-dark"></div>
                     </div>
                      <div class="col-md-4">
-                        <label class="fw-bold small">เลขผู้เสียภาษี:</label>
+                        <label class="fw-bold small">{{ __('เลขผู้เสียภาษี:') }}</label>
                         <div id="preview_tax_id" class="text-dark"></div>
                     </div>
                      <div class="col-md-4">
-                        <label class="fw-bold small">รหัสคนงาน (นายจ้าง):</label>
+                        <label class="fw-bold small">{{ __('รหัสคนงาน (นายจ้าง):') }}</label>
                         <div id="preview_employer_emp_id" class="text-dark"></div>
                     </div>
                      <div class="col-md-4">
-                        <label class="fw-bold small">เลขอ้างอิงคนงาน:</label>
+                        <label class="fw-bold small">{{ __('เลขอ้างอิงคนงาน:') }}</label>
                         <div id="preview_ref_id" class="text-dark"></div>
                     </div>
                 </div>
 
                 {{-- Insurance Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">5. ข้อมูลประกัน</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('5. ข้อมูลประกัน') }}</h6>
                 <div class="row g-2 mb-3">
                     <div class="col-md-4">
-                        <label class="fw-bold small">ประเภทประกัน:</label>
+                        <label class="fw-bold small">{{ __('ประเภทประกัน:') }}</label>
                         <div id="preview_insurance_type" class="text-dark"></div>
                     </div>
                     <div class="col-md-8">
-                        <label class="fw-bold small">รายละเอียด/เลขที่/วันหมดอายุ:</label>
+                        <label class="fw-bold small">{{ __('รายละเอียด/เลขที่/วันหมดอายุ:') }}</label>
                         <div id="preview_insurance_detail" class="text-dark"></div>
                     </div>
                 </div>
 
                 {{-- Documents Section --}}
-                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">6. เอกสารแนบ</h6>
+                <h6 class="text-primary border-bottom pb-2 mb-3 mt-2">{{ __('6. เอกสารแนบ') }}</h6>
                 <div class="row g-2" id="preview_documents_container">
                     {{-- Links will be injected here via JS --}}
                 </div>
 
             </div>
             <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('ปิดหน้าต่าง') }}</button>
             </div>
         </div>
     </div>
@@ -346,7 +346,7 @@
         }
 
         if (!hasDocs) {
-            docsContainer.innerHTML = '<div class="col-12 text-muted fst-italic">- ไม่มีเอกสารแนบ -</div>';
+            docsContainer.innerHTML = '<div class="col-12 text-muted fst-italic">{{ __('- ไม่มีเอกสารแนบ -') }}</div>';
         }
 
         // Show Modal

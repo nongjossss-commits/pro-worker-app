@@ -46,7 +46,7 @@
     @endif
     @if ($errors->any())
         <div class="alert alert-danger mb-4">
-            <strong>พบข้อผิดพลาด:</strong>
+            <strong>{{ __('พบข้อผิดพลาด:') }}</strong>
             <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -164,7 +164,7 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="button" class="btn btn-sm btn-outline-danger btn-submit-swal"
-                                                    data-swal-title="ยืนยันการลบ"
+                                                    data-swal-title="{{ __('ยืนยันการลบ') }}"
                                                     data-swal-text="ต้องการลบ '{{ $employee->employeeNameTh }}' ออกจากตั๋วนี้ใช่หรือไม่?"
                                                     data-swal-icon="warning"
                                                     data-swal-confirm-text="ใช่, ลบเลย">
@@ -224,22 +224,22 @@
                                             @php
                                                 // Create a map for user-friendly labels
                                                 $docLabels = [
-                                                    'employeePhoto' => 'รูปถ่าย',
+                                                    'employeePhoto' => __('รูปถ่าย'),
                                                     'employee_doc_1' => 'Passport',
                                                     'employee_doc_2' => 'Visa',
                                                     'employee_doc_3' => 'Work Permit',
                                                     'employee_doc_4' => 'Pink Card',
-                                                    'employee_doc_5' => 'ทะเบียนบ้าน',
-                                                    'employee_doc_6' => 'บัตรประชาชน',
-                                                    'employee_doc_7' => 'ใบแจ้งที่พักอาศัย',
-                                                    'employee_doc_8' => 'เอกสารบ้านเกิด',
-                                                    'employee_doc_9' => 'เอกสารอื่นๆ 1',
-                                                    'employee_doc_10' => 'เอกสารอื่นๆ 2',
-                                                    'employee_doc_11' => 'เอกสารอื่นๆ 3',
-                                                    'employee_doc_12' => 'เอกสารอื่นๆ 4',
-                                                    'insurance_document_path_social' => 'ประกันสังคม',
-                                                    'insurance_document_path_hospital' => 'ประกัน รพ.',
-                                                    'insurance_document_path_private' => 'ประกันเอกชน'
+                                                    'employee_doc_5' => __('ทะเบียนบ้าน'),
+                                                    'employee_doc_6' => __('บัตรประชาชน'),
+                                                    'employee_doc_7' => __('ใบแจ้งที่พักอาศัย'),
+                                                    'employee_doc_8' => __('เอกสารบ้านเกิด'),
+                                                    'employee_doc_9' => __('เอกสารอื่นๆ 1'),
+                                                    'employee_doc_10' => __('เอกสารอื่นๆ 2'),
+                                                    'employee_doc_11' => __('เอกสารอื่นๆ 3'),
+                                                    'employee_doc_12' => __('เอกสารอื่นๆ 4'),
+                                                    'insurance_document_path_social' => __('ประกันสังคม'),
+                                                    'insurance_document_path_hospital' => __('ประกัน รพ.'),
+                                                    'insurance_document_path_private' => __('ประกันเอกชน')
                                                 ];
                                             @endphp
 
@@ -392,7 +392,7 @@
                     @endforeach
 
                     @if(!$hasConversation)
-                        <p class="text-center text-muted py-4">ยังไม่มีการสนทนา</p>
+                        <p class="text-center text-muted py-4">{{ __('ยังไม่มีการสนทนา') }}</p>
                     @endif
                 </div>
             </div>
@@ -419,7 +419,7 @@
 
                             {{-- Text Area --}}
                             <div class="mb-3">
-                                <label for="message" class="form-label">ข้อความ:</label>
+                                <label for="message" class="form-label">{{ __('ข้อความ:') }}</label>
                                 <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" placeholder="{{ __('Type your reply here...') }}">{{ old('message') }}</textarea>
                                 @error('message')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -452,7 +452,7 @@
 
                             {{-- Attachment Basket --}}
                             <div class="mb-3">
-                                <label class="form-label">{{ __('Attached Items') }} (<span x-text="totalItemsCount()"></span> รายการ):</label>
+                                <label class="form-label">{{ __('Attached Items') }} (<span x-text="totalItemsCount()"></span> {{ __('รายการ):') }}</label>
 
                                 {{-- Upload Progress Bar --}}
                                 <div x-show="isUploading" class="mb-2">
@@ -510,10 +510,10 @@
                         <strong>Ticket ID:</strong> #{{ $ticket->id }}
                     </li>
                     <li class="list-group-item">
-                        <strong>สร้างเมื่อ:</strong> {{ $ticket->created_at->format('d M Y H:i') }}
+                        <strong>{{ __('สร้างเมื่อ:') }}</strong> {{ $ticket->created_at->format('d M Y H:i') }}
                     </li>
                      <li class="list-group-item">
-                        <strong>อัปเดตล่าสุด:</strong> {{ $ticket->updated_at->format('d M Y H:i') }}
+                        <strong>{{ __('อัปเดตล่าสุด:') }}</strong> {{ $ticket->updated_at->format('d M Y H:i') }}
                     </li>
                     {{-- Show Employer Info (More detailed in Admin view) --}}
                     <li class="list-group-item">
@@ -541,7 +541,7 @@
                         <form id="resolve-form" action="{{ route('admin.tickets.resolve', $ticket) }}" method="POST" class="d-grid">
                             @csrf
                             <button type="button" class="btn btn-outline-success btn-submit-swal"
-                                    data-swal-title="ยืนยันการปิดตั๋ว"
+                                    data-swal-title="{{ __('ยืนยันการปิดตั๋ว') }}"
                                     data-swal-text="คุณแน่ใจหรือไม่ว่าต้องการปิดตั๋วนี้เป็น 'Resolved'?"
                                     data-swal-icon="success"
                                     data-swal-confirm-text="ใช่, ปิดตั๋วเลย"
@@ -554,7 +554,7 @@
                         <form id="reject-form" action="{{ route('admin.tickets.reject', $ticket) }}" method="POST" class="d-grid">
                             @csrf
                             <button type="button" class="btn btn-outline-danger btn-submit-swal"
-                                    data-swal-title="ยืนยันการปฏิเสธตั๋ว"
+                                    data-swal-title="{{ __('ยืนยันการปฏิเสธตั๋ว') }}"
                                     data-swal-text="คุณแน่ใจหรือไม่ว่าต้องการ 'Reject' ตั๋วนี้?"
                                     data-swal-icon="warning"
                                     data-swal-confirm-text="ใช่, ปฏิเสธตั๋ว"
@@ -566,7 +566,7 @@
                         <form id="forward-form" action="{{ route('admin.tickets.forward', $ticket) }}" method="POST" class="d-grid">
                             @csrf
                             <button type="button" class="btn btn-outline-primary btn-submit-swal"
-                                    data-swal-title="ยืนยันการส่งต่องาน"
+                                    data-swal-title="{{ __('ยืนยันการส่งต่องาน') }}"
                                     data-swal-text="คุณต้องการส่งต่องานนี้เข้าสู่ P-Workflow (สถานะ In Progress) ใช่หรือไม่?"
                                     data-swal-icon="info"
                                     data-swal-confirm-text="ใช่, ส่งต่อเลย"
@@ -676,7 +676,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 confirmButtonColor: (icon === 'danger' || icon === 'warning') ? '#d33' : '#3085d6',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: confirmText,
-                cancelButtonText: 'ยกเลิก'
+                cancelButtonText('{{ __('ยกเลิก') }}')
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit(); // สั่ง submit form เมื่อผู้ใช้ยืนยัน
