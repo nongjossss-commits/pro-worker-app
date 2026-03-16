@@ -1,3 +1,3 @@
 #!/bin/bash
-sed -i "s/->whereIn('status', \['registration_pending', 'registration_completed'\])//g" app/Http/Controllers/Production/RegistrationController.php
-sed -i "s/->whereIn('status', \['renewal_pending', 'renewal_completed'\])//g" app/Http/Controllers/Production/RenewalController.php
+# Mocking the login page since we are testing search functionality on the internal dashboard.
+# No need to build the app, we can just use the provided verify_frontend.py if it exists, or create our own.
