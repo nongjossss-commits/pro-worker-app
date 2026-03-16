@@ -46,9 +46,14 @@ class DelegateController extends Controller
             'delegate_doc_other_2_desc' => 'nullable|string|max:255',
             'delegate_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'delegate_doc_other_3_desc' => 'nullable|string|max:255',
+            'delegate_signature' => 'nullable|image|max:5120',
         ]);
 
         $data = $request->all();
+
+        if ($request->hasFile('delegate_signature')) {
+            $data['signature_path'] = $request->file('delegate_signature')->store('signatures/delegates', 'public');
+        }
 
         if ($request->hasFile('delegatePhoto')) {
             $path = $request->file('delegatePhoto')->store('delegate_photos', 'public');
@@ -125,9 +130,17 @@ class DelegateController extends Controller
             'delegate_doc_other_2_desc' => 'nullable|string|max:255',
             'delegate_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'delegate_doc_other_3_desc' => 'nullable|string|max:255',
+            'delegate_signature' => 'nullable|image|max:5120',
         ]);
 
         $data = $request->all();
+
+        if ($request->hasFile('delegate_signature')) {
+            if ($delegate->signature_path) {
+                Storage::disk('public')->delete($delegate->signature_path);
+            }
+            $data['signature_path'] = $request->file('delegate_signature')->store('signatures/delegates', 'public');
+        }
 
         if ($request->hasFile('delegatePhoto')) {
             // Delete old photo

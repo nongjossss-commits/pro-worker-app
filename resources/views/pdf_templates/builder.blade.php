@@ -273,6 +273,7 @@
                                     <option value="employee">Employee</option>
                                     <option value="employer">Employer 1 (Signer 1)</option>
                                     <option value="employer_2">Employer 2 (Signer 2)</option>
+                                    <option value="delegate">ลายเซ็นพนักงานบริษัท (Delegate)</option>
                                     <option value="witness_1">Witness 1</option>
                                     <option value="witness_2">Witness 2</option>
                                     <option value="witness_3">Witness 3</option>
@@ -963,6 +964,7 @@
                     'employee': '(Employee)',
                     'employer': '(Signer 1)',
                     'employer_2': '(Signer 2)',
+                    'delegate': '(Delegate)',
                     'witness_1': '(Witness 1)',
                     'witness_2': '(Witness 2)',
                     'witness_3': '(Witness 3)',
