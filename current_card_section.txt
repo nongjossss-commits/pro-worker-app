@@ -1,0 +1,132 @@
+            <div class="d-flex flex-column gap-2 ms-md-2">
+            {{-- REMARKS SECTION --}}
+            @php
+                $isRenewal = request()->is('production/renewal*');
+                $remarkText = $isRenewal ? $employee->renewal_remarks : $employee->registration_remarks;
+                // Need absolute or generated URL because we are in shared partial, but we will use route named params if possible
+                // It's safer to generate based on request
+                $remarkUrl = $isRenewal
+                    ? route('production.renewal.remarks', $employee->id)
+                    : route('production.registration.remarks', $employee->id);
+            @endphp
+            <div x-data="{
+                isEditing: false,
+                remarkText: {{ json_encode($remarkText ?? '') }},
+                tempRemarkText: '',
+                isSaving: false,
+                startEditing() {
+                    this.tempRemarkText = this.remarkText;
+                    this.isEditing = true;
+                    this.$nextTick(() => { this.$refs.remarkInput.focus(); });
+                },
+                saveRemark() {
+                    this.isSaving = true;
+                    fetch('{{ $remarkUrl }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ remarks: this.tempRemarkText })
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error(response.statusText);
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            this.remarkText = data.remarks ?? this.tempRemarkText;
+                            this.isEditing = false;
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'บันทึกหมายเหตุสำเร็จ',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        } else {
+                            Swal.fire('Error', 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire('Error', `เกิดข้อผิดพลาด: ${error}`, 'error');
+                    })
+                    .finally(() => {
+                        this.isSaving = false;
+                    });
+                }
+            }">
+                <div style="min-width: 140px; max-width: 250px;">
+                    <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">หมายเหตุ</small>
+
+                    <div class="d-flex align-items-start gap-1 mb-2">
+                        <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
+                            <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                                <span x-text="remarkText || '-'"></span>
+                            </div>
+                            <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
+                                <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                            </button>
+                        </div>
+
+                        <div x-cloak :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
+                            <textarea x-ref="remarkInput" x-model="tempRemarkText" class="form-control form-control-sm mb-1" rows="3" placeholder="กรอกข้อความหมายเหตุ..."></textarea>
+                            <div class="d-flex gap-1">
+                                <button @click="saveRemark()" :disabled="isSaving" class="btn btn-sm btn-success flex-grow-1">
+                                    <i class="bi bi-check-lg" x-show="!isSaving"></i>
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" x-show="isSaving" style="display: none;"></span>
+                                </button>
+                                <button @click="isEditing = false" :disabled="isSaving" class="btn btn-sm btn-outline-secondary flex-shrink-0">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @php
+                $isRegistration = request()->is('*registration*');
+                $isRenewal = request()->is('*renewal*');
+                $isPreProduction = request()->is('*production*') && !$isRegistration && !$isRenewal;
+                $isWorkflow = request()->is('*workflow*');
+
+                // Determine request number
+                $currentRequestNumber = '';
+                $updateUrl = route('employees.update', $employee->id);
+                $updateMethod = 'employee_update';
+
+                if (isset($item) && $item instanceof \App\Models\ProductionItem) {
+                    $currentRequestNumber = $item->request_number;
+                    $updateUrl = route('production.items.update_fields', $item->id);
+                    $updateMethod = 'item_update';
+                } elseif ($isRegistration) {
+                    $currentRequestNumber = $employee->registration_request_number;
+                    $updateUrl = route('employees.update_menu_fields', $employee->id);
+                    $updateMethod = 'menu_update';
+                } elseif ($isRenewal) {
+                    $currentRequestNumber = $employee->renewal_request_number;
+                    $updateUrl = route('employees.update_menu_fields', $employee->id);
+                    $updateMethod = 'menu_update';
+                } else {
+                    $currentRequestNumber = $employee->request_number; // Fallback
+                }
+            @endphp
+
+            {{-- 3 Extra Fields (Editable) --}}
+            <div class="d-flex flex-column gap-2" x-data="{
+                isEditing: false,
+                nameList: '{{ $employee->name_list_number }}',
+                reqNo: '{{ $currentRequestNumber }}',
+                refId: '{{ $employee->employee_reference_id }}',
+                updateMethod: '{{ $updateMethod }}',
+                updateUrl: '{{ $updateUrl }}',
+                copy(el, text) {
+                    if (!text) return;
+                    navigator.clipboard.writeText(text).then(() => {
+                        const originalHtml = el.innerHTML;
+                        el.innerHTML = '<i class=\'bi bi-check text-success\'></i>';
+                        setTimeout(() => el.innerHTML = originalHtml, 1000);
+                    });

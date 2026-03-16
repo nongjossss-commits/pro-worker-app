@@ -412,6 +412,7 @@
             </div>
             @endcan
             <div class="d-flex flex-column gap-2 ms-md-2">
+            <div class="d-flex gap-2 align-items-start">
             {{-- REMARKS SECTION --}}
             @php
                 $isRenewal = request()->is('production/renewal*');
@@ -499,6 +500,103 @@
                     </div>
                 </div>
             </div>
+
+            {{-- INSURANCE TYPE SECTION --}}
+            <div x-data="{
+                isEditing: false,
+                insuranceType: '{{ $employee->insurance_type ?? '' }}',
+                tempInsuranceType: '{{ $employee->insurance_type ?? '' }}',
+                isSaving: false,
+                startEditing() {
+                    this.tempInsuranceType = this.insuranceType;
+                    this.isEditing = true;
+                    this.$nextTick(() => { this.$refs.insuranceInput.focus(); });
+                },
+                saveInsurance() {
+                    this.isSaving = true;
+
+                    let formData = new FormData();
+                    formData.append('_method', 'PUT');
+                    formData.append('_token', '{{ csrf_token() }}');
+                    formData.append('insurance_type', this.tempInsuranceType);
+                    // required fields for employees.update usually include these for safety if not using patch
+                    formData.append('employer_id', '{{ $employee->employer_id }}');
+                    formData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
+
+                    fetch('{{ route('employees.update', $employee->id) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error(response.statusText);
+                        return response.json();
+                    })
+                    .then(data => {
+                        this.insuranceType = this.tempInsuranceType;
+                        this.isEditing = false;
+
+                        // Also update the hidden data attribute if it exists, so bulk actions or finance tab might pick it up
+                        let checkbox = document.querySelector('#check_{{ $employee->id }}');
+                        if (checkbox) {
+                            checkbox.setAttribute('data-insurance-type', this.insuranceType);
+                        }
+
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'บันทึกประเภทประกันสำเร็จ',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    })
+                    .catch(error => {
+                        Swal.fire('Error', `เกิดข้อผิดพลาด: ${error}`, 'error');
+                    })
+                    .finally(() => {
+                        this.isSaving = false;
+                    });
+                }
+            }">
+                <div style="min-width: 140px; max-width: 250px;">
+                    <small class="text-muted d-block fw-bold" style="font-size: 0.7rem;">ประเภทประกัน</small>
+
+                    <div class="d-flex align-items-start gap-1 mb-2">
+                        <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-center gap-1 w-100">
+                            <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-truncate" style="min-height: 31px;">
+                                <span x-text="insuranceType || '-'"></span>
+                            </div>
+                            <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขประเภทประกัน">
+                                <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                            </button>
+                        </div>
+
+                        <div x-cloak :style="{ display: isEditing ? 'block' : 'none' }" class="w-100">
+                            <select x-ref="insuranceInput" x-model="tempInsuranceType" class="form-select form-select-sm mb-1">
+                                <option value="">{{ __('- ไม่ระบุ -') }}</option>
+                                <option value="ประกันเอกชน">{{ __('ประกันเอกชน') }}</option>
+                                <option value="ประกันโรงพยาบาล">{{ __('ประกันโรงพยาบาล') }}</option>
+                                <option value="ประกันสังคม">{{ __('ประกันสังคม') }}</option>
+                            </select>
+                            <div class="d-flex gap-1">
+                                <button @click="saveInsurance()" :disabled="isSaving" class="btn btn-sm btn-success flex-grow-1">
+                                    <i class="bi bi-check-lg" x-show="!isSaving"></i>
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" x-show="isSaving" style="display: none;"></span>
+                                </button>
+                                <button @click="isEditing = false" :disabled="isSaving" class="btn btn-sm btn-outline-secondary flex-shrink-0">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            </div> {{-- End d-flex gap-2 align-items-start --}}
 
             @php
                 $isRegistration = request()->is('*registration*');

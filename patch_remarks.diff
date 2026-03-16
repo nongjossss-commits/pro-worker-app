@@ -1,0 +1,29 @@
+<<<<<<< SEARCH
+            <div class="d-flex flex-column gap-2 ms-md-2">
+            {{-- REMARKS SECTION --}}
+            @php
+                $isRenewal = request()->is('production/renewal*');
+                $remarkText = $isRenewal ? $employee->renewal_remarks : $employee->registration_remarks;
+                // Need absolute or generated URL because we are in shared partial, but we will use route named params if possible
+                // It's safer to generate based on request
+                $remarkUrl = $isRenewal
+                    ? route('production.renewal.remarks', $employee->id)
+                    : route('production.registration.remarks', $employee->id);
+            @endphp
+            <div x-data="{
+=======
+            <div class="d-flex flex-column gap-2 ms-md-2">
+
+            <div class="d-flex gap-2 align-items-start">
+            {{-- REMARKS SECTION --}}
+            @php
+                $isRenewal = request()->is('production/renewal*');
+                $remarkText = $isRenewal ? $employee->renewal_remarks : $employee->registration_remarks;
+                // Need absolute or generated URL because we are in shared partial, but we will use route named params if possible
+                // It's safer to generate based on request
+                $remarkUrl = $isRenewal
+                    ? route('production.renewal.remarks', $employee->id)
+                    : route('production.registration.remarks', $employee->id);
+            @endphp
+            <div x-data="{
+>>>>>>> REPLACE
