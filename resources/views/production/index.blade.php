@@ -1175,11 +1175,11 @@
     window.deleteEmployee = function(employeeId, itemId) {
         if (!itemId) return;
         Swal.fire({
-            title: '{{ __("Delete Item?") }}',
-            text: '{{ __("This will move the employee to the trash.") }}',
-            icon: 'error',
+            title: '{{ __("Cancel Item?") }}',
+            text: '{{ __("This will cancel the process for this employee in this workflow.") }}',
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: '{{ __("Delete") }}',
+            confirmButtonText: '{{ __("Cancel Process") }}',
             confirmButtonColor: '#d33'
         }).then((result) => {
             if (result.isConfirmed) {

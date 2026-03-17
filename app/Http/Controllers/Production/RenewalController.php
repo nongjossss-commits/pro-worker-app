@@ -1425,11 +1425,17 @@ class RenewalController extends Controller
     public function destroy(Request $request, Employee $employee)
     {
         if (!auth()->user()->can('edit-employees')) abort(403);
-        $employee->delete();
+
+        // "Cancel" instead of "Delete" so the employee remains in the system database
+        $employee->update([
+            'status' => 'renewal_cancelled',
+            'resolution_completed_at' => now(), // End the tracking
+        ]);
+
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
-        return back()->with('success', 'Employee deleted.');
+        return back()->with('success', 'Employee removed from renewal.');
     }
 
     public function cancelEmployer(Request $request, Employer $employer)

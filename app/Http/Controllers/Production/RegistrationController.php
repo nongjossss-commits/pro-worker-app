@@ -877,8 +877,13 @@ class RegistrationController extends Controller
             abort(403);
         }
 
-        $employerId = $employee->employer_id; // Capture ID before deletion
-        $employee->delete(); // Soft delete
+        $employerId = $employee->employer_id;
+
+        // "Cancel" instead of "Delete" so the employee remains in the system database
+        $employee->update([
+            'status' => 'registration_cancelled',
+            'resolution_completed_at' => now(), // End the tracking
+        ]);
 
         if ($request->ajax()) {
             return response()->json([
@@ -886,7 +891,7 @@ class RegistrationController extends Controller
                 'stats' => $this->getStats($employerId, $request)
             ]);
         }
-        return back()->with('success', 'Employee deleted.');
+        return back()->with('success', 'Employee removed from registration.');
     }
 
     /**

@@ -1555,23 +1555,18 @@ class WorkflowController extends Controller
     }
 
     /**
-     * Soft Delete an Item.
+     * Cancel/Remove an Item from Workflow/Production.
      */
     public function destroyItem(Request $request, $itemId)
     {
         $item = ProductionItem::with(['employee', 'order'])->findOrFail($itemId);
-        $order = $item->order; // Capture order before delete
+        $order = $item->order;
 
-        // Capture employee before deleting the item
-        $employee = $item->employee;
-
-        $item->delete();
-
-        // Check if employee should also be deleted
-        // Logic: If employee was created specifically for this workflow (status 'onboarding')
-        if ($employee && $employee->status === 'onboarding') {
-            $employee->delete();
-        }
+        // "Cancel" instead of "Delete" so the employee remains in the system database
+        $item->update([
+            'status' => 'cancelled',
+            'completed_at' => now(), // End the tracking
+        ]);
 
         // Recalculate Stats
         $orderStats = $this->calculateOrderStats($order);
