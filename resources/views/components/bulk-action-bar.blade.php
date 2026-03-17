@@ -21,6 +21,7 @@
             {{ $slot ?? '' }}
         </ul>
     </div>
+    <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
 </div>
 
 <script>
