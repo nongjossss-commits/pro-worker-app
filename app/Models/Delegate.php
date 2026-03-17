@@ -20,6 +20,7 @@ class Delegate extends Model
         'delegatePhone',
         'delegateEmail',
         'delegatePhoto',
+        'signature_path',
         'delegate_doc_other_1',
         'delegate_doc_other_1_desc',
         'delegate_doc_other_2',

@@ -137,6 +137,7 @@
     @endif
 @endif
 
+@if(auth()->user()->hasAnyRole(['super-admin', 'admin', 'staff']))
 @if(\App\Facades\SuperAdmin::isVisible('importers'))
 @can('view-importers')
 <a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>{{ __('Importers') }}</a>
@@ -151,6 +152,7 @@
 @can('view-delegates')
 <a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>{{ __('Delegates') }}</a>
 @endcan
+@endif
 @endif
 
 @if(\App\Facades\SuperAdmin::isVisible('user_management'))

@@ -376,6 +376,11 @@ class PdfGeneratorService
         $emprSig1Path = null;
         $emprSig2Path = null;
         $emprStampPath = null;
+        $delegateSigPath = null;
+
+        if ($targetDelegate && $targetDelegate->signature_path && Storage::disk('public')->exists($targetDelegate->signature_path)) {
+            $delegateSigPath = Storage::disk('public')->path($targetDelegate->signature_path);
+        }
 
         if ($effectiveEmployer) {
             // Signer 1
@@ -462,6 +467,7 @@ class PdfGeneratorService
                             if ($group === 'employee') $targetPath = $empSigPath;
                             elseif ($group === 'employer') $targetPath = $emprSig1Path;
                             elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                            elseif ($group === 'delegate') $targetPath = $delegateSigPath;
                             elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
                         } elseif ($item['type'] === 'stamp') {
                             $targetPath = $emprStampPath;
@@ -629,6 +635,11 @@ class PdfGeneratorService
         $emprSig1Path = null;
         $emprSig2Path = null;
         $emprStampPath = null;
+        $delegateSigPath = null;
+
+        if ($targetDelegate && $targetDelegate->signature_path && Storage::disk('public')->exists($targetDelegate->signature_path)) {
+            $delegateSigPath = Storage::disk('public')->path($targetDelegate->signature_path);
+        }
 
         if ($effectiveEmployer) {
             if ($effectiveEmployer->signature_1_path && Storage::disk('public')->exists($effectiveEmployer->signature_1_path)) {
@@ -710,6 +721,7 @@ class PdfGeneratorService
                             if ($group === 'employee' && $employee) $targetPath = $employeeSigPaths[$employee->id] ?? null;
                             elseif ($group === 'employer') $targetPath = $emprSig1Path;
                             elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                            elseif ($group === 'delegate') $targetPath = $delegateSigPath;
                             elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
                         } elseif ($item['type'] === 'stamp') {
                             $targetPath = $emprStampPath;

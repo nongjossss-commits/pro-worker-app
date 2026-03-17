@@ -12,13 +12,26 @@
                 @csrf
 
                 <div class="row mb-4">
-                    <div class="col-md-12 text-center">
+                    <div class="col-md-6 text-center">
                         <label class="form-label d-block text-muted mb-2">Photo</label>
                         <div class="mb-3">
                             <input type="file" name="delegatePhoto" id="delegatePhoto" class="form-control" accept="image/*" onchange="previewImage(event, 'photoPreview')">
                         </div>
                         <img id="photoPreview" src="#" alt="Photo Preview" style="display: none; max-width: 150px; max-height: 150px; margin-top: 10px;" class="img-thumbnail rounded-circle">
                     </div>
+
+                    @if(auth()->user()->hasAnyRole(['super-admin', 'admin', 'staff']))
+                    <div class="col-md-6 text-center border-start">
+                        <label class="form-label d-block text-muted mb-2">ลายเซ็นพนักงานบริษัท (Delegate Signature)</label>
+                        <div class="mb-3 d-flex gap-2">
+                            <input type="file" name="delegate_signature" id="delegate_signature" class="form-control" accept="image/*" onchange="previewImage(event, 'signaturePreview'); if(window.interceptFileSelect) window.interceptFileSelect(event)">
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'delegate_signature' } }))" title="สแกนเอกสาร">
+                                <i class="bi bi-camera"></i>
+                            </button>
+                        </div>
+                        <img id="signaturePreview" src="#" alt="Signature Preview" style="display: none; max-width: 200px; max-height: 100px; margin-top: 10px;" class="img-thumbnail">
+                    </div>
+                    @endif
                 </div>
 
                 <div class="row mb-3">
