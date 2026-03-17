@@ -2636,56 +2636,56 @@
         if (restoreEmployerId) {
             sessionStorage.removeItem('registration_restore_employer_id'); // Clear immediately
             const collapseEl = document.getElementById(`collapse${restoreEmployerId}`);
-            if (collapseEl) {
-                const bsCollapse = new bootstrap.Collapse(collapseEl, {
-                    toggle: false
-                });
-                bsCollapse.show();
+            const employerHeading = document.getElementById(`heading${restoreEmployerId}`);
+
+            if (collapseEl && employerHeading) {
+                // Scroll to Employer
+                employerHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Check if collapsed
+                if (!collapseEl.classList.contains('show')) {
+                    // Trigger click on the button
+                    const btn = employerHeading.querySelector('button[data-bs-toggle="collapse"]');
+                    if(btn) btn.click();
+                }
 
                 // If we also have an employee to scroll to
                 if (restoreEmployeeId) {
                     sessionStorage.removeItem('registration_restore_employee_id');
-                    // Wait for collapse animation (approx 350ms usually, but we can try slightly more)
-                    // Or listen to event 'shown.bs.collapse'
-                    collapseEl.addEventListener('shown.bs.collapse', function () {
-                        // Function to retry finding the element if lazy load takes time
-                        const scrollToCard = () => {
-                            const employeeCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
-                            if (employeeCard) {
-                                employeeCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                // Optional: Highlight effect
-                                employeeCard.classList.add('filter-active'); // Use filter-active for stronger highlight
-                                setTimeout(() => employeeCard.classList.remove('filter-active'), 3000);
-                            } else {
-                                // Retry once after a short delay if loading
-                                setTimeout(() => {
-                                     const retryCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
-                                     if(retryCard) {
-                                         retryCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                         retryCard.classList.add('filter-active');
-                                         setTimeout(() => retryCard.classList.remove('filter-active'), 3000);
-                                     }
-                                }, 500);
-                            }
-                        };
 
-                        // Small delay to ensure lazy load content injection (if instantaneous) or wait for mutation observer?
-                        // loadEmployees is triggered by show.bs.collapse listener above in this file.
-                        // That listener triggers fetch. fetch takes time.
-                        // We need to wait for the fetch to complete.
-                        // We can hook into window.loadEmployees promise if we refactored it, but it returns nothing.
-                        // Workaround: Poll for element existence.
-                        let attempts = 0;
-                        const poller = setInterval(() => {
-                            const card = document.getElementById(`employee-card-${restoreEmployeeId}`);
-                            if (card) {
-                                clearInterval(poller);
-                                scrollToCard();
-                            }
-                            attempts++;
-                            if (attempts > 20) clearInterval(poller); // 2 seconds timeout
-                        }, 100);
-                    }, { once: true });
+                    const highlightTarget = (card) => {
+                        setTimeout(() => {
+                             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                             card.classList.add('filter-active'); // Use filter-active for stronger highlight
+                             setTimeout(() => {
+                                 card.classList.remove('filter-active');
+                             }, 5000);
+                        }, 500);
+                    };
+
+                    // Wait for Item to Load
+                    const observer = new MutationObserver(function(mutations, obs) {
+                        let targetCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
+                        if (targetCard) {
+                            highlightTarget(targetCard);
+                            obs.disconnect();
+                        }
+                    });
+
+                    // Start observing the content wrapper
+                    const contentWrapper = document.getElementById(`employee-list-${restoreEmployerId}`);
+                    if (contentWrapper) {
+                        observer.observe(contentWrapper, { childList: true, subtree: true });
+
+                        // Fallback check
+                        setTimeout(() => {
+                             let targetCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
+                             if(targetCard) {
+                                 highlightTarget(targetCard);
+                                 observer.disconnect();
+                             }
+                        }, 2000); // Wait up to 2s
+                    }
                 }
             }
         }
