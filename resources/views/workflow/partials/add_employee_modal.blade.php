@@ -400,48 +400,72 @@
     // Search Resigned Logic
     let searchTimeout;
     const resignedInput = document.getElementById('resigned-search-input');
+
+    function fetchResignedEmployees(query = '') {
+        const employerId = document.getElementById('modal_employer_id').value;
+        const url = new URL(`{{ route('workflow.api.resigned') }}`);
+        url.searchParams.append('q', query);
+        if (employerId) {
+            url.searchParams.append('employer_id', employerId);
+        }
+
+        const container = document.getElementById('resigned-results');
+        container.innerHTML = '<div class="text-center py-2"><span class="spinner-border spinner-border-sm text-primary"></span></div>';
+
+        fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            container.innerHTML = '';
+            if(data.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-2">No employees found.</div>';
+                return;
+            }
+            data.forEach(emp => {
+                const item = document.createElement('label');
+                item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer';
+
+                const statusBadge = emp.terminated_at ?
+                    '<span class="badge bg-danger ms-2">Terminated</span>' :
+                    '<span class="badge bg-success ms-2">Active</span>';
+
+                const gender = emp.gender ? (emp.gender === 'Male' || emp.gender === 'M' || emp.gender === 'ชาย' ? 'ชาย' : (emp.gender === 'Female' || emp.gender === 'F' || emp.gender === 'หญิง' ? 'หญิง' : emp.gender)) : '-';
+
+                item.innerHTML = `
+                    <input class="form-check-input flex-shrink-0" type="checkbox" name="employee_ids[]" value="${emp.id}">
+                    <img src="${emp.photo_url || 'https://ui-avatars.com/api/?name=' + (emp.employeeNameEn || emp.employeeNameTh || 'User') + '&color=FFFFFF&background=F97316&size=128'}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" alt="Photo">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">${emp.employeeNameTh || emp.employeeNameEn || '-'} ${emp.employeeNameTh && emp.employeeNameEn ? '(' + emp.employeeNameEn + ')' : ''} ${statusBadge}</div>
+                        <div class="small text-muted">นายจ้าง: ${emp.employer ? (emp.employer.employerNameTh || emp.employer.employerNameEn) : 'N/A'}</div>
+                        <div class="d-flex align-items-center gap-2 mt-1" style="font-size: 0.8rem;">
+                            <span class="text-muted"><i class="bi bi-person me-1"></i>เพศ: <strong>${gender}</strong></span>
+                            <span class="text-muted"><i class="bi bi-flag me-1"></i>สัญชาติ: <strong>${emp.nationality || '-'}</strong></span>
+                        </div>
+                        <div class="small text-muted mt-1" style="font-size: 0.75rem;">Passport: ${emp.employeePassport || '-'}</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = '<div class="text-center text-danger py-2">Error loading employees.</div>';
+        });
+    }
+
     if(resignedInput) {
+        resignedInput.addEventListener('focus', function(e) {
+            if (!this.dataset.fetched) {
+                fetchResignedEmployees(e.target.value);
+                this.dataset.fetched = 'true';
+            }
+        });
+
         resignedInput.addEventListener('input', function(e) {
             clearTimeout(searchTimeout);
             const query = e.target.value;
-            if(query.length < 2) return;
 
             searchTimeout = setTimeout(() => {
-                    const employerId = document.getElementById('modal_employer_id').value;
-                    const url = new URL(`{{ route('workflow.api.resigned') }}`);
-                    url.searchParams.append('q', query);
-                    if (employerId) {
-                        url.searchParams.append('employer_id', employerId);
-                    }
-
-                    fetch(url)
-                    .then(res => res.json())
-                    .then(data => {
-                        const container = document.getElementById('resigned-results');
-                        container.innerHTML = '';
-                        if(data.length === 0) {
-                            container.innerHTML = '<div class="text-center text-muted py-2">No employees found.</div>';
-                            return;
-                        }
-                        data.forEach(emp => {
-                            const item = document.createElement('label');
-                            item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer';
-
-                                const statusBadge = emp.terminated_at ?
-                                    '<span class="badge bg-danger ms-2">Terminated</span>' :
-                                    '<span class="badge bg-success ms-2">Active</span>';
-
-                            item.innerHTML = `
-                                <input class="form-check-input flex-shrink-0" type="checkbox" name="employee_ids[]" value="${emp.id}">
-                                <div>
-                                        <div class="fw-bold">${emp.employeeNameEn || emp.employeeNameTh || '-'} ${statusBadge}</div>
-                                        <div class="small text-muted">Employer: ${emp.employer ? (emp.employer.employerNameTh || emp.employer.employerNameEn) : 'N/A'}</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">Passport: ${emp.employeePassport || '-'}</div>
-                                </div>
-                            `;
-                            container.appendChild(item);
-                        });
-                    });
+                fetchResignedEmployees(query);
             }, 500);
         });
     }
@@ -449,37 +473,62 @@
     // Global Search Logic
     let globalSearchTimeout;
     const globalInput = document.getElementById('global-search-input');
+
+    function fetchGlobalEmployees(query = '') {
+        const container = document.getElementById('global-results');
+        container.innerHTML = '<div class="text-center py-2"><span class="spinner-border spinner-border-sm text-primary"></span></div>';
+
+        fetch(`{{ route('workflow.api.global') }}?q=${query}`)
+            .then(res => res.json())
+            .then(data => {
+                container.innerHTML = '';
+                if(data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-2">No employees found.</div>';
+                    return;
+                }
+                data.forEach(emp => {
+                    const item = document.createElement('label');
+                    item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer';
+                    const currentEmployer = emp.employer ? (emp.employer.employerNameTh || emp.employer.employerNameEn) : 'No Employer';
+
+                    const gender = emp.gender ? (emp.gender === 'Male' || emp.gender === 'M' || emp.gender === 'ชาย' ? 'ชาย' : (emp.gender === 'Female' || emp.gender === 'F' || emp.gender === 'หญิง' ? 'หญิง' : emp.gender)) : '-';
+
+                    item.innerHTML = `
+                        <input class="form-check-input flex-shrink-0" type="checkbox" name="employee_ids[]" value="${emp.id}">
+                        <img src="${emp.photo_url || 'https://ui-avatars.com/api/?name=' + (emp.employeeNameEn || emp.employeeNameTh || 'User') + '&color=FFFFFF&background=F97316&size=128'}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" alt="Photo">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${emp.employeeNameTh || emp.employeeNameEn || '-'} ${emp.employeeNameTh && emp.employeeNameEn ? '(' + emp.employeeNameEn + ')' : ''}</div>
+                            <div class="small text-muted">นายจ้างปัจจุบัน: ${currentEmployer}</div>
+                            <div class="d-flex align-items-center gap-2 mt-1" style="font-size: 0.8rem;">
+                                <span class="text-muted"><i class="bi bi-person me-1"></i>เพศ: <strong>${gender}</strong></span>
+                                <span class="text-muted"><i class="bi bi-flag me-1"></i>สัญชาติ: <strong>${emp.nationality || '-'}</strong></span>
+                            </div>
+                            <div class="small text-muted mt-1" style="font-size: 0.75rem;">Passport: ${emp.employeePassport || '-'}</div>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<div class="text-center text-danger py-2">Error loading employees.</div>';
+            });
+    }
+
     if(globalInput) {
+        globalInput.addEventListener('focus', function(e) {
+            if (!this.dataset.fetched) {
+                fetchGlobalEmployees(e.target.value);
+                this.dataset.fetched = 'true';
+            }
+        });
+
         globalInput.addEventListener('input', function(e) {
             clearTimeout(globalSearchTimeout);
             const query = e.target.value;
-            if(query.length < 2) return;
 
             globalSearchTimeout = setTimeout(() => {
-                fetch(`{{ route('workflow.api.global') }}?q=${query}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        const container = document.getElementById('global-results');
-                        container.innerHTML = '';
-                        if(data.length === 0) {
-                            container.innerHTML = '<div class="text-center text-muted py-2">No employees found.</div>';
-                            return;
-                        }
-                        data.forEach(emp => {
-                            const item = document.createElement('label');
-                            item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 cursor-pointer';
-                            const currentEmployer = emp.employer ? (emp.employer.employerNameTh || emp.employer.employerNameEn) : 'No Employer';
-                            item.innerHTML = `
-                                <input class="form-check-input flex-shrink-0" type="checkbox" name="employee_ids[]" value="${emp.id}">
-                                <div>
-                                    <div class="fw-bold">${emp.employeeNameEn || emp.employeeNameTh || '-'}</div>
-                                    <div class="small text-muted">Current: ${currentEmployer}</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">Passport: ${emp.employeePassport || '-'}</div>
-                                </div>
-                            `;
-                            container.appendChild(item);
-                        });
-                    });
+                fetchGlobalEmployees(query);
             }, 500);
         });
     }
