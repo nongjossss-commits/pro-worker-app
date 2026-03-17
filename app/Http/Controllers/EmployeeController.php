@@ -1663,7 +1663,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return back()->with('error', 'No employees selected.');
         }
 
-        $employees = Employee::whereIn('id', $employeeIds)->with('employer.addresses')->get();
+        $employees = Employee::whereIn('id', $employeeIds)->with('employer.addresses', 'employer.jobOwner')->get();
 
         // Define labels for the header
         $columnLabels = [
@@ -1715,6 +1715,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'outsource_code' => 'รหัสสำหรับระบบ Outsource',
             'bank_name' => 'ชื่อธนาคาร',
             'bank_account_number' => 'เลขบัญชีธนาคาร',
+            'employerTaxId' => 'เลขประจำตัวนายจ้าง',
+            'businessType' => 'ประเภทกิจการ',
+            'job_owner_id' => 'ชื่อเจ้าของงาน',
             'employerNameTh' => 'Employer Name (TH)',
             'employerNameEn' => 'Employer Name (EN)',
             'employerAddressTh' => 'Employer Address (TH)',
@@ -1823,6 +1826,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
                     $cell->setValue($employee->age);
                 } elseif ($col === 'employeeGender') {
                     $cell->setValue($employee->gender ?? $employee->employeeGender);
+                } elseif ($col === 'employerTaxId') {
+                    $cell->setValueExplicit($employee->employer->employerTaxId ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                } elseif ($col === 'businessType') {
+                    $cell->setValue($employee->employer->businessType ?? '-');
+                } elseif ($col === 'job_owner_id') {
+                    $cell->setValue($employee->employer->jobOwner->name ?? '-');
                 } elseif ($col === 'employerNameTh') {
                     $cell->setValue($employee->employer->employerNameTh ?? '-');
                 } elseif ($col === 'employerNameEn') {
