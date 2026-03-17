@@ -352,6 +352,24 @@
                             <div class="row g-2">
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="employerTaxId" id="col_emp_tax_id">
+                                        <label class="form-check-label" for="col_emp_tax_id">เลขประจำตัวนายจ้าง</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="businessType" id="col_emp_business_type">
+                                        <label class="form-check-label" for="col_emp_business_type">ประเภทกิจการ</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="job_owner_id" id="col_emp_job_owner">
+                                        <label class="form-check-label" for="col_emp_job_owner">ชื่อเจ้าของงาน</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="employerNameTh" id="col_emp_name_th">
                                         <label class="form-check-label" for="col_emp_name_th">{{ __('Employer Name (TH)') }}</label>
                                     </div>
