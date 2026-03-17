@@ -4,6 +4,7 @@
             <form id="advancedExportForm" action="{{ route('employees.advanced_export') }}" method="POST">
                 @csrf
                 <input type="hidden" name="employee_ids" id="export_employee_ids">
+                <input type="hidden" name="export_source_menu" id="export_source_menu" value="">
 
                 <div class="modal-header">
                     <h5 class="modal-title" id="advancedExportModalLabel">{{ __('Advanced Export') }} (Max 15 items)</h5>

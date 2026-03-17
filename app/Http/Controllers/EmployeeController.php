@@ -1654,16 +1654,26 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $validated = $request->validate([
             'employee_ids' => 'required|string',
             'columns' => 'required|array|max:15',
+            'export_source_menu' => 'nullable|string',
         ]);
 
         $employeeIds = json_decode($validated['employee_ids'], true);
         $selectedColumns = $validated['columns'];
+        $sourceMenu = $validated['export_source_menu'] ?? null;
 
         if (empty($employeeIds)) {
             return back()->with('error', 'No employees selected.');
         }
 
-        $employees = Employee::whereIn('id', $employeeIds)->with('employer.addresses', 'employer.jobOwner')->get();
+        $employeesQuery = Employee::whereIn('id', $employeeIds)->with('employer.addresses', 'employer.jobOwner');
+
+        if (in_array($sourceMenu, ['pre_production', 'workflow'])) {
+             $employeesQuery->with(['productionItems' => function ($query) {
+                 $query->latest();
+             }]);
+        }
+
+        $employees = $employeesQuery->get();
 
         // Define labels for the header
         $columnLabels = [
@@ -1870,13 +1880,31 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $fullAddress = implode(', ', $parts);
                     }
                     $cell->setValue($fullAddress);
+                } elseif ($col === 'request_number') {
+                    $val = '-';
+                    if ($sourceMenu === 'registration') {
+                        $val = $employee->registration_request_number ?? '-';
+                    } elseif ($sourceMenu === 'renewal') {
+                        $val = $employee->renewal_request_number ?? '-';
+                    } elseif (in_array($sourceMenu, ['pre_production', 'workflow'])) {
+                        $latestItem = $employee->productionItems->first();
+                        $val = $latestItem ? ($latestItem->request_number ?? '-') : '-';
+                    } else {
+                        $val = $employee->request_number ?? '-';
+                    }
+
+                    if ($val !== '-') {
+                        $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    } else {
+                        $cell->setValue($val);
+                    }
                 } else {
                     $val = $employee->$col ?? '-';
                     // List of columns that might contain long numbers (e.g. 13 digits) and should be explicitly set as text
                     $textColumns = [
                         'employeePassport', 'employeeWorkPermit', 'pinkCardNo', 'tax_id_number',
                         'social_security_number', 'employer_employee_id', 'employee_id_number',
-                        'request_number', 'name_list_number', 'bank_account_number', 'employeePhone',
+                        'name_list_number', 'bank_account_number', 'employeePhone',
                         'outsource_code', 'employee_reference_id'
                     ];
 
