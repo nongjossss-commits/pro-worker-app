@@ -377,6 +377,10 @@ class PdfGeneratorService
         $emprSig2Path = null;
         $emprStampPath = null;
 
+        $importerSig1Path = null;
+        $importerSig2Path = null;
+        $importerStampPath = null;
+
         if ($effectiveEmployer) {
             // Signer 1
             if ($effectiveEmployer->signature_1_path && Storage::disk('public')->exists($effectiveEmployer->signature_1_path)) {
@@ -410,6 +414,18 @@ class PdfGeneratorService
 
             if ($effectiveEmployer->employer_stamp_path && Storage::disk('public')->exists($effectiveEmployer->employer_stamp_path)) {
                 $emprStampPath = Storage::disk('public')->path($effectiveEmployer->employer_stamp_path);
+            }
+        }
+
+        if ($targetImporter) {
+            if ($targetImporter->signature_1_path && Storage::disk('public')->exists($targetImporter->signature_1_path)) {
+                $importerSig1Path = Storage::disk('public')->path($targetImporter->signature_1_path);
+            }
+            if ($targetImporter->signature_2_path && Storage::disk('public')->exists($targetImporter->signature_2_path)) {
+                $importerSig2Path = Storage::disk('public')->path($targetImporter->signature_2_path);
+            }
+            if ($targetImporter->importer_stamp_path && Storage::disk('public')->exists($targetImporter->importer_stamp_path)) {
+                $importerStampPath = Storage::disk('public')->path($targetImporter->importer_stamp_path);
             }
         }
 
@@ -462,9 +478,16 @@ class PdfGeneratorService
                             if ($group === 'employee') $targetPath = $empSigPath;
                             elseif ($group === 'employer') $targetPath = $emprSig1Path;
                             elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                            elseif ($group === 'importer_1') $targetPath = $importerSig1Path;
+                            elseif ($group === 'importer_2') $targetPath = $importerSig2Path;
                             elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
                         } elseif ($item['type'] === 'stamp') {
-                            $targetPath = $emprStampPath;
+                            $group = $item['signatureGroup'] ?? 'employer_stamp';
+                            if ($group === 'importer_stamp') {
+                                $targetPath = $importerStampPath;
+                            } else {
+                                $targetPath = $emprStampPath;
+                            }
                         }
 
                         if ($targetPath && file_exists($targetPath)) {
@@ -630,6 +653,10 @@ class PdfGeneratorService
         $emprSig2Path = null;
         $emprStampPath = null;
 
+        $importerSig1Path = null;
+        $importerSig2Path = null;
+        $importerStampPath = null;
+
         if ($effectiveEmployer) {
             if ($effectiveEmployer->signature_1_path && Storage::disk('public')->exists($effectiveEmployer->signature_1_path)) {
                 $emprSig1Path = Storage::disk('public')->path($effectiveEmployer->signature_1_path);
@@ -655,6 +682,18 @@ class PdfGeneratorService
 
             if ($effectiveEmployer->employer_stamp_path && Storage::disk('public')->exists($effectiveEmployer->employer_stamp_path)) {
                 $emprStampPath = Storage::disk('public')->path($effectiveEmployer->employer_stamp_path);
+            }
+        }
+
+        if ($targetImporter) {
+            if ($targetImporter->signature_1_path && Storage::disk('public')->exists($targetImporter->signature_1_path)) {
+                $importerSig1Path = Storage::disk('public')->path($targetImporter->signature_1_path);
+            }
+            if ($targetImporter->signature_2_path && Storage::disk('public')->exists($targetImporter->signature_2_path)) {
+                $importerSig2Path = Storage::disk('public')->path($targetImporter->signature_2_path);
+            }
+            if ($targetImporter->importer_stamp_path && Storage::disk('public')->exists($targetImporter->importer_stamp_path)) {
+                $importerStampPath = Storage::disk('public')->path($targetImporter->importer_stamp_path);
             }
         }
 
@@ -710,9 +749,16 @@ class PdfGeneratorService
                             if ($group === 'employee' && $employee) $targetPath = $employeeSigPaths[$employee->id] ?? null;
                             elseif ($group === 'employer') $targetPath = $emprSig1Path;
                             elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                            elseif ($group === 'importer_1') $targetPath = $importerSig1Path;
+                            elseif ($group === 'importer_2') $targetPath = $importerSig2Path;
                             elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
                         } elseif ($item['type'] === 'stamp') {
-                            $targetPath = $emprStampPath;
+                            $group = $item['signatureGroup'] ?? 'employer_stamp';
+                            if ($group === 'importer_stamp') {
+                                $targetPath = $importerStampPath;
+                            } else {
+                                $targetPath = $emprStampPath;
+                            }
                         }
 
                         if ($targetPath && file_exists($targetPath)) {
