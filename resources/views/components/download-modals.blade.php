@@ -45,10 +45,6 @@
                                     <label class="form-check-label" for="chkPhoto">รูปถ่าย (Photo)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="insurance" id="chkInsurance" checked>
-                                    <label class="form-check-label" for="chkInsurance">ไฟล์แนบประกัน (Insurance)</label>
-                                </div>
-                                <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="passport" id="chkPassport" checked>
                                     <label class="form-check-label" for="chkPassport">1. พาสปอร์ต (Passport)</label>
                                 </div>
@@ -67,6 +63,10 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="tor_ror_38" id="chkTorRor38">
                                     <label class="form-check-label" for="chkTorRor38">5. ทร. 38</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="insurance" id="chkInsurance" checked>
+                                    <label class="form-check-label" for="chkInsurance">ไฟล์แนบประกัน (Insurance)</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="medical_certificate" id="chkMedicalCertificate" checked>
