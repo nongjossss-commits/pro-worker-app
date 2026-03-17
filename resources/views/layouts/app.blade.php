@@ -1545,7 +1545,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Check if it's visible to determine "Select All" state
             const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper') || cb.closest('tr');
-            const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none');
+            const accordionCollapse = cb.closest('.accordion-collapse');
+            const isHiddenByAccordion = accordionCollapse && !accordionCollapse.classList.contains('show');
+            const isHidden = (cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none')) || isHiddenByAccordion;
 
             if (!isHidden) {
                 visibleCount++;
@@ -1640,7 +1642,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const visibleCheckboxes = Array.from(currentCheckboxes).filter(cb => {
                 const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper') || cb.closest('tr');
-                const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none');
+                const accordionCollapse = cb.closest('.accordion-collapse');
+                const isHiddenByAccordion = accordionCollapse && !accordionCollapse.classList.contains('show');
+                const isHidden = (cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none')) || isHiddenByAccordion;
                 return !isHidden;
             });
 
