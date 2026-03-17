@@ -858,6 +858,7 @@
             return;
         }
         document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+        if(document.getElementById('export_source_menu')) document.getElementById('export_source_menu').value = 'production';
         new bootstrap.Modal(document.getElementById('advancedExportModal')).show();
     });
 

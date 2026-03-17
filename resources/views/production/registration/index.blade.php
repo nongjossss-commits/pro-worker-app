@@ -2615,6 +2615,7 @@
                 }
 
                 document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                if(document.getElementById('export_source_menu')) document.getElementById('export_source_menu').value = 'registration';
                 const modalEl = document.getElementById('advancedExportModal');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
