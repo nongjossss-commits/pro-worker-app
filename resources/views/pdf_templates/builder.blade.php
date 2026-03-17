@@ -164,7 +164,7 @@
 
                                             <!-- Label Overlay -->
                                             <div class="absolute bottom-0 right-0 bg-white/80 text-[10px] px-1 rounded border border-red-200 text-red-800 font-bold flex gap-1">
-                                                <span>(Employer Stamp)</span>
+                                                <span x-text="getSignatureLabel(item.signatureGroup)"></span>
                                             </div>
                                         </div>
                                     </template>
@@ -273,11 +273,26 @@
                                     <option value="employee">Employee</option>
                                     <option value="employer">Employer 1 (Signer 1)</option>
                                     <option value="employer_2">Employer 2 (Signer 2)</option>
+                                    <option value="importer_1">Importer 1 (Signer 1)</option>
+                                    <option value="importer_2">Importer 2 (Signer 2)</option>
                                     <option value="delegate">ลายเซ็นพนักงานบริษัท (Delegate)</option>
                                     <option value="witness_1">Witness 1</option>
                                     <option value="witness_2">Witness 2</option>
                                     <option value="witness_3">Witness 3</option>
                                     <option value="witness_4">Witness 4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Stamp Settings -->
+                    <template x-if="items[editingIndex]?.type === 'stamp'">
+                        <div>
+                            <div class="mb-3">
+                                <label class="form-label">Stamp Group</label>
+                                <select x-model="items[editingIndex].signatureGroup" class="form-select">
+                                    <option value="employer_stamp">Employer Stamp</option>
+                                    <option value="importer_stamp">Importer Stamp</option>
                                 </select>
                             </div>
                         </div>
@@ -511,6 +526,8 @@
                     'importer.importerLicenseNo': 'LIC-12345',
                     'importer.importerSignerTh': 'นายผู้นำเข้า',
                     'importer.importerSignerEn': 'MR. IMPORTER',
+                    'importer.signer_2_name_th': 'นายผู้นำเข้า คนที่สอง',
+                    'importer.signer_2_name_en': 'MR. IMPORTER TWO',
                     'importer.address_th': '456 ถนนพญาไท แขวงวังใหม่ เขตปทุมวัน กรุงเทพฯ 10330',
                     'importer.address_en': '456 Phaya Thai Rd, Wang Mai, Pathum Wan, Bangkok 10330',
                     'importer.address_th.addrNo': '456',
@@ -655,6 +672,8 @@
                 { group: '{{ __('Importer Data') }}', key: 'importer.importerLicenseNo', label: '{{ __('Importer License No') }}' },
                 { group: '{{ __('Importer Data') }}', key: 'importer.importerSignerTh', label: '{{ __('Importer Signer (TH)') }}' },
                 { group: '{{ __('Importer Data') }}', key: 'importer.importerSignerEn', label: '{{ __('Importer Signer (EN)') }}' },
+                { group: '{{ __('Importer Data') }}', key: 'importer.signer_2_name_th', label: '{{ __('Importer Signer 2 (TH)') }}' },
+                { group: '{{ __('Importer Data') }}', key: 'importer.signer_2_name_en', label: '{{ __('Importer Signer 2 (EN)') }}' },
                 { group: '{{ __('Importer Data') }}', key: 'importer.address_th', label: '{{ __('Importer Address Full (TH)') }}' },
                 { group: '{{ __('Importer Data') }}', key: 'importer.address_en', label: '{{ __('Importer Address Full (EN)') }}' },
                 { group: '{{ __('Importer Data') }}', key: 'importer.address_th.addrNo', label: '{{ __('Importer Address (TH) - House No') }}' },
@@ -821,7 +840,7 @@
                         fontSize: 12,
                         autoFit: true, // Default to true
                         align: 'left', // Default align
-                        signatureGroup: data.type === 'signature' ? 'employee' : null,
+                        signatureGroup: data.type === 'signature' ? 'employee' : (data.type === 'stamp' ? 'employer_stamp' : null),
                         employeeIndex: (data.type !== 'static' && data.type !== 'stamp') ? this.currentEmployeeSlot : null
                     });
 
@@ -964,6 +983,10 @@
                     'employee': '(Employee)',
                     'employer': '(Signer 1)',
                     'employer_2': '(Signer 2)',
+                    'importer_1': '(Importer Signer 1)',
+                    'importer_2': '(Importer Signer 2)',
+                    'employer_stamp': '(Employer Stamp)',
+                    'importer_stamp': '(Importer Stamp)',
                     'delegate': '(Delegate)',
                     'witness_1': '(Witness 1)',
                     'witness_2': '(Witness 2)',

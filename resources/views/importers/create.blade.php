@@ -46,16 +46,70 @@
                 <input type="date" class="form-control" id="importerLicenseExpiryDate" name="importerLicenseExpiryDate">
             </div>
         </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="importerSignerTh" class="form-label">คนเซ็น (ไทย)</label>
-                <input type="text" class="form-control" id="importerSignerTh" name="importerSignerTh">
-            </div>
-            <div class="col-md-6">
-                <label for="importerSignerEn" class="form-label">คนเซ็น (อังกฤษ)</label>
-                <input type="text" class="form-control" id="importerSignerEn" name="importerSignerEn">
+        <h5 class="mb-3 text-primary mt-4">{{ __('Authorized Signatories & Stamp') }}</h5>
+        <!-- Signer 1 -->
+        <div class="card bg-light mb-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">คนเซ็น 1</h6>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="importerSignerTh" class="form-label">คนเซ็น (ไทย)</label>
+                        <input type="text" class="form-control" id="importerSignerTh" name="importerSignerTh">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="importerSignerEn" class="form-label">คนเซ็น (อังกฤษ)</label>
+                        <input type="text" class="form-control" id="importerSignerEn" name="importerSignerEn">
+                    </div>
+                </div>
+
+                @unless(auth()->user()->hasRole('employer'))
+                <div class="mb-3">
+                    <label for="signature_1_path" class="form-label">{{ __('Upload Signature Image') }}</label>
+                    <input type="file" class="form-control" id="signature_1_path" name="signature_1_path" accept="image/png, image/jpeg, image/jpg">
+                    <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+                </div>
+                @endunless
             </div>
         </div>
+
+        <!-- Signer 2 -->
+        <div class="card bg-light mb-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">คนเซ็น 2 (ไม่บังคับ)</h6>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="signer_2_name_th" class="form-label">คนเซ็น (ไทย)</label>
+                        <input type="text" class="form-control" id="signer_2_name_th" name="signer_2_name_th">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="signer_2_name_en" class="form-label">คนเซ็น (อังกฤษ)</label>
+                        <input type="text" class="form-control" id="signer_2_name_en" name="signer_2_name_en">
+                    </div>
+                </div>
+
+                @unless(auth()->user()->hasRole('employer'))
+                <div class="mb-3">
+                    <label for="signature_2_path" class="form-label">{{ __('Upload Signature Image') }}</label>
+                    <input type="file" class="form-control" id="signature_2_path" name="signature_2_path" accept="image/png, image/jpeg, image/jpg">
+                    <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+                </div>
+                @endunless
+            </div>
+        </div>
+
+        <!-- Stamp -->
+        @unless(auth()->user()->hasRole('employer'))
+        <div class="card bg-light mb-4">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">{{ __('Importer Stamp') }}</h6>
+                <div class="mb-3">
+                    <label for="importer_stamp_path" class="form-label">{{ __('Upload Stamp Image') }}</label>
+                    <input type="file" class="form-control" id="importer_stamp_path" name="importer_stamp_path" accept="image/png, image/jpeg, image/jpg">
+                    <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+                </div>
+            </div>
+        </div>
+        @endunless
 
         <hr>
         <h5>{{ __('Other Documents') }}</h5>
