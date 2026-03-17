@@ -1654,6 +1654,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $validated = $request->validate([
             'employee_ids' => 'required|string',
             'columns' => 'required|array|max:15',
+            'source_menu' => 'nullable|string',
         ]);
 
         $employeeIds = json_decode($validated['employee_ids'], true);
@@ -1663,7 +1664,15 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return back()->with('error', 'No employees selected.');
         }
 
-        $employees = Employee::whereIn('id', $employeeIds)->with('employer.addresses')->get();
+        $sourceMenu = $validated['source_menu'] ?? 'default';
+
+        $employeesQuery = Employee::whereIn('id', $employeeIds)->with('employer.addresses');
+        if (in_array($sourceMenu, ['production', 'workflow'])) {
+            $employeesQuery->with(['productionItems' => function($q) {
+                $q->latest('id');
+            }]);
+        }
+        $employees = $employeesQuery->get();
 
         // Define labels for the header
         $columnLabels = [
@@ -1861,6 +1870,20 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $fullAddress = implode(', ', $parts);
                     }
                     $cell->setValue($fullAddress);
+                } elseif ($col === 'request_number') {
+                    $val = $employee->request_number ?? '-';
+                    if ($sourceMenu === 'registration' && !empty($employee->registration_request_number)) {
+                        $val = $employee->registration_request_number;
+                    } elseif ($sourceMenu === 'renewal' && !empty($employee->renewal_request_number)) {
+                        $val = $employee->renewal_request_number;
+                    } elseif (in_array($sourceMenu, ['production', 'workflow'])) {
+                        // Grab the latest production item
+                        $item = $employee->productionItems->first();
+                        if ($item && !empty($item->request_number)) {
+                            $val = $item->request_number;
+                        }
+                    }
+                    $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                 } else {
                     $val = $employee->$col ?? '-';
                     // List of columns that might contain long numbers (e.g. 13 digits) and should be explicitly set as text
