@@ -94,9 +94,17 @@
                         <!-- Stamp -->
                         <div class="border rounded p-2 bg-white cursor-move hover:border-red-500 hover:bg-red-50 flex flex-col items-center justify-center gap-1 text-center"
                              draggable="true"
-                             @dragstart="dragStart($event, {type: 'stamp', label: 'Employer Stamp'})">
-                            <i class="bi bi-vinyl text-xl text-gray-600"></i>
-                            <span class="text-xs font-medium">Stamp</span>
+                             @dragstart="dragStart($event, {type: 'stamp', label: 'Employer Stamp', signatureGroup: 'employer_stamp'})">
+                            <i class="bi bi-patch-check text-xl text-red-500"></i>
+                            <span class="text-xs font-medium">Employer Stamp</span>
+                        </div>
+
+                        <!-- Importer Stamp -->
+                        <div class="border rounded p-2 bg-white cursor-move hover:border-red-600 hover:bg-red-100 flex flex-col items-center justify-center gap-1 text-center"
+                             draggable="true"
+                             @dragstart="dragStart($event, {type: 'stamp', label: 'Importer Stamp', signatureGroup: 'importer_stamp'})">
+                            <i class="bi bi-patch-check text-xl text-red-600"></i>
+                            <span class="text-xs font-medium">Importer Stamp</span>
                         </div>
                     </div>
                 </div>
@@ -273,10 +281,25 @@
                                     <option value="employee">Employee</option>
                                     <option value="employer">Employer 1 (Signer 1)</option>
                                     <option value="employer_2">Employer 2 (Signer 2)</option>
+                                    <option value="importer_1">Importer 1 (Signer 1)</option>
+                                    <option value="importer_2">Importer 2 (Signer 2)</option>
                                     <option value="witness_1">Witness 1</option>
                                     <option value="witness_2">Witness 2</option>
                                     <option value="witness_3">Witness 3</option>
                                     <option value="witness_4">Witness 4</option>
+                                </select>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Stamp Settings Form -->
+                    <template x-if="items[editingIndex]?.type === 'stamp'">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="form-label">Stamp Group</label>
+                                <select x-model="items[editingIndex].signatureGroup" class="form-select">
+                                    <option value="employer_stamp">Employer Stamp</option>
+                                    <option value="importer_stamp">Importer Stamp</option>
                                 </select>
                             </div>
                         </div>

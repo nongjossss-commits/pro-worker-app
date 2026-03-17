@@ -38,15 +38,27 @@ class ImporterController extends Controller
             'importerLicenseExpiryDate' => 'nullable|date',
             'importerSignerTh' => 'nullable|string|max:255',
             'importerSignerEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
             'importer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_1_desc' => 'nullable|string|max:255',
             'importer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_2_desc' => 'nullable|string|max:255',
             'importer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_3_desc' => 'nullable|string|max:255',
+            'signature_1_file' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'signature_2_file' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'importer_stamp_file' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
         ]);
 
         $data = $request->all();
+
+        // Remove signature temp fields from mass assignment
+        unset(
+            $data['signature_1_action'], $data['signature_1_file'], $data['signature_1_base64'],
+            $data['signature_2_action'], $data['signature_2_file'], $data['signature_2_base64'],
+            $data['importer_stamp_action'], $data['importer_stamp_file'], $data['importer_stamp_base64']
+        );
 
         $docFields = ['importer_doc_other_1', 'importer_doc_other_2', 'importer_doc_other_3'];
         foreach ($docFields as $field) {
@@ -112,15 +124,81 @@ class ImporterController extends Controller
             'importerLicenseExpiryDate' => 'nullable|date',
             'importerSignerTh' => 'nullable|string|max:255',
             'importerSignerEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
             'importer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_1_desc' => 'nullable|string|max:255',
             'importer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_2_desc' => 'nullable|string|max:255',
             'importer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_3_desc' => 'nullable|string|max:255',
+            'signature_1_file' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'signature_2_file' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
+            'importer_stamp_file' => 'nullable|file|mimes:jpg,jpeg,png|max:5120',
         ]);
 
         $data = $request->all();
+
+        // Remove signature temp fields from mass assignment
+        unset(
+            $data['signature_1_action'], $data['signature_1_file'], $data['signature_1_base64'],
+            $data['signature_2_action'], $data['signature_2_file'], $data['signature_2_base64'],
+            $data['importer_stamp_action'], $data['importer_stamp_file'], $data['importer_stamp_base64']
+        );
+
+        // Process Signature 1
+        $sig1Action = $request->input('signature_1_action', 'keep');
+        if ($sig1Action === 'upload' && $request->hasFile('signature_1_file')) {
+             if ($importer->signature_1_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->signature_1_path);
+             $data['signature_1_path'] = $request->file('signature_1_file')->store('signatures/importers', 'public');
+        } elseif ($sig1Action === 'draw' && $request->filled('signature_1_base64')) {
+             if ($importer->signature_1_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->signature_1_path);
+             $base64Image = $request->input('signature_1_base64');
+             $imageInfo = explode(";base64,", $base64Image);
+             $image = str_replace(' ', '+', $imageInfo[1] ?? '');
+             $filename = 'sig_1_' . time() . '.png';
+             $path = 'signatures/importers/' . $filename;
+             \Illuminate\Support\Facades\Storage::disk('public')->put($path, base64_decode($image));
+             $data['signature_1_path'] = $path;
+        } elseif ($sig1Action === 'generate') {
+             if ($importer->signature_1_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->signature_1_path);
+             $data['signature_1_path'] = null; // System will generate on-the-fly or we handle in PDF
+        }
+
+        // Process Signature 2
+        $sig2Action = $request->input('signature_2_action', 'keep');
+        if ($sig2Action === 'upload' && $request->hasFile('signature_2_file')) {
+             if ($importer->signature_2_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->signature_2_path);
+             $data['signature_2_path'] = $request->file('signature_2_file')->store('signatures/importers', 'public');
+        } elseif ($sig2Action === 'draw' && $request->filled('signature_2_base64')) {
+             if ($importer->signature_2_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->signature_2_path);
+             $base64Image = $request->input('signature_2_base64');
+             $imageInfo = explode(";base64,", $base64Image);
+             $image = str_replace(' ', '+', $imageInfo[1] ?? '');
+             $filename = 'sig_2_' . time() . '.png';
+             $path = 'signatures/importers/' . $filename;
+             \Illuminate\Support\Facades\Storage::disk('public')->put($path, base64_decode($image));
+             $data['signature_2_path'] = $path;
+        } elseif ($sig2Action === 'generate') {
+             if ($importer->signature_2_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->signature_2_path);
+             $data['signature_2_path'] = null;
+        }
+
+        // Process Importer Stamp
+        $stampAction = $request->input('importer_stamp_action', 'keep');
+        if ($stampAction === 'upload' && $request->hasFile('importer_stamp_file')) {
+            if ($importer->importer_stamp_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->importer_stamp_path);
+            $data['importer_stamp_path'] = $request->file('importer_stamp_file')->store('signatures/importers', 'public');
+        } elseif ($stampAction === 'draw' && $request->filled('importer_stamp_base64')) {
+            if ($importer->importer_stamp_path) \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->importer_stamp_path);
+            $base64Image = $request->input('importer_stamp_base64');
+            $imageInfo = explode(";base64,", $base64Image);
+            $image = str_replace(' ', '+', $imageInfo[1] ?? '');
+            $filename = 'stamp_' . time() . '.png';
+            $path = 'signatures/importers/' . $filename;
+            \Illuminate\Support\Facades\Storage::disk('public')->put($path, base64_decode($image));
+            $data['importer_stamp_path'] = $path;
+        }
 
         $docFields = ['importer_doc_other_1', 'importer_doc_other_2', 'importer_doc_other_3'];
         foreach ($docFields as $field) {
