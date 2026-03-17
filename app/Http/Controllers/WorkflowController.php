@@ -1032,6 +1032,7 @@ class WorkflowController extends Controller
         }
 
         $employees = $query->limit(20)->get();
+        $employees->append('photo_url');
 
         return response()->json($employees);
     }
@@ -1064,6 +1065,7 @@ class WorkflowController extends Controller
         }
 
         $employees = $query->limit(20)->get();
+        $employees->append('photo_url');
 
         return response()->json($employees);
     }
