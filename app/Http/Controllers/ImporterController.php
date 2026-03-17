@@ -38,6 +38,11 @@ class ImporterController extends Controller
             'importerLicenseExpiryDate' => 'nullable|date',
             'importerSignerTh' => 'nullable|string|max:255',
             'importerSignerEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
+            'signature_1_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'signature_2_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'importer_stamp_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'importer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_1_desc' => 'nullable|string|max:255',
             'importer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -50,6 +55,13 @@ class ImporterController extends Controller
 
         $docFields = ['importer_doc_other_1', 'importer_doc_other_2', 'importer_doc_other_3'];
         foreach ($docFields as $field) {
+            if ($request->hasFile($field)) {
+                $data[$field] = $request->file($field)->store('importer_documents', 'public');
+            }
+        }
+
+        $imageFields = ['signature_1_path', 'signature_2_path', 'importer_stamp_path'];
+        foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 $data[$field] = $request->file($field)->store('importer_documents', 'public');
             }
@@ -112,6 +124,11 @@ class ImporterController extends Controller
             'importerLicenseExpiryDate' => 'nullable|date',
             'importerSignerTh' => 'nullable|string|max:255',
             'importerSignerEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
+            'signature_1_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'signature_2_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'importer_stamp_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'importer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'importer_doc_other_1_desc' => 'nullable|string|max:255',
             'importer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -124,6 +141,16 @@ class ImporterController extends Controller
 
         $docFields = ['importer_doc_other_1', 'importer_doc_other_2', 'importer_doc_other_3'];
         foreach ($docFields as $field) {
+            if ($request->hasFile($field)) {
+                if ($importer->{$field}) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->{$field});
+                }
+                $data[$field] = $request->file($field)->store('importer_documents', 'public');
+            }
+        }
+
+        $imageFields = ['signature_1_path', 'signature_2_path', 'importer_stamp_path'];
+        foreach ($imageFields as $field) {
             if ($request->hasFile($field)) {
                 if ($importer->{$field}) {
                     \Illuminate\Support\Facades\Storage::disk('public')->delete($importer->{$field});

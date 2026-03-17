@@ -47,16 +47,85 @@
                 <input type="date" class="form-control" id="importerLicenseExpiryDate" name="importerLicenseExpiryDate" value="{{ old('importerLicenseExpiryDate', $importer->importerLicenseExpiryDate) }}">
             </div>
         </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="importerSignerTh" class="form-label">คนเซ็น (ไทย)</label>
-                <input type="text" class="form-control" id="importerSignerTh" name="importerSignerTh" value="{{ old('importerSignerTh', $importer->importerSignerTh) }}">
-            </div>
-            <div class="col-md-6">
-                <label for="importerSignerEn" class="form-label">คนเซ็น (อังกฤษ)</label>
-                <input type="text" class="form-control" id="importerSignerEn" name="importerSignerEn" value="{{ old('importerSignerEn', $importer->importerSignerEn) }}">
+        <h5 class="mb-3 text-primary mt-4">{{ __('Authorized Signatories & Stamp') }}</h5>
+        <!-- Signer 1 -->
+        <div class="card bg-light mb-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">คนเซ็น 1</h6>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="importerSignerTh" class="form-label">คนเซ็น (ไทย)</label>
+                        <input type="text" class="form-control" id="importerSignerTh" name="importerSignerTh" value="{{ old('importerSignerTh', $importer->importerSignerTh) }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="importerSignerEn" class="form-label">คนเซ็น (อังกฤษ)</label>
+                        <input type="text" class="form-control" id="importerSignerEn" name="importerSignerEn" value="{{ old('importerSignerEn', $importer->importerSignerEn) }}">
+                    </div>
+                </div>
+
+                @unless(auth()->user()->hasRole('employer'))
+                <div class="mb-3">
+                    <label for="signature_1_path" class="form-label">{{ __('Upload Signature Image') }}</label>
+                    <input type="file" class="form-control" id="signature_1_path" name="signature_1_path" accept="image/png, image/jpeg, image/jpg">
+                    <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+                    @if($importer->signature_1_path)
+                        <div class="mt-2 border rounded bg-white d-flex justify-content-center align-items-center overflow-hidden" style="width: 180px; height: 100px;">
+                            <img src="{{ Storage::url($importer->signature_1_path) }}" class="img-fluid" style="max-height: 100%;">
+                        </div>
+                    @endif
+                </div>
+                @endunless
             </div>
         </div>
+
+        <!-- Signer 2 -->
+        <div class="card bg-light mb-3">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">คนเซ็น 2 (ไม่บังคับ)</h6>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="signer_2_name_th" class="form-label">คนเซ็น (ไทย)</label>
+                        <input type="text" class="form-control" id="signer_2_name_th" name="signer_2_name_th" value="{{ old('signer_2_name_th', $importer->signer_2_name_th) }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="signer_2_name_en" class="form-label">คนเซ็น (อังกฤษ)</label>
+                        <input type="text" class="form-control" id="signer_2_name_en" name="signer_2_name_en" value="{{ old('signer_2_name_en', $importer->signer_2_name_en) }}">
+                    </div>
+                </div>
+
+                @unless(auth()->user()->hasRole('employer'))
+                <div class="mb-3">
+                    <label for="signature_2_path" class="form-label">{{ __('Upload Signature Image') }}</label>
+                    <input type="file" class="form-control" id="signature_2_path" name="signature_2_path" accept="image/png, image/jpeg, image/jpg">
+                    <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+                    @if($importer->signature_2_path)
+                        <div class="mt-2 border rounded bg-white d-flex justify-content-center align-items-center overflow-hidden" style="width: 180px; height: 100px;">
+                            <img src="{{ Storage::url($importer->signature_2_path) }}" class="img-fluid" style="max-height: 100%;">
+                        </div>
+                    @endif
+                </div>
+                @endunless
+            </div>
+        </div>
+
+        <!-- Stamp -->
+        @unless(auth()->user()->hasRole('employer'))
+        <div class="card bg-light mb-4">
+            <div class="card-body">
+                <h6 class="card-title text-muted fw-bold">{{ __('Importer Stamp') }}</h6>
+                <div class="mb-3">
+                    <label for="importer_stamp_path" class="form-label">{{ __('Upload Stamp Image') }}</label>
+                    <input type="file" class="form-control" id="importer_stamp_path" name="importer_stamp_path" accept="image/png, image/jpeg, image/jpg">
+                    <div class="form-text">{{ __('Max size: 2MB. Allowed formats: PNG, JPG.') }}</div>
+                    @if($importer->importer_stamp_path)
+                        <div class="mt-2 border rounded bg-white d-flex justify-content-center align-items-center overflow-hidden" style="width: 100px; height: 100px;">
+                            <img src="{{ Storage::url($importer->importer_stamp_path) }}" class="img-fluid" style="max-height: 100%;">
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endunless
 
         <hr>
         <h5>{{ __('Other Documents') }}</h5>
