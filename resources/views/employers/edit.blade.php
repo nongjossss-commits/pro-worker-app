@@ -342,7 +342,7 @@
             </div>
             <div class="col-md-6">
                 <label for="minimum_wage" class="form-label">{{ __('Minimum Wage') }}</label>
-                <input type="text" class="form-control" id="minimum_wage" name="minimum_wage" value="{{ old('minimum_wage') }}">
+                <input type="text" class="form-control" id="minimum_wage" name="minimum_wage" value="{{ old('minimum_wage', $employer->minimum_wage) }}">
             </div>
         </div>
 

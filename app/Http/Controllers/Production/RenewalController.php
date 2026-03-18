@@ -836,6 +836,9 @@ class RenewalController extends Controller
             'employeeNameTh' => 'nullable|string|max:255',
             'employeeTitleEn' => 'nullable|string|max:255',
             'employeeNameEn' => 'required|string|max:255',
+            'department' => 'nullable|string|max:255',
+            'height' => 'nullable|string|max:255',
+            'weight' => 'nullable|string|max:255',
             'father_name' => 'nullable|string|max:255',
             'mother_name' => 'nullable|string|max:255',
             'employeeGender' => 'nullable|string|max:255',
@@ -845,13 +848,17 @@ class RenewalController extends Controller
             'employeeNationality' => 'nullable|string|max:255',
             'passport_type_cambodia' => 'nullable|string|max:255',
             'employeePassport' => 'nullable|string|max:255',
+            'passport_issue_place' => 'nullable|string|max:255',
             'passport_issue_date' => 'nullable|date',
             'passportExpiryDate' => 'nullable|date',
             'pinkCardNo' => 'nullable|string|max:255',
             'visaType' => 'nullable|string|max:255',
+            'visa_issue_place' => 'nullable|string|max:255',
             'visaExpiryDate' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
             'job_description' => 'nullable|string',
+            'outsource_code' => 'nullable|string|max:255',
+            'employee_reference_id' => 'nullable|string|max:255',
             'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
             'workPermitExpiryDate' => 'nullable|date',
@@ -864,25 +871,36 @@ class RenewalController extends Controller
             'employee_id_number' => 'nullable|string|max:255',
             'tax_id_number' => 'nullable|string|max:255',
             'employer_employee_id' => 'nullable|string|max:255',
-            'employee_reference_id' => 'nullable|string|max:255',
             'insurance_type' => 'nullable|string|max:255',
             'insurance_detail' => 'nullable|string',
             'insurance_expiry_date' => 'nullable|date',
             'social_security_number' => 'nullable|string|max:255',
+            'sso_issue_date' => 'nullable|date',
+            'sso_expiry_date' => 'nullable|date',
             'insurance_detail_hospital' => 'nullable|string|max:255',
             'insurance_detail_private' => 'nullable|string|max:255',
             'insurance_expiry_date_private' => 'nullable|string|max:255',
             'insurance_expiry_date_hospital' => 'nullable|string|max:255',
             'insurance_detail_social' => 'nullable|string|max:255',
+            'medical_hospital_name' => 'nullable|string|max:255',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:255',
             'employeeEmail' => 'nullable|email|max:255|unique:employees,email',
             'employeePassword' => 'nullable|string|min:8',
             'other_doc_1_desc' => 'nullable|string|max:255',
             'other_doc_2_desc' => 'nullable|string|max:255',
             'other_doc_3_desc' => 'nullable|string|max:255',
             'other_doc_4_desc' => 'nullable|string|max:255',
+            'other_doc_5_desc' => 'nullable|string|max:255',
+            'other_doc_6_desc' => 'nullable|string|max:255',
+            'other_doc_7_desc' => 'nullable|string|max:255',
+            'other_doc_8_desc' => 'nullable|string|max:255',
+            'other_doc_9_desc' => 'nullable|string|max:255',
+            'other_doc_10_desc' => 'nullable|string|max:255',
             'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'medical_certificate_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
@@ -895,6 +913,12 @@ class RenewalController extends Controller
             'employee_doc_10' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_11' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_12' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_13' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_14' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_15' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_16' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_17' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employee_doc_18' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
         ]);
 
         // Forced Status
@@ -902,22 +926,35 @@ class RenewalController extends Controller
 
         // Insurance Mapping (Same as EmployeeController)
         $validated['insuranceType'] = $validated['insurance_type'] ?? null;
+
         if ($validated['insuranceType'] === 'ประกันสังคม') {
             $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
             $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+            $validated['sso_issue_date'] = $validated['sso_issue_date'] ?? null;
+            $validated['sso_expiry_date'] = $validated['sso_expiry_date'] ?? null;
+            $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
         } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
+            $validated['insuranceCompany'] = $validated['insurance_detail_private'] ?? null;
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
             $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
             $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
             $validated['socialSecurityNumber'] = null;
+            $validated['insuranceCompany'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         } else {
             $validated['socialSecurityNumber'] = null;
             $validated['hospitalName'] = null;
+            $validated['insuranceCompany'] = null;
             $validated['insuranceExpiryDate'] = null;
+            $validated['sso_issue_date'] = null;
+            $validated['sso_expiry_date'] = null;
         }
 
         // Prevent email from being overwritten with null during partial updates
@@ -944,10 +981,12 @@ class RenewalController extends Controller
 
         // File Uploads
         $fileFields = [
-            'employeePhoto', 'insurance_document_path','insurance_document_path_private',
+            'employeePhoto', 'insurance_document_path','insurance_document_path_private', 'medical_certificate_path',
             'employee_doc_1', 'employee_doc_2', 'employee_doc_3', 'employee_doc_4',
             'employee_doc_5', 'employee_doc_6', 'employee_doc_7', 'employee_doc_8',
-            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12'
+            'employee_doc_9', 'employee_doc_10', 'employee_doc_11', 'employee_doc_12',
+            'employee_doc_13', 'employee_doc_14', 'employee_doc_15', 'employee_doc_16',
+            'employee_doc_17', 'employee_doc_18'
         ];
 
         foreach ($fileFields as $field) {
