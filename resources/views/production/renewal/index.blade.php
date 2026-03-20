@@ -1306,6 +1306,7 @@
 
     // --- Lazy Loading Logic ---
     window.loadedEmployers = {};
+    window.employerCurrentPages = {};
 
     window.loadEmployees = function(employerId, pageUrl = null) {
         // Only skip if already loaded AND not a pagination request
@@ -1314,17 +1315,23 @@
         const container = document.getElementById(`employee-list-${employerId}`);
         if(pageUrl) {
             container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div><span class="ms-2 small text-muted">Loading employees...</span></div>';
+            // Save the pageUrl for this employer so it remembers its state
+            window.employerCurrentPages[employerId] = pageUrl;
         }
 
         // Base URL for the new AJAX route
-        let baseUrl = pageUrl || `{{ route('production.renewal.index') }}/employer/${employerId}/employees`;
+        // Use the saved page state if available, otherwise default to first page
+        let baseUrl = pageUrl || window.employerCurrentPages[employerId] || `{{ route('production.renewal.index') }}/employer/${employerId}/employees`;
 
         // Append current search/filter params
         const url = new URL(baseUrl, window.location.origin);
         const currentParams = new URLSearchParams(window.location.search);
+
+        // Strip out the main window 'page' param so it doesn't bleed into the AJAX URL
+        // If the main window is on page 2, we do NOT want this employer's initial load to be on page 2
+        // unless it was specifically saved via employerCurrentPages
         currentParams.forEach((value, key) => {
-             // Don't overwrite 'page' if we have it in the pageUrl
-             if(key !== 'page' || !url.searchParams.has('page')) {
+             if(key !== 'page') {
                  url.searchParams.append(key, value);
              }
         });
