@@ -472,7 +472,10 @@ class="row">
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
                                     <td class="text-end" x-text="formatCurrency(t.amount)"></td>
-                                    <td class="text-end" x-text="formatCurrency(t.paid_amount)"></td>
+                                    <td class="text-end">
+                                        <span x-text="formatCurrency(t.paid_amount || 0)"></span><br>
+                                        <small class="text-muted" x-show="t.amount - (t.paid_amount || 0) > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - (t.paid_amount || 0)))"></span></small>
+                                    </td>
                                     <td class="text-center">
                                         <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
                                     </td>
@@ -521,7 +524,10 @@ class="row">
                                     </td>
                                     <td x-text="formatDate(t.due_date)"></td>
                                     <td class="text-end text-primary" x-text="formatCurrency(t.amount)"></td>
-                                    <td class="text-end" x-text="formatCurrency(t.paid_amount)"></td>
+                                    <td class="text-end">
+                                        <span x-text="formatCurrency(t.paid_amount)"></span><br>
+                                        <small class="text-muted" x-show="t.amount - t.paid_amount > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - t.paid_amount))"></span></small>
+                                    </td>
                                     <td class="text-center">
                                         <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
                                     </td>
@@ -923,43 +929,116 @@ class="row">
 
     <!-- Update Payment Modal -->
     <div class="modal fade" :id="'updatePaymentModal-' + productionId" tabindex="-1" x-ref="payModal">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h6 class="modal-title">Update Payment & Items</h6>
+                    <h6 class="modal-title">Payment History & Details</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form @submit.prevent="updateTransaction">
-                        <div class="row">
-                             <div class="col-md-6">
-                                <div class="mb-2">
-                                    <label class="form-label small">Paid Amount</label>
-                                    <input type="number" step="0.01" class="form-control form-control-sm" x-model="editingTransaction.paid_amount">
-                                    <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 0.75rem;">
-                                         <span>Total: <span x-text="formatCurrency(editingTransaction.amount)"></span></span>
-                                         <span :class="(editingTransaction.amount - (parseFloat(editingTransaction.paid_amount) || 0)) > 0.01 ? 'text-danger fw-bold' : 'text-success'">
-                                             Remaining: <span x-text="formatCurrency(Math.max(0, editingTransaction.amount - (parseFloat(editingTransaction.paid_amount) || 0)))"></span>
-                                         </span>
+                    <div class="row">
+                        <!-- Left Column: Payments History -->
+                        <div class="col-md-5">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Payments</h6>
+
+                            <!-- Payment List -->
+                            <div class="list-group list-group-flush mb-3 border rounded shadow-sm" style="max-height: 250px; overflow-y: auto;">
+                                <template x-for="pay in editingTransaction.payments" :key="pay.id">
+                                    <div class="list-group-item py-2 px-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <div class="fw-bold text-success" x-text="formatCurrency(pay.amount)"></div>
+                                            <div class="text-muted small" x-text="formatDate(pay.paid_at)"></div>
+                                        </div>
+                                        <div class="small text-muted mb-1 d-flex justify-content-between">
+                                            <span x-text="pay.bank_account ? pay.bank_account.bank_name : 'No Account'"></span>
+                                            <span>
+                                                <a x-show="pay.slip_path" href="#" @click.prevent="viewPDF('/storage/' + pay.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
+                                            </span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mt-2">
+                                            <div class="small fst-italic text-muted" x-text="pay.notes"></div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deletePayment(pay.id)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="!editingTransaction.payments || editingTransaction.payments.length === 0" class="text-center text-muted p-3 small">
+                                    No payments recorded yet.
+                                </div>
+                            </div>
+
+                            <!-- Add New Payment Form -->
+                            <div class="card shadow-sm border-success">
+                                <div class="card-header bg-success text-white py-1 small fw-bold">Add Payment</div>
+                                <div class="card-body p-2">
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label small mb-0">Amount</label>
+                                            <input type="number" step="0.01" class="form-control form-control-sm" x-model="newPayment.amount">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small mb-0">Date</label>
+                                            <input type="date" class="form-control form-control-sm" x-model="newPayment.paid_at">
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-0">Account</label>
+                                        <select class="form-select form-select-sm" x-model="newPayment.bank_account_id">
+                                            <option value="">-- Select Account --</option>
+                                            @foreach(\App\Models\BankAccount::where('is_active', true)->get() as $bank)
+                                                <option value="{{ $bank->id }}">{{ $bank->bank_name }} {{ $bank->account_number ? '('.$bank->account_number.')' : '' }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-0">Slip</label>
+                                        <input type="file" class="form-control form-control-sm" @change="handlePaymentSlipSelect" accept=".jpg,.jpeg,.png,.pdf">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-0">Notes</label>
+                                        <input type="text" class="form-control form-control-sm" x-model="newPayment.notes">
+                                    </div>
+                                    <button type="button" class="btn btn-success btn-sm w-100" @click="addPayment" :disabled="isSavingPayment">
+                                        <span x-show="isSavingPayment" class="spinner-border spinner-border-sm me-1"></span>
+                                        Save Payment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Transaction Options & Items -->
+                        <div class="col-md-7 border-start ps-3">
+                            <form @submit.prevent="updateTransaction">
+                                <h6 class="fw-bold mb-3 border-bottom pb-2">Transaction Options</h6>
+
+                                <!-- Summary Display -->
+                                <div class="d-flex justify-content-between small mb-3 bg-light p-2 rounded border">
+                                    <div><span class="text-muted">Total:</span> <span class="fw-bold" x-text="formatCurrency(editingTransaction.amount)"></span></div>
+                                    <div><span class="text-muted">Paid:</span> <span class="fw-bold text-success" x-text="formatCurrency(editingTransaction.paid_amount || 0)"></span></div>
+                                    <div><span class="text-muted">Remaining:</span> <span class="fw-bold text-danger" x-text="formatCurrency(Math.max(0, editingTransaction.amount - (editingTransaction.paid_amount || 0)))"></span></div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-6 mb-2">
+                                        <label class="form-label small">Status Override</label>
+                                        <select class="form-select form-select-sm" x-model="editingTransaction.status">
+                                            <option value="pending">Pending</option>
+                                            <option value="partial">Partial</option>
+                                            <option value="paid">Paid</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <label class="form-label small">Receive to Account (Legacy)</label>
+                                        <select class="form-select form-select-sm" x-model="editingTransaction.bank_account_id" disabled title="Please update account via the Payments tab below.">
+                                            <option value="">-- Legacy Field --</option>
+                                            @foreach(\App\Models\BankAccount::where('is_active', true)->get() as $bank)
+                                                <option value="{{ $bank->id }}">{{ $bank->bank_name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
-                                <div class="mb-2">
-                                    <label class="form-label small">Status</label>
-                                    <select class="form-select form-select-sm" x-model="editingTransaction.status">
-                                        <option value="pending">Pending</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="paid">Paid</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label small">Receive to Account</label>
-                                    <select class="form-select form-select-sm" x-model="editingTransaction.bank_account_id">
-                                        <option value="">-- Select Account --</option>
-                                        @foreach(\App\Models\BankAccount::where('is_active', true)->get() as $bank)
-                                            <option value="{{ $bank->id }}">{{ $bank->bank_name }} {{ $bank->account_number ? '('.$bank->account_number.')' : '' }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+
                                 <div class="mb-2" x-show="editingTransaction.type !== 'advance_payment' && editingTransaction.type !== 'advance_receipt'">
                                     <label class="form-label small">WHT (หัก ณ ที่จ่าย 3%)</label>
                                     <select class="form-select form-select-sm mb-1" x-model="editingTransaction.wht_status">

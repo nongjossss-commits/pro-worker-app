@@ -56,8 +56,11 @@ if (typeof window.financialManager === 'undefined') {
             // Transaction State
             transactions: initialData.transactions || [],
             newTransaction: { type: 'installment', amount: '', due_date: '', notes: '' },
-            editingTransaction: {},
+            editingTransaction: { payments: [] },
             selectedFile: null,
+            newPayment: { amount: '', paid_at: '', bank_account_id: '', notes: '' },
+            paymentSlipFile: null,
+            isSavingPayment: false,
 
             // Separate Saving States
             isSavingSettings: false,
@@ -573,6 +576,15 @@ if (typeof window.financialManager === 'undefined') {
                 this.editingTransaction.withholding_tax_amount = t.withholding_tax_amount || '';
                 this.editingTransaction.bank_account_id = t.bank_account_id || '';
                 this.editingTransaction.wht_file = null;
+
+                // Initialize default payment
+                let defaultAmount = (t.amount - (t.paid_amount || 0)).toFixed(2);
+                if (defaultAmount < 0) defaultAmount = 0;
+
+                let today = new Date().toISOString().split('T')[0];
+                this.newPayment = { amount: defaultAmount, paid_at: today, bank_account_id: '', notes: '' };
+                this.paymentSlipFile = null;
+
                 if (t.items) {
                     this.selectedTransactionItems = t.items.map(i => i.id);
                 } else {
@@ -586,10 +598,86 @@ if (typeof window.financialManager === 'undefined') {
                 this.editingTransaction.wht_file = e.target.files[0];
             },
 
+            handlePaymentSlipSelect(e) {
+                this.paymentSlipFile = e.target.files[0];
+            },
+
+            addPayment() {
+                if(!this.newPayment.amount || !this.newPayment.paid_at) {
+                    Swal.fire('Warning', 'Amount and Date are required.', 'warning');
+                    return;
+                }
+
+                this.isSavingPayment = true;
+                const formData = new FormData();
+                formData.append('amount', this.newPayment.amount);
+                formData.append('paid_at', this.newPayment.paid_at);
+                formData.append('bank_account_id', this.newPayment.bank_account_id || '');
+                formData.append('notes', this.newPayment.notes || '');
+                if (this.paymentSlipFile) {
+                    formData.append('slip_file', this.paymentSlipFile);
+                }
+
+                fetch(`/production/transactions/${this.editingTransaction.id}/payments`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
+                        if(idx !== -1) this.transactions[idx] = data.transaction;
+
+                        this.editingTransaction = { ...data.transaction };
+
+                        // Reset form
+                        let defaultAmount = (data.transaction.amount - (data.transaction.paid_amount || 0)).toFixed(2);
+                        if (defaultAmount < 0) defaultAmount = 0;
+                        this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '' };
+                        this.paymentSlipFile = null;
+
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Added', showConfirmButton: false, timer: 3000 });
+                    } else {
+                        throw new Error(data.message || 'Error adding payment');
+                    }
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'))
+                .finally(() => this.isSavingPayment = false);
+            },
+
+            deletePayment(paymentId) {
+                Swal.fire({
+                    title: 'Delete this payment?',
+                    text: 'This will revert the paid amount and bank balances.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`/production/payments/${paymentId}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if(data.success) {
+                                const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
+                                if(idx !== -1) this.transactions[idx] = data.transaction;
+                                this.editingTransaction = { ...data.transaction };
+                                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 3000 });
+                            } else {
+                                throw new Error(data.message || 'Error deleting payment');
+                            }
+                        })
+                        .catch(err => Swal.fire('Error', err.message, 'error'));
+                    }
+                });
+            },
+
             updateTransaction() {
                 const formData = new FormData();
                 formData.append('_method', 'PUT');
-                formData.append('paid_amount', this.editingTransaction.paid_amount);
                 formData.append('status', this.editingTransaction.status);
                 formData.append('notes', this.editingTransaction.notes || '');
                 formData.append('bank_account_id', this.editingTransaction.bank_account_id || '');
