@@ -658,6 +658,10 @@ class WorkflowController extends Controller
         $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId);
 
+        if ($request->boolean('hide_cancelled', true)) {
+            $query->where('status', '!=', 'cancelled');
+        }
+
         // 1. History Filter (Default: Hide completed > 24h)
         // Unless we are filtering specifically for "Completed", we keep this rule.
         // But if user clicks "Completed" pill, they might expect ALL completed?
@@ -1864,6 +1868,10 @@ class WorkflowController extends Controller
 
         $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId);
+
+        if ($request->boolean('hide_cancelled', true)) {
+            $query->where('status', '!=', 'cancelled');
+        }
 
         // Status/Step Filter
         if ($request->has('filter') && $request->filter) {

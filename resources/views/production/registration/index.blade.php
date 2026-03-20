@@ -312,6 +312,9 @@
                     <button class="btn btn-secondary fw-bold" onclick="openTrashModal()">
                         <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
                     </button>
+                    <button class="btn btn-outline-secondary fw-bold ms-2" id="btn-global-toggle-cancelled" onclick="toggleGlobalCancelled()">
+                        <i class="bi bi-eye-slash-fill me-1"></i> {{ __('Hide Cancelled') }}
+                    </button>
                     @endcan
                 </div>
             </div>
@@ -1555,53 +1558,90 @@
     });
 
     // --- Global & Employer Cancelled Toggle ---
-    window.globalCancelledHidden = false; // Default: show cancelled
+    window.globalCancelledHidden = true; // Default: hide cancelled
     window.employerCancelledHidden = {}; // Per employer state
 
-    window.toggleGlobalCancelled = function() {
-        window.globalCancelledHidden = !window.globalCancelledHidden;
-        const btn = document.getElementById('btn-global-toggle-cancelled');
-
-        if (window.globalCancelledHidden) {
-            btn.innerHTML = '<i class="bi bi-eye-fill me-1"></i> {{ __('Show Cancelled') }}';
-            // Hide all cancelled employers
-            document.querySelectorAll('.employer-card-container[data-is-cancelled="true"]').forEach(el => el.classList.add('d-none'));
-            // Hide all cancelled employees globally
-            document.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.add('d-none'));
-        } else {
-            btn.innerHTML = '<i class="bi bi-eye-slash-fill me-1"></i> {{ __('Hide Cancelled') }}';
-            // Show all cancelled employers
-            document.querySelectorAll('.employer-card-container[data-is-cancelled="true"]').forEach(el => el.classList.remove('d-none'));
-            // Show all cancelled employees globally
-            document.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.remove('d-none'));
+    // Initialize global button state on load
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('hide_cancelled')) {
+            window.globalCancelledHidden = urlParams.get('hide_cancelled') === '1';
         }
+
+        const btn = document.getElementById('btn-global-toggle-cancelled');
+        if (btn) {
+            if (window.globalCancelledHidden) {
+                btn.innerHTML = '<i class="bi bi-eye-fill me-1"></i> {{ __('Show Cancelled') }}';
+            } else {
+                btn.innerHTML = '<i class="bi bi-eye-slash-fill me-1"></i> {{ __('Hide Cancelled') }}';
+            }
+        }
+    });
+
+    window.toggleGlobalCancelled = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentHide = urlParams.has('hide_cancelled') ? urlParams.get('hide_cancelled') : '1';
+        if (currentHide === '1') {
+            urlParams.set('hide_cancelled', '0');
+        } else {
+            urlParams.set('hide_cancelled', '1');
+        }
+        window.location.search = urlParams.toString();
     }
 
     window.toggleEmployerCancelled = function(employerId) {
         if (typeof window.employerCancelledHidden[employerId] === 'undefined') {
-            window.employerCancelledHidden[employerId] = false;
+            window.employerCancelledHidden[employerId] = window.globalCancelledHidden;
         }
 
         window.employerCancelledHidden[employerId] = !window.employerCancelledHidden[employerId];
         const btn = document.getElementById(`btn-employer-toggle-cancelled-${employerId}`);
-        const listContainer = document.getElementById(`employee-list-${employerId}`);
 
         if (window.employerCancelledHidden[employerId]) {
             btn.innerHTML = '<i class="bi bi-eye"></i>';
             btn.title = '{{ __('Show Cancelled Items') }}';
             btn.classList.add('active', 'bg-secondary', 'text-white');
-            // Hide cancelled employees in this employer container
-            if (listContainer) {
-                listContainer.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.add('d-none'));
-            }
         } else {
             btn.innerHTML = '<i class="bi bi-eye-slash"></i>';
             btn.title = '{{ __('Hide Cancelled Items') }}';
             btn.classList.remove('active', 'bg-secondary', 'text-white');
-            // Show cancelled employees in this employer container
-            if (listContainer) {
-                listContainer.querySelectorAll('.employee-card-wrapper[data-status="registration_cancelled"]').forEach(el => el.classList.remove('d-none'));
+        }
+
+        // Re-load the employee list for this employer with the specific hide_cancelled param
+        const container = document.getElementById(`employee-list-${employerId}`);
+        if(container) {
+            container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div><span class="ms-2 small text-muted">Loading employees...</span></div>';
+
+            let baseUrl = `{{ route('production.registration.index') }}/employer/${employerId}/employees`;
+            const url = new URL(baseUrl, window.location.origin);
+            const currentParams = new URLSearchParams(window.location.search);
+            currentParams.forEach((value, key) => {
+                 if(key !== 'page' || !url.searchParams.has('page')) {
+                     url.searchParams.append(key, value);
+                 }
+            });
+            // Override the global hide_cancelled for this specific employer
+            url.searchParams.set('hide_cancelled', window.employerCancelledHidden[employerId] ? '1' : '0');
+
+            const perPageSelect = document.getElementById(`perPage-${employerId}`);
+            if(perPageSelect && !url.searchParams.has('per_page')) {
+                url.searchParams.append('per_page', perPageSelect.value);
             }
+
+            fetch(url)
+            .then(res => res.text())
+            .then(html => {
+                container.innerHTML = html;
+                window.loadedEmployers[employerId] = true;
+                if (typeof applyFilters === 'function') applyFilters();
+                if (window.refreshGlobalSelectionUI) {
+                    window.refreshGlobalSelectionUI();
+                }
+            })
+            .catch(err => {
+                container.innerHTML = `<div class="text-danger p-3">Failed to load employees.</div>`;
+                console.error(err);
+            });
         }
     }
 
@@ -1889,10 +1929,10 @@
                 const cardWrapper = document.getElementById(`employee-card-${cb.value}`);
                 const isVisible = cardWrapper && !cardWrapper.classList.contains('d-none');
 
-                // Explicitly check status data attribute to prevent selecting non-pending (Saved/Cancelled)
-                // even if they are somehow visible or accessible.
+                // Explicitly check status data attribute to prevent selecting non-pending (Saved)
+                // We allow selecting cancelled if they are currently visible
                 const status = cardWrapper.dataset.status;
-                const isPending = (status === 'registration_pending');
+                const isPending = (status === 'registration_pending' || status === 'registration_cancelled');
 
                 if (isVisible && isPending) {
                     if(cb.checked !== isChecked) {

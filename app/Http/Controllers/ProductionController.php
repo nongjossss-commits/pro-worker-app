@@ -841,6 +841,10 @@ class ProductionController extends Controller
         $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
             ->where('production_order_id', $orderId);
 
+        if ($request->boolean('hide_cancelled', true)) {
+            $query->where('status', '!=', 'cancelled');
+        }
+
         // Status/Step Filter
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;

@@ -524,9 +524,13 @@ class RenewalController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $query->where(function($q) {
-                $q->whereIn('status', ['renewal_pending', 'renewal_cancelled'])
-                  ->orWhere(function($sub) {
+        $query->where(function($q) use ($request) {
+                if ($request->boolean('hide_cancelled', true)) {
+                    $q->where('status', 'renewal_pending');
+                } else {
+                    $q->whereIn('status', ['renewal_pending', 'renewal_cancelled']);
+                }
+                $q->orWhere(function($sub) {
                       $sub->where('status', 'renewal_completed')
                           ->where(function($t) {
                               $t->whereNull('resolution_completed_at')
