@@ -426,6 +426,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For status updates
         Route::post('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For file uploads (method spoofing)
         Route::delete('production/transactions/{id}', [FinancialController::class, 'destroyTransaction']);
+        Route::post('production/transactions/{id}/payments', [FinancialController::class, 'storePayment']);
+        Route::post('production/payments/{id}', [FinancialController::class, 'updatePayment']);
+        Route::delete('production/payments/{id}', [FinancialController::class, 'destroyPayment']);
     });
     // Replaced by dedicated ProductionDocumentController
     // Route::get('production/{id}/documents/{type}', [FinancialController::class, 'generateDocument']);

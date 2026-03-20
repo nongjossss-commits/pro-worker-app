@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProductionOrder;
 use App\Models\FinancialTransaction;
+use App\Models\FinancialPayment;
 use App\Models\CompanyProfile;
 use App\Models\ProductionItem;
 use Illuminate\Http\Request;
@@ -96,10 +97,9 @@ class FinancialController extends Controller
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $transaction = FinancialTransaction::findOrFail($id);
+        $transaction = FinancialTransaction::with('payments')->findOrFail($id);
 
         $rules = [
-            'paid_amount' => 'nullable|numeric',
             'status' => 'nullable|in:pending,partial,paid,overdue',
             'notes' => 'nullable|string',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
@@ -108,13 +108,11 @@ class FinancialController extends Controller
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
             'wht_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
             'item_ids' => 'nullable', // Can be array or string "1,2,3" if FormData
-            'employee_ids' => 'nullable' // Can be array or string
+            'employee_ids' => 'nullable', // Can be array or string
+            'amount' => 'nullable|numeric|min:0'
         ];
 
         $request->validate($rules);
-
-        $oldPaidAmount = $transaction->paid_amount;
-        $oldBankAccountId = $transaction->bank_account_id;
 
         if ($request->has('notes')) {
             $transaction->notes = $request->notes;
@@ -152,36 +150,20 @@ class FinancialController extends Controller
             $transaction->amount = $request->amount;
         }
 
-        if ($request->has('paid_amount')) {
-            $transaction->paid_amount = $request->paid_amount;
-            if (!$transaction->paid_at && $transaction->paid_amount > 0) {
-                $transaction->paid_at = now();
-            }
-        }
-
         if ($request->has('status')) {
             $transaction->status = $request->status;
         }
 
-        // Auto-update status if fully paid
-        if ($transaction->paid_amount >= $transaction->amount && $transaction->status !== 'paid') {
+        // Auto-update status if fully paid (based on current paid_amount)
+        if ($transaction->paid_amount > 0 && $transaction->paid_amount >= $transaction->amount && $transaction->status !== 'paid') {
             $transaction->status = 'paid';
-            $transaction->paid_at = now(); // Ensure date is set
+        } elseif ($transaction->paid_amount > 0 && $transaction->paid_amount < $transaction->amount && $transaction->status !== 'partial') {
+            $transaction->status = 'partial';
+        } elseif ($transaction->paid_amount == 0 && $transaction->status !== 'pending') {
+            $transaction->status = 'pending';
         }
 
         $transaction->save();
-
-        // Handle Bank Account Balance Logic
-        if ($transaction->paid_amount != $oldPaidAmount || $transaction->bank_account_id != $oldBankAccountId) {
-            // Revert old balance
-            if ($oldBankAccountId && $oldPaidAmount > 0) {
-                \App\Models\BankAccount::where('id', $oldBankAccountId)->decrement('current_balance', $oldPaidAmount);
-            }
-            // Add new balance
-            if ($transaction->bank_account_id && $transaction->paid_amount > 0) {
-                \App\Models\BankAccount::where('id', $transaction->bank_account_id)->increment('current_balance', $transaction->paid_amount);
-            }
-        }
 
         // Sync Items
         // We need to merge item_ids and employee_ids logic
@@ -231,8 +213,162 @@ class FinancialController extends Controller
             }
         }
 
-        $transaction->load('items.employee');
+        $transaction->load(['items.employee', 'payments', 'bankAccount']);
 
+        return response()->json(['success' => true, 'transaction' => $transaction]);
+    }
+
+    /**
+     * Store a payment for a transaction.
+     */
+    public function storePayment(Request $request, $transactionId)
+    {
+         if (!auth()->user()->can('manage-finance') && !auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
+             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $transaction = FinancialTransaction::findOrFail($transactionId);
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'paid_at' => 'required|date',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'notes' => 'nullable|string'
+        ]);
+
+        $slipPath = null;
+        if ($request->hasFile('slip_file')) {
+            $slipPath = $request->file('slip_file')->store('financial_slips', 'public');
+        }
+
+        $payment = $transaction->payments()->create([
+            'amount' => $request->amount,
+            'paid_at' => \Carbon\Carbon::parse($request->paid_at),
+            'bank_account_id' => $request->bank_account_id,
+            'slip_path' => $slipPath,
+            'notes' => $request->notes,
+            'created_by' => auth()->id()
+        ]);
+
+        // Update transaction paid amount
+        $transaction->paid_amount += $payment->amount;
+        $transaction->paid_at = now();
+
+        if ($transaction->paid_amount >= $transaction->amount) {
+            $transaction->status = 'paid';
+        } else {
+            $transaction->status = 'partial';
+        }
+        $transaction->save();
+
+        // Update Bank Balance
+        if ($payment->bank_account_id) {
+            \App\Models\BankAccount::where('id', $payment->bank_account_id)
+                ->increment('current_balance', $payment->amount);
+        }
+
+        $transaction->load(['items.employee', 'payments', 'bankAccount']);
+        return response()->json(['success' => true, 'transaction' => $transaction]);
+    }
+
+    /**
+     * Update an existing payment.
+     */
+    public function updatePayment(Request $request, $paymentId)
+    {
+         if (!auth()->user()->can('manage-finance') && !auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
+             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $payment = FinancialPayment::with('transaction')->findOrFail($paymentId);
+        $transaction = $payment->transaction;
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'paid_at' => 'required|date',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'notes' => 'nullable|string'
+        ]);
+
+        $oldAmount = $payment->amount;
+        $oldBankAccountId = $payment->bank_account_id;
+
+        // Revert old bank balance
+        if ($oldBankAccountId) {
+            \App\Models\BankAccount::where('id', $oldBankAccountId)->decrement('current_balance', $oldAmount);
+        }
+
+        if ($request->hasFile('slip_file')) {
+            if ($payment->slip_path) {
+                Storage::disk('public')->delete($payment->slip_path);
+            }
+            $payment->slip_path = $request->file('slip_file')->store('financial_slips', 'public');
+        }
+
+        $payment->amount = $request->amount;
+        $payment->paid_at = \Carbon\Carbon::parse($request->paid_at);
+        $payment->bank_account_id = $request->bank_account_id;
+        $payment->notes = $request->notes;
+        $payment->save();
+
+        // Apply new bank balance
+        if ($payment->bank_account_id) {
+            \App\Models\BankAccount::where('id', $payment->bank_account_id)
+                ->increment('current_balance', $payment->amount);
+        }
+
+        // Recalculate transaction totals
+        $newTotalPaid = $transaction->payments()->sum('amount');
+        $transaction->paid_amount = $newTotalPaid;
+
+        if ($newTotalPaid >= $transaction->amount) {
+            $transaction->status = 'paid';
+        } else if ($newTotalPaid > 0) {
+            $transaction->status = 'partial';
+        } else {
+            $transaction->status = 'pending';
+        }
+        $transaction->save();
+
+        $transaction->load(['items.employee', 'payments', 'bankAccount']);
+        return response()->json(['success' => true, 'transaction' => $transaction]);
+    }
+
+    /**
+     * Delete an existing payment.
+     */
+    public function destroyPayment($paymentId)
+    {
+         if (!auth()->user()->can('manage-finance') && !auth()->user()->hasAnyRole(['admin', 'super-admin'])) {
+             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $payment = FinancialPayment::with('transaction')->findOrFail($paymentId);
+        $transaction = $payment->transaction;
+
+        // Revert bank balance
+        if ($payment->bank_account_id) {
+            \App\Models\BankAccount::where('id', $payment->bank_account_id)->decrement('current_balance', $payment->amount);
+        }
+
+        $payment->delete();
+
+        // Recalculate transaction totals
+        $newTotalPaid = $transaction->payments()->sum('amount');
+        $transaction->paid_amount = $newTotalPaid;
+
+        if ($newTotalPaid >= $transaction->amount) {
+            $transaction->status = 'paid';
+        } else if ($newTotalPaid > 0) {
+            $transaction->status = 'partial';
+        } else {
+            $transaction->status = 'pending';
+        }
+        $transaction->save();
+
+        $transaction->load(['items.employee', 'payments', 'bankAccount']);
         return response()->json(['success' => true, 'transaction' => $transaction]);
     }
 
@@ -290,14 +426,16 @@ class FinancialController extends Controller
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $transaction = FinancialTransaction::findOrFail($id);
+        $transaction = FinancialTransaction::with('payments')->findOrFail($id);
 
-        // Revert bank balance
-        if ($transaction->bank_account_id && $transaction->paid_amount > 0) {
-            \App\Models\BankAccount::where('id', $transaction->bank_account_id)->decrement('current_balance', $transaction->paid_amount);
+        // Revert bank balances for all associated payments
+        foreach ($transaction->payments as $payment) {
+            if ($payment->bank_account_id) {
+                \App\Models\BankAccount::where('id', $payment->bank_account_id)->decrement('current_balance', $payment->amount);
+            }
         }
 
-        $transaction->delete();
+        $transaction->delete(); // payments will cascade via DB if configured, but let's be safe.
 
         return response()->json(['success' => true]);
     }

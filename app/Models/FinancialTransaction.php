@@ -58,4 +58,9 @@ class FinancialTransaction extends Model
     {
         return $this->belongsTo(FinancialProfile::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(FinancialPayment::class);
+    }
 }
