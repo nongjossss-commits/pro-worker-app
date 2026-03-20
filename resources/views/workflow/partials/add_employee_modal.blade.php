@@ -227,6 +227,19 @@
         const globalRes = document.getElementById('global-results');
         if(globalRes) globalRes.innerHTML = '<div class="text-center text-muted py-3">{{ __("Type to search...") }}</div>';
 
+        // Reset Manual Employee Photo Preview and Cropper State
+        const employeePhotoPreview = document.getElementById('employeePhotoPreview');
+        if (employeePhotoPreview) {
+            employeePhotoPreview.src = 'https://placehold.co/150x180/f8fafc/6c757d?text=Photo';
+        }
+        if (window.cropperManager) {
+            window.cropperManager.originalFile = null;
+            window.cropperManager.editedFile = null;
+            window.cropperManager.mimeType = null;
+            window.cropperManager.targetInputId = null;
+            window.cropperManager.targetPreviewId = null;
+        }
+
         // Toggle Employer Search Section
         const employerSearchSection = document.getElementById('section-select-employer');
 
