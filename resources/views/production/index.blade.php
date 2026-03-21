@@ -248,16 +248,22 @@
     @endif
 
     {{-- Bulk Action Bar --}}
-    <div class="bulk-action-bar mb-3 align-items-center gap-2" style="display: none;" id="bulkActionBar">
+    <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+         style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;"
+         id="bulkActionBar"
+         draggable="true"
+         ondragstart="window.startDragBulk(event)">
         <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="select-all-checkbox">
-            <label class="form-check-label" for="select-all-checkbox">
+            <label class="form-check-label fw-bold" for="select-all-checkbox">
                 {{ __('Select All') }} (<span id="selected-count">0</span>)
             </label>
         </div>
 
+        <div class="vr mx-2"></div>
+
         <div class="dropdown">
-            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="bulkActionDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="bulkActionDropdown" data-bs-toggle="dropdown" aria-expanded="false" disabled>
                 {{ __('Actions') }}
             </button>
             <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
@@ -271,11 +277,14 @@
                 @endcan
             </ul>
         </div>
-        <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
-        <button class="btn btn-sm btn-info text-white ms-2" id="btn-view-selected" onclick="window.openViewSelectedModal()">
+        <button class="btn btn-sm btn-outline-danger ms-2" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+        <button class="btn btn-sm btn-info text-white" id="btn-view-selected" onclick="window.openViewSelectedModal()">
             <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
             <span class="badge bg-white text-info ms-1" id="view-selected-count">0</span>
         </button>
+        <div class="ms-auto text-muted small d-none d-md-block">
+            <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
+        </div>
     </div>
 
     {{-- Accordion List --}}
@@ -795,13 +804,14 @@
                 // Determine if employee is eligible for selection
                 const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
 
-                // Only select visible, non-cancelled cards
+                // Only select visible cards (allow cancelled if visible)
                 const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled'));
                 const status = cardWrapper ? cardWrapper.dataset.status : '';
-                const isPending = status !== 'cancelled' && status !== 'registration_cancelled' && status !== 'renewal_cancelled';
+                // Since user wants to be able to select cancelled if shown, remove strict isPending check
+                const isSelectable = status !== 'completed'; // Maybe exclude completed if desired, but let's just use visibility
 
                 // Pre-production uses status = pending usually, but generally we just exclude cancelled
-                if (!isHidden && isPending) {
+                if (!isHidden && isSelectable) {
                     if(cb.checked !== isChecked) {
                         cb.checked = isChecked;
                         cb.dispatchEvent(new Event('change', { bubbles: true }));
@@ -824,8 +834,8 @@
                 const cw = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
                 const isHidden = cw && (cw.classList.contains('d-none') || cw.classList.contains('hide-cancelled'));
                 const status = cw ? cw.dataset.status : '';
-                const isPending = status !== 'cancelled' && status !== 'registration_cancelled' && status !== 'renewal_cancelled';
-                return !isHidden && isPending;
+                const isSelectable = status !== 'completed';
+                return !isHidden && isSelectable;
             });
 
             if (relevantCheckboxes.length > 0) {
