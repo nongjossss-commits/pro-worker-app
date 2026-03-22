@@ -94,6 +94,16 @@ class ProcessDownload implements ShouldQueue
                     }
                 }
 
+                // Ensure Thai fonts exist
+                $thaiFonts = ['THSarabunNew.php', 'THSarabunNew.z', 'THSarabunNew.ttf'];
+                $publicFontPath = public_path('fonts/');
+
+                foreach ($thaiFonts as $fontFile) {
+                    if (!file_exists($fontPath . $fontFile) && file_exists($publicFontPath . $fontFile)) {
+                        @copy($publicFontPath . $fontFile, $fontPath . $fontFile);
+                    }
+                }
+
                 define('FPDF_FONTPATH', $fontPath);
             }
 
