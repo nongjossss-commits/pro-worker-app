@@ -475,7 +475,7 @@
                     :label="$i . '. ' . $label"
                     :value="$employee->{$docField}"
                     :pdfRoute="route('employees.documents.pdf', ['employee' => $employee->id, 'field' => $docField])"
-                    :description="in_array($i, $descSlots) ? 'edit_' . $descField : null"
+                    :description="in_array($i, $descSlots) ? $descField : null"
                     :descriptionValue="in_array($i, $descSlots) ? $employee->{$descField} : null"
                 />
             </div>

@@ -316,6 +316,12 @@
             'employee_doc_10': 'เอกสารอื่นๆ 2',
             'employee_doc_11': 'เอกสารอื่นๆ 3',
             'employee_doc_12': 'เอกสารอื่นๆ 4',
+            'employee_doc_13': 'เอกสารอื่นๆ 5',
+            'employee_doc_14': 'เอกสารอื่นๆ 6',
+            'employee_doc_15': 'เอกสารอื่นๆ 7',
+            'employee_doc_16': 'เอกสารอื่นๆ 8',
+            'employee_doc_17': 'เอกสารอื่นๆ 9',
+            'employee_doc_18': 'เอกสารอื่นๆ 10',
             'insurance_document_path_social': 'เอกสารประกันสังคม',
             'insurance_document_path_hospital': 'เอกสารประกัน รพ.',
             'insurance_document_path_private': 'เอกสารประกันเอกชน'
@@ -332,6 +338,12 @@
                 if (key === 'employee_doc_10' && data.other_doc_2_desc) displayLabel += ': ' + data.other_doc_2_desc;
                 if (key === 'employee_doc_11' && data.other_doc_3_desc) displayLabel += ': ' + data.other_doc_3_desc;
                 if (key === 'employee_doc_12' && data.other_doc_4_desc) displayLabel += ': ' + data.other_doc_4_desc;
+                if (key === 'employee_doc_13' && data.other_doc_5_desc) displayLabel += ': ' + data.other_doc_5_desc;
+                if (key === 'employee_doc_14' && data.other_doc_6_desc) displayLabel += ': ' + data.other_doc_6_desc;
+                if (key === 'employee_doc_15' && data.other_doc_7_desc) displayLabel += ': ' + data.other_doc_7_desc;
+                if (key === 'employee_doc_16' && data.other_doc_8_desc) displayLabel += ': ' + data.other_doc_8_desc;
+                if (key === 'employee_doc_17' && data.other_doc_9_desc) displayLabel += ': ' + data.other_doc_9_desc;
+                if (key === 'employee_doc_18' && data.other_doc_10_desc) displayLabel += ': ' + data.other_doc_10_desc;
 
 
                 const col = document.createElement('div');
