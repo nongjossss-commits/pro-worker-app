@@ -166,15 +166,6 @@ class ProcessDownload implements ShouldQueue
 
             $safeName = $this->sanitizeFileName($rawName) . '_' . $employee->id;
 
-            // Prepare Header Text (for stamping)
-            if ($hasThaiFont && !empty($employee->employeeNameTh)) {
-                $nameDisplay = @iconv('UTF-8', 'cp874//IGNORE', $employee->employeeNameTh);
-            } else {
-                $nameDisplay = $employee->employeeNameEn ?? 'Employee ID: ' . $employee->id;
-                $nameDisplay = preg_replace('/[^\x20-\x7E]/', '', $nameDisplay);
-            }
-            $headerText = $nameDisplay . "   ID: " . $employee->id;
-
             // If singleFolder is true, we use an empty folder name (root),
             // but we might want to prefix the file with the employee name to avoid collisions.
             // If separated, we use the safeName as the folder.
@@ -182,7 +173,7 @@ class ProcessDownload implements ShouldQueue
             $filePrefix = $singleFolder ? $safeName . '_' : '';
 
             foreach ($this->selectedFiles as $fileType) {
-                $this->addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix, $headerText, $hasThaiFont);
+                $this->addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix, $hasThaiFont);
             }
         }
 
@@ -190,7 +181,7 @@ class ProcessDownload implements ShouldQueue
         return 'downloads/' . $zipFileName;
     }
 
-    protected function addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix = '', $headerText = '', $hasThaiFont = false)
+    protected function addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix = '', $hasThaiFont = false)
     {
         $attributes = $this->fileMap[$fileType] ?? [];
         if (!is_array($attributes)) {
@@ -214,7 +205,7 @@ class ProcessDownload implements ShouldQueue
 
                     if ($shouldStamp && in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'])) {
                         // Stamp the file and add the stamped version. Note that it returns a PDF.
-                        $stampedFilePath = $this->stampFileForZip($filePath, $headerText, $hasThaiFont);
+                        $stampedFilePath = $this->stampFileForZip($filePath, $employee, $hasThaiFont);
                         if ($stampedFilePath) {
                             // The stamped file is now a PDF, so we should change the extension in the zip path
                             // if it was an image. If it was already a PDF, it just overwrites.
@@ -262,24 +253,9 @@ class ProcessDownload implements ShouldQueue
             }
 
             foreach ($employees as $employee) {
-                $employeeNameTh = $employee->employeeNameTh;
-                $employeeNameEn = $employee->employeeNameEn;
-
-                // Prepare Header Text
-                if ($hasThaiFont && $employeeNameTh) {
-                    // Convert UTF-8 to cp874 (TIS-620) for FPDF
-                    $nameDisplay = @iconv('UTF-8', 'cp874//IGNORE', $employeeNameTh);
-                } else {
-                    $nameDisplay = $employeeNameEn ?? 'Employee ID: ' . $employee->id;
-                    // Sanitize fallback
-                    $nameDisplay = preg_replace('/[^\x20-\x7E]/', '', $nameDisplay);
-                }
-
-                $headerText = $nameDisplay . "   ID: " . $employee->id;
-
                 foreach ($this->selectedFiles as $fileType) {
                     try {
-                        $this->addFilesToPdf($pdf, $employee, $fileType, $headerText, $hasThaiFont);
+                        $this->addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont);
                     } catch (Throwable $e) {
                         Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
                     }
@@ -301,7 +277,7 @@ class ProcessDownload implements ShouldQueue
         }
     }
 
-    protected function addFilesToPdf($pdf, $employee, $fileType, $headerText, $hasThaiFont)
+    protected function addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont)
     {
         $attributes = $this->fileMap[$fileType] ?? [];
         if (!is_array($attributes)) {
@@ -327,7 +303,7 @@ class ProcessDownload implements ShouldQueue
                                     $pdf->useTemplate($tplIdx);
 
                                     // Add Header
-                                    $this->drawHeader($pdf, $headerText, $hasThaiFont);
+                                    $this->drawHeader($pdf, $employee, $hasThaiFont);
 
                                 } catch (Throwable $e) {
                                     // Log and skip bad pages
@@ -376,7 +352,7 @@ class ProcessDownload implements ShouldQueue
                             $pdf->Image($normalizedPath, $x, $y, $newW, $newH);
 
                             // Add Header
-                            $this->drawHeader($pdf, $headerText, $hasThaiFont);
+                            $this->drawHeader($pdf, $employee, $hasThaiFont);
                         }
                     } catch (Throwable $e) {
                         Log::error("Failed to merge file $originalFilePath: " . $e->getMessage());
@@ -386,43 +362,50 @@ class ProcessDownload implements ShouldQueue
         }
     }
 
-    protected function drawHeader($pdf, $headerText, $hasThaiFont)
+    protected function drawHeader($pdf, $employee, $hasThaiFont)
     {
         // Save current position
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
-        // Always try to use THSarabunNew if possible since we force iconv to cp874 later.
-        // FPDF handles missing font gracefully or throws error. We assume THSarabunNew is setup.
+        $pageWidth = $pdf->GetPageWidth();
+        $margin = 10;
+        // Total available width minus margins
+        $totalAvailableW = $pageWidth - ($margin * 2);
+        // Half of the page width for left/right split
+        $halfW = $totalAvailableW / 2;
+
+        // Always try to use THSarabunNew if possible
+        $baseFontSize = 14;
         try {
-             $pdf->SetFont('THSarabunNew', '', 14);
-             $hasThaiFont = true;
+            $pdf->SetFont('THSarabunNew', '', $baseFontSize);
+            $hasThaiFont = true;
         } catch (Throwable $e) {
-             $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', 14);
+            $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', $baseFontSize);
         }
 
-        // 1. Stamp Company Info (Top Left)
+        $topY = 2; // Fixed top Y position
+
+        // 1. Stamp Company Info (Left Half)
         if (!empty($this->options['stamp_company_info']) && $this->downloadProfile) {
-            $currentX = 10;
-            $topY = 2; // Moved up from 5 to 2 to prevent overlapping
+            $currentX = $margin;
+            $logoW = 0;
 
             // Draw Logo
             if ($this->downloadProfile->logo_path) {
                 $logoPath = Storage::disk('public')->path($this->downloadProfile->logo_path);
                 if (file_exists($logoPath)) {
-                    // Try to add the logo image. Max height 10mm.
                     try {
-                        // Image(file, x, y, w, h). If w=0, it's auto-calculated to maintain aspect ratio
                         $pdf->Image($logoPath, $currentX, $topY, 0, 10);
-
-                        // We need to know the width to offset the text
                         list($imgW, $imgH) = getimagesize($logoPath);
                         if ($imgH > 0) {
                             $ratio = $imgW / $imgH;
                             $renderedW = 10 * $ratio;
-                            $currentX += $renderedW + 3; // Add 3mm padding
+                            $logoW = $renderedW + 3; // Add padding
+                            $currentX += $logoW;
                         } else {
-                            $currentX += 30; // Fallback spacing
+                            $logoW = 30; // Fallback
+                            $currentX += $logoW;
                         }
                     } catch (Throwable $e) {
                         Log::warning("Failed to stamp logo for profile {$this->downloadProfile->id}: " . $e->getMessage());
@@ -430,29 +413,59 @@ class ProcessDownload implements ShouldQueue
                 }
             }
 
-            // Draw Company Name and Phone Number
-            $companyText = $this->downloadProfile->name;
+            // Company Text
+            $companyTextRaw = $this->downloadProfile->name;
             if ($this->downloadProfile->phone_number) {
-                $companyText .= ' โทร. ' . $this->downloadProfile->phone_number;
+                $companyTextRaw .= ' โทร. ' . $this->downloadProfile->phone_number;
             }
 
-            // Always attempt to iconv if we are relying on FPDF default methods,
-            // but FPDF with THSarabunNew strictly needs cp874 or TIS-620.
-            // As per memory, strictly use 'cp874//IGNORE' for Thai fonts in FPDF.
-            $companyText = @iconv('UTF-8', 'cp874//IGNORE', $companyText);
+            $companyTextDisplay = @iconv('UTF-8', 'cp874//IGNORE', $companyTextRaw);
+            $availableCompanyW = $halfW - $logoW;
 
-            // Position for text (centered vertically relative to logo if logo exists, or just top)
-            $textY = $topY + 1; // Approx middle of 10mm, minus cell padding compensation
+            // Auto-size font for Company Info
+            $fontSize = $baseFontSize;
+            $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', $fontSize);
+            while ($fontSize > 6 && $pdf->GetStringWidth($companyTextDisplay) > $availableCompanyW - 2) {
+                $fontSize -= 0.5;
+                $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', $fontSize);
+            }
+
+            $textY = $topY + 1;
             $pdf->SetXY($currentX, $textY);
-            $pdf->Cell(0, 10, $companyText, 0, 0, 'L');
+            $pdf->Cell($availableCompanyW, 10, $companyTextDisplay, 0, 0, 'L');
         }
 
-        // 2. Stamp Employee Info (Top Right)
+        // 2. Stamp Employee Info (Right Half)
         if (!empty($this->options['stamp_employee_info']) || !isset($this->options['stamp_employee_info'])) {
-            $pageWidth = $pdf->GetPageWidth();
-            // Position Y=2, align Right, with some margin
-            $pdf->SetXY(10, 2);
-            $pdf->Cell($pageWidth - 20, 10, $headerText, 0, 0, 'R');
+            // Restore base font for measuring
+            $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', $baseFontSize);
+
+            $employeeNameTh = $employee->employeeNameTh;
+            $employeeNameEn = $employee->employeeNameEn;
+
+            // Combine ID and Name directly as raw UTF-8 string first
+            $employeeNameStr = '';
+            if ($hasThaiFont && $employeeNameTh) {
+                $employeeNameStr = $employeeNameTh;
+            } else {
+                $employeeNameStr = preg_replace('/[^\x20-\x7E]/', '', $employeeNameEn ?? 'Employee');
+            }
+            $headerTextRaw = $employeeNameStr . "   ID: " . $employee->id;
+
+            // Convert the ENTIRE right-side string using iconv correctly
+            $headerTextDisplay = @iconv('UTF-8', 'cp874//IGNORE', $headerTextRaw);
+
+            // Auto-size font for Employee Info
+            $fontSize = $baseFontSize;
+            $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', $fontSize);
+            while ($fontSize > 6 && $pdf->GetStringWidth($headerTextDisplay) > $halfW - 2) {
+                $fontSize -= 0.5;
+                $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', $fontSize);
+            }
+
+            // Draw in the right half
+            $pdf->SetXY($margin + $halfW, $topY + 1);
+            $pdf->Cell($halfW, 10, $headerTextDisplay, 0, 0, 'R');
         }
 
         // Restore position
@@ -510,7 +523,7 @@ class ProcessDownload implements ShouldQueue
     /**
      * Creates a temporary PDF version of an image or modifies an existing PDF to include stamps for ZIP downloads.
      */
-    protected function stampFileForZip($filePath, $headerText, $hasThaiFont)
+    protected function stampFileForZip($filePath, $employee, $hasThaiFont)
     {
         try {
             $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
@@ -534,7 +547,7 @@ class ProcessDownload implements ShouldQueue
                     $size = $pdf->getTemplateSize($tplIdx);
                     $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                     $pdf->useTemplate($tplIdx);
-                    $this->drawHeader($pdf, $headerText, $hasThaiFont);
+                    $this->drawHeader($pdf, $employee, $hasThaiFont);
                 }
             } else {
                 // It's an image. Normalize it first
@@ -566,7 +579,7 @@ class ProcessDownload implements ShouldQueue
                 $y = $topMargin + ($writableH - $newH) / 2;
 
                 $pdf->Image($normalizedPath, $x, $y, $newW, $newH);
-                $this->drawHeader($pdf, $headerText, $hasThaiFont);
+                $this->drawHeader($pdf, $employee, $hasThaiFont);
             }
 
             $tempPath = tempnam(sys_get_temp_dir(), 'stamped_') . '.pdf';
