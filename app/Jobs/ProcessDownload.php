@@ -168,7 +168,7 @@ class ProcessDownload implements ShouldQueue
 
             // Prepare Header Text (for stamping)
             if ($hasThaiFont && !empty($employee->employeeNameTh)) {
-                $nameDisplay = @iconv('UTF-8', 'cp874//TRANSLIT', $employee->employeeNameTh);
+                $nameDisplay = @iconv('UTF-8', 'TIS-620//IGNORE', $employee->employeeNameTh);
             } else {
                 $nameDisplay = $employee->employeeNameEn ?? 'Employee ID: ' . $employee->id;
                 $nameDisplay = preg_replace('/[^\x20-\x7E]/', '', $nameDisplay);
@@ -269,7 +269,7 @@ class ProcessDownload implements ShouldQueue
                 // Prepare Header Text
                 if ($hasThaiFont && $employeeNameTh) {
                     // Convert UTF-8 to cp874 (TIS-620) for FPDF
-                    $nameDisplay = @iconv('UTF-8', 'cp874//TRANSLIT', $employeeNameTh);
+                    $nameDisplay = @iconv('UTF-8', 'TIS-620//IGNORE', $employeeNameTh);
                 } else {
                     $nameDisplay = $employeeNameEn ?? 'Employee ID: ' . $employee->id;
                     // Sanitize fallback
@@ -398,25 +398,25 @@ class ProcessDownload implements ShouldQueue
         // 1. Stamp Company Info (Top Left)
         if (!empty($this->options['stamp_company_info']) && $this->downloadProfile) {
             $currentX = 10;
-            $topY = 5;
+            $topY = 2; // Moved up from 5 to 2 to prevent overlapping
 
             // Draw Logo
             if ($this->downloadProfile->logo_path) {
                 $logoPath = Storage::disk('public')->path($this->downloadProfile->logo_path);
                 if (file_exists($logoPath)) {
-                    // Try to add the logo image. Max height 15mm.
+                    // Try to add the logo image. Max height 10mm.
                     try {
                         // Image(file, x, y, w, h). If w=0, it's auto-calculated to maintain aspect ratio
-                        $pdf->Image($logoPath, $currentX, $topY, 0, 15);
+                        $pdf->Image($logoPath, $currentX, $topY, 0, 10);
 
                         // We need to know the width to offset the text
                         list($imgW, $imgH) = getimagesize($logoPath);
                         if ($imgH > 0) {
                             $ratio = $imgW / $imgH;
-                            $renderedW = 15 * $ratio;
-                            $currentX += $renderedW + 5; // Add 5mm padding
+                            $renderedW = 10 * $ratio;
+                            $currentX += $renderedW + 3; // Add 3mm padding
                         } else {
-                            $currentX += 40; // Fallback spacing
+                            $currentX += 30; // Fallback spacing
                         }
                     } catch (Throwable $e) {
                         Log::warning("Failed to stamp logo for profile {$this->downloadProfile->id}: " . $e->getMessage());
@@ -431,11 +431,11 @@ class ProcessDownload implements ShouldQueue
             }
 
             if ($hasThaiFont) {
-                $companyText = @iconv('UTF-8', 'cp874//TRANSLIT', $companyText);
+                $companyText = @iconv('UTF-8', 'TIS-620//IGNORE', $companyText);
             }
 
             // Position for text (centered vertically relative to logo if logo exists, or just top)
-            $textY = $topY + 5; // Approx middle of 15mm
+            $textY = $topY + 1; // Approx middle of 10mm, minus cell padding compensation
             $pdf->SetXY($currentX, $textY);
             $pdf->Cell(0, 10, $companyText, 0, 0, 'L');
         }
@@ -443,8 +443,8 @@ class ProcessDownload implements ShouldQueue
         // 2. Stamp Employee Info (Top Right)
         if (!empty($this->options['stamp_employee_info']) || !isset($this->options['stamp_employee_info'])) {
             $pageWidth = $pdf->GetPageWidth();
-            // Position Y=5, align Right, with some margin
-            $pdf->SetXY(10, 5);
+            // Position Y=2, align Right, with some margin
+            $pdf->SetXY(10, 2);
             $pdf->Cell($pageWidth - 20, 10, $headerText, 0, 0, 'R');
         }
 
