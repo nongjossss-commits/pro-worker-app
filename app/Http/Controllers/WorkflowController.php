@@ -1115,47 +1115,79 @@ class WorkflowController extends Controller
                 $grouped = $employees->groupBy('employer_id');
                 $updatedOrderIds = [];
 
-                foreach ($grouped as $employerId => $emps) {
-                    if (!$employerId) continue;
+                $duplicateMessages = [];
 
-                    // Find or Create Order for this Employer
-                    $employer = $emps->first()->employer; // Optimization: use relation from first item
+                // Pre-validate all employees for duplicates BEFORE making any database changes
+                foreach ($employees as $emp) {
+                     $hasActiveWorkflow = ProductionItem::where('employee_id', $emp->id)
+                        ->whereHas('order', function($q) use ($workTypeId) {
+                             $q->where('work_type_id', $workTypeId)
+                               ->where('status', '!=', 'cancelled');
+                        })
+                        ->whereNotIn('status', ['completed', 'cancelled'])
+                        ->with('order')
+                        ->first();
 
-                    $order = ProductionOrder::firstOrCreate(
-                        [
-                            'employer_id' => $employerId,
-                            'work_type_id' => $workTypeId,
-                            'status' => $targetStatus
-                        ],
-                        [
-                            'type' => 'employer',
-                            'project_name' => $workType->name . ' - ' . ($employer->employerNameTh ?? 'Unknown') . ($isPreProduction ? ' (Prep)' : ''),
-                            'created_by' => auth()->id()
-                        ]
-                    );
+                     if ($hasActiveWorkflow) {
+                         $name = $emp->employeeNameEn ?? $emp->employeeNameTh ?? 'Unknown';
+                         $statusStr = $hasActiveWorkflow->order->status === 'pre_production' ? 'Pre-Production' : 'Workflow';
+                         $duplicateMessages[] = "$name is already in $statusStr";
+                     }
+                }
 
-                    $updatedOrderIds[] = $order->id;
+                if (!empty($duplicateMessages)) {
+                    $errorMsg = implode(', ', $duplicateMessages) . ". Please complete or cancel the existing process first.";
 
-                    foreach ($emps as $emp) {
-                         // Check duplicates (Locking)
-                         $hasActive = ProductionItem::where('employee_id', $emp->id)
-                            ->whereNotIn('status', ['completed', 'cancelled'])
-                            ->exists();
-
-                         if ($hasActive) continue;
-
-                         $exists = ProductionItem::where('production_order_id', $order->id)
-                            ->where('employee_id', $emp->id)->exists();
-
-                         if (!$exists) {
-                             ProductionItem::create([
-                                'production_order_id' => $order->id,
-                                'employee_id' => $emp->id,
-                                'group_name' => $request->group_name ?? null,
-                                'status' => 'pending'
-                             ]);
-                         }
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => $errorMsg
+                        ]);
                     }
+                    return back()->with('error', $errorMsg);
+                }
+
+                DB::beginTransaction();
+                try {
+                    foreach ($grouped as $employerId => $emps) {
+                        if (!$employerId) continue;
+
+                        // Find or Create Order for this Employer
+                        $employer = $emps->first()->employer; // Optimization: use relation from first item
+
+                        $order = ProductionOrder::firstOrCreate(
+                            [
+                                'employer_id' => $employerId,
+                                'work_type_id' => $workTypeId,
+                                'status' => $targetStatus
+                            ],
+                            [
+                                'type' => 'employer',
+                                'project_name' => $workType->name . ' - ' . ($employer->employerNameTh ?? 'Unknown') . ($isPreProduction ? ' (Prep)' : ''),
+                                'created_by' => auth()->id()
+                            ]
+                        );
+
+                        $updatedOrderIds[] = $order->id;
+
+                        foreach ($emps as $emp) {
+                             $exists = ProductionItem::where('production_order_id', $order->id)
+                                ->where('employee_id', $emp->id)->exists();
+
+                             if (!$exists) {
+                                 ProductionItem::create([
+                                    'production_order_id' => $order->id,
+                                    'employee_id' => $emp->id,
+                                    'group_name' => $request->group_name ?? null,
+                                    'status' => 'pending'
+                                 ]);
+                             }
+                        }
+                    }
+                    DB::commit();
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    throw $e;
                 }
 
                 if ($request->ajax() || $request->wantsJson()) {
