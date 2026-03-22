@@ -393,7 +393,14 @@ class ProcessDownload implements ShouldQueue
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
-        $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', 'B', 14);
+        // Always try to use THSarabunNew if possible since we force iconv to cp874 later.
+        // FPDF handles missing font gracefully or throws error. We assume THSarabunNew is setup.
+        try {
+             $pdf->SetFont('THSarabunNew', 'B', 14);
+             $hasThaiFont = true;
+        } catch (Throwable $e) {
+             $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', 'B', 14);
+        }
 
         // 1. Stamp Company Info (Top Left)
         if (!empty($this->options['stamp_company_info']) && $this->downloadProfile) {
@@ -427,12 +434,13 @@ class ProcessDownload implements ShouldQueue
             // Draw Company Name and Phone Number
             $companyText = $this->downloadProfile->name;
             if ($this->downloadProfile->phone_number) {
-                $companyText .= '  โทร. ' . $this->downloadProfile->phone_number;
+                $companyText .= ' โทร. ' . $this->downloadProfile->phone_number;
             }
 
-            if ($hasThaiFont) {
-                $companyText = @iconv('UTF-8', 'cp874//IGNORE', $companyText);
-            }
+            // Always attempt to iconv if we are relying on FPDF default methods,
+            // but FPDF with THSarabunNew strictly needs cp874 or TIS-620.
+            // As per memory, strictly use 'cp874//IGNORE' for Thai fonts in FPDF.
+            $companyText = @iconv('UTF-8', 'cp874//IGNORE', $companyText);
 
             // Position for text (centered vertically relative to logo if logo exists, or just top)
             $textY = $topY + 1; // Approx middle of 10mm, minus cell padding compensation
