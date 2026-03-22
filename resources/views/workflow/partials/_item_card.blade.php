@@ -209,62 +209,73 @@
 
                 {{-- Appointment Date & Location --}}
                 <div class="ms-md-4" x-data="{
-                    isEditing: false,
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: '{{ $appValue }}',
                     displayValue: '{{ $appDisplay }}',
                     locationValue: '{{ $appLocation }}',
                     updatedByName: '{{ $appUpdatedByName }}',
                     updatedAtHuman: '{{ $appUpdatedAtHuman }}',
-                    initFlatpickr() {
-                        if (this.$refs.dateInput._flatpickr) return;
-                        flatpickr(this.$refs.dateInput, {
-                            enableTime: true,
-                            dateFormat: 'Y-m-d H:i',
-                            altInput: true,
-                            altFormat: 'd/m/Y H:i',
-                            time_24hr: true,
-                            defaultDate: this.dateValue,
-                            onChange: (selectedDates, dateStr) => {
-                                this.dateValue = dateStr;
-                            }
-                        });
-                    },
                     toggleAppComplete() {
                         fetch('/workflow/item/{{ $item->id }}/appointment-complete', {
                             method: 'POST',
                             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
                         }).then(res => res.json()).then(data => {
                             if(data.success) {
-                                // this.isAppCompleted is already toggled by x-model, but let's confirm logic
+                                // toggled
                             } else {
                                 this.isAppCompleted = !this.isAppCompleted; // revert
                             }
                         });
                     },
-                    saveDate() {
+                    openEditModal() {
                         Swal.fire({
-                            title: '{{ __("Confirm Appointment") }}',
-                            text: '{{ __("Save appointment details?") }}',
-                            icon: 'question',
+                            title: '{{ __("อัพเดทวันนัดหมาย") }}',
+                            html: `
+                                <div class='mb-3 text-start'>
+                                    <label class='form-label fw-bold'>{{ __('Date & Time') }}</label>
+                                    <input type='text' id='swal-dateInput' class='form-control bg-white' placeholder='{{ __('Select Date...') }}'>
+                                </div>
+                                <div class='mb-3 text-start'>
+                                    <label class='form-label fw-bold'>{{ __('Location') }}</label>
+                                    <input type='text' id='swal-locationValue' class='form-control' value='${this.locationValue}' placeholder='{{ __('e.g., Office A') }}'>
+                                </div>
+                            `,
                             showCancelButton: true,
-                            confirmButtonColor: '#3085d6',
-                            cancelButtonColor: '#d33',
-                            confirmButtonText: '{{ __("Yes, save it!") }}',
-                            cancelButtonText: '{{ __("Cancel") }}'
+                            confirmButtonText: '<i class=\'bi bi-check-lg\'></i> {{ __('Save') }}',
+                            cancelButtonText: '{{ __('Cancel') }}',
+                            confirmButtonColor: '#198754',
+                            focusConfirm: false,
+                            didOpen: () => {
+                                flatpickr(document.getElementById('swal-dateInput'), {
+                                    enableTime: true,
+                                    dateFormat: 'Y-m-d H:i',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y H:i',
+                                    time_24hr: true,
+                                    defaultDate: this.dateValue
+                                });
+                            },
+                            preConfirm: () => {
+                                return {
+                                    date: document.getElementById('swal-dateInput').value,
+                                    location: document.getElementById('swal-locationValue').value
+                                }
+                            }
                         }).then((result) => {
                             if (result.isConfirmed) {
+                                const data = result.value;
                                 fetch('/workflow/item/{{ $item->id }}/appointment', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                                    body: JSON.stringify({ appointment_date: this.dateValue, appointment_location: this.locationValue })
-                                }).then(res => res.json()).then(data => {
-                                    if(data.success) {
-                                        this.isEditing = false;
+                                    body: JSON.stringify({ appointment_date: data.date, appointment_location: data.location })
+                                }).then(res => res.json()).then(resData => {
+                                    if(resData.success) {
+                                        this.dateValue = data.date;
+                                        this.locationValue = data.location;
 
-                                        if (data.appointment_updated_by_name) {
-                                            this.updatedByName = data.appointment_updated_by_name;
-                                            this.updatedAtHuman = data.appointment_updated_at_human;
+                                        if (resData.appointment_updated_by_name) {
+                                            this.updatedByName = resData.appointment_updated_by_name;
+                                            this.updatedAtHuman = resData.appointment_updated_at_human;
                                         }
 
                                         Swal.fire({
@@ -276,16 +287,14 @@
                                             timer: 1500
                                         });
 
-                                        // Update display logic
                                         if (!this.dateValue) {
                                             this.displayValue = '-';
                                         } else {
                                             try {
                                                 let parts = this.dateValue.split(' ');
                                                 let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
-                                                let timePart = parts[1];
+                                                let timePart = parts[1] || '00:00';
                                                 let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-
                                                 if (timePart === '00:00') {
                                                     this.displayValue = displayDate;
                                                 } else {
@@ -309,8 +318,8 @@
                             </div>
                         </div>
 
-                        <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
-                             @click="isEditing = true; $nextTick(() => initFlatpickr())"
+                        <div class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                             @click="openEditModal()"
                              :class="{ 'opacity-50': isAppCompleted }">
 
                              <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px;">
@@ -328,21 +337,6 @@
                         <!-- Appt Updated By -->
                         <div x-show="updatedByName" class="mt-1 text-end" style="font-size: 0.65rem;" x-cloak>
                             <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
-                        </div>
-
-                        <div x-show="isEditing" @click.outside="isEditing = false" :class="{ 'd-flex': isEditing }" class="flex-column gap-1 p-2 bg-white border rounded shadow-sm" style="display: none; position: absolute; z-index: 1050; min-width: 200px;">
-                             <label class="small fw-bold">Date & Time</label>
-                             <div>
-                                <input x-ref="dateInput" type="text" class="form-control form-control-sm" placeholder="Date...">
-                             </div>
-
-                             <label class="small fw-bold mt-1">Location</label>
-                             <input x-model="locationValue" type="text" class="form-control form-control-sm" placeholder="e.g. Office, Site A">
-
-                             <div class="d-flex gap-1 mt-2">
-                                <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> Save</button>
-                                <button @click="isEditing = false" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
-                             </div>
                         </div>
                     </div>
                 </div>

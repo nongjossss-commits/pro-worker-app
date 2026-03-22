@@ -325,25 +325,10 @@
                     $modulePath = $isRenewalContext ? 'production/renewal' : 'production/registration';
                 @endphp
                 <div class="mt-2" style="min-width: 250px;" x-data="{
-                    isEditing: false,
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: '{{ $appValue }}',
                     displayValue: '{{ $appDisplay }}',
                     locationValue: '{{ $appLocation }}',
-                    initFlatpickr() {
-                        if (this.$refs.dateInput._flatpickr) return;
-                        flatpickr(this.$refs.dateInput, {
-                            enableTime: true,
-                            dateFormat: 'Y-m-d H:i',
-                            altInput: true,
-                            altFormat: 'd/m/Y H:i',
-                            time_24hr: true,
-                            defaultDate: this.dateValue,
-                            onChange: (selectedDates, dateStr) => {
-                                this.dateValue = dateStr;
-                            }
-                        });
-                    },
                     toggleAppComplete() {
                         fetch('/{{ $modulePath }}/{{ $employee->id }}/appointment-complete', {
                             method: 'POST',
@@ -356,32 +341,71 @@
                             }
                         });
                     },
-                    saveDate() {
-                        fetch('/{{ $modulePath }}/{{ $employee->id }}/appointment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                            body: JSON.stringify({ appointment_date: this.dateValue, appointment_location: this.locationValue })
-                        }).then(res => res.json()).then(data => {
-                            if(data.success) {
-                                this.isEditing = false;
-                                showToast('{{ __('Saved') }}', 'success');
-                                if (!this.dateValue) {
-                                    this.displayValue = '-';
-                                } else {
-                                    try {
-                                        let parts = this.dateValue.split(' ');
-                                        let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
-                                        let timePart = parts[1];
-                                        let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-                                        if (timePart === '00:00') {
-                                            this.displayValue = displayDate;
-                                        } else {
-                                            this.displayValue = `${displayDate} ${timePart}`;
-                                        }
-                                    } catch (e) {
-                                        this.displayValue = this.dateValue;
-                                    }
+                    openEditModal() {
+                        Swal.fire({
+                            title: '{{ __("อัพเดทวันนัดหมาย") }}',
+                            html: `
+                                <div class='mb-3 text-start'>
+                                    <label class='form-label fw-bold'>{{ __('Date & Time') }}</label>
+                                    <input type='text' id='swal-dateInput' class='form-control bg-white' placeholder='{{ __('Select Date...') }}'>
+                                </div>
+                                <div class='mb-3 text-start'>
+                                    <label class='form-label fw-bold'>{{ __('Location') }}</label>
+                                    <input type='text' id='swal-locationValue' class='form-control' value='${this.locationValue}' placeholder='{{ __('e.g., Office A') }}'>
+                                </div>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class=\'bi bi-check-lg\'></i> {{ __('Save') }}',
+                            cancelButtonText: '{{ __('Cancel') }}',
+                            confirmButtonColor: '#198754',
+                            focusConfirm: false,
+                            didOpen: () => {
+                                flatpickr(document.getElementById('swal-dateInput'), {
+                                    enableTime: true,
+                                    dateFormat: 'Y-m-d H:i',
+                                    altInput: true,
+                                    altFormat: 'd/m/Y H:i',
+                                    time_24hr: true,
+                                    defaultDate: this.dateValue
+                                });
+                            },
+                            preConfirm: () => {
+                                return {
+                                    date: document.getElementById('swal-dateInput').value,
+                                    location: document.getElementById('swal-locationValue').value
                                 }
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                const data = result.value;
+                                fetch('/{{ $modulePath }}/{{ $employee->id }}/appointment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                                    body: JSON.stringify({ appointment_date: data.date, appointment_location: data.location })
+                                }).then(res => res.json()).then(resData => {
+                                    if(resData.success) {
+                                        this.dateValue = data.date;
+                                        this.locationValue = data.location;
+                                        showToast('{{ __('Saved') }}', 'success');
+                                        if (!this.dateValue) {
+                                            this.displayValue = '-';
+                                        } else {
+                                            try {
+                                                let parts = this.dateValue.split(' ');
+                                                let dateParts = parts[0].split('-'); // [YYYY, MM, DD]
+                                                let timePart = parts[1] || '00:00';
+                                                let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                                                if (timePart === '00:00') {
+                                                    this.displayValue = displayDate;
+                                                } else {
+                                                    this.displayValue = `${displayDate} ${timePart}`;
+                                                }
+                                            } catch (e) {
+                                                this.displayValue = this.dateValue;
+                                            }
+                                        }
+                                    }
+                                });
                             }
                         });
                     }
@@ -393,8 +417,8 @@
                         </div>
                     </div>
 
-                    <div x-show="!isEditing" class="d-flex align-items-center gap-2 cursor-pointer position-relative"
-                         @click="isEditing = true; $nextTick(() => initFlatpickr())"
+                    <div class="d-flex align-items-center gap-2 cursor-pointer position-relative"
+                         @click="openEditModal()"
                          :class="{ 'opacity-50': isAppCompleted }">
 
                          <div class="text-primary fw-bold small border rounded px-2 py-1 bg-white shadow-sm d-flex flex-column justify-content-center px-2 w-100" style="min-height: 38px;">
@@ -407,19 +431,6 @@
                                 <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
                             </div>
                          </div>
-                    </div>
-
-                    <div x-show="isEditing" @click.outside="isEditing = false" class="flex-column gap-2 p-2 bg-white border rounded shadow-sm position-absolute" style="display: none; z-index: 1060; min-width: 250px;">
-                        <label class="small fw-bold mb-1">{{ __('Date & Time') }}</label>
-                        <input type="text" x-ref="dateInput" class="form-control form-control-sm bg-white" placeholder="{{ __('Select Date...') }}">
-
-                        <label class="small fw-bold mt-2 mb-1">{{ __('Location') }}</label>
-                        <input type="text" x-model="locationValue" class="form-control form-control-sm" placeholder="{{ __('e.g., Office A') }}">
-
-                        <div class="d-flex gap-1 mt-2">
-                            <button @click="saveDate()" class="btn btn-sm btn-success flex-grow-1"><i class="bi bi-check-lg"></i> {{ __('Save') }}</button>
-                            <button @click="isEditing = false; dateValue = '{{ $appValue }}'; locationValue = '{{ $appLocation }}';" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></button>
-                        </div>
                     </div>
                 </div>
 
