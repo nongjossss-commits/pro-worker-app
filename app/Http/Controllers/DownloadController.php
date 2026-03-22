@@ -27,6 +27,9 @@ class DownloadController extends Controller
             'employee_ids' => 'required|array',
             'selected_files' => 'required|array',
             'type' => 'required|in:zip,pdf,zip_single',
+            'stamp_employee_info' => 'nullable|boolean',
+            'stamp_company_info' => 'nullable|boolean',
+            'download_profile_id' => 'nullable|exists:download_profiles,id',
         ]);
 
         // Authorization Logic:
@@ -50,9 +53,15 @@ class DownloadController extends Controller
             'status' => 'pending',
         ]);
 
+        $options = [
+            'stamp_employee_info' => $request->boolean('stamp_employee_info'),
+            'stamp_company_info' => $request->boolean('stamp_company_info'),
+            'download_profile_id' => $request->input('download_profile_id'),
+        ];
+
         // Use dispatchSync to ensure immediate execution, avoiding stuck "pending" tasks
         // if the queue worker is not running.
-        ProcessDownload::dispatchSync($task->id, $authorizedEmployeeIds, $validated['selected_files']);
+        ProcessDownload::dispatchSync($task->id, $authorizedEmployeeIds, $validated['selected_files'], $options);
 
         $task->refresh();
 
