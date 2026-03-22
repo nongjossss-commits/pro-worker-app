@@ -998,11 +998,12 @@
                 <iframe id="pdfPreviewFrame" src="" class="w-100 h-100" style="border: none;"></iframe>
 
                 <!-- Image Preview Container -->
-                <div id="imagePreviewContainer" class="d-none w-100 h-100 overflow-auto d-flex bg-dark">
+                <div id="imagePreviewContainer" class="d-none w-100 h-100 bg-dark" style="position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                     <div id="imageLoadingSpinner" class="spinner-border text-light position-absolute top-50 start-50 translate-middle" role="status" style="z-index: 5;">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <img id="imagePreview" src="" alt="Preview" class="m-auto" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+                    <!-- Image will be manipulated via CSS transform -->
+                    <img id="imagePreview" src="" alt="Preview" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5); transform-origin: 0 0; transition: transform 0.1s ease-out;">
                 </div>
             </div>
         </div>
@@ -1107,55 +1108,150 @@ window.viewPDF = function(url, title = 'PDF Preview') {
     }
 };
 
-window.updateImageStyle = function() {
-    const img = document.getElementById('imagePreview');
-    if (!img) return;
+(function() {
+    let isPanning = false;
+    let startX = 0, startY = 0;
+    let translateX = 0, translateY = 0;
+    let panStartX = 0, panStartY = 0;
 
-    if (isImageFitToScreen) {
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '100%';
-        img.style.width = 'auto';
-        img.style.height = 'auto';
-        img.style.cursor = 'zoom-in';
-    } else {
-        img.style.maxWidth = 'none';
-        img.style.maxHeight = 'none';
-        if (img.naturalWidth) {
-             img.style.width = (img.naturalWidth * imageZoomLevel) + 'px';
-             img.style.height = 'auto';
-        }
-        img.style.cursor = 'grab';
-    }
-};
+    // Set initial transform state
+    window.updateImageStyle = function() {
+        const img = document.getElementById('imagePreview');
+        if (!img) return;
 
-window.zoomImage = function(delta) {
-    const img = document.getElementById('imagePreview');
-    if (!img) return;
-
-    if (isImageFitToScreen) {
-        isImageFitToScreen = false;
-        // Calculate starting zoom level based on current visual size vs natural size
-        const currentVisualWidth = img.width;
-        const naturalWidth = img.naturalWidth || currentVisualWidth;
-        // Start zoom from current visual scale + delta
-        if (naturalWidth > 0) {
-            imageZoomLevel = (currentVisualWidth / naturalWidth) + delta;
+        if (isImageFitToScreen) {
+            translateX = 0;
+            translateY = 0;
+            img.style.transform = `translate(0px, 0px) scale(1)`;
+            img.style.cursor = 'zoom-in';
         } else {
-            imageZoomLevel = 1.0 + delta;
+            img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${imageZoomLevel})`;
+            img.style.cursor = isPanning ? 'grabbing' : 'grab';
         }
-    } else {
-        imageZoomLevel += delta;
-    }
+    };
 
-    if (imageZoomLevel < 0.1) imageZoomLevel = 0.1;
-    updateImageStyle();
-};
+    window.zoomImage = function(delta, mouseX = null, mouseY = null) {
+        const img = document.getElementById('imagePreview');
+        const imgContainer = document.getElementById('imagePreviewContainer');
+        if (!img || !imgContainer) return;
 
-window.resetZoom = function() {
-    isImageFitToScreen = true;
-    imageZoomLevel = 1.0;
-    updateImageStyle();
-};
+        // Container bounding rect
+        const rect = imgContainer.getBoundingClientRect();
+
+        // If no mouse coordinates provided, zoom into the center of the container
+        if (mouseX === null || mouseY === null) {
+            mouseX = rect.width / 2;
+            mouseY = rect.height / 2;
+        }
+
+        const oldZoomLevel = isImageFitToScreen ? 1.0 : imageZoomLevel;
+        let newZoomLevel = oldZoomLevel + delta;
+
+        if (newZoomLevel < 0.1) newZoomLevel = 0.1;
+        if (newZoomLevel > 10.0) newZoomLevel = 10.0;
+
+        // Prevent action if zoom limit reached
+        if (newZoomLevel === oldZoomLevel) return;
+
+        isImageFitToScreen = false;
+        imageZoomLevel = newZoomLevel;
+
+        // Image coordinates relative to the screen
+        const imgRect = img.getBoundingClientRect();
+
+        // Cursor position relative to the image's top-left corner (in screen pixels)
+        const cursorX_relativeToImg = (rect.left + mouseX) - imgRect.left;
+        const cursorY_relativeToImg = (rect.top + mouseY) - imgRect.top;
+
+        // Calculate how much the pixel under the cursor moves due to scaling
+        const ratio = newZoomLevel / oldZoomLevel;
+        const shiftX = cursorX_relativeToImg * (1 - ratio);
+        const shiftY = cursorY_relativeToImg * (1 - ratio);
+
+        // Adjust translation to keep the pixel exactly under the cursor
+        translateX += shiftX;
+        translateY += shiftY;
+
+        window.updateImageStyle();
+    };
+
+    window.resetZoom = function() {
+        isImageFitToScreen = true;
+        imageZoomLevel = 1.0;
+        translateX = 0;
+        translateY = 0;
+        window.updateImageStyle();
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prevent default pinch zoom on the page if container hovered
+        document.body.addEventListener('wheel', function(e) {
+            const imgContainer = document.getElementById('imagePreviewContainer');
+            if (imgContainer && imgContainer.contains(e.target)) {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    // Zoom amount
+                    const delta = e.deltaY < 0 ? 0.2 : -0.2;
+
+                    const rect = imgContainer.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+
+                    window.zoomImage(delta, mouseX, mouseY);
+                }
+            }
+        }, { passive: false });
+
+        // Handle Panning
+        document.body.addEventListener('mousedown', function(e) {
+            const imgContainer = document.getElementById('imagePreviewContainer');
+            if (imgContainer && imgContainer.contains(e.target)) {
+                if (isImageFitToScreen) return;
+
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault(); // Prevent native image drag
+                }
+
+                isPanning = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                panStartX = translateX;
+                panStartY = translateY;
+
+                // Temporarily disable transition during drag for smoothness
+                const img = document.getElementById('imagePreview');
+                if (img) img.style.transition = 'none';
+
+                window.updateImageStyle();
+            }
+        });
+
+        // Use window for mouseup/mousemove so dragging doesn't break if mouse leaves container
+        window.addEventListener('mouseup', function() {
+            if (isPanning) {
+                isPanning = false;
+                const img = document.getElementById('imagePreview');
+                if (img) img.style.transition = 'transform 0.1s ease-out';
+                window.updateImageStyle();
+            }
+        });
+
+        window.addEventListener('mousemove', function(e) {
+            if (!isPanning) return;
+            e.preventDefault();
+
+            // Calculate pixel movement
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+
+            // Apply new translation
+            translateX = panStartX + dx;
+            translateY = panStartY + dy;
+
+            window.updateImageStyle();
+        });
+    });
+})();
 
 // Full-Featured Address Management Script
 document.addEventListener('DOMContentLoaded', function () {
