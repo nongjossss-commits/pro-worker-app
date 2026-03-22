@@ -168,7 +168,7 @@ class ProcessDownload implements ShouldQueue
 
             // Prepare Header Text (for stamping)
             if ($hasThaiFont && !empty($employee->employeeNameTh)) {
-                $nameDisplay = @iconv('UTF-8', 'TIS-620//IGNORE', $employee->employeeNameTh);
+                $nameDisplay = @iconv('UTF-8', 'cp874//IGNORE', $employee->employeeNameTh);
             } else {
                 $nameDisplay = $employee->employeeNameEn ?? 'Employee ID: ' . $employee->id;
                 $nameDisplay = preg_replace('/[^\x20-\x7E]/', '', $nameDisplay);
@@ -269,7 +269,7 @@ class ProcessDownload implements ShouldQueue
                 // Prepare Header Text
                 if ($hasThaiFont && $employeeNameTh) {
                     // Convert UTF-8 to cp874 (TIS-620) for FPDF
-                    $nameDisplay = @iconv('UTF-8', 'TIS-620//IGNORE', $employeeNameTh);
+                    $nameDisplay = @iconv('UTF-8', 'cp874//IGNORE', $employeeNameTh);
                 } else {
                     $nameDisplay = $employeeNameEn ?? 'Employee ID: ' . $employee->id;
                     // Sanitize fallback
@@ -427,11 +427,11 @@ class ProcessDownload implements ShouldQueue
             // Draw Company Name and Phone Number
             $companyText = $this->downloadProfile->name;
             if ($this->downloadProfile->phone_number) {
-                $companyText .= '  ' . $this->downloadProfile->phone_number;
+                $companyText .= '  โทร. ' . $this->downloadProfile->phone_number;
             }
 
             if ($hasThaiFont) {
-                $companyText = @iconv('UTF-8', 'TIS-620//IGNORE', $companyText);
+                $companyText = @iconv('UTF-8', 'cp874//IGNORE', $companyText);
             }
 
             // Position for text (centered vertically relative to logo if logo exists, or just top)
