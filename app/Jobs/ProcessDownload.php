@@ -258,7 +258,6 @@ class ProcessDownload implements ShouldQueue
 
             if (file_exists($fontDir . 'THSarabunNew.php')) {
                 $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
-                $pdf->AddFont('THSarabunNew', 'B', 'THSarabunNew-Bold.php'); // Assuming bold exists too if main does
                 $hasThaiFont = true;
             }
 
@@ -396,10 +395,10 @@ class ProcessDownload implements ShouldQueue
         // Always try to use THSarabunNew if possible since we force iconv to cp874 later.
         // FPDF handles missing font gracefully or throws error. We assume THSarabunNew is setup.
         try {
-             $pdf->SetFont('THSarabunNew', 'B', 14);
+             $pdf->SetFont('THSarabunNew', '', 14);
              $hasThaiFont = true;
         } catch (Throwable $e) {
-             $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', 'B', 14);
+             $pdf->SetFont($hasThaiFont ? 'THSarabunNew' : 'Arial', '', 14);
         }
 
         // 1. Stamp Company Info (Top Left)
@@ -526,7 +525,6 @@ class ProcessDownload implements ShouldQueue
             $fontDir = defined('FPDF_FONTPATH') ? FPDF_FONTPATH : storage_path('fonts/');
             if (file_exists($fontDir . 'THSarabunNew.php')) {
                 $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
-                $pdf->AddFont('THSarabunNew', 'B', 'THSarabunNew-Bold.php');
             }
 
             if ($ext === 'pdf') {
