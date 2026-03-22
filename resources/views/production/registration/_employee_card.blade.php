@@ -29,9 +29,16 @@
 
     // Operator Logic
     $operator = $employee->operator;
-    $operatorName = $operator ? $operator->name : null;
     $operatorId = $employee->operator_id;
+    $customOperatorName = $employee->custom_operator_name;
     $isMe = $operatorId === auth()->id();
+
+    if ($customOperatorName) {
+        $operatorName = $customOperatorName . ' (ภายนอก)';
+        $operatorId = 'external'; // Used for JS logic
+    } else {
+        $operatorName = $operator ? $operator->name : null;
+    }
 @endphp
 
 <div class="d-flex align-items-center employee-card-outer mb-3 employee-card-wrapper"
@@ -54,11 +61,18 @@
             $toggleUrl = request()->is('production/renewal*')
                 ? route('production.renewal.toggle_operator', $employee->id)
                 : route('production.registration.toggle_operator', $employee->id);
+
+            $btnClass = 'btn-outline-secondary';
+            if ($customOperatorName) {
+                $btnClass = 'btn-info text-dark';
+            } else if ($operatorId && $operatorId !== 'external') {
+                $btnClass = $isMe ? 'btn-primary' : 'btn-secondary';
+            }
         @endphp
-        <button class="btn btn-sm {{ $operatorId ? ($isMe ? 'btn-primary' : 'btn-secondary') : 'btn-outline-secondary' }} rounded-pill shadow-sm py-0 px-2"
+        <button class="btn btn-sm {{ $btnClass }} rounded-pill shadow-sm py-0 px-2"
                 style="font-size: 0.75rem; border-width: 1px;"
                 @hasanyrole('super-admin|admin|staff')
-                onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this, '{{ $operatorId ?? '' }}', '{{ $toggleUrl }}') : console.error('toggleOperator not defined')"
+                onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this, '{{ $employee->operator_id ?? '' }}', '{{ addslashes($customOperatorName ?? '') }}', '{{ $toggleUrl }}') : console.error('toggleOperator not defined')"
                 title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Assign' }}"
                 @else
                 disabled

@@ -152,6 +152,7 @@ class Employee extends Model
         'renewal_remarks',
         'last_daily_checked_at',
         'operator_id',
+        'custom_operator_name',
     ];
 
     protected $casts = [

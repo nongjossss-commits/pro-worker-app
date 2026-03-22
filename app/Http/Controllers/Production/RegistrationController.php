@@ -167,8 +167,11 @@ class RegistrationController extends Controller
             $opFilter = $request->operator_filter;
             $employerQuery->whereHas('employees', function($q) use ($opFilter) {
                 // Should only check relevant status?
-                $q
-                  ->where('operator_id', $opFilter);
+                if ($opFilter === 'external') {
+                    $q->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+                } else {
+                    $q->where('operator_id', $opFilter);
+                }
             });
         }
 
@@ -451,7 +454,11 @@ class RegistrationController extends Controller
 
             // Operator Filter
             if ($request->has('operator_filter') && $request->operator_filter) {
-                $query->where('operator_id', $request->operator_filter);
+                if ($request->operator_filter === 'external') {
+                    $query->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+                } else {
+                    $query->where('operator_id', $request->operator_filter);
+                }
             }
 
             if (!$employerMatches && $search) {
@@ -632,7 +639,11 @@ class RegistrationController extends Controller
 
         // Operator Filter
         if ($request->has('operator_filter') && $request->operator_filter) {
-            $query->where('operator_id', $request->operator_filter);
+            if ($request->operator_filter === 'external') {
+                $query->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $query->where('operator_id', $request->operator_filter);
+            }
         }
 
         // Apply Filter
@@ -2236,16 +2247,32 @@ class RegistrationController extends Controller
         $employee = Employee::findOrFail($employeeId);
 
         // Check for specific user assignment
-        if ($request->has('operator_id')) {
+        if ($request->has('operator_id') || $request->has('custom_operator_name')) {
             $userId = $request->input('operator_id');
-            // If explicit null or empty, remove operator
-            if (empty($userId)) {
-                $employee->update(['operator_id' => null]);
+            $customOperatorName = $request->input('custom_operator_name');
+
+            // If custom operator name is provided (external operator)
+            if (!empty($customOperatorName)) {
+                $employee->update([
+                    'operator_id' => null,
+                    'custom_operator_name' => $customOperatorName
+                ]);
+                $message = 'Operator assigned to external: ' . $customOperatorName;
+            }
+            // If explicit null or empty and no custom name, remove operator
+            else if (empty($userId)) {
+                $employee->update([
+                    'operator_id' => null,
+                    'custom_operator_name' => null
+                ]);
                 $message = 'Operator unassigned.';
             } else {
                 $user = User::find($userId);
                 if ($user) {
-                    $employee->update(['operator_id' => $user->id]);
+                    $employee->update([
+                        'operator_id' => $user->id,
+                        'custom_operator_name' => null
+                    ]);
                     $message = 'Operator assigned to ' . $user->name;
                 } else {
                      return response()->json(['success' => false, 'message' => 'User not found'], 404);
@@ -2254,11 +2281,11 @@ class RegistrationController extends Controller
         } else {
             // Legacy Toggle Behavior (Toggle Me)
             $userId = auth()->id();
-            if ($employee->operator_id === $userId) {
-                $employee->update(['operator_id' => null]);
+            if ($employee->operator_id === $userId && empty($employee->custom_operator_name)) {
+                $employee->update(['operator_id' => null, 'custom_operator_name' => null]);
                 $message = 'Operator unassigned.';
             } else {
-                $employee->update(['operator_id' => $userId]);
+                $employee->update(['operator_id' => $userId, 'custom_operator_name' => null]);
                 $message = 'Operator assigned to ' . auth()->user()->name;
             }
         }
