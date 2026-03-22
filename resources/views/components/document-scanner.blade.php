@@ -424,7 +424,8 @@
     // Global Interceptor Function
     window.interceptFileSelect = function(event) {
         const input = event.target;
-        const files = input.files;
+        // Convert FileList to a static Array immediately so clearing the input later doesn't destroy the list during async processing
+        const files = Array.from(input.files);
 
         // 1. Check if this change was triggered by the scanner itself
         if (input.dataset.scannerSource === 'true') {
