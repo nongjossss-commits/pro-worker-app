@@ -152,8 +152,11 @@ class RenewalController extends Controller
         if ($request->has('operator_filter') && $request->operator_filter) {
             $opFilter = $request->operator_filter;
             $employerQuery->whereHas('employees', function($q) use ($opFilter) {
-                $q
-                  ->where('operator_id', $opFilter);
+                if ($opFilter === 'external') {
+                    $q->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+                } else {
+                    $q->where('operator_id', $opFilter);
+                }
             });
         }
 
@@ -419,7 +422,11 @@ class RenewalController extends Controller
 
             // Operator Filter
             if ($request->has('operator_filter') && $request->operator_filter) {
-                $query->where('operator_id', $request->operator_filter);
+                if ($request->operator_filter === 'external') {
+                    $query->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+                } else {
+                    $query->where('operator_id', $request->operator_filter);
+                }
             }
 
             // Insurance Filter
@@ -546,7 +553,11 @@ class RenewalController extends Controller
 
         // Operator Filter
         if ($request->has('operator_filter') && $request->operator_filter) {
-            $query->where('operator_id', $request->operator_filter);
+            if ($request->operator_filter === 'external') {
+                $query->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $query->where('operator_id', $request->operator_filter);
+            }
         }
 
         // Insurance Filter
@@ -1684,15 +1695,29 @@ class RenewalController extends Controller
     {
         $employee = Employee::findOrFail($employeeId);
 
-        if ($request->has('operator_id')) {
+        if ($request->has('operator_id') || $request->has('custom_operator_name')) {
             $userId = $request->input('operator_id');
-            if (empty($userId)) {
-                $employee->update(['operator_id' => null]);
+            $customOperatorName = $request->input('custom_operator_name');
+
+            if (!empty($customOperatorName)) {
+                $employee->update([
+                    'operator_id' => null,
+                    'custom_operator_name' => $customOperatorName
+                ]);
+                $message = 'Operator assigned to external: ' . $customOperatorName;
+            } else if (empty($userId)) {
+                $employee->update([
+                    'operator_id' => null,
+                    'custom_operator_name' => null
+                ]);
                 $message = 'Operator unassigned.';
             } else {
                 $user = User::find($userId);
                 if ($user) {
-                    $employee->update(['operator_id' => $user->id]);
+                    $employee->update([
+                        'operator_id' => $user->id,
+                        'custom_operator_name' => null
+                    ]);
                     $message = 'Operator assigned to ' . $user->name;
                 } else {
                      return response()->json(['success' => false, 'message' => 'User not found'], 404);
@@ -1700,11 +1725,11 @@ class RenewalController extends Controller
             }
         } else {
             $userId = auth()->id();
-            if ($employee->operator_id === $userId) {
-                $employee->update(['operator_id' => null]);
+            if ($employee->operator_id === $userId && empty($employee->custom_operator_name)) {
+                $employee->update(['operator_id' => null, 'custom_operator_name' => null]);
                 $message = 'Operator unassigned.';
             } else {
-                $employee->update(['operator_id' => $userId]);
+                $employee->update(['operator_id' => $userId, 'custom_operator_name' => null]);
                 $message = 'Operator assigned to ' . auth()->user()->name;
             }
         }
