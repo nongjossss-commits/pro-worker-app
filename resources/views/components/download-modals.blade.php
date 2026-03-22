@@ -35,6 +35,34 @@
 
                     <hr>
 
+                    <!-- Download Profiles / Stamping Options -->
+                    @php
+                        $downloadProfiles = \App\Models\DownloadProfile::all();
+                    @endphp
+                    <div class="mb-3 p-3 bg-light border rounded">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-printer"></i> Document Stamping Options</h6>
+
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="stampEmployeeInfo" name="stamp_employee_info" value="1" checked>
+                            <label class="form-check-label" for="stampEmployeeInfo">Stamp Employee Name & ID (Top Right)</label>
+                        </div>
+
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="stampCompanyInfo" name="stamp_company_info" value="1">
+                            <label class="form-check-label" for="stampCompanyInfo">Stamp Company Info & Logo (Top Left)</label>
+                        </div>
+
+                        <div class="mt-2 ms-4" id="downloadProfileSelectContainer" style="display: none;">
+                            <label for="downloadProfileId" class="form-label small text-muted">Select Company Profile:</label>
+                            <select class="form-select form-select-sm" id="downloadProfileId" name="download_profile_id">
+                                <option value="">-- No Profile Selected --</option>
+                                @foreach($downloadProfiles as $profile)
+                                    <option value="{{ $profile->id }}">{{ $profile->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-bold">Select Files to Include</label>
                         <div class="row">
@@ -211,14 +239,39 @@ document.addEventListener('DOMContentLoaded', function() {
             downloadModal.show();
         };
 
+        // --- 1.5 Handle Download Profile Toggle ---
+        const stampCompanyInfoCheckbox = document.getElementById('stampCompanyInfo');
+        const profileSelectContainer = document.getElementById('downloadProfileSelectContainer');
+        const downloadProfileSelect = document.getElementById('downloadProfileId');
+
+        if (stampCompanyInfoCheckbox) {
+            stampCompanyInfoCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    profileSelectContainer.style.display = 'block';
+                } else {
+                    profileSelectContainer.style.display = 'none';
+                    downloadProfileSelect.value = ''; // Reset selection
+                }
+            });
+        }
+
         // --- 2. Handle Confirm Download ---
         document.getElementById('btnConfirmDownload').addEventListener('click', function() {
             const type = document.querySelector('input[name="download_type"]:checked').value;
             const files = Array.from(document.querySelectorAll('input[name="files[]"]:checked')).map(cb => cb.value);
             const empIds = JSON.parse(document.getElementById('downloadEmployeeIds').value || '[]');
 
+            const stampEmployeeInfo = document.getElementById('stampEmployeeInfo').checked;
+            const stampCompanyInfo = document.getElementById('stampCompanyInfo').checked;
+            const downloadProfileId = document.getElementById('downloadProfileId').value;
+
             if (files.length === 0) {
                 showToast('Please select at least one file type.', 'danger');
+                return;
+            }
+
+            if (stampCompanyInfo && !downloadProfileId) {
+                showToast('Please select a company profile to stamp.', 'danger');
                 return;
             }
 
@@ -235,7 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     employee_ids: empIds,
                     selected_files: files,
-                    type: type
+                    type: type,
+                    stamp_employee_info: stampEmployeeInfo,
+                    stamp_company_info: stampCompanyInfo,
+                    download_profile_id: stampCompanyInfo ? downloadProfileId : null
                 })
             })
             .then(res => res.json())

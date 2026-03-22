@@ -22,12 +22,15 @@ use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FinancialController; // Import
 use App\Http\Controllers\SuperAdmin\SettingsController as SuperAdminSettingsController;
+use App\Http\Controllers\SuperAdmin\DownloadProfileController;
 
 Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/settings', [SuperAdminSettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SuperAdminSettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/visibility', [SuperAdminSettingsController::class, 'updateVisibility'])->name('settings.update-visibility');
     Route::get('/sidebar', [SuperAdminSettingsController::class, 'renderSidebar'])->name('sidebar');
+
+    Route::resource('download-profiles', DownloadProfileController::class)->except(['show']);
 });
 
 // Menu Unlock Routes (Publicly accessible for auth users)
