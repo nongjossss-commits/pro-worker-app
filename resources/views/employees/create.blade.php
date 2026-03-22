@@ -118,7 +118,10 @@ document.addEventListener('DOMContentLoaded', function () {
             ageInput.value = '';
         }
     }
-    if (dobInput) dobInput.addEventListener('change', calculateAge);
+    if (dobInput) {
+        dobInput.addEventListener('change', calculateAge);
+        dobInput.addEventListener('input', calculateAge);
+    }
 
     // --- Logic Block 2.5: Work Age Calculation ---
     function calculateWorkAge() {
@@ -154,7 +157,10 @@ document.addEventListener('DOMContentLoaded', function () {
             workAgeInput.value = '';
         }
     }
-    if (startDateInput) startDateInput.addEventListener('change', calculateWorkAge);
+    if (startDateInput) {
+        startDateInput.addEventListener('change', calculateWorkAge);
+        startDateInput.addEventListener('input', calculateWorkAge);
+    }
 
 
     // --- Logic Block 3: Nationality Conditional Fields ---

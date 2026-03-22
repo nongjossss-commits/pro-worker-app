@@ -1289,6 +1289,7 @@
         }
         if(dobInput) {
             dobInput.addEventListener('change', calculateAge);
+            dobInput.addEventListener('input', calculateAge);
             if(dobInput.value) calculateAge();
         }
 
@@ -1328,6 +1329,7 @@
         }
         if(startDateInput) {
             startDateInput.addEventListener('change', calculateWorkAge);
+            startDateInput.addEventListener('input', calculateWorkAge);
             if(startDateInput.value) calculateWorkAge();
         }
 
