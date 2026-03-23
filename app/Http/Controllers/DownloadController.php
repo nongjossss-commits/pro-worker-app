@@ -26,7 +26,7 @@ class DownloadController extends Controller
         $validated = $request->validate([
             'employee_ids' => 'required|array',
             'selected_files' => 'required|array',
-            'type' => 'required|in:zip,pdf,zip_single',
+            'type' => 'required|in:zip,pdf,zip_single,pdf_individual',
             'stamp_employee_info' => 'nullable|boolean',
             'stamp_company_info' => 'nullable|boolean',
             'download_profile_id' => 'nullable|exists:download_profiles,id',
