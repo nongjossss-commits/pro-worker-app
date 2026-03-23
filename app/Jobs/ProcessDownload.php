@@ -213,7 +213,7 @@ class ProcessDownload implements ShouldQueue
 
                     $shouldStamp = (!empty($this->options['stamp_company_info']) || !empty($this->options['stamp_employee_info']));
 
-                    if ($shouldStamp && in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                    if ($shouldStamp && $fileType !== 'photo' && in_array($ext, ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'])) {
                         // Stamp the file and add the stamped version. Note that it returns a PDF.
                         $stampedFilePath = $this->stampFileForZip($filePath, $employee, $hasThaiFont);
                         if ($stampedFilePath) {
