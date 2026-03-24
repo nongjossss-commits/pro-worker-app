@@ -2101,14 +2101,18 @@ class WorkflowController extends Controller
             }
 
             $results[$order->id] = [
-                'activeCount' => $total,
-                'notStartedCount' => $notStarted,
-                'cancelledCount' => $cancelled,
-                'completedCount' => $completed,
-                'stepStats' => $stepStats
+                'total' => $total,
+                'not_started' => $notStarted,
+                'cancelled' => $cancelled,
+                'completed' => $completed,
+                'step_stats' => $stepStats,
+                'active_items_count' => $total
             ];
         }
 
-        return response()->json($results);
+        return response()->json([
+            'success' => true,
+            'stats' => $results
+        ]);
     }
 }
