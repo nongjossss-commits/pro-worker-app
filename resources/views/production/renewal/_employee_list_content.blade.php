@@ -19,7 +19,8 @@
         'employee' => $employee,
         'steps' => $steps,
         'loop' => $loop,
-        'isHistory' => $isHistory ?? false
+        'isHistory' => $isHistory ?? false,
+        'show_employer' => true
     ])
 @endforeach
 

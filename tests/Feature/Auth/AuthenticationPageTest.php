@@ -12,7 +12,7 @@ class AuthenticationPageTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
-        $response->assertSee('เข้าสู่ระบบ');
-        $response->assertSee('รหัสพนักงาน (อีเมล)');
+        $response->assertSee('Login');
+        $response->assertSee('Email / Username');
     }
 }
