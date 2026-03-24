@@ -382,6 +382,24 @@ Route::middleware(['auth'])->group(function () {
     Route::post('production/{id}/add-employee', [\App\Http\Controllers\ProductionController::class, 'addEmployee'])->name('production.add_employee');
     Route::post('production/{id}/add-new-employee', [\App\Http\Controllers\ProductionController::class, 'addNewEmployee'])->name('production.add_new_employee');
 
+    // Read and Sale (Sales Leads)
+    Route::middleware('role:super-admin|admin|staff')->prefix('sales')->name('sales.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SalesLeadController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\SalesLeadController::class, 'store'])->name('store');
+        Route::put('/{sales}/status', [\App\Http\Controllers\SalesLeadController::class, 'updateStatus'])->name('status.update');
+        Route::delete('/{sales}', [\App\Http\Controllers\SalesLeadController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/restore', [\App\Http\Controllers\SalesLeadController::class, 'restore'])->name('restore');
+
+        Route::post('/{sales}/employees', [\App\Http\Controllers\SalesLeadController::class, 'storeEmployee'])->name('employees.store');
+        Route::delete('/{sales}/employees/{employee}', [\App\Http\Controllers\SalesLeadController::class, 'destroyEmployee'])->name('employees.destroy');
+
+        Route::post('/{sales}/quotation', [\App\Http\Controllers\SalesLeadController::class, 'storeQuotation'])->name('quotation.store');
+
+        Route::post('/{sales}/transition', [\App\Http\Controllers\SalesLeadController::class, 'transition'])->name('transition');
+
+        Route::post('/{sales}/import', [\App\Http\Controllers\Sales\SalesLeadImportController::class, 'importExcel'])->name('import');
+    });
+
     // NEW: Pre-Production Routes
     Route::post('production/{item}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendToWorkflow'])->name('production.item.send_to_workflow');
     Route::post('production/bulk-send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'bulkSendToWorkflow'])->name('production.bulk_send_to_workflow');

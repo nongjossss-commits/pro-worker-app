@@ -1,0 +1,51 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class SalesLead extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = [
+        'employer_id',
+        'employerNameTh',
+        'employerNameEn',
+        'employerId',
+        'employerTaxId',
+        'employerPhone',
+        'jobOwner',
+        'requires_special_attention',
+        'status', // quoted, deciding, confirmed, transitioned, cancelled
+        'workflow_destination',
+        'created_by',
+        'confirmed_by'
+    ];
+
+    /**
+     * Get the real employer if linked.
+     */
+    public function employer()
+    {
+        return $this->belongsTo(Employer::class, 'employer_id');
+    }
+
+    /**
+     * Get the employees associated with this sales lead.
+     */
+    public function employees()
+    {
+        return $this->hasMany(SalesLeadEmployee::class, 'sales_lead_id');
+    }
+
+    /**
+     * Get the quotation associated with this sales lead.
+     */
+    public function quotation()
+    {
+        return $this->hasOne(SalesQuotation::class, 'sales_lead_id');
+    }
+}
