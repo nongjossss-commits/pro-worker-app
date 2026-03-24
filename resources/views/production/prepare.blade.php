@@ -233,6 +233,14 @@
 
                                                             <div class="small text-muted mb-2">
                                                                 <i class="bi bi-building me-1"></i> {{ $employerName }}
+                                                                @if($emp->employer_id)
+                                                                <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                                                        data-model-type="employer"
+                                                                        data-model-id="{{ $emp->employer_id }}"
+                                                                        title="Preview Employer">
+                                                                    <i class="bi bi-eye-fill"></i>
+                                                                </button>
+                                                                @endif
                                                             </div>
 
                                                             <div>

@@ -116,14 +116,14 @@ class EmployeeManagementTest extends TestCase
 
     public function test_admin_and_staff_can_update_employee()
     {
-        $updatedData = ['employeeNameTh' => 'Updated Name'];
+        $updatedData = ['employer_id' => $this->employer->id, 'employeeNameEn' => 'Updated Name En', 'employeeNameTh' => 'Updated Name'];
         $this->actingAs($this->adminUser)->put(route('employees.update', $this->employee), $updatedData)
-             ->assertRedirect(route('employees.index'));
+             ->assertRedirect(route('employees.index') . '#employee-card-' . $this->employee->id);
         $this->assertDatabaseHas('employees', ['id' => $this->employee->id, 'employeeNameTh' => 'Updated Name']);
 
-        $updatedData2 = ['employeeNameTh' => 'Updated By Staff'];
+        $updatedData2 = ['employer_id' => $this->employer->id, 'employeeNameEn' => 'Updated Name En', 'employeeNameTh' => 'Updated By Staff'];
         $this->actingAs($this->staffUser)->put(route('employees.update', $this->employee), $updatedData2)
-             ->assertRedirect(route('employees.index'));
+             ->assertRedirect(route('employees.index') . '#employee-card-' . $this->employee->id);
         $this->assertDatabaseHas('employees', ['id' => $this->employee->id, 'employeeNameTh' => 'Updated By Staff']);
     }
 
@@ -131,8 +131,8 @@ class EmployeeManagementTest extends TestCase
     public function test_admin_can_delete_employee()
     {
         $response = $this->actingAs($this->adminUser)->delete(route('employees.destroy', $this->employee));
-        $response->assertRedirect(route('employees.index'));
-        $this->assertDatabaseMissing('employees', ['id' => $this->employee->id]);
+        $response->assertRedirect();
+        $this->assertSoftDeleted('employees', ['id' => $this->employee->id]);
     }
 
     public function test_unauthorized_users_cannot_delete_employee()
