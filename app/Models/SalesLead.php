@@ -22,7 +22,18 @@ class SalesLead extends Model
         'status', // quoted, deciding, confirmed, transitioned, cancelled
         'workflow_destination',
         'created_by',
-        'confirmed_by'
+        'confirmed_by',
+        'employerEmail',
+        'employerPassword',
+        'outsource_re_code',
+        'outsource_password',
+        'socialSecurityHospital',
+        'businessType',
+        'businessTypeEn',
+        'signerNameTh',
+        'signerNameEn',
+        'signer_2_name_th',
+        'signer_2_name_en'
     ];
 
     /**

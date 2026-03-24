@@ -38,6 +38,17 @@ class SalesLeadController extends Controller
             'employerTaxId' => 'nullable|string|max:255',
             'employerPhone' => 'nullable|string|max:255',
             'jobOwner' => 'nullable|string|max:255',
+            'employerEmail' => 'nullable|string|max:255',
+            'employerPassword' => 'nullable|string|max:255',
+            'outsource_re_code' => 'nullable|string|max:255',
+            'outsource_password' => 'nullable|string|max:255',
+            'socialSecurityHospital' => 'nullable|string|max:255',
+            'businessType' => 'nullable|string|max:255',
+            'businessTypeEn' => 'nullable|string|max:255',
+            'signerNameTh' => 'nullable|string|max:255',
+            'signerNameEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
         ]);
 
         if ($request->filled('employer_id')) {
@@ -50,6 +61,17 @@ class SalesLeadController extends Controller
         } else {
             // Temporary ID logic
             $validated['employerId'] = 'SL-EMP-' . strtoupper(uniqid());
+            $validated['employerEmail'] = $request->employerEmail;
+            $validated['employerPassword'] = $request->employerPassword;
+            $validated['outsource_re_code'] = $request->outsource_re_code;
+            $validated['outsource_password'] = $request->outsource_password;
+            $validated['socialSecurityHospital'] = $request->socialSecurityHospital;
+            $validated['businessType'] = $request->businessType;
+            $validated['businessTypeEn'] = $request->businessTypeEn;
+            $validated['signerNameTh'] = $request->signerNameTh;
+            $validated['signerNameEn'] = $request->signerNameEn;
+            $validated['signer_2_name_th'] = $request->signer_2_name_th;
+            $validated['signer_2_name_en'] = $request->signer_2_name_en;
         }
 
         $validated['status'] = 'quoted';
@@ -210,7 +232,17 @@ class SalesLeadController extends Controller
                     'employerNameEn' => $sales->employerNameEn,
                     'employerTaxId' => $sales->employerTaxId,
                     'employerPhone' => $sales->employerPhone,
-                    // Add other defaults as necessary
+                    'employerEmail' => $sales->employerEmail,
+                    'employerPassword' => $sales->employerPassword,
+                    'outsource_re_code' => $sales->outsource_re_code,
+                    'outsource_password' => $sales->outsource_password,
+                    'socialSecurityHospital' => $sales->socialSecurityHospital,
+                    'businessType' => $sales->businessType,
+                    'businessTypeEn' => $sales->businessTypeEn,
+                    'signerNameTh' => $sales->signerNameTh,
+                    'signerNameEn' => $sales->signerNameEn,
+                    'signer_2_name_th' => $sales->signer_2_name_th,
+                    'signer_2_name_en' => $sales->signer_2_name_en,
                 ]);
                 $sales->employer_id = $realEmployer->id;
                 $sales->save();

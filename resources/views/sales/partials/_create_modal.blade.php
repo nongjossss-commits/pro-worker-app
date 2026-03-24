@@ -61,6 +61,53 @@
                                     <label class="form-label">ชื่อผู้ติดต่อ / เจ้าของงาน</label>
                                     <input type="text" class="form-control" name="jobOwner">
                                 </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">โรงพยาบาลประกันสังคม</label>
+                                    <input type="text" class="form-control" name="socialSecurityHospital">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">อีเมล</label>
+                                    <input type="text" class="form-control" name="employerEmail">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">รหัสผ่านอีเมล</label>
+                                    <input type="text" class="form-control" name="employerPassword">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">รหัส RE Outsource</label>
+                                    <input type="text" class="form-control" name="outsource_re_code">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">รหัสผ่าน Outsource</label>
+                                    <input type="text" class="form-control" name="outsource_password">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">ประเภทธุรกิจ (ไทย)</label>
+                                    <input type="text" class="form-control" name="businessType">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ประเภทธุรกิจ (อังกฤษ)</label>
+                                    <input type="text" class="form-control" name="businessTypeEn">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">ชื่อผู้มีอำนาจลงนาม 1 (ไทย)</label>
+                                    <input type="text" class="form-control" name="signerNameTh">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ชื่อผู้มีอำนาจลงนาม 1 (อังกฤษ)</label>
+                                    <input type="text" class="form-control" name="signerNameEn">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ชื่อผู้มีอำนาจลงนาม 2 (ไทย)</label>
+                                    <input type="text" class="form-control" name="signer_2_name_th">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ชื่อผู้มีอำนาจลงนาม 2 (อังกฤษ)</label>
+                                    <input type="text" class="form-control" name="signer_2_name_en">
+                                </div>
                             </div>
                         </div>
                     </div>

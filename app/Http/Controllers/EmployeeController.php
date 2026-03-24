@@ -92,6 +92,38 @@ public function reinstate(Employee $employee)
     return response()->json(['success' => 'Employee reinstated successfully.']);
 }
 
+    public function search(Request $request)
+    {
+        $searchTerm = $request->input("q");
+        $query = Employee::query()
+            ->whereNull("terminated_at")
+            ->where(function($q) {
+                $q->whereNotIn("status", ["registration_cancelled"])
+                  ->orWhereNull("status");
+            });
+
+        if ($searchTerm) {
+            $term = "%" . $searchTerm . "%";
+            $query->where(function ($q) use ($term) {
+                $q->where("employeeNameTh", "like", $term)
+                  ->orWhere("employeeNameEn", "like", $term)
+                  ->orWhere("employeePassport", "like", $term)
+                  ->orWhere("pinkCardNo", "like", $term)
+                  ->orWhere("employeeWorkPermit", "like", $term)
+                  ->orWhere("employee_id_number", "like", $term)
+                  ->orWhere("name_list_number", "like", $term)
+                  ->orWhere("request_number", "like", $term)
+                  ->orWhere("employer_employee_id", "like", $term);
+            });
+        }
+
+        $employees = $query->select("id", "employeeNameEn", "employeeNameTh", "employeePassport")
+            ->limit(30)
+            ->get();
+
+        return response()->json($employees);
+    }
+
     public function index(Request $request)
 {
     // Filter out 'registration_cancelled' statuses so they don't appear until finalized
