@@ -526,13 +526,22 @@ class ProcessDownload implements ShouldQueue
             $employeeNameTh = $employee->employeeNameTh;
             $employeeNameEn = $employee->employeeNameEn;
 
+            $employeeTitleEn = $employee->employeeTitleEn;
+            $employeeTitleTh = $employee->employeeTitleTh;
+
             // Combine ID and Name directly as raw UTF-8 string first
             $employeeNameStr = '';
-            if ($hasThaiFont && $employeeNameTh) {
-                $employeeNameStr = $employeeNameTh;
+
+            if (!empty($employeeNameEn)) {
+                $prefixEn = !empty($employeeTitleEn) ? $employeeTitleEn . ' ' : '';
+                $employeeNameStr = preg_replace('/[^\x20-\x7E\p{Thai}]/u', '', $prefixEn . $employeeNameEn);
+            } elseif (!empty($employeeNameTh) && $hasThaiFont) {
+                $prefixTh = !empty($employeeTitleTh) ? $employeeTitleTh . ' ' : '';
+                $employeeNameStr = $prefixTh . $employeeNameTh;
             } else {
-                $employeeNameStr = preg_replace('/[^\x20-\x7E]/', '', $employeeNameEn ?? 'Employee');
+                $employeeNameStr = 'Employee';
             }
+
             $headerTextRaw = $employeeNameStr . "   ID: " . $employee->id;
 
             // Convert the ENTIRE right-side string using iconv correctly
