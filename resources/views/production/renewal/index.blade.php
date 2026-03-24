@@ -2726,7 +2726,9 @@
 
             if (collapseEl && employerHeading) {
                 // Scroll to Employer
-                employerHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    employerHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
 
                 // Check if collapsed
                 if (!collapseEl.classList.contains('show')) {

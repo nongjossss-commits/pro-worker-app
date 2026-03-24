@@ -1826,14 +1826,29 @@ window.loadBatchStats = function() {
         const targetOrderId = urlParams.get('order');
         const targetItemId = urlParams.get('item');
         const highlightEmployeeId = urlParams.get('highlight_employee_id');
+        const highlightEmployerId = urlParams.get('highlight_employer_id');
 
-        if (targetOrderId && targetItemId) {
-            const orderHeading = document.getElementById('heading-' + targetOrderId);
-            const collapseElement = document.getElementById('collapse-' + targetOrderId);
+        // Note: Workflow index uses order_id to expand accordions.
+        // We will fallback to highlighting by employer id if passed and order is missing.
+        let actualOrderId = targetOrderId;
+        if (!actualOrderId && highlightEmployerId) {
+             const collapseEls = document.querySelectorAll('.accordion-collapse');
+             collapseEls.forEach(el => {
+                  if (el.getAttribute('data-employer-id') === highlightEmployerId) {
+                      actualOrderId = el.id.replace('collapse-', '');
+                  }
+             });
+        }
+
+        if (actualOrderId && (targetItemId || highlightEmployeeId)) {
+            const orderHeading = document.getElementById('heading-' + actualOrderId);
+            const collapseElement = document.getElementById('collapse-' + actualOrderId);
 
             if (orderHeading && collapseElement) {
                 // Scroll to Order
-                orderHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    orderHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
 
                 // Check if collapsed
                 if (!collapseElement.classList.contains('show')) {
@@ -1876,7 +1891,7 @@ window.loadBatchStats = function() {
                 });
 
                 // Start observing the content wrapper
-                const contentWrapper = document.getElementById('order-content-' + targetOrderId);
+                const contentWrapper = document.getElementById('order-content-' + actualOrderId);
                 if (contentWrapper) {
                     observer.observe(contentWrapper, { childList: true, subtree: true });
 
