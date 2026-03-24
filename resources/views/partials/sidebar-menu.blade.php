@@ -93,25 +93,49 @@
 
 @if(\App\Facades\SuperAdmin::isVisible('finance'))
 @hasanyrole('admin|super-admin')
-<a href="{{ route('finance.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.index') || request()->routeIs('finance.create') ? 'active' : '' }}">
-    <i class="bi bi-cash-coin me-2"></i>{{ __('Finance') }}
-</a>
-<a href="{{ route('finance.bank-accounts.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.bank-accounts.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-    <i class="bi bi-bank me-2"></i>{{ __('Bank Accounts') }}
-</a>
-<a href="{{ route('finance.expense-categories.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expense-categories.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-    <i class="bi bi-tags me-2"></i>{{ __('Expense Categories') }}
-</a>
-<a href="{{ route('finance.expenses.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-    <i class="bi bi-receipt-cutoff me-2"></i>{{ __('Expenses (รายจ่าย)') }}
-</a>
-@if(\App\Facades\SuperAdmin::isVisible('financial_profiles'))
-<a href="{{ route('finance.profiles.builder') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.profiles.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-    <i class="bi bi-file-earmark-person me-2"></i>{{ __('Financial Profiles') }}
-</a>
-@endif
+@php
+    $isFinanceActive = request()->routeIs('finance.index') || request()->routeIs('finance.create');
+    $isFinanceSubMenuActive = request()->routeIs('finance.bank-accounts.*') || request()->routeIs('finance.expense-categories.*') || request()->routeIs('finance.expenses.*') || request()->routeIs('finance.profiles.*');
+@endphp
+
+<div class="list-group-item list-group-item-action p-0 {{ $isFinanceActive || $isFinanceSubMenuActive ? 'active-parent' : '' }}" style="border: none;">
+    <div class="d-flex align-items-stretch w-100">
+        {{-- Left side: Clickable link to Finance Index --}}
+        <a href="{{ route('finance.index') }}" class="flex-grow-1 d-flex align-items-center {{ $isFinanceActive ? 'active text-white' : 'text-dark' }}" style="padding: 0.75rem 1.25rem; text-decoration: none; {{ $isFinanceActive ? 'background-color: var(--bs-primary);' : '' }}">
+            <i class="bi bi-cash-coin me-2"></i>{{ __('Finance') }}
+        </a>
+
+        {{-- Right side: Clickable toggle for sub-menus --}}
+        <button class="btn btn-link shadow-none {{ $isFinanceActive ? 'text-white' : 'text-dark' }} d-flex align-items-center justify-content-center" type="button" data-bs-toggle="collapse" data-bs-target="#financeSubMenu" aria-expanded="{{ $isFinanceSubMenuActive ? 'true' : 'false' }}" aria-controls="financeSubMenu" style="width: 40px; padding: 0; border-radius: 0; {{ $isFinanceActive ? 'background-color: var(--bs-primary);' : '' }}" onclick="this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
+            <i class="bi bi-chevron-{{ $isFinanceSubMenuActive ? 'up' : 'down' }}"></i>
+        </button>
+    </div>
+</div>
+
+<div class="collapse {{ $isFinanceSubMenuActive ? 'show' : '' }}" id="financeSubMenu">
+    <a href="{{ route('finance.bank-accounts.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.bank-accounts.*') ? 'active' : '' }}" style="padding-left: 3rem; border-top: none;">
+        <i class="bi bi-bank me-2"></i>{{ __('Bank Accounts') }}
+    </a>
+    <a href="{{ route('finance.expense-categories.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expense-categories.*') ? 'active' : '' }}" style="padding-left: 3rem;">
+        <i class="bi bi-tags me-2"></i>{{ __('Expense Categories') }}
+    </a>
+    <a href="{{ route('finance.expenses.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" style="padding-left: 3rem;">
+        <i class="bi bi-receipt-cutoff me-2"></i>{{ __('Expenses (รายจ่าย)') }}
+    </a>
+    @if(\App\Facades\SuperAdmin::isVisible('financial_profiles'))
+    <a href="{{ route('finance.profiles.builder') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.profiles.*') ? 'active' : '' }}" style="padding-left: 3rem;">
+        <i class="bi bi-file-earmark-person me-2"></i>{{ __('Financial Profiles') }}
+    </a>
+    @endif
+</div>
 @endhasanyrole
 @endif
+
+@hasanyrole('admin|super-admin|staff')
+<a href="{{ route('sales.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('sales.*') ? 'active' : '' }}">
+    <i class="bi bi-megaphone-fill me-2"></i>{{ __('Read and Sale') }}
+</a>
+@endhasanyrole
 
 {{-- V2.4-S14: Production & Workflow Menus --}}
 @if(Route::has('production.index'))
