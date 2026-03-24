@@ -31,6 +31,13 @@
                                 <small class="d-block text-muted">Combines all files from all selected employees into one single folder.</small>
                             </label>
                         </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="download_type" id="dlTypePdfIndividual" value="pdf_individual">
+                            <label class="form-check-label" for="dlTypePdfIndividual">
+                                Merged PDF (Individual)
+                                <small class="d-block text-muted">Combines files into a single PDF per employee, then zips them together.</small>
+                            </label>
+                        </div>
                     </div>
 
                     <hr>
@@ -367,6 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Pretty type
                     let displayType = task.type.toUpperCase();
                     if(task.type === 'zip_single') displayType = 'ZIP (Single Folder)';
+                    if(task.type === 'pdf_individual') displayType = 'PDF (Individual)';
 
                     tbody.innerHTML += `
                         <tr>

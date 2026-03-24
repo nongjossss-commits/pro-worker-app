@@ -119,6 +119,8 @@ class ProcessDownload implements ShouldQueue
                 $outputFile = $this->createZip($employees, $tempDir, $task, false);
             } elseif ($task->type === 'zip_single') {
                 $outputFile = $this->createZip($employees, $tempDir, $task, true);
+            } elseif ($task->type === 'pdf_individual') {
+                $outputFile = $this->createIndividualPdfsZip($employees, $tempDir, $task);
             } else {
                 $outputFile = $this->createPdf($employees, $tempDir, $task);
             }
@@ -235,6 +237,77 @@ class ProcessDownload implements ShouldQueue
                 }
             }
         }
+    }
+
+    protected function createIndividualPdfsZip($employees, $tempDir, $task)
+    {
+        if (!class_exists(Fpdi::class)) {
+            throw new Exception("FPDI library not found.");
+        }
+
+        $zipFileName = 'download_individual_pdfs_' . $task->id . '_' . date('YmdHis') . '.zip';
+        $zipPath = storage_path('app/public/downloads/' . $zipFileName);
+
+        if (!file_exists(dirname($zipPath))) {
+            mkdir(dirname($zipPath), 0755, true);
+        }
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE) !== TRUE) {
+            throw new Exception("Cannot create zip file");
+        }
+
+        $hasThaiFont = false;
+        $fontDir = defined('FPDF_FONTPATH') ? FPDF_FONTPATH : storage_path('fonts/');
+
+        if (file_exists($fontDir . 'THSarabunNew.php')) {
+            $hasThaiFont = true;
+        }
+
+        foreach ($employees as $employee) {
+            try {
+                $pdf = new Fpdi();
+                $pdf->SetAutoPageBreak(false);
+
+                if ($hasThaiFont) {
+                    $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
+                }
+
+                $hasPages = false;
+
+                foreach ($this->selectedFiles as $fileType) {
+                    try {
+                        $pageCountBefore = $pdf->PageNo();
+                        $this->addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont);
+                        if ($pdf->PageNo() > $pageCountBefore) {
+                            $hasPages = true;
+                        }
+                    } catch (Throwable $e) {
+                        Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
+                    }
+                }
+
+                if ($hasPages) {
+                    if (!empty($employee->employeeNameEn)) {
+                        $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
+                        $rawName = $prefix . $employee->employeeNameEn;
+                    } else {
+                        $rawName = $employee->employeeNameTh ?? 'Employee';
+                    }
+
+                    $safeName = $this->sanitizeFileName($rawName) . '_' . $employee->id;
+                    $pdfPath = $tempDir . '/' . $safeName . '.pdf';
+
+                    $pdf->Output('F', $pdfPath);
+                    $zip->addFile($pdfPath, $safeName . '.pdf');
+                }
+            } catch (Throwable $e) {
+                Log::warning("Failed to create individual PDF for employee {$employee->id}: " . $e->getMessage());
+            }
+        }
+
+        $zip->close();
+        return 'downloads/' . $zipFileName;
     }
 
     protected function createPdf($employees, $tempDir, $task)
