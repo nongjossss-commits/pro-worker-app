@@ -145,9 +145,15 @@
                 </h5>
                 @if(isset($activeTab) && !$isReadOnly)
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-global-toggle-cancelled" onclick="toggleGlobalCancelled()">
-                            <i class="bi bi-eye-slash-fill me-1"></i> {{ __('Hide Cancelled') }}
-                        </button>
+                        @if(request('hide_cancelled', '1') === '0')
+                            <button class="btn btn-secondary btn-sm" id="btn-global-toggle-cancelled" onclick="toggleGlobalCancelled()">
+                                <i class="bi bi-eye-fill me-1"></i> {{ __('Hide Cancelled') }}
+                            </button>
+                        @else
+                            <button class="btn btn-outline-secondary btn-sm" id="btn-global-toggle-cancelled" onclick="toggleGlobalCancelled()">
+                                <i class="bi bi-eye-slash-fill me-1"></i> {{ __('Hide Cancelled') }}
+                            </button>
+                        @endif
                         <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
                             <i class="bi bi-bell-fill me-1"></i> {{ __('Notify Settings') }}
                         </button>
@@ -766,6 +772,18 @@
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const activeTabId = @json($activeTab->id ?? null);
+
+    // --- Global Toggle Cancelled ---
+    window.toggleGlobalCancelled = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentHide = urlParams.has('hide_cancelled') ? urlParams.get('hide_cancelled') : '1';
+        if (currentHide === '1') {
+            urlParams.set('hide_cancelled', '0');
+        } else {
+            urlParams.set('hide_cancelled', '1');
+        }
+        window.location.search = urlParams.toString();
+    }
 
     // --- Step Management JS ---
     document.getElementById('addStepForm')?.addEventListener('submit', function(e) {
