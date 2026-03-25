@@ -24,6 +24,11 @@ if (typeof window.financialManager === 'undefined') {
             employees: initialData.employees || [], // List of candidates {id, name} (Scoped to Current Stage)
             selectedTransactionItems: [], // List of IDs (ProductionItem ID or 'emp_ID')
 
+            // Employee Filter State
+            tierEmployeeFilter: 'active', // 'active' or 'cancelled'
+            newTransactionEmployeeFilter: 'active',
+            editTransactionEmployeeFilter: 'active',
+
             // Tax Settings
             vatIncluded: false,
             vatRate: 7,
@@ -247,6 +252,11 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             // --- Employee Filter Logic ---
+            isCancelledStatus(status) {
+                if (!status) return false;
+                return status.endsWith('cancelled') || status === 'cancelled';
+            },
+
             get allEmployeesForTier() {
                 // Return Merged List for Price Tier Modal
                 // This includes Existing ProductionItems AND Candidates (Employees not yet in Order)
@@ -274,6 +284,10 @@ if (typeof window.financialManager === 'undefined') {
                 this.productionItems.forEach(item => {
                     if (usedItemIds.has(item.id)) return; // Locked by installment
 
+                    const isCancelled = this.isCancelledStatus(item.status);
+                    if (this.tierEmployeeFilter === 'active' && isCancelled) return;
+                    if (this.tierEmployeeFilter === 'cancelled' && !isCancelled) return;
+
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
                     list.push({ ...item, type: 'item', last_step_name: item.last_step_name });
                 });
@@ -282,6 +296,10 @@ if (typeof window.financialManager === 'undefined') {
                 this.employees.forEach(emp => {
                     if (itemsByEmpId[emp.id]) return; // Already exists as item
                     if (usedEmployeeIds.has(emp.id)) return; // Locked
+
+                    const isCancelled = this.isCancelledStatus(emp.status);
+                    if (this.tierEmployeeFilter === 'active' && isCancelled) return;
+                    if (this.tierEmployeeFilter === 'cancelled' && !isCancelled) return;
 
                     list.push({
                         id: 'emp_' + emp.id,
@@ -294,6 +312,7 @@ if (typeof window.financialManager === 'undefined') {
                         passport: emp.passport,
                         employee_id: emp.id,
                         last_step_name: emp.last_step_name,
+                        status: emp.status,
                         type: 'employee'
                     });
                 });
@@ -325,6 +344,10 @@ if (typeof window.financialManager === 'undefined') {
                 this.productionItems.forEach(item => {
                     if (usedItemIds.has(item.id)) return;
 
+                    const isCancelled = this.isCancelledStatus(item.status);
+                    if (this.newTransactionEmployeeFilter === 'active' && isCancelled) return;
+                    if (this.newTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
+
                     let hasPrice = true;
                     if (this.pricingMode === 'per_head') {
                          hasPrice = !!this.getTierForItem(item.id);
@@ -347,6 +370,7 @@ if (typeof window.financialManager === 'undefined') {
                         insurance_type: item.insurance_type,
                         passport: item.passport,
                         last_step_name: item.last_step_name,
+                        status: item.status,
                         type: 'item'
                     });
                 });
@@ -356,6 +380,10 @@ if (typeof window.financialManager === 'undefined') {
                     this.employees.forEach(emp => {
                         if (itemsByEmpId[emp.id]) return;
                         if (usedEmployeeIds.has(emp.id)) return;
+
+                        const isCancelled = this.isCancelledStatus(emp.status);
+                        if (this.newTransactionEmployeeFilter === 'active' && isCancelled) return;
+                        if (this.newTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
 
                         list.push({
                             id: 'emp_' + emp.id,
@@ -367,6 +395,7 @@ if (typeof window.financialManager === 'undefined') {
                             insurance_type: emp.insurance_type,
                             passport: emp.passport,
                             last_step_name: emp.last_step_name,
+                            status: emp.status,
                             type: 'employee'
                         });
                     });
@@ -406,6 +435,10 @@ if (typeof window.financialManager === 'undefined') {
                     const isAttached = attachedItemIds.has(item.id);
                     const isUsed = usedItemIds.has(item.id);
 
+                    const isCancelled = this.isCancelledStatus(item.status);
+                    if (this.editTransactionEmployeeFilter === 'active' && isCancelled) return;
+                    if (this.editTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
+
                     if (isAttached || !isUsed) {
                          list.push({
                             id: item.id,
@@ -417,6 +450,7 @@ if (typeof window.financialManager === 'undefined') {
                             insurance_type: item.insurance_type,
                             passport: item.passport,
                             last_step_name: item.last_step_name,
+                            status: item.status,
                             type: 'item',
                             attached: isAttached
                         });
@@ -428,6 +462,10 @@ if (typeof window.financialManager === 'undefined') {
                     if (itemsByEmpId[emp.id]) return; // Already has item
                     if (usedEmployeeIds.has(emp.id)) return; // Used elsewhere
 
+                    const isCancelled = this.isCancelledStatus(emp.status);
+                    if (this.editTransactionEmployeeFilter === 'active' && isCancelled) return;
+                    if (this.editTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
+
                     list.push({
                         id: 'emp_' + emp.id,
                         name: emp.name,
@@ -438,6 +476,7 @@ if (typeof window.financialManager === 'undefined') {
                         insurance_type: emp.insurance_type,
                         passport: emp.passport,
                         last_step_name: emp.last_step_name,
+                        status: emp.status,
                         type: 'employee',
                         attached: false
                     });

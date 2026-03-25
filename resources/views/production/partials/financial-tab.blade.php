@@ -22,7 +22,8 @@
             'insurance_type' => $item->employee ? $item->employee->insurance_type : '',
             'passport' => $item->employee ? $item->employee->employeePassport : '',
             'employee_id' => $item->employee_id,
-            'last_step_name' => $lastStepName
+            'last_step_name' => $lastStepName,
+            'status' => $item->employee ? $item->employee->status : $item->status
         ];
     })) }},
     employees: {{ json_encode(($employees ?? collect())->map(function($emp) {
@@ -40,7 +41,8 @@
             'nationality' => $emp->employeeNationality,
             'insurance_type' => $emp->insurance_type,
             'passport' => $emp->employeePassport,
-            'last_step_name' => $lastStepName
+            'last_step_name' => $lastStepName,
+            'status' => $emp->status
         ];
     })) }},
     productionId: {{ $production->id }},
@@ -640,14 +642,24 @@ class="row">
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-2">
-                    <div class="mb-2 d-flex gap-2">
-                        <input type="text" class="form-control form-control-sm" placeholder="Search employee..." x-model="modalSearch">
-                        <button class="btn btn-sm btn-outline-secondary" @click="selectAllForModal()" title="Select All Visible">
-                            <i class="bi bi-check-all"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary" @click="deselectAllForModal()" title="Clear Selection">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
+                    <div class="d-flex justify-content-between mb-2 gap-2">
+                        <ul class="nav nav-pills nav-pills-sm custom-nav-pills w-50" style="font-size: 0.8rem;">
+                            <li class="nav-item flex-fill text-center">
+                                <button class="nav-link w-100 py-1 px-2" :class="{ 'active': tierEmployeeFilter === 'active' }" @click="tierEmployeeFilter = 'active'" type="button">Active</button>
+                            </li>
+                            <li class="nav-item flex-fill text-center">
+                                <button class="nav-link w-100 py-1 px-2" :class="{ 'active': tierEmployeeFilter === 'cancelled' }" @click="tierEmployeeFilter = 'cancelled'" type="button">Cancelled</button>
+                            </li>
+                        </ul>
+                        <div class="d-flex gap-1 w-50">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search..." x-model="modalSearch">
+                            <button class="btn btn-sm btn-outline-secondary" @click="selectAllForModal()" title="Select All Visible">
+                                <i class="bi bi-check-all"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" @click="deselectAllForModal()" title="Clear Selection">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="list-group list-group-flush border rounded small" style="max-height: 300px; overflow-y: auto;">
                         <template x-for="item in allEmployeesForTier" :key="item.id">
@@ -853,6 +865,14 @@ class="row">
                             </div>
                             <div class="col-md-6 border-start">
                                 <label class="form-label small fw-bold mb-1">Select Employees</label>
+                                <ul class="nav nav-pills nav-pills-sm custom-nav-pills mb-2" style="font-size: 0.75rem;">
+                                    <li class="nav-item flex-fill text-center">
+                                        <button class="nav-link w-100 py-0" :class="{ 'active': newTransactionEmployeeFilter === 'active' }" @click="newTransactionEmployeeFilter = 'active'" type="button">Active</button>
+                                    </li>
+                                    <li class="nav-item flex-fill text-center">
+                                        <button class="nav-link w-100 py-0" :class="{ 'active': newTransactionEmployeeFilter === 'cancelled' }" @click="newTransactionEmployeeFilter = 'cancelled'" type="button">Cancelled</button>
+                                    </li>
+                                </ul>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div class="small text-muted" style="font-size: 0.75rem;">
                                         Selected: <span x-text="selectedTransactionItems.length"></span>
@@ -1108,6 +1128,14 @@ class="row">
                              </div>
                              <div class="col-md-6 border-start">
                                 <label class="form-label small fw-bold mb-1">Edit Employees</label>
+                                <ul class="nav nav-pills nav-pills-sm custom-nav-pills mb-2" style="font-size: 0.75rem;">
+                                    <li class="nav-item flex-fill text-center">
+                                        <button class="nav-link w-100 py-0" :class="{ 'active': editTransactionEmployeeFilter === 'active' }" @click="editTransactionEmployeeFilter = 'active'" type="button">Active</button>
+                                    </li>
+                                    <li class="nav-item flex-fill text-center">
+                                        <button class="nav-link w-100 py-0" :class="{ 'active': editTransactionEmployeeFilter === 'cancelled' }" @click="editTransactionEmployeeFilter = 'cancelled'" type="button">Cancelled</button>
+                                    </li>
+                                </ul>
                                 <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
                                     <div class="list-group list-group-flush">
                                         <!-- Show ALL items for edit (Available + Currently Attached) -->
