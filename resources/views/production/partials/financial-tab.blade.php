@@ -23,7 +23,7 @@
             'passport' => $item->employee ? $item->employee->employeePassport : '',
             'employee_id' => $item->employee_id,
             'last_step_name' => $lastStepName,
-            'status' => $item->employee ? $item->employee->status : $item->status
+            'status' => $item->status
         ];
     })) }},
     employees: {{ json_encode(($employees ?? collect())->map(function($emp) {
