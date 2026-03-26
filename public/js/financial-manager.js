@@ -284,11 +284,12 @@ if (typeof window.financialManager === 'undefined') {
                 this.productionItems.forEach(item => {
                     if (usedItemIds.has(item.id)) return; // Locked by installment
 
+                    if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
+
                     const isCancelled = this.isCancelledStatus(item.status);
                     if (this.tierEmployeeFilter === 'active' && isCancelled) return;
                     if (this.tierEmployeeFilter === 'cancelled' && !isCancelled) return;
 
-                    if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
                     list.push({ ...item, type: 'item', last_step_name: item.last_step_name });
                 });
 
@@ -344,6 +345,10 @@ if (typeof window.financialManager === 'undefined') {
                 this.productionItems.forEach(item => {
                     if (usedItemIds.has(item.id)) return;
 
+                    if (item.employee_id) {
+                        itemsByEmpId[item.employee_id] = item.id;
+                    }
+
                     const isCancelled = this.isCancelledStatus(item.status);
                     if (this.newTransactionEmployeeFilter === 'active' && isCancelled) return;
                     if (this.newTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
@@ -356,7 +361,6 @@ if (typeof window.financialManager === 'undefined') {
                     if (this.pricingMode === 'per_head' && !hasPrice) return;
 
                     if (item.employee_id) {
-                        itemsByEmpId[item.employee_id] = item.id;
                         if (usedEmployeeIds.has(item.employee_id)) return;
                     }
 
