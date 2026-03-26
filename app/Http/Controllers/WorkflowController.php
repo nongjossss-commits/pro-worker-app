@@ -1612,12 +1612,41 @@ class WorkflowController extends Controller
         // Capture employee before deleting the item
         $employee = $item->employee;
 
-        $item->delete();
+        $action = $request->input('action', 'cancel_only');
 
-        // Check if employee should also be deleted
-        // Logic: If employee was created specifically for this workflow (status 'onboarding')
-        if ($employee && $employee->status === 'onboarding') {
+        if ($action === 'full_delete' && $employee) {
+            $cancelWorkflows = $request->input('cancel_workflows', []);
+            if (!empty($cancelWorkflows) && is_array($cancelWorkflows)) {
+                foreach ($cancelWorkflows as $workflowData) {
+                    if (is_string($workflowData)) {
+                        $workflowData = json_decode($workflowData, true);
+                    }
+                    if (isset($workflowData['is_registration']) && $workflowData['is_registration']) {
+                        $employee->status = 'registration_cancelled';
+                        $employee->save();
+                    } elseif (isset($workflowData['is_renewal']) && $workflowData['is_renewal']) {
+                        $employee->status = 'renewal_cancelled';
+                        $employee->save();
+                    } elseif (isset($workflowData['item_id']) && $workflowData['item_id'] != $item->id) {
+                        $otherItem = \App\Models\ProductionItem::find($workflowData['item_id']);
+                        if ($otherItem) {
+                            $otherItem->status = 'cancelled';
+                            $otherItem->save();
+                        }
+                    }
+                }
+            }
+            $item->status = 'cancelled';
+            $item->save();
             $employee->delete();
+        } else {
+            // Check if employee should also be deleted normally
+            // Logic: If employee was created specifically for this workflow (status 'onboarding')
+            if ($employee && $employee->status === 'onboarding') {
+                $employee->delete();
+            }
+            $item->status = 'cancelled';
+            $item->save();
         }
 
         // Recalculate Stats

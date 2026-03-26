@@ -99,6 +99,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/employees/advanced-export', [EmployeeController::class, 'advancedExport'])->name('employees.advanced_export');
     Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->name('employees.history');
     Route::get('/employees/{employee}/documents/{field}', [EmployeeController::class, 'serveDocument'])->name('employees.documents.serve');
+    Route::get('/api/employees/{employee}/workflows', function(\App\Models\Employee $employee) {
+        return response()->json([
+            'success' => true,
+            'workflows' => $employee->active_workflows
+        ]);
+    })->name('api.employees.workflows');
     Route::get('/employees/{employee}/documents/{field}/pdf', [EmployeeController::class, 'downloadDocumentAsPdf'])->name('employees.documents.pdf');
     Route::get('custom-fields/{id}/pdf', [App\Http\Controllers\CustomFieldController::class, 'downloadCustomFieldPdf'])->name('custom-fields.pdf');
 

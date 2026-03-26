@@ -1530,19 +1530,55 @@ window.loadBatchStats = function() {
         });
     }
 
-    window.deleteItem = function(itemId) {
+    window.deleteItem = async function(itemId) {
+        // Find employee id associated with this item first if possible
+        const itemCard = document.getElementById(`item-card-${itemId}`);
+        const employeeId = itemCard ? itemCard.dataset.employeeId : null;
+
+        let workflowsHtml = '';
+        let workflows = [];
+        if (employeeId) {
+            try {
+                const response = await fetch(`/api/employees/${employeeId}/workflows`);
+                const data = await response.json();
+                if (data.success && data.workflows.length > 0) {
+                    workflows = data.workflows.filter(wf => wf.item_id != itemId); // Exclude current item
+                    if (workflows.length > 0) {
+                        workflowsHtml = `<div class="mt-3 text-start"><p class="mb-2 text-danger fw-bold">ลูกจ้างคนนี้กำลังดำเนินการอยู่ในเมนูอื่นๆ ด้วย คุณต้องการลบ (ยกเลิก) ออกจากเมนูเหล่านี้ด้วยหรือไม่?</p><div class="list-group text-start">`;
+                        workflows.forEach((wf, index) => {
+                            workflowsHtml += `
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1 cancel-workflow-checkbox" type="checkbox" value='${JSON.stringify(wf)}' checked>
+                                    ${wf.name} (${wf.status_label})
+                                </label>
+                            `;
+                        });
+                        workflowsHtml += `</div><p class="mt-2 text-muted small">*หากไม่เลือก ลูกจ้างจะถูกลบแค่ในการ์ดงานนี้เท่านั้น</p></div>`;
+                    }
+                }
+            } catch (e) { console.error('Error fetching workflows', e); }
+        }
+
         Swal.fire({
             title: '{{ __("Delete Item?") }}',
-            text: '{{ __("This cannot be undone.") }}',
+            html: '{{ __("This will remove the item from this workflow.") }}' + workflowsHtml,
             icon: 'error',
             showCancelButton: true,
             confirmButtonText: '{{ __("Delete") }}',
             confirmButtonColor: '#d33'
         }).then((result) => {
             if (result.isConfirmed) {
+                const checkboxes = document.querySelectorAll('.cancel-workflow-checkbox:checked');
+                const cancelWorkflows = Array.from(checkboxes).map(cb => cb.value);
+
                 fetch(`/workflow/item/${itemId}`, {
-                    method: 'DELETE',
-                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    method: 'POST', // Use POST with _method=DELETE for JSON body
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({
+                        _method: 'DELETE',
+                        action: 'full_delete',
+                        cancel_workflows: cancelWorkflows
+                    })
                 })
                 .then(res => res.json())
                 .then(data => {

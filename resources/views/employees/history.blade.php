@@ -287,11 +287,49 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
             } else if (target.classList.contains('btn-move-to-trash')) {
-                Swal.fire({ title: 'ยืนยันการย้ายไปถังขยะ', text: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33' })
-                    .then(result => {
-                        if (result.isConfirmed) {
-                            performAction(`/employees/${employeeId}`, { _method: 'DELETE' });
+                // Fetch workflows to check if they should be cancelled
+                fetch(`/api/employees/${employeeId}/workflows`)
+                    .then(res => res.json())
+                    .then(data => {
+                        let workflowsHtml = '';
+                        let workflows = [];
+                        if (data.success && data.workflows && data.workflows.length > 0) {
+                            workflows = data.workflows;
+                            workflowsHtml = `<div class="mt-3 text-start"><p class="mb-2 text-danger fw-bold">ลูกจ้างคนนี้กำลังดำเนินการอยู่ในเมนูอื่นๆ ด้วย คุณต้องการลบ (ยกเลิก) ออกจากเมนูเหล่านี้ด้วยหรือไม่?</p><div class="list-group text-start">`;
+                            workflows.forEach((wf) => {
+                                workflowsHtml += `
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-1 cancel-workflow-checkbox" type="checkbox" name="cancel_workflows[]" value='${JSON.stringify(wf)}' checked>
+                                        ${wf.name} (${wf.status_label})
+                                    </label>
+                                `;
+                            });
+                            workflowsHtml += `</div><p class="mt-2 text-muted small">*หากไม่เลือก ลูกจ้างจะถูกย้ายไปถังขยะแต่ยังคงแสดงชื่อในเมนูย่อย พร้อมสถานะถูกลบ</p></div>`;
                         }
+
+                        Swal.fire({
+                            title: 'ยืนยันการย้ายไปถังขยะ',
+                            html: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง" + workflowsHtml,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'ยืนยัน',
+                            cancelButtonText: 'ยกเลิก',
+                            confirmButtonColor: '#d33'
+                        }).then(result => {
+                            if (result.isConfirmed) {
+                                const checkboxes = document.querySelectorAll('.cancel-workflow-checkbox:checked');
+                                const cancelWorkflows = Array.from(checkboxes).map(cb => cb.value);
+                                performAction(`/employees/${employeeId}`, { _method: 'DELETE', cancel_workflows: cancelWorkflows });
+                            }
+                        });
+                    }).catch(err => {
+                        console.error('Error fetching workflows:', err);
+                        Swal.fire({ title: 'ยืนยันการย้ายไปถังขยะ', text: "ลูกจ้างจะถูกย้ายไปที่ถังขยะส่วนกลาง", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#d33' })
+                            .then(result => {
+                                if (result.isConfirmed) {
+                                    performAction(`/employees/${employeeId}`, { _method: 'DELETE' });
+                                }
+                            });
                     });
             } else if (target.classList.contains('btn-transfer-employee')) {
                 isBulkTransfer = false;
@@ -389,22 +427,86 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!selectedEmployer) return showToast('กรุณาเลือกนายจ้างใหม่ก่อน', 'danger');
             const { id: newEmployerId, name: newEmployerName } = selectedEmployer;
 
-            const swalHtml = isBulkTransfer
-                ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
-                : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
+            let workflowsHtml = '';
+            let isFetching = true;
 
-            Swal.fire({ title: 'ยืนยันการย้ายนายจ้าง', html: swalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
-                .then(result => {
-                    if (result.isConfirmed) {
-                        if (isBulkTransfer) {
-                            const employeeIds = JSON.parse(employeeToTransferIdInput.value);
-                            performAction('/employees/bulk-transfer', { employee_ids: employeeIds, new_employer_id: newEmployerId });
-                        } else {
-                            const employeeId = employeeToTransferIdInput.value;
-                            performAction(`/employees/${employeeId}/transfer`, { new_employer_id: newEmployerId });
+            const handleSwal = () => {
+                const baseSwalHtml = isBulkTransfer
+                    ? `คุณต้องการย้ายลูกจ้างที่เลือกทั้งหมดไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`
+                    : `คุณต้องการย้ายลูกจ้างไปยัง <strong>${newEmployerName}</strong> ใช่หรือไม่?`;
+
+                const finalHtml = baseSwalHtml + workflowsHtml;
+
+                Swal.fire({ title: 'ยืนยันการย้ายนายจ้าง', html: finalHtml, icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก' })
+                    .then(result => {
+                        if (result.isConfirmed) {
+
+                            if (isBulkTransfer) {
+                                const employeeIds = JSON.parse(employeeToTransferIdInput.value);
+                                const globalActionSelect = document.getElementById('global-workflow-action-select');
+                                const globalAction = globalActionSelect ? globalActionSelect.value : 'keep';
+
+                                // For bulk, we send a special payload that tells backend to apply global action
+                                performAction('/employees/bulk-transfer', {
+                                    employee_ids: employeeIds,
+                                    new_employer_id: newEmployerId,
+                                    global_workflow_action: globalAction
+                                });
+                            } else {
+                                const workflowActions = [];
+                                document.querySelectorAll('.workflow-action-select').forEach(select => {
+                                    const action = select.value;
+                                    const wfData = JSON.parse(select.dataset.wfInfo);
+                                    wfData.action = action;
+                                    workflowActions.push(wfData);
+                                });
+                                const employeeId = employeeToTransferIdInput.value;
+                                performAction(`/employees/${employeeId}/transfer`, { new_employer_id: newEmployerId, workflow_actions: workflowActions });
+                            }
                         }
-                    }
-                });
+                    });
+            };
+
+            if (!isBulkTransfer) {
+                const employeeId = employeeToTransferIdInput.value;
+                fetch(`/api/employees/${employeeId}/workflows`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && data.workflows && data.workflows.length > 0) {
+                            workflowsHtml = `<div class="mt-3 text-start"><p class="mb-2 text-danger fw-bold">พบการดำเนินงานค้างอยู่กับนายจ้างเดิม:</p><div class="list-group text-start">`;
+                            data.workflows.forEach((wf) => {
+                                workflowsHtml += `
+                                    <div class="list-group-item">
+                                        <div class="mb-2"><strong>${wf.name} (${wf.status_label})</strong></div>
+                                        <select class="form-select form-select-sm workflow-action-select" data-wf-info='${JSON.stringify(wf)}'>
+                                            <option value="keep">คงไว้กับนายจ้างเดิม</option>
+                                            <option value="move">ย้ายไปนายจ้างใหม่</option>
+                                            <option value="cancel">ลบ/ยกเลิก</option>
+                                        </select>
+                                    </div>
+                                `;
+                            });
+                            workflowsHtml += `</div></div>`;
+                        }
+                        handleSwal();
+                    }).catch(err => {
+                        console.error('Error fetching workflows:', err);
+                        handleSwal();
+                    });
+            } else {
+                workflowsHtml = `
+                    <div class="mt-4 text-start p-3 bg-light rounded border">
+                        <label class="form-label text-danger fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>สำหรับลูกจ้างที่มีการดำเนินงานค้างอยู่กับนายจ้างเดิม (หากมี):</label>
+                        <select class="form-select" id="global-workflow-action-select">
+                            <option value="keep">คงการดำเนินงานไว้กับนายจ้างเดิมตามปกติ</option>
+                            <option value="move">ย้ายการดำเนินงานทั้งหมดไปให้นายจ้างใหม่ด้วย</option>
+                            <option value="cancel">ลบ/ยกเลิก การดำเนินงานที่ค้างอยู่ทั้งหมด</option>
+                        </select>
+                        <small class="text-muted d-block mt-2">*การตั้งค่านี้จะมีผลกับลูกจ้างทุกคนที่เลือก</small>
+                    </div>
+                `;
+                handleSwal();
+            }
         });
     }
 

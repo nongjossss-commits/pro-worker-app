@@ -859,6 +859,33 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function destroy(Employee $employee)
     {
+        $request = request();
+        $cancelWorkflows = $request->input('cancel_workflows', []);
+
+        // Handle cancelling workflows if requested
+        if (!empty($cancelWorkflows) && is_array($cancelWorkflows)) {
+            foreach ($cancelWorkflows as $workflowData) {
+                // Decode JSON if it's passed as JSON string
+                if (is_string($workflowData)) {
+                    $workflowData = json_decode($workflowData, true);
+                }
+
+                if (isset($workflowData['is_registration']) && $workflowData['is_registration']) {
+                    $employee->status = 'registration_cancelled';
+                    $employee->save();
+                } elseif (isset($workflowData['is_renewal']) && $workflowData['is_renewal']) {
+                    $employee->status = 'renewal_cancelled';
+                    $employee->save();
+                } elseif (isset($workflowData['item_id'])) {
+                    $item = \App\Models\ProductionItem::find($workflowData['item_id']);
+                    if ($item) {
+                        $item->status = 'cancelled';
+                        $item->save();
+                    }
+                }
+            }
+        }
+
         $employee->delete();
 
         if (request()->ajax() || request()->wantsJson()) {
@@ -1290,6 +1317,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $validated = $request->validate([
             'new_employer_id' => 'required|exists:employers,id',
+            'workflow_actions' => 'nullable|array',
         ]);
 
         // Ensure the employee is actually terminated before transferring
@@ -1297,8 +1325,64 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return response()->json(['success' => false, 'message' => 'Employee is not terminated and cannot be transferred.'], 422);
         }
 
+        $newEmployerId = $validated['new_employer_id'];
+        $workflowActions = $validated['workflow_actions'] ?? [];
+
+        // Handle active workflows if specified
+        if (!empty($workflowActions)) {
+            foreach ($workflowActions as $wfAction) {
+                if (is_string($wfAction)) {
+                    $wfAction = json_decode($wfAction, true);
+                }
+
+                $actionType = $wfAction['action'] ?? 'keep'; // 'cancel', 'keep', 'move'
+
+                if ($actionType === 'cancel') {
+                    if (isset($wfAction['is_registration']) && $wfAction['is_registration']) {
+                        $employee->status = 'registration_cancelled';
+                        $employee->save();
+                    } elseif (isset($wfAction['is_renewal']) && $wfAction['is_renewal']) {
+                        $employee->status = 'renewal_cancelled';
+                        $employee->save();
+                    } elseif (isset($wfAction['item_id'])) {
+                        $item = \App\Models\ProductionItem::find($wfAction['item_id']);
+                        if ($item) {
+                            $item->status = 'cancelled';
+                            $item->save();
+                        }
+                    }
+                } elseif ($actionType === 'move') {
+                    if (isset($wfAction['item_id'])) {
+                        $item = \App\Models\ProductionItem::with('order')->find($wfAction['item_id']);
+                        if ($item && $item->order) {
+                            $oldOrder = $item->order;
+
+                            // Find or create an equivalent order for the new employer
+                            $newOrder = \App\Models\ProductionOrder::firstOrCreate(
+                                [
+                                    'employer_id' => $newEmployerId,
+                                    'work_type_id' => $oldOrder->work_type_id,
+                                    'status' => $oldOrder->status, // Use the same status
+                                ],
+                                [
+                                    'type' => 'employer',
+                                    'created_by' => auth()->id(),
+                                ]
+                            );
+
+                            // Move the item
+                            $item->production_order_id = $newOrder->id;
+                            $item->save();
+                        }
+                    }
+                    // For registration and renewal, changing the employee's employer_id automatically moves them
+                    // but we ensure their status stays active (pending).
+                }
+            }
+        }
+
         $employee->update([
-            'employer_id' => $validated['new_employer_id'],
+            'employer_id' => $newEmployerId,
             'terminated_at' => null, // Make the employee active again
             'termination_reason' => null, // Clear the old reason
         ]);
@@ -1320,6 +1404,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_ids' => 'required|array',
             'employee_ids.*' => 'exists:employees,id',
             'new_employer_id' => 'required|exists:employers,id',
+            'workflow_actions' => 'nullable|array',
+            'global_workflow_action' => 'nullable|string|in:keep,move,cancel'
         ]);
 
         // Additional security: Explicitly check that the user owns ALL employees they are trying to transfer.
@@ -1333,10 +1419,123 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        Employee::whereIn('id', $validated['employee_ids'])
-            ->whereNotNull('terminated_at') // Ensure we only transfer terminated employees
+        $newEmployerId = $validated['new_employer_id'];
+        $workflowActions = $validated['workflow_actions'] ?? [];
+        $globalWorkflowAction = $validated['global_workflow_action'] ?? null;
+        $employeeIds = $validated['employee_ids'];
+
+        // Ensure we only process terminated employees
+        $terminatedEmployeeIds = Employee::whereIn('id', $employeeIds)
+            ->whereNotNull('terminated_at')
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($terminatedEmployeeIds)) {
+            return response()->json(['success' => false, 'message' => 'None of the selected employees are terminated.'], 422);
+        }
+
+        // Apply global action if present
+        if ($globalWorkflowAction && $globalWorkflowAction !== 'keep') {
+            foreach ($terminatedEmployeeIds as $empId) {
+                $employee = Employee::find($empId);
+                if (!$employee) continue;
+
+                $workflows = $employee->active_workflows;
+                foreach ($workflows as $wf) {
+                    if ($wf->is_registration) {
+                        if ($globalWorkflowAction === 'cancel') {
+                            $employee->status = 'registration_cancelled';
+                            $employee->save();
+                        }
+                    } elseif ($wf->is_renewal) {
+                        if ($globalWorkflowAction === 'cancel') {
+                            $employee->status = 'renewal_cancelled';
+                            $employee->save();
+                        }
+                    } elseif (isset($wf->item_id)) {
+                        $item = \App\Models\ProductionItem::with('order')->find($wf->item_id);
+                        if ($item) {
+                            if ($globalWorkflowAction === 'cancel') {
+                                $item->status = 'cancelled';
+                                $item->save();
+                            } elseif ($globalWorkflowAction === 'move' && $item->order) {
+                                $oldOrder = $item->order;
+                                $newOrder = \App\Models\ProductionOrder::firstOrCreate(
+                                    [
+                                        'employer_id' => $newEmployerId,
+                                        'work_type_id' => $oldOrder->work_type_id,
+                                        'status' => $oldOrder->status,
+                                    ],
+                                    [
+                                        'type' => 'employer',
+                                        'created_by' => auth()->id(),
+                                    ]
+                                );
+                                $item->production_order_id = $newOrder->id;
+                                $item->save();
+                            }
+                        }
+                    }
+                }
+            }
+        } elseif (!empty($workflowActions)) {
+            foreach ($terminatedEmployeeIds as $empId) {
+                $employee = Employee::find($empId);
+                if (!$employee) continue;
+
+                foreach ($workflowActions as $wfAction) {
+                    if (is_string($wfAction)) {
+                        $wfAction = json_decode($wfAction, true);
+                    }
+
+                    // We only apply the action if the employee ID matches or is not specified
+                    // (in bulk, it's safer to just iterate through employee's active workflows)
+                    // The frontend will pass workflow_actions mapped to specific item_ids.
+                    // Let's assume the frontend passes the specific item_id and we just execute it.
+
+                    $actionType = $wfAction['action'] ?? 'keep';
+
+                    if (isset($wfAction['is_registration']) && $wfAction['is_registration']) {
+                        if ($actionType === 'cancel') {
+                            $employee->status = 'registration_cancelled';
+                            $employee->save();
+                        }
+                    } elseif (isset($wfAction['is_renewal']) && $wfAction['is_renewal']) {
+                        if ($actionType === 'cancel') {
+                            $employee->status = 'renewal_cancelled';
+                            $employee->save();
+                        }
+                    } elseif (isset($wfAction['item_id'])) {
+                        $item = \App\Models\ProductionItem::with('order')->find($wfAction['item_id']);
+                        if ($item && $item->employee_id == $employee->id) {
+                            if ($actionType === 'cancel') {
+                                $item->status = 'cancelled';
+                                $item->save();
+                            } elseif ($actionType === 'move' && $item->order) {
+                                $oldOrder = $item->order;
+                                $newOrder = \App\Models\ProductionOrder::firstOrCreate(
+                                    [
+                                        'employer_id' => $newEmployerId,
+                                        'work_type_id' => $oldOrder->work_type_id,
+                                        'status' => $oldOrder->status,
+                                    ],
+                                    [
+                                        'type' => 'employer',
+                                        'created_by' => auth()->id(),
+                                    ]
+                                );
+                                $item->production_order_id = $newOrder->id;
+                                $item->save();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Employee::whereIn('id', $terminatedEmployeeIds)
             ->update([
-                'employer_id' => $validated['new_employer_id'],
+                'employer_id' => $newEmployerId,
                 'terminated_at' => null,
                 'termination_reason' => null,
             ]);

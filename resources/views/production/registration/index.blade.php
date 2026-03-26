@@ -2507,19 +2507,52 @@
         });
     }
 
-    window.deleteEmployee = function(id) {
+    window.deleteEmployee = async function(id) {
+        // Fetch active workflows first
+        let workflowsHtml = '';
+        let workflows = [];
+        try {
+            const response = await fetch(`/api/employees/${id}/workflows`);
+            const data = await response.json();
+            if (data.success && data.workflows.length > 0) {
+                workflows = data.workflows.filter(wf => !wf.is_registration); // Exclude current module
+                if (workflows.length > 0) {
+                    workflowsHtml = `<div class="mt-3 text-start"><p class="mb-2 text-danger fw-bold">ลูกจ้างคนนี้กำลังดำเนินการอยู่ในเมนูอื่นๆ ด้วย คุณต้องการลบ (ยกเลิก) ออกจากเมนูเหล่านี้ด้วยหรือไม่?</p><div class="list-group text-start">`;
+                    workflows.forEach((wf, index) => {
+                        workflowsHtml += `
+                            <label class="list-group-item">
+                                <input class="form-check-input me-1 cancel-workflow-checkbox" type="checkbox" value='${JSON.stringify(wf)}' checked>
+                                ${wf.name} (${wf.status_label})
+                            </label>
+                        `;
+                    });
+                    workflowsHtml += `</div><p class="mt-2 text-muted small">*หากไม่เลือก ลูกจ้างจะถูกลบแค่ในเมนูลงทะเบียนเท่านั้น</p></div>`;
+                }
+            }
+        } catch (e) { console.error('Error fetching workflows', e); }
+
         Swal.fire({
             title: '{{ __('Delete Employee?') }}',
-            text: "{{ __('This will move the employee to the trash.') }}",
+            html: "{{ __('This will remove the employee from this registration module.') }}" + workflowsHtml,
             icon: 'error',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             confirmButtonText: '{{ __('Yes, Delete') }}'
         }).then((result) => {
              if (result.isConfirmed) {
+
+                const checkboxes = document.querySelectorAll('.cancel-workflow-checkbox:checked');
+                const cancelWorkflows = Array.from(checkboxes).map(cb => cb.value);
+                const action = (cancelWorkflows.length > 0 || workflows.length === 0) ? 'full_delete' : 'cancel_only'; // Actually full_delete means soft-delete from DB if we cancel all, or just let backend decide. We will pass the action.
+
                 fetch(`/production/registration/${id}/destroy` + window.location.search, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                    method: 'POST', // Use POST with _method=DELETE to send JSON body safely
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({
+                        _method: 'DELETE',
+                        action: 'full_delete', // Signal to controller we want to process cross-module
+                        cancel_workflows: cancelWorkflows
+                    })
                 })
                 .then(res => {
                      if(!res.ok) throw new Error(res.statusText);

@@ -1479,11 +1479,43 @@ class RenewalController extends Controller
     public function destroy(Request $request, Employee $employee)
     {
         if (!auth()->user()->can('edit-employees')) abort(403);
-        $employee->delete();
+
+        $action = $request->input('action', 'cancel_only'); // cancel_only or full_delete
+
+        if ($action === 'full_delete') {
+            // Check if they also want to cancel other workflows
+            $cancelWorkflows = $request->input('cancel_workflows', []);
+            if (!empty($cancelWorkflows) && is_array($cancelWorkflows)) {
+                foreach ($cancelWorkflows as $workflowData) {
+                    if (is_string($workflowData)) {
+                        $workflowData = json_decode($workflowData, true);
+                    }
+                    if (isset($workflowData['is_registration']) && $workflowData['is_registration']) {
+                        $employee->status = 'registration_cancelled';
+                        $employee->save();
+                    } elseif (isset($workflowData['item_id'])) {
+                        $item = \App\Models\ProductionItem::find($workflowData['item_id']);
+                        if ($item) {
+                            $item->status = 'cancelled';
+                            $item->save();
+                        }
+                    }
+                }
+            }
+            // Always cancel in this module too before full soft delete
+            $employee->status = 'renewal_cancelled';
+            $employee->save();
+            $employee->delete(); // Soft delete
+        } else {
+            // Cancel only in Renewal
+            $employee->status = 'renewal_cancelled';
+            $employee->save();
+        }
+
         if ($request->ajax()) {
             return response()->json(['success' => true]);
         }
-        return back()->with('success', 'Employee deleted.');
+        return back()->with('success', 'Employee removed from renewal.');
     }
 
     public function cancelEmployer(Request $request, Employer $employer)
