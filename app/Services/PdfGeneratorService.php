@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Employee;
 use App\Models\PdfTemplate;
 use App\Models\GlobalWitness;
+use App\Models\Witness;
 use App\Models\Employer;
 use setasign\Fpdi\Fpdi;
 use setasign\Fpdi\PdfParser\StreamReader;
@@ -200,24 +201,33 @@ class PdfGeneratorService
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
 
-                    if (isset($item['type']) && $item['type'] === 'signature') {
+                    if (isset($item['type']) && in_array($item['type'], ['image', 'signature', 'stamp'])) {
                         $w = ($item['w'] / 100) * $size['width'];
                         $h = ($item['h'] / 100) * $size['height'];
 
-                        // Draw a placeholder box for signatures
-                        $pdf->SetDrawColor(200, 200, 200);
-                        $pdf->SetFillColor(240, 240, 240);
-                        $pdf->Rect($x, $y, $w, $h, 'DF');
+                        if ($item['type'] === 'image' && !empty($item['path']) && Storage::disk('public')->exists($item['path'])) {
+                            $targetPath = Storage::disk('public')->path($item['path']);
+                            $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+                            $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+                            if ($imgType === 'JPG') $imgType = 'JPEG';
 
-                        $pdf->SetTextColor(150, 150, 150);
-                        $groupName = $item['signatureGroup'] ?? 'signature';
+                            $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                        } else {
+                            // Draw a placeholder box for signatures and stamps
+                            $pdf->SetDrawColor(200, 200, 200);
+                            $pdf->SetFillColor(240, 240, 240);
+                            $pdf->Rect($x, $y, $w, $h, 'DF');
 
-                        $pdf->SetFontSize(10);
-                        // Center text in signature box
-                        $textX = $x + 2;
-                        $textY = $y + ($h / 2) + 2;
-                        $pdf->Text($textX, $textY, "[$groupName]");
-                        $pdf->SetTextColor(0, 0, 0); // Reset
+                            $pdf->SetTextColor(150, 150, 150);
+                            $groupName = $item['signatureGroup'] ?? $item['type'];
+
+                            $pdf->SetFontSize(10);
+                            // Center text in signature box
+                            $textX = $x + 2;
+                            $textY = $y + ($h / 2) + 2;
+                            $pdf->Text($textX, $textY, "[$groupName]");
+                            $pdf->SetTextColor(0, 0, 0); // Reset
+                        }
                         continue;
                     }
 
@@ -434,13 +444,12 @@ class PdfGeneratorService
         }
 
         // 3. Witness Signatures
-        // Pre-load all global witnesses
-        $globalWitnesses = GlobalWitness::all()->keyBy('alias'); // alias: witness_1, witness_2...
-
+        // Load custom witnesses from template metadata if assigned, else fallback to random/global
         $witnessSigPaths = [];
         for ($i = 1; $i <= 4; $i++) {
             $alias = "witness_{$i}";
-            $witness = $globalWitnesses->get($alias);
+            $witnessId = $template->meta_data[$alias . '_id'] ?? null;
+            $witness = $witnessId ? Witness::find($witnessId) : null;
 
             if ($witness && $witness->signature_path && Storage::disk('public')->exists($witness->signature_path)) {
                 $witnessSigPaths[$alias] = Storage::disk('public')->path($witness->signature_path);
@@ -469,14 +478,18 @@ class PdfGeneratorService
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
 
-                    // --- Handle Signatures & Stamps ---
-                    if (isset($item['type']) && ($item['type'] === 'signature' || $item['type'] === 'stamp')) {
+                    // --- Handle Images, Signatures & Stamps ---
+                    if (isset($item['type']) && in_array($item['type'], ['image', 'signature', 'stamp'])) {
                         $w = ($item['w'] / 100) * $size['width'];
                         $h = ($item['h'] / 100) * $size['height'];
 
                         $targetPath = null;
 
-                        if ($item['type'] === 'signature') {
+                        if ($item['type'] === 'image') {
+                            if (!empty($item['path']) && Storage::disk('public')->exists($item['path'])) {
+                                $targetPath = Storage::disk('public')->path($item['path']);
+                            }
+                        } elseif ($item['type'] === 'signature') {
                             $group = $item['signatureGroup'] ?? 'employee';
 
                             if ($group === 'employee') $targetPath = $empSigPath;
@@ -713,11 +726,18 @@ class PdfGeneratorService
 
         if ($witnessFields->isNotEmpty()) {
             foreach (['witness_1', 'witness_2', 'witness_3', 'witness_4'] as $alias) {
-                $seed = 'WITNESS-' . $alias . '-' . ($effectiveEmployer ? $effectiveEmployer->id : 'global') . '-' . uniqid();
-                $temp = tempnam(sys_get_temp_dir(), 'sig_') . '.png';
-                file_put_contents($temp, $this->signatureService->generate($seed));
-                $witnessSigPaths[$alias] = $temp;
-                $tempSigPaths[] = $temp;
+                $witnessId = $template->meta_data[$alias . '_id'] ?? null;
+                $witness = $witnessId ? Witness::find($witnessId) : null;
+
+                if ($witness && $witness->signature_path && Storage::disk('public')->exists($witness->signature_path)) {
+                    $witnessSigPaths[$alias] = Storage::disk('public')->path($witness->signature_path);
+                } else {
+                    $seed = 'WITNESS-' . $alias . '-' . ($effectiveEmployer ? $effectiveEmployer->id : 'global') . '-' . uniqid();
+                    $temp = tempnam(sys_get_temp_dir(), 'sig_') . '.png';
+                    file_put_contents($temp, $this->signatureService->generate($seed));
+                    $witnessSigPaths[$alias] = $temp;
+                    $tempSigPaths[] = $temp;
+                }
             }
         }
 
@@ -745,14 +765,18 @@ class PdfGeneratorService
                         continue;
                     }
 
-                    // --- Handle Signatures & Stamps ---
-                    if (isset($item['type']) && ($item['type'] === 'signature' || $item['type'] === 'stamp')) {
+                    // --- Handle Images, Signatures & Stamps ---
+                    if (isset($item['type']) && in_array($item['type'], ['image', 'signature', 'stamp'])) {
                         $w = ($item['w'] / 100) * $size['width'];
                         $h = ($item['h'] / 100) * $size['height'];
 
                         $targetPath = null;
 
-                        if ($item['type'] === 'signature') {
+                        if ($item['type'] === 'image') {
+                            if (!empty($item['path']) && Storage::disk('public')->exists($item['path'])) {
+                                $targetPath = Storage::disk('public')->path($item['path']);
+                            }
+                        } elseif ($item['type'] === 'signature') {
                             $group = $item['signatureGroup'] ?? 'employee';
 
                             if ($group === 'employee' && $employee) $targetPath = $employeeSigPaths[$employee->id] ?? null;
@@ -978,10 +1002,20 @@ class PdfGeneratorService
             // key format: witness_1.name_th
             $parts = explode('.', $key);
             if (count($parts) === 2) {
-                $alias = $parts[0];
+                $alias = $parts[0]; // e.g. witness_1
                 $field = $parts[1]; // name_th or name_en
-                $witness = GlobalWitness::where('alias', $alias)->first();
-                return $witness ? $witness->{$field} : '';
+
+                // First check template-specific witness
+                if ($template && !empty($template->meta_data[$alias . '_id'])) {
+                    $witness = Witness::find($template->meta_data[$alias . '_id']);
+                    if ($witness) {
+                        return $witness->{$field};
+                    }
+                }
+
+                // Fallback to legacy GlobalWitness
+                $globalWitness = GlobalWitness::where('alias', $alias)->first();
+                return $globalWitness ? $globalWitness->{$field} : '';
             }
         }
 
