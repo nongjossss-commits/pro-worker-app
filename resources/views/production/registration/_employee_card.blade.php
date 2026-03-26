@@ -4,6 +4,12 @@
     $isCompleted = in_array($employee->status, ['registration_completed', 'renewal_completed']);
     $isCancelled = in_array($employee->status, ['registration_cancelled', 'renewal_cancelled']);
 
+    // Support for Pre-Production / Workflow where the card is reused and status is on the item
+    if (isset($employee->production_item)) {
+        $isCompleted = $employee->production_item->status === 'completed';
+        $isCancelled = $employee->production_item->status === 'cancelled';
+    }
+
     if ($isHistory) {
         // $isCompleted = true; // Force completed styling if not already
     }
@@ -27,6 +33,9 @@
     // Determine if "Not Started" (only if active status and no steps)
     $isNotStarted = (!$isCompleted && !$isCancelled && !$highestStep);
 
+    // Contextual status for JS
+    $itemStatus = isset($employee->production_item) ? $employee->production_item->status : $employee->status;
+
     // Operator Logic
     $operator = $employee->operator;
     $operatorId = $employee->operator_id;
@@ -44,7 +53,7 @@
 <div class="d-flex align-items-center employee-card-outer mb-3 employee-card-wrapper {{ $isCancelled ? 'status-cancelled' : '' }}"
      id="employee-card-{{ $employee->id }}"
      data-highest-step-id="{{ $highestStepId }}"
-     data-status="{{ $employee->status }}"
+     data-status="{{ $itemStatus }}"
      data-is-not-started="{{ $isNotStarted ? 'true' : 'false' }}"
      data-employer-id="{{ $employee->employer_id }}"
      data-biometrics-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
@@ -100,7 +109,7 @@
                            id="check_{{ $employee->id }}"
                            data-employee-id="{{ $employee->id }}"
                            data-employer-id="{{ $employee->employer_id }}"
-                           data-status="{{ $employee->status }}"
+                           data-status="{{ $itemStatus }}"
                            data-name-th="{{ $employee->employeeNameTh }}"
                            data-name-en="{{ $employee->employeeNameEn }}"
                            data-title-th="{{ $employee->employeeTitleTh }}"
