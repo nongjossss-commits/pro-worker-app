@@ -41,7 +41,7 @@
     }
 @endphp
 
-<div class="d-flex align-items-center employee-card-outer mb-3 employee-card-wrapper"
+<div class="d-flex align-items-center employee-card-outer mb-3 employee-card-wrapper {{ $isCancelled ? 'status-cancelled' : '' }}"
      id="employee-card-{{ $employee->id }}"
      data-highest-step-id="{{ $highestStepId }}"
      data-status="{{ $employee->status }}"
