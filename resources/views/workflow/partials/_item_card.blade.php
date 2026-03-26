@@ -99,7 +99,7 @@
     $isMe = $operatorId === auth()->id();
 @endphp
 
-<div class="d-flex align-items-center item-card-outer mb-3"
+<div class="d-flex align-items-center item-card-outer mb-3 {{ $isCancelled ? 'status-cancelled' : '' }}"
      id="item-card-{{ $item->id }}"
      data-status="{{ $status }}"
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
