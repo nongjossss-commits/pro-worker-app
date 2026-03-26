@@ -202,6 +202,7 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->p
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
     // PDF Generation
+    Route::post('pdf-templates/quick-generate', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'quickGenerate'])->name('pdf-templates.quick-generate');
     Route::post('pdf-templates/generate', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'showGenerateModal'])->name('pdf-templates.generate.modal');
     Route::get('pdf-templates/generate', function () {
         return redirect()->route('employees.index')->with('error', 'Please select employees to generate PDF.');

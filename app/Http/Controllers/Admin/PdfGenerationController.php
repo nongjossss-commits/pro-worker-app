@@ -73,6 +73,80 @@ class PdfGenerationController extends Controller
         ]);
     }
 
+    public function quickGenerate(Request $request)
+    {
+        $this->authorize('view-pdf-templates');
+
+        $request->validate([
+            'template_id' => 'required|exists:pdf_templates,id',
+            'target_employer_id' => 'nullable|exists:employers,id',
+            'target_importer_id' => 'nullable|exists:importers,id',
+            'target_delegate_id' => 'nullable|exists:delegates,id',
+            'employee_id' => 'nullable|exists:employees,id',
+        ]);
+
+        try {
+            $template = PdfTemplate::findOrFail($request->template_id);
+
+            $targetEmployerModel = null;
+            if ($request->target_employer_id) {
+                $targetEmployerModel = Employer::find($request->target_employer_id);
+            }
+
+            $targetImporterModel = null;
+            if ($request->target_importer_id) {
+                $targetImporterModel = \App\Models\Importer::find($request->target_importer_id);
+            }
+
+            $targetDelegateModel = null;
+            if ($request->target_delegate_id) {
+                $targetDelegateModel = \App\Models\Delegate::find($request->target_delegate_id);
+            }
+
+            // Either an actual employee or a new empty instance
+            $employee = null;
+            if ($request->employee_id) {
+                $employee = Employee::withTrashed()->with('employer')->find($request->employee_id);
+            } else {
+                $employee = new Employee();
+            }
+
+            $useEmptyEmployer = false;
+            if ($template->type === 'global' && empty($request->target_employer_id)) {
+                $useEmptyEmployer = true;
+            }
+
+            // Generate Single PDF content directly
+            $content = $this->pdfService->generateSinglePdf(
+                $template,
+                $employee,
+                $targetEmployerModel,
+                $useEmptyEmployer,
+                $targetImporterModel,
+                $targetDelegateModel
+            );
+
+            // Generate appropriate filename
+            $filename = "quick_export_" . date('Ymd_His') . ".pdf";
+            if ($request->employee_id && $employee->employeeNameEn) {
+                $filename = "{$employee->employeeNameEn}_{$filename}";
+            } elseif ($request->target_employer_id && $targetEmployerModel) {
+                $filename = "{$targetEmployerModel->employerNameEn}_{$filename}";
+            }
+
+            return response()->streamDownload(function () use ($content) {
+                echo $content;
+            }, $filename, [
+                'Content-Type' => 'application/pdf',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate'
+            ]);
+
+        } catch (\Throwable $e) {
+            \Log::error("Quick PDF Gen Error: " . $e->getMessage());
+            return redirect()->back()->with('danger', 'การสร้างเอกสารล้มเหลว (Generation Failed): ' . $e->getMessage());
+        }
+    }
+
     public function process(Request $request)
     {
         $this->authorize('view-pdf-templates');

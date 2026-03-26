@@ -78,7 +78,10 @@ class PdfTemplateController extends Controller
              $employers = $empQuery->orderBy('employerNameTh')->get();
         }
 
-        return view('pdf_templates.index', compact('templates', 'employers'));
+        $importers = \App\Models\Importer::select('id', 'importerNameTh', 'importerNameEn')->orderBy('importerNameTh')->get();
+        $delegates = \App\Models\Delegate::select('id', 'delegateNameTh', 'delegateNameEn')->orderBy('delegateNameTh')->get();
+
+        return view('pdf_templates.index', compact('templates', 'employers', 'importers', 'delegates'));
     }
 
     public function listTemplates(Request $request)
