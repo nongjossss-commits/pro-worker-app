@@ -33,7 +33,17 @@ class SalesLead extends Model
         'signerNameTh',
         'signerNameEn',
         'signer_2_name_th',
-        'signer_2_name_en'
+        'signer_2_name_en',
+        'employer_doc_company',
+        'employer_doc_company_expiry',
+        'employer_doc_lease',
+        'employer_doc_construction',
+        'employer_doc_other_1',
+        'employer_doc_other_1_desc',
+        'employer_doc_other_2',
+        'employer_doc_other_2_desc',
+        'employer_doc_other_3',
+        'employer_doc_other_3_desc'
     ];
 
     /**

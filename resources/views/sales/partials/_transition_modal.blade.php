@@ -61,14 +61,19 @@
 </div>
 
 @push('scripts')
+@once
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof jQuery !== 'undefined') {
-            $('.select2-destination').select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $('.modal') // This assumes only one modal opens at a time
+            // Need to apply to specific modal to avoid bugs when there are multiple modals in DOM
+            $('.modal').on('shown.bs.modal', function () {
+                $(this).find('.select2-destination').select2({
+                    theme: 'bootstrap-5',
+                    dropdownParent: $(this)
+                });
             });
         }
     });
 </script>
+@endonce
 @endpush

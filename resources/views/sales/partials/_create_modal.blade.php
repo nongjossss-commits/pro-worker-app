@@ -108,6 +108,43 @@
                                     <label class="form-label">ชื่อผู้มีอำนาจลงนาม 2 (อังกฤษ)</label>
                                     <input type="text" class="form-control" name="signer_2_name_en">
                                 </div>
+                                <div class="col-12">
+                                    <hr class="my-4">
+                                    <h6 class="fw-bold"><i class="bi bi-folder-fill me-2"></i>เอกสารแนบ (ถ้ามี)</h6>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">1. หนังสือรับรองบริษัท / บัตรประชาชน</label>
+                                    <input type="file" class="form-control" name="employer_doc_company" accept=".pdf,.doc,.docx,.jpg,.png">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">1.1 วันหมดอายุ</label>
+                                    <input type="date" class="form-control" name="employer_doc_company_expiry">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">2. สัญญาเช่าบ้าน / ทะเบียนบ้าน</label>
+                                    <input type="file" class="form-control" name="employer_doc_lease" accept=".pdf,.doc,.docx,.jpg,.png">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">3. สัญญาก่อสร้าง / แผนที่</label>
+                                    <input type="file" class="form-control" name="employer_doc_construction" accept=".pdf,.doc,.docx,.jpg,.png">
+                                </div>
+
+                                <div class="col-md-6 mt-3">
+                                    <label class="form-label">4. เอกสารอื่นๆ 1</label>
+                                    <input type="file" class="form-control" name="employer_doc_other_1" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    <input type="text" class="form-control form-control-sm mt-1" name="employer_doc_other_1_desc" placeholder="ระบุรายละเอียดเอกสาร">
+                                </div>
+                                <div class="col-md-6 mt-3">
+                                    <label class="form-label">5. เอกสารอื่นๆ 2</label>
+                                    <input type="file" class="form-control" name="employer_doc_other_2" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    <input type="text" class="form-control form-control-sm mt-1" name="employer_doc_other_2_desc" placeholder="ระบุรายละเอียดเอกสาร">
+                                </div>
+                                <div class="col-md-6 mt-3 mb-4">
+                                    <label class="form-label">6. เอกสารอื่นๆ 3</label>
+                                    <input type="file" class="form-control" name="employer_doc_other_3" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    <input type="text" class="form-control form-control-sm mt-1" name="employer_doc_other_3_desc" placeholder="ระบุรายละเอียดเอกสาร">
+                                </div>
                             </div>
                         </div>
                     </div>

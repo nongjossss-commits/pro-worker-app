@@ -49,6 +49,16 @@ class SalesLeadController extends Controller
             'signerNameEn' => 'nullable|string|max:255',
             'signer_2_name_th' => 'nullable|string|max:255',
             'signer_2_name_en' => 'nullable|string|max:255',
+            'employer_doc_company' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_company_expiry' => 'nullable|date',
+            'employer_doc_lease' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_construction' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_1_desc' => 'nullable|string|max:255',
+            'employer_doc_other_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_2_desc' => 'nullable|string|max:255',
+            'employer_doc_other_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_3_desc' => 'nullable|string|max:255',
         ]);
 
         if ($request->filled('employer_id')) {
@@ -72,6 +82,22 @@ class SalesLeadController extends Controller
             $validated['signerNameEn'] = $request->signerNameEn;
             $validated['signer_2_name_th'] = $request->signer_2_name_th;
             $validated['signer_2_name_en'] = $request->signer_2_name_en;
+
+            // Handle file uploads
+            $fileFields = [
+                'employer_doc_company',
+                'employer_doc_lease',
+                'employer_doc_construction',
+                'employer_doc_other_1',
+                'employer_doc_other_2',
+                'employer_doc_other_3'
+            ];
+
+            foreach ($fileFields as $field) {
+                if ($request->hasFile($field)) {
+                    $validated[$field] = $request->file($field)->store('sales_leads/employers', 'public');
+                }
+            }
         }
 
         $validated['status'] = 'quoted';
@@ -80,6 +106,58 @@ class SalesLeadController extends Controller
         SalesLead::create($validated);
 
         return redirect()->route('sales.index')->with('success', 'สร้างรายการเสนอราคาสำเร็จ');
+    }
+
+    public function update(Request $request, SalesLead $sales)
+    {
+        $validated = $request->validate([
+            'employerNameTh' => 'required|string|max:255',
+            'employerNameEn' => 'nullable|string|max:255',
+            'employerTaxId' => 'nullable|string|max:255',
+            'employerPhone' => 'nullable|string|max:255',
+            'jobOwner' => 'nullable|string|max:255',
+            'employerEmail' => 'nullable|string|max:255',
+            'employerPassword' => 'nullable|string|max:255',
+            'outsource_re_code' => 'nullable|string|max:255',
+            'outsource_password' => 'nullable|string|max:255',
+            'socialSecurityHospital' => 'nullable|string|max:255',
+            'businessType' => 'nullable|string|max:255',
+            'businessTypeEn' => 'nullable|string|max:255',
+            'signerNameTh' => 'nullable|string|max:255',
+            'signerNameEn' => 'nullable|string|max:255',
+            'signer_2_name_th' => 'nullable|string|max:255',
+            'signer_2_name_en' => 'nullable|string|max:255',
+            'employer_doc_company' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_company_expiry' => 'nullable|date',
+            'employer_doc_lease' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_construction' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_1_desc' => 'nullable|string|max:255',
+            'employer_doc_other_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_2_desc' => 'nullable|string|max:255',
+            'employer_doc_other_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employer_doc_other_3_desc' => 'nullable|string|max:255',
+        ]);
+
+        // Handle file uploads
+        $fileFields = [
+            'employer_doc_company',
+            'employer_doc_lease',
+            'employer_doc_construction',
+            'employer_doc_other_1',
+            'employer_doc_other_2',
+            'employer_doc_other_3'
+        ];
+
+        foreach ($fileFields as $field) {
+            if ($request->hasFile($field)) {
+                $validated[$field] = $request->file($field)->store('sales_leads/employers', 'public');
+            }
+        }
+
+        $sales->update($validated);
+
+        return redirect()->back()->with('success', 'อัปเดตข้อมูลลูกค้าสำเร็จ');
     }
 
     public function updateStatus(Request $request, SalesLead $sales)
@@ -130,7 +208,17 @@ class SalesLeadController extends Controller
             'employeePassport' => 'nullable|string',
             'employeeWorkPermit' => 'nullable|string',
             'photo' => 'nullable|image|max:5120',
-            'document' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_visa' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_4' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_other_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'other_doc_1_desc' => 'nullable|string|max:255',
+            'employee_doc_other_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'other_doc_2_desc' => 'nullable|string|max:255',
+            'employee_doc_other_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'other_doc_3_desc' => 'nullable|string|max:255',
         ]);
 
         $validated['sales_lead_id'] = $sales->id;
@@ -148,13 +236,76 @@ class SalesLeadController extends Controller
         if ($request->hasFile('photo')) {
             $validated['photo_path'] = $request->file('photo')->store('sales_lead_employees/photos', 'public');
         }
-        if ($request->hasFile('document')) {
-            $validated['document_path'] = $request->file('document')->store('sales_lead_employees/documents', 'public');
+
+        $employeeDocs = [
+            'employee_doc_1',
+            'employee_doc_2',
+            'employee_doc_visa',
+            'employee_doc_3',
+            'employee_doc_4',
+            'employee_doc_other_1',
+            'employee_doc_other_2',
+            'employee_doc_other_3'
+        ];
+
+        foreach ($employeeDocs as $doc) {
+            if ($request->hasFile($doc)) {
+                $validated[$doc] = $request->file($doc)->store('sales_lead_employees/documents', 'public');
+            }
         }
 
         SalesLeadEmployee::create($validated);
 
         return redirect()->back()->with('success', 'เพิ่มลูกจ้างสำเร็จ');
+    }
+
+    public function updateEmployee(Request $request, SalesLead $sales, SalesLeadEmployee $employee)
+    {
+        $validated = $request->validate([
+            'employeeNameEn' => 'required|string|max:255',
+            'employeeNameTh' => 'nullable|string|max:255',
+            'employeeGender' => 'nullable|string',
+            'employeePassport' => 'nullable|string',
+            'employeeWorkPermit' => 'nullable|string',
+            'photo' => 'nullable|image|max:5120',
+            'employee_doc_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_visa' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_4' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'employee_doc_other_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'other_doc_1_desc' => 'nullable|string|max:255',
+            'employee_doc_other_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'other_doc_2_desc' => 'nullable|string|max:255',
+            'employee_doc_other_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
+            'other_doc_3_desc' => 'nullable|string|max:255',
+        ]);
+
+        // Handle file uploads
+        if ($request->hasFile('photo')) {
+            $validated['photo_path'] = $request->file('photo')->store('sales_lead_employees/photos', 'public');
+        }
+
+        $employeeDocs = [
+            'employee_doc_1',
+            'employee_doc_2',
+            'employee_doc_visa',
+            'employee_doc_3',
+            'employee_doc_4',
+            'employee_doc_other_1',
+            'employee_doc_other_2',
+            'employee_doc_other_3'
+        ];
+
+        foreach ($employeeDocs as $doc) {
+            if ($request->hasFile($doc)) {
+                $validated[$doc] = $request->file($doc)->store('sales_lead_employees/documents', 'public');
+            }
+        }
+
+        $employee->update($validated);
+
+        return redirect()->back()->with('success', 'อัปเดตข้อมูลลูกจ้างสำเร็จ');
     }
 
     public function destroyEmployee(SalesLead $sales, SalesLeadEmployee $employee)
@@ -243,6 +394,16 @@ class SalesLeadController extends Controller
                     'signerNameEn' => $sales->signerNameEn,
                     'signer_2_name_th' => $sales->signer_2_name_th,
                     'signer_2_name_en' => $sales->signer_2_name_en,
+                    'employer_doc_company' => $sales->employer_doc_company,
+                    'employer_doc_company_expiry' => $sales->employer_doc_company_expiry,
+                    'employer_doc_lease' => $sales->employer_doc_lease,
+                    'employer_doc_construction' => $sales->employer_doc_construction,
+                    'employer_doc_other_1' => $sales->employer_doc_other_1,
+                    'employer_doc_other_1_desc' => $sales->employer_doc_other_1_desc,
+                    'employer_doc_other_2' => $sales->employer_doc_other_2,
+                    'employer_doc_other_2_desc' => $sales->employer_doc_other_2_desc,
+                    'employer_doc_other_3' => $sales->employer_doc_other_3,
+                    'employer_doc_other_3_desc' => $sales->employer_doc_other_3_desc,
                 ]);
                 $sales->employer_id = $realEmployer->id;
                 $sales->save();
@@ -262,16 +423,19 @@ class SalesLeadController extends Controller
                         'employeePassport' => $slEmp->employeePassport,
                         'employeeWorkPermit' => $slEmp->employeeWorkPermit,
                         'status' => 'active', // Default status
+                        'employee_doc_1' => $slEmp->employee_doc_1,
+                        'employee_doc_2' => $slEmp->employee_doc_2,
+                        'employee_doc_visa' => $slEmp->employee_doc_visa,
+                        'employee_doc_3' => $slEmp->employee_doc_3,
+                        'employee_doc_4' => $slEmp->employee_doc_4,
+                        'employee_doc_other_1' => $slEmp->employee_doc_other_1,
+                        'other_doc_1_desc' => $slEmp->other_doc_1_desc,
+                        'employee_doc_other_2' => $slEmp->employee_doc_other_2,
+                        'other_doc_2_desc' => $slEmp->other_doc_2_desc,
+                        'employee_doc_other_3' => $slEmp->employee_doc_other_3,
+                        'other_doc_3_desc' => $slEmp->other_doc_3_desc,
+                        'photo_path' => $slEmp->photo_path,
                     ]);
-
-                    // Handle transferring files to the real employee record
-                    // using Spatie Media Library or simple path updates depending on the system implementation.
-                    // For now, we update the path references on the real employee model if it supports it,
-                    // or just keep them in storage. The main system usually uses Media Library for Employees.
-                    if ($slEmp->photo_path) {
-                        // $newEmp->addMedia(storage_path('app/public/' . $slEmp->photo_path))->toMediaCollection('employee_photo'); // Example
-                        $newEmp->photo_path = $slEmp->photo_path; // Simple fallback
-                    }
 
                     $newEmp->save();
 

@@ -39,7 +39,7 @@
                     <div class="card shadow-sm border-0 mb-4">
                         <div class="card-header bg-white border-bottom-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
                             <h6 class="mb-0 fw-bold"><i class="bi bi-list-check me-2"></i>รายการเสนอราคา</h6>
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addQuoteItem({{ $lead->id }})">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addQuoteItem({{ $lead->id }}, {{ $lead->employees->count() ?: 1 }})">
                                 <i class="bi bi-plus-circle"></i> เพิ่มรายการ
                             </button>
                         </div>
@@ -115,10 +115,12 @@
 <script>
     let quoteItemCounter = 1;
 
-    function addQuoteItem(leadId) {
+    function addQuoteItem(leadId, numEmployees) {
         const tbody = document.querySelector(`#quoteItemsTable-${leadId} tbody`);
         const tr = document.createElement('tr');
-        const numEmployees = {{ $lead->employees->count() ?: 1 }};
+
+        // numEmployees passed as arg instead of relying on blade directive that only captures the last lead in the loop
+        numEmployees = numEmployees || 1;
 
         tr.innerHTML = `
             <td><input type="text" class="form-control form-control-sm" name="items[${quoteItemCounter}][description]" placeholder="ระบุรายละเอียดงาน" required></td>

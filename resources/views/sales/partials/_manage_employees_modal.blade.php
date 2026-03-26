@@ -89,14 +89,46 @@
                                         <label class="form-label">เลขใบอนุญาตทำงาน</label>
                                         <input type="text" class="form-control" name="employeeWorkPermit">
                                     </div>
-                                    <div class="col-md-6 mt-3">
-                                        <label class="form-label">รูปถ่ายหน้าตรง (ถ้ามี)</label>
+                                    <div class="col-md-12 mt-4">
+                                        <hr>
+                                        <h6 class="fw-bold"><i class="bi bi-folder-fill me-2"></i>เอกสารแนบลูกจ้าง (ถ้ามี)</h6>
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <label class="form-label">รูปถ่ายหน้าตรง</label>
                                         <input type="file" class="form-control" name="photo" accept="image/*">
                                     </div>
-                                    <div class="col-md-6 mt-3">
-                                        <label class="form-label">เอกสารอื่นๆ (ถ้ามี)</label>
-                                        <input type="file" class="form-control" name="document" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    <div class="col-md-6 mt-2">
+                                        <label class="form-label">1. พาสปอร์ต (Passport)</label>
+                                        <input type="file" class="form-control" name="employee_doc_1" accept=".pdf,.doc,.docx,.jpg,.png">
                                     </div>
+                                    <div class="col-md-6 mt-2">
+                                        <label class="form-label">2. ใบอนุญาตทำงาน (Work Permit)</label>
+                                        <input type="file" class="form-control" name="employee_doc_2" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <label class="form-label">3. วีซ่า (Visa)</label>
+                                        <input type="file" class="form-control" name="employee_doc_visa" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <label class="form-label">4. บัตรชมพู (Pink Card)</label>
+                                        <input type="file" class="form-control" name="employee_doc_3" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <label class="form-label">5. ทะเบียนบ้านลูกจ้าง (TR 38/1)</label>
+                                        <input type="file" class="form-control" name="employee_doc_4" accept=".pdf,.doc,.docx,.jpg,.png">
+                                    </div>
+
+                                    @for($i = 1; $i <= 3; $i++)
+                                        @php
+                                            $fieldName = "employee_doc_other_" . $i;
+                                            $descName = "other_doc_" . $i . "_desc";
+                                        @endphp
+                                        <div class="col-md-6 mt-3">
+                                            <label class="form-label">เอกสารอื่นๆ {{ $i }}</label>
+                                            <input type="file" class="form-control" name="{{ $fieldName }}" accept=".pdf,.doc,.docx,.jpg,.png">
+                                            <input type="text" class="form-control form-control-sm mt-1" name="{{ $descName }}" placeholder="ระบุรายละเอียดเอกสาร">
+                                        </div>
+                                    @endfor
                                 </div>
                             </div>
 
@@ -157,11 +189,18 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <form action="{{ route('sales.employees.destroy', [$lead->id, $emp->id]) }}" method="POST" onsubmit="return confirm('ยืนยันการลบลูกจ้างออกจากรายการนี้?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                                        </form>
+                                        <div class="d-flex justify-content-center gap-1">
+                                            @if(!$emp->employee_id)
+                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editEmployeeModal-{{ $emp->id }}" title="แก้ไข">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            @endif
+                                            <form action="{{ route('sales.employees.destroy', [$lead->id, $emp->id]) }}" method="POST" onsubmit="return confirm('ยืนยันการลบลูกจ้างออกจากรายการนี้?');" class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบ"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -180,6 +219,13 @@
         </div>
     </div>
 </div>
+
+{{-- Edit Employee Modals --}}
+@foreach($lead->employees as $emp)
+    @if(!$emp->employee_id)
+        @include('sales.partials._edit_employee_modal', ['lead' => $lead, 'emp' => $emp])
+    @endif
+@endforeach
 
 @push('scripts')
 <script>
