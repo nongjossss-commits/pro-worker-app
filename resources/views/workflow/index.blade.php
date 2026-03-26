@@ -534,7 +534,7 @@
 
                 </div>
 
-                    <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#workflowAccordion">
+                    <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" data-employer-id="{{ $order->employer_id }}" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#workflowAccordion">
                         <div class="card-body bg-light p-4">
                             {{-- Default: hide-cancelled class added --}}
                             <div id="order-content-{{ $order->id }}" class="order-content-wrapper hide-cancelled">
