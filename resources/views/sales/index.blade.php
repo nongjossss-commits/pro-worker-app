@@ -27,9 +27,9 @@
         </div>
     @endif
 
-    <div class="row kanban-board">
+    <div class="row kanban-board flex-nowrap overflow-auto pb-3">
         {{-- Column 1: Quoted --}}
-        <div class="col-md-4">
+        <div class="col-md-4" style="min-width: 350px;">
             <div class="card bg-light h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
                     <h5 class="mb-0 text-primary fw-bold">1. เสนอราคา <span class="badge bg-primary rounded-pill ms-2">{{ $quoted->count() }}</span></h5>
@@ -43,7 +43,7 @@
         </div>
 
         {{-- Column 2: Deciding --}}
-        <div class="col-md-4">
+        <div class="col-md-4" style="min-width: 350px;">
             <div class="card bg-light h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
                     <h5 class="mb-0 text-warning fw-bold">2. รอตัดสินใจ/คอนเฟิร์ม <span class="badge bg-warning text-dark rounded-pill ms-2">{{ $deciding->count() }}</span></h5>
@@ -57,7 +57,7 @@
         </div>
 
         {{-- Column 3: Confirmed --}}
-        <div class="col-md-4">
+        <div class="col-md-4" style="min-width: 350px;">
             <div class="card bg-light h-100 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
                     <h5 class="mb-0 text-success fw-bold">3. คอนเฟิร์มแล้ว (พร้อมส่งต่อ) <span class="badge bg-success rounded-pill ms-2">{{ $confirmed->count() }}</span></h5>

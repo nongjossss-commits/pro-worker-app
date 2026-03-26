@@ -29,7 +29,19 @@ class SalesLeadEmployee extends Model
         'employer_employee_id',
         'name_list_number',
         'employeeAddress',
-        'employeePhone'
+        'employeePhone',
+        'employee_doc_1',
+        'employee_doc_2',
+        'employee_doc_visa',
+        'employee_doc_3',
+        'employee_doc_4',
+        'employee_doc_other_1',
+        'other_doc_1_desc',
+        'employee_doc_other_2',
+        'other_doc_2_desc',
+        'employee_doc_other_3',
+        'other_doc_3_desc',
+        'photo_path'
     ];
 
     /**

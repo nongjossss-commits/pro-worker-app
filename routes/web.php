@@ -388,10 +388,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [\App\Http\Controllers\SalesLeadController::class, 'index'])->name('index');
         Route::post('/', [\App\Http\Controllers\SalesLeadController::class, 'store'])->name('store');
         Route::put('/{sales}/status', [\App\Http\Controllers\SalesLeadController::class, 'updateStatus'])->name('status.update');
+        Route::put('/{sales}', [\App\Http\Controllers\SalesLeadController::class, 'update'])->name('update');
         Route::delete('/{sales}', [\App\Http\Controllers\SalesLeadController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/restore', [\App\Http\Controllers\SalesLeadController::class, 'restore'])->name('restore');
 
         Route::post('/{sales}/employees', [\App\Http\Controllers\SalesLeadController::class, 'storeEmployee'])->name('employees.store');
+        Route::put('/{sales}/employees/{employee}', [\App\Http\Controllers\SalesLeadController::class, 'updateEmployee'])->name('employees.update');
         Route::delete('/{sales}/employees/{employee}', [\App\Http\Controllers\SalesLeadController::class, 'destroyEmployee'])->name('employees.destroy');
 
         Route::post('/{sales}/quotation', [\App\Http\Controllers\SalesLeadController::class, 'storeQuotation'])->name('quotation.store');

@@ -20,6 +20,13 @@
                     <i class="bi bi-three-dots-vertical"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    @if(!$lead->employer_id)
+                        <li>
+                            <a class="dropdown-item text-primary" href="#" data-bs-toggle="modal" data-bs-target="#editEmployerModal-{{ $lead->id }}">
+                                <i class="bi bi-pencil me-2"></i>แก้ไขข้อมูลลูกค้า
+                            </a>
+                        </li>
+                    @endif
                     <li><a class="dropdown-item text-danger" href="#" onclick="if(confirm('ย้ายรายการนี้ลงประวัติ/ถังขยะ ใช่หรือไม่?')) { document.getElementById('delete-lead-{{ $lead->id }}').submit(); }"><i class="bi bi-trash me-2"></i>ทิ้ง/ยกเลิก</a></li>
                 </ul>
                 <form id="delete-lead-{{ $lead->id }}" action="{{ route('sales.destroy', $lead->id) }}" method="POST" class="d-none">
@@ -62,6 +69,9 @@
 </div>
 
 {{-- Modals for this Lead --}}
+@if(!$lead->employer_id)
+    @include('sales.partials._edit_employer_modal', ['lead' => $lead])
+@endif
 @include('sales.partials._manage_employees_modal', ['lead' => $lead])
 @include('sales.partials._quotation_modal', ['lead' => $lead, 'profiles' => $financialProfiles])
 
