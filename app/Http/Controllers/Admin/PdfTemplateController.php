@@ -235,6 +235,27 @@ class PdfTemplateController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function uploadImage(Request $request)
+    {
+        $this->authorize('create-pdf-templates');
+
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max (FPDF doesn't support WebP natively)
+        ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('pdf_templates/images', 'public');
+
+            return response()->json([
+                'success' => true,
+                'path' => $path,
+                'url' => Storage::disk('public')->url($path)
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'No image uploaded'], 400);
+    }
+
     public function destroy(PdfTemplate $pdf_template)
     {
         $this->authorize('delete-pdf-templates', $pdf_template);

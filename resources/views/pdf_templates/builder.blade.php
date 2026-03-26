@@ -24,6 +24,10 @@
 
             <div class="border-l h-6 mx-2"></div>
 
+            <button type="button" @click="openWitnessSettings()" class="btn btn-outline-info btn-sm flex items-center gap-2">
+                <i class="bi bi-people"></i> พยาน (Witnesses)
+            </button>
+
             <button type="button" @click="openTemplateSettings()" class="btn btn-outline-secondary btn-sm flex items-center gap-2">
                 <i class="bi bi-sliders"></i> Settings
             </button>
@@ -97,6 +101,13 @@
                              @dragstart="dragStart($event, {type: 'stamp', label: 'Employer Stamp'})">
                             <i class="bi bi-vinyl text-xl text-gray-600"></i>
                             <span class="text-xs font-medium">Stamp</span>
+                        </div>
+
+                        <!-- Custom Image -->
+                        <div class="bg-white p-2 border rounded shadow-sm cursor-grab hover:bg-blue-50 transition-colors flex flex-col items-center justify-center gap-1 text-center"
+                             @click="openImageUploader()">
+                            <i class="bi bi-image text-xl text-blue-600"></i>
+                            <span class="text-xs font-medium">Add Image</span>
                         </div>
                     </div>
                 </div>
@@ -184,8 +195,15 @@
                                         </div>
                                     </template>
 
+                                    <!-- Custom Image Content -->
+                                    <template x-if="item.type === 'image'">
+                                        <div class="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none relative">
+                                            <img :src="item.url" class="max-w-full max-h-full" style="object-fit: contain;">
+                                        </div>
+                                    </template>
+
                                     <!-- Text Content (DB & Static) -->
-                                    <template x-if="item.type !== 'signature' && item.type !== 'stamp'">
+                                    <template x-if="item.type !== 'signature' && item.type !== 'stamp' && item.type !== 'image'">
                                         <div class="w-full h-full flex flex-col justify-end overflow-hidden pointer-events-none select-none relative"
                                              :style="`font-family: 'THSarabunNew', sans-serif; font-size: ${getFontSize(item, pageNum)}; text-align: ${item.align || 'left'}; color: #000;`">
 
@@ -345,6 +363,69 @@
         </div>
     </div>
 
+    <!-- Image Upload Modal -->
+    <div class="modal fade" id="imageUploadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Image (JPG/PNG)</label>
+                        <input type="file" x-ref="customImageInput" class="form-control" accept="image/png, image/jpeg">
+                        <div class="form-text">This image will be placed in the center of the current page. You can drag and resize it afterwards.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @click="uploadImage" :disabled="isUploadingImage">
+                        <span x-show="isUploadingImage" class="spinner-border spinner-border-sm me-2"></span>
+                        Upload & Add
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Witness Settings Modal -->
+    <div class="modal fade" id="witnessSettingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-people me-2"></i>ตั้งค่าพยาน (Template Witnesses)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info border-0 d-flex align-items-center mb-4 text-sm">
+                        <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                        <div>
+                            เลือกพยานที่จะใช้เฉพาะสำหรับ Template นี้ หากไม่เลือก ระบบจะสุ่มลายเซ็นให้
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <template x-for="i in 4" :key="i">
+                            <div class="border rounded p-3 bg-gray-50">
+                                <label class="form-label font-bold text-gray-700" x-text="`พยานรายที่ ${i} (Witness ${i})`"></label>
+                                <select class="form-select form-select-sm" x-model="metaData['witness_' + i + '_id']">
+                                    <option value="">-- ไม่ระบุ (ใช้ระบบสุ่ม) --</option>
+                                    <template x-for="witness in masterWitnesses" :key="witness.id">
+                                        <option :value="witness.id" x-text="witness.name_th + ' (' + witness.name_en + ')'"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Template Settings Modal -->
     <div class="modal fade" id="templateSettingsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -402,10 +483,12 @@
                 pageDimensions: {},
                 items: @json($template->field_mapping ?? []),
                 metaData: @json($template->meta_data ?? ['auto_prefix_titles' => false, 'employees_per_page' => 1]),
+                masterWitnesses: [],
 
                 currentEmployeeSlot: 1,
                 searchQuery: '',
                 isSaving: false,
+                isUploadingImage: false,
                 editingIndex: null,
 
                 dummyData: {
@@ -729,6 +812,16 @@
             },
 
             async init() {
+                // Load witnesses for mapping
+                try {
+                    const res = await fetch('{{ route("admin.pdf-templates.witnesses.index") }}');
+                    if (res.ok) {
+                        this.masterWitnesses = await res.json();
+                    }
+                } catch(e) {
+                    console.error('Failed to load witnesses', e);
+                }
+
                 // Handle null or undefined items
                 if (!this.items) {
                     this.items = [];
@@ -970,8 +1063,69 @@
             },
 
             openSettings(index) {
+                // If it's an image, maybe skip settings or provide opacity settings in the future
+                if (this.items[index].type === 'image') return;
                 this.editingIndex = index;
                 new bootstrap.Modal(document.getElementById('itemSettingsModal')).show();
+            },
+
+            openImageUploader() {
+                if(this.$refs.customImageInput) this.$refs.customImageInput.value = '';
+                new bootstrap.Modal(document.getElementById('imageUploadModal')).show();
+            },
+
+            async uploadImage() {
+                const fileInput = this.$refs.customImageInput;
+                if (!fileInput.files.length) {
+                    showToast('Please select an image first', 'warning');
+                    return;
+                }
+
+                this.isUploadingImage = true;
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+
+                try {
+                    const response = await fetch('{{ route("admin.pdf-templates.upload-image") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        // Add image to canvas
+                        this.items.push({
+                            type: 'image',
+                            url: data.url,
+                            path: data.path,
+                            x: 40, // center roughly
+                            y: 40,
+                            w: 20,
+                            h: 20,
+                            page: this.currentPage,
+                            align: 'left',
+                            autoFit: true
+                        });
+
+                        bootstrap.Modal.getInstance(document.getElementById('imageUploadModal')).hide();
+                        showToast('Image added to template', 'success');
+                    } else {
+                        showToast(data.message || 'Failed to upload image', 'danger');
+                    }
+                } catch (error) {
+                    showToast('Network error while uploading image', 'danger');
+                    console.error(error);
+                } finally {
+                    this.isUploadingImage = false;
+                }
+            },
+
+            openWitnessSettings() {
+                new bootstrap.Modal(document.getElementById('witnessSettingsModal')).show();
             },
 
             openTemplateSettings() {

@@ -208,7 +208,14 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->p
     });
     Route::post('pdf-templates/generate/process', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'process'])->name('pdf-templates.generate.process');
 
+    // Custom Witnesses API
+    Route::get('pdf-templates/witnesses', [\App\Http\Controllers\Admin\WitnessController::class, 'index'])->name('pdf-templates.witnesses.index');
+    Route::post('pdf-templates/witnesses', [\App\Http\Controllers\Admin\WitnessController::class, 'store'])->name('pdf-templates.witnesses.store');
+    Route::post('pdf-templates/witnesses/{id}', [\App\Http\Controllers\Admin\WitnessController::class, 'update'])->name('pdf-templates.witnesses.update'); // using POST instead of PUT because FormData handles files better with POST
+    Route::delete('pdf-templates/witnesses/{id}', [\App\Http\Controllers\Admin\WitnessController::class, 'destroy'])->name('pdf-templates.witnesses.destroy');
+
     // PDF Templates
+    Route::post('pdf-templates/upload-image', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'uploadImage'])->name('pdf-templates.upload-image');
     Route::get('pdf-templates/list-templates', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'listTemplates'])->name('pdf-templates.list'); // AJAX API
     Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
     Route::get('pdf-templates/{pdf_template}/preview', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'preview'])->name('pdf-templates.preview');
