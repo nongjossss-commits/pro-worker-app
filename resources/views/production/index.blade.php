@@ -495,7 +495,7 @@
                     </div>
                 </div>
 
-                    <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#productionAccordion">
+                    <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" data-employer-id="{{ $order->employer_id }}" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#productionAccordion">
                         <div class="card-body bg-light p-4">
                              {{-- Lazy Load Content Container --}}
                             <div id="order-content-{{ $order->id }}" class="order-content-wrapper hide-cancelled">

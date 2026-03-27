@@ -2716,11 +2716,11 @@
 
         // --- Restore UI State on Load (After Reload) ---
         const urlParams = new URLSearchParams(window.location.search);
-        const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id') || urlParams.get('highlight_employer_id');
-        const restoreEmployeeId = sessionStorage.getItem('registration_restore_employee_id') || urlParams.get('highlight_employee_id');
+        const restoreEmployerId = sessionStorage.getItem('renewal_restore_employer_id') || urlParams.get('highlight_employer_id');
+        const restoreEmployeeId = sessionStorage.getItem('renewal_restore_employee_id') || urlParams.get('highlight_employee_id');
 
         if (restoreEmployerId) {
-            sessionStorage.removeItem('registration_restore_employer_id'); // Clear immediately
+            sessionStorage.removeItem('renewal_restore_employer_id'); // Clear immediately
             const collapseEl = document.getElementById(`collapse${restoreEmployerId}`);
             const employerHeading = document.getElementById(`heading${restoreEmployerId}`);
 
@@ -2739,7 +2739,7 @@
 
                 // If we also have an employee to scroll to
                 if (restoreEmployeeId) {
-                    sessionStorage.removeItem('registration_restore_employee_id');
+                    sessionStorage.removeItem('renewal_restore_employee_id');
 
                     const highlightTarget = (card) => {
                         setTimeout(() => {
