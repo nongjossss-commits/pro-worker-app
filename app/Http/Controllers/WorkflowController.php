@@ -265,9 +265,11 @@ class WorkflowController extends Controller
 
                 $stats['completed'] = (clone $baseItemQuery)->where('status', 'completed')->count();
                 $stats['not_started'] = (clone $baseItemQuery)
-                    ->where('status', 'pending')
+                    ->whereIn('status', ['pending', 'completed'])
                     ->whereHas('order', fn($o) => $o->where('status', '!=', 'cancelled'))
-                    ->doesntHave('completedWorkTypeSteps')->count();
+                    ->whereDoesntHave('completedWorkTypeSteps', function($q) {
+                        $q->where('order', 1);
+                    })->count();
                 $stats['pending_daily_check'] = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
                     ->where(function($q) {
                         $q->whereNull('last_checked_at')
@@ -343,9 +345,11 @@ class WorkflowController extends Controller
                                     ->whereHas('employer')
                                     ->count(),
             'total_employees' => (clone $itemsQuery)->count(),
-            'not_started' => (clone $itemsQuery)->where('status', 'pending')
+            'not_started' => (clone $itemsQuery)->whereIn('status', ['pending', 'completed'])
                                            ->whereHas('order', fn($q) => $q->where('status', '!=', 'cancelled'))
-                                           ->doesntHave('completedWorkTypeSteps')
+                                           ->whereDoesntHave('completedWorkTypeSteps', function($q) {
+                                               $q->where('order', 1);
+                                           })
                                            ->count(),
             'cancelled' => (clone $itemsQuery)
                                 ->where(function($q) {
@@ -685,8 +689,10 @@ class WorkflowController extends Controller
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
             if ($filter === 'not_started') {
-                 $query->where('status', 'pending')
-                       ->doesntHave('completedWorkTypeSteps');
+                 $query->whereIn('status', ['pending', 'completed'])
+                       ->whereDoesntHave('completedWorkTypeSteps', function($q) {
+                           $q->where('order', 1);
+                       });
             } elseif ($filter === 'cancelled') {
                  $query->where('status', 'cancelled');
             } elseif ($filter === 'completed') {
@@ -890,6 +896,8 @@ class WorkflowController extends Controller
             'pending_daily_check' => 0,
         ];
 
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
         foreach ($allOrders as $order) {
             if ($order->status === 'cancelled') {
                 foreach ($order->items as $item) {
@@ -911,8 +919,8 @@ class WorkflowController extends Controller
                     $stats['completed']++;
                 }
 
-                // Not Started: Pending + No Steps
-                if ($item->status === 'pending' && $item->completedWorkTypeSteps->isEmpty()) {
+                // Not Started: Pending + No Step 1
+                if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
                     $stats['not_started']++;
                 }
 
@@ -973,7 +981,7 @@ class WorkflowController extends Controller
                 $completed++;
             }
 
-            if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+            if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
                 $notStarted++;
             }
 
@@ -1918,7 +1926,10 @@ class WorkflowController extends Controller
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
             if ($filter === 'not_started') {
-                $query->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+                $query->whereIn('status', ['pending', 'completed'])
+                      ->whereDoesntHave('completedWorkTypeSteps', function($q) {
+                          $q->where('order', 1);
+                      });
             } elseif ($filter === 'cancelled') {
                 $query->where('status', 'cancelled');
             } elseif ($filter === 'completed') {
@@ -2077,6 +2088,8 @@ class WorkflowController extends Controller
             $items = $query->get();
 
             $total = 0;
+                $stepOneId = $steps->sortBy('order')->first()?->id;
+
             $notStarted = 0;
             $cancelled = 0;
             $completed = 0;
@@ -2101,7 +2114,7 @@ class WorkflowController extends Controller
                     $completed++;
                 }
 
-                if ($stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+                if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
                     $notStarted++;
                 }
 

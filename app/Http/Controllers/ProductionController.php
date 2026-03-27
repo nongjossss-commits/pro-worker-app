@@ -68,7 +68,13 @@ class ProductionController extends Controller
 
              $stats['total_projects'] = ProductionOrder::where('status', 'pre_production')->count();
              $stats['total_employees'] = (clone $baseItemsQuery)->count();
-             $stats['not_started'] = (clone $baseItemsQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
+             // Use global step logic: wait, without active tab, we don't have a specific stepOneId.
+             // Actually, 'pre_production' is not started globally if they don't have their respective step 1.
+             // But usually global stats are for total.
+             $stats['not_started'] = (clone $baseItemsQuery)->whereIn('status', ['pending', 'completed'])
+                ->whereDoesntHave('completedWorkTypeSteps', function($q) {
+                    $q->where('order', 1);
+                })->count();
              $stats['cancelled'] = (clone $baseItemsQuery)->where('status', 'cancelled')->count();
              $stats['completed'] = (clone $baseItemsQuery)->where('status', 'completed')->count();
              $stats['pending_daily_check'] = (clone $baseItemsQuery)->whereNotIn('status', ['cancelled', 'completed'])
@@ -140,7 +146,10 @@ class ProductionController extends Controller
                 $filter = $request->filter;
                 $query->whereHas('items', function($q) use ($filter) {
                     if ($filter === 'not_started') {
-                        $q->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+                        $q->whereIn('status', ['pending', 'completed'])
+                          ->whereDoesntHave('completedWorkTypeSteps', function($subQ) {
+                              $subQ->where('order', 1);
+                          });
                     } elseif ($filter === 'cancelled') {
                         $q->where('status', 'cancelled');
                     } elseif ($filter === 'completed') {
@@ -278,7 +287,10 @@ class ProductionController extends Controller
                 $stats['total_employees'] = (clone $baseItemQuery)->count();
                 $stats['cancelled'] = (clone $baseItemQuery)->where('status', 'cancelled')->count();
                 $stats['completed'] = (clone $baseItemQuery)->where('status', 'completed')->count();
-                $stats['not_started'] = (clone $baseItemQuery)->where('status', 'pending')->doesntHave('completedWorkTypeSteps')->count();
+                $stats['not_started'] = (clone $baseItemQuery)->whereIn('status', ['pending', 'completed'])
+                    ->whereDoesntHave('completedWorkTypeSteps', function($q) {
+                        $q->where('order', 1);
+                    })->count();
                 $stats['pending_daily_check'] = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
                     ->where(function($q) {
                         $q->whereNull('last_checked_at')
@@ -807,6 +819,7 @@ class ProductionController extends Controller
         $cancelled = 0;
         $completed = 0;
         $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
 
         foreach ($items as $item) {
             if ($item->status === 'cancelled') {
@@ -818,7 +831,7 @@ class ProductionController extends Controller
                 $completed++;
             }
             $completedSteps = $item->completedWorkTypeSteps->pluck('id')->toArray();
-            if (empty($completedSteps)) {
+            if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !in_array($stepOneId, $completedSteps)) {
                 $notStarted++;
             }
             $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
@@ -854,7 +867,10 @@ class ProductionController extends Controller
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
             if ($filter === 'not_started') {
-                $query->where('status', 'pending')->doesntHave('completedWorkTypeSteps');
+                $query->whereIn('status', ['pending', 'completed'])
+                      ->whereDoesntHave('completedWorkTypeSteps', function($q) {
+                          $q->where('order', 1);
+                      });
             } elseif ($filter === 'cancelled') {
                 $query->where('status', 'cancelled');
             } elseif ($filter === 'completed') {
@@ -1045,6 +1061,7 @@ class ProductionController extends Controller
                 ->where('stage', 'preparation')
                 ->get();
 
+            $stepOneId = $steps->sortBy('order')->first()?->id;
             foreach ($steps as $step) {
                 $stepStats[$step->id] = 0;
             }
@@ -1062,7 +1079,7 @@ class ProductionController extends Controller
                 }
 
                 $completedSteps = $item->completedWorkTypeSteps;
-                if ($completedSteps->isEmpty()) {
+                if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$completedSteps->contains('id', $stepOneId)) {
                     $notStarted++;
                 }
 
