@@ -76,13 +76,14 @@ class RenewalController extends Controller
         if ($stepOneId) {
             $notStartedCount = (clone $statsQuery)
                 ->where('status', 'renewal_pending')
+                ->where('status', '!=', 'renewal_cancelled')
                 ->whereDoesntHave('registrationSteps', function ($q) use ($stepOneId) {
                     $q->where('registration_steps.id', $stepOneId);
                 })->count();
         }
 
         // Step Stats (Optimized via SQL)
-        $stepStatsQuery = (clone $statsQuery);
+        $stepStatsQuery = (clone $statsQuery)->where('status', '!=', 'renewal_cancelled');
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments
@@ -327,6 +328,7 @@ class RenewalController extends Controller
         $query->whereHas('employees', function($q) use ($filter, $stepOneId) {
             if ($filter === 'not_started') {
                  $q->where('status', 'renewal_pending')
+                   ->where('status', '!=', 'renewal_cancelled')
                    ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
                        $sq->where('registration_steps.id', $stepOneId);
                    });
@@ -576,7 +578,8 @@ class RenewalController extends Controller
             if ($filter === 'saved') $query->where('status', 'renewal_completed');
             elseif ($filter === 'cancelled') $query->where('status', 'renewal_cancelled');
             elseif ($filter === 'not_started') {
-                 $query->where('status', '!=', 'renewal_cancelled')
+                 $query->where('status', 'renewal_pending')
+                       ->where('status', '!=', 'renewal_cancelled')
                        ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
                            $q->where('registration_steps.id', $stepOneId);
                        });
@@ -1307,7 +1310,9 @@ class RenewalController extends Controller
             $globalNotStarted = 0;
 
             foreach ($allEmployees as $emp) {
-                if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                if ($emp->status === 'renewal_cancelled') continue;
+
+                if ($stepOneId && $emp->status === 'renewal_pending' && !$emp->registrationSteps->contains('id', $stepOneId)) {
                     $globalNotStarted++;
                 }
                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
@@ -1374,7 +1379,9 @@ class RenewalController extends Controller
             $employerNotStarted = 0;
 
             foreach ($employerEmployees as $emp) {
-                 if ($stepOneId && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                 if ($emp->status === 'renewal_cancelled') continue;
+
+                 if ($stepOneId && $emp->status === 'renewal_pending' && !$emp->registrationSteps->contains('id', $stepOneId)) {
                      $employerNotStarted++;
                  }
                  $highest = $emp->registrationSteps->sortByDesc('order')->first();
