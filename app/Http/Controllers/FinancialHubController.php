@@ -81,7 +81,7 @@ class FinancialHubController extends Controller
 
             $stats = $this->getStatsForOrders($baseQuery);
 
-            $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions'])
+            $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions', 'financialGroups.transactions.payments'])
                 ->latest('created_at')
                 ->withCount('items');
 
@@ -157,7 +157,7 @@ class FinancialHubController extends Controller
                 );
             } else {
                 $orders = $query->paginate(20)->withQueryString();
-                $orders->load(['financialGroups.transactions', 'financialGroups.advanceItems']);
+                $orders->load(['financialGroups.transactions', 'financialGroups.transactions.payments', 'financialGroups.advanceItems']);
                 foreach ($orders as $order) {
                     $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
                 }
@@ -223,7 +223,7 @@ class FinancialHubController extends Controller
                 );
             } else {
                 $orders = $query->paginate(20)->withQueryString();
-                $orders->load(['financialGroups.transactions', 'financialGroups.advanceItems']);
+                $orders->load(['financialGroups.transactions', 'financialGroups.transactions.payments', 'financialGroups.advanceItems']);
                 foreach ($orders as $order) {
                     $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
                 }
@@ -234,7 +234,7 @@ class FinancialHubController extends Controller
 
             $stats = $this->getStatsForOrders($baseQuery);
 
-            $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions'])
+            $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions', 'financialGroups.transactions.payments'])
                 ->latest('created_at')
                 ->withCount('items');
 
@@ -303,7 +303,7 @@ class FinancialHubController extends Controller
         $pricedItemIds = [];
         $totalAmount = 0;
 
-        $order->loadMissing(['financialGroups.transactions']);
+        $order->loadMissing(['financialGroups.transactions', 'financialGroups.transactions.payments']);
 
         foreach ($order->financialGroups as $group) {
             $financialData = $group->financial_data ?? [];
