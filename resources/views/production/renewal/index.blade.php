@@ -1827,14 +1827,14 @@
         document.querySelectorAll('.employee-card-wrapper').forEach(card => {
             let visible = true;
             if (filter === 'not_started') {
-                 visible = (card.dataset.isNotStarted === 'true' && card.dataset.status !== 'registration_cancelled');
+                 visible = (card.dataset.isNotStarted === 'true' && card.dataset.status !== 'renewal_cancelled');
             } else if (filter === 'saved') {
-                 visible = (card.dataset.status === 'registration_completed');
+                 visible = (card.dataset.status === 'renewal_completed');
             } else if (filter === 'cancelled') {
-                 visible = (card.dataset.status === 'registration_cancelled');
+                 visible = (card.dataset.status === 'renewal_cancelled');
             } else if (!isNaN(filter)) {
                  // Step ID
-                 visible = (card.dataset.highestStepId == filter && card.dataset.status !== 'registration_cancelled');
+                 visible = (card.dataset.highestStepId == filter && card.dataset.status !== 'renewal_cancelled');
             }
 
             if (visible) {
