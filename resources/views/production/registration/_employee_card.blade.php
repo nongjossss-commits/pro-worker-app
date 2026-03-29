@@ -27,11 +27,21 @@
         $overlayClass = 'opacity-50 pointer-events-none';
     }
 
+    // Determine the relevant steps relationship depending on the active module
+    $completedStepsCollection = isset($employee->production_item)
+        ? $employee->production_item->completedWorkTypeSteps
+        : $employee->registrationSteps;
+
     // Determine Highest Completed Step for Filtering
-    $highestStep = $employee->registrationSteps->sortByDesc('order')->first();
+    $highestStep = $completedStepsCollection->sortByDesc('order')->first();
     $highestStepId = $highestStep ? $highestStep->id : '';
-    // Determine if "Not Started" (only if active status and no steps)
-    $isNotStarted = (!$isCompleted && !$isCancelled && !$highestStep);
+
+    // "Not Started" logic must exactly match the backend: missing Step 1.
+    // If they have steps 2, 3, etc. but no step 1, they are STILL considered "Not Started".
+    // We check if the collection contains any step with 'order' === 1 to avoid relying on external variables.
+    $hasStepOne = $completedStepsCollection->where('order', 1)->isNotEmpty();
+
+    $isNotStarted = (!$isCancelled && !$hasStepOne);
 
     // Contextual status for JS
     $itemStatus = isset($employee->production_item) ? $employee->production_item->status : $employee->status;
