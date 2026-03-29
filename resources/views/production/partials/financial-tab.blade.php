@@ -977,9 +977,14 @@ class="row">
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mt-2">
                                             <div class="small fst-italic text-muted" x-text="pay.notes"></div>
-                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deletePayment(pay.id)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="editPayment(pay)">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deletePayment(pay.id)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </template>
@@ -989,8 +994,11 @@ class="row">
                             </div>
 
                             <!-- Add New Payment Form -->
-                            <div class="card shadow-sm border-success">
-                                <div class="card-header bg-success text-white py-1 small fw-bold">Add Payment</div>
+                            <div class="card shadow-sm border-success" :class="{'border-primary': editingPaymentId, 'border-success': !editingPaymentId}">
+                                <div class="card-header text-white py-1 small fw-bold d-flex justify-content-between align-items-center" :class="{'bg-primary': editingPaymentId, 'bg-success': !editingPaymentId}">
+                                    <span x-text="editingPaymentId ? 'Edit Payment' : 'Add Payment'"></span>
+                                    <button type="button" class="btn-close btn-close-white" style="font-size: 0.5rem;" x-show="editingPaymentId" @click="cancelEditPayment()"></button>
+                                </div>
                                 <div class="card-body p-2">
                                     <div class="row g-2 mb-2">
                                         <div class="col-6">
@@ -1013,16 +1021,29 @@ class="row">
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small mb-0">Slip</label>
-                                        <input type="file" class="form-control form-control-sm" @change="handlePaymentSlipSelect" accept=".jpg,.jpeg,.png,.pdf">
+                                        <input type="file" id="paymentSlipInput" class="form-control form-control-sm" @change="handlePaymentSlipSelect" accept=".jpg,.jpeg,.png,.pdf">
+                                        <div x-show="editingPaymentId && newPayment.slip_path && !paymentSlipFile" class="mt-1 small">
+                                            <a :href="'/storage/' + newPayment.slip_path" target="_blank" class="text-decoration-none">
+                                                <i class="bi bi-file-earmark-text"></i> View Current Slip
+                                            </a>
+                                        </div>
+                                        <div x-show="editingPaymentId && paymentSlipFile" class="mt-1 small text-warning">
+                                            <i class="bi bi-info-circle"></i> New file selected.
+                                        </div>
                                     </div>
                                     <div class="mb-2">
                                         <label class="form-label small mb-0">Notes</label>
                                         <input type="text" class="form-control form-control-sm" x-model="newPayment.notes">
                                     </div>
-                                    <button type="button" class="btn btn-success btn-sm w-100" @click="addPayment" :disabled="isSavingPayment">
-                                        <span x-show="isSavingPayment" class="spinner-border spinner-border-sm me-1"></span>
-                                        Save Payment
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm w-100" :class="editingPaymentId ? 'btn-primary' : 'btn-success'" @click="editingPaymentId ? updatePayment() : addPayment()" :disabled="isSavingPayment">
+                                            <span x-show="isSavingPayment" class="spinner-border spinner-border-sm me-1"></span>
+                                            <span x-text="editingPaymentId ? 'Save Changes' : 'Save Payment'"></span>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-sm w-50" x-show="editingPaymentId" @click="cancelEditPayment()">
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

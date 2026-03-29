@@ -63,7 +63,8 @@ if (typeof window.financialManager === 'undefined') {
             newTransaction: { type: 'installment', amount: '', due_date: '', notes: '' },
             editingTransaction: { payments: [] },
             selectedFile: null,
-            newPayment: { amount: '', paid_at: '', bank_account_id: '', notes: '' },
+            editingPaymentId: null,
+            newPayment: { amount: '', paid_at: '', bank_account_id: '', notes: '', slip_path: null },
             paymentSlipFile: null,
             isSavingPayment: false,
 
@@ -625,7 +626,8 @@ if (typeof window.financialManager === 'undefined') {
                 if (defaultAmount < 0) defaultAmount = 0;
 
                 let today = new Date().toISOString().split('T')[0];
-                this.newPayment = { amount: defaultAmount, paid_at: today, bank_account_id: '', notes: '' };
+                this.editingPaymentId = null;
+                this.newPayment = { amount: defaultAmount, paid_at: today, bank_account_id: '', notes: '', slip_path: null };
                 this.paymentSlipFile = null;
 
                 if (t.items) {
@@ -677,12 +679,79 @@ if (typeof window.financialManager === 'undefined') {
                         // Reset form
                         let defaultAmount = (data.transaction.amount - (data.transaction.paid_amount || 0)).toFixed(2);
                         if (defaultAmount < 0) defaultAmount = 0;
-                        this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '' };
+                        this.editingPaymentId = null;
+                        this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '', slip_path: null };
                         this.paymentSlipFile = null;
 
                         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Added', showConfirmButton: false, timer: 3000 });
                     } else {
                         throw new Error(data.message || 'Error adding payment');
+                    }
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'))
+                .finally(() => this.isSavingPayment = false);
+            },
+
+            editPayment(payment) {
+                this.editingPaymentId = payment.id;
+                this.newPayment = {
+                    amount: payment.amount,
+                    paid_at: payment.paid_at ? payment.paid_at.split('T')[0] : '',
+                    bank_account_id: payment.bank_account_id || '',
+                    notes: payment.notes || '',
+                    slip_path: payment.slip_path || null
+                };
+                this.paymentSlipFile = null;
+                // clear file input if possible
+                const fileInput = document.getElementById('paymentSlipInput');
+                if (fileInput) fileInput.value = '';
+            },
+
+            cancelEditPayment() {
+                this.editingPaymentId = null;
+                let defaultAmount = (this.editingTransaction.amount - (this.editingTransaction.paid_amount || 0)).toFixed(2);
+                if (defaultAmount < 0) defaultAmount = 0;
+                this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '', slip_path: null };
+                this.paymentSlipFile = null;
+                const fileInput = document.getElementById('paymentSlipInput');
+                if (fileInput) fileInput.value = '';
+            },
+
+            updatePayment() {
+                if(!this.newPayment.amount || !this.newPayment.paid_at) {
+                    Swal.fire('Warning', 'Amount and Date are required.', 'warning');
+                    return;
+                }
+
+                this.isSavingPayment = true;
+                const formData = new FormData();
+                formData.append('_method', 'PUT');
+                formData.append('amount', this.newPayment.amount);
+                formData.append('paid_at', this.newPayment.paid_at);
+                formData.append('bank_account_id', this.newPayment.bank_account_id || '');
+                formData.append('notes', this.newPayment.notes || '');
+                if (this.paymentSlipFile) {
+                    formData.append('slip_file', this.paymentSlipFile);
+                }
+
+                fetch(`/production/payments/${this.editingPaymentId}`, {
+                    method: 'POST', // Use POST with _method=PUT
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
+                        if(idx !== -1) this.transactions[idx] = data.transaction;
+
+                        this.editingTransaction = { ...data.transaction };
+
+                        this.cancelEditPayment();
+
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Updated', showConfirmButton: false, timer: 3000 });
+                    } else {
+                        throw new Error(data.message || 'Error updating payment');
                     }
                 })
                 .catch(err => Swal.fire('Error', err.message, 'error'))
@@ -748,6 +817,8 @@ if (typeof window.financialManager === 'undefined') {
                     if(data.success) {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                         if(idx !== -1) this.transactions[idx] = data.transaction;
+
+                        this.editingTransaction = { ...data.transaction };
 
                         if (data.transaction.items) {
                             data.transaction.items.forEach(newItem => {
