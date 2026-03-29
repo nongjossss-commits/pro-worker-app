@@ -82,7 +82,7 @@ class RenewalController extends Controller
         }
 
         // Step Stats (Optimized via SQL)
-        $stepStatsQuery = (clone $statsQuery);
+        $stepStatsQuery = (clone $statsQuery)->where('status', '!=', 'renewal_cancelled');
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments
@@ -1307,6 +1307,9 @@ class RenewalController extends Controller
             $globalNotStarted = 0;
 
             foreach ($allEmployees as $emp) {
+                if ($emp->status === 'renewal_cancelled') {
+                    continue;
+                }
                 if ($stepOneId && in_array($emp->status, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
                     $globalNotStarted++;
                 }
@@ -1374,6 +1377,9 @@ class RenewalController extends Controller
             $employerNotStarted = 0;
 
             foreach ($employerEmployees as $emp) {
+                 if ($emp->status === 'renewal_cancelled') {
+                     continue;
+                 }
                  if ($stepOneId && in_array($emp->status, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
                      $employerNotStarted++;
                  }
