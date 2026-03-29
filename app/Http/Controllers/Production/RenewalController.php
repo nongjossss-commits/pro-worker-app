@@ -67,8 +67,56 @@ class RenewalController extends Controller
             $this->applySearchToQuery($statsQuery, $request->search);
         }
 
+        // Apply operator filter
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $opFilter = $request->operator_filter;
+            if ($opFilter === 'external') {
+                $statsQuery->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $statsQuery->where('operator_id', $opFilter);
+            }
+        }
+
+        // Apply insurance filter
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            if ($request->insurance_filter === 'none') {
+                 $statsQuery->where(function($q) {
+                     $q->whereNull('insurance_type')->orWhere('insurance_type', '');
+                 });
+            } else {
+                 $statsQuery->where('insurance_type', $request->insurance_filter);
+            }
+        }
+
+        // Apply additional filter for total employees if present
+        $totalEmployeesQuery = clone $statsQuery;
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'not_started') {
+                 $totalEmployeesQuery->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                   ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
+                       $sq->where('registration_steps.id', $stepOneId);
+                   });
+            } elseif ($filter === 'saved') {
+                 $totalEmployeesQuery->where('status', 'renewal_completed');
+            } elseif ($filter === 'cancelled') {
+                 $totalEmployeesQuery->where('status', 'renewal_cancelled');
+            } elseif ($filter === 'pending_daily_check') {
+                 $totalEmployeesQuery->where('daily_check_enabled', true)
+                   ->where(function ($sub) {
+                       $sub->whereNull('last_daily_checked_at')
+                         ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                   });
+            } elseif (is_numeric($filter)) {
+                 $totalEmployeesQuery->where('status', '!=', 'renewal_cancelled')
+                    ->whereHas('registrationSteps', function($s) use ($filter) {
+                        $s->where('registration_steps.id', $filter);
+                    });
+            }
+        }
+
         // Clone for different counts
-        $totalEmployees = (clone $statsQuery)->count();
+        $totalEmployees = $totalEmployeesQuery->count();
         $totalCancelled = (clone $statsQuery)->where('status', 'renewal_cancelled')->count();
         $totalSaved = (clone $statsQuery)->where('status', 'renewal_completed')->count();
 
