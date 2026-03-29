@@ -202,7 +202,7 @@ class ProductionController extends Controller
                 if ($order->work_type_id !== null) {
                     $sharedGroups = \App\Models\ProductionFinancialGroup::where('employer_id', $order->employer_id)
                         ->where('work_type_id', $order->work_type_id)
-                        ->with(['transactions.items', 'advanceItems'])
+                        ->with(['transactions.items', 'transactions.payments', 'advanceItems'])
                         ->get();
                     if ($sharedGroups->isEmpty()) {
                         $sharedGroups = $order->financialGroups;
@@ -741,16 +741,16 @@ class ProductionController extends Controller
         // IMPORTANT: Manual bills have work_type_id = null. We do NOT want to share groups
         // across all manual bills for the same employer. If null, fetch ONLY its own groups.
         if ($production->work_type_id === null) {
-             $sharedGroups = $production->financialGroups()->with(['transactions.items', 'advanceItems'])->get();
+             $sharedGroups = $production->financialGroups()->with(['transactions.items', 'transactions.payments', 'advanceItems'])->get();
         } else {
              $sharedGroups = ProductionFinancialGroup::where('employer_id', $production->employer_id)
                 ->where('work_type_id', $production->work_type_id)
-                ->with(['transactions.items', 'advanceItems'])
+                ->with(['transactions.items', 'transactions.payments', 'advanceItems'])
                 ->get();
 
              // If no shared groups exist, but the order has old groups (migration fallback), fetch them
              if ($sharedGroups->isEmpty()) {
-                 $sharedGroups = $production->financialGroups()->with(['transactions.items', 'advanceItems'])->get();
+                 $sharedGroups = $production->financialGroups()->with(['transactions.items', 'transactions.payments', 'advanceItems'])->get();
              }
         }
 
@@ -925,7 +925,7 @@ class ProductionController extends Controller
         if ($order->work_type_id !== null) {
             $sharedGroups = \App\Models\ProductionFinancialGroup::where('employer_id', $order->employer_id)
                 ->where('work_type_id', $order->work_type_id)
-                ->with(['transactions.items', 'advanceItems'])
+                ->with(['transactions.items', 'transactions.payments', 'advanceItems'])
                 ->get();
             if ($sharedGroups->isEmpty()) {
                 $sharedGroups = $order->financialGroups;

@@ -1984,7 +1984,7 @@ class WorkflowController extends Controller
         if ($order->work_type_id !== null) {
             $sharedGroups = \App\Models\ProductionFinancialGroup::where('employer_id', $order->employer_id)
                 ->where('work_type_id', $order->work_type_id)
-                ->with(['transactions.items', 'advanceItems'])
+                ->with(['transactions.items', 'transactions.payments', 'advanceItems'])
                 ->get();
             if ($sharedGroups->isEmpty()) {
                 $sharedGroups = $order->financialGroups;

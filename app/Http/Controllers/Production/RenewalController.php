@@ -620,7 +620,7 @@ class RenewalController extends Controller
             $employees = $query->paginate($perPage)->withQueryString();
         }
 
-        $financeOrder = ProductionOrder::with('financialGroups.transactions.items')
+        $financeOrder = ProductionOrder::with('financialGroups.transactions.items', 'financialGroups.transactions.payments')
             ->where('employer_id', $employerId)
             ->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])
             ->first();
@@ -763,7 +763,7 @@ class RenewalController extends Controller
         }
 
         // Load relationships needed for the view
-        $financeOrder->load(['financialGroups.transactions.items', 'financialGroups.advanceItems', 'items.employee']);
+        $financeOrder->load(['financialGroups.transactions.items', 'financialGroups.transactions.payments', 'financialGroups.advanceItems', 'items.employee']);
 
         // Fetch ALL Active Employees for this employer (ignoring search)
         $query = $employer->employees()
