@@ -1067,7 +1067,7 @@ class="row">
 
                         <!-- Right Column: Transaction Options & Items -->
                         <div class="col-md-7 border-start ps-3">
-                            <form @submit.prevent="updateTransaction">
+                            <form @submit.prevent="updateTransaction" :id="'updateTransactionForm-' + productionId">
                                 <h6 class="fw-bold mb-3 border-bottom pb-2">Transaction Options</h6>
 
                                 <!-- Summary Display -->
@@ -1236,7 +1236,7 @@ class="row">
                                 </div>
                              </div>
                         </div>
-                        <button type="submit" class="btn btn-success btn-sm w-100 mt-3">Update</button>
+                        <button type="submit" :form="'updateTransactionForm-' + productionId" class="btn btn-success btn-sm w-100 mt-3">Update</button>
                     </form>
                 </div>
             </div>
