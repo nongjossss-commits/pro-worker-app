@@ -254,7 +254,63 @@ class WorkflowController extends Controller
             if ($matchingOrderIds->isNotEmpty()) {
                 $baseItemQuery = ProductionItem::whereIn('production_order_id', $matchingOrderIds);
 
-                $stats['total_employees'] = (clone $baseItemQuery)->count();
+                // Apply search to the item query if needed
+                if ($request->has('search') && $request->search) {
+                    $search = trim($request->search);
+                    $cleanedSearch = str_replace(' ', '', $search);
+                    $baseItemQuery->where(function($q) use ($search, $cleanedSearch) {
+                        $q->where('request_number', 'like', "%{$search}%")
+                            ->orWhereHas('employee', function($emp) use ($search, $cleanedSearch) {
+                                $emp->where('employeeNameTh', 'like', "%{$search}%")
+                                    ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                                    ->orWhere('employeePassport', 'like', "%{$search}%")
+                                    ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                                    ->orWhere('employee_id_number', 'like', "%{$search}%")
+                                    ->orWhere('name_list_number', 'like', "%{$search}%")
+                                    ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                                    ->orWhere('request_number', 'like', "%{$search}%")
+                                    ->orWhere('employer_employee_id', 'like', "%{$search}%")
+                                    ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                                    ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                            });
+                    });
+                }
+
+                // Apply operator filter to items
+                if ($request->has('operator_filter') && $request->operator_filter) {
+                    $baseItemQuery->where('operator_id', $request->operator_filter);
+                }
+
+                // Apply filter to total_employees
+                $totalItemQuery = clone $baseItemQuery;
+                if ($request->has('filter') && $request->filter) {
+                    $filter = $request->filter;
+                    if ($filter === 'not_started') {
+                        $totalItemQuery->whereIn('status', ['pending', 'completed'])
+                          ->whereHas('order', fn($o) => $o->where('status', '!=', 'cancelled'))
+                          ->whereDoesntHave('completedWorkTypeSteps', function($subQ) {
+                              $subQ->where('order', 1);
+                          });
+                    } elseif ($filter === 'cancelled') {
+                        $totalItemQuery->where(function($q) {
+                            $q->where('status', 'cancelled')
+                              ->orWhereHas('order', fn($o) => $o->where('status', 'cancelled'));
+                        });
+                    } elseif ($filter === 'completed') {
+                        $totalItemQuery->where('status', 'completed');
+                    } elseif ($filter === 'pending_daily_check') {
+                        $totalItemQuery->where(function($sub) {
+                            $sub->whereNull('last_checked_at')
+                                ->orWhereDate('last_checked_at', '<', now()->today());
+                        })->whereNotIn('status', ['cancelled', 'completed']);
+                    } elseif (is_numeric($filter)) {
+                        $totalItemQuery->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
+                            $s->where('work_type_steps.id', $filter);
+                        });
+                    }
+                }
+
+                $stats['total_employees'] = $totalItemQuery->count();
 
                 // If the order is cancelled, we need to count all its items as cancelled
                 $stats['cancelled'] = (clone $baseItemQuery)

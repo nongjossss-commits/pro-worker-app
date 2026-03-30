@@ -70,11 +70,57 @@ class RegistrationController extends Controller
             $this->applySearchToQuery($statsQuery, $request->search);
         }
 
+        // Apply operator filter if present
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $opFilter = $request->operator_filter;
+            if ($opFilter === 'external') {
+                $statsQuery->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $statsQuery->where('operator_id', $opFilter);
+            }
+        }
+
         // Filter by relevant statuses for this menu
         $statsQuery->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
 
+        // Apply additional filter for total employees if present
+        $totalEmployeesQuery = clone $statsQuery;
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'not_started') {
+                 $totalEmployeesQuery->whereIn('status', ['registration_pending', 'registration_completed'])
+                       ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
+                           $q->where('registration_steps.id', $stepOneId);
+                       });
+            } elseif ($filter === 'saved') {
+                 $totalEmployeesQuery->where('status', 'registration_completed');
+            } elseif ($filter === 'cancelled') {
+                 $totalEmployeesQuery->where('status', 'registration_cancelled');
+            } elseif ($filter === 'biometrics_collected') {
+                 $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
+                       ->whereNotNull('biometrics_collected_at');
+            } elseif ($filter === 'biometrics_not_collected') {
+                 $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
+                       ->whereNull('biometrics_collected_at');
+            } elseif ($filter === 'total_appointments') {
+                 $totalEmployeesQuery->whereNotNull('appointment_date');
+            } elseif ($filter === 'pending_daily_check') {
+                 $totalEmployeesQuery->where('daily_check_enabled', true)
+                       ->where(function ($sub) {
+                           $sub->whereNull('last_daily_checked_at')
+                             ->orWhereDate('last_daily_checked_at', '<', now()->today());
+                       });
+            } elseif (is_numeric($filter)) {
+                // Approximate filtering for count: must have this step
+                 $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
+                    ->whereHas('registrationSteps', function($s) use ($filter) {
+                        $s->where('registration_steps.id', $filter);
+                    });
+            }
+        }
+
         // Clone for different counts
-        $totalEmployees = (clone $statsQuery)->count();
+        $totalEmployees = $totalEmployeesQuery->count();
         $totalCancelled = (clone $statsQuery)->where('status', 'registration_cancelled')->count();
         $totalSaved = (clone $statsQuery)->where('status', 'registration_completed')->count();
         $totalBiometricsCollected = (clone $statsQuery)
