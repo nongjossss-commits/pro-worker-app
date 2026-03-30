@@ -469,6 +469,13 @@
                                  </button>
                                  @endif
 
+                                @if(isset($activeTab) && $activeTab->slug === 'mou')
+                                {{-- Custom Fields Button (Employer) --}}
+                                <button class="btn btn-outline-secondary btn-sm ms-2 fw-bold" onclick="toggleEmployerInlineDrawer({{ $order->employer_id }}, {{ json_encode($order->employer->customFields ?? []) }}); event.stopPropagation();">
+                                    <i class="bi bi-list-task"></i> {{ __('Fields') }}
+                                </button>
+                                @endif
+
                                 <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
                                     <i class="bi bi-chevron-down"></i>
                                 </button>
@@ -476,8 +483,22 @@
                         </div>
                     </div>
 
+                    {{-- Employer Custom Fields Drawer --}}
+                    @if(isset($activeTab) && $activeTab->slug === 'mou')
+                    <div class="collapse mt-3 mx-4" id="drawer-employer-{{ $order->employer_id }}">
+                        <div class="card card-body bg-light border-0 rounded-3 shadow-sm">
+                            <div id="drawer-content-employer-{{ $order->employer_id }}" class="position-relative" style="min-height: 100px;">
+                                <div class="d-flex justify-content-center align-items-center h-100 py-3">
+                                     <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                     <span class="ms-2 small text-muted">{{ __('Loading fields...') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     {{-- Bottom Row: Steps Progress --}}
-                    <div class="w-100 overflow-auto custom-scrollbar pb-1" style="scrollbar-width: thin;">
+                    <div class="w-100 overflow-auto custom-scrollbar pb-1 mt-2" style="scrollbar-width: thin;">
                          <div class="d-flex flex-nowrap align-items-center gap-2">
                              @foreach($steps as $step)
                                 @php
