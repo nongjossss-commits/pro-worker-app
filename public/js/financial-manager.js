@@ -788,6 +788,9 @@ if (typeof window.financialManager === 'undefined') {
             updateTransaction() {
                 const formData = new FormData();
                 formData.append('_method', 'PUT');
+                if (this.editingTransaction.amount !== undefined) {
+                    formData.append('amount', this.editingTransaction.amount);
+                }
                 formData.append('status', this.editingTransaction.status);
                 formData.append('notes', this.editingTransaction.notes || '');
                 formData.append('bank_account_id', this.editingTransaction.bank_account_id || '');
