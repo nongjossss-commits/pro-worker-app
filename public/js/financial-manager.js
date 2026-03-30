@@ -522,9 +522,7 @@ if (typeof window.financialManager === 'undefined') {
                     this.selectedTransactionItems.forEach(val => {
                          total += this.getItemPrice(val);
                     });
-                    // For edit mode, we generally don't auto-update paid amount, only total guidance?
-                    // Or maybe we update the transaction total?
-                    // Let's update editingTransaction.amount for display, but it's not bound to input
+                    // Update editingTransaction.amount dynamically
                     this.editingTransaction.amount = total;
                 }
             },
@@ -1233,6 +1231,19 @@ if (typeof window.financialManager === 'undefined') {
                     url += `&include_employee_list=1`;
                 }
                 window.open(url, '_blank');
+            },
+            generatePaymentDocument(paymentId, type) {
+                let url = `/production/${this.productionId}/documents/payment/${paymentId}/${type}?profile_id=${this.selectedProfileId}`;
+                if (this.activeGroupId) {
+                    url += `&group_id=${this.activeGroupId}`;
+                }
+                window.open(url, '_blank');
+
+                // Optimistically update the UI to show it's generated
+                const payment = this.editingTransaction.payments.find(p => p.id === paymentId);
+                if (payment) {
+                    payment.receipt_generated_at = new Date().toISOString();
+                }
             },
             uploadLogo() {
                 const input = this.$refs.logoInput;

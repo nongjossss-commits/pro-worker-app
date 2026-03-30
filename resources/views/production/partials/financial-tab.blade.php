@@ -969,21 +969,38 @@ class="row">
                                             <div class="fw-bold text-success" x-text="formatCurrency(pay.amount)"></div>
                                             <div class="text-muted small" x-text="formatDate(pay.paid_at)"></div>
                                         </div>
-                                        <div class="small text-muted mb-1 d-flex justify-content-between">
+                                        <div class="small text-muted mb-1 d-flex justify-content-between align-items-center">
                                             <span x-text="pay.bank_account ? pay.bank_account.bank_name : 'No Account'"></span>
-                                            <span>
+                                            <div class="d-flex gap-1 align-items-center">
+                                                <template x-if="pay.receipt_generated_at">
+                                                    <span class="badge bg-success" style="font-size: 0.6rem;" title="Document Generated"><i class="bi bi-check-circle"></i> Generated</span>
+                                                </template>
+                                                <template x-if="!pay.receipt_generated_at">
+                                                    <span class="badge bg-secondary" style="font-size: 0.6rem;" title="Not Generated"><i class="bi bi-dash-circle"></i> Not Generated</span>
+                                                </template>
                                                 <a x-show="pay.slip_path" href="#" @click.prevent="viewPDF('/storage/' + pay.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
-                                            </span>
+                                            </div>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <div class="small fst-italic text-muted" x-text="pay.notes"></div>
-                                            <div class="btn-group">
-                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="editPayment(pay)">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deletePayment(pay.id)">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
+                                            <div class="small fst-italic text-muted text-truncate" style="max-width: 40%;" x-text="pay.notes"></div>
+                                            <div class="d-flex gap-1">
+                                                <div class="btn-group">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        Doc
+                                                    </button>
+                                                    <ul class="dropdown-menu shadow" style="font-size: 0.8rem;">
+                                                        <li><a class="dropdown-item py-1" href="#" @click.prevent="generatePaymentDocument(pay.id, 'receipt')"><i class="bi bi-receipt me-1"></i> Receipt</a></li>
+                                                        <li><a class="dropdown-item py-1" href="#" @click.prevent="generatePaymentDocument(pay.id, 'tax_invoice')"><i class="bi bi-file-earmark-text me-1"></i> Tax Invoice</a></li>
+                                                    </ul>
+                                                </div>
+                                                <div class="btn-group">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="editPayment(pay)">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deletePayment(pay.id)">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1157,6 +1174,16 @@ class="row">
                                         <button class="nav-link w-100 py-0" :class="{ 'active': editTransactionEmployeeFilter === 'cancelled' }" @click="editTransactionEmployeeFilter = 'cancelled'" type="button">Cancelled</button>
                                     </li>
                                 </ul>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="small text-muted" style="font-size: 0.75rem;">
+                                        Selected: <span x-text="selectedTransactionItems.length"></span>
+                                        <span x-show="pricingMode === 'per_head'">(Auto-calc active)</span>
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = editModalItems.map(i => i.id); recalcEditAmount()">All</button>
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = []; recalcEditAmount()">None</button>
+                                    </div>
+                                </div>
                                 <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
                                     <div class="list-group list-group-flush">
                                         <!-- Show ALL items for edit (Available + Currently Attached) -->

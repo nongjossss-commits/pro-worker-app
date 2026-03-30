@@ -246,4 +246,153 @@ class ProductionDocumentController extends Controller
 
         return view($view, $data);
     }
+
+    public function showPaymentDocument($id, $paymentId, $type, Request $request)
+    {
+        $production = ProductionOrder::with(['employer', 'items.employee', 'financialGroups', 'financialAdvances'])->findOrFail($id);
+
+        // Fetch the specific payment
+        $payment = \App\Models\FinancialPayment::with('transaction')->findOrFail($paymentId);
+
+        // Mark as generated
+        if (!$payment->receipt_generated_at) {
+            $payment->update(['receipt_generated_at' => now()]);
+        }
+
+        // Ensure the payment belongs to a transaction in this production order
+        if ($payment->transaction->production_order_id !== $production->id) {
+            abort(403, 'Unauthorized access to this payment document.');
+        }
+
+        // Fake a transaction object that holds only the payment amount for the document logic
+        // This makes the existing generic document views work without massive rewrites
+        $mockTransaction = clone $payment->transaction;
+        $mockTransaction->amount = $payment->amount; // Override the transaction amount with the payment amount
+        $mockTransaction->id = $payment->transaction->id; // Keep ID
+        $mockTransaction->type = $payment->transaction->type;
+        $mockTransaction->notes = "Payment: " . ($payment->notes ?? "Partial/Full Payment");
+
+        $transactions = collect([$mockTransaction]);
+
+        // Standard setup from show()
+        $financialData = is_string($production->financial_data) ? json_decode($production->financial_data, true) : ($production->financial_data ?? []);
+
+        $groupId = $request->query('group_id', $payment->transaction->production_financial_group_id);
+        $activeGroup = null;
+        if ($groupId) {
+            $activeGroup = $production->financialGroups->where('id', $groupId)->first();
+            if ($activeGroup) {
+                $groupData = is_string($activeGroup->financial_data) ? json_decode($activeGroup->financial_data, true) : ($activeGroup->financial_data ?? []);
+                $financialData = array_merge($financialData, $groupData);
+            }
+        }
+
+        // Advance Items specific to group
+        $advanceItems = collect();
+
+        // --- Header Logic ---
+        $profileId = $financialData['profile_id'] ?? $request->query('profile_id');
+        $baseProfile = $profileId ? CompanyProfile::find($profileId) : CompanyProfile::where('is_default', true)->first();
+
+        // Fallback Base
+        if (!$baseProfile) {
+            $baseProfile = CompanyProfile::first() ?? new CompanyProfile([
+                'name' => 'Company Name (Default)',
+                'address' => 'Please configure a company profile in settings.',
+                'tax_id' => '0000000000000',
+                'phone' => '-',
+                'email' => '-',
+            ]);
+        }
+
+        $customHeader = $financialData['custom_header'] ?? null;
+
+        // If Custom Header exists, merge it with Base Profile
+        if ($customHeader && !empty($customHeader['name'])) {
+            $attributes = $baseProfile->toArray();
+
+            // Merge Overrides
+            $attributes['name'] = $customHeader['name'];
+            $attributes['address'] = $customHeader['address'] ?? ($attributes['address'] ?? '');
+            $attributes['tax_id'] = $customHeader['tax_id'] ?? ($attributes['tax_id'] ?? '');
+            $attributes['phone'] = $customHeader['phone'] ?? ($attributes['phone'] ?? '');
+            $attributes['email'] = $customHeader['email'] ?? ($attributes['email'] ?? '');
+
+            // Only override logo if provided in custom header
+            if (!empty($customHeader['logo'])) {
+                $attributes['logo_path'] = $customHeader['logo'];
+            }
+
+            $companyProfile = new CompanyProfile($attributes);
+        } else {
+            $companyProfile = $baseProfile;
+        }
+
+        // --- Bill To Logic (Customer Override) ---
+        $customCustomer = $financialData['customer_override'] ?? null;
+        $billTo = $production->employer; // Default
+
+        if ($customCustomer) {
+            $billTo = (object) [
+                'employerNameTh' => $customCustomer['name'] ?? 'Client Name',
+                'employerAddress' => $customCustomer['address'] ?? '',
+                'employerPhone' => $customCustomer['phone'] ?? '-',
+                'tax_id' => $customCustomer['tax_id'] ?? '-'
+            ];
+        }
+
+        // --- Mode Logic (Combined, Service Only, Advance Only) ---
+        $mode = $request->query('mode', 'combined');
+
+        // --- Document Title Logic ---
+        $titles = [
+            'tax_invoice' => 'ใบกำกับภาษี / Tax Invoice',
+            'receipt' => 'ใบเสร็จรับเงิน / Receipt',
+        ];
+
+        $title = $titles[$type] ?? ucfirst($type);
+
+        $employerName = $production->employer->employerNameTh ?: ($production->employer->employerNameEn ?: 'Unknown_Employer');
+        $pageTitle = "{$title}_{$employerName}_PAY-{$payment->id}";
+
+        // Prepare data for the view
+        $billerProfile = null;
+        $customerProfile = null;
+        if (!empty($financialData['custom_header']['biller_profile_id'])) {
+            $billerProfile = \App\Models\FinancialProfile::find($financialData['custom_header']['biller_profile_id']);
+        }
+        if (!empty($financialData['custom_header']['customer_profile_id'])) {
+            $customerProfile = \App\Models\FinancialProfile::find($financialData['custom_header']['customer_profile_id']);
+        }
+
+        $data = [
+            'production' => $production,
+            'includeEmployeeList' => false,
+            'employeeList' => [],
+            'profile' => $companyProfile,
+            'company' => $companyProfile,
+            'billerProfile' => $billerProfile,
+            'customerProfile' => $customerProfile,
+            'billTo' => $billTo,
+            'type' => $type,
+            'title' => $title,
+            'page_title' => $pageTitle,
+            'date' => $payment->paid_at ?? now(), // Use payment date instead of now
+            'transactions' => $transactions,
+            'financial' => $financialData,
+            'advanceItems' => collect(), // usually no advances in direct payment doc unless specified
+            'activeGroup' => $activeGroup,
+            'mode' => $mode
+        ];
+
+        $view = 'documents.generic';
+
+        if (view()->exists('documents.' . $type)) {
+            $view = 'documents.' . $type;
+        } elseif (in_array($type, ['tax_invoice', 'receipt'])) {
+             $view = 'documents.tax_invoice';
+        }
+
+        return view($view, $data);
+    }
 }

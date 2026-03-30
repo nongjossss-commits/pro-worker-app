@@ -16,12 +16,14 @@ class FinancialPayment extends Model
         'bank_account_id',
         'slip_path',
         'notes',
+        'receipt_generated_at',
         'created_by',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
+        'receipt_generated_at' => 'datetime',
     ];
 
     public function transaction()

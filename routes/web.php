@@ -464,6 +464,7 @@ Route::middleware(['auth'])->group(function () {
     // Replaced by dedicated ProductionDocumentController
     // Route::get('production/{id}/documents/{type}', [FinancialController::class, 'generateDocument']);
     Route::get('production/{id}/documents/{type}', [App\Http\Controllers\ProductionDocumentController::class, 'show'])->name('production.documents.show');
+    Route::get('production/{id}/documents/payment/{paymentId}/{type}', [App\Http\Controllers\ProductionDocumentController::class, 'showPaymentDocument'])->name('production.documents.payment.show');
 
     // Workflow Routes
     Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->middleware('menu:workflow')->name('workflow.index');
