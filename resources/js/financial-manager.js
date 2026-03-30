@@ -951,6 +951,19 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 window.open(url, '_blank');
             },
+            generatePaymentDocument(paymentId, type) {
+                let url = `/production/${this.productionId}/documents/payment/${paymentId}/${type}?profile_id=${this.selectedProfileId}`;
+                if (this.activeGroupId) {
+                    url += `&group_id=${this.activeGroupId}`;
+                }
+                window.open(url, '_blank');
+
+                // Optimistically update the UI to show it's generated
+                const payment = this.editingTransaction.payments.find(p => p.id === paymentId);
+                if (payment) {
+                    payment.receipt_generated_at = new Date().toISOString();
+                }
+            },
             uploadLogo() {
                 const input = this.$refs.logoInput;
                 if (!input.files || input.files.length === 0) return;
