@@ -2052,20 +2052,11 @@
                     const dt = new DataTransfer();
 
                     // Standard Logic: Bundle everything into the input
-                    // If 1 image -> JPG
-                    // If > 1 image -> PDF
+                    // Whether 1 or multiple images, always generate a PDF.
                     // Note: If user created a Layout, it is just another image in the list.
                     // The user is expected to delete source images if they only want the layout.
 
-                    if (this.capturedImages.length === 1) {
-                        // Check if we should generate PDF for single image to enforce A4 placement
-                        // For now, we continue to return JPG for single images unless they are specifically from a layout.
-                        // However, to ensure "Fit to A4" behavior is consistent, we might want to consider PDF.
-                        // But sticking to JPG for single image is standard for file inputs.
-                        const file = await this.urlToFile(this.capturedImages[0].cropped, 'scanned_doc.jpg', 'image/jpeg');
-                        dt.items.add(file);
-
-                    } else if (this.capturedImages.length > 1) {
+                    if (this.capturedImages.length >= 1) {
                         // Check if jsPDF is loaded
                         if (!window.jspdf) {
                             throw new Error("PDF generation library (jsPDF) is not loaded. Please check your internet connection.");
