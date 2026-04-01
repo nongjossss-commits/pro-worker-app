@@ -788,6 +788,8 @@
 @include('employees.partials._edit_scripts')
 @include('production.registration.partials.edit_modal_script')
 @include('employees.modals.advanced_export')
+@include('production.registration.partials.offcanvas_drawer')
+@include('production.registration.partials.modals.add_custom_field')
 
 @push('scripts')
 <script>
