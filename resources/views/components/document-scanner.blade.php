@@ -340,7 +340,7 @@
                         <canvas x-ref="cropCanvas" class="block max-w-full max-h-full object-contain"></canvas>
 
                         <!-- SVG Overlay for Handles -->
-                        <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10;">
+                        <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10;" :viewBox="`0 0 ${canvasWidth} ${canvasHeight}`">
                             <!-- Polygon Line -->
                             <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
 
@@ -741,7 +741,7 @@
                     this.loadingMessage = `กำลังแปลง PDF หน้าที่ ${pageNum}/${pdf.numPages}...`;
 
                     const page = await pdf.getPage(pageNum);
-                    const viewport = page.getViewport({ scale: 2.0 }); // High quality
+                    const viewport = page.getViewport({ scale: 3.0 }); // Ultra High quality (300DPI+)
 
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
@@ -750,7 +750,7 @@
 
                     await page.render({ canvasContext: context, viewport: viewport }).promise;
 
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.98);
 
                     this.capturedImages.push({
                         id: Date.now() + Math.random(),
@@ -942,7 +942,7 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0);
 
-                const originalDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                const originalDataUrl = canvas.toDataURL('image/jpeg', 0.98);
 
                 // PROCESS IMAGE
                 try {
@@ -1188,7 +1188,7 @@
                     tempCanvas.width = maxWidth;
                     tempCanvas.height = maxHeight;
                     cv.imshow(tempCanvas, finalDst);
-                    return tempCanvas.toDataURL('image/jpeg', 0.95);
+                    return tempCanvas.toDataURL('image/jpeg', 0.98);
 
                 } catch (e) {
                     console.error("Warp Error:", e);
@@ -1392,15 +1392,15 @@
                     id: Date.now(),
                     original: dataUrl,
                     cropped: dataUrl,
-                    corners: this.getDefaultCorners(1240, 1754),
+                    corners: this.getDefaultCorners(2480, 3508),
                     isFound: true
                 });
                 // Optional: Scroll to bottom
             },
 
             renderLayoutToCanvas(type, images) {
-                const a4w = 1240;
-                const a4h = 1754;
+                const a4w = 2480; // 300 DPI A4
+                const a4h = 3508; // 300 DPI A4
                 const canvas = document.createElement('canvas');
                 canvas.width = a4w;
                 canvas.height = a4h;
@@ -1410,7 +1410,7 @@
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, a4w, a4h);
 
-                const margin = 40;
+                const margin = 80; // Scaled for 300 DPI
 
                 // Helper to draw image fitting within a box
                 const drawFit = (img, x, y, w, h) => {
@@ -1439,8 +1439,8 @@
                     // Passport (Spread/Open ID-3): 176mm x 125mm @ 150DPI
                     // W: (176 / 25.4) * 150 = 1039 px
                     // H: (125 / 25.4) * 150 = 738 px
-                    const pw = 1039;
-                    const ph = 738;
+                    const pw = 2078; // 300 DPI Passport
+                    const ph = 1476; // 300 DPI Passport
                     // Center it
                     if(images[0]) drawFit(images[0], (a4w - pw)/2, (a4h - ph)/2, pw, ph);
                 }
@@ -1448,8 +1448,8 @@
                     // Credit Card (ID-1): 85.6mm x 54mm @ 150DPI
                     // W: (85.6 / 25.4) * 150 = 506 px -> +15% = 582 px
                     // H: (54 / 25.4) * 150 = 319 px -> +15% = 367 px
-                    const cw = 582;
-                    const ch = 367;
+                    const cw = 1164; // 300 DPI ID Card
+                    const ch = 734; // 300 DPI ID Card
                     if(images[0]) drawFit(images[0], (a4w - cw)/2, (a4h - ch)/2, cw, ch);
                 }
                 else if (type === 'half_v') {
@@ -1475,8 +1475,8 @@
                 else if (type === 'id_card_pair') {
                     // Specific ID Card Layout (Center Top / Center Bottom)
                     // Standard ID-1 Size: 506 x 319 px -> +15% = 582 x 367 px
-                    const cardW = 582;
-                    const cardH = 367;
+                    const cardW = 1164; // 300 DPI ID Card
+                    const cardH = 734; // 300 DPI ID Card
 
                     const topY = a4h/4 - cardH/2;
                     const botY = a4h*3/4 - cardH/2;
@@ -1502,7 +1502,7 @@
                     if(images[3]) drawFit(images[3], wHalf + margin, hHalf + margin, wHalf - 2*margin, hHalf - 2*margin);
                 }
 
-                return canvas.toDataURL('image/jpeg', 0.9);
+                return canvas.toDataURL('image/jpeg', 0.98);
             },
 
             // --- EDIT / CROP LOGIC ---
@@ -1596,7 +1596,13 @@
                     const container = this.$refs.cropContainer;
 
                     // Simple fit logic
-                    const scale = Math.min(container.clientWidth / this.imageWidth, container.clientHeight / this.imageHeight) * 0.9;
+                    // Preserve HIGH RESOLUTION for cropping so text isn't blurry.
+                    // We only scale down if the image is astronomically large (> 4000px) to prevent memory crashes.
+                    const maxCropRes = 3000;
+                    let scale = 1;
+                    if (this.imageWidth > maxCropRes || this.imageHeight > maxCropRes) {
+                        scale = Math.min(maxCropRes / this.imageWidth, maxCropRes / this.imageHeight);
+                    }
 
                     this.canvasWidth = Math.max(1, Math.floor(this.imageWidth * scale));
                     this.canvasHeight = Math.max(1, Math.floor(this.imageHeight * scale));
@@ -1724,7 +1730,7 @@
                                 id: Date.now(), // Force reactivity
                                 cropped: newCroppedUrl,
                                 corners: realCorners,
-                                original: canvas.toDataURL('image/jpeg', 0.9)
+                                original: canvas.toDataURL('image/jpeg', 0.98)
                             };
 
                             // Update State with Splice to ensure Alpine detects change

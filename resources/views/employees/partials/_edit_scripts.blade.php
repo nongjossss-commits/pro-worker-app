@@ -270,10 +270,10 @@
             }
 
             const canvas = cropper.getCroppedCanvas({
-                width: 300,
-                height: 360,
-                minWidth: 200,
-                minHeight: 200,
+                width: 600, // Increased for better PDF print quality
+                height: 720, // Increased for better PDF print quality
+                minWidth: 400,
+                minHeight: 400,
                 imageSmoothingQuality: 'high',
             });
 
@@ -283,7 +283,7 @@
             }
 
             // Show Review
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.98);
             if(reviewImage) reviewImage.src = dataUrl;
 
             // Switch UI
@@ -472,7 +472,7 @@
                     ctx.putImageData(imageData, 0, 0);
 
                     // Output back to reviewImage
-                    const newUrl = c.toDataURL('image/jpeg', 0.95);
+                    const newUrl = c.toDataURL('image/jpeg', 0.98);
                     reviewImage.src = newUrl;
 
                 } catch (err) {
