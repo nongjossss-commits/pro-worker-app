@@ -214,6 +214,18 @@ public function reinstate(Employee $employee)
         }
     }
 
+    if ($request->filled('visa_status')) {
+        if ($request->input('visa_status') === 'has_visa') {
+            $query->where(function ($q) {
+                $q->whereNotNull('visaExpiryDate')->where('visaExpiryDate', '!=', '');
+            });
+        } elseif ($request->input('visa_status') === 'no_visa') {
+            $query->where(function ($q) {
+                $q->whereNull('visaExpiryDate')->orWhere('visaExpiryDate', '=', '');
+            });
+        }
+    }
+
     if ($request->filled('bank_account_status')) {
         $status = $request->input('bank_account_status');
         if ($status === 'opened') {
@@ -965,6 +977,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
+
         if ($request->filled('passport_type_myanmar')) {
             $query->where('passportType', $request->input('passport_type_myanmar'))
                   ->where('employeeNationality', 'เมียนมา');
@@ -1143,6 +1156,18 @@ public function create(Request $request) // เพิ่ม Request $request เ
             } elseif ($request->input('passport_status') === 'no_passport') {
                 $query->where(function ($q) {
                     $q->whereNull('employeePassport')->orWhere('employeePassport', '=', '');
+                });
+            }
+        }
+
+        if ($request->filled('visa_status')) {
+            if ($request->input('visa_status') === 'has_visa') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('visaExpiryDate')->where('visaExpiryDate', '!=', '');
+                });
+            } elseif ($request->input('visa_status') === 'no_visa') {
+                $query->where(function ($q) {
+                    $q->whereNull('visaExpiryDate')->orWhere('visaExpiryDate', '=', '');
                 });
             }
         }
