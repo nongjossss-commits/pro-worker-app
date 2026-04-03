@@ -173,10 +173,10 @@
                                             <a href="{{ route('super-admin.download-profiles.edit', $profile->id) }}" class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-pencil-fill"></i> Edit
                                             </a>
-                                            <form action="{{ route('super-admin.download-profiles.destroy', $profile->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this profile?');">
+                                            <form id="delete-profile-form-{{ $profile->id }}" action="{{ route('super-admin.download-profiles.destroy', $profile->id) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteProfile({{ $profile->id }})">
                                                     <i class="bi bi-trash-fill"></i> Delete
                                                 </button>
                                             </form>
@@ -210,7 +210,7 @@
                                 <strong>Note:</strong> This is a one-time operation. It does not affect newly created users.
                             </div>
 
-                            <form action="{{ route('super-admin.attachments.swap') }}" method="POST" onsubmit="return confirm('Are you sure you want to perform this mass file operation? This cannot be easily undone.');">
+                            <form id="mass-swap-form" action="{{ route('super-admin.attachments.swap') }}" method="POST">
                                 @csrf
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Entity Type</label>
@@ -252,7 +252,7 @@
                                 </div>
 
                                 <div class="d-grid">
-                                    <button type="submit" class="btn btn-warning fw-bold">Execute Mass Swap</button>
+                                    <button type="button" class="btn btn-warning fw-bold" onclick="confirmMassSwap()">Execute Mass Swap</button>
                                 </div>
                             </form>
                         </div>
@@ -270,7 +270,7 @@
                                 Set default text for generic "Other Documents". Saving this will apply the new text to <strong>all existing records</strong> and save it as the default for future records. (Users can still edit individual records later).
                             </div>
 
-                            <form action="{{ route('super-admin.attachments.descriptions') }}" method="POST" onsubmit="return confirm('This will overwrite custom descriptions for ALL existing employers and employees with these values. Continue?');">
+                            <form id="update-descriptions-form" action="{{ route('super-admin.attachments.descriptions') }}" method="POST">
                                 @csrf
 
                                 <h6 class="fw-bold mt-3 text-secondary">Employer - Other Documents</h6>
@@ -296,7 +296,7 @@
                                 </div>
 
                                 <div class="d-grid mt-3">
-                                    <button type="submit" class="btn btn-primary fw-bold">Save Defaults & Update All Records</button>
+                                    <button type="button" class="btn btn-primary fw-bold" onclick="confirmUpdateDescriptions()">Save Defaults & Update All Records</button>
                                 </div>
                             </form>
 
@@ -439,6 +439,54 @@
     document.addEventListener("DOMContentLoaded", function() {
         updateSwapFields();
     });
+
+    function confirmDeleteProfile(profileId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Are you sure you want to delete this profile?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('delete-profile-form-' + profileId).submit();
+            }
+        });
+    }
+
+    function confirmMassSwap() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Are you sure you want to perform this mass file operation? This cannot be easily undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f39c12',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, execute swap!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('mass-swap-form').submit();
+            }
+        });
+    }
+
+    function confirmUpdateDescriptions() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will overwrite custom descriptions for ALL existing employers and employees with these values. Continue?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, update all!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('update-descriptions-form').submit();
+            }
+        });
+    }
 </script>
 @endpush
 @endsection
