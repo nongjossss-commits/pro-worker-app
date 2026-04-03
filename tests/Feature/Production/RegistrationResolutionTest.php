@@ -49,7 +49,7 @@ class RegistrationResolutionTest extends TestCase
     public function test_can_view_index_page()
     {
         $response = $this->actingAs($this->adminUser)
-                         ->get(route('production.registration.index'));
+                         ->get(route('production.registration.operations'));
 
         $response->assertStatus(200);
         $response->assertSee('Registration Resolution');
@@ -95,7 +95,7 @@ class RegistrationResolutionTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->adminUser)
-                         ->get(route('production.registration.index'));
+                         ->get(route('production.registration.operations'));
 
         // View should have 'stepStats' passed to it.
         // We can inspect the view data or response content.

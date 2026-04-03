@@ -36,7 +36,7 @@ class RenewalResolutionTest extends TestCase
 
     public function test_can_view_renewal_dashboard()
     {
-        $response = $this->actingAs($this->user)->get(route('production.renewal.index'));
+        $response = $this->actingAs($this->user)->get(route('production.renewal.operations'));
         $response->assertStatus(200);
         $response->assertSee('Renewal Resolution');
     }

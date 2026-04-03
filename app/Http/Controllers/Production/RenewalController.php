@@ -51,7 +51,24 @@ class RenewalController extends Controller
 
     public function dashboard(Request $request)
     {
-        return view('production.renewal.dashboard');
+        $days = \App\Models\NotificationSetting::where('notification_type', 'renewal_appointment')->first()->days_before_expiry ?? 3;
+        $start = \Carbon\Carbon::now()->startOfDay();
+        $end = \Carbon\Carbon::now()->addDays($days)->endOfDay();
+
+        $query = Employee::query()
+            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereNotNull('appointment_date')
+            ->whereBetween('appointment_date', [$start, $end])
+            ->whereNull('appointment_completed_at')
+            ->with(['employer']);
+
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $upcomingAppointments = $query->orderBy('appointment_date', 'asc')->get();
+
+        return view('production.renewal.dashboard', compact('upcomingAppointments'));
     }
 
     public function index(Request $request)
