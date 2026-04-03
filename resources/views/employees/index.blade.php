@@ -60,8 +60,6 @@
                 <option value="yes" {{ request('pink_card') == 'yes' ? 'selected' : '' }}>{{ __('Has Pink Card') }}</option>
                 <option value="no" {{ request('pink_card') == 'no' ? 'selected' : '' }}>{{ __('No Pink Card') }}</option>
             </select>
-            <select name="visa_status" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- {{ __(Visa
             <select name="passport_status" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- {{ __('Passport Status') }} --</option>
                 <option value="has_passport" {{ request('passport_status') == 'has_passport' ? 'selected' : '' }}>{{ __('Has Passport') }}</option>
