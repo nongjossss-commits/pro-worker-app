@@ -670,10 +670,10 @@ class="row">
                                    style="cursor: pointer;">
                                 <input class="form-check-input me-1 mt-0" type="checkbox" :value="item.id" x-model="modalSelectedIds">
 
-                                <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
                                     <div class="d-flex flex-column" style="line-height: 1.2; min-width: 0;">
-                                        <div class="fw-bold text-truncate" style="font-size: 0.85rem;">
+                                        <div class="fw-bold text-wrap" style="font-size: 0.85rem;">
                                             <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
                                             <!-- Insurance Badge -->
                                             <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
@@ -902,7 +902,7 @@ class="row">
                                                 <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
-                                                        <div class="fw-bold text-truncate">
+                                                        <div class="fw-bold text-wrap">
                                                             <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
                                                             <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
@@ -1210,7 +1210,7 @@ class="row">
                                                 <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
-                                                        <div class="fw-bold text-truncate">
+                                                        <div class="fw-bold text-wrap">
                                                             <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
                                                             <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
