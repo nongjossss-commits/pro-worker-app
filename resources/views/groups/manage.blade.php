@@ -211,6 +211,9 @@
                                     aria-expanded="{{ request('active_team') == $team->id ? 'true' : 'false' }}"
                                     aria-controls="collapseTeam{{ $team->id }}">
                                 <div class="d-flex align-items-center w-100">
+                                    <div class="form-check me-2" @click.stop>
+                                        <input class="form-check-input team-select-all" type="checkbox" id="team-select-all-{{ $team->id }}" data-team-id="{{ $team->id }}">
+                                    </div>
                                     <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab me-2"
                                        draggable="true"
                                        data-drag-payload="{{ json_encode([
@@ -261,8 +264,11 @@
                                                 $firstMember = $members->first();
                                                 $employerName = $firstMember->employer ? ($firstMember->employer->employerNameTh . ' (' . $firstMember->employer->employerNameEn . ')') : __('Unknown Employer');
                                             @endphp
-                                            <div class="mb-3">
+                                            <div class="mb-3 employer-group" id="employer-group-{{ $team->id }}-{{ $employerId }}" data-team-id="{{ $team->id }}">
                                                 <h5 class="bg-light p-2 rounded border-start border-4 border-primary d-flex align-items-center flex-wrap">
+                                                    <div class="form-check me-2 mb-0">
+                                                        <input class="form-check-input employer-select-all" type="checkbox" id="employer-select-all-{{ $team->id }}-{{ $employerId }}" data-team-id="{{ $team->id }}" data-employer-id="{{ $employerId }}">
+                                                    </div>
                                                     <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab me-2"
                                                        draggable="true"
                                                        data-drag-payload="{{ json_encode([
@@ -280,7 +286,7 @@
                                                         @endforeach
                                                     @endif
                                                 </h5>
-                                                <div class="list-group">
+                                                <div class="list-group employer-employees-container" data-team-id="{{ $team->id }}" data-employer-id="{{ $employerId }}">
                                                     @foreach($members as $member)
                                                         @php
                                                             $currentUrl = request()->fullUrlWithQuery([
@@ -309,7 +315,7 @@
                                         @endforelse
                                     @else
                                         {{-- No Grouping --}}
-                                        <div class="list-group">
+                                        <div class="list-group team-employees-container" data-team-id="{{ $team->id }}">
                                             @forelse($team->employees as $member)
                                                 @php
                                                     $currentUrl = request()->fullUrlWithQuery([
@@ -826,6 +832,123 @@
                 }
             });
         }
+
+        // --- Team & Employer Select All Logic ---
+
+        // 1. Handle clicking on Team "Select All" checkbox
+        document.body.addEventListener('change', function(e) {
+            if (e.target.matches('.team-select-all')) {
+                const teamId = e.target.getAttribute('data-team-id');
+                const isChecked = e.target.checked;
+
+                // Find all employee checkboxes within this team's collapse section
+                const collapseSection = document.getElementById('collapseTeam' + teamId);
+                if (collapseSection) {
+                    const employeeCheckboxes = collapseSection.querySelectorAll('.employee-checkbox');
+
+                    employeeCheckboxes.forEach(cb => {
+                        if (cb.checked !== isChecked) {
+                            cb.checked = isChecked;
+                            // Dispatch change event to trigger global selection manager
+                            cb.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                }
+            }
+        });
+
+        // 2. Handle clicking on Employer "Select All" checkbox
+        document.body.addEventListener('change', function(e) {
+            if (e.target.matches('.employer-select-all')) {
+                const teamId = e.target.getAttribute('data-team-id');
+                const employerId = e.target.getAttribute('data-employer-id');
+                const isChecked = e.target.checked;
+
+                // Find all employee checkboxes within this employer's list group
+                const employerContainer = document.querySelector(`.employer-employees-container[data-team-id="${teamId}"][data-employer-id="${employerId}"]`);
+                if (employerContainer) {
+                    const employeeCheckboxes = employerContainer.querySelectorAll('.employee-checkbox');
+
+                    employeeCheckboxes.forEach(cb => {
+                        if (cb.checked !== isChecked) {
+                            cb.checked = isChecked;
+                            // Dispatch change event to trigger global selection manager
+                            cb.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                }
+            }
+        });
+
+        // 3. Sync Team and Employer checkboxes state when global selection updates
+        document.addEventListener('global-selection-updated', function() {
+            // Check all Team checkboxes
+            const teamCheckboxes = document.querySelectorAll('.team-select-all');
+            teamCheckboxes.forEach(teamCb => {
+                const teamId = teamCb.getAttribute('data-team-id');
+                const collapseSection = document.getElementById('collapseTeam' + teamId);
+
+                if (collapseSection) {
+                    const empCheckboxes = collapseSection.querySelectorAll('.employee-checkbox');
+                    const totalEmp = empCheckboxes.length;
+
+                    if (totalEmp > 0) {
+                        const checkedEmp = collapseSection.querySelectorAll('.employee-checkbox:checked').length;
+
+                        if (checkedEmp === totalEmp) {
+                            teamCb.checked = true;
+                            teamCb.indeterminate = false;
+                        } else if (checkedEmp > 0) {
+                            teamCb.checked = false;
+                            teamCb.indeterminate = true;
+                        } else {
+                            teamCb.checked = false;
+                            teamCb.indeterminate = false;
+                        }
+                    } else {
+                        teamCb.checked = false;
+                        teamCb.indeterminate = false;
+                    }
+                }
+            });
+
+            // Check all Employer checkboxes
+            const employerCheckboxes = document.querySelectorAll('.employer-select-all');
+            employerCheckboxes.forEach(empCb => {
+                const teamId = empCb.getAttribute('data-team-id');
+                const employerId = empCb.getAttribute('data-employer-id');
+                const employerContainer = document.querySelector(`.employer-employees-container[data-team-id="${teamId}"][data-employer-id="${employerId}"]`);
+
+                if (employerContainer) {
+                    const empCheckboxes = employerContainer.querySelectorAll('.employee-checkbox');
+                    const totalEmp = empCheckboxes.length;
+
+                    if (totalEmp > 0) {
+                        const checkedEmp = employerContainer.querySelectorAll('.employee-checkbox:checked').length;
+
+                        if (checkedEmp === totalEmp) {
+                            empCb.checked = true;
+                            empCb.indeterminate = false;
+                        } else if (checkedEmp > 0) {
+                            empCb.checked = false;
+                            empCb.indeterminate = true;
+                        } else {
+                            empCb.checked = false;
+                            empCb.indeterminate = false;
+                        }
+                    } else {
+                        empCb.checked = false;
+                        empCb.indeterminate = false;
+                    }
+                }
+            });
+        });
+
+        // Trigger initial sync
+        setTimeout(() => {
+            document.dispatchEvent(new Event('global-selection-updated'));
+        }, 100);
+
     });
 
     document.addEventListener('alpine:init', () => {
