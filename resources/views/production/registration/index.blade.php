@@ -260,15 +260,20 @@
     <div class="card shadow-sm border-0 mb-4 bg-white">
         <div class="card-body p-3">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
-                <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-people-fill me-2"></i>{{ __('Registration Resolution') }}</h4>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('production.registration.index') }}" class="btn btn-outline-secondary btn-sm" title="{{ __('Back to Dashboard') }}">
+                        <i class="bi bi-arrow-left"></i>
+                    </a>
+                    <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-people-fill me-2"></i>{{ __('Registration Resolution') }}</h4>
+                </div>
 
-                <form action="{{ route('production.registration.index') }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
+                <form action="{{ route('production.registration.operations') }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
                     <div class="input-group input-group-lg">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search employee or employer...') }}" value="{{ request('search') }}">
                         <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
                         @if(request('search'))
-                            <a href="{{ route('production.registration.index') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
+                            <a href="{{ route('production.registration.operations') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
                         @endif
                     </div>
                 </form>
@@ -283,12 +288,12 @@
                         @endif
                     </button>
                     <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;">
-                        <li><a class="dropdown-item" href="{{ route('production.registration.index', array_merge(request()->query(), ['operator_filter' => null])) }}">{{ __('All Operators') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.registration.operations', array_merge(request()->query(), ['operator_filter' => null])) }}">{{ __('All Operators') }}</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item {{ request('operator_filter') == 'external' ? 'active' : '' }}" href="{{ route('production.registration.index', array_merge(request()->query(), ['operator_filter' => 'external'])) }}">ผู้ยื่นภายนอก (พิมพ์ชื่อเอง)</a></li>
+                        <li><a class="dropdown-item {{ request('operator_filter') == 'external' ? 'active' : '' }}" href="{{ route('production.registration.operations', array_merge(request()->query(), ['operator_filter' => 'external'])) }}">ผู้ยื่นภายนอก (พิมพ์ชื่อเอง)</a></li>
                         <li><hr class="dropdown-divider"></li>
                         @foreach($activeOperators as $user)
-                            <li><a class="dropdown-item {{ request('operator_filter') == $user->id ? 'active' : '' }}" href="{{ route('production.registration.index', array_merge(request()->query(), ['operator_filter' => $user->id])) }}">{{ $user->name }}</a></li>
+                            <li><a class="dropdown-item {{ request('operator_filter') == $user->id ? 'active' : '' }}" href="{{ route('production.registration.operations', array_merge(request()->query(), ['operator_filter' => $user->id])) }}">{{ $user->name }}</a></li>
                         @endforeach
                     </ul>
                 </div>
@@ -524,7 +529,7 @@
                             @if($employer->jobOwner)
                                 <div class="text-muted small border-start ps-3">
                                     <i class="bi bi-person-badge me-1"></i>
-                                    <a href="{{ route('production.registration.index', ['search' => $employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
+                                    <a href="{{ route('production.registration.operations', ['search' => $employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
                                         {{ $employer->jobOwner->name }}
                                     </a>
                                 </div>
@@ -1310,7 +1315,7 @@
                 }).then(res => res.json()).then(response => {
                     // Then handle the complete toggle if it changed
                     if (data.isComplete !== isCompleted) {
-                        return fetch(`/${moduleUrl}/${employeeId}/toggle-appointment-complete`, {
+                        return fetch(`/${moduleUrl}/${employeeId}/appointment-complete`, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
@@ -1382,7 +1387,7 @@
 
         // Base URL for the new AJAX route
         // Use the saved page state if available, otherwise default to first page
-        let baseUrl = pageUrl || window.employerCurrentPages[employerId] || `{{ route('production.registration.index') }}/employer/${employerId}/employees`;
+        let baseUrl = pageUrl || window.employerCurrentPages[employerId] || `/production/registration/employer/${employerId}/employees`;
 
         // Append current search/filter params
         const url = new URL(baseUrl, window.location.origin);
@@ -1435,7 +1440,7 @@
         if(e.target.classList.contains('per-page-selector')) {
             const employerId = e.target.dataset.employerId;
             const perPage = e.target.value;
-            const baseUrl = `{{ route('production.registration.index') }}/employer/${employerId}/employees`;
+            const baseUrl = `/production/registration/employer/${employerId}/employees`;
             const url = new URL(baseUrl, window.location.origin);
             url.searchParams.append('per_page', perPage);
             url.searchParams.append('page', 1); // Reset to page 1 on resize
@@ -1453,7 +1458,7 @@
         // Check if already loaded by checking for Alpine component root
         if (body.querySelector('[x-data]')) return;
 
-        fetch(`{{ route('production.registration.index') }}/employer/${employerId}/finance-tab`)
+        fetch(`/production/registration/employer/${employerId}/finance-tab`)
             .then(res => {
                 if (!res.ok) throw new Error('Failed to load');
                 return res.text();
@@ -1625,7 +1630,7 @@
         if(container) {
             container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div><span class="ms-2 small text-muted">Loading employees...</span></div>';
 
-            let baseUrl = `{{ route('production.registration.index') }}/employer/${employerId}/employees`;
+            let baseUrl = `/production/registration/employer/${employerId}/employees`;
             const url = new URL(baseUrl, window.location.origin);
             const currentParams = new URLSearchParams(window.location.search);
             currentParams.forEach((value, key) => {

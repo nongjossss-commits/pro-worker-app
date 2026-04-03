@@ -51,7 +51,15 @@ class RegistrationController extends Controller
     }
 
     /**
-     * Display the main dashboard for Registration Resolution.
+     * Display the new calendar dashboard for Registration Resolution.
+     */
+    public function dashboard(Request $request)
+    {
+        return view('production.registration.dashboard');
+    }
+
+    /**
+     * Display the main operations view for Registration Resolution.
      */
     public function index(Request $request)
     {

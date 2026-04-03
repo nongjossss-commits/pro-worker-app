@@ -249,7 +249,8 @@ Route::middleware(['auth'])->group(function () {
     // Registration Resolution Routes (P Production > Registration)
     // MOVED ABOVE 'production' resource to prevent route masking
     Route::prefix('production/registration')->middleware('menu:registration_resolution')->name('production.registration.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('index');
+        Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'dashboard'])->name('index');
+        Route::get('/operations', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('operations');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RegistrationController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
         Route::get('/employer/{employer}/history', [App\Http\Controllers\Production\RegistrationController::class, 'fetchHistory'])->name('employer.history');
         Route::get('/import', [App\Http\Controllers\Production\RegistrationController::class, 'importView'])->name('import');
@@ -324,7 +325,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Renewal Resolution Routes (NEW)
     Route::prefix('production/renewal')->middleware('menu:renewal_resolution')->name('production.renewal.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('index');
+        Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'dashboard'])->name('index');
+        Route::get('/operations', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('operations');
         Route::get('/create', [App\Http\Controllers\Production\RenewalController::class, 'create'])->name('create');
         Route::post('/store', [App\Http\Controllers\Production\RenewalController::class, 'store'])->name('store');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
