@@ -125,9 +125,15 @@
             <button class="btn btn-light btn-sm shadow-sm border" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
                 <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
             </button>
-            <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}', 'production')">
-                <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
-            </button>
+            @if(isset($activeTab) && $activeTab->slug === 'mou')
+                <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                    <i class="bi bi-plus-lg me-1"></i> {{ __('Create Job') }}
+                </button>
+            @else
+                <button class="btn btn-primary fw-bold shadow-sm" onclick="openAddEmployeeModal(null, null, {{ $activeTab->id ?? 'null' }}, '{{ $activeTab->slug ?? '' }}', 'production')">
+                    <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
+                </button>
+            @endif
         </div>
         @endif
     </div>
@@ -464,15 +470,24 @@
                                  </button>
 
                                  {{-- Add Employee Button --}}
-                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'production')">
-                                    <i class="bi bi-plus-lg"></i> {{ __('Add') }}
-                                 </button>
+                                 @if(isset($activeTab) && $activeTab->slug !== 'mou')
+                                     <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'production')">
+                                        <i class="bi bi-plus-lg"></i> {{ __('Add') }}
+                                     </button>
+                                 @endif
                                  @endif
 
                                 @if(isset($activeTab) && $activeTab->slug === 'mou')
-                                {{-- Custom Fields Button (Employer) --}}
-                                <button class="btn btn-outline-secondary btn-sm ms-2 fw-bold" onclick="toggleEmployerInlineDrawer({{ $order->employer_id }}, {{ json_encode($order->employer->customFields ?? []) }}); event.stopPropagation();">
+                                {{-- Custom Fields Button (Order/Job) --}}
+                                <button class="btn btn-outline-secondary btn-sm ms-2 fw-bold" onclick="toggleOrderInlineDrawer({{ $order->id }}, {{ json_encode($order->customFields ?? []) }}); event.stopPropagation();">
                                     <i class="bi bi-list-task"></i> {{ __('Fields') }}
+                                </button>
+
+                                {{-- SEND ENTIRE ORDER TO WORKFLOW --}}
+                                <button class="btn btn-primary btn-sm ms-2 fw-bold px-3 shadow-sm"
+                                        onclick="sendOrderToWorkflow({{ $order->id }})"
+                                        title="{{ __('Send Job to Workflow') }}">
+                                    <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
                                 </button>
                                 @endif
 
@@ -483,11 +498,11 @@
                         </div>
                     </div>
 
-                    {{-- Employer Custom Fields Drawer --}}
+                    {{-- Order Custom Fields Drawer --}}
                     @if(isset($activeTab) && $activeTab->slug === 'mou')
-                    <div class="collapse mt-3 mx-4" id="drawer-employer-{{ $order->employer_id }}">
+                    <div class="collapse mt-3 mx-4" id="drawer-order-{{ $order->id }}">
                         <div class="card card-body bg-light border-0 rounded-3 shadow-sm">
-                            <div id="drawer-content-employer-{{ $order->employer_id }}" class="position-relative" style="min-height: 100px;">
+                            <div id="drawer-content-order-{{ $order->id }}" class="position-relative" style="min-height: 100px;">
                                 <div class="d-flex justify-content-center align-items-center h-100 py-3">
                                      <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
                                      <span class="ms-2 small text-muted">{{ __('Loading fields...') }}</span>

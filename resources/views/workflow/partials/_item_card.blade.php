@@ -667,20 +667,24 @@
 
                 @if(!$isReadOnly)
                     @if($isPreProduction)
-                        {{-- Send to Workflow Button (Only in Pre-Production) --}}
-                        <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3"
-                                onclick="sendToWorkflow({{ $item->id }})"
-                                title="{{ __('Send to Workflow') }}">
-                            <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
-                        </button>
+                        @if($activeTab->slug !== 'mou')
+                            {{-- Send to Workflow Button (Only in Pre-Production) --}}
+                            <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3"
+                                    onclick="sendToWorkflow({{ $item->id }})"
+                                    title="{{ __('Send to Workflow') }}">
+                                <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
+                            </button>
+                        @endif
                     @else
                         {{-- Send Back to Pre-Production --}}
                         @if(!$isCompleted && !$isCancelled)
-                        <button class="btn btn-info btn-sm fw-bold shadow-sm px-3 text-white"
-                                onclick="sendBackToPreProduction({{ $item->id }})"
-                                title="{{ __('Back to Preparation') }}">
-                             <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-lg-inline">{{ __('Back to Prep') }}</span>
-                        </button>
+                            @if($activeTab->slug !== 'mou')
+                            <button class="btn btn-info btn-sm fw-bold shadow-sm px-3 text-white"
+                                    onclick="sendBackToPreProduction({{ $item->id }})"
+                                    title="{{ __('Back to Preparation') }}">
+                                 <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-lg-inline">{{ __('Back to Prep') }}</span>
+                            </button>
+                            @endif
                         @endif
 
                         {{-- Daily Check Button (Only in Workflow) --}}
