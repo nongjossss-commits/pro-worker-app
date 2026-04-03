@@ -213,8 +213,4 @@
     <i class="bi bi-gear-fill me-2"></i>
     {{ __('Super Admin Settings') }}
 </a>
-<a class="list-group-item list-group-item-action {{ request()->routeIs('super-admin.download-profiles.*') ? 'active' : '' }}" href="{{ route('super-admin.download-profiles.index') }}">
-    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>
-    {{ __('Download Profiles') }}
-</a>
 @endrole
