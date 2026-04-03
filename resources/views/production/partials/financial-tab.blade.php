@@ -21,6 +21,7 @@
             'nationality' => $item->employee ? $item->employee->employeeNationality : '',
             'insurance_type' => $item->employee ? $item->employee->insurance_type : '',
             'passport' => $item->employee ? $item->employee->employeePassport : '',
+            'has_visa' => $item->employee ? !empty($item->employee->visaExpiryDate) : false,
             'employee_id' => $item->employee_id,
             'last_step_name' => $lastStepName,
             'status' => $item->status
@@ -41,6 +42,7 @@
             'nationality' => $emp->employeeNationality,
             'insurance_type' => $emp->insurance_type,
             'passport' => $emp->employeePassport,
+            'has_visa' => !empty($emp->visaExpiryDate),
             'last_step_name' => $lastStepName,
             'status' => $emp->status
         ];
@@ -694,6 +696,13 @@ class="row">
                                             <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
                                                 <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
                                             </template>
+                                            <!-- Visa Badge -->
+                                            <template x-if="item.has_visa">
+                                                <span class="badge bg-success rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Visa') }}</span>
+                                            </template>
+                                            <template x-if="!item.has_visa">
+                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
+                                            </template>
                                             <!-- Last Step Badge -->
                                             <template x-if="item.last_step_name">
                                                 <span class="badge border border-primary text-primary rounded-pill ms-1" style="font-size: 0.6rem;" x-text="item.last_step_name"></span>
@@ -914,6 +923,13 @@ class="row">
                                                             </template>
                                                             <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
                                                                 <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
+                                                            </template>
+                                                            <!-- Visa Badge -->
+                                                            <template x-if="item.has_visa">
+                                                                <span class="badge bg-success rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Visa') }}</span>
+                                                            </template>
+                                                            <template x-if="!item.has_visa">
+                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
                                                             </template>
                                                             <!-- Last Step Badge -->
                                                             <template x-if="item.last_step_name">
@@ -1215,6 +1231,13 @@ class="row">
                                                             </template>
                                                             <template x-if="!item.passport || item.passport === '-' || item.passport === 'No' || item.passport === 'ไม่มี'">
                                                                 <span class="badge bg-light text-dark border rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('No Passport') }}</span>
+                                                            </template>
+                                                            <!-- Visa Badge -->
+                                                            <template x-if="item.has_visa">
+                                                                <span class="badge bg-success rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Visa') }}</span>
+                                                            </template>
+                                                            <template x-if="!item.has_visa">
+                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
                                                             </template>
                                                             <!-- Last Step Badge -->
                                                             <template x-if="item.last_step_name">

@@ -245,6 +245,18 @@ class EmployerController extends Controller
             }
         }
 
+        if ($request->filled('visa_status')) {
+            if ($request->input('visa_status') === 'has_visa') {
+                $employeeQuery->where(function ($q) {
+                    $q->whereNotNull('visaExpiryDate')->where('visaExpiryDate', '!=', '');
+                });
+            } elseif ($request->input('visa_status') === 'no_visa') {
+                $employeeQuery->where(function ($q) {
+                    $q->whereNull('visaExpiryDate')->orWhere('visaExpiryDate', '=', '');
+                });
+            }
+        }
+
         if ($request->filled('work_permit_expiry_date')) {
             $employeeQuery->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
         }

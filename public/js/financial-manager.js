@@ -291,7 +291,7 @@ if (typeof window.financialManager === 'undefined') {
                     if (this.tierEmployeeFilter === 'active' && isCancelled) return;
                     if (this.tierEmployeeFilter === 'cancelled' && !isCancelled) return;
 
-                    list.push({ ...item, type: 'item', last_step_name: item.last_step_name });
+                    list.push({ ...item, type: 'item', last_step_name: item.last_step_name, has_visa: item.has_visa });
                 });
 
                 // 2. Candidates
@@ -312,6 +312,7 @@ if (typeof window.financialManager === 'undefined') {
                         nationality: emp.nationality,
                         insurance_type: emp.insurance_type,
                         passport: emp.passport,
+                        has_visa: emp.has_visa,
                         employee_id: emp.id,
                         last_step_name: emp.last_step_name,
                         status: emp.status,
@@ -374,6 +375,7 @@ if (typeof window.financialManager === 'undefined') {
                         nationality: item.nationality,
                         insurance_type: item.insurance_type,
                         passport: item.passport,
+                        has_visa: item.has_visa,
                         last_step_name: item.last_step_name,
                         status: item.status,
                         type: 'item'
@@ -399,6 +401,7 @@ if (typeof window.financialManager === 'undefined') {
                             nationality: emp.nationality,
                             insurance_type: emp.insurance_type,
                             passport: emp.passport,
+                            has_visa: emp.has_visa,
                             last_step_name: emp.last_step_name,
                             status: emp.status,
                             type: 'employee'
@@ -454,6 +457,7 @@ if (typeof window.financialManager === 'undefined') {
                             nationality: item.nationality,
                             insurance_type: item.insurance_type,
                             passport: item.passport,
+                            has_visa: item.has_visa,
                             last_step_name: item.last_step_name,
                             status: item.status,
                             type: 'item',
@@ -480,6 +484,7 @@ if (typeof window.financialManager === 'undefined') {
                         nationality: emp.nationality,
                         insurance_type: emp.insurance_type,
                         passport: emp.passport,
+                        has_visa: emp.has_visa,
                         last_step_name: emp.last_step_name,
                         status: emp.status,
                         type: 'employee',
