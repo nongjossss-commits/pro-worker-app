@@ -928,13 +928,15 @@
                 @endphp
 
                 @if($isPreProductionContext && isset($employee->production_item))
-                    {{-- SEND TO WORKFLOW (P Production Context) --}}
-                    <button class="btn btn-sm btn-primary rounded-pill px-3"
-                        id="btn-send-to-workflow-{{ $employee->id }}"
-                        title="{{ __('Send to Workflow') }}"
-                        onclick="sendToWorkflow({{ $employee->production_item->id }})">
-                        <i class="bi bi-send-check"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
-                    </button>
+                    @if($activeTab->slug !== 'mou')
+                        {{-- SEND TO WORKFLOW (P Production Context) - Not shown in MOU --}}
+                        <button class="btn btn-sm btn-primary rounded-pill px-3"
+                            id="btn-send-to-workflow-{{ $employee->id }}"
+                            title="{{ __('Send to Workflow') }}"
+                            onclick="sendToWorkflow({{ $employee->production_item->id }})">
+                            <i class="bi bi-send-check"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
+                        </button>
+                    @endif
 
                     {{-- CANCEL --}}
                     <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
