@@ -27,7 +27,7 @@
         @include('employees.partials.create_form_partial_content')
 
         <div class="mt-4 d-flex justify-content-end">
-            <a href="{{ route('production.registration.index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
+            <a href="{{ route('production.registration.operations') }}" class="btn btn-secondary me-2">ยกเลิก</a>
             <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน (Registration)</button>
         </div>
     </form>

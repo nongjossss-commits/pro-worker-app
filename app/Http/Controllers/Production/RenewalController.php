@@ -49,6 +49,11 @@ class RenewalController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function dashboard(Request $request)
+    {
+        return view('production.renewal.dashboard');
+    }
+
     public function index(Request $request)
     {
         $steps = RegistrationStep::renewal()->orderBy('order')->get();
