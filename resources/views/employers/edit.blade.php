@@ -593,6 +593,11 @@
                     <option value="has_passport" {{ request('passport_status') == 'has_passport' ? 'selected' : '' }}>{{ __('Has Passport') }}</option>
                     <option value="no_passport" {{ request('passport_status') == 'no_passport' ? 'selected' : '' }}>{{ __('No Passport') }}</option>
                 </select>
+                <select name="visa_status" class="form-select form-select-sm" style="width: auto;">
+                    <option value="">-- {{ __('Visa Status') }} --</option>
+                    <option value="has_visa" {{ request('visa_status') == 'has_visa' ? 'selected' : '' }}>{{ __('มีวีซ่า') }}</option>
+                    <option value="no_visa" {{ request('visa_status') == 'no_visa' ? 'selected' : '' }}>{{ __('ไม่มีวีซ่า') }}</option>
+                </select>
                 <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
                     <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>เล่ม CI</option>
