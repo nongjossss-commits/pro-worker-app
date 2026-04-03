@@ -167,11 +167,270 @@
             </div>
         </div>
     </div>
+
+    <!-- Bulk Action Bar -->
+    <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+         style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;"
+         id="bulkActionBar"
+         draggable="true"
+         ondragstart="window.startDragBulk(event)">
+        <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="select-all-checkbox">
+            <label class="form-check-label fw-bold" for="select-all-checkbox">
+                {{ __('Select All') }} (<span id="selected-count">0</span>)
+            </label>
+        </div>
+
+        <div class="vr mx-2"></div>
+
+        <div class="dropdown">
+            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="bulkActionDropdown" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                {{ __('Actions') }}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="bulkActionDropdown">
+                <li><a class="dropdown-item" href="#" id="bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
+                @can('manage-tickets')
+                <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
+                @endcan
+            </ul>
+        </div>
+
+        <button class="btn btn-sm btn-outline-danger ms-2" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
+        <button class="btn btn-sm btn-info text-white" id="btn-view-selected" onclick="window.openViewSelectedModal()">
+            <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+            <span class="badge bg-white text-info ms-1" id="view-selected-count">0</span>
+        </button>
+        <div class="ms-auto text-muted small d-none d-md-block">
+            <i class="bi bi-info-circle me-1"></i> Drag to chat
+        </div>
+    </div>
 </div>
+
+{{-- Include Advanced Export & Target Employer Modals (reused from Employees) --}}
+@include('employees.modals.advanced_export')
+@include('employees.modals.select_target_employer_modal')
 
 @endsection
 
 @push('scripts')
+<script>
+    // Include bulk action event handlers
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bulk Generate PDF
+        const bulkGeneratePdfBtn = document.getElementById('bulk-generate-pdf-btn');
+        if (bulkGeneratePdfBtn) {
+            bulkGeneratePdfBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route("admin.pdf-templates.generate.modal", [], false) }}';
+
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = csrfToken;
+                form.appendChild(csrf);
+
+                const redirectInput = document.createElement('input');
+                redirectInput.type = 'hidden';
+                redirectInput.name = 'redirect_url';
+                redirectInput.value = window.location.href;
+                form.appendChild(redirectInput);
+
+                selected.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'employees[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        // Bulk Advanced Edit
+        const bulkEditBtn = document.getElementById('bulk-advanced-edit-btn');
+        if (bulkEditBtn) {
+            bulkEditBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route('employees.bulk_edit.select_fields') }}';
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                const redirectInput = document.createElement('input');
+                redirectInput.type = 'hidden';
+                redirectInput.name = 'redirect_to';
+                redirectInput.value = window.location.href;
+                form.appendChild(redirectInput);
+
+                selected.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'employee_ids[]';
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        // Bulk Advanced Export
+        const bulkExportBtn = document.getElementById('bulk-advanced-export-btn');
+        if (bulkExportBtn) {
+            bulkExportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                document.getElementById('export_employee_ids').value = JSON.stringify(selected);
+                if (document.getElementById('export_source_menu')) {
+                    document.getElementById('export_source_menu').value = 'registration';
+                }
+                const modalEl = document.getElementById('advancedExportModal');
+                if (modalEl) {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                } else {
+                    console.error("advancedExportModal not found in DOM");
+                }
+            });
+        }
+
+        // Bulk Download Files
+        const bulkDownloadBtn = document.getElementById('bulk-download-btn');
+        if (bulkDownloadBtn) {
+            bulkDownloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                if (window.openBulkDownloadModal) {
+                    window.openBulkDownloadModal(selected);
+                } else {
+                    showToast('{{ __('Download module not available.') }}', 'warning');
+                }
+            });
+        }
+
+        // Bulk Send Data (Drag to Chat logic wrapper)
+        const bulkSendDataBtn = document.getElementById('bulk-send-data-btn');
+        if (bulkSendDataBtn) {
+            bulkSendDataBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selectedData = window.getGlobalSelectedData();
+                const selectedIds = selectedData.map(item => item.id);
+
+                if (selectedIds.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                const employers = [...new Set(selectedData.map(item => item.employer_id))];
+                if (employers.length > 1) {
+                    showToast('{{ __('Please select employees from a single employer to send data.') }}', 'warning');
+                    return;
+                }
+
+                const employerId = employers[0];
+                if (window.openBulkTicketModal) {
+                     window.openBulkTicketModal(employerId, selectedIds);
+                } else {
+                     showToast('{{ __('Ticket module not available.') }}', 'warning');
+                }
+            });
+        }
+
+        // Bulk Transfer
+        const bulkTransferBtn = document.getElementById('bulk-transfer-btn');
+        if (bulkTransferBtn) {
+            bulkTransferBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const selected = window.getGlobalSelectedIds();
+                if (selected.length === 0) {
+                    showToast('{{ __('Please select employees first.') }}', 'danger');
+                    return;
+                }
+
+                document.getElementById('transfer_employee_ids').value = JSON.stringify(selected);
+
+                fetch('{{ route('employees.list_all_employers') }}')
+                    .then(res => res.json())
+                    .then(employers => {
+                        const select = document.getElementById('target_employer_id');
+                        select.innerHTML = '<option value="">{{ __("Select Target Employer") }}</option>';
+                        employers.forEach(emp => {
+                            const title = `[${emp.id}] ${emp.employerNameEn || emp.employerNameTh}`;
+                            select.add(new Option(title, emp.id));
+                        });
+
+                        const modalEl = document.getElementById('selectTargetEmployerModal');
+                        if (modalEl) {
+                            const modal = new bootstrap.Modal(modalEl);
+                            modal.show();
+                        }
+                    });
+            });
+        }
+
+        window.startDragBulk = function(e) {
+            const ids = window.getGlobalSelectedIds();
+            const count = ids.length;
+
+            if (count === 0) {
+                e.preventDefault();
+                return;
+            }
+
+            const payload = {
+                type: 'employees_bulk',
+                title: count + ' Employees',
+                count: count,
+                ids: ids,
+                url: window.location.href
+            };
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('application/json', JSON.stringify(payload));
+        }
+    });
+</script>
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('appointmentSearch', () => ({
@@ -326,6 +585,11 @@
                         document.getElementById('dayAppointmentsContent').innerHTML = data.html;
                         this.isLoading = false;
                         this.searchQuery = ''; // Reset search query when changing dates
+                        if (typeof window.refreshGlobalSelectionUI === 'function') {
+                            setTimeout(() => {
+                                window.refreshGlobalSelectionUI();
+                            }, 50);
+                        }
                     })
                     .catch(() => {
                         this.isLoading = false;

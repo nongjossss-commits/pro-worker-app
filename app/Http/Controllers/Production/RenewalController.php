@@ -52,13 +52,12 @@ class RenewalController extends Controller
     public function dashboard(Request $request)
     {
         $days = \App\Models\NotificationSetting::where('notification_type', 'renewal_appointment')->first()->days_before_expiry ?? 3;
-        $start = \Carbon\Carbon::now()->startOfDay();
         $end = \Carbon\Carbon::now()->addDays($days)->endOfDay();
 
         $query = Employee::query()
             ->whereIn('status', ['renewal_pending', 'renewal_completed'])
             ->whereNotNull('appointment_date')
-            ->whereBetween('appointment_date', [$start, $end])
+            ->where('appointment_date', '<=', $end)
             ->whereNull('appointment_completed_at')
             ->with(['employer']);
 
