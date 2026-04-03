@@ -4,10 +4,15 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SuperAdminSetting;
+use App\Models\DownloadProfile;
+use App\Models\Employee;
+use App\Models\Employer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class SettingsController extends Controller
 {
@@ -44,7 +49,9 @@ class SettingsController extends Controller
         // Fetch current settings from DB
         $settings = SuperAdminSetting::all()->keyBy('key');
 
-        return view('super-admin.settings', compact('menus', 'settings'));
+        $profiles = DownloadProfile::latest()->get();
+
+        return view('super-admin.settings', compact('menus', 'settings', 'profiles'));
     }
 
     /**
@@ -208,5 +215,139 @@ class SettingsController extends Controller
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0');
+    }
+
+    public function swapAttachments(Request $request)
+    {
+        $request->validate([
+            'entity_type' => 'required|in:employer,employee',
+            'from_field' => 'required|string',
+            'to_field' => 'required|string',
+            'mode' => 'required|in:swap,move_delete',
+        ]);
+
+        $entityType = $request->entity_type;
+        $fromField = $request->from_field;
+        $toField = $request->to_field;
+        $mode = $request->mode;
+
+        if ($fromField === $toField) {
+            return back()->with('error', 'Cannot swap the same field.');
+        }
+
+        DB::beginTransaction();
+        try {
+            if ($entityType === 'employee') {
+                $records = Employee::all();
+            } else {
+                $records = Employer::all();
+            }
+
+            foreach ($records as $record) {
+                $fromPath = $record->{$fromField};
+                $toPath = $record->{$toField};
+
+                if ($mode === 'swap') {
+                    // Simple swap
+                    $record->{$fromField} = $toPath;
+                    $record->{$toField} = $fromPath;
+                } else {
+                    // Move and delete
+                    // Move $fromPath to $toField. Delete what was in $toField.
+                    if ($toPath) {
+                        Storage::disk('public')->delete($toPath);
+                    }
+                    $record->{$toField} = $fromPath;
+                    $record->{$fromField} = null;
+                }
+
+                // Optimization: Avoid firing full model events if we only update two columns
+                $record->saveQuietly();
+            }
+
+            DB::commit();
+
+            return redirect()->route('super-admin.settings.index', ['tab' => 'attachment-settings'])
+                             ->with('success', ucfirst($entityType) . " files swapped successfully!");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('super-admin.settings.index', ['tab' => 'attachment-settings'])
+                             ->with('error', 'Error swapping files: ' . $e->getMessage());
+        }
+    }
+
+    public function updateAttachmentDescriptions(Request $request)
+    {
+        $request->validate([
+            'employer_other_1_desc' => 'nullable|string|max:255',
+            'employer_other_2_desc' => 'nullable|string|max:255',
+            'employer_other_3_desc' => 'nullable|string|max:255',
+        ]);
+
+        // Validate employee descriptions (1 to 10)
+        $employeeRules = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $employeeRules["employee_other_{$i}_desc"] = 'nullable|string|max:255';
+        }
+        $request->validate($employeeRules);
+
+        // Save to Settings
+        $settingData = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $key = "employer_other_{$i}_desc";
+            if ($request->has($key)) {
+                $settingData[$key] = $request->input($key);
+                SuperAdminSetting::updateOrCreate(['key' => $key], ['value' => $request->input($key)]);
+            }
+        }
+
+        for ($i = 1; $i <= 10; $i++) {
+            $key = "employee_other_{$i}_desc";
+            if ($request->has($key)) {
+                $settingData[$key] = $request->input($key);
+                SuperAdminSetting::updateOrCreate(['key' => $key], ['value' => $request->input($key)]);
+            }
+        }
+
+        // Apply changes to existing records
+        DB::beginTransaction();
+        try {
+            // Update Employers
+            $employerUpdates = [];
+            for ($i = 1; $i <= 3; $i++) {
+                $inputKey = "employer_other_{$i}_desc";
+                $dbCol = "employer_doc_other_{$i}_desc";
+                if ($request->has($inputKey) && !empty($request->input($inputKey))) {
+                    $employerUpdates[$dbCol] = $request->input($inputKey);
+                }
+            }
+            if (!empty($employerUpdates)) {
+                Employer::query()->update($employerUpdates);
+            }
+
+            // Update Employees
+            $employeeUpdates = [];
+            for ($i = 1; $i <= 10; $i++) {
+                $inputKey = "employee_other_{$i}_desc";
+                $dbCol = "other_doc_{$i}_desc";
+                if ($request->has($inputKey) && !empty($request->input($inputKey))) {
+                    $employeeUpdates[$dbCol] = $request->input($inputKey);
+                }
+            }
+            if (!empty($employeeUpdates)) {
+                Employee::query()->update($employeeUpdates);
+            }
+
+            DB::commit();
+
+            return redirect()->route('super-admin.settings.index', ['tab' => 'attachment-settings'])
+                             ->with('success', 'Attachment descriptions updated globally and default values saved.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('super-admin.settings.index', ['tab' => 'attachment-settings'])
+                             ->with('error', 'Error updating descriptions: ' . $e->getMessage());
+        }
     }
 }

@@ -11,8 +11,7 @@ class DownloadProfileController extends Controller
 {
     public function index()
     {
-        $profiles = DownloadProfile::latest()->get();
-        return view('super-admin.download-profiles.index', compact('profiles'));
+        return redirect()->route('super-admin.settings.index', ['tab' => 'download-profiles']);
     }
 
     public function create()
@@ -36,7 +35,7 @@ class DownloadProfileController extends Controller
 
         DownloadProfile::create($data);
 
-        return redirect()->route('super-admin.download-profiles.index')->with('success', 'Download Profile created successfully.');
+        return redirect()->route('super-admin.settings.index', ['tab' => 'download-profiles'])->with('success', 'Download Profile created successfully.');
     }
 
     public function edit(DownloadProfile $downloadProfile)
@@ -64,7 +63,7 @@ class DownloadProfileController extends Controller
 
         $downloadProfile->update($data);
 
-        return redirect()->route('super-admin.download-profiles.index')->with('success', 'Download Profile updated successfully.');
+        return redirect()->route('super-admin.settings.index', ['tab' => 'download-profiles'])->with('success', 'Download Profile updated successfully.');
     }
 
     public function destroy(DownloadProfile $downloadProfile)
@@ -74,6 +73,6 @@ class DownloadProfileController extends Controller
         }
         $downloadProfile->delete();
 
-        return redirect()->route('super-admin.download-profiles.index')->with('success', 'Download Profile deleted successfully.');
+        return redirect()->route('super-admin.settings.index', ['tab' => 'download-profiles'])->with('success', 'Download Profile deleted successfully.');
     }
 }

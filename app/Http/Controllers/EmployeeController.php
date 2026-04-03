@@ -429,6 +429,18 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
+        // Apply SuperAdmin defaults for Other Document Descriptions if not provided
+        $defaults = \App\Models\SuperAdminSetting::where('key', 'like', 'employee_other_%_desc')->pluck('value', 'key');
+        for ($i = 1; $i <= 10; $i++) {
+            $descField = "other_doc_{$i}_desc";
+            $settingKey = "employee_other_{$i}_desc";
+            if (!isset($validated[$descField]) || trim($validated[$descField]) === '') {
+                if (isset($defaults[$settingKey])) {
+                    $validated[$descField] = $defaults[$settingKey];
+                }
+            }
+        }
+
         // --- V6: Step 4: Create Employee ---
         Employee::create($validated);
 
