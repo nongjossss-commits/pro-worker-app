@@ -15,11 +15,86 @@
         </div>
     </div>
 
-    <!-- Calendar App -->
-    <div x-data="calendarApp()">
-        <div class="row g-4 h-100">
-            <!-- Left Column: Monthly Calendar -->
-            <div class="col-lg-5 col-xl-4 h-100 d-flex flex-column">
+    <!-- Layout with Upcoming Appointments -->
+    <div class="row g-4 mb-4">
+        <!-- Left Column: Upcoming Appointments -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-event me-2"></i>{{ __('Upcoming Appointments (Short Term)') }}</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if(isset($upcomingAppointments) && $upcomingAppointments->isEmpty())
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-check fs-1 opacity-25"></i>
+                            <p class="mt-2">{{ __('No upcoming appointments found in the next few days.') }}</p>
+                            <small>{{ __('Check notification settings in Registration settings.') }}</small>
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">{{ __('Date / Time') }}</th>
+                                        <th>{{ __('Details') }}</th>
+                                        <th class="text-end pe-4">{{ __('Action') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if(isset($upcomingAppointments))
+                                    @foreach($upcomingAppointments as $item)
+                                        @php
+                                            $date = \Carbon\Carbon::parse($item->appointment_date);
+                                            $isToday = $date->isToday();
+                                            $isTomorrow = $date->isTomorrow();
+                                            $colorClass = $isToday ? 'text-danger fw-bold' : ($isTomorrow ? 'text-warning fw-bold' : 'text-primary');
+                                            $formatted = $date->format('d/m/Y H:i');
+                                        @endphp
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="{{ $colorClass }}">
+                                                    <i class="bi bi-clock me-1"></i> {{ $formatted }}
+                                                    @if($isToday) <span class="badge bg-danger ms-1">TODAY</span> @endif
+                                                </div>
+                                                <div class="small text-muted">{{ $date->diffForHumans() }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">{{ $item->employeeNameEn ?? $item->employeeNameTh ?? 'New Employee' }}</div>
+                                                <div class="small text-muted">
+                                                    {{ $item->employer->employerNameTh ?? $item->employer->employerNameEn ?? '-' }}
+                                                    @if($item->employer)
+                                                    <button class="btn btn-sm btn-link p-0 ms-1 btn-preview"
+                                                        data-model-type="employer"
+                                                        data-model-id="{{ $item->employer->id }}"
+                                                        title="Preview Employer">
+                                                        <i class="bi bi-eye-fill"></i>
+                                                    </button>
+                                                    @endif
+                                                </div>
+                                                @if($item->appointment_location)
+                                                    <div class="small text-info"><i class="bi bi-geo-alt-fill"></i> {{ $item->appointment_location }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <a href="{{ route('production.registration.operations') }}"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-arrow-right"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    @endif
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Monthly Calendar -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100" x-data="calendarApp()">
                 <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
                     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-month me-2"></i>{{ __('Monthly Overview') }}</h5>
@@ -98,6 +173,26 @@
 
 @push('scripts')
 <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('appointmentSearch', () => ({
+            searchQuery: '',
+            matchesSearch(el) {
+                if (!this.searchQuery) return true;
+
+                const query = this.searchQuery.toLowerCase();
+                const nameTh = el.dataset.employeeNameTh || '';
+                const nameEn = el.dataset.employeeNameEn || '';
+                const employerName = el.dataset.employerName || '';
+                const reference = el.dataset.reference || '';
+
+                return nameTh.includes(query) ||
+                       nameEn.includes(query) ||
+                       employerName.includes(query) ||
+                       reference.includes(query);
+            }
+        }));
+    });
+
     function calendarApp() {
         return {
             month: new Date().getMonth(),

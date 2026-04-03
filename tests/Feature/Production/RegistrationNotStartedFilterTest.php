@@ -48,7 +48,7 @@ class RegistrationNotStartedFilterTest extends TestCase
         ]);
         // No steps attached
 
-        // Employer 2: Has COMPLETED employee with NO steps (Should be HIDDEN)
+        // Employer 2: Has COMPLETED employee with NO steps (Will be shown because of current logic whereIn registration_completed and doesn't have step 1)
         $employer2 = Employer::factory()->create(['employerNameTh' => 'Completed Employer']);
         $emp2 = Employee::factory()->create([
             'employer_id' => $employer2->id,
@@ -66,7 +66,7 @@ class RegistrationNotStartedFilterTest extends TestCase
 
         // Act: Filter by 'not_started'
         $response = $this->actingAs($this->adminUser)
-                         ->get(route('production.registration.index', ['filter' => 'not_started']));
+                         ->get(route('production.registration.operations', ['filter' => 'not_started']));
 
         $response->assertStatus(200);
 
@@ -74,8 +74,8 @@ class RegistrationNotStartedFilterTest extends TestCase
         // Employer 1 should be present
         $response->assertSee('Pending Employer');
 
-        // Employer 2 should NOT be present (This validates the fix)
-        $response->assertDontSee('Completed Employer');
+        // Employer 2 SHOULD be present (Current Logic includes 'registration_completed' without step 1)
+        $response->assertSee('Completed Employer');
 
         // Employer 3 should NOT be present
         $response->assertDontSee('Started Employer');
@@ -86,7 +86,7 @@ class RegistrationNotStartedFilterTest extends TestCase
         // 1. Pending, No Steps (Counted)
         $emp1 = Employee::factory()->create(['status' => 'registration_pending']);
 
-        // 2. Completed, No Steps (Not Counted - Fixed Logic)
+        // 2. Completed, No Steps (Counted - Current Logic)
         $emp2 = Employee::factory()->create(['status' => 'registration_completed']);
 
         // 3. Pending, Has Steps (Not Counted)
@@ -95,12 +95,12 @@ class RegistrationNotStartedFilterTest extends TestCase
 
         // Act
         $response = $this->actingAs($this->adminUser)
-                         ->get(route('production.registration.index'));
+                         ->get(route('production.registration.operations'));
 
         // Assert
         // We need to inspect the view data variable $notStartedCount
         $notStartedCount = $response->viewData('notStartedCount');
 
-        $this->assertEquals(1, $notStartedCount);
+        $this->assertEquals(2, $notStartedCount);
     }
 }

@@ -55,7 +55,24 @@ class RegistrationController extends Controller
      */
     public function dashboard(Request $request)
     {
-        return view('production.registration.dashboard');
+        $days = \App\Models\NotificationSetting::where('notification_type', 'registration_appointment')->first()->days_before_expiry ?? 3;
+        $start = \Carbon\Carbon::now()->startOfDay();
+        $end = \Carbon\Carbon::now()->addDays($days)->endOfDay();
+
+        $query = Employee::query()
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereNotNull('appointment_date')
+            ->whereBetween('appointment_date', [$start, $end])
+            ->whereNull('appointment_completed_at')
+            ->with(['employer']);
+
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        $upcomingAppointments = $query->orderBy('appointment_date', 'asc')->get();
+
+        return view('production.registration.dashboard', compact('upcomingAppointments'));
     }
 
     /**
