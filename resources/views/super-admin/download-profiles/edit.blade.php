@@ -3,7 +3,7 @@
 @section('content')
 <div class="container py-4">
     <div class="mb-4">
-        <a href="{{ route('super-admin.download-profiles.index') }}" class="text-decoration-none">
+        <a href="{{ route('super-admin.settings.index', ['tab' => 'download-profiles']) }}" class="text-decoration-none">
             <i class="bi bi-arrow-left"></i> Back to Profiles
         </a>
     </div>

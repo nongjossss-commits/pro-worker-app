@@ -30,6 +30,9 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::post('/settings/visibility', [SuperAdminSettingsController::class, 'updateVisibility'])->name('settings.update-visibility');
     Route::get('/sidebar', [SuperAdminSettingsController::class, 'renderSidebar'])->name('sidebar');
 
+    Route::post('/attachments/swap', [SuperAdminSettingsController::class, 'swapAttachments'])->name('attachments.swap');
+    Route::post('/attachments/descriptions', [SuperAdminSettingsController::class, 'updateAttachmentDescriptions'])->name('attachments.descriptions');
+
     Route::resource('download-profiles', DownloadProfileController::class)->except(['show']);
 });
 

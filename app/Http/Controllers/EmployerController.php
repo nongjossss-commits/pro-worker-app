@@ -150,6 +150,18 @@ class EmployerController extends Controller
         unset($validated['signature_2_file']);
         unset($validated['employer_stamp_file']);
 
+        // Apply SuperAdmin defaults for Employer Other Document Descriptions if not provided
+        $defaults = \App\Models\SuperAdminSetting::where('key', 'like', 'employer_other_%_desc')->pluck('value', 'key');
+        for ($i = 1; $i <= 3; $i++) {
+            $descField = "employer_doc_other_{$i}_desc";
+            $settingKey = "employer_other_{$i}_desc";
+            if (!isset($validated[$descField]) || trim($validated[$descField]) === '') {
+                if (isset($defaults[$settingKey])) {
+                    $validated[$descField] = $defaults[$settingKey];
+                }
+            }
+        }
+
         $staffIds = $validated['assigned_staff_ids'] ?? [];
         unset($validated['assigned_staff_ids']);
 

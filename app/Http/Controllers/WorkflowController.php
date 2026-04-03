@@ -2144,7 +2144,6 @@ class WorkflowController extends Controller
             $items = $query->get();
 
             $total = 0;
-                $stepOneId = $steps->sortBy('order')->first()?->id;
 
             $notStarted = 0;
             $cancelled = 0;
