@@ -455,7 +455,7 @@
                                  {{-- Finance Button --}}
                                  @can('view-finance')
                                  <button class="btn btn-outline-primary btn-sm rounded-circle me-1"
-                                    onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => new bootstrap.Modal(document.getElementById('financeModal-{{ $order->id }}')).show())"
+                                    onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => openFinanceModal({{ $order->id }}))"
                                     title="{{ __('Finance') }}">
                                     <i class="bi bi-currency-dollar"></i>
                                 </button>
@@ -543,7 +543,7 @@
                     </div>
                 </div>
 
-                {{-- Finance Modal for this Order --}}
+                {{-- Finance Modal (lazy load — โหลดข้อมูลเมื่อเปิดครั้งแรก ไม่โหลดทุก order พร้อมกันตอนเปิดหน้า) --}}
                 <div class="modal fade" id="financeModal-{{ $order->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
                     <div class="modal-dialog modal-xl">
                         <div class="modal-content">
@@ -551,12 +551,10 @@
                                 <h5 class="modal-title">{{ __('Finance') }}: {{ $order->employer->employerNameTh ?? $order->project_name }}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <div class="modal-body bg-light">
-                                @include('production.partials.financial-tab', [
-                                    'production' => $order,
-                                    'employeeCount' => $order->items->count(),
-                                    'employees' => $order->items->pluck('employee')->filter()->values()
-                                ])
+                            <div class="modal-body bg-light p-0" id="finance-modal-body-{{ $order->id }}">
+                                <div class="d-flex justify-content-center align-items-center py-5">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -766,9 +764,13 @@
         .catch(err => console.error('Stats loading failed', err));
     }
 
-    // Call batch stats on load
+    // โหลด batch stats หลังจาก browser ว่าง (ไม่บล็อกการ render หน้าเว็บ)
     document.addEventListener('DOMContentLoaded', function() {
-        loadBatchStats();
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => loadBatchStats(), { timeout: 2000 });
+        } else {
+            setTimeout(() => loadBatchStats(), 300);
+        }
     });
 
     // --- Lazy Load ---
@@ -860,31 +862,35 @@
     });
 
     // --- Sync Employer Select All state when individual employees change ---
+    // ใช้ debounce เพื่อป้องกันการรัน function นี้ซ้ำๆ หลายครั้งในช่วงเวลาสั้นๆ
+    // เช่น ตอน Select All กด checkbox ทีเดียว 50 อัน จะรันแค่ครั้งเดียวแทน 50 ครั้ง
+    let _employerCbTimer = null;
     function updateEmployerCheckboxesState() {
-        document.querySelectorAll('.employer-select-all').forEach(masterCb => {
-            const orderId = masterCb.dataset.employerId;
-            const container = document.getElementById(`order-content-${orderId}`);
-            if (!container) return;
+        clearTimeout(_employerCbTimer);
+        _employerCbTimer = setTimeout(function() {
+            document.querySelectorAll('.employer-select-all').forEach(masterCb => {
+                const orderId = masterCb.dataset.employerId;
+                const container = document.getElementById(`order-content-${orderId}`);
+                if (!container) return;
 
-            const allCheckboxes = container.querySelectorAll('.employee-checkbox');
-            // Filter only relevant ones (pending & visible) to check against
-            const relevantCheckboxes = Array.from(allCheckboxes).filter(cb => {
-                const cw = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
-                const isHidden = cw && (cw.classList.contains('d-none') || cw.classList.contains('hide-cancelled'));
-                const status = cw ? cw.dataset.status : '';
-                const isSelectable = status !== 'completed';
-                return !isHidden && isSelectable;
+                const allCheckboxes = container.querySelectorAll('.employee-checkbox');
+                const relevantCheckboxes = Array.from(allCheckboxes).filter(cb => {
+                    const cw = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
+                    const isHidden = cw && (cw.classList.contains('d-none') || cw.classList.contains('hide-cancelled'));
+                    const status = cw ? cw.dataset.status : '';
+                    return !isHidden && status !== 'completed';
+                });
+
+                if (relevantCheckboxes.length > 0) {
+                    const allChecked = relevantCheckboxes.every(cb => cb.checked);
+                    masterCb.checked = allChecked;
+                    masterCb.indeterminate = !allChecked && relevantCheckboxes.some(cb => cb.checked);
+                } else {
+                    masterCb.checked = false;
+                    masterCb.indeterminate = false;
+                }
             });
-
-            if (relevantCheckboxes.length > 0) {
-                const allChecked = relevantCheckboxes.every(cb => cb.checked);
-                masterCb.checked = allChecked;
-                masterCb.indeterminate = !allChecked && relevantCheckboxes.some(cb => cb.checked);
-            } else {
-                masterCb.checked = false;
-                masterCb.indeterminate = false;
-            }
-        });
+        }, 60);
     }
 
     document.addEventListener('change', function(e) {
@@ -1912,6 +1918,78 @@
             }
         }
     });
+
+    // ─────────────────────────────────────────────────────────────
+    // Finance Modal — Lazy Loading
+    // โหลดข้อมูล Finance ของแต่ละ order เฉพาะตอนที่คลิกเปิด
+    // ไม่โหลดพร้อมกันทุก order ตอนเปิดหน้า ช่วยลดภาระหน้าเว็บมาก
+    // ─────────────────────────────────────────────────────────────
+    let _fmScriptPromise = null;
+
+    function _ensureFinancialManagerScript() {
+        if (!_fmScriptPromise) {
+            _fmScriptPromise = new Promise((resolve, reject) => {
+                // ถ้า financialManager ถูกโหลดไปแล้ว (เช่น เปิด modal ที่สองขึ้นไป) ก็ไม่ต้องโหลดซ้ำ
+                if (typeof financialManager === 'function') { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = '{{ asset("js/financial-manager.js") }}';
+                s.onload  = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+        return _fmScriptPromise;
+    }
+
+    const _financeTabCache = {};
+
+    window.openFinanceModal = async function(orderId) {
+        const modal = document.getElementById('financeModal-' + orderId);
+        if (!modal) return;
+
+        // เปิด modal ทันที (แสดง spinner ก่อน)
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+
+        // ถ้าโหลดไปแล้ว ไม่ต้องโหลดซ้ำ
+        if (_financeTabCache[orderId]) return;
+
+        const body = document.getElementById('finance-modal-body-' + orderId);
+
+        try {
+            // โหลด HTML ของ finance tab และ financial-manager.js พร้อมกัน
+            const [html] = await Promise.all([
+                fetch('/production/' + orderId + '/finance-tab', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' }
+                }).then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.text();
+                }),
+                _ensureFinancialManagerScript()
+            ]);
+
+            // ดึง HTML แล้วลบ <script src> ออกก่อน inject
+            // เพราะ financial-manager.js โหลดจาก _ensureFinancialManagerScript แล้ว
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            doc.querySelectorAll('script').forEach(s => s.remove());
+            body.innerHTML = doc.body.innerHTML;
+
+            _financeTabCache[orderId] = true;
+
+            // ให้ Alpine.js รับรู้ component ที่ inject เข้ามาใหม่
+            if (window.Alpine) Alpine.initTree(body);
+
+        } catch (err) {
+            body.innerHTML = [
+                '<div class="text-center py-5 text-danger">',
+                '<i class="bi bi-exclamation-triangle-fill fs-2 mb-3 d-block"></i>',
+                '<p class="fw-bold">โหลดข้อมูลไม่สำเร็จ</p>',
+                '<button class="btn btn-outline-danger btn-sm" onclick="_financeTabCache[' + orderId + ']=false; window.openFinanceModal(' + orderId + ')">',
+                '<i class="bi bi-arrow-clockwise me-1"></i>ลองใหม่</button>',
+                '</div>'
+            ].join('');
+        }
+    };
 
 </script>
 @endpush

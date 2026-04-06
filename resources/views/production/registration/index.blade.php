@@ -723,6 +723,82 @@
     </div>
 </div>
 
+{{-- GPS Navigate: ฝัง inline หลัง DOM เสร็จ — ไม่ต้องพึ่ง DOMContentLoaded --}}
+@if(request('highlight_employer_id') || session('registration_restore_employer_id'))
+<script>
+(function() {
+    var empId      = "{{ request('highlight_employer_id', session('registration_restore_employer_id', '')) }}";
+    var employeeId = "{{ request('highlight_employee_id', session('registration_restore_employee_id', '')) }}";
+    if (!empId) return;
+
+    function run() {
+        var collapseEl = document.getElementById('collapse' + empId);
+        var headingEl  = document.getElementById('heading' + empId);
+
+        if (!collapseEl || !headingEl) return;
+
+        // 1. เลื่อนไปหานายจ้าง
+        headingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // 2. เปิด accordion
+        if (!collapseEl.classList.contains('show')) {
+            try {
+                var bsCol = bootstrap.Collapse.getOrCreateInstance(collapseEl);
+                bsCol.show();
+            } catch(e) {
+                var btn = headingEl.querySelector('[data-bs-toggle="collapse"]');
+                if (btn) btn.click();
+            }
+        }
+
+        // 3. โหลด employee list
+        setTimeout(function() {
+            if (typeof window.loadEmployees === 'function') {
+                window.loadEmployees(empId);
+            }
+        }, 100);
+
+        // 4. ไฮไลท์ลูกจ้าง
+        if (!employeeId) return;
+
+        function doHighlight(card) {
+            setTimeout(function() {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('highlight-navigate');
+                setTimeout(function() { card.classList.remove('highlight-navigate'); }, 5000);
+            }, 400);
+        }
+
+        function tryFind() {
+            var card = document.getElementById('employee-card-' + employeeId);
+            if (card) { doHighlight(card); return true; }
+            return false;
+        }
+
+        var listEl = document.getElementById('employee-list-' + empId);
+        if (!listEl) return;
+
+        var obs = new MutationObserver(function(_, o) {
+            if (tryFind()) o.disconnect();
+        });
+        obs.observe(listEl, { childList: true, subtree: true });
+
+        // Fallback polling
+        [600, 1200, 2500, 4000, 6000].forEach(function(ms) {
+            setTimeout(function() { if (tryFind()) obs.disconnect(); }, ms);
+        });
+    }
+
+    // รอ Bootstrap โหลดเสร็จ — ใช้ window.onload + delay เพื่อความมั่นใจ
+    if (document.readyState === 'complete') {
+        setTimeout(run, 200);
+    } else {
+        window.addEventListener('load', function() { setTimeout(run, 200); });
+    }
+})();
+</script>
+@endif
+
 {{-- Include Drawer --}}
 @include('production.registration.partials.offcanvas_drawer')
 
@@ -1257,7 +1333,7 @@
                     .then(data => {
                         document.getElementById('dayAppointmentsContent').innerHTML = data.html;
                         this.isLoading = false;
-                        this.searchQuery = ''; // Reset search query when changing dates
+                        this.searchQuery = '';
                     })
                     .catch(() => {
                         this.isLoading = false;
@@ -2863,71 +2939,10 @@
         });
     }
 
-        // --- Restore UI State on Load (After Reload) ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const restoreEmployerId = sessionStorage.getItem('registration_restore_employer_id') || urlParams.get('highlight_employer_id');
-        const restoreEmployeeId = sessionStorage.getItem('registration_restore_employee_id') || urlParams.get('highlight_employee_id');
-
-        if (restoreEmployerId) {
-            sessionStorage.removeItem('registration_restore_employer_id'); // Clear immediately
-            const collapseEl = document.getElementById(`collapse${restoreEmployerId}`);
-            const employerHeading = document.getElementById(`heading${restoreEmployerId}`);
-
-            if (collapseEl && employerHeading) {
-                // Scroll to Employer
-                setTimeout(() => {
-                    employerHeading.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 100);
-
-                // Check if collapsed
-                if (!collapseEl.classList.contains('show')) {
-                    // Trigger click on the button
-                    const btn = employerHeading.querySelector('button[data-bs-toggle="collapse"]');
-                    if(btn) btn.click();
-                }
-
-                // If we also have an employee to scroll to
-                if (restoreEmployeeId) {
-                    sessionStorage.removeItem('registration_restore_employee_id');
-
-                    const highlightTarget = (card) => {
-                        setTimeout(() => {
-                             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                             card.classList.add('filter-active'); // Use filter-active for stronger highlight
-                             setTimeout(() => {
-                                 card.classList.remove('filter-active');
-                             }, 5000);
-                        }, 500);
-                    };
-
-                    // Wait for Item to Load
-                    const observer = new MutationObserver(function(mutations, obs) {
-                        let targetCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
-                        if (targetCard) {
-                            highlightTarget(targetCard);
-                            obs.disconnect();
-                        }
-                    });
-
-                    // Start observing the content wrapper
-                    const contentWrapper = document.getElementById(`employee-list-${restoreEmployerId}`);
-                    if (contentWrapper) {
-                        observer.observe(contentWrapper, { childList: true, subtree: true });
-
-                        // Fallback check
-                        setTimeout(() => {
-                             let targetCard = document.getElementById(`employee-card-${restoreEmployeeId}`);
-                             if(targetCard) {
-                                 highlightTarget(targetCard);
-                                 observer.disconnect();
-                             }
-                        }, 2000); // Wait up to 2s
-                    }
-                }
-            }
-        }
+        // GPS Navigate logic ถูกย้ายไปอยู่ใน handler แยก ด้านล่าง
     });
 </script>
+
 @endpush
 
 <script>

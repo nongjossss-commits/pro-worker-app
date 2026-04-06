@@ -847,7 +847,7 @@ class="row">
 
     <!-- Add Transaction Modal -->
     <div class="modal fade" :id="'addTransactionModal-' + productionId" tabindex="-1" x-ref="addModal">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">Add Installment</h6>
@@ -937,7 +937,7 @@ class="row">
                                                                 <span class="badge bg-success rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Visa') }}</span>
                                                             </template>
                                                             <template x-if="!item.has_visa">
-                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
+                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Not Visa') }}</span>
                                                             </template>
                                                             <!-- Last Step Badge -->
                                                             <template x-if="item.last_step_name">
@@ -1245,7 +1245,7 @@ class="row">
                                                                 <span class="badge bg-success rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Visa') }}</span>
                                                             </template>
                                                             <template x-if="!item.has_visa">
-                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('None') }}</span>
+                                                                <span class="badge bg-secondary rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Not Visa') }}</span>
                                                             </template>
                                                             <!-- Last Step Badge -->
                                                             <template x-if="item.last_step_name">

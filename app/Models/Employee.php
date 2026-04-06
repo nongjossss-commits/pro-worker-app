@@ -325,7 +325,7 @@ class Employee extends Model
                     'is_pre_production' => false,
                     'is_registration' => true,
                     'is_renewal' => false,
-                    'url' => route('production.registration.index', [
+                    'url' => route('production.registration.operations', [
                         'highlight_employer_id' => $this->employer_id,
                         'highlight_employee_id' => $this->id
                     ]),
@@ -342,7 +342,7 @@ class Employee extends Model
                     'is_pre_production' => false,
                     'is_registration' => false,
                     'is_renewal' => true,
-                    'url' => route('production.renewal.index', [
+                    'url' => route('production.renewal.operations', [
                         'highlight_employer_id' => $this->employer_id,
                         'highlight_employee_id' => $this->id
                     ]),

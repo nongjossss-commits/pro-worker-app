@@ -169,8 +169,14 @@
 
                     {{-- Info --}}
                     <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                              <div class="fw-bold text-dark">{{ $empNameEn }}</div>
+                             {{-- Employee Preview Button --}}
+                             @if($empId)
+                             <button class="btn btn-sm btn-link p-0 btn-preview" style="text-decoration: none; line-height: 1;" data-model-type="employee" data-model-id="{{ $empId }}" title="{{ __('Preview Employee') }}">
+                                 <i class="bi bi-search text-info"></i>
+                             </button>
+                             @endif
                              {{-- Resolution Badge --}}
                              @if($mouGroup !== 'N/A')
                                 <span class="badge rounded-pill {{ $mouBadgeClass }} small" style="font-size: 0.65rem;">{{ $mouGroup }}</span>
@@ -193,7 +199,7 @@
                                 data-model-type="employer"
                                 data-model-id="{{ $order->employer_id }}"
                                 title="Preview Employer">
-                                 <i class="bi bi-eye-fill"></i>
+                                 <i class="bi bi-search"></i>
                              </button>
                         </div>
                         @endif
@@ -715,13 +721,6 @@
                         </button>
                     @endif
                 @endif
-
-                 <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
-                    data-model-type="employee"
-                    data-model-id="{{ $empId ?? 0 }}"
-                    title="Preview">
-                    <i class="bi bi-eye-fill"></i>
-                </button>
 
                 @if(!$isReadOnly)
                     {{-- Manage Team --}}

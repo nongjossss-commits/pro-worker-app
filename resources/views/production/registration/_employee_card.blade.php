@@ -176,9 +176,13 @@
 
                     {{-- Info --}}
                     <div>
-                        <div class="fw-bold text-dark">
+                        <div class="fw-bold text-dark d-flex align-items-center gap-1 flex-wrap">
                              {{-- English Name + Title --}}
-                            {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? '-' }}
+                            <span>{{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? '-' }}</span>
+                            {{-- Employee Preview Button --}}
+                            <button class="btn btn-sm btn-link p-0 btn-preview" style="text-decoration: none; line-height: 1;" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('Preview Employee') }}">
+                                <i class="bi bi-search text-info"></i>
+                            </button>
                         </div>
                         <div class="text-muted small">
                             {{-- Thai Name + Title --}}
@@ -869,7 +873,7 @@
 
                     <button x-show="dailyCheckEnabled && isPending"
                         @click="checkDaily()"
-                        class="btn btn-warning btn-sm ms-2 rounded-circle animate__animated animate__pulse animate__infinite"
+                        class="btn btn-warning btn-sm ms-2 rounded-circle cal-badge-pulse"
                         style="width: 30px; height: 30px; padding: 0;"
                         :disabled="checking"
                         title="Mark as Checked Today">
@@ -902,14 +906,6 @@
                      </button>
                  </div>
                  @endcan
-
-                 {{-- Preview Button (Universal) --}}
-                 <button class="btn btn-sm btn-outline-info btn-preview rounded-pill px-3"
-                    data-model-type="employee"
-                    data-model-id="{{ $employee->id }}"
-                    title="Preview">
-                    <i class="bi bi-eye-fill"></i>
-                </button>
 
                  @can('edit-employees')
                  {{-- Inline Drawer Toggle --}}

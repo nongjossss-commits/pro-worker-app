@@ -86,13 +86,15 @@
              </div>
         </div>
     @endif
-    <div class="card-body d-flex align-items-center">
-        <div class="me-3">
+    {{-- d-flex align-items-center: desktop | flex-wrap ให้ CSS responsive จัดการบน mobile --}}
+    <div class="card-body d-flex align-items-center" style="row-gap: 0.25rem;">
+        <div class="me-3 flex-shrink-0">
             <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}" data-name-th="{{ $employee->employeeNameTh }}" data-name-en="{{ $employee->employeeNameEn }}" data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}" data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
         </div>
 
-        <div class="position-relative" style="margin-right: 1rem;">
+        <div class="position-relative flex-shrink-0" style="margin-right: 1rem;">
             <img src="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}"
+                loading="lazy"
                 alt="Photo" class="employee-photo-thumb" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%;">
             @if(isset($employee->financialStatus))
                 @if($employee->financialStatus === 'paid')

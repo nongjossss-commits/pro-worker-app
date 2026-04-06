@@ -249,7 +249,7 @@ class ProductionDocumentController extends Controller
 
     public function showPaymentDocument($id, $paymentId, $type, Request $request)
     {
-        $production = ProductionOrder::with(['employer', 'items.employee', 'financialGroups', 'financialAdvances'])->findOrFail($id);
+        $production = ProductionOrder::with(['employer', 'items.employee', 'financialGroups'])->findOrFail($id);
 
         // Fetch the specific payment
         $payment = \App\Models\FinancialPayment::with('transaction')->findOrFail($paymentId);

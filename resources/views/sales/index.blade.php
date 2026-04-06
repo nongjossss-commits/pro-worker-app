@@ -89,6 +89,14 @@
 <style>
     .kanban-board {
         height: 80vh;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+    }
+    /* บังคับ 3 ช่องเรียงต่อกันเสมอ ไม่ตกลงด้านล่าง */
+    .kanban-board > .col-md-4 {
+        flex: 1 0 350px;
+        max-width: none;
+        width: auto;
     }
     .kanban-column {
         min-height: 200px;

@@ -2,6 +2,21 @@
 
 @section('title', 'Workflow Dashboard')
 
+@push('styles')
+<style>
+/* ภาพเคลื่อนไหวตัวเลขในปฏิทิน — ใช้ transform เพื่อให้ GPU รับผิดชอบแทน CPU */
+@keyframes calBadgePulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.25); }
+}
+.cal-badge-pulse {
+    display: inline-block;
+    animation: calBadgePulse 2s ease-in-out infinite;
+    will-change: transform;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid py-4">
     {{-- Scoreboard (Global Stats) --}}
@@ -158,36 +173,26 @@
                             >
                                 <span class="small" x-text="day.dayNum"></span>
                                 <template x-if="counts[day.dateStr]">
-                                    <span class="badge bg-danger rounded-pill shadow-sm animate__animated animate__pulse animate__infinite" x-text="counts[day.dateStr]" style="font-size: 0.9rem;"></span>
+                                    <span class="badge bg-danger rounded-pill shadow-sm cal-badge-pulse" x-text="counts[day.dateStr]" style="font-size: 0.9rem;"></span>
                                 </template>
                             </div>
                         </template>
                     </div>
                 </div>
 
-                {{-- Day Details Modal (Updated for Full Cards) --}}
+                {{-- Day Details Modal --}}
                 <div class="modal fade" id="dayDetailsModal" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+                    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: 1100px;">
                         <div class="modal-content">
-                            <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title">{{ __('Appointments for') }} <span x-text="selectedDateFormatted"></span></h5>
+                            <div class="modal-header bg-primary text-white py-2">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-calendar-event me-2"></i>{{ __('Appointments for') }}
+                                    <span x-text="selectedDateFormatted"></span>
+                                </h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
-
-                            {{-- Toolbar --}}
-                            <div class="modal-body p-0 border-bottom">
-                                <div class="bg-light p-3 d-flex justify-content-between align-items-center sticky-top border-bottom">
-                                    <div class="form-check ms-1">
-                                        <input class="form-check-input" type="checkbox" id="selectAllDay" @change="toggleSelectAll($el.checked)">
-                                        <label class="form-check-label fw-bold" for="selectAllDay">{{ __('Select All') }}</label>
-                                    </div>
-                                    <button class="btn btn-success" @click="exportSelected()">
-                                        <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> {{ __('Export / Download') }}
-                                    </button>
-                                </div>
-                                <div id="dayAppointmentsContent" class="p-3 bg-light" style="min-height: 200px;">
-                                     {{-- Rendered Content Injected Here --}}
-                                </div>
+                            <div class="modal-body p-0" id="dayAppointmentsContent" style="min-height: 300px;">
+                                {{-- Injected by openDayModal() --}}
                             </div>
                         </div>
                     </div>
@@ -228,16 +233,15 @@
         </div>
     </div>
 
-    {{-- Hidden Form for Export --}}
-    <form id="exportForm" action="{{ route('workflow.appointments.export') }}" method="POST" target="_blank" class="d-none">
-        @csrf
-        <div id="exportIdsContainer"></div>
-    </form>
 
 </div>
 
 {{-- Create Job Modal --}}
 @include('workflow.partials.create_modal')
+
+{{-- Bulk Action Modals (required for Advanced Export & Download) --}}
+@include('employees.modals.advanced_export')
+@include('components.download-modals')
 
 {{-- Edit Employee Modal (Full Form) --}}
 <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -403,54 +407,27 @@
                 this.selectedDateFormatted = moment(dateStr).format('D MMM YYYY');
 
                 const container = document.getElementById('dayAppointmentsContent');
-                container.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>';
+                container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
 
-                // Reset Select All
-                document.getElementById('selectAllDay').checked = false;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('dayDetailsModal')).show();
 
-                new bootstrap.Modal(document.getElementById('dayDetailsModal')).show();
-
-                // Fetch rendered HTML
                 fetch(`/workflow/api/appointments-by-date?date=${dateStr}`)
                     .then(res => res.json())
                     .then(data => {
                         container.innerHTML = data.html;
-                        // Re-initialize Alpine components in the injected HTML
-                        if(window.Alpine) {
-                             Alpine.initTree(container);
-                        }
+                        // Re-execute injected <script> tags
+                        container.querySelectorAll('script').forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            newScript.textContent = oldScript.textContent;
+                            document.body.appendChild(newScript);
+                            document.body.removeChild(newScript);
+                        });
+                        // Sync global selection checkboxes
+                        if (window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
+                    })
+                    .catch(() => {
+                        container.innerHTML = '<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle fs-1"></i><p class="mt-2">{{ __("Failed to load appointments.") }}</p></div>';
                     });
-            },
-
-            toggleSelectAll(checked) {
-                const container = document.getElementById('dayAppointmentsContent');
-                const checkboxes = container.querySelectorAll('.item-checkbox');
-                checkboxes.forEach(cb => cb.checked = checked);
-            },
-
-            exportSelected() {
-                const container = document.getElementById('dayAppointmentsContent');
-                const checkboxes = container.querySelectorAll('.item-checkbox:checked');
-
-                if(checkboxes.length === 0) {
-                    Swal.fire('{{ __('No Items Selected') }}', '{{ __('Please select at least one item to export.') }}', 'warning');
-                    return;
-                }
-
-                const ids = Array.from(checkboxes).map(cb => cb.value);
-                const form = document.getElementById('exportForm');
-                const containerInput = document.getElementById('exportIdsContainer');
-                containerInput.innerHTML = '';
-
-                ids.forEach(id => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'ids[]';
-                    input.value = id;
-                    containerInput.appendChild(input);
-                });
-
-                form.submit();
             }
         }
     }

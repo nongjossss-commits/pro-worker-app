@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid py-4" x-data="calendarApp()">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -16,14 +16,16 @@
     </div>
 
     <!-- Layout with Upcoming Appointments -->
-    <div class="row g-4 mb-4">
+    {{-- align-items-start: ให้แต่ละคอลัมน์สูงตามเนื้อหาของตัวเอง ไม่ยืดตามกัน --}}
+    <div class="row g-4 mb-4 align-items-start">
         <!-- Left Column: Upcoming Appointments -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
+            {{-- max-height + overflow-y: ถ้ารายการเยอะให้เลื่อนดูแทนการยืดยาว --}}
+            <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-event me-2"></i>{{ __('Upcoming Appointments (Short Term)') }}</h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0" style="max-height: 370px; overflow-y: auto;">
                     @if(isset($upcomingAppointments) && $upcomingAppointments->isEmpty())
                         <div class="text-center py-5 text-muted">
                             <i class="bi bi-calendar-check fs-1 opacity-25"></i>
@@ -92,10 +94,11 @@
             </div>
         </div>
 
-        <!-- Right Column: Monthly Calendar -->
+        <!-- Right Column: Monthly Calendar + Appointments -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100" x-data="calendarApp()">
-                <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
+            {{-- ปฏิทินมีความสูงคงที่ ไม่ขึ้นกับรายการฝั่งซ้าย --}}
+            <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-month me-2"></i>{{ __('Monthly Overview') }}</h5>
                         <div class="d-flex align-items-center gap-2">
@@ -104,15 +107,16 @@
                             <button class="btn btn-sm btn-light border" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
                         </div>
                     </div>
-                    <div class="card-body p-3 flex-grow-1 d-flex flex-column">
+                    <div class="card-body p-3">
                         <!-- Calendar Grid -->
                         <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
                             <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                         </div>
-                        <div class="d-grid flex-grow-1" style="grid-template-columns: repeat(7, 1fr); gap: 5px; min-height: 0;">
+                        {{-- grid-template-rows: กำหนดความสูงแต่ละแถวให้คงที่ 55px --}}
+                        <div class="d-grid" style="grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(6, 55px); gap: 5px;">
                             <template x-for="day in days" :key="day.dateStr">
                                 <div
-                                    class="border rounded p-2 d-flex flex-column align-items-center justify-content-between position-relative cursor-pointer transition-all h-100"
+                                    class="border rounded p-1 d-flex flex-column align-items-center justify-content-between position-relative cursor-pointer transition-all"
                                     :class="{
                                         'bg-light text-muted': !day.isCurrentMonth,
                                         'bg-white': day.isCurrentMonth,
@@ -133,35 +137,31 @@
                 </div>
             </div>
 
-            <!-- Right Column: Appointments List -->
-            <div class="col-lg-7 col-xl-8 h-100 d-flex flex-column">
-                <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
-                    <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                        <h5 class="fw-bold text-primary mb-0">
-                            <i class="bi bi-list-check me-2"></i>{{ __('Appointments for') }}: <span class="text-dark" x-text="selectedDateFormatted"></span>
-                        </h5>
+        </div>
+    </div>
 
-                        <div class="input-group" style="max-width: 300px;">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" class="form-control border-start-0 bg-light" placeholder="{{ __('Search names, employer...') }}" x-model="searchQuery">
-                        </div>
+    {{-- Appointments Panel (full width, below calendar row) --}}
+    <div id="appt-panel-wrapper">
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-primary mb-0">
+                    <i class="bi bi-list-check me-2"></i>{{ __('Appointments for') }}:
+                    <span class="text-dark" x-text="selectedDateFormatted || '{{ __('Select a date') }}'"></span>
+                </h5>
+                <span class="badge bg-light text-muted border" x-show="!appointmentsLoaded">
+                    <i class="bi bi-arrow-up-left me-1"></i>{{ __('Click a date on the calendar above') }}
+                </span>
+            </div>
+            <div class="card-body bg-light position-relative p-3" style="min-height: 200px;">
+                <div x-show="isLoading" class="position-absolute w-100 h-100 bg-white bg-opacity-75 top-0 start-0" style="z-index: 10;">
+                    <div class="w-100 h-100 d-flex justify-content-center align-items-center">
+                        <div class="spinner-border text-primary" role="status"></div>
                     </div>
-                    <div class="card-body p-0 overflow-auto bg-light position-relative custom-scrollbar" style="min-height: 500px;">
-
-                        <div x-show="isLoading" class="position-absolute w-100 h-100 bg-white bg-opacity-75" style="z-index: 10;">
-                            <div class="w-100 h-100 d-flex justify-content-center align-items-center">
-                                <div class="spinner-border text-primary" role="status"></div>
-                            </div>
-                        </div>
-
-                        <div id="dayAppointmentsContent" class="p-3">
-                            <!-- Content loaded via AJAX will go here -->
-                            <div x-show="!isLoading && (!appointmentsLoaded || Object.keys(counts).length === 0)" class="text-center py-5 text-muted">
-                                <i class="bi bi-calendar-x fs-1 opacity-25" style="font-size: 4rem;"></i>
-                                <p class="mt-3 fs-5">{{ __('Select a date to view appointments.') }}</p>
-                            </div>
-                        </div>
-
+                </div>
+                <div id="dayAppointmentsContent">
+                    <div x-show="!isLoading && !appointmentsLoaded" class="text-center py-5 text-muted">
+                        <i class="bi bi-calendar-event fs-1 opacity-25"></i>
+                        <p class="mt-2">{{ __('Select a date to view appointments.') }}</p>
                     </div>
                 </div>
             </div>
@@ -169,29 +169,14 @@
     </div>
 </div>
 
+@include('employees.modals.advanced_export')
+@include('components.download-modals')
+
 @endsection
 
 @push('scripts')
 <script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('appointmentSearch', () => ({
-            searchQuery: '',
-            matchesSearch(el) {
-                if (!this.searchQuery) return true;
-
-                const query = this.searchQuery.toLowerCase();
-                const nameTh = el.dataset.employeeNameTh || '';
-                const nameEn = el.dataset.employeeNameEn || '';
-                const employerName = el.dataset.employerName || '';
-                const reference = el.dataset.reference || '';
-
-                return nameTh.includes(query) ||
-                       nameEn.includes(query) ||
-                       employerName.includes(query) ||
-                       reference.includes(query);
-            }
-        }));
-    });
+    // appointmentSearch handled inside injected partial
 
     function calendarApp() {
         return {
@@ -323,9 +308,17 @@
                 fetch(`{{ route('production.renewal.api.appointments_by_date') }}?date=${dateStr}`)
                     .then(res => res.json())
                     .then(data => {
-                        document.getElementById('dayAppointmentsContent').innerHTML = data.html;
+                        const apptContainer = document.getElementById('dayAppointmentsContent');
+                        apptContainer.innerHTML = data.html;
+                        // Execute <script> tags injected via innerHTML (browser blocks them by default)
+                        apptContainer.querySelectorAll('script').forEach(oldScript => {
+                            const newScript = document.createElement('script');
+                            newScript.textContent = oldScript.textContent;
+                            document.body.appendChild(newScript);
+                            document.body.removeChild(newScript);
+                        });
                         this.isLoading = false;
-                        this.searchQuery = ''; // Reset search query when changing dates
+                        this.searchQuery = '';
                     })
                     .catch(() => {
                         this.isLoading = false;

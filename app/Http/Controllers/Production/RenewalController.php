@@ -262,6 +262,19 @@ class RenewalController extends Controller
         $perPage = $request->input('per_page', 20);
         $perPage = in_array((int)$perPage, [20, 25, 50, 100]) ? (int)$perPage : 20;
 
+        // Auto-navigate: redirect ไปยังหน้าที่ถูกต้องเมื่อ highlight_employer_id อยู่คนละหน้า
+        if ($request->filled('highlight_employer_id') && !$request->filled('page')) {
+            $highlightId = (int) $request->input('highlight_employer_id');
+            $allIds = (clone $employerQuery)->pluck('employers.id')->toArray();
+            $position = array_search($highlightId, $allIds);
+            if ($position !== false) {
+                $targetPage = (int) ceil(($position + 1) / $perPage);
+                if ($targetPage > 1) {
+                    return redirect()->to($request->fullUrlWithQuery(['page' => $targetPage]));
+                }
+            }
+        }
+
         $employers = $employerQuery->paginate($perPage)->withQueryString();
 
         $cancelledEmployersQuery = Employer::whereHas('productionOrders', function($q) {
@@ -1273,9 +1286,9 @@ class RenewalController extends Controller
         }
 
         $employees = $query->whereDate('appointment_date', $date)
-
-            ->whereNull('appointment_completed_at') // Exclude completed
+            ->whereNull('appointment_completed_at')
             ->with(['employer'])
+            ->orderBy('appointment_date')
             ->get();
 
         $steps = RegistrationStep::renewal()->orderBy('order')->get();

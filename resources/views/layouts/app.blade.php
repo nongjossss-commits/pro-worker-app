@@ -248,6 +248,464 @@
         .form-check-input {
             border: 2px solid #0d6efd !important;
         }
+
+        /* ─── Pulse animation (GPU-accelerated, replaces animate__pulse) ─── */
+        @keyframes calBadgePulse {
+            0%, 100% { transform: scale(1); }
+            50%       { transform: scale(1.25); }
+        }
+        .cal-badge-pulse {
+            display: inline-block;
+            animation: calBadgePulse 2s ease-in-out infinite;
+            will-change: transform;
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           Responsive — Mobile & Tablet
+           รองรับการแสดงผลบนมือถือและแท็บเล็ตทุกขนาด
+           ปรับปรุง: 2026 | ยึดหลักนี้สำหรับฟีเจอร์ใหม่ทุกชิ้น
+           ═══════════════════════════════════════════════════════════ */
+
+        /* ─── ป้องกัน horizontal scroll ทั้งหน้า ─── */
+        @media (max-width: 767.98px) {
+            body, .main-layout { overflow-x: hidden; }
+            #main-content { max-width: 100%; overflow-x: hidden; }
+        }
+
+        /* ─── Main content: ลด padding บนมือถือขนาดเล็ก ─── */
+        @media (max-width: 575.98px) {
+            #main-content { padding: 0.6rem; }
+        }
+
+        /* ─── Typography: ตัวอักษรเล็กลงบนมือถือ ─── */
+        @media (max-width: 575.98px) {
+            h1, h2, .h1, .h2 { font-size: 1.25rem !important; }
+            h3, .h3           { font-size: 1.1rem  !important; }
+            .display-4        { font-size: 2rem    !important; }
+            .fs-5             { font-size: 1rem    !important; }
+        }
+
+        /* ─── Employee Card (partials/_employee_card): mobile layout ─── */
+        /* บัตรลูกจ้างบน mobile: ปุ่มจะย้ายไปอยู่แถวใหม่ใต้ข้อมูล */
+        @media (max-width: 767.98px) {
+            .employee-card .card-body {
+                flex-wrap: wrap;
+                align-items: flex-start !important;
+                gap: 0.25rem;
+            }
+            .employee-card .employee-info {
+                flex: 1 1 0;
+                min-width: 0;
+                font-size: 0.85rem;
+            }
+            .employee-card .employee-info .employee-name-en {
+                font-size: 0.9rem;
+                font-weight: 600;
+                display: block;
+                word-break: break-word;
+            }
+            .employee-card .employee-info .employer-name { font-size: 0.78rem; }
+            .employee-card .employee-info .document-details { font-size: 0.72rem; line-height: 1.45; }
+            /* ทีม tag: เปลี่ยนจาก position-absolute เป็น relative บน mobile */
+            .employee-card .employee-info > .position-absolute {
+                position: relative !important;
+                top: auto !important; right: auto !important;
+                max-width: 100%; margin-bottom: 0.25rem;
+                flex-wrap: wrap;
+            }
+            /* ปุ่ม action: ย้ายมาแถวใหม่ชิดขวา + ลอยเหนือ overlay */
+            .employee-card .employee-actions {
+                width: 100%;
+                margin-top: 0.25rem;
+                display: flex !important;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+                gap: 0.3rem !important;
+                padding-left: 3.5rem; /* เยื้องผ่านรูปภาพ */
+                position: relative;   /* สร้าง stacking context */
+                z-index: 15;          /* เหนือ overlay (z-index: 10) */
+            }
+            .employee-card .employee-actions .btn { padding: 0.2rem 0.45rem; font-size: 0.78rem; }
+
+            /* overlay badge: ย้ายไปด้านล่างการ์ด ไม่บดบังชื่อลูกจ้าง ไม่บดบังปุ่ม action */
+            .employee-card .position-absolute.top-0.start-0.w-100.h-100 {
+                align-items: flex-end !important;
+                padding-bottom: 3rem;  /* เว้นพื้นที่ให้แถวปุ่ม action */
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            /* overlay badge text: เล็กลงบน mobile */
+            .employee-card .position-absolute.top-0.start-0.w-100.h-100 a.badge {
+                font-size: 0.72rem !important;
+                padding: 0.25em 0.5em !important;
+                max-width: 85% !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        /* ─── Modal: ขยายเต็มจอบน mobile ─── */
+        @media (max-width: 767.98px) {
+            .modal-dialog.modal-xl,
+            .modal-dialog.modal-lg { margin: 0.4rem; max-width: calc(100vw - 0.8rem); }
+            .modal-xl .modal-body, .modal-lg .modal-body { padding: 0.6rem; }
+        }
+        @media (max-width: 575.98px) {
+            .modal-dialog { margin: 0.25rem; max-width: calc(100vw - 0.5rem); }
+        }
+
+        /* ─── Bulk Action Bar: ปรับขนาดบน mobile ─── */
+        @media (max-width: 767.98px) {
+            #bulkActionBar {
+                width: calc(100vw - 1.5rem) !important;
+                min-width: unset !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                flex-wrap: wrap;
+                gap: 0.4rem !important;
+                padding: 0.5rem 0.75rem !important;
+            }
+        }
+
+        /* ─── Workflow Appointment Popup Cards: mobile ─── */
+        @media (max-width: 575.98px) {
+            /* Toolbar: wrap ปุ่มลงบรรทัดใหม่ */
+            #wf-appt-toolbar {
+                flex-wrap: wrap !important;
+                gap: 0.3rem !important;
+                padding: 0.5rem !important;
+            }
+            #wf-appt-toolbar .btn { font-size: 0.78rem; padding: 0.25rem 0.5rem; }
+            #wf-appt-toolbar .input-group { flex: 1 1 100% !important; min-width: 0 !important; }
+
+            /* การ์ดนัดหมาย: ปุ่มย้ายมาแถวใหม่ */
+            .wf-appt-card-item .card-body { padding: 0.5rem 0.6rem 0.5rem 1.2rem !important; }
+            .wf-appt-card-item .d-flex.align-items-start.gap-3 { flex-wrap: wrap; gap: 0.4rem !important; }
+            .wf-appt-card-item .flex-grow-1 { min-width: 0; font-size: 0.82rem; }
+            /* ปุ่มขวาของการ์ด → เปลี่ยนเป็นแถวแนวนอน */
+            .wf-appt-card-item .flex-shrink-0.d-flex.flex-column.gap-2.align-items-end {
+                width: 100%;
+                flex-direction: row !important;
+                justify-content: flex-end;
+                flex-wrap: wrap;
+                gap: 0.3rem !important;
+                margin-top: 0.25rem;
+            }
+            .wf-appt-card-item .btn { font-size: 0.78rem; padding: 0.2rem 0.5rem; }
+        }
+
+        /* ─── Production / Workflow Index: Employer Card Header ─── */
+        @media (max-width: 991.98px) {
+            .production-order-card .card-header .row.align-items-xl-center { gap: 0.5rem; }
+            /* ปุ่ม action ด้านขวา: wrap บน tablet/mobile */
+            .production-order-card .card-header .col-12.col-xl { text-align: left !important; }
+            .production-order-card .card-header .d-flex.align-items-center.justify-content-xl-end {
+                justify-content: flex-start !important;
+                flex-wrap: wrap;
+            }
+            /* Stats badges container: wrap ได้บน tablet/mobile */
+            .production-order-card .card-header .d-flex.align-items-center.gap-2.me-xl-3 {
+                flex-wrap: wrap;
+            }
+            /* แต่ละ badge: ลด min-width ให้หดได้ */
+            .production-order-card .card-header [style*="min-width: 8"],
+            .production-order-card .card-header [style*="min-width: 9"] {
+                min-width: 60px !important;
+                padding-left: 0.4rem !important;
+                padding-right: 0.4rem !important;
+            }
+        }
+        @media (max-width: 575.98px) {
+            .production-order-card .card-header { padding: 0.6rem 0.75rem; }
+            .production-order-card .card-header h5 { font-size: 0.95rem; }
+            /* ลำดับที่ด้านซ้าย: เล็กลง */
+            .employer-sequence-number { font-size: 1.8rem !important; min-width: 36px !important; }
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           Workflow Item Cards + Registration/Renewal Operations Cards
+           — Mobile & Tablet Layout Fix (< 1200px) —
+           Root cause: ข้อมูลส่วนต่างๆ (appointment, credentials, remarks)
+           อยู่ใน d-flex ไม่มี flex-wrap → ล้นหน้าจอบน mobile/tablet
+           ═══════════════════════════════════════════════════════════ */
+
+        /* ── ใช้กับทั้ง mobile + tablet (< 1200px) ── */
+        @media (max-width: 1199.98px) {
+
+            /* 1. container หลักที่เก็บทุกส่วน: ให้ wrap ได้ */
+            .item-card-outer .card-body .d-flex.w-100,
+            .employee-card-wrapper .card-body .d-flex.w-100 {
+                flex-wrap: wrap !important;
+                align-items: flex-start !important;
+            }
+
+            /* 2. ส่วน appointment / credentials / remarks:
+                  ให้แต่ละส่วนขึ้นบรรทัดใหม่ (full width ภายใน container) */
+            .item-card-outer .ms-md-4,
+            .item-card-outer .ms-md-2,
+            .employee-card-wrapper .ms-md-2,
+            .employee-card-wrapper .ms-md-4 {
+                flex-basis: 100% !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                margin-left: 0 !important;
+            }
+
+            /* 3. panels ที่มี min-width inline (เฉพาะใน .card): ให้หดได้ */
+            .item-card-outer .card [style*="min-width:"],
+            .employee-card-wrapper .card [style*="min-width:"] {
+                min-width: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            /* 4. step pills: wrap ได้ */
+            [id^="steps-container-"] .d-flex { flex-wrap: wrap; gap: 0.25rem !important; }
+
+            /* 5. floating edit popup: ป้องกันหลุดขอบจอ */
+            .item-card-outer .position-absolute[style*="z-index: 1060"],
+            .employee-card-wrapper .position-absolute[style*="z-index: 1060"] {
+                position: fixed !important;
+                left: 0.5rem !important;
+                right: 0.5rem !important;
+                min-width: 0 !important;
+                max-width: calc(100vw - 1rem) !important;
+            }
+        }
+
+        /* ── เฉพาะ tablet: ปรับ layout action buttons + info ── */
+        @media (min-width: 768px) and (max-width: 1199.98px) {
+            /* action buttons column: ไม่เล็กเกินไปบน tablet */
+            .item-card-outer .d-flex.gap-2.flex-wrap.justify-content-end.align-items-center,
+            .employee-card-wrapper .d-flex.gap-2.flex-wrap.justify-content-end {
+                justify-content: flex-start !important;
+                margin-top: 0.5rem;
+            }
+            /* step pills: เล็กลงนิดหน่อยบน tablet */
+            [id^="steps-container-"] .btn.btn-sm { font-size: 0.75rem !important; padding: 0.2rem 0.5rem !important; }
+            /* ปุ่มกลุ่ม: wrap ได้ */
+            .item-card-outer .d-flex.gap-1,
+            .employee-card-wrapper .d-flex.gap-1 { flex-wrap: wrap; }
+        }
+
+        /* ── เฉพาะ mobile (< 768px): ลดขนาดเพิ่มเติม ── */
+        @media (max-width: 767.98px) {
+            /* ลด padding การ์ด */
+            .item-card-outer .card-body,
+            .employee-card-wrapper .card-body { padding: 0.6rem 0.75rem !important; }
+
+            /* sequence number: เล็กลง */
+            .item-sequence-number,
+            .employee-card-outer > .employee-sequence-number {
+                min-width: 20px !important;
+                font-size: 1rem !important;
+            }
+
+            /* ปุ่ม action: เล็กลงบน mobile */
+            .item-card-outer .btn,
+            .employee-card-wrapper .btn { font-size: 0.78rem; padding: 0.25rem 0.5rem; }
+            .item-card-outer .btn-group .btn,
+            .employee-card-wrapper .btn-group .btn { font-size: 0.78rem; padding: 0.25rem 0.5rem; }
+
+            /* step pills: เล็กลง */
+            [id^="steps-container-"] .btn.btn-sm {
+                font-size: 0.72rem !important;
+                padding: 0.2rem 0.5rem !important;
+            }
+
+            /* ปุ่มกลุ่มย่อย: wrap ได้ */
+            .item-card-outer .d-flex.gap-1,
+            .employee-card-wrapper .d-flex.gap-1 { flex-wrap: wrap; }
+
+            /* badge text: เล็กลง */
+            .item-card-outer .badge,
+            .employee-card-wrapper .badge { font-size: 0.7rem; }
+        }
+
+        /* ─── Scoreboard Cards: 2 คอลัมน์บน mobile ─── */
+        @media (max-width: 575.98px) {
+            .row-cols-1.row-cols-md-3.row-cols-xl-5 > *,
+            .row-cols-1.row-cols-md-3.row-cols-xl-6 > * { flex: 0 0 50%; max-width: 50%; }
+        }
+
+        /* ─── Input groups & filters: full width บน mobile ─── */
+        @media (max-width: 575.98px) {
+            .input-group { min-width: 0 !important; width: 100% !important; }
+            /* ช่องค้นหาใน header */
+            form .input-group[style*="max-width"] { max-width: 100% !important; }
+        }
+
+        /* ─── Navigation Tabs: scroll ─── */
+        .nav.nav-pills.overflow-auto { scrollbar-width: thin; }
+        .nav.nav-pills.overflow-auto::-webkit-scrollbar { height: 4px; }
+        .nav.nav-pills.overflow-auto::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+        /* ─── Sticky toolbar (production operations): mobile ─── */
+        @media (max-width: 575.98px) {
+            .sticky-top.bg-white.border-bottom { flex-wrap: wrap; gap: 0.3rem; padding: 0.4rem !important; }
+        }
+
+        /* ─── Workflow Kanban Board: horizontal scroll บน mobile ─── */
+        @media (max-width: 767.98px) {
+            /* ถ้าหน้า workflow มี container แนวนอน ให้ scroll ได้ */
+            .kanban-board, [class*="kanban"] {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* ─── Tables: เพิ่ม horizontal scroll อัตโนมัติ ─── */
+        @media (max-width: 767.98px) {
+            .table-responsive { -webkit-overflow-scrolling: touch; }
+        }
+
+        /* ─── Button groups in cards: wrap ─── */
+        @media (max-width: 575.98px) {
+            .d-flex.gap-2.flex-wrap { gap: 0.35rem !important; }
+            .btn-group .btn, .d-flex.gap-2 .btn { white-space: nowrap; }
+        }
+
+        /* ─── Finance Modal: scroll on mobile ─── */
+        @media (max-width: 767.98px) {
+            [id^="finance-modal-body-"] { overflow-x: auto; }
+        }
+
+        /* ─── Overlay badges บน employee card: แท็บเล็ต (768-1199px) ย้ายลงด้านล่าง ─── */
+        @media (min-width: 768px) and (max-width: 1199.98px) {
+            .employee-card .position-absolute.top-0.start-0.w-100.h-100 {
+                align-items: flex-end !important;
+                padding-bottom: 0.75rem;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            .employee-card .position-absolute.top-0.start-0.w-100.h-100 a.badge {
+                font-size: 0.78rem !important;
+                max-width: 90% !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        /* ─── Overlay badges บน employee card: เล็กลงบน mobile เล็ก ─── */
+        @media (max-width: 575.98px) {
+            .employee-card .position-absolute.top-0.start-0.w-100.h-100 a.badge {
+                font-size: 0.72rem !important;
+                padding: 0.3em 0.5em !important;
+                max-width: 95% !important;
+            }
+        }
+
+        /* ─── Highlight animation เมื่อนำทาง GPS ไปยังการ์ดลูกจ้าง ─── */
+        @keyframes highlightNavigatePulse {
+            0%   { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.8); background-color: rgba(59, 130, 246, 0.12); }
+            60%  { box-shadow: 0 0 0 16px rgba(59, 130, 246, 0); background-color: rgba(59, 130, 246, 0.06); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);   background-color: transparent; }
+        }
+        .highlight-navigate {
+            animation: highlightNavigatePulse 1.2s ease-out 3 !important;
+            border: 2px solid #3b82f6 !important;
+            border-radius: 0.5rem;
+        }
+
+        /* ─── Registration/Renewal employee card: mobile — รูปบน ชื่อล่าง ─── */
+        @media (max-width: 767.98px) {
+            /* avatar + info: เรียงจากบนลงล่าง */
+            .employee-card-wrapper [id^="info-container-"] {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center;
+                width: 100%;
+            }
+            /* info text: เต็มความกว้าง */
+            .employee-card-wrapper [id^="info-container-"] > div:not(.avatar-container) {
+                width: 100%;
+            }
+            /* sections ต่างๆ (outsource, appointment ฯลฯ): เต็มความกว้าง */
+            .employee-card-wrapper .card-body .d-flex.flex-column.flex-md-row > .d-flex.align-items-start.gap-3.w-100 {
+                flex-direction: column !important;
+            }
+            .employee-card-wrapper .ms-md-2,
+            .employee-card-wrapper .ms-md-4 {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+        }
+        /* tablet: เหมือน mobile */
+        @media (min-width: 768px) and (max-width: 1199.98px) {
+            .employee-card-wrapper [id^="info-container-"] {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center;
+                width: 100%;
+            }
+            .employee-card-wrapper [id^="info-container-"] > div:not(.avatar-container) {
+                width: 100%;
+            }
+        }
+
+        /* ─── Dashboard appointment card: mobile — text ใช้พื้นที่เต็ม ─── */
+        @media (max-width: 767.98px) {
+            .appt-card-item .card-body > .d-flex.align-items-start.gap-3 {
+                flex-wrap: wrap !important;
+            }
+            /* info text: เต็มความกว้าง */
+            .appt-card-item .card-body > .d-flex > .flex-grow-1 {
+                flex-basis: 100% !important;
+                width: 100% !important;
+                order: 2;
+                margin-top: 0.5rem;
+            }
+            /* action buttons: เต็มความกว้าง ไปอยู่ด้านล่าง */
+            .appt-card-item .card-body > .d-flex > .flex-shrink-0.d-flex.flex-column {
+                flex-basis: 100% !important;
+                flex-direction: row !important;
+                justify-content: flex-end;
+                order: 3;
+                margin-top: 0.5rem;
+            }
+        }
+
+        /* ─── Workflow Progress card header: ปุ่มตั้งค่า wrap บน tablet/mobile ─── */
+        @media (max-width: 991.98px) {
+            .card-body.p-4 > .d-flex.justify-content-between.align-items-center.mb-4 {
+                flex-wrap: wrap;
+                row-gap: 0.5rem;
+            }
+            .card-body.p-4 > .d-flex.justify-content-between.align-items-center.mb-4 .card-title {
+                width: 100%;
+            }
+            .card-body.p-4 > .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2 {
+                flex-wrap: wrap;
+                gap: 0.35rem !important;
+            }
+            .card-body.p-4 > .d-flex.justify-content-between.align-items-center.mb-4 > .d-flex.gap-2 .btn {
+                font-size: 0.78rem;
+                padding: 0.2rem 0.5rem;
+            }
+        }
+
+        /* ─── Registration/Renewal employer card: stats badges + ปุ่ม wrap บน mobile/tablet ─── */
+        @media (max-width: 991.98px) {
+            .employer-card-container .card-header .d-flex.align-items-center.gap-2.me-xl-3 {
+                flex-wrap: wrap;
+                gap: 0.25rem !important;
+            }
+            .employer-card-container .card-header .d-flex.align-items-center.gap-2.me-xl-3 [style*="min-width:"] {
+                min-width: 0 !important;
+                flex: 1 1 auto;
+            }
+            .employer-card-container .card-header .d-flex.align-items-center.justify-content-xl-end {
+                flex-wrap: wrap;
+                gap: 0.3rem !important;
+            }
+            .employer-card-container .card-header .d-flex.align-items-center.justify-content-xl-end .btn {
+                font-size: 0.78rem;
+                padding: 0.2rem 0.45rem;
+            }
+        }
     </style>
 </head>
 <body>

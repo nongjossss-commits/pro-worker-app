@@ -1152,4 +1152,28 @@ class ProductionController extends Controller
 
         return response()->json($results);
     }
+
+    /**
+     * โหลด Finance Tab สำหรับ order ที่ระบุ (ใช้กับ AJAX lazy loading)
+     * เพื่อลดภาระการโหลดหน้า Production Index
+     */
+    public function fetchFinanceTab(Request $request, $id)
+    {
+        $order = ProductionOrder::with([
+            'employer',
+            'items.employee.registrationSteps',
+            'items.completedWorkTypeSteps',
+            'financialGroups.transactions.items',
+            'financialGroups.advanceItems',
+            'workType',
+        ])->findOrFail($id);
+
+        $employees = $order->items->pluck('employee')->filter()->values();
+
+        return view('production.partials.financial-tab', [
+            'production'    => $order,
+            'employeeCount' => $order->items->count(),
+            'employees'     => $employees,
+        ]);
+    }
 }
