@@ -24,6 +24,7 @@
             $grandTotal = 0;
             // Config
             $vatRate = isset($financial['vat_rate']) && $financial['vat_rate'] !== '' ? (float)$financial['vat_rate'] : 7;
+            $vatEnabled = $financial['vat_enabled'] ?? true;
             $vatIncluded = $financial['vat_included'] ?? false;
             $whtEnabled = $financial['wht_enabled'] ?? false;
             $whtRate = isset($financial['wht_rate']) ? (float)$financial['wht_rate'] : 3;
@@ -89,23 +90,19 @@
     <tfoot>
         @php
             // 1. Calculate VAT & Net Base
-            if ($vatIncluded) {
-                // GrandTotal is Inc VAT
-                $netBase = $grandTotal / (1 + ($vatRate / 100));
-                $vatAmount = $grandTotal - $netBase;
+            if (!$vatEnabled) {
+                $netBase = $grandTotal;
+                $vatAmount = 0;
             } else {
-                // GrandTotal is Gross (Net + VAT) if entered that way?
-                // Wait, if !vatIncluded, usually "Fixed Total" input is Ex-VAT.
-                // But "Transaction Amount" input by user - is it Inc or Ex?
-                // The JS logic: "Base (Ex) -> +VAT -> Total (Inc)".
-                // And Transaction Amount is usually derived from Total (Inc).
-                // So Transaction Amount is ALWAYS Inclusive of VAT in the DB logic we wrote.
-                // JS: `totalAmount` (Inc VAT) -> scheduledAmount (Inc VAT).
-                // So here, regardless of `vatIncluded` setting, `$grandTotal` IS INCLUSIVE OF VAT.
-
-                // So logic is SAME:
-                $netBase = $grandTotal / (1 + ($vatRate / 100));
-                $vatAmount = $grandTotal - $netBase;
+                if ($vatIncluded) {
+                    // GrandTotal is Inc VAT
+                    $netBase = $grandTotal / (1 + ($vatRate / 100));
+                    $vatAmount = $grandTotal - $netBase;
+                } else {
+                    // JS logic ensures total amount is always inclusive of VAT during entry
+                    $netBase = $grandTotal / (1 + ($vatRate / 100));
+                    $vatAmount = $grandTotal - $netBase;
+                }
             }
 
             // 2. WHT Logic
@@ -141,6 +138,7 @@
         @endif
 
         <!-- Net Before VAT -->
+        @if($vatEnabled)
         <tr>
             <td colspan="2" style="border: none;"></td>
             <td class="text-right text-muted">Net Amount</td>
@@ -153,6 +151,7 @@
             <td class="text-right text-muted">VAT {{ $vatRate }}%</td>
             <td class="amount">{{ number_format($vatAmount, 2) }}</td>
         </tr>
+        @endif
 
         <!-- Grand Total -->
         <tr>

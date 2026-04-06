@@ -110,7 +110,7 @@ class="row">
 
                 <!-- Fixed Price Input -->
                 <div x-show="pricingMode === 'fixed'" class="mb-3">
-                    <label class="form-label">{{ __('Total Project Value') }} <span x-show="!vatIncluded">{{ __('(Excl. VAT)') }}</span><span x-show="vatIncluded">{{ __('(Incl. VAT)') }}</span></label>
+                    <label class="form-label">{{ __('Total Project Value') }} <span x-show="vatEnabled && !vatIncluded">{{ __('(Excl. VAT)') }}</span><span x-show="vatEnabled && vatIncluded">{{ __('(Incl. VAT)') }}</span></label>
                     <div class="input-group">
                         <span class="input-group-text">฿</span>
                         <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
@@ -238,11 +238,19 @@ class="row">
                 <div class="mb-3 border-top pt-3">
                     <label class="form-label small text-muted">{{ __('Tax Settings (Service Fee Only)') }}</label>
 
-                    <!-- VAT -->
-                    <div class="d-flex align-items-center justify-content-between mb-2">
+                    <!-- VAT Toggle -->
+                    <div class="d-flex align-items-center justify-content-between mb-2 pb-2" :class="vatEnabled ? 'border-bottom' : ''">
                         <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" :id="'vatEnabled_' + productionId" x-model="vatEnabled" @change="updateTotal()">
+                            <label class="form-check-label small fw-bold" :for="'vatEnabled_' + productionId">{{ __('Enable VAT') }}</label>
+                        </div>
+                    </div>
+
+                    <!-- VAT Settings -->
+                    <div class="d-flex align-items-center justify-content-between mb-3" x-show="vatEnabled">
+                        <div class="form-check form-switch ps-4">
                             <input class="form-check-input" type="checkbox" :id="'vatIncluded_' + productionId" x-model="vatIncluded" @change="updateTotal()">
-                            <label class="form-check-label small" :for="'vatIncluded_' + productionId">{{ __('Price Includes VAT') }}</label>
+                            <label class="form-check-label small text-muted" :for="'vatIncluded_' + productionId">{{ __('Price Includes VAT') }}</label>
                         </div>
                         <div class="input-group input-group-sm" style="width: 120px;">
                             <span class="input-group-text">VAT</span>
