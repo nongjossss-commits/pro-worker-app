@@ -31,6 +31,8 @@ class ProductionItem extends Model
         'remarks', // Added remarks
     ];
 
+    protected $appends = ['has_visa'];
+
     protected $casts = [
         'new_employee_data' => 'array',
         'appointment_date' => 'datetime',
@@ -90,6 +92,11 @@ class ProductionItem extends Model
     }
 
     // ACCESSORS
+
+    public function getHasVisaAttribute()
+    {
+        return $this->employee ? !empty($this->employee->visaExpiryDate) : false;
+    }
 
     public function getIsCheckedTodayAttribute()
     {
