@@ -6,6 +6,7 @@
     $isCompleted = $status === 'completed';
     $isCancelled = $status === 'cancelled';
     $isPreProduction = $order->status === 'pre_production';
+    $activeTab = $activeTab ?? $order->workType ?? null;
 
     // Daily Check Logic
     $isCheckedToday = $item->is_checked_today;
@@ -667,7 +668,7 @@
 
                 @if(!$isReadOnly)
                     @if($isPreProduction)
-                        @if($activeTab->slug !== 'mou')
+                        @if($activeTab && $activeTab->slug !== 'mou')
                             {{-- Send to Workflow Button (Only in Pre-Production) --}}
                             <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3"
                                     onclick="sendToWorkflow({{ $item->id }})"
@@ -678,7 +679,7 @@
                     @else
                         {{-- Send Back to Pre-Production --}}
                         @if(!$isCompleted && !$isCancelled)
-                            @if($activeTab->slug !== 'mou')
+                            @if($activeTab && $activeTab->slug !== 'mou')
                             <button class="btn btn-info btn-sm fw-bold shadow-sm px-3 text-white"
                                     onclick="sendBackToPreProduction({{ $item->id }})"
                                     title="{{ __('Back to Preparation') }}">
