@@ -155,6 +155,8 @@ class Employee extends Model
         'custom_operator_name',
     ];
 
+    protected $appends = ['has_visa'];
+
     protected $casts = [
         'passportExpiryDate' => 'date:Y-m-d',
         'workPermitExpiryDate' => 'date:Y-m-d',
@@ -265,6 +267,11 @@ class Employee extends Model
     public function productionItems()
     {
         return $this->hasMany(ProductionItem::class);
+    }
+
+    public function getHasVisaAttribute()
+    {
+        return !empty($this->visaExpiryDate);
     }
 
     public function getActiveWorkflowsAttribute()
