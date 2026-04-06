@@ -30,6 +30,7 @@ if (typeof window.financialManager === 'undefined') {
             editTransactionEmployeeFilter: 'active',
 
             // Tax Settings
+            vatEnabled: true,
             vatIncluded: false,
             vatRate: 7,
             whtEnabled: false,
@@ -111,6 +112,7 @@ if (typeof window.financialManager === 'undefined') {
                 // Load Advance Items
                 this.advanceItems = group.advance_items || [];
 
+                this.vatEnabled = data.vat_enabled !== false;
                 this.vatIncluded = !!data.vat_included;
                 this.vatRate = data.vat_rate !== undefined && data.vat_rate !== null && data.vat_rate !== '' ? parseFloat(data.vat_rate) : 7;
                 this.whtEnabled = !!data.wht_enabled;
@@ -1013,7 +1015,11 @@ if (typeof window.financialManager === 'undefined') {
 
                 let netBase = Math.max(0, gross - (parseFloat(this.discount) || 0));
 
-                if (this.vatIncluded) {
+                if (!this.vatEnabled) {
+                    this.totalAmount = netBase;
+                    this.subtotalAmount = netBase;
+                    this.vatAmount = 0;
+                } else if (this.vatIncluded) {
                     this.totalAmount = netBase;
                     this.subtotalAmount = netBase / (1 + (this.vatRate / 100));
                     this.vatAmount = this.totalAmount - this.subtotalAmount;
@@ -1102,6 +1108,7 @@ if (typeof window.financialManager === 'undefined') {
                     fixed_base_amount: this.fixedTotal,
                     pricing_tiers: this.pricingTiers,
                     discount: this.discount,
+                    vat_enabled: this.vatEnabled,
                     vat_included: this.vatIncluded,
                     vat_rate: parseFloat(this.vatRate),
                     wht_enabled: this.whtEnabled,

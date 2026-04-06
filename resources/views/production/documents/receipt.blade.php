@@ -19,6 +19,7 @@
 
             // Tax Config
             $vatRate = isset($financial['vat_rate']) && $financial['vat_rate'] !== '' ? (float)$financial['vat_rate'] : 7;
+            $vatEnabled = $financial['vat_enabled'] ?? true;
             $vatIncluded = $financial['vat_included'] ?? false;
             $whtEnabled = $financial['wht_enabled'] ?? false;
             $whtRate = isset($financial['wht_rate']) ? (float)$financial['wht_rate'] : 3;
@@ -51,8 +52,13 @@
             // GrandTotal = Received (Inc VAT)
 
             // NetBase + VAT = GrandTotal
-            $netBase = $grandTotal / (1 + ($vatRate / 100));
-            $vatAmount = $grandTotal - $netBase;
+            if (!$vatEnabled) {
+                $netBase = $grandTotal;
+                $vatAmount = 0;
+            } else {
+                $netBase = $grandTotal / (1 + ($vatRate / 100));
+                $vatAmount = $grandTotal - $netBase;
+            }
 
             // WHT Note
             // Receipt usually confirms the GROSS invoice amount (Total Received + WHT if the customer deducted it?)
@@ -92,13 +98,20 @@
             // Let's implement Gross Up logic if WHT enabled to show full receipt.
 
             if ($whtEnabled) {
-                // GrossUp Factor = 1 + VAT - WHT
-                $factor = 1 + ($vatRate/100) - ($whtRate/100);
-                $realBase = $grandTotal / $factor;
-
-                $vatAmount = $realBase * ($vatRate/100);
-                $whtAmount = $realBase * ($whtRate/100);
-                $fullInvoiceValue = $realBase + $vatAmount;
+                // GrossUp Factor = 1 + VAT - WHT (if VAT is enabled)
+                if (!$vatEnabled) {
+                    $factor = 1 - ($whtRate/100);
+                    $realBase = $grandTotal / $factor;
+                    $vatAmount = 0;
+                    $whtAmount = $realBase * ($whtRate/100);
+                    $fullInvoiceValue = $realBase;
+                } else {
+                    $factor = 1 + ($vatRate/100) - ($whtRate/100);
+                    $realBase = $grandTotal / $factor;
+                    $vatAmount = $realBase * ($vatRate/100);
+                    $whtAmount = $realBase * ($whtRate/100);
+                    $fullInvoiceValue = $realBase + $vatAmount;
+                }
             } else {
                 $realBase = $netBase; // Calculated earlier
                 $whtAmount = 0;
@@ -107,6 +120,7 @@
         @endphp
 
         <!-- Breakdown -->
+        @if($vatEnabled)
         <tr>
             <td colspan="2" style="border: none;"></td>
             <td class="text-right text-muted">Base Amount</td>
@@ -117,6 +131,13 @@
             <td class="text-right text-muted">VAT {{ $vatRate }}%</td>
             <td class="amount">{{ number_format($vatAmount, 2) }}</td>
         </tr>
+        @else
+        <tr>
+            <td colspan="2" style="border: none;"></td>
+            <td class="text-right text-muted">Base Amount</td>
+            <td class="amount">{{ number_format($realBase, 2) }}</td>
+        </tr>
+        @endif
         <tr>
             <td colspan="2" style="border: none;"></td>
             <td class="text-right font-bold text-primary">Total Invoice Value</td>
