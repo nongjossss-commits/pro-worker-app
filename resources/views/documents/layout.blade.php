@@ -345,12 +345,13 @@
             };
 
             $vatIncluded = $financial['vat_included'] ?? false;
+            $vatEnabled = $financial['vat_enabled'] ?? true;
             // Explicitly checking if it's strictly numeric 0 or string '0' to avoid fallback
             $vatRate = isset($financial['vat_rate']) && $financial['vat_rate'] !== '' && $financial['vat_rate'] !== null ? (float)$financial['vat_rate'] : 7;
             $whtEnabled = $financial['wht_enabled'] ?? false;
             $whtRate = isset($financial['wht_rate']) && $financial['wht_rate'] !== '' && $financial['wht_rate'] !== null ? (float)$financial['wht_rate'] : 3;
 
-            if ($vatRate <= 0) {
+            if (!$vatEnabled || $vatRate <= 0) {
                 $serviceBase = $serviceTotal;
                 $serviceVat = 0;
                 $totalServiceIncVat = $serviceBase;
@@ -542,20 +543,25 @@
         <div class="totals-container">
             <table class="totals-table">
                 @if($showService)
-                    <tr>
-                        <td class="total-label"><strong>Service Base <span class="en-label">/ มูลค่าบริการ (ก่อน VAT)</span></strong></td>
-                        <td class="total-value">{{ number_format($serviceBase, 2) }}</td>
-                    </tr>
-                    @if($vatRate > 0)
-                    <tr>
-                        <td class="total-label">VAT ({{ $vatRate }}%)</td>
-                        <td class="total-value">{{ number_format($serviceVat, 2) }}</td>
-                    </tr>
+                    @if($vatEnabled && $vatRate > 0)
+                        <tr>
+                            <td class="total-label"><strong>Service Base <span class="en-label">/ มูลค่าบริการ (ก่อน VAT)</span></strong></td>
+                            <td class="total-value">{{ number_format($serviceBase, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="total-label">VAT ({{ $vatRate }}%)</td>
+                            <td class="total-value">{{ number_format($serviceVat, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total <span class="en-label">/ รวมค่าบริการ (รวม VAT)</span></td>
+                            <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td class="total-label" style="border-bottom: 1px solid #ddd;"><strong>Service Total <span class="en-label">/ รวมค่าบริการ</span></strong></td>
+                            <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
+                        </tr>
                     @endif
-                    <tr>
-                        <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total <span class="en-label">/ รวมค่าบริการ (รวม VAT)</span></td>
-                        <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
-                    </tr>
                 @endif
 
                 @if($showAdvance && $advanceTotal > 0)
