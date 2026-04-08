@@ -2363,14 +2363,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    document.body.addEventListener('submit', function(e) {
+    document.body.addEventListener('submit', async function(e) {
         if (e.target.matches('.delete-employee-form')) {
             e.preventDefault();
             const form = e.target;
 
+            // Extract employee ID from the action URL
+            const action = form.getAttribute('action');
+            const matches = action.match(/\/employees\/(\d+)/);
+            const employeeId = matches ? matches[1] : null;
+
+            let workflowsHtml = '';
+            let workflows = [];
+
+            if (employeeId) {
+                try {
+                    const response = await fetch(`/api/employees/${employeeId}/workflows`);
+                    const data = await response.json();
+                    if (data.success && data.workflows.length > 0) {
+                        workflows = data.workflows;
+                        workflowsHtml = `<div class="mt-3 text-start"><p class="mb-2 text-danger fw-bold">ลูกจ้างคนนี้กำลังดำเนินการอยู่ในเมนูอื่นๆ ด้วย คุณต้องการลบ (ยกเลิก) ออกจากเมนูเหล่านี้ด้วยหรือไม่?</p><div class="list-group text-start">`;
+                        workflows.forEach((wf, index) => {
+                            workflowsHtml += `
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1 cancel-workflow-checkbox" type="checkbox" name="cancel_workflows[]" value='${JSON.stringify(wf)}' checked>
+                                    ${wf.name} (${wf.status_label})
+                                </label>
+                            `;
+                        });
+                        workflowsHtml += `</div><p class="mt-2 text-muted small">*หากไม่เลือก ลูกจ้างจะถูกย้ายไปถังขยะแต่ยังคงแสดงชื่อในเมนูย่อย พร้อมสถานะถูกลบ</p></div>`;
+                    }
+                } catch (err) { console.error('Error fetching workflows', err); }
+            }
+
             Swal.fire({
                 title: '{{ __('Are you sure?') }}',
-                text: "{{ __('This will move the employee to the Central Trash. You can recover them later.') }}",
+                html: "{{ __('This will move the employee to the Central Trash. You can recover them later.') }}" + workflowsHtml,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -2379,8 +2407,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 cancelButtonText: '{{ __('Cancel') }}'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const action = form.getAttribute('action');
                     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    const formData = new FormData(form);
+
+                    // Add cancel_workflows manually if not added by form data natively
+                    const checkboxes = document.querySelectorAll('.cancel-workflow-checkbox:checked');
+                    Array.from(checkboxes).forEach(cb => {
+                        formData.append('cancel_workflows[]', cb.value);
+                    });
 
                     fetch(action, {
                         method: 'POST',
@@ -2388,7 +2423,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             'X-CSRF-TOKEN': csrfToken,
                             'Accept': 'application/json'
                         },
-                        body: new FormData(form)
+                        body: formData
                     })
                     .then(response => response.json())
                     .then(data => {

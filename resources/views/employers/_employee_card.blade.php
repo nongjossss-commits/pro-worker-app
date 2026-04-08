@@ -2,8 +2,9 @@
     $flagCodes = ['เมียนมา' => 'mm', 'ลาว' => 'la', 'กัมพูชา' => 'kh', 'เวียดนาม' => 'vn'];
     $nationality = $employee->employeeNationality ?? null;
     $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
+    $isDeleted = !is_null($employee->deleted_at);
 @endphp
-<div class="card mb-3 position-relative" id="employee-card-{{ $employee->id }}">
+<div class="card mb-3 position-relative {{ $isDeleted ? 'border-danger' : '' }}" id="employee-card-{{ $employee->id }}">
     @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
         @php
             $isRegistration = $employee->active_workflows->contains('is_registration', true);
@@ -90,6 +91,9 @@
                             @if($flagCode)
                                 <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
                             @endif
+                        @endif
+                        @if($isDeleted)
+                            <span class="badge bg-danger ms-2">ลบไปอยู่ในถังขยะ</span>
                         @endif
                     </p>
                     <p class="mb-1 text-muted small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }} ({{ $employee->job_title ?? 'ไม่ระบุตำแหน่ง' }})</p>

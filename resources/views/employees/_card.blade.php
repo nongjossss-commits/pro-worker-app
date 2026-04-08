@@ -4,7 +4,11 @@
     $flagCode = $nationality ? ($flagCodes[$nationality] ?? null) : null;
 @endphp
 
-<div class="card mb-3" id="employee-card-{{ $employee->id }}">
+@php
+    $isDeleted = !is_null($employee->deleted_at);
+@endphp
+
+<div class="card mb-3 {{ $isDeleted ? 'border-danger' : '' }}" id="employee-card-{{ $employee->id }}">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-start gap-3">
             <div class="d-flex align-items-center flex-grow-1">
@@ -20,6 +24,9 @@
                             @if($flagCode)
                                 <img src="https://flagcdn.com/w20/{{ $flagCode }}.png" alt="{{ $nationality }}" class="ms-1" style="width: 20px; vertical-align: middle;">
                             @endif
+                        @endif
+                        @if($isDeleted)
+                            <span class="badge bg-danger ms-2">ลบไปอยู่ในถังขยะ</span>
                         @endif
                     </p>
                     <p class="mb-1 text-muted small">{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'ไม่มีชื่อภาษาไทย' }}</p>
