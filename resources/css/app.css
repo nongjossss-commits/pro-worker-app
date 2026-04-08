@@ -100,6 +100,74 @@ select:disabled, input:disabled, textarea:disabled, input:read-only, textarea:re
 
 /* END: Custom Form Styles */
 
+/* Employee Card: Responsive action buttons */
+/* Phone (<576px): actions go below as full-width row */
+@media (max-width: 575.98px) {
+    .employee-actions-unified {
+        width: 100%;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #e2e8f0;
+    }
+}
+/* Tablet/Desktop (≥576px): actions stay on the right */
+@media (min-width: 576px) {
+    .employee-actions-unified {
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+}
+/* Small tablet (576px-991px): action buttons stack vertically to avoid overlapping badges */
+@media (min-width: 576px) and (max-width: 991.98px) {
+    .employee-actions-unified > .d-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.25rem !important;
+    }
+    .employee-actions-unified > .d-flex .btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Last Edited Badge - top-left corner of cards */
+.last-edited-badge {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+    line-height: 1.2;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 0 0 0.375rem 0;
+    border-top-left-radius: 0.5rem;
+    cursor: default;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.last-edited-badge i {
+    font-size: 0.6rem;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+.last-edited-badge .last-edited-user {
+    font-weight: 600;
+    color: #475569;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.last-edited-badge .last-edited-time {
+    color: #94a3b8;
+}
+
 .collapse {
     visibility: unset !important;
 }

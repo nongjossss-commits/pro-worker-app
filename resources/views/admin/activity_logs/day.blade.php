@@ -21,16 +21,33 @@
                     <p class="text-muted mb-0">แสดงรายการแก้ไขอัพเดตและเปลี่ยนแปลงทุกย่างก้าว</p>
                 </div>
                 <div>
-                    <form action="{{ route('admin.activity-logs.day', ['year' => $year, 'month' => $month, 'day' => $day]) }}" method="GET" class="d-flex align-items-center gap-2">
-                        <label for="user_id" class="text-nowrap fw-bold">กรองตามผู้ใช้:</label>
-                        <select name="user_id" id="user_id" class="form-select" onchange="this.form.submit()">
-                            <option value="">-- แสดงทุกคน (All Users) --</option>
+                    <form action="{{ route('admin.activity-logs.day', ['year' => $year, 'month' => $month, 'day' => $day]) }}" method="GET" class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="input-group input-group-sm" style="width: auto; min-width: 220px;">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" name="search" class="form-control" placeholder="ค้นหา ชื่อ, ID:123, รายละเอียด..." value="{{ $search ?? '' }}">
+                        </div>
+                        <select name="user_id" class="form-select form-select-sm" style="width: auto; min-width: 180px;" onchange="this.form.submit()">
+                            <option value="">-- ทุกผู้ใช้ --</option>
                             @foreach($users as $u)
-                                <option value="{{ $u->id }}" {{ $userId == $u->id ? 'selected' : '' }}>
+                                <option value="{{ $u->id }}" {{ ($userId ?? '') == $u->id ? 'selected' : '' }}>
                                     {{ $u->name }} ({{ $u->email }})
                                 </option>
                             @endforeach
                         </select>
+                        <select name="action" class="form-select form-select-sm" style="width: auto; min-width: 160px;" onchange="this.form.submit()">
+                            <option value="">-- ทุกประเภท --</option>
+                            @foreach($actions as $act)
+                                <option value="{{ $act }}" {{ ($actionFilter ?? '') == $act ? 'selected' : '' }}>
+                                    {{ \App\Helpers\ActivityLogHelper::formatAction($act) }} ({{ $act }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search"></i></button>
+                        @if(($userId ?? '') || ($actionFilter ?? '') || ($search ?? ''))
+                            <a href="{{ route('admin.activity-logs.day', ['year' => $year, 'month' => $month, 'day' => $day]) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-x-lg"></i> ล้าง
+                            </a>
+                        @endif
                     </form>
                 </div>
             </div>
@@ -75,6 +92,13 @@
                                             'restore' => 'info',
                                             'login' => 'success',
                                             'logout' => 'secondary',
+                                            'download' => 'warning',
+                                            'export' => 'warning',
+                                            'upload' => 'info',
+                                            'print', 'generate_document' => 'dark',
+                                            'bulk_action' => 'primary',
+                                            'import' => 'info',
+                                            'status_change' => 'primary',
                                             default => 'secondary',
                                         };
                                     @endphp
@@ -84,7 +108,16 @@
                                 </td>
                                 <td>
                                     <div class="fw-bold">{{ $log->description }}</div>
-                                    <div class="small text-muted">ID: {{ $log->subject_id }} ({{ \App\Helpers\ActivityLogHelper::formatModel($log->subject_type) }})</div>
+                                    @if($log->subject_type)
+                                        @php $subjectName = \App\Helpers\ActivityLogHelper::getSubjectName($log); @endphp
+                                        <div class="small text-muted">
+                                            <span class="badge bg-light text-dark border me-1">ID: {{ $log->subject_id }}</span>
+                                            {{ \App\Helpers\ActivityLogHelper::formatModel($log->subject_type) }}
+                                            @if($subjectName)
+                                                — <span class="fw-semibold text-dark">{{ $subjectName }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($log->properties && (isset($log->properties['old']) || isset($log->properties['attributes'])))

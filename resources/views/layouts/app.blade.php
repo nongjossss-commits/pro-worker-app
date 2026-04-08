@@ -841,6 +841,9 @@
             @yield('content')
         </main>
 
+        {{-- Page-level modals (render นอก <main> เพื่อหลีกเลี่ยง overflow/z-index issues) --}}
+        @stack('page-modals')
+
         {{-- Notification Modals --}}
         <div class="modal fade" id="renewNotificationModal" tabindex="-1" aria-labelledby="renewModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -1413,8 +1416,21 @@
     @include('partials.view_selected_modal')
     @stack('scripts')
 
+{{-- Global: Clean up stale Bootstrap modal backdrops that get stuck due to CSS display:none hack --}}
+<script>
+document.addEventListener('hidden.bs.modal', function() {
+    // If no modal is currently shown, clean up all orphaned backdrops
+    if (!document.querySelector('.modal.show')) {
+        document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    }
+});
+</script>
+
 <!-- Universal Preview Modal -->
-<div class="modal fade" id="universalPreviewModal" tabindex="-1" aria-labelledby="universalPreviewModalLabel" aria-hidden="true">
+<div class="modal fade" id="universalPreviewModal" tabindex="-1" aria-labelledby="universalPreviewModalLabel" aria-hidden="true" style="z-index: 1090;">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">

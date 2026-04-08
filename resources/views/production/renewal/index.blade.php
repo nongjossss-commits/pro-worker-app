@@ -379,6 +379,7 @@
                 <div class="employer-sequence-number me-3 pt-2"></div>
 
                 <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}" style="position: relative;">
+                    <x-last-edited-badge :model="$employer" />
                     {{-- Status/Note Tab/Drawer --}}
                     <div class="position-absolute d-flex align-items-center gap-1 shadow-sm border border-secondary border-bottom-0 rounded-top bg-white px-2 py-1"
                          style="top: -34px; right: 20px; z-index: 5; height: 34px;">
@@ -557,7 +558,7 @@
 
                                  @can('edit-employees')
                                  {{-- Add Employee Button --}}
-                                 <a href="{{ route('production.registration.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
+                                 <a href="{{ route('production.renewal.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </a>
 
@@ -703,74 +704,10 @@
     </div>
 </div>
 
-{{-- GPS Navigate: ฝัง inline หลัง DOM เสร็จ --}}
-@if(request('highlight_employer_id') || session('renewal_restore_employer_id'))
-<script>
-(function() {
-    var empId      = "{{ request('highlight_employer_id', session('renewal_restore_employer_id', '')) }}";
-    var employeeId = "{{ request('highlight_employee_id', session('renewal_restore_employee_id', '')) }}";
-    if (!empId) return;
-
-    function run() {
-        var collapseEl = document.getElementById('collapse' + empId);
-        var headingEl  = document.getElementById('heading' + empId);
-
-        if (!collapseEl || !headingEl) return;
-
-        headingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        if (!collapseEl.classList.contains('show')) {
-            try {
-                var bsCol = bootstrap.Collapse.getOrCreateInstance(collapseEl);
-                bsCol.show();
-            } catch(e) {
-                var btn = headingEl.querySelector('[data-bs-toggle="collapse"]');
-                if (btn) btn.click();
-            }
-        }
-
-        setTimeout(function() {
-            if (typeof window.loadEmployees === 'function') {
-                window.loadEmployees(empId);
-            }
-        }, 100);
-
-        if (!employeeId) return;
-
-        function doHighlight(card) {
-            setTimeout(function() {
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                card.classList.add('highlight-navigate');
-                setTimeout(function() { card.classList.remove('highlight-navigate'); }, 5000);
-            }, 400);
-        }
-
-        function tryFind() {
-            var card = document.getElementById('employee-card-' + employeeId);
-            if (card) { doHighlight(card); return true; }
-            return false;
-        }
-
-        var listEl = document.getElementById('employee-list-' + empId);
-        if (!listEl) return;
-
-        var obs = new MutationObserver(function(_, o) {
-            if (tryFind()) o.disconnect();
-        });
-        obs.observe(listEl, { childList: true, subtree: true });
-
-        [600, 1200, 2500, 4000, 6000].forEach(function(ms) {
-            setTimeout(function() { if (tryFind()) obs.disconnect(); }, ms);
-        });
-    }
-
-    if (document.readyState === 'complete') {
-        setTimeout(run, 200);
-    } else {
-        window.addEventListener('load', function() { setTimeout(run, 200); });
-    }
-})();
-</script>
+{{-- GPS Navigate: hidden input เก็บค่าให้ script ใน @push อ่าน --}}
+@if(request('highlight_employer_id'))
+<input type="hidden" id="gps-highlight-employer" value="{{ request('highlight_employer_id') }}">
+<input type="hidden" id="gps-highlight-employee" value="{{ request('highlight_employee_id', '') }}">
 @endif
 
 {{-- Configuration Modal --}}
@@ -2789,7 +2726,65 @@
         });
     }
 
-        // GPS Navigate logic ถูกย้ายไปอยู่ใน handler แยก ด้านล่าง
+        // GPS Navigate logic อยู่ด้านล่าง
+    });
+
+    // ─── GPS Navigate: Renewal Operations ───
+    document.addEventListener('DOMContentLoaded', function() {
+        var empInput = document.getElementById('gps-highlight-employer');
+        if (!empInput) return;
+        var empId = empInput.value;
+        var employeeId = (document.getElementById('gps-highlight-employee') || {}).value || '';
+        if (!empId) return;
+
+        empInput.remove();
+
+        var collapseEl = document.getElementById('collapse' + empId);
+        var headingEl  = document.getElementById('heading' + empId);
+        if (!collapseEl || !headingEl) return;
+
+        setTimeout(function() {
+            headingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
+        if (!collapseEl.classList.contains('show')) {
+            var btn = headingEl.querySelector('[data-bs-toggle="collapse"]');
+            if (btn) btn.click();
+        }
+
+        setTimeout(function() {
+            if (typeof window.loadEmployees === 'function') {
+                window.loadEmployees(empId);
+            }
+        }, 200);
+
+        if (!employeeId) return;
+
+        function doHighlight(card) {
+            setTimeout(function() {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('highlight-navigate');
+                setTimeout(function() { card.classList.remove('highlight-navigate'); }, 5000);
+            }, 500);
+        }
+
+        function tryFind() {
+            var card = document.getElementById('employee-card-' + employeeId);
+            if (card) { doHighlight(card); return true; }
+            return false;
+        }
+
+        var listEl = document.getElementById('employee-list-' + empId);
+        if (!listEl) return;
+
+        var obs = new MutationObserver(function(_, o) {
+            if (tryFind()) o.disconnect();
+        });
+        obs.observe(listEl, { childList: true, subtree: true });
+
+        [800, 1500, 3000, 5000, 7000].forEach(function(ms) {
+            setTimeout(function() { if (tryFind()) obs.disconnect(); }, ms);
+        });
     });
 </script>
 

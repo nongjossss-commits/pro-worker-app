@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -102,6 +103,11 @@ public function reinstate(Employee $employee)
                   ->orWhereNull("status");
             });
 
+        // Filter by employer_id (for bulk import in Sales Lead)
+        if ($request->filled('employer_id')) {
+            $query->where('employer_id', $request->input('employer_id'));
+        }
+
         if ($searchTerm) {
             $term = "%" . $searchTerm . "%";
             $query->where(function ($q) use ($term) {
@@ -117,9 +123,17 @@ public function reinstate(Employee $employee)
             });
         }
 
-        $employees = $query->select("id", "employeeNameEn", "employeeNameTh", "employeePassport")
-            ->limit(30)
+        $limit = min((int) $request->input('limit', 30), 200);
+        $employees = $query->select("id", "employeeNameEn", "employeeNameTh", "employeePassport", "employeeTitleEn", "employeePhoto")
+            ->limit($limit)
             ->get();
+
+        // Add display text and photo URL for Select2/list usage
+        $employees->each(function ($emp) {
+            $emp->text = ($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: 'ID:'.$emp->id)
+                . ($emp->employeePassport ? ' (PP: '.$emp->employeePassport.')' : '');
+            $emp->photo_url = $emp->employeePhoto ? asset('storage/' . $emp->employeePhoto) : null;
+        });
 
         return response()->json($employees);
     }
@@ -137,25 +151,32 @@ public function reinstate(Employee $employee)
 
     // --- START: ADDED FILTERING LOGIC ---
     if ($request->filled('search')) {
-        $searchTerm = '%' . $request->input('search') . '%';
-        $query->where(function ($q) use ($searchTerm) {
-            $q->where('employeeNameTh', 'like', $searchTerm)
-              ->orWhere('employeeNameEn', 'like', $searchTerm)
-              ->orWhere('employeePassport', 'like', $searchTerm)
-              ->orWhere('pinkCardNo', 'like', $searchTerm)
-              ->orWhere('employeeWorkPermit', 'like', $searchTerm)
-              ->orWhere('employee_id_number', 'like', $searchTerm)
-              ->orWhere('name_list_number', 'like', $searchTerm)
-              ->orWhere('request_number', 'like', $searchTerm)
-              ->orWhere('employer_employee_id', 'like', $searchTerm)
-              ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
-                  $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                ->orWhere('employerNameEn', 'like', $searchTerm)
-                                ->orWhere(function($addrQ) use ($searchTerm) {
-                                    $addrQ->filterByAddress($searchTerm);
-                                });
-              });
-        });
+        $rawSearch = trim($request->input('search'));
+
+        // Support ID:123 format for direct ID lookup
+        if (preg_match('/^ID:\s*(\d+)$/i', $rawSearch, $matches)) {
+            $query->where('id', (int) $matches[1]);
+        } else {
+            $searchTerm = '%' . $rawSearch . '%';
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('employeeNameTh', 'like', $searchTerm)
+                  ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('employeePassport', 'like', $searchTerm)
+                  ->orWhere('pinkCardNo', 'like', $searchTerm)
+                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
+                  ->orWhere('employee_id_number', 'like', $searchTerm)
+                  ->orWhere('name_list_number', 'like', $searchTerm)
+                  ->orWhere('request_number', 'like', $searchTerm)
+                  ->orWhere('employer_employee_id', 'like', $searchTerm)
+                  ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
+                      $employerQuery->where('employerNameTh', 'like', $searchTerm)
+                                    ->orWhere('employerNameEn', 'like', $searchTerm)
+                                    ->orWhere(function($addrQ) use ($searchTerm) {
+                                        $addrQ->filterByAddress($searchTerm);
+                                    });
+                  });
+            });
+        }
     }
     if ($request->filled('work_permit_expiry_date')) {
         $query->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
@@ -896,8 +917,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
     {
         $this->authorize('view-employees');
 
-        // Determine scope: history (terminated) or active
         $isHistoryExport = $request->has('history');
+
+        ActivityLogHelper::logAction('export', 'ส่งออกข้อมูลลูกจ้าง (' . ($isHistoryExport ? 'ประวัติ' : 'ปัจจุบัน') . ') Excel', null, null, [
+            'type' => $isHistoryExport ? 'history' : 'active',
+        ]);
+
+        // Determine scope: history (terminated) or active
 
         if ($isHistoryExport) {
             $query = Employee::query()->whereNotNull('terminated_at');
@@ -1724,6 +1750,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_ids' => 'required|string',
             'columns' => 'required|array|max:15',
             'export_source_menu' => 'nullable|string',
+        ]);
+
+        $ids = explode(',', $validated['employee_ids']);
+        ActivityLogHelper::logAction('export', 'ส่งออกขั้นสูง (Advanced Export) ลูกจ้าง ' . count($ids) . ' ราย จาก ' . ($validated['export_source_menu'] ?? 'ไม่ระบุ'), null, null, [
+            'employee_count' => count($ids),
+            'columns' => $validated['columns'],
+            'source_menu' => $validated['export_source_menu'] ?? null,
         ]);
 
         $employeeIds = json_decode($validated['employee_ids'], true);

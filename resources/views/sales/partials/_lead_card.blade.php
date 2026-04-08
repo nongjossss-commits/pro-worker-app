@@ -62,19 +62,8 @@
                 <i class="bi bi-person-lines-fill me-1"></i> จัดการลูกจ้าง
             </button>
             <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#quotationModal-{{ $lead->id }}">
-                <i class="bi bi-file-earmark-text me-1"></i> ใบเสนอราคา
+                <i class="bi bi-file-earmark-text me-1"></i> ใบเสนอราคา / การเงิน
             </button>
         </div>
     </div>
 </div>
-
-{{-- Modals for this Lead --}}
-@if(!$lead->employer_id)
-    @include('sales.partials._edit_employer_modal', ['lead' => $lead])
-@endif
-@include('sales.partials._manage_employees_modal', ['lead' => $lead])
-@include('sales.partials._quotation_modal', ['lead' => $lead, 'profiles' => $financialProfiles])
-
-@if($lead->status === 'confirmed')
-    @include('sales.partials._transition_modal', ['lead' => $lead])
-@endif

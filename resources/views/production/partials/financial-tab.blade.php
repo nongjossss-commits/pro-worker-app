@@ -4,24 +4,29 @@
     transactions: {{ json_encode($production->financialGroups->pluck('transactions')->flatten()) }},
     productionItems: {{ json_encode($production->items->map(function($item) {
         $lastStepName = null;
-        if (request()->is('production/registration*') && $item->employee) {
-            $lastStepName = $item->employee->registrationSteps->sortByDesc('order')->first()?->name;
-        } elseif (request()->is('production/renewal*') && $item->employee) {
-            $lastStepName = $item->employee->registrationSteps->sortByDesc('order')->first()?->name; // Renewal uses registrationSteps relation logic
-        } else {
-            $lastStepName = $item->completedWorkTypeSteps->sortByDesc('order')->first()?->name;
+        $emp = $item->employee;
+        $tempData = $item->new_employee_data;
+
+        if ($emp) {
+            if (request()->is('production/registration*')) {
+                $lastStepName = $emp->registrationSteps->sortByDesc('order')->first()?->name;
+            } elseif (request()->is('production/renewal*')) {
+                $lastStepName = $emp->registrationSteps->sortByDesc('order')->first()?->name;
+            } else {
+                $lastStepName = $item->completedWorkTypeSteps?->sortByDesc('order')->first()?->name;
+            }
         }
 
         return [
             'id' => $item->id,
-            'name' => $item->employee ? ($item->employee->name_th ?? $item->employee->name_en) : 'New Employee',
-            'name_en' => $item->employee ? $item->employee->employeeNameEn : '',
-            'title_en' => $item->employee ? $item->employee->employeeTitleEn : '',
-            'photo' => $item->employee ? $item->employee->photo_url : '',
-            'nationality' => $item->employee ? $item->employee->employeeNationality : '',
-            'insurance_type' => $item->employee ? $item->employee->insurance_type : '',
-            'passport' => $item->employee ? $item->employee->employeePassport : '',
-            'has_visa' => $item->employee ? !empty($item->employee->visaExpiryDate) : false,
+            'name' => $emp ? ($emp->employeeNameTh ?? $emp->employeeNameEn) : ($tempData['name_th'] ?? $tempData['name_en'] ?? 'ลูกจ้างชั่วคราว'),
+            'name_en' => $emp ? $emp->employeeNameEn : ($tempData['name_en'] ?? ''),
+            'title_en' => $emp ? $emp->employeeTitleEn : ($tempData['title_en'] ?? ''),
+            'photo' => $emp ? ($emp->employeePhoto ? asset('storage/' . $emp->employeePhoto) : '') : '',
+            'nationality' => $emp ? $emp->employeeNationality : ($tempData['nationality'] ?? ''),
+            'insurance_type' => $emp ? $emp->insurance_type : '',
+            'passport' => $emp ? $emp->employeePassport : ($tempData['passport'] ?? ''),
+            'has_visa' => $emp ? !empty($emp->visaExpiryDate) : false,
             'employee_id' => $item->employee_id,
             'last_step_name' => $lastStepName,
             'status' => $item->status
@@ -38,7 +43,7 @@
             'name' => $emp->employeeNameTh ?? $emp->employeeNameEn,
             'name_en' => $emp->employeeNameEn,
             'title_en' => $emp->employeeTitleEn,
-            'photo' => $emp->photo_url,
+            'photo' => $emp->employeePhoto ? asset('storage/' . $emp->employeePhoto) : '',
             'nationality' => $emp->employeeNationality,
             'insurance_type' => $emp->insurance_type,
             'passport' => $emp->employeePassport,
@@ -179,13 +184,9 @@ class="row">
                     </div>
                 </div>
 
-                <!-- Discount Field -->
+                <!-- Discount: ย้ายไปอยู่ในแต่ละ Installment/Transaction แล้ว -->
                 <div class="mb-3">
-                    <label class="form-label">{{ __('Discount (From Total)') }}</label>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text">฿</span>
-                        <input type="number" class="form-control" x-model="discount" @input="updateTotal()">
-                    </div>
+                    <small class="text-muted"><i class="bi bi-info-circle me-1"></i>{{ __('ส่วนลด: ตั้งค่าได้ในแต่ละรายการ Installment ที่สร้างขึ้น') }}</small>
                 </div>
 
                 <!-- Advance Payments Section (NEW) -->
@@ -478,6 +479,12 @@ class="row">
                                     <td class="ps-3">
                                         <div class="fw-bold" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
+                                        <template x-if="t.discount_amount > 0">
+                                            <div class="small text-danger mt-1">
+                                                <i class="bi bi-tag-fill me-1"></i>ส่วนลด: <span x-text="formatCurrency(t.discount_amount)"></span>
+                                                <span x-show="t.discount_description" class="text-muted ms-1">(<span x-text="t.discount_description"></span>)</span>
+                                            </div>
+                                        </template>
                                         <div x-show="t.slip_path" class="mt-1">
                                             <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
                                         </div>
@@ -486,7 +493,7 @@ class="row">
                                     <td class="text-end" x-text="formatCurrency(t.amount)"></td>
                                     <td class="text-end">
                                         <span x-text="formatCurrency(t.paid_amount || 0)"></span><br>
-                                        <small class="text-muted" x-show="t.amount - (t.paid_amount || 0) > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - (t.paid_amount || 0)))"></span></small>
+                                        <small class="text-muted" x-show="t.amount - (parseFloat(t.discount_amount) || 0) - (t.paid_amount || 0) > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - (parseFloat(t.discount_amount) || 0) - (t.paid_amount || 0)))"></span></small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
@@ -530,6 +537,12 @@ class="row">
                                     <td class="ps-3">
                                         <div class="fw-bold text-primary" x-text="formatType(t.type)"></div>
                                         <div class="small text-muted" x-text="t.notes || '-'"></div>
+                                        <template x-if="t.discount_amount > 0">
+                                            <div class="small text-danger mt-1">
+                                                <i class="bi bi-tag-fill me-1"></i>ส่วนลด: <span x-text="formatCurrency(t.discount_amount)"></span>
+                                                <span x-show="t.discount_description" class="text-muted ms-1">(<span x-text="t.discount_description"></span>)</span>
+                                            </div>
+                                        </template>
                                         <div x-show="t.slip_path" class="mt-1">
                                             <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
                                         </div>
@@ -538,7 +551,7 @@ class="row">
                                     <td class="text-end text-primary" x-text="formatCurrency(t.amount)"></td>
                                     <td class="text-end">
                                         <span x-text="formatCurrency(t.paid_amount)"></span><br>
-                                        <small class="text-muted" x-show="t.amount - t.paid_amount > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - t.paid_amount))"></span></small>
+                                        <small class="text-muted" x-show="t.amount - (parseFloat(t.discount_amount) || 0) - t.paid_amount > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - (parseFloat(t.discount_amount) || 0) - t.paid_amount))"></span></small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
@@ -771,12 +784,12 @@ class="row">
                         <div class="input-group input-group-sm">
                             <select class="form-select" x-model="selectedEmployerAddressId" @change="loadEmployerData()">
                                 <option value="">-- Select Address --</option>
-                                @foreach($production->employer->addresses ?? [] as $address)
+                                @foreach($production->employer?->addresses ?? [] as $address)
                                     <option value="{{ $address->id }}"
-                                            data-name-th="{{ $production->employer->employerNameTh }}"
-                                            data-name-en="{{ $production->employer->employerNameEn }}"
-                                            data-tax-id="{{ $production->employer->employerTaxId }}"
-                                            data-phone="{{ $production->employer->employerPhone }}"
+                                            data-name-th="{{ $production->employer?->employerNameTh }}"
+                                            data-name-en="{{ $production->employer?->employerNameEn }}"
+                                            data-tax-id="{{ $production->employer?->employerTaxId }}"
+                                            data-phone="{{ $production->employer?->employerPhone }}"
                                             data-address-th="{{ $address->full_address_th }}"
                                             data-address-en="{{ $address->full_address_en }}"
                                             >
@@ -878,6 +891,14 @@ class="row">
                                 <div class="mb-2">
                                     <label class="form-label small">Notes</label>
                                     <textarea class="form-control form-control-sm" x-model="newTransaction.notes" rows="2"></textarea>
+                                </div>
+                                <div class="mb-2 border-top pt-2">
+                                    <label class="form-label small fw-bold text-danger"><i class="bi bi-tag me-1"></i>{{ __('Discount / ส่วนลด') }}</label>
+                                    <div class="input-group input-group-sm mb-1">
+                                        <span class="input-group-text">฿</span>
+                                        <input type="number" class="form-control" x-model="newTransaction.discount_amount" placeholder="0.00" step="0.01" min="0">
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm" x-model="newTransaction.discount_description" placeholder="{{ __('รายละเอียดส่วนลด เช่น ลดราคาพิเศษ') }}">
                                 </div>
                             </div>
                             <div class="col-md-6 border-start">
@@ -1095,10 +1116,11 @@ class="row">
                                 <h6 class="fw-bold mb-3 border-bottom pb-2">Transaction Options</h6>
 
                                 <!-- Summary Display -->
-                                <div class="d-flex justify-content-between small mb-3 bg-light p-2 rounded border">
+                                <div class="d-flex justify-content-between small mb-3 bg-light p-2 rounded border flex-wrap gap-1">
                                     <div><span class="text-muted">Total:</span> <span class="fw-bold" x-text="formatCurrency(editingTransaction.amount)"></span></div>
+                                    <div x-show="editingTransaction.discount_amount > 0"><span class="text-muted">Discount:</span> <span class="fw-bold text-warning" x-text="'-' + formatCurrency(editingTransaction.discount_amount)"></span></div>
                                     <div><span class="text-muted">Paid:</span> <span class="fw-bold text-success" x-text="formatCurrency(editingTransaction.paid_amount || 0)"></span></div>
-                                    <div><span class="text-muted">Remaining:</span> <span class="fw-bold text-danger" x-text="formatCurrency(Math.max(0, editingTransaction.amount - (editingTransaction.paid_amount || 0)))"></span></div>
+                                    <div><span class="text-muted">Remaining:</span> <span class="fw-bold text-danger" x-text="formatCurrency(Math.max(0, editingTransaction.amount - (parseFloat(editingTransaction.discount_amount) || 0) - (editingTransaction.paid_amount || 0)))"></span></div>
                                 </div>
 
                                 <div class="row">
@@ -1148,6 +1170,30 @@ class="row">
                                     <label class="form-label small">Notes</label>
                                     <textarea class="form-control form-control-sm" x-model="editingTransaction.notes" rows="2"></textarea>
                                 </div>
+
+                                <!-- Discount / ส่วนลด -->
+                                <div class="card border-warning mb-2">
+                                    <div class="card-header py-1 px-2 bg-warning bg-opacity-10">
+                                        <label class="form-label small mb-0 text-warning fw-bold"><i class="bi bi-tag-fill me-1"></i>Discount / ส่วนลด</label>
+                                    </div>
+                                    <div class="card-body p-2">
+                                        <div class="row g-2">
+                                            <div class="col-5">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">฿</span>
+                                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm" x-model="editingTransaction.discount_amount" placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-7">
+                                                <input type="text" class="form-control form-control-sm" x-model="editingTransaction.discount_description" placeholder="รายละเอียดส่วนลด">
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted mt-1" x-show="editingTransaction.discount_amount > 0">
+                                            ยอดหลังหักส่วนลด: <span class="fw-bold text-success" x-text="formatCurrency(editingTransaction.amount - (parseFloat(editingTransaction.discount_amount) || 0))"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="mb-2">
                                     <label class="form-label small">Proof of Payment / Slip</label>
                                     <!-- Hidden Input -->

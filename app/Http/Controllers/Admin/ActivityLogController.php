@@ -50,15 +50,36 @@ class ActivityLogController extends Controller
     {
         $date = Carbon::createFromDate($year, $month, $day)->format('Y-m-d');
 
-        // Filter by specific User ID if provided
+        // Filter parameters
         $userId = $request->query('user_id');
+        $actionFilter = $request->query('action');
+        $search = $request->query('search');
 
-        $query = ActivityLog::with('user')
+        $query = ActivityLog::with(['user', 'subject'])
             ->whereDate('created_at', $date)
             ->orderBy('created_at', 'desc');
 
         if ($userId) {
             $query->where('user_id', $userId);
+        }
+
+        if ($actionFilter) {
+            $query->where('action', $actionFilter);
+        }
+
+        // Search: support ID:123 format and text search
+        if ($search) {
+            $searchTerm = trim($search);
+            if (preg_match('/^ID:\s*(\d+)$/i', $searchTerm, $matches)) {
+                // Search by subject ID
+                $query->where('subject_id', (int) $matches[1]);
+            } else {
+                // Search by description or subject name (via properties or description text)
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('description', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('subject_id', 'like', '%' . $searchTerm . '%');
+                });
+            }
         }
 
         $logs = $query->get();
@@ -70,7 +91,14 @@ class ActivityLogController extends Controller
 
         $users = User::whereIn('id', $activeUserIds)->get();
 
-        return view('admin.activity_logs.day', compact('logs', 'date', 'users', 'userId', 'year', 'month', 'day'));
+        // Get distinct action types on this day for the filter dropdown
+        $actions = ActivityLog::whereDate('created_at', $date)
+            ->distinct()
+            ->pluck('action')
+            ->sort()
+            ->values();
+
+        return view('admin.activity_logs.day', compact('logs', 'date', 'users', 'userId', 'actionFilter', 'actions', 'search', 'year', 'month', 'day'));
     }
 
     public function search(Request $request)

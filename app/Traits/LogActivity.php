@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\Request;
 
 trait LogActivity
 {
+    /**
+     * Get the most recent activity log entry (create/update) for this model.
+     */
+    public function lastEditedActivity()
+    {
+        return $this->morphOne(\App\Models\ActivityLog::class, 'subject')
+            ->whereIn('action', ['create', 'update'])
+            ->latest('created_at');
+    }
+
     protected static function bootLogActivity()
     {
         static::created(function (Model $model) {

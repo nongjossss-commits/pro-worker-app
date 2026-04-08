@@ -335,32 +335,105 @@
 
             <!-- VIEW: CROP -->
             <div x-show="view === 'crop'" class="w-full h-full flex flex-col bg-dark relative">
-                <div class="flex-grow relative overflow-hidden flex items-center justify-center bg-gray-900" x-ref="cropContainer">
-                    <div class="relative shadow-2xl max-w-full max-h-full flex items-center justify-center" x-ref="cropWrapper">
-                        <canvas x-ref="cropCanvas" class="block max-w-full max-h-full object-contain"></canvas>
+                <div class="flex-grow relative bg-gray-900" x-ref="cropContainer"
+                     :style="isDragging ? 'overflow: hidden; touch-action: none;' : 'overflow: auto;'"
+                     @wheel="handleCropZoomWheel($event)">
+                    <div style="display: flex; align-items: center; justify-content: center; min-width: 100%; min-height: 100%; padding: 8px;">
+                        <div x-ref="cropWrapper" style="position: relative; flex-shrink: 0;">
+                            <canvas x-ref="cropCanvas" style="display: block; image-rendering: high-quality;"></canvas>
 
-                        <!-- SVG Overlay for Handles -->
-                        <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 10;" :viewBox="`0 0 ${canvasWidth} ${canvasHeight}`">
-                            <!-- Polygon Line -->
-                            <polygon :points="getPolygonPoints()" fill="rgba(255, 255, 255, 0.2)" stroke="#0d6efd" stroke-width="2" />
+                            <!-- SVG Overlay for Handles -->
+                            <svg x-ref="cropSvg"
+                                 style="position: absolute; top: 0; left: 0; z-index: 10; pointer-events: none; overflow: visible; touch-action: none;">
 
-                            <!-- Edge Click Areas (Transparent Thick Lines) -->
-                            <!-- Top (0-1) -->
-                            <line :x1="corners[0].x" :y1="corners[0].y" :x2="corners[1].x" :y2="corners[1].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 0, $event)" @touchstart="startDrag('edge', 0, $event)" />
-                            <!-- Right (1-2) -->
-                            <line :x1="corners[1].x" :y1="corners[1].y" :x2="corners[2].x" :y2="corners[2].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 1, $event)" @touchstart="startDrag('edge', 1, $event)" />
-                            <!-- Bottom (2-3) -->
-                            <line :x1="corners[2].x" :y1="corners[2].y" :x2="corners[3].x" :y2="corners[3].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 2, $event)" @touchstart="startDrag('edge', 2, $event)" />
-                            <!-- Left (3-0) -->
-                            <line :x1="corners[3].x" :y1="corners[3].y" :x2="corners[0].x" :y2="corners[0].y" stroke="transparent" stroke-width="30" class="pointer-events-auto cursor-move" @mousedown="startDrag('edge', 3, $event)" @touchstart="startDrag('edge', 3, $event)" />
+                                <!-- Dim area outside crop region -->
+                                <defs>
+                                    <mask id="cropMask">
+                                        <rect x="0" y="0" :width="canvasWidth" :height="canvasHeight" fill="white" />
+                                        <polygon :points="getPolygonPoints()" fill="black" />
+                                    </mask>
+                                </defs>
+                                <rect x="0" y="0" :width="canvasWidth" :height="canvasHeight" fill="rgba(0,0,0,0.4)" mask="url(#cropMask)" />
 
-                            <!-- Handles (Larger) -->
-                            <circle :cx="corners[0].x" :cy="corners[0].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 0, $event)" @touchstart="startDrag('corner', 0, $event)" />
-                            <circle :cx="corners[1].x" :cy="corners[1].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 1, $event)" @touchstart="startDrag('corner', 1, $event)" />
-                            <circle :cx="corners[2].x" :cy="corners[2].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 2, $event)" @touchstart="startDrag('corner', 2, $event)" />
-                            <circle :cx="corners[3].x" :cy="corners[3].y" r="15" fill="#0d6efd" stroke="white" stroke-width="3" class="pointer-events-auto cursor-move shadow-sm" @mousedown="startDrag('corner', 3, $event)" @touchstart="startDrag('corner', 3, $event)" />
-                        </svg>
+                                <!-- Border Lines (green) -->
+                                <line :x1="corners[0].x" :y1="corners[0].y" :x2="corners[1].x" :y2="corners[1].y" stroke="#22c55e" stroke-width="3" />
+                                <line :x1="corners[1].x" :y1="corners[1].y" :x2="corners[2].x" :y2="corners[2].y" stroke="#22c55e" stroke-width="3" />
+                                <line :x1="corners[2].x" :y1="corners[2].y" :x2="corners[3].x" :y2="corners[3].y" stroke="#22c55e" stroke-width="3" />
+                                <line :x1="corners[3].x" :y1="corners[3].y" :x2="corners[0].x" :y2="corners[0].y" stroke="#22c55e" stroke-width="3" />
+
+                                <!-- Invisible thick edge hit areas for dragging (Edge 0-3) -->
+                                <line :x1="corners[0].x" :y1="corners[0].y" :x2="corners[1].x" :y2="corners[1].y" stroke="transparent" stroke-width="30" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('edge', 0, $event)" @touchstart.prevent="startDrag('edge', 0, $event)" />
+                                <line :x1="corners[1].x" :y1="corners[1].y" :x2="corners[2].x" :y2="corners[2].y" stroke="transparent" stroke-width="30" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('edge', 1, $event)" @touchstart.prevent="startDrag('edge', 1, $event)" />
+                                <line :x1="corners[2].x" :y1="corners[2].y" :x2="corners[3].x" :y2="corners[3].y" stroke="transparent" stroke-width="30" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('edge', 2, $event)" @touchstart.prevent="startDrag('edge', 2, $event)" />
+                                <line :x1="corners[3].x" :y1="corners[3].y" :x2="corners[0].x" :y2="corners[0].y" stroke="transparent" stroke-width="30" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('edge', 3, $event)" @touchstart.prevent="startDrag('edge', 3, $event)" />
+
+                                <!-- Midpoint Square Handles (center of each edge) - invisible hit area + visible handle -->
+                                <rect :x="(corners[0].x + corners[1].x) / 2 - 22" :y="(corners[0].y + corners[1].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 0, $event)" @touchstart.prevent="startDrag('midpoint', 0, $event)" />
+                                <rect :x="(corners[0].x + corners[1].x) / 2 - 12" :y="(corners[0].y + corners[1].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 0 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+
+                                <rect :x="(corners[1].x + corners[2].x) / 2 - 22" :y="(corners[1].y + corners[2].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 1, $event)" @touchstart.prevent="startDrag('midpoint', 1, $event)" />
+                                <rect :x="(corners[1].x + corners[2].x) / 2 - 12" :y="(corners[1].y + corners[2].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 1 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+
+                                <rect :x="(corners[2].x + corners[3].x) / 2 - 22" :y="(corners[2].y + corners[3].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 2, $event)" @touchstart.prevent="startDrag('midpoint', 2, $event)" />
+                                <rect :x="(corners[2].x + corners[3].x) / 2 - 12" :y="(corners[2].y + corners[3].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 2 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+
+                                <rect :x="(corners[3].x + corners[0].x) / 2 - 22" :y="(corners[3].y + corners[0].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 3, $event)" @touchstart.prevent="startDrag('midpoint', 3, $event)" />
+                                <rect :x="(corners[3].x + corners[0].x) / 2 - 12" :y="(corners[3].y + corners[0].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 3 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+
+                                <!-- Corner 0 (TL) -->
+                                <circle :cx="corners[0].x" :cy="corners[0].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 0, $event)" @touchstart.prevent="startDrag('corner', 0, $event)" />
+                                <circle x-show="activeDragIndex === 0" :cx="corners[0].x" :cy="corners[0].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[0].x" :cy="corners[0].y" :r="activeDragIndex === 0 ? 22 : 18" :fill="activeDragIndex === 0 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+
+                                <!-- Corner 1 (TR) -->
+                                <circle :cx="corners[1].x" :cy="corners[1].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 1, $event)" @touchstart.prevent="startDrag('corner', 1, $event)" />
+                                <circle x-show="activeDragIndex === 1" :cx="corners[1].x" :cy="corners[1].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[1].x" :cy="corners[1].y" :r="activeDragIndex === 1 ? 22 : 18" :fill="activeDragIndex === 1 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+
+                                <!-- Corner 2 (BR) -->
+                                <circle :cx="corners[2].x" :cy="corners[2].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 2, $event)" @touchstart.prevent="startDrag('corner', 2, $event)" />
+                                <circle x-show="activeDragIndex === 2" :cx="corners[2].x" :cy="corners[2].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[2].x" :cy="corners[2].y" :r="activeDragIndex === 2 ? 22 : 18" :fill="activeDragIndex === 2 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+
+                                <!-- Corner 3 (BL) -->
+                                <circle :cx="corners[3].x" :cy="corners[3].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 3, $event)" @touchstart.prevent="startDrag('corner', 3, $event)" />
+                                <circle x-show="activeDragIndex === 3" :cx="corners[3].x" :cy="corners[3].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[3].x" :cy="corners[3].y" :r="activeDragIndex === 3 ? 22 : 18" :fill="activeDragIndex === 3 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+                            </svg>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Magnifier Loupe (canvas-based, fixed top-left, shows when dragging corner) -->
+                <div x-show="isDragging && activeDragIndex !== -1"
+                     x-ref="loupeContainer"
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="opacity-0 scale-75"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-100"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-75"
+                     style="position: absolute; top: 12px; left: 12px; z-index: 9999; pointer-events: none; border-radius: 16px; overflow: hidden; border: 3px solid white; box-shadow: 0 6px 30px rgba(0,0,0,0.6), 0 0 0 2px rgba(34, 197, 94, 0.5); width: 160px; height: 160px;">
+                    <canvas x-ref="loupeCanvas" width="320" height="320" style="width: 160px; height: 160px;"></canvas>
+                    <!-- Crosshair overlay drawn on loupeCanvas via JS -->
+                </div>
+
+                <!-- Zoom Controls (floating) -->
+                <div class="absolute top-16 right-3 z-20 flex flex-col gap-1 bg-black/70 rounded-lg p-1 shadow-lg">
+                    <button @click="setCropZoom(cropZoom + 0.5)" class="btn btn-sm btn-dark border-0 text-white px-2" title="ซูมเข้า">
+                        <i class="bi bi-zoom-in"></i>
+                    </button>
+                    <div class="text-center text-white text-xs py-1 font-bold" x-text="Math.round(cropZoom * 100) + '%'"></div>
+                    <button @click="setCropZoom(cropZoom - 0.5)" class="btn btn-sm btn-dark border-0 text-white px-2" title="ซูมออก">
+                        <i class="bi bi-zoom-out"></i>
+                    </button>
+                    <hr class="border-gray-600 my-0.5">
+                    <button @click="setCropZoom(1)" class="btn btn-sm btn-dark border-0 text-white px-2" title="พอดีจอ">
+                        <i class="bi bi-fullscreen"></i>
+                    </button>
+                    <button @click="setCropZoom(2)" class="btn btn-sm btn-dark border-0 text-white px-2" title="ซูม 200%">
+                        <i class="bi bi-search"></i>
+                    </button>
                 </div>
 
                 <!-- Filter Toolbar -->
@@ -499,18 +572,24 @@
             // Cropping State
             cvLoaded: false,
             corners: [{x:0, y:0}, {x:0, y:0}, {x:0, y:0}, {x:0, y:0}],
-            canvasWidth: 0,
-            canvasHeight: 0,
+            canvasWidth: 1,
+            canvasHeight: 1,
             imageWidth: 0,
             imageHeight: 0,
             scaleX: 1,
             scaleY: 1,
             activeDragIndex: -1,
             activeDragEdge: -1,
+            activeDragMidpoint: -1,
             previousMousePosition: { x: 0, y: 0 },
+            isDragging: false,
+            dragPosition: { x: 0, y: 0 },
+            loupeScreenPos: { x: 0, y: 0 },
             rotation: 0, // Current rotation in degrees (0, 90, 180, 270)
             activeFilter: 'original', // original, bw, magic, gray
             editorSourceCanvas: null, // Store rotated source for preview
+            cropZoom: 1, // 1 = fit to screen, 2 = 200%, etc.
+            cropZoomFitScale: 1, // The base fit scale (stored for reference)
 
             // Live Detection State
             liveCorners: [],
@@ -701,7 +780,8 @@
 
                                 const result = this.detectDocument(src, true);
                                 if (result.found) {
-                                    finalCorners = result.corners;
+                                    // Expand corners slightly outward to avoid cutting document edges
+                                    finalCorners = this.expandCorners(result.corners, img.width, img.height, 0.01);
                                     isFound = true;
                                     finalCropped = this.performWarp(src, finalCorners, canvas.width, canvas.height);
                                 } else {
@@ -955,11 +1035,11 @@
 
                         // Use live corners if they exist and are valid, otherwise detect from the high-res snapshot
                         if (this.liveCorners.length === 4) {
-                            cornersToUse = [...this.liveCorners];
+                            cornersToUse = this.expandCorners([...this.liveCorners], canvas.width, canvas.height, 0.01);
                             isFound = true;
                         } else {
                             const result = this.detectDocument(src);
-                            cornersToUse = result.corners;
+                            cornersToUse = result.found ? this.expandCorners(result.corners, canvas.width, canvas.height, 0.01) : result.corners;
                             isFound = result.found;
                         }
 
@@ -1015,96 +1095,162 @@
                 let bestCorners = [];
                 let isFound = false;
 
-                // Declare Mats outside for cleanup
-                let processingSrc = null;
-                let gray = null;
-                let blurred = null;
-                let edges = null;
-                let dilated = null;
-                let kernel = null;
-                let contours = null;
-                let hierarchy = null;
-                let approx = null;
+                const matsToDelete = [];
+                const trackMat = (mat) => { if (mat) matsToDelete.push(mat); return mat; };
 
                 try {
-                    // 1. Preprocessing (Resize for speed & noise reduction)
-                    processingSrc = src; // Default alias
+                    // 1. Preprocessing - Resize for speed
+                    let processingSrc = src;
                     let scale = 1;
-                    const maxDim = 600; // Smaller dim for more robust structural detection
+                    const maxDim = 800;
 
                     if (Math.max(width, height) > maxDim) {
                         scale = maxDim / Math.max(width, height);
-                        processingSrc = new cv.Mat();
+                        processingSrc = trackMat(new cv.Mat());
                         cv.resize(src, processingSrc, new cv.Size(0, 0), scale, scale, cv.INTER_AREA);
                     }
 
                     const pWidth = processingSrc.cols;
                     const pHeight = processingSrc.rows;
 
-                    gray = new cv.Mat();
+                    const gray = trackMat(new cv.Mat());
                     cv.cvtColor(processingSrc, gray, cv.COLOR_RGBA2GRAY, 0);
 
-                    // 2. Denoise (Gaussian Blur or Bilateral)
-                    // Bilateral is better at preserving edges while removing noise
-                    blurred = new cv.Mat();
-                    cv.bilateralFilter(gray, blurred, 9, 75, 75, cv.BORDER_DEFAULT);
-
-                    // 3. Edge Detection (Canny with Otsu's thresholding trick equivalent)
-                    edges = new cv.Mat();
-                    cv.Canny(blurred, edges, 30, 150, 3, false);
-
-                    // 4. Morphological Close to connect broken document edges
-                    kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5));
-                    dilated = new cv.Mat();
-                    cv.morphologyEx(edges, dilated, cv.MORPH_CLOSE, kernel);
-
-                    // 5. Find Contours
-                    contours = new cv.MatVector();
-                    hierarchy = new cv.Mat();
-                    cv.findContours(dilated, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
-
-                    // 6. Find Best Quadrilateral
-                    let maxArea = 0;
+                    // 2. Multi-strategy detection - try multiple approaches
                     let bestCandidate = null;
-                    const minArea = pWidth * pHeight * 0.10; // Must be at least 10%
+                    let maxArea = 0;
+                    const minArea = pWidth * pHeight * 0.15;
 
-                    for (let i = 0; i < contours.size(); ++i) {
-                        const cnt = contours.get(i);
-                        const area = cv.contourArea(cnt);
+                    // Helper: find quads from edge mat
+                    const findQuadsFromEdges = (edgeMat) => {
+                        const morphKernel = trackMat(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5)));
+                        const closed = trackMat(new cv.Mat());
+                        cv.morphologyEx(edgeMat, closed, cv.MORPH_CLOSE, morphKernel);
 
-                        if (area < minArea) continue;
+                        // Also dilate to connect nearby edges
+                        const dilateKernel = trackMat(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3)));
+                        const dilated = trackMat(new cv.Mat());
+                        cv.dilate(closed, dilated, dilateKernel);
 
-                        let peri = cv.arcLength(cnt, true);
-                        approx = new cv.Mat();
-                        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+                        const contours = trackMat(new cv.MatVector());
+                        const hierarchy = trackMat(new cv.Mat());
+                        cv.findContours(dilated, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-                        // Looking for 4 corners and convexity
-                        if (approx.rows === 4 && cv.isContourConvex(approx)) {
-                            if (area > maxArea) {
-                                maxArea = area;
-                                bestCandidate = [];
-                                for(let j=0; j<4; j++) {
-                                    bestCandidate.push({
-                                        x: approx.data32S[j*2] / scale,
-                                        y: approx.data32S[j*2+1] / scale
-                                    });
+                        for (let i = 0; i < contours.size(); ++i) {
+                            const cnt = contours.get(i);
+                            const area = cv.contourArea(cnt);
+                            if (area < minArea) continue;
+
+                            // Try multiple epsilon values for approxPolyDP
+                            for (const epsFactor of [0.015, 0.02, 0.03, 0.04, 0.05]) {
+                                const peri = cv.arcLength(cnt, true);
+                                const approx = trackMat(new cv.Mat());
+                                cv.approxPolyDP(cnt, approx, epsFactor * peri, true);
+
+                                if (approx.rows === 4 && cv.isContourConvex(approx)) {
+                                    // Score: prefer larger area and more rectangular shape
+                                    const pts = [];
+                                    for (let j = 0; j < 4; j++) {
+                                        pts.push({ x: approx.data32S[j * 2], y: approx.data32S[j * 2 + 1] });
+                                    }
+                                    const sorted = this.sortPoints(pts);
+
+                                    // Calculate angles - prefer close to 90 degrees
+                                    const angleScore = this._calcRectScore(sorted);
+                                    const score = area * angleScore;
+
+                                    if (score > maxArea) {
+                                        maxArea = score;
+                                        bestCandidate = sorted.map(p => ({
+                                            x: p.x / scale,
+                                            y: p.y / scale
+                                        }));
+                                    }
                                 }
                             }
                         }
+                    };
 
-                        approx.delete();
-                        approx = null;
+                    // Strategy 1: Bilateral filter + adaptive Canny thresholds
+                    const blurred1 = trackMat(new cv.Mat());
+                    cv.bilateralFilter(gray, blurred1, 9, 75, 75, cv.BORDER_DEFAULT);
+
+                    // Calculate Otsu threshold for adaptive Canny
+                    const otsuThresh = trackMat(new cv.Mat());
+                    const otsuVal = cv.threshold(gray, otsuThresh, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU);
+                    const cannyLow1 = Math.max(10, otsuVal * 0.33);
+                    const cannyHigh1 = Math.min(255, otsuVal * 0.67);
+
+                    const edges1 = trackMat(new cv.Mat());
+                    cv.Canny(blurred1, edges1, cannyLow1, cannyHigh1, 3, true);
+                    findQuadsFromEdges(edges1);
+
+                    // Strategy 2: Gaussian blur + different Canny thresholds
+                    if (!bestCandidate) {
+                        const blurred2 = trackMat(new cv.Mat());
+                        cv.GaussianBlur(gray, blurred2, new cv.Size(5, 5), 0);
+
+                        // Live mode: fewer thresholds for speed
+                        const thresholds = isHighRes
+                            ? [[20, 80], [30, 120], [50, 200], [75, 250]]
+                            : [[30, 120], [50, 200]];
+
+                        for (const [low, high] of thresholds) {
+                            const edges2 = trackMat(new cv.Mat());
+                            cv.Canny(blurred2, edges2, low, high, 3, false);
+                            findQuadsFromEdges(edges2);
+                            if (bestCandidate) break;
+                        }
+                    }
+
+                    // Strategy 3: Adaptive threshold + contour (skip for live mode)
+                    if (!bestCandidate && isHighRes) {
+                        const blurred3 = trackMat(new cv.Mat());
+                        cv.GaussianBlur(gray, blurred3, new cv.Size(11, 11), 0);
+
+                        const thresh = trackMat(new cv.Mat());
+                        cv.adaptiveThreshold(blurred3, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 15, 8);
+
+                        findQuadsFromEdges(thresh);
+                    }
+
+                    // Strategy 4: Color-based detection (skip for live mode)
+                    if (!bestCandidate && isHighRes && processingSrc.channels() >= 3) {
+                        try {
+                            const rgb = trackMat(new cv.Mat());
+                            cv.cvtColor(processingSrc, rgb, cv.COLOR_RGBA2RGB);
+                            const hsv = trackMat(new cv.Mat());
+                            cv.cvtColor(rgb, hsv, cv.COLOR_RGB2HSV);
+
+                            // Detect white/light areas (paper) using scalar bounds
+                            const lowerBound = new cv.Scalar(0, 0, 160);
+                            const upperBound = new cv.Scalar(180, 60, 255);
+                            const mask = trackMat(new cv.Mat());
+                            // Create bound mats matching HSV type
+                            const low = trackMat(new cv.Mat(hsv.rows, hsv.cols, hsv.type(), lowerBound));
+                            const high = trackMat(new cv.Mat(hsv.rows, hsv.cols, hsv.type(), upperBound));
+                            cv.inRange(hsv, low, high, mask);
+
+                            const morphK = trackMat(cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(7, 7)));
+                            const morphed = trackMat(new cv.Mat());
+                            cv.morphologyEx(mask, morphed, cv.MORPH_CLOSE, morphK);
+                            cv.morphologyEx(morphed, morphed, cv.MORPH_OPEN, morphK);
+
+                            const edgesFromMask = trackMat(new cv.Mat());
+                            cv.Canny(morphed, edgesFromMask, 50, 150);
+                            findQuadsFromEdges(edgesFromMask);
+                        } catch(colorErr) {
+                            console.warn("Color detection strategy failed:", colorErr);
+                        }
                     }
 
                     if (bestCandidate) {
-                        bestCorners = this.sortPoints(bestCandidate);
+                        bestCorners = bestCandidate;
                         isFound = true;
                     } else {
-                        // Fallback Intelligence:
-                        // Instead of the extreme edges (which makes it hard to grab),
-                        // place the crop box slightly inwards so user can see/drag handles.
-                        const marginW = width * 0.1;
-                        const marginH = height * 0.1;
+                        // Fallback: place crop at 5% inset
+                        const marginW = width * 0.05;
+                        const marginH = height * 0.05;
                         bestCorners = [
                             {x: marginW, y: marginH},
                             {x: width - marginW, y: marginH},
@@ -1119,18 +1265,38 @@
                     bestCorners = this.getDefaultCorners(width, height);
                     isFound = false;
                 } finally {
-                    if (approx) approx.delete();
-                    if (processingSrc && processingSrc !== src) processingSrc.delete();
-                    if (gray) gray.delete();
-                    if (blurred) blurred.delete();
-                    if (edges) edges.delete();
-                    if (dilated) dilated.delete();
-                    if (kernel) kernel.delete();
-                    if (contours) contours.delete();
-                    if (hierarchy) hierarchy.delete();
+                    for (let i = matsToDelete.length - 1; i >= 0; i--) {
+                        try {
+                            const mat = matsToDelete[i];
+                            if (mat && typeof mat.delete === 'function') {
+                                mat.delete();
+                            }
+                        } catch(e) { /* ignore cleanup errors */ }
+                    }
                 }
 
                 return { corners: bestCorners, found: isFound };
+            },
+
+            _calcRectScore(sortedPts) {
+                // Score how rectangular a quadrilateral is (1.0 = perfect rectangle)
+                const angles = [];
+                for (let i = 0; i < 4; i++) {
+                    const p1 = sortedPts[i];
+                    const p2 = sortedPts[(i + 1) % 4];
+                    const p3 = sortedPts[(i + 2) % 4];
+                    const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+                    const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+                    const dot = v1.x * v2.x + v1.y * v2.y;
+                    const mag = Math.sqrt(v1.x * v1.x + v1.y * v1.y) * Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+                    if (mag === 0) return 0;
+                    const angle = Math.acos(Math.min(1, Math.max(-1, dot / mag))) * (180 / Math.PI);
+                    angles.push(angle);
+                }
+                // Average deviation from 90 degrees
+                const avgDev = angles.reduce((s, a) => s + Math.abs(a - 90), 0) / 4;
+                // Score: 1.0 for perfect rectangle, lower for skewed shapes
+                return Math.max(0, 1 - avgDev / 45);
             },
 
             performWarp(src, corners, width, height, filterType = 'original') {
@@ -1211,6 +1377,16 @@
                     {x: w, y: h},
                     {x: 0, y: h}
                 ];
+            },
+
+            expandCorners(corners, imgW, imgH, ratio) {
+                // Expand each corner outward from center by ratio (e.g. 0.01 = 1%)
+                const cx = corners.reduce((s, c) => s + c.x, 0) / 4;
+                const cy = corners.reduce((s, c) => s + c.y, 0) / 4;
+                return corners.map(c => ({
+                    x: Math.max(0, Math.min(imgW, c.x + (c.x - cx) * ratio)),
+                    y: Math.max(0, Math.min(imgH, c.y + (c.y - cy) * ratio))
+                }));
             },
 
             finishCapture() {
@@ -1510,8 +1686,9 @@
             startEdit(index) {
                 this.currentEditIndex = index;
                 this.view = 'crop';
-                this.rotation = 0; // Reset rotation
-                this.activeFilter = 'original'; // Reset filter
+                this.rotation = 0;
+                this.activeFilter = 'original';
+                this.cropZoom = 1;
                 const item = this.capturedImages[index];
 
                 this.$nextTick(() => {
@@ -1593,11 +1770,11 @@
                     this.editorSourceCanvas = rotCanvas;
 
                     const canvas = this.$refs.cropCanvas;
+                    const wrapper = this.$refs.cropWrapper;
+                    const svg = this.$refs.cropSvg;
                     const container = this.$refs.cropContainer;
 
-                    // Simple fit logic
                     // Preserve HIGH RESOLUTION for cropping so text isn't blurry.
-                    // We only scale down if the image is astronomically large (> 4000px) to prevent memory crashes.
                     const maxCropRes = 3000;
                     let scale = 1;
                     if (this.imageWidth > maxCropRes || this.imageHeight > maxCropRes) {
@@ -1607,10 +1784,20 @@
                     this.canvasWidth = Math.max(1, Math.floor(this.imageWidth * scale));
                     this.canvasHeight = Math.max(1, Math.floor(this.imageHeight * scale));
 
+                    // Set canvas internal resolution = logical size (full quality)
                     canvas.width = this.canvasWidth;
                     canvas.height = this.canvasHeight;
 
-                    // Render with filter check
+                    // Calculate base fit scale
+                    const containerRect = container.getBoundingClientRect();
+                    const availW = containerRect.width - 16;
+                    const availH = containerRect.height - 16;
+                    this.cropZoomFitScale = Math.min(availW / this.canvasWidth, availH / this.canvasHeight);
+
+                    // Apply zoom display
+                    this._applyCropZoom();
+
+                    // Render image to canvas
                     this.renderEditorCanvas();
 
                     this.scaleX = this.canvasWidth / this.imageWidth;
@@ -1620,21 +1807,58 @@
                         this.resetToFull();
                     } else {
                         if (isNormalized) {
-                            // Map normalized (0..1) to New Canvas Dimensions
                             this.corners = savedCorners.map(c => ({
                                 x: c.u * this.canvasWidth,
                                 y: c.v * this.canvasHeight
                             }));
                         } else {
-                            // Map Original Image Coordinates to Canvas
                             this.corners = savedCorners.map(c => ({
                                 x: c.x * this.scaleX,
                                 y: c.y * this.scaleY
                             }));
                         }
                     }
+
+                    console.log('CropEditor loaded:', {
+                        canvasW: this.canvasWidth, canvasH: this.canvasHeight,
+                        fitScale: this.cropZoomFitScale, zoom: this.cropZoom,
+                        corners: JSON.parse(JSON.stringify(this.corners))
+                    });
                 };
                 img.src = src;
+            },
+
+            _applyCropZoom() {
+                const wrapper = this.$refs.cropWrapper;
+                const canvas = this.$refs.cropCanvas;
+                const svg = this.$refs.cropSvg;
+                if (!wrapper || !canvas) return;
+
+                const displayW = Math.max(1, Math.floor(this.canvasWidth * this.cropZoomFitScale * this.cropZoom));
+                const displayH = Math.max(1, Math.floor(this.canvasHeight * this.cropZoomFitScale * this.cropZoom));
+
+                canvas.style.width = displayW + 'px';
+                canvas.style.height = displayH + 'px';
+                wrapper.style.width = displayW + 'px';
+                wrapper.style.height = displayH + 'px';
+                if (svg) {
+                    svg.setAttribute('width', displayW);
+                    svg.setAttribute('height', displayH);
+                    svg.setAttribute('viewBox', `0 0 ${this.canvasWidth} ${this.canvasHeight}`);
+                }
+            },
+
+            setCropZoom(level) {
+                this.cropZoom = Math.max(0.5, Math.min(4, level));
+                this._applyCropZoom();
+            },
+
+            handleCropZoomWheel(e) {
+                // Ctrl+wheel = zoom, plain wheel = normal scroll
+                if (!e.ctrlKey) return;
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.25 : 0.25;
+                this.setCropZoom(this.cropZoom + delta);
             },
 
             renderEditorCanvas() {
@@ -1643,8 +1867,8 @@
                 const canvas = this.$refs.cropCanvas;
                 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-                // 1. Draw Original (Scaled) - effectively resetting the view
-                ctx.drawImage(this.editorSourceCanvas, 0, 0, this.canvasWidth, this.canvasHeight);
+                // Draw Original at full canvas resolution
+                ctx.drawImage(this.editorSourceCanvas, 0, 0, canvas.width, canvas.height);
 
                 // 2. Apply Filter (if not original)
                 if (this.activeFilter !== 'original' && typeof cv !== 'undefined' && this.cvLoaded) {
@@ -1949,6 +2173,11 @@
                 return this.corners.map(c => `${c.x},${c.y}`).join(' ');
             },
 
+            getLoupePosition() {
+                // Fixed top-left position — no longer follows finger
+                return '';
+            },
+
             startDrag(type, index, e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1957,86 +2186,218 @@
                 const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
                 this.previousMousePosition = { x: clientX, y: clientY };
+                this.isDragging = true;
 
                 if (type === 'corner') {
                     this.activeDragIndex = index;
                     this.activeDragEdge = -1;
+                    this.activeDragMidpoint = -1;
+                    this.dragPosition = { ...this.corners[index] };
+                    this.loupeScreenPos = { x: clientX, y: clientY };
+                    this.$nextTick(() => this._renderLoupe(this.corners[index].x, this.corners[index].y));
                 } else if (type === 'edge') {
                     this.activeDragEdge = index;
                     this.activeDragIndex = -1;
+                    this.activeDragMidpoint = -1;
+                } else if (type === 'midpoint') {
+                    this.activeDragMidpoint = index;
+                    this.activeDragIndex = -1;
+                    this.activeDragEdge = -1;
                 }
             },
 
             onDrag(e) {
-                if (this.activeDragIndex === -1 && this.activeDragEdge === -1) return;
+                if (this.activeDragIndex === -1 && this.activeDragEdge === -1 && this.activeDragMidpoint === -1) return;
                 e.preventDefault();
 
                 const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
                 const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
-                // Calculate Delta for edge dragging
                 const dx = clientX - this.previousMousePosition.x;
                 const dy = clientY - this.previousMousePosition.y;
-
-                // Update prev position for next frame
                 this.previousMousePosition = { x: clientX, y: clientY };
 
-                // Get Canvas Rect to check bounds relative to canvas
                 const canvasRect = this.$refs.cropCanvas.getBoundingClientRect();
+                const scaleX = this.canvasWidth / canvasRect.width;
+                const scaleY = this.canvasHeight / canvasRect.height;
 
                 if (this.activeDragIndex !== -1) {
-                    // Moving a Corner: Calculate absolute position relative to the canvas.
-                    // To handle potential CSS scaling, we calculate the scale factor between
-                    // the actual canvas display size (canvasRect) and its internal resolution (this.canvasWidth).
-
-                    const scaleX = this.canvasWidth / canvasRect.width;
-                    const scaleY = this.canvasHeight / canvasRect.height;
-
+                    // Corner drag: absolute position
                     let x = (clientX - canvasRect.left) * scaleX;
                     let y = (clientY - canvasRect.top) * scaleY;
-
-                    // Clamping
                     x = Math.max(0, Math.min(x, this.canvasWidth));
                     y = Math.max(0, Math.min(y, this.canvasHeight));
 
-                    // Directly update ONLY the active corner using array assignment to trigger reactivity safely
                     const newCorners = [...this.corners];
-                    newCorners[this.activeDragIndex] = { x: x, y: y };
+                    newCorners[this.activeDragIndex] = { x, y };
                     this.corners = newCorners;
+                    this.dragPosition = { x, y };
+
+                    // Update loupe position (raw screen coords, getLoupePosition() handles offset)
+                    this.loupeScreenPos = { x: clientX, y: clientY };
+                    this._renderLoupe(x, y);
 
                 } else if (this.activeDragEdge !== -1) {
-                    // Moving an Edge: Apply delta to both endpoints
-                    const scaleX = this.canvasWidth / canvasRect.width;
-                    const scaleY = this.canvasHeight / canvasRect.height;
-
+                    // Edge drag: move both endpoints by delta
                     const scaledDx = dx * scaleX;
                     const scaledDy = dy * scaleY;
-
-                    const edgeIdx = this.activeDragEdge;
-                    // Edge 0: 0-1, Edge 1: 1-2, Edge 2: 2-3, Edge 3: 3-0
-                    const p1 = edgeIdx;
-                    const p2 = (edgeIdx + 1) % 4;
-
+                    const p1 = this.activeDragEdge;
+                    const p2 = (this.activeDragEdge + 1) % 4;
                     const newCorners = [...this.corners];
 
                     [p1, p2].forEach(idx => {
-                        let newX = newCorners[idx].x + scaledDx;
-                        let newY = newCorners[idx].y + scaledDy;
-
-                        // Clamping
-                        newX = Math.max(0, Math.min(newX, this.canvasWidth));
-                        newY = Math.max(0, Math.min(newY, this.canvasHeight));
-
-                        newCorners[idx] = { x: newX, y: newY };
+                        newCorners[idx] = {
+                            x: Math.max(0, Math.min(newCorners[idx].x + scaledDx, this.canvasWidth)),
+                            y: Math.max(0, Math.min(newCorners[idx].y + scaledDy, this.canvasHeight))
+                        };
                     });
+                    this.corners = newCorners;
 
+                } else if (this.activeDragMidpoint !== -1) {
+                    // Midpoint drag: move both endpoints of that edge
+                    const scaledDx = dx * scaleX;
+                    const scaledDy = dy * scaleY;
+                    const p1 = this.activeDragMidpoint;
+                    const p2 = (this.activeDragMidpoint + 1) % 4;
+                    const newCorners = [...this.corners];
+
+                    // Determine movement axis based on edge orientation
+                    // Edge 0 (top) & Edge 2 (bottom): primarily vertical
+                    // Edge 1 (right) & Edge 3 (left): primarily horizontal
+                    [p1, p2].forEach(idx => {
+                        newCorners[idx] = {
+                            x: Math.max(0, Math.min(newCorners[idx].x + scaledDx, this.canvasWidth)),
+                            y: Math.max(0, Math.min(newCorners[idx].y + scaledDy, this.canvasHeight))
+                        };
+                    });
                     this.corners = newCorners;
                 }
+            },
+
+            _renderLoupe(canvasX, canvasY) {
+                const loupeCanvas = this.$refs.loupeCanvas;
+                const srcCanvas = this.$refs.cropCanvas;
+                if (!loupeCanvas || !srcCanvas) return;
+
+                const ctx = loupeCanvas.getContext('2d');
+                const loupeSize = 320; // canvas internal size (matches canvas element)
+                const zoomFactor = 3.5; // 3.5x magnification for better precision
+                const srcSize = loupeSize / zoomFactor;
+
+                // Map from logical coords to actual canvas pixels
+                const pixelX = (canvasX / this.canvasWidth) * srcCanvas.width;
+                const pixelY = (canvasY / this.canvasHeight) * srcCanvas.height;
+                const srcPixelSize = (srcSize / this.canvasWidth) * srcCanvas.width;
+
+                // Clamp source rect to stay within canvas bounds (prevents black bars)
+                let sx = pixelX - srcPixelSize / 2;
+                let sy = pixelY - srcPixelSize / 2;
+                let sw = srcPixelSize;
+                let sh = srcPixelSize;
+                let dx = 0, dy = 0, dw = loupeSize, dh = loupeSize;
+
+                // Fill background with the image's edge color instead of black
+                ctx.fillStyle = '#374151'; // dark gray background
+                ctx.fillRect(0, 0, loupeSize, loupeSize);
+
+                // Clamp: if source goes out of bounds, adjust destination accordingly
+                if (sx < 0) {
+                    const overflow = -sx;
+                    const ratio = overflow / sw;
+                    dx = ratio * dw;
+                    dw -= ratio * dw;
+                    sw -= overflow;
+                    sx = 0;
+                }
+                if (sy < 0) {
+                    const overflow = -sy;
+                    const ratio = overflow / sh;
+                    dy = ratio * dh;
+                    dh -= ratio * dh;
+                    sh -= overflow;
+                    sy = 0;
+                }
+                if (sx + sw > srcCanvas.width) {
+                    const overflow = (sx + sw) - srcCanvas.width;
+                    const ratio = overflow / srcPixelSize;
+                    dw -= ratio * loupeSize;
+                    sw = srcCanvas.width - sx;
+                }
+                if (sy + sh > srcCanvas.height) {
+                    const overflow = (sy + sh) - srcCanvas.height;
+                    const ratio = overflow / srcPixelSize;
+                    dh -= ratio * loupeSize;
+                    sh = srcCanvas.height - sy;
+                }
+
+                if (sw > 0 && sh > 0 && dw > 0 && dh > 0) {
+                    ctx.drawImage(srcCanvas, sx, sy, sw, sh, dx, dy, dw, dh);
+                }
+
+                // Draw crop border lines that pass through this region
+                // Convert each corner from canvas logical coords to loupe pixel coords
+                const cornerIdx = this.activeDragIndex;
+                const prevIdx = (cornerIdx + 3) % 4; // previous corner
+                const nextIdx = (cornerIdx + 1) % 4; // next corner
+
+                // Center of loupe = current corner position
+                const centerLoupeX = loupeSize / 2;
+                const centerLoupeY = loupeSize / 2;
+                const scale = loupeSize / srcSize; // pixels per canvas-logical-unit
+
+                // Helper: convert canvas logical coord to loupe coord
+                const toLoupe = (cx, cy) => ({
+                    lx: centerLoupeX + (cx - canvasX) * scale,
+                    ly: centerLoupeY + (cy - canvasY) * scale
+                });
+
+                // Draw the two crop lines meeting at the active corner
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = 'rgba(0,0,0,0.4)';
+                ctx.shadowBlur = 3;
+
+                // Line from previous corner to active corner
+                const prev = toLoupe(this.corners[prevIdx].x, this.corners[prevIdx].y);
+                const curr = toLoupe(this.corners[cornerIdx].x, this.corners[cornerIdx].y);
+                const next = toLoupe(this.corners[nextIdx].x, this.corners[nextIdx].y);
+
+                ctx.beginPath();
+                ctx.moveTo(prev.lx, prev.ly);
+                ctx.lineTo(curr.lx, curr.ly);
+                ctx.lineTo(next.lx, next.ly);
+                ctx.stroke();
+
+                // Reset shadow
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                // Draw crosshair at center
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 2;
+                const chSize = 18;
+                // Horizontal
+                ctx.beginPath();
+                ctx.moveTo(centerLoupeX - chSize, centerLoupeY);
+                ctx.lineTo(centerLoupeX + chSize, centerLoupeY);
+                ctx.stroke();
+                // Vertical
+                ctx.beginPath();
+                ctx.moveTo(centerLoupeX, centerLoupeY - chSize);
+                ctx.lineTo(centerLoupeX, centerLoupeY + chSize);
+                ctx.stroke();
+                // Center dot
+                ctx.fillStyle = '#22c55e';
+                ctx.beginPath();
+                ctx.arc(centerLoupeX, centerLoupeY, 3, 0, Math.PI * 2);
+                ctx.fill();
             },
 
             stopDrag() {
                 this.activeDragIndex = -1;
                 this.activeDragEdge = -1;
+                this.activeDragMidpoint = -1;
+                this.isDragging = false;
             },
 
             // --- FINALIZATION ---

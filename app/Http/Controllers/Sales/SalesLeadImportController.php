@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sales;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\SalesLead;
 use App\Models\SalesLeadEmployee;
 use Illuminate\Http\Request;
@@ -55,6 +56,11 @@ class SalesLeadImportController extends Controller
 
                 $importedCount++;
             }
+
+            ActivityLogHelper::logAction('import', 'นำเข้าข้อมูลลูกจ้าง (Excel) จำนวน ' . $importedCount . ' รายการ สำหรับ ' . $sales->employerNameTh, SalesLead::class, $sales->id, [
+                'imported_count' => $importedCount,
+                'file_name' => $file->getClientOriginalName(),
+            ]);
 
             return redirect()->back()->with('success', "นำเข้าข้อมูลลูกจ้างสำเร็จ {$importedCount} รายการ");
         } catch (\Exception $e) {

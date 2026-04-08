@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\ActivityLogHelper;
 use App\Models\Employee;
 use App\Models\PdfTemplate;
 use App\Models\Employer;
@@ -250,6 +251,10 @@ class PdfGenerationController extends Controller
                      }
                      return redirect($redirectUrl)->with('danger', $errorMessage);
                 }
+
+                ActivityLogHelper::logAction('generate_document', 'สร้างเอกสาร PDF อัตโนมัติ จำนวน ' . $generatedCount . ' ไฟล์', null, null, [
+                    'generated_count' => $generatedCount,
+                ]);
 
                 return response()->download($zipPath)->deleteFileAfterSend(true);
             }

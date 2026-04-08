@@ -21,6 +21,18 @@ class PdfHelper
             abort(404, 'File not found.');
         }
 
+        // Log PDF access (download or view/print)
+        try {
+            $action = ($disposition === 'inline') ? 'print' : 'download';
+            $desc = ($disposition === 'inline' ? 'เปิดดู/พิมพ์' : 'ดาวน์โหลด') . ' PDF: ' . ($customFilename ?: basename($filePath));
+            ActivityLogHelper::logAction($action, $desc, null, null, [
+                'file' => $filePath,
+                'disposition' => $disposition,
+            ]);
+        } catch (\Throwable $e) {
+            // Don't let logging failure break file serving
+        }
+
         $filename = $customFilename ?: basename($filePath);
         // Ensure extension
         if (!str_ends_with(strtolower($filename), '.pdf')) {

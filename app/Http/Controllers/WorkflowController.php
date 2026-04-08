@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ProductionOrder;
+use App\Helpers\ActivityLogHelper;
 use App\Models\ProductionItem;
 use App\Models\WorkflowStep;
 use App\Models\WorkType;
@@ -889,6 +890,8 @@ class WorkflowController extends Controller
 
         $item = ProductionItem::with('order.workType')->findOrFail($itemId);
 
+        $stepName = \App\Models\WorkTypeStep::find($request->step_id)?->name ?? 'ขั้นตอน #' . $request->step_id;
+
         if ($request->completed) {
             $item->completedWorkTypeSteps()->syncWithoutDetaching([
                 $request->step_id => [
@@ -899,6 +902,16 @@ class WorkflowController extends Controller
         } else {
             $item->completedWorkTypeSteps()->detach($request->step_id);
         }
+
+        // Log step change - reference the employee via production item
+        $employeeId = $item->employee_id;
+        $employeeName = $item->employee?->employeeNameTh ?: ($item->employee?->employeeNameEn ?: 'ID:' . $employeeId);
+        ActivityLogHelper::logAction('update', ($request->completed ? 'ติ๊กขั้นตอน' : 'ยกเลิกติ๊กขั้นตอน') . ' "' . $stepName . '" (Workflow) ลูกจ้าง ' . $employeeName, Employee::class, $employeeId, [
+            'step_id' => $request->step_id,
+            'step_name' => $stepName,
+            'completed' => $request->completed,
+            'production_item_id' => $itemId,
+        ]);
 
         // Return stats for UI update (Recalculate Order Stats)
         $order = $item->order;

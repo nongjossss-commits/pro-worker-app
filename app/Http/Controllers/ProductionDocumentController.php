@@ -73,7 +73,11 @@ class ProductionDocumentController extends Controller
 
         // --- Bill To Logic (Customer Override) ---
         $customCustomer = $financialData['customer_override'] ?? null;
-        $billTo = $production->employer; // Default
+        $billTo = $production->employer ?? (object) [
+            'employerNameTh' => $production->project_name ?? 'ลูกค้า',
+            'employerNameEn' => '', 'employerAddress' => '',
+            'employerPhone' => '-', 'tax_id' => '-', 'employerTaxId' => '-',
+        ];
 
         if ($customCustomer) {
             $billTo = (object) [
@@ -118,7 +122,9 @@ class ProductionDocumentController extends Controller
 
         // Construct descriptive filename for browser "Save as PDF"
         // [Document Type]_[Employer Name]_[Production ID]
-        $employerName = $production->employer->employerNameTh ?: ($production->employer->employerNameEn ?: 'Unknown_Employer');
+        $employerName = $production->employer
+            ? ($production->employer->employerNameTh ?: ($production->employer->employerNameEn ?: 'Unknown_Employer'))
+            : 'Sales_Quotation';
         $pageTitle = "{$title}_{$employerName}_PROD-{$production->id}";
 
         // --- Employee List Data Logic ---
@@ -330,7 +336,11 @@ class ProductionDocumentController extends Controller
 
         // --- Bill To Logic (Customer Override) ---
         $customCustomer = $financialData['customer_override'] ?? null;
-        $billTo = $production->employer; // Default
+        $billTo = $production->employer ?? (object) [
+            'employerNameTh' => $production->project_name ?? 'ลูกค้า',
+            'employerNameEn' => '', 'employerAddress' => '',
+            'employerPhone' => '-', 'tax_id' => '-', 'employerTaxId' => '-',
+        ];
 
         if ($customCustomer) {
             $billTo = (object) [
@@ -352,7 +362,9 @@ class ProductionDocumentController extends Controller
 
         $title = $titles[$type] ?? ucfirst($type);
 
-        $employerName = $production->employer->employerNameTh ?: ($production->employer->employerNameEn ?: 'Unknown_Employer');
+        $employerName = $production->employer
+            ? ($production->employer->employerNameTh ?: ($production->employer->employerNameEn ?: 'Unknown_Employer'))
+            : 'Sales_Quotation';
         $pageTitle = "{$title}_{$employerName}_PAY-{$payment->id}";
 
         // Prepare data for the view

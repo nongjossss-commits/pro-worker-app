@@ -413,6 +413,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{sales}/transition', [\App\Http\Controllers\SalesLeadController::class, 'transition'])->name('transition');
 
         Route::post('/{sales}/import', [\App\Http\Controllers\Sales\SalesLeadImportController::class, 'importExcel'])->name('import');
+
+        Route::get('/{sales}/document/{type}', [\App\Http\Controllers\SalesLeadController::class, 'generateDocument'])->name('document.generate');
+        Route::post('/{sales}/payment', [\App\Http\Controllers\SalesLeadController::class, 'storeSalesPayment'])->name('payment.store');
+        Route::delete('/{sales}/payment/{paymentIndex}', [\App\Http\Controllers\SalesLeadController::class, 'destroySalesPayment'])->name('payment.destroy');
+
+        // Financial Tab (full finance features like production)
+        Route::get('/{sales}/finance-tab', [\App\Http\Controllers\SalesLeadController::class, 'loadFinancialTab'])->name('finance.tab');
     });
 
     // NEW: Pre-Production Routes
@@ -428,10 +435,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware('menu:finance')->group(function() {
         Route::get('production/{id}/finance-tab', [\App\Http\Controllers\ProductionController::class, 'fetchFinanceTab'])->name('production.finance_tab');
-        Route::post('production/{id}/financial-groups', [\App\Http\Controllers\ProductionController::class, 'storeFinancialGroup'])->name('production.financial_groups.store');
-        Route::put('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'updateFinancialGroup'])->name('production.financial_groups.update');
-        Route::delete('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'destroyFinancialGroup'])->name('production.financial_groups.destroy');
     });
+
+    // Financial group CRUD (used by registration, renewal, workflow, AND sales — no menu:finance lock)
+    Route::post('production/{id}/financial-groups', [\App\Http\Controllers\ProductionController::class, 'storeFinancialGroup'])->name('production.financial_groups.store');
+    Route::put('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'updateFinancialGroup'])->name('production.financial_groups.update');
+    Route::delete('production/{id}/financial-groups/{groupId}', [\App\Http\Controllers\ProductionController::class, 'destroyFinancialGroup'])->name('production.financial_groups.destroy');
 
     // Financial Hub Routes (Central Menu)
     Route::middleware('menu:finance')->prefix('finance')->name('finance.')->group(function () {

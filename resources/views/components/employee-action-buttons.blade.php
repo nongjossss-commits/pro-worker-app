@@ -1,6 +1,6 @@
 @props(['employee', 'showLocateButton' => false])
 
-<div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-start gap-2">
+<div class="d-flex flex-row flex-wrap align-items-center justify-content-start gap-2">
     {{-- Create Job Button (Green) - Placeholder --}}
     <a href="#" class="btn btn-sm btn-outline-success" title="{{ __('Create Job (Coming Soon)') }}">
         <i class="bi bi-briefcase-fill"></i>
@@ -40,7 +40,7 @@
 
     {{-- Standard Delete (Soft Delete to Trash) Button --}}
     @can('delete-employees')
-        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" class="d-grid d-md-inline delete-employee-form">
+        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" class="d-inline delete-employee-form">
             @csrf
             @method('DELETE')
             <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete Employee (to Trash)') }}">

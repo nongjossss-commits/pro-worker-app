@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\ProductionOrder;
 use App\Models\FinancialTransaction;
 use App\Models\FinancialPayment;
@@ -26,6 +27,8 @@ class FinancialController extends Controller
 
         $request->validate([
             'amount' => 'required|numeric|min:0',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'discount_description' => 'nullable|string|max:255',
             'due_date' => 'nullable|date',
             'type' => 'required|in:installment,down_payment,full_payment,advance_payment',
             'notes' => 'nullable|string',
@@ -41,6 +44,8 @@ class FinancialController extends Controller
             'production_financial_group_id' => $request->financial_group_id,
             'type' => $request->type,
             'amount' => $request->amount,
+            'discount_amount' => $request->discount_amount ?? 0,
+            'discount_description' => $request->discount_description,
             'due_date' => $request->due_date,
             'notes' => $request->notes,
             'status' => 'pending'
@@ -109,10 +114,19 @@ class FinancialController extends Controller
             'wht_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB
             'item_ids' => 'nullable', // Can be array or string "1,2,3" if FormData
             'employee_ids' => 'nullable', // Can be array or string
-            'amount' => 'nullable|numeric|min:0'
+            'amount' => 'nullable|numeric|min:0',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'discount_description' => 'nullable|string|max:255'
         ];
 
         $request->validate($rules);
+
+        if ($request->has('discount_amount')) {
+            $transaction->discount_amount = $request->discount_amount;
+        }
+        if ($request->has('discount_description')) {
+            $transaction->discount_description = $request->discount_description;
+        }
 
         if ($request->has('notes')) {
             $transaction->notes = $request->notes;
@@ -255,7 +269,8 @@ class FinancialController extends Controller
         $transaction->paid_amount += $payment->amount;
         $transaction->paid_at = now();
 
-        if ($transaction->paid_amount >= $transaction->amount) {
+        $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0);
+        if ($transaction->paid_amount >= $effectiveAmount) {
             $transaction->status = 'paid';
         } else {
             $transaction->status = 'partial';
@@ -323,7 +338,8 @@ class FinancialController extends Controller
         $newTotalPaid = $transaction->payments()->sum('amount');
         $transaction->paid_amount = $newTotalPaid;
 
-        if ($newTotalPaid >= $transaction->amount) {
+        $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0);
+        if ($newTotalPaid >= $effectiveAmount) {
             $transaction->status = 'paid';
         } else if ($newTotalPaid > 0) {
             $transaction->status = 'partial';
@@ -359,7 +375,8 @@ class FinancialController extends Controller
         $newTotalPaid = $transaction->payments()->sum('amount');
         $transaction->paid_amount = $newTotalPaid;
 
-        if ($newTotalPaid >= $transaction->amount) {
+        $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0);
+        if ($newTotalPaid >= $effectiveAmount) {
             $transaction->status = 'paid';
         } else if ($newTotalPaid > 0) {
             $transaction->status = 'partial';
@@ -445,6 +462,10 @@ class FinancialController extends Controller
      */
     public function generateDocument(Request $request, $productionId, $type)
     {
+        ActivityLogHelper::logAction('generate_document', 'สร้างเอกสารการเงิน (' . $type . ') Production #' . $productionId, ProductionOrder::class, $productionId, [
+            'document_type' => $type,
+        ]);
+
         // ... (Keeping existing logic for safety, though likely unused)
         $production = ProductionOrder::with(['employer', 'items.employee', 'financialGroups'])->findOrFail($productionId);
 

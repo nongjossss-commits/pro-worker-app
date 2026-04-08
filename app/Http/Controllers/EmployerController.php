@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\Employer;
 use App\Models\JobOwner;
 use App\Models\User;
@@ -38,24 +39,31 @@ class EmployerController extends Controller
         $query = Employer::with(['jobOwner', 'caretakers', 'addresses'])->latest();
 
         if ($request->filled('search')) {
-            $searchTerm = '%' . $request->input('search') . '%';
+            $rawSearch = trim($request->input('search'));
 
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('employerNameTh', 'like', $searchTerm)
-                  ->orWhere('employerNameEn', 'like', $searchTerm)
-                  ->orWhere('businessType', 'like', $searchTerm)
-                  ->orWhere('employerId', 'like', $searchTerm)
-                  ->orWhere('employerTaxId', 'like', $searchTerm)
-                  ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
-                      $subQ->where('name', 'like', $searchTerm);
-                  })
-                  ->orWhereHas('caretakers', function($subQ) use ($searchTerm) {
-                      $subQ->where('name', 'like', $searchTerm);
-                  })
-                  ->orWhere(function($subQ) use ($searchTerm) {
-                      $subQ->filterByAddress($searchTerm);
-                  });
-            });
+            // Support ID:123 format for direct employer ID lookup
+            if (preg_match('/^ID:\s*(\d+)$/i', $rawSearch, $matches)) {
+                $query->where('id', (int) $matches[1]);
+            } else {
+                $searchTerm = '%' . $rawSearch . '%';
+
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('employerNameTh', 'like', $searchTerm)
+                      ->orWhere('employerNameEn', 'like', $searchTerm)
+                      ->orWhere('businessType', 'like', $searchTerm)
+                      ->orWhere('employerId', 'like', $searchTerm)
+                      ->orWhere('employerTaxId', 'like', $searchTerm)
+                      ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
+                          $subQ->where('name', 'like', $searchTerm);
+                      })
+                      ->orWhereHas('caretakers', function($subQ) use ($searchTerm) {
+                          $subQ->where('name', 'like', $searchTerm);
+                      })
+                      ->orWhere(function($subQ) use ($searchTerm) {
+                          $subQ->filterByAddress($searchTerm);
+                      });
+                });
+            }
         }
 
         // Address options (before address filtering)
@@ -509,6 +517,11 @@ class EmployerController extends Controller
 
         $isHistoryExport = $request->has('history');
 
+        ActivityLogHelper::logAction('export', 'ส่งออกข้อมูลลูกจ้าง (' . ($isHistoryExport ? 'ประวัติ' : 'ปัจจุบัน') . ') ของ ' . $employer->employerNameTh, Employer::class, $employer->id, [
+            'type' => $isHistoryExport ? 'history' : 'active',
+            'employer' => $employer->employerNameTh,
+        ]);
+
         if ($isHistoryExport) {
             $query = $employer->employees()->whereNotNull('terminated_at');
         } else {
@@ -684,6 +697,11 @@ class EmployerController extends Controller
     public function export(Request $request)
     {
         $this->authorize('view-employers');
+
+        ActivityLogHelper::logAction('export', 'ส่งออกรายชื่อนายจ้างทั้งหมด (Excel)', null, null, [
+            'search' => $request->input('search'),
+        ]);
+
         $query = Employer::with('jobOwner')->latest();
 
         if ($request->filled('search')) {

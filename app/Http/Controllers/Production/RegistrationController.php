@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Production;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\ActivityLogHelper;
 use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\ProductionOrder;
@@ -267,7 +268,8 @@ class RegistrationController extends Controller
         // Auto-navigate: redirect ไปยังหน้าที่ถูกต้องเมื่อ highlight_employer_id อยู่คนละหน้า
         if ($request->filled('highlight_employer_id') && !$request->filled('page')) {
             $highlightId = (int) $request->input('highlight_employer_id');
-            $allIds = (clone $employerQuery)->pluck('employers.id')->toArray();
+            // ใช้ get()->pluck() แทน pluck() เพื่อให้ลำดับตรงกับ paginate()
+            $allIds = (clone $employerQuery)->get()->pluck('id')->toArray();
             $position = array_search($highlightId, $allIds);
             if ($position !== false) {
                 $targetPage = (int) ceil(($position + 1) / $perPage);
@@ -377,6 +379,19 @@ class RegistrationController extends Controller
     private function applyEmployerLevelSearch($query, $search)
     {
         $search = trim($search);
+
+        // Support ID:123 format for direct employee/employer ID lookup
+        if (preg_match('/^ID:\s*(\d+)$/i', $search, $matches)) {
+            $targetId = (int) $matches[1];
+            $query->where(function($q) use ($targetId) {
+                $q->where('id', $targetId)
+                  ->orWhereHas('employees', function($qEmp) use ($targetId) {
+                      $qEmp->where('id', $targetId);
+                  });
+            });
+            return;
+        }
+
         $cleanedSearch = str_replace(' ', '', $search);
 
         $query->where(function($q) use ($search, $cleanedSearch) {
@@ -1256,7 +1271,7 @@ class RegistrationController extends Controller
 
         Employee::create($validated);
 
-        return redirect()->route('production.registration.index')
+        return redirect()->route('production.registration.operations', ['highlight_employer_id' => $validated['employer_id']])
                          ->with('success', 'Registration Employee created successfully.');
     }
 
@@ -1371,6 +1386,8 @@ class RegistrationController extends Controller
 
             DB::beginTransaction();
 
+            $stepName = \App\Models\RegistrationStep::find($validated['step_id'])?->name ?? 'ขั้นตอน #' . $validated['step_id'];
+
             if ($validated['completed']) {
                 $employee->registrationSteps()->syncWithoutDetaching([
                     $validated['step_id'] => ['completed_at' => now()]
@@ -1379,11 +1396,16 @@ class RegistrationController extends Controller
                 $employee->registrationSteps()->detach($validated['step_id']);
             }
 
+            // Log step change as activity on the employee
+            ActivityLogHelper::logAction('update', ($validated['completed'] ? 'ติ๊กขั้นตอน' : 'ยกเลิกติ๊กขั้นตอน') . ' "' . $stepName . '" ลูกจ้าง ' . ($employee->employeeNameTh ?: $employee->employeeNameEn), Employee::class, $employee->id, [
+                'step_id' => $validated['step_id'],
+                'step_name' => $stepName,
+                'completed' => $validated['completed'],
+            ]);
+
             DB::commit();
 
             // --- Recalculate Stats for Response (Highest Step Logic) ---
-            // Global Stats
-            // Ensure no global scope issues, but handle if method doesn't exist just in case
             $allQuery = Employee::query();
             if (auth()->user()->can('manage-tickets')) {
                 $allQuery->withoutGlobalScope('employerTenancy');

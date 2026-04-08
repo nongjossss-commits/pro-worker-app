@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\EmployeeCustomField;
 use App\Models\ProductionCustomField;
 use Illuminate\Http\Request;

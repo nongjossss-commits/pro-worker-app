@@ -11,6 +11,7 @@ class SuperAdminSetting extends Model
 
     protected $fillable = [
         'key',
+        'value',
         'is_visible',
         'access_password',
     ];

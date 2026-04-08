@@ -390,6 +390,7 @@
                 <div class="employer-sequence-number me-3 pt-2"></div>
 
                 <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}" style="position: relative;">
+                    <x-last-edited-badge :model="$employer" />
                     {{-- Status/Note Tab/Drawer --}}
                     <div class="position-absolute d-flex align-items-center gap-1 shadow-sm border border-secondary border-bottom-0 rounded-top bg-white px-2 py-1"
                          style="top: -34px; right: 20px; z-index: 5; height: 34px;">
@@ -723,80 +724,10 @@
     </div>
 </div>
 
-{{-- GPS Navigate: ฝัง inline หลัง DOM เสร็จ — ไม่ต้องพึ่ง DOMContentLoaded --}}
-@if(request('highlight_employer_id') || session('registration_restore_employer_id'))
-<script>
-(function() {
-    var empId      = "{{ request('highlight_employer_id', session('registration_restore_employer_id', '')) }}";
-    var employeeId = "{{ request('highlight_employee_id', session('registration_restore_employee_id', '')) }}";
-    if (!empId) return;
-
-    function run() {
-        var collapseEl = document.getElementById('collapse' + empId);
-        var headingEl  = document.getElementById('heading' + empId);
-
-        if (!collapseEl || !headingEl) return;
-
-        // 1. เลื่อนไปหานายจ้าง
-        headingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        // 2. เปิด accordion
-        if (!collapseEl.classList.contains('show')) {
-            try {
-                var bsCol = bootstrap.Collapse.getOrCreateInstance(collapseEl);
-                bsCol.show();
-            } catch(e) {
-                var btn = headingEl.querySelector('[data-bs-toggle="collapse"]');
-                if (btn) btn.click();
-            }
-        }
-
-        // 3. โหลด employee list
-        setTimeout(function() {
-            if (typeof window.loadEmployees === 'function') {
-                window.loadEmployees(empId);
-            }
-        }, 100);
-
-        // 4. ไฮไลท์ลูกจ้าง
-        if (!employeeId) return;
-
-        function doHighlight(card) {
-            setTimeout(function() {
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                card.classList.add('highlight-navigate');
-                setTimeout(function() { card.classList.remove('highlight-navigate'); }, 5000);
-            }, 400);
-        }
-
-        function tryFind() {
-            var card = document.getElementById('employee-card-' + employeeId);
-            if (card) { doHighlight(card); return true; }
-            return false;
-        }
-
-        var listEl = document.getElementById('employee-list-' + empId);
-        if (!listEl) return;
-
-        var obs = new MutationObserver(function(_, o) {
-            if (tryFind()) o.disconnect();
-        });
-        obs.observe(listEl, { childList: true, subtree: true });
-
-        // Fallback polling
-        [600, 1200, 2500, 4000, 6000].forEach(function(ms) {
-            setTimeout(function() { if (tryFind()) obs.disconnect(); }, ms);
-        });
-    }
-
-    // รอ Bootstrap โหลดเสร็จ — ใช้ window.onload + delay เพื่อความมั่นใจ
-    if (document.readyState === 'complete') {
-        setTimeout(run, 200);
-    } else {
-        window.addEventListener('load', function() { setTimeout(run, 200); });
-    }
-})();
-</script>
+{{-- GPS Navigate: ใช้ hidden input เก็บค่าไว้ให้ script ใน @push อ่าน --}}
+@if(request('highlight_employer_id'))
+<input type="hidden" id="gps-highlight-employer" value="{{ request('highlight_employer_id') }}">
+<input type="hidden" id="gps-highlight-employee" value="{{ request('highlight_employee_id', '') }}">
 @endif
 
 {{-- Include Drawer --}}
@@ -2939,7 +2870,70 @@
         });
     }
 
-        // GPS Navigate logic ถูกย้ายไปอยู่ใน handler แยก ด้านล่าง
+        // GPS Navigate logic อยู่ด้านล่าง
+    });
+
+    // ─── GPS Navigate: Registration Operations ───
+    // ใช้ DOMContentLoaded แยก เพื่อรอ Bootstrap (module script) โหลดเสร็จก่อน
+    document.addEventListener('DOMContentLoaded', function() {
+        var empInput = document.getElementById('gps-highlight-employer');
+        if (!empInput) return;
+        var empId = empInput.value;
+        var employeeId = (document.getElementById('gps-highlight-employee') || {}).value || '';
+        if (!empId) return;
+
+        empInput.remove();
+
+        var collapseEl = document.getElementById('collapse' + empId);
+        var headingEl  = document.getElementById('heading' + empId);
+        if (!collapseEl || !headingEl) return;
+
+        // 1. เลื่อนไปหานายจ้าง
+        setTimeout(function() {
+            headingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
+        // 2. เปิด accordion
+        if (!collapseEl.classList.contains('show')) {
+            var btn = headingEl.querySelector('[data-bs-toggle="collapse"]');
+            if (btn) btn.click();
+        }
+
+        // 3. โหลด employee list
+        setTimeout(function() {
+            if (typeof window.loadEmployees === 'function') {
+                window.loadEmployees(empId);
+            }
+        }, 200);
+
+        // 4. ไฮไลท์ลูกจ้าง
+        if (!employeeId) return;
+
+        function doHighlight(card) {
+            setTimeout(function() {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('highlight-navigate');
+                setTimeout(function() { card.classList.remove('highlight-navigate'); }, 5000);
+            }, 500);
+        }
+
+        function tryFind() {
+            var card = document.getElementById('employee-card-' + employeeId);
+            if (card) { doHighlight(card); return true; }
+            return false;
+        }
+
+        var listEl = document.getElementById('employee-list-' + empId);
+        if (!listEl) return;
+
+        var obs = new MutationObserver(function(_, o) {
+            if (tryFind()) o.disconnect();
+        });
+        obs.observe(listEl, { childList: true, subtree: true });
+
+        [800, 1500, 3000, 5000, 7000].forEach(function(ms) {
+            setTimeout(function() { if (tryFind()) obs.disconnect(); }, ms);
+        });
     });
 </script>
 

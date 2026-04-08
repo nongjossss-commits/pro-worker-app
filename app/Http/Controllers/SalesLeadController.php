@@ -9,6 +9,7 @@ use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\FinancialProfile;
+use App\Models\ProductionOrder;
 
 class SalesLeadController extends Controller
 {
@@ -200,26 +201,83 @@ class SalesLeadController extends Controller
 
     public function storeEmployee(Request $request, SalesLead $sales)
     {
-        $validated = $request->validate([
+        // Text/date field validation
+        $textRules = [
             'employee_id' => 'nullable|exists:employees,id',
             'employeeNameEn' => 'required_without:employee_id|string|max:255|nullable',
             'employeeNameTh' => 'nullable|string|max:255',
-            'employeeGender' => 'nullable|string',
-            'employeePassport' => 'nullable|string',
-            'employeeWorkPermit' => 'nullable|string',
-            'photo' => 'nullable|image|max:5120',
-            'employee_doc_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_visa' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_4' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_other_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'other_doc_1_desc' => 'nullable|string|max:255',
-            'employee_doc_other_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'other_doc_2_desc' => 'nullable|string|max:255',
-            'employee_doc_other_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'other_doc_3_desc' => 'nullable|string|max:255',
-        ]);
+            'employeeTitleTh' => 'nullable|string|max:50',
+            'employeeTitleEn' => 'nullable|string|max:50',
+            'employeeGender' => 'nullable|string|max:20',
+            'employeeDob' => 'nullable|date',
+            'height' => 'nullable|string|max:10',
+            'weight' => 'nullable|string|max:10',
+            'father_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'employeePhone' => 'nullable|string|max:50',
+            'employeeNationality' => 'nullable|string|max:100',
+            'passportType' => 'nullable|string|max:50',
+            'passport_type_cambodia' => 'nullable|string|max:50',
+            'employeePassport' => 'nullable|string|max:100',
+            'passport_issue_place' => 'nullable|string|max:255',
+            'passport_issue_date' => 'nullable|date',
+            'passportExpiryDate' => 'nullable|date',
+            'pinkCardNo' => 'nullable|string|max:100',
+            'visaType' => 'nullable|string|max:100',
+            'visa_issue_place' => 'nullable|string|max:255',
+            'visaExpiryDate' => 'nullable|date',
+            'job_title' => 'nullable|string|max:255',
+            'job_description' => 'nullable|string|max:255',
+            'startDate' => 'nullable|date',
+            'employeeWorkPermit' => 'nullable|string|max:100',
+            'workPermitExpiryDate' => 'nullable|date',
+            'ninetyDayReportDate' => 'nullable|date',
+            'workPermitMOUGroup' => 'nullable|string|max:100',
+            'workPermitMOUGroupOther' => 'nullable|string|max:255',
+            'name_list_number' => 'nullable|string|max:100',
+            'request_number' => 'nullable|string|max:100',
+            'employee_id_number' => 'nullable|string|max:100',
+            'tax_id_number' => 'nullable|string|max:100',
+            'employer_employee_id' => 'nullable|string|max:100',
+            'department' => 'nullable|string|max:255',
+            'employee_reference_id' => 'nullable|string|max:100',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:100',
+            'insurance_type' => 'nullable|string|max:100',
+            'social_security_number' => 'nullable|string|max:100',
+            'insurance_detail_social' => 'nullable|string|max:255',
+            'sso_issue_date' => 'nullable|date',
+            'sso_expiry_date' => 'nullable|date',
+            'insurance_detail_hospital' => 'nullable|string|max:255',
+            'insurance_expiry_date_hospital' => 'nullable|date',
+            'insurance_detail_private' => 'nullable|string|max:255',
+            'insurance_expiry_date_private' => 'nullable|date',
+            'medical_hospital_name' => 'nullable|string|max:255',
+            'employeeEmail' => 'nullable|string|max:255',
+            'employeePassword' => 'nullable|string|max:255',
+            'outsource_code' => 'nullable|string|max:255',
+        ];
+
+        // File validation
+        $fileRules = ['photo' => 'nullable|image|max:5120'];
+        $fileFields = ['employee_doc_1','employee_doc_2','employee_doc_visa','employee_doc_3','employee_doc_4',
+            'employee_doc_5','employee_doc_6','employee_doc_7','employee_doc_8',
+            'employee_doc_9','employee_doc_10','employee_doc_11','employee_doc_12','employee_doc_13',
+            'employee_doc_14','employee_doc_15','employee_doc_16','employee_doc_17','employee_doc_18',
+            'employee_doc_other_1','employee_doc_other_2','employee_doc_other_3',
+            'medical_certificate_path','insurance_document_path_social',
+            'insurance_document_path_hospital','insurance_document_path_private'];
+        foreach ($fileFields as $f) {
+            $fileRules[$f] = 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240';
+        }
+
+        // Description fields
+        $descRules = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $descRules["other_doc_{$i}_desc"] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate(array_merge($textRules, $fileRules, $descRules));
 
         $validated['sales_lead_id'] = $sales->id;
 
@@ -230,25 +288,20 @@ class SalesLeadController extends Controller
             $validated['employeeGender'] = $employee->employeeGender;
             $validated['employeePassport'] = $employee->employeePassport;
             $validated['employeeWorkPermit'] = $employee->employeeWorkPermit;
+            $validated['employeeNationality'] = $employee->employeeNationality ?? null;
+            $validated['employeeDob'] = $employee->employeeDob ?? null;
+            $validated['pinkCardNo'] = $employee->pinkCardNo ?? null;
+            $validated['insurance_type'] = $employee->insuranceType ?? null;
         }
 
-        // Handle file uploads
+        // Handle photo
         if ($request->hasFile('photo')) {
             $validated['photo_path'] = $request->file('photo')->store('sales_lead_employees/photos', 'public');
         }
 
-        $employeeDocs = [
-            'employee_doc_1',
-            'employee_doc_2',
-            'employee_doc_visa',
-            'employee_doc_3',
-            'employee_doc_4',
-            'employee_doc_other_1',
-            'employee_doc_other_2',
-            'employee_doc_other_3'
-        ];
-
-        foreach ($employeeDocs as $doc) {
+        // Handle all document file uploads
+        $allFileFields = array_merge($fileFields);
+        foreach ($allFileFields as $doc) {
             if ($request->hasFile($doc)) {
                 $validated[$doc] = $request->file($doc)->store('sales_lead_employees/documents', 'public');
             }
@@ -261,43 +314,87 @@ class SalesLeadController extends Controller
 
     public function updateEmployee(Request $request, SalesLead $sales, SalesLeadEmployee $employee)
     {
-        $validated = $request->validate([
+        $textRules = [
             'employeeNameEn' => 'required|string|max:255',
             'employeeNameTh' => 'nullable|string|max:255',
-            'employeeGender' => 'nullable|string',
-            'employeePassport' => 'nullable|string',
-            'employeeWorkPermit' => 'nullable|string',
-            'photo' => 'nullable|image|max:5120',
-            'employee_doc_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_visa' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_4' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'employee_doc_other_1' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'other_doc_1_desc' => 'nullable|string|max:255',
-            'employee_doc_other_2' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'other_doc_2_desc' => 'nullable|string|max:255',
-            'employee_doc_other_3' => 'nullable|file|mimes:pdf,doc,docx,jpg,png|max:10240',
-            'other_doc_3_desc' => 'nullable|string|max:255',
-        ]);
+            'employeeTitleTh' => 'nullable|string|max:50',
+            'employeeTitleEn' => 'nullable|string|max:50',
+            'employeeGender' => 'nullable|string|max:20',
+            'employeeDob' => 'nullable|date',
+            'height' => 'nullable|string|max:10',
+            'weight' => 'nullable|string|max:10',
+            'father_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'employeePhone' => 'nullable|string|max:50',
+            'employeeNationality' => 'nullable|string|max:100',
+            'passportType' => 'nullable|string|max:50',
+            'passport_type_cambodia' => 'nullable|string|max:50',
+            'employeePassport' => 'nullable|string|max:100',
+            'passport_issue_place' => 'nullable|string|max:255',
+            'passport_issue_date' => 'nullable|date',
+            'passportExpiryDate' => 'nullable|date',
+            'pinkCardNo' => 'nullable|string|max:100',
+            'visaType' => 'nullable|string|max:100',
+            'visa_issue_place' => 'nullable|string|max:255',
+            'visaExpiryDate' => 'nullable|date',
+            'job_title' => 'nullable|string|max:255',
+            'job_description' => 'nullable|string|max:255',
+            'startDate' => 'nullable|date',
+            'employeeWorkPermit' => 'nullable|string|max:100',
+            'workPermitExpiryDate' => 'nullable|date',
+            'ninetyDayReportDate' => 'nullable|date',
+            'workPermitMOUGroup' => 'nullable|string|max:100',
+            'workPermitMOUGroupOther' => 'nullable|string|max:255',
+            'name_list_number' => 'nullable|string|max:100',
+            'request_number' => 'nullable|string|max:100',
+            'employee_id_number' => 'nullable|string|max:100',
+            'tax_id_number' => 'nullable|string|max:100',
+            'employer_employee_id' => 'nullable|string|max:100',
+            'department' => 'nullable|string|max:255',
+            'employee_reference_id' => 'nullable|string|max:100',
+            'bank_name' => 'nullable|string|max:255',
+            'bank_account_number' => 'nullable|string|max:100',
+            'insurance_type' => 'nullable|string|max:100',
+            'social_security_number' => 'nullable|string|max:100',
+            'insurance_detail_social' => 'nullable|string|max:255',
+            'sso_issue_date' => 'nullable|date',
+            'sso_expiry_date' => 'nullable|date',
+            'insurance_detail_hospital' => 'nullable|string|max:255',
+            'insurance_expiry_date_hospital' => 'nullable|date',
+            'insurance_detail_private' => 'nullable|string|max:255',
+            'insurance_expiry_date_private' => 'nullable|date',
+            'medical_hospital_name' => 'nullable|string|max:255',
+            'employeeEmail' => 'nullable|string|max:255',
+            'employeePassword' => 'nullable|string|max:255',
+            'outsource_code' => 'nullable|string|max:255',
+        ];
 
-        // Handle file uploads
+        $fileRules = ['photo' => 'nullable|image|max:5120'];
+        $fileFields = ['employee_doc_1','employee_doc_2','employee_doc_visa','employee_doc_3','employee_doc_4',
+            'employee_doc_5','employee_doc_6','employee_doc_7','employee_doc_8',
+            'employee_doc_9','employee_doc_10','employee_doc_11','employee_doc_12','employee_doc_13',
+            'employee_doc_14','employee_doc_15','employee_doc_16','employee_doc_17','employee_doc_18',
+            'employee_doc_other_1','employee_doc_other_2','employee_doc_other_3',
+            'medical_certificate_path','insurance_document_path_social',
+            'insurance_document_path_hospital','insurance_document_path_private'];
+        foreach ($fileFields as $f) {
+            $fileRules[$f] = 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240';
+        }
+
+        $descRules = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $descRules["other_doc_{$i}_desc"] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate(array_merge($textRules, $fileRules, $descRules));
+
+        // Handle photo
         if ($request->hasFile('photo')) {
             $validated['photo_path'] = $request->file('photo')->store('sales_lead_employees/photos', 'public');
         }
 
-        $employeeDocs = [
-            'employee_doc_1',
-            'employee_doc_2',
-            'employee_doc_visa',
-            'employee_doc_3',
-            'employee_doc_4',
-            'employee_doc_other_1',
-            'employee_doc_other_2',
-            'employee_doc_other_3'
-        ];
-
-        foreach ($employeeDocs as $doc) {
+        // Handle all document file uploads
+        foreach ($fileFields as $doc) {
             if ($request->hasFile($doc)) {
                 $validated[$doc] = $request->file($doc)->store('sales_lead_employees/documents', 'public');
             }
@@ -312,6 +409,137 @@ class SalesLeadController extends Controller
     {
         $employee->delete();
         return redirect()->back()->with('success', 'ลบลูกจ้างสำเร็จ');
+    }
+
+    // --- Document Generation ---
+    public function generateDocument(SalesLead $sales, $type)
+    {
+        $sales->load(['quotation', 'employees']);
+
+        if (!$sales->quotation) {
+            return back()->with('error', 'กรุณาสร้างใบเสนอราคาก่อนพิมพ์เอกสาร');
+        }
+
+        $quotation = $sales->quotation;
+
+        // Get CompanyProfile from financial_profile_id
+        $profile = null;
+        if ($quotation->financial_profile_id) {
+            $fp = \App\Models\FinancialProfile::find($quotation->financial_profile_id);
+            if ($fp) {
+                $profile = \App\Models\CompanyProfile::where('name', 'like', '%' . $fp->name . '%')->first();
+            }
+        }
+        if (!$profile) {
+            $profile = \App\Models\CompanyProfile::where('is_default', true)->first();
+        }
+        if (!$profile) {
+            $profile = new \App\Models\CompanyProfile([
+                'name' => 'Company Name (Default)',
+                'address' => 'Please configure a company profile in settings.',
+                'tax_id' => '0000000000000',
+            ]);
+        }
+
+        // Build fake production object for the document layout
+        $employer = $sales->employer;
+        $production = (object) [
+            'id' => $sales->id,
+            'employer' => $employer ?? (object) [
+                'employerNameTh' => $sales->employerNameTh,
+                'employerNameEn' => $sales->employerNameEn ?? '',
+                'employerTaxId' => $sales->employerTaxId ?? '',
+                'employerPhone' => $sales->employerPhone ?? '',
+                'addresses' => collect(),
+            ],
+            'items' => collect(),
+            'financialGroups' => collect(),
+        ];
+
+        // Build financial data from quotation
+        $financial = [
+            'pricing_mode' => 'fixed',
+            'total_amount' => $quotation->grand_total,
+            'vat_enabled' => false,
+            'vat_rate' => 7,
+            'vat_included' => false,
+            'wht_enabled' => false,
+            'wht_rate' => 3,
+            'pricing_tiers' => [],
+        ];
+
+        // Build transactions from quotation items
+        $transactions = collect();
+        $activeGroup = null;
+
+        $viewName = match ($type) {
+            'quotation' => 'documents.quotation',
+            'invoice' => 'documents.invoice',
+            'receipt' => 'documents.receipt',
+            'tax_invoice' => 'documents.tax_invoice',
+            default => 'documents.quotation',
+        };
+
+        return view($viewName, compact('production', 'profile', 'financial', 'transactions', 'type', 'activeGroup'));
+    }
+
+    // --- Payments (Pre-Production) ---
+    public function storeSalesPayment(Request $request, SalesLead $sales)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'paid_at' => 'required|date',
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        $quotation = $sales->quotation;
+        if (!$quotation) {
+            return redirect()->back()->with('error', 'กรุณาสร้างใบเสนอราคาก่อน');
+        }
+
+        $payments = $quotation->payments_data ?? [];
+        $payments[] = [
+            'id' => count($payments) + 1,
+            'amount' => (float) $request->amount,
+            'paid_at' => $request->paid_at,
+            'notes' => $request->notes,
+            'created_at' => now()->toDateTimeString(),
+        ];
+
+        $totalPaid = collect($payments)->sum('amount');
+        $status = $totalPaid >= $quotation->grand_total ? 'paid' : ($totalPaid > 0 ? 'partial' : 'unpaid');
+
+        $quotation->update([
+            'payments_data' => $payments,
+            'total_paid' => $totalPaid,
+            'payment_status' => $status,
+        ]);
+
+        return redirect()->back()->with('success', 'บันทึกการชำระเงินสำเร็จ');
+    }
+
+    public function destroySalesPayment(SalesLead $sales, $paymentIndex)
+    {
+        $quotation = $sales->quotation;
+        if (!$quotation) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลใบเสนอราคา');
+        }
+
+        $payments = $quotation->payments_data ?? [];
+        if (isset($payments[$paymentIndex])) {
+            array_splice($payments, $paymentIndex, 1);
+        }
+
+        $totalPaid = collect($payments)->sum('amount');
+        $status = $totalPaid >= $quotation->grand_total ? 'paid' : ($totalPaid > 0 ? 'partial' : 'unpaid');
+
+        $quotation->update([
+            'payments_data' => $payments,
+            'total_paid' => $totalPaid,
+            'payment_status' => $status,
+        ]);
+
+        return redirect()->back()->with('success', 'ลบรายการชำระเงินสำเร็จ');
     }
 
     // --- Quotation ---
@@ -498,5 +726,97 @@ class SalesLeadController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Load the full Financial Tab for a sales lead (same as production/registration).
+     */
+    public function loadFinancialTab(SalesLead $sales)
+    {
+        // Find or create a production order for this sales lead
+        $financeOrder = ProductionOrder::where('sales_lead_id', $sales->id)->first();
+
+        if (!$financeOrder) {
+            $financeOrder = ProductionOrder::create([
+                'employer_id'   => $sales->employer_id, // nullable for temp employers
+                'sales_lead_id' => $sales->id,
+                'status'        => 'sales_quotation',
+                'type'          => 'employer',
+                'project_name'  => 'Sales Quotation - ' . $sales->employerNameTh,
+                'financial_data' => [],
+            ]);
+        }
+
+        // Create default financial group if empty
+        if ($financeOrder->financialGroups->isEmpty()) {
+            $financeOrder->financialGroups()->create([
+                'name' => 'General',
+                'financial_data' => $financeOrder->financial_data ?? [],
+            ]);
+        }
+
+        // Load relationships needed by the financial-tab partial
+        $financeOrder->load([
+            'financialGroups.transactions.items',
+            'financialGroups.transactions.payments',
+            'financialGroups.advanceItems',
+            'items.employee',
+        ]);
+
+        // Sync sales lead employees → production items (so financial tab can use them)
+        $sales->load('employees.employee');
+
+        foreach ($sales->employees as $slemp) {
+            if ($slemp->employee_id) {
+                // Real employee: create ProductionItem if not exists
+                $financeOrder->items()->firstOrCreate(
+                    ['employee_id' => $slemp->employee_id],
+                    ['status' => 'pending']
+                );
+            } else {
+                // Temp employee: create ProductionItem with new_employee_data
+                $existsTempItem = $financeOrder->items()
+                    ->whereNull('employee_id')
+                    ->whereJsonContains('new_employee_data->sales_lead_employee_id', $slemp->id)
+                    ->exists();
+
+                if (!$existsTempItem) {
+                    $financeOrder->items()->create([
+                        'employee_id' => null,
+                        'status' => 'pending',
+                        'new_employee_data' => [
+                            'sales_lead_employee_id' => $slemp->id,
+                            'name_en' => $slemp->employeeNameEn,
+                            'name_th' => $slemp->employeeNameTh,
+                            'title_en' => $slemp->employeeTitleEn,
+                            'nationality' => $slemp->employeeNationality,
+                            'passport' => $slemp->employeePassport,
+                            'gender' => $slemp->employeeGender,
+                        ],
+                    ]);
+                }
+            }
+        }
+
+        // Reload items after sync
+        $financeOrder->load(['items.employee.registrationSteps']);
+
+        // Employees available to add (real employees NOT yet in production items)
+        $existingItemEmployeeIds = $financeOrder->items->pluck('employee_id')->filter()->toArray();
+        $availableEmployees = collect();
+
+        $realEmployeeIds = $sales->employees()->whereNotNull('employee_id')->pluck('employee_id');
+        if ($realEmployeeIds->isNotEmpty()) {
+            $availableEmployees = Employee::whereIn('id', $realEmployeeIds)
+                ->whereNotIn('id', $existingItemEmployeeIds)
+                ->with(['registrationSteps'])
+                ->get();
+        }
+
+        return view('production.partials.financial-tab', [
+            'production'    => $financeOrder,
+            'employeeCount' => $sales->employees->count(),
+            'employees'     => $availableEmployees,
+        ]);
     }
 }

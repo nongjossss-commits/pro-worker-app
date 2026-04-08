@@ -12,6 +12,7 @@ class ProductionOrder extends Model
 
     protected $fillable = [
         'employer_id',
+        'sales_lead_id',
         'work_type_id',
         'type', // 'employer' or 'independent'
         'project_name',
@@ -47,6 +48,11 @@ class ProductionOrder extends Model
     public function employer()
     {
         return $this->belongsTo(Employer::class);
+    }
+
+    public function salesLead()
+    {
+        return $this->belongsTo(\App\Models\SalesLead::class, 'sales_lead_id');
     }
 
     public function creator()

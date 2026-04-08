@@ -74,6 +74,8 @@
 
     <div class="card {{ $cardClass }} w-100 position-relative">
 
+    <x-last-edited-badge :model="$employee" />
+
     {{-- Operator Badge (Bottom Right) --}}
     <div class="position-absolute bottom-0 end-0 m-2 z-index-10">
         @php

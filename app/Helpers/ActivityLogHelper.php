@@ -22,8 +22,36 @@ class ActivityLogHelper
             'restore' => 'กู้คืน',
             'login' => 'เข้าสู่ระบบ',
             'logout' => 'ออกจากระบบ',
+            'download' => 'ดาวน์โหลด',
+            'export' => 'ส่งออก (Export)',
+            'upload' => 'อัพโหลดไฟล์',
+            'print' => 'พิมพ์เอกสาร',
+            'generate_document' => 'สร้างเอกสารอัตโนมัติ',
+            'bulk_action' => 'ดำเนินการแบบกลุ่ม',
+            'import' => 'นำเข้าข้อมูล (Import)',
+            'status_change' => 'เปลี่ยนสถานะ',
         ];
         return $map[$action] ?? $action;
+    }
+
+    /**
+     * Get a display name for a polymorphic subject (Employee, Employer, User, etc.)
+     */
+    public static function getSubjectName($log)
+    {
+        $subject = $log->relationLoaded('subject') ? $log->subject : null;
+
+        if (!$subject) return null;
+
+        $class = class_basename($log->subject_type);
+
+        return match($class) {
+            'Employee' => $subject->employeeNameEn ?: $subject->employeeNameTh,
+            'Employer' => $subject->employerNameTh ?: $subject->employerNameEn,
+            'User' => $subject->name,
+            'JobTicket' => $subject->title ?? null,
+            default => null,
+        };
     }
 
     public static function formatModel($model)
@@ -245,5 +273,28 @@ class ActivityLogHelper
         }
 
         return $changes;
+    }
+
+    /**
+     * Log a non-CRUD action (download, export, upload, print, etc.)
+     *
+     * @param string $action  Action type: download, export, upload, print, generate_document, bulk_action, import, status_change
+     * @param string $description  Human-readable description
+     * @param string|null $subjectType  Related model class (e.g. App\Models\Employee)
+     * @param int|null $subjectId  Related model ID
+     * @param array $properties  Additional details to store as JSON
+     */
+    public static function logAction(string $action, string $description, ?string $subjectType = null, $subjectId = null, array $properties = [])
+    {
+        \App\Models\ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => $action,
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+            'description' => $description,
+            'properties' => !empty($properties) ? $properties : null,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
     }
 }

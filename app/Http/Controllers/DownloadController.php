@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ActivityLogHelper;
 use App\Jobs\ProcessDownload;
 use App\Models\DownloadTask;
 use App\Models\Employee;
@@ -64,6 +65,14 @@ class DownloadController extends Controller
         ProcessDownload::dispatchSync($task->id, $authorizedEmployeeIds, $validated['selected_files'], $options);
 
         $task->refresh();
+
+        // Log download action
+        ActivityLogHelper::logAction('download', 'ดาวน์โหลดเอกสาร (' . $validated['type'] . ') จำนวน ' . count($authorizedEmployeeIds) . ' ลูกจ้าง', DownloadTask::class, $task->id, [
+            'type' => $validated['type'],
+            'employee_count' => count($authorizedEmployeeIds),
+            'employee_ids' => array_slice($authorizedEmployeeIds, 0, 20), // store max 20 IDs
+            'selected_files' => $validated['selected_files'],
+        ]);
 
         return response()->json([
             'success' => true,

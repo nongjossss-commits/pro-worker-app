@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\FinancialTransaction;
 use App\Models\ProductionOrder;
 use App\Models\ProductionFinancialGroup;
@@ -357,6 +358,12 @@ class FinancialHubController extends Controller
         $month = $request->input('month', now()->format('Y-m'));
         $billerId = $request->input('biller_id', 'all');
         $exportType = $request->input('export_type', 'all'); // 'all' or 'tax_only'
+
+        ActivityLogHelper::logAction('export', 'ส่งออกรายงานการเงินรายเดือน (' . $month . ', ' . $exportType . ')', null, null, [
+            'month' => $month,
+            'biller_id' => $billerId,
+            'export_type' => $exportType,
+        ]);
 
         $startDate = \Carbon\Carbon::parse($month . '-01')->startOfMonth();
         $endDate = $startDate->copy()->endOfMonth();

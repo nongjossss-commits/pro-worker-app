@@ -22,35 +22,41 @@
     ];
 @endphp
 
-<div id="{{ $cardId }}" class="employee-card card mb-3 position-relative">
-    @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
-        @php
-            // Determine primary status for card overlay color
-            // Priority: Registration (Purple) > Renewal (Pink) > Workflow (Yellow) > Pre-Production (Blue)
-            $isRegistration = $employee->active_workflows->contains('is_registration', true);
-            $isRenewal = $employee->active_workflows->contains('is_renewal', true);
-            // Standard workflow is not pre-production AND not registration AND not renewal
-            $hasStandardWorkflow = $employee->active_workflows->contains(function ($value, $key) {
-                return ($value->is_pre_production === false) && (!isset($value->is_registration) || !$value->is_registration) && (!isset($value->is_renewal) || !$value->is_renewal);
-            });
+@php
+    $cardBorderStyle = '';
+    if (isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty()) {
+        $isRegistration = $employee->active_workflows->contains('is_registration', true);
+        $isRenewal = $employee->active_workflows->contains('is_renewal', true);
+        $hasStandardWorkflow = $employee->active_workflows->contains(function ($value, $key) {
+            return ($value->is_pre_production === false) && (!isset($value->is_registration) || !$value->is_registration) && (!isset($value->is_renewal) || !$value->is_renewal);
+        });
 
-            if ($isRegistration) {
-                // Purple (Registration)
-                $overlayStyle = 'background-color: rgba(139, 92, 246, 0.15); border: 2px solid #8B5CF6;';
-            } elseif ($isRenewal) {
-                // Pink (Renewal)
-                $overlayStyle = 'background-color: rgba(236, 72, 153, 0.15); border: 2px solid #EC4899;';
-            } elseif ($hasStandardWorkflow) {
-                // Yellow (Standard Workflow)
-                $overlayStyle = 'background-color: rgba(255, 223, 0, 0.15); border: 2px solid #ffc107;';
-            } else {
-                // Light Blue (Pre-Production)
-                $overlayStyle = 'background-color: rgba(13, 202, 240, 0.15); border: 2px solid #0dcaf0;';
-            }
-        @endphp
-        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded"
-             style="{{ $overlayStyle }} z-index: 10; pointer-events: none;">
-             <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
+        if ($isRegistration) {
+            $cardBorderStyle = 'border-left: 4px solid #8B5CF6;';
+            $overlayBorder = 'border: 2px solid #8B5CF6;';
+            $overlayBg = 'background-color: rgba(139, 92, 246, 0.08);';
+        } elseif ($isRenewal) {
+            $cardBorderStyle = 'border-left: 4px solid #EC4899;';
+            $overlayBorder = 'border: 2px solid #EC4899;';
+            $overlayBg = 'background-color: rgba(236, 72, 153, 0.08);';
+        } elseif ($hasStandardWorkflow) {
+            $cardBorderStyle = 'border-left: 4px solid #ffc107;';
+            $overlayBorder = 'border: 2px solid #ffc107;';
+            $overlayBg = 'background-color: rgba(255, 223, 0, 0.08);';
+        } else {
+            $cardBorderStyle = 'border-left: 4px solid #0dcaf0;';
+            $overlayBorder = 'border: 2px solid #0dcaf0;';
+            $overlayBg = 'background-color: rgba(13, 202, 240, 0.08);';
+        }
+    }
+@endphp
+<div id="{{ $cardId }}" class="employee-card card mb-3 position-relative" style="{{ $cardBorderStyle }}">
+    <x-last-edited-badge :model="$employee" />
+    @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
+        {{-- Desktop/Tablet: overlay centered on card (≥576px) --}}
+        <div class="d-none d-sm-flex position-absolute top-0 start-0 w-100 h-100 justify-content-center align-items-center rounded"
+             style="{{ $overlayBorder }} {{ $overlayBg }} z-index: 10; pointer-events: none;">
+             <div class="d-flex flex-column gap-2" style="pointer-events: auto; touch-action: auto;">
                 @foreach($employee->active_workflows as $wf)
                     @php
                         $url = $wf->url;
@@ -86,8 +92,7 @@
              </div>
         </div>
     @endif
-    {{-- d-flex align-items-center: desktop | flex-wrap ให้ CSS responsive จัดการบน mobile --}}
-    <div class="card-body d-flex align-items-center" style="row-gap: 0.25rem;">
+    <div class="card-body d-flex flex-wrap align-items-center" style="row-gap: 0.5rem;">
         <div class="me-3 flex-shrink-0">
             <input class="form-check-input employee-checkbox" type="checkbox" value="{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-employer-id="{{ $employee->employer_id }}" data-name-th="{{ $employee->employeeNameTh }}" data-name-en="{{ $employee->employeeNameEn }}" data-photo="{{ $employee->employeePhoto ? asset('storage/' . $employee->employeePhoto) : asset('images/default-profile.png') }}" data-employer-name="{{ $employee->employer->employerNameTh ?? 'N/A' }}">
         </div>
@@ -192,20 +197,41 @@
             </div>
         </div>
 
-        <div class="employee-actions">
-            @if(isset($isTrashView) && $isTrashView)
-                <div class="d-flex align-items-center gap-2">
-                    @include('admin.trash._action_buttons', ['modelName' => 'employees', 'item' => $employee])
-                    <span class="btn btn-sm btn-light border cursor-grab ms-1"
-                          draggable="true"
-                          data-drag-payload="{{ json_encode($dragPayload) }}"
-                          ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
-                         title="{{ __('Drag') }}">
-                        <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
-                    </span>
+        {{-- Single unified actions section: right on ≥576px, below on <576px --}}
+        <div class="employee-actions-unified">
+            {{-- Mobile-only status badges (below 576px) --}}
+            @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
+                <div class="d-flex flex-wrap gap-2 mb-2 d-sm-none">
+                    @foreach($employee->active_workflows as $wf)
+                        @php
+                            $url = $wf->url;
+                            if (isset($wf->is_registration) && $wf->is_registration) {
+                                $mStyle = 'background-color: #8B5CF6; color: white;';
+                                $mIcon = 'bi-person-badge';
+                            } elseif (isset($wf->is_renewal) && $wf->is_renewal) {
+                                $mStyle = 'background-color: #EC4899; color: white;';
+                                $mIcon = 'bi-arrow-repeat';
+                            } elseif (isset($wf->is_pre_production) && $wf->is_pre_production) {
+                                $mStyle = 'background-color: #0dcaf0; color: white;';
+                                $mIcon = 'bi-hourglass-split';
+                            } else {
+                                $mStyle = 'background-color: #ffc107; color: #212529;';
+                                $mIcon = 'bi-gear-fill';
+                            }
+                        @endphp
+                        <a href="{{ $url }}"
+                           class="badge text-decoration-none shadow-sm"
+                           style="{{ $mStyle }} font-size: 0.8rem; padding: 0.4em 0.7em; touch-action: auto;">
+                           <i class="bi {{ $mIcon }} me-1"></i> {{ $wf->status_label }}: {{ Str::limit($wf->name, 20) }}
+                        </a>
+                    @endforeach
                 </div>
-            @else
-                <div class="d-flex align-items-center gap-2">
+            @endif
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                @if(isset($isTrashView) && $isTrashView)
+                    @include('admin.trash._action_buttons', ['modelName' => 'employees', 'item' => $employee])
+                @else
                     <x-employee-action-buttons :employee="$employee" :show-locate-button="($showLocateButton ?? false)" />
                     @if(isset($currentTeamId))
                         <form action="{{ route('groups.teams.members.remove', ['team' => $currentTeamId, 'employee' => $employee->id]) }}" method="POST" class="d-inline delete-member-form">
@@ -216,15 +242,15 @@
                             </button>
                         </form>
                     @endif
-                    <span class="btn btn-sm btn-light border cursor-grab ms-1"
-                          draggable="true"
-                          data-drag-payload="{{ json_encode($dragPayload) }}"
-                          ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
-                         title="{{ __('Drag') }}">
-                        <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
-                    </span>
-                </div>
-            @endif
+                @endif
+                <span class="btn btn-sm btn-light border cursor-grab"
+                      draggable="true"
+                      data-drag-payload="{{ json_encode($dragPayload) }}"
+                      ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
+                     title="{{ __('Drag') }}">
+                    <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
+                </span>
+            </div>
         </div>
     </div>
 </div>

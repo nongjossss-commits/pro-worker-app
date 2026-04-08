@@ -1,6 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    /* CSS Grid: บังคับ 3 คอลัมน์เท่ากันเสมอ ไม่มีทางตกลงด้านล่าง */
+    .kanban-board {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 1rem !important;
+        align-items: start !important;
+        width: 100% !important;
+    }
+    .kanban-board > .kanban-col {
+        min-width: 0 !important;
+        min-height: 0 !important;
+    }
+    .kanban-column { min-height: 250px; }
+    .lead-card { cursor: grab; transition: transform 0.15s, box-shadow 0.15s; }
+    .lead-card:active { cursor: grabbing; transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important; }
+    .gu-mirror { position: fixed !important; margin: 0 !important; z-index: 9999 !important; opacity: 0.8; }
+    .gu-hide { display: none !important; }
+    .gu-unselectable { user-select: none !important; }
+    .gu-transit { opacity: 0.2; }
+</style>
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-megaphone-fill me-2 text-primary"></i>{{ __('Read and Sale') }}</h2>
@@ -27,14 +48,16 @@
         </div>
     @endif
 
-    <div class="row kanban-board flex-nowrap overflow-auto pb-3">
-        {{-- Column 1: Quoted --}}
-        <div class="col-md-4" style="min-width: 350px;">
-            <div class="card bg-light h-100 border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
-                    <h5 class="mb-0 text-primary fw-bold">1. เสนอราคา <span class="badge bg-primary rounded-pill ms-2">{{ $quoted->count() }}</span></h5>
+    {{-- Kanban Board: ใช้ class kanban-board เพื่อบังคับ 3 คอลัมน์ --}}
+    <div class="kanban-board">
+
+        {{-- Column 1: เสนอราคา --}}
+        <div class="kanban-col">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary bg-opacity-10 border-0 py-3">
+                    <h6 class="mb-0 fw-bold text-primary"><i class="bi bi-file-earmark-text me-2"></i>1. เสนอราคา <span class="badge bg-primary rounded-pill ms-2">{{ $quoted->count() }}</span></h6>
                 </div>
-                <div class="card-body kanban-column" id="col-quoted" data-status="quoted" style="overflow-y: auto; max-height: 75vh;">
+                <div class="card-body kanban-column p-2" id="col-quoted" data-status="quoted" style="overflow-y: auto; max-height: 72vh; background: #f8f9fa;">
                     @foreach($quoted as $lead)
                         @include('sales.partials._lead_card', ['lead' => $lead, 'nextStatus' => 'deciding'])
                     @endforeach
@@ -42,13 +65,13 @@
             </div>
         </div>
 
-        {{-- Column 2: Deciding --}}
-        <div class="col-md-4" style="min-width: 350px;">
-            <div class="card bg-light h-100 border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
-                    <h5 class="mb-0 text-warning fw-bold">2. รอตัดสินใจ/คอนเฟิร์ม <span class="badge bg-warning text-dark rounded-pill ms-2">{{ $deciding->count() }}</span></h5>
+        {{-- Column 2: รอลูกค้าคอนเฟิร์ม --}}
+        <div class="kanban-col">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning bg-opacity-10 border-0 py-3">
+                    <h6 class="mb-0 fw-bold text-warning"><i class="bi bi-hourglass-split me-2"></i>2. รอลูกค้าคอนเฟิร์ม <span class="badge bg-warning text-dark rounded-pill ms-2">{{ $deciding->count() }}</span></h6>
                 </div>
-                <div class="card-body kanban-column" id="col-deciding" data-status="deciding" style="overflow-y: auto; max-height: 75vh;">
+                <div class="card-body kanban-column p-2" id="col-deciding" data-status="deciding" style="overflow-y: auto; max-height: 72vh; background: #f8f9fa;">
                     @foreach($deciding as $lead)
                         @include('sales.partials._lead_card', ['lead' => $lead, 'nextStatus' => 'confirmed'])
                     @endforeach
@@ -56,25 +79,39 @@
             </div>
         </div>
 
-        {{-- Column 3: Confirmed --}}
-        <div class="col-md-4" style="min-width: 350px;">
-            <div class="card bg-light h-100 border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
-                    <h5 class="mb-0 text-success fw-bold">3. คอนเฟิร์มแล้ว (พร้อมส่งต่อ) <span class="badge bg-success rounded-pill ms-2">{{ $confirmed->count() }}</span></h5>
+        {{-- Column 3: คอนเฟิร์มแล้ว รอส่งดำเนินงาน --}}
+        <div class="kanban-col">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success bg-opacity-10 border-0 py-3">
+                    <h6 class="mb-0 fw-bold text-success"><i class="bi bi-check-circle me-2"></i>3. คอนเฟิร์มแล้ว <small class="fw-normal">(รอส่งดำเนินงาน)</small> <span class="badge bg-success rounded-pill ms-2">{{ $confirmed->count() }}</span></h6>
                 </div>
-                <div class="card-body kanban-column" id="col-confirmed" data-status="confirmed" style="overflow-y: auto; max-height: 75vh;">
+                <div class="card-body kanban-column p-2" id="col-confirmed" data-status="confirmed" style="overflow-y: auto; max-height: 72vh; background: #f8f9fa;">
                     @foreach($confirmed as $lead)
                         @include('sales.partials._lead_card', ['lead' => $lead, 'nextStatus' => 'transition'])
                     @endforeach
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
-{{-- Modals --}}
-@include('sales.partials._create_modal')
-@include('sales.partials._history_modal')
+{{-- Modals container: ใช้ div แยกเพื่อ teleport ออกไปนอก main ตอน DOM ready --}}
+<div id="sales-modals-container">
+    @include('sales.partials._create_modal')
+    @include('sales.partials._history_modal')
+
+    @foreach($quoted->merge($deciding)->merge($confirmed) as $lead)
+        @if(!$lead->employer_id)
+            @include('sales.partials._edit_employer_modal', ['lead' => $lead])
+        @endif
+        @include('sales.partials._manage_employees_modal', ['lead' => $lead])
+        @include('sales.partials._quotation_modal', ['lead' => $lead])
+        @if($lead->status === 'confirmed')
+            @include('sales.partials._transition_modal', ['lead' => $lead])
+        @endif
+    @endforeach
+</div>
 
 {{-- Forms and scripts for Drag and Drop / Status Updates --}}
 <form id="updateStatusForm" method="POST" style="display: none;">
@@ -85,51 +122,7 @@
 
 @endsection
 
-@push('styles')
-<style>
-    .kanban-board {
-        height: 80vh;
-        display: flex !important;
-        flex-wrap: nowrap !important;
-    }
-    /* บังคับ 3 ช่องเรียงต่อกันเสมอ ไม่ตกลงด้านล่าง */
-    .kanban-board > .col-md-4 {
-        flex: 1 0 350px;
-        max-width: none;
-        width: auto;
-    }
-    .kanban-column {
-        min-height: 200px;
-    }
-    .lead-card {
-        cursor: grab;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .lead-card:active {
-        cursor: grabbing;
-        transform: scale(1.02);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
-    }
-    .gu-mirror {
-        position: fixed !important;
-        margin: 0 !important;
-        z-index: 9999 !important;
-        opacity: 0.8;
-    }
-    .gu-hide {
-        display: none !important;
-    }
-    .gu-unselectable {
-        -webkit-user-select: none !important;
-        -moz-user-select: none !important;
-        -ms-user-select: none !important;
-        user-select: none !important;
-    }
-    .gu-transit {
-        opacity: 0.2;
-    }
-</style>
-@endpush
+{{-- styles ถูกย้ายไป inline <style> ภายใน @section('content') เพราะ layout ไม่มี @stack('styles') --}}
 
 @push('scripts')
 {{-- Include Dragula for drag and drop --}}
@@ -138,6 +131,28 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Fix: Teleport all sales modals to body so they escape #main-content's overflow/z-index
+        var modalsContainer = document.getElementById('sales-modals-container');
+        if (modalsContainer) {
+            var modals = modalsContainer.querySelectorAll('.modal');
+            modals.forEach(function(modal) {
+                document.body.appendChild(modal);
+            });
+        }
+
+        // Re-open modal after page reload (for continuous employee adding)
+        var reopenId = sessionStorage.getItem('reopenModal');
+        if (reopenId) {
+            sessionStorage.removeItem('reopenModal');
+            setTimeout(function() {
+                var modalEl = document.getElementById(reopenId);
+                if (modalEl && typeof bootstrap !== 'undefined') {
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                }
+            }, 300);
+        }
+
         // Init Dragula
         const drake = dragula([
             document.getElementById('col-quoted'),
