@@ -106,7 +106,7 @@
     </div>
 
     <div class="card-body p-3 pt-4">
-        <div class="d-flex flex-column justify-content-between align-items-start gap-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
             <div class="d-flex align-items-start gap-3 w-100 emp-info-section">
                 <div class="d-flex align-items-center gap-3">

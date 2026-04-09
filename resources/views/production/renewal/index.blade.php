@@ -62,6 +62,7 @@
     /* Mobile/Tablet optimizations for employee cards */
     @media (max-width: 1024px) {
         .employee-card-wrapper .card-body { padding: 0.5rem !important; padding-top: 0.75rem !important; }
+        .employee-card-wrapper .card-body > .d-flex { flex-direction: column !important; }
         .employee-card-wrapper .emp-info-section,
         .employee-card-wrapper .emp-info-section > .d-flex,
         .employee-card-wrapper .emp-info-section .d-flex.align-items-center.gap-3,

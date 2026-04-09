@@ -65,6 +65,7 @@
     /* Mobile/Tablet optimizations */
     @media (max-width: 1024px) {
         .item-card-wrapper .card-body { padding: 0.5rem !important; padding-top: 0.75rem !important; }
+        .item-card-wrapper .card-body > .d-flex { flex-direction: column !important; }
         .item-card-wrapper .item-info-section { flex-direction: column !important; align-items: center !important; text-align: center; width: 100% !important; }
         .item-card-wrapper .item-info-section > .d-flex.align-items-center.gap-3,
         .item-card-wrapper .item-info-section [id^="info-container-"] { flex-direction: column !important; align-items: center !important; text-align: center; width: 100% !important; }
