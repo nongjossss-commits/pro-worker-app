@@ -25,7 +25,7 @@
                 <div class="card-header bg-white py-3">
                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-event me-2"></i>{{ __('Upcoming Appointments (Short Term)') }}</h5>
                 </div>
-                <div class="card-body p-0" style="max-height: 370px; overflow-y: auto;">
+                <div class="card-body p-0">
                     @if(isset($upcomingAppointments) && $upcomingAppointments->isEmpty())
                         <div class="text-center py-5 text-muted">
                             <i class="bi bi-calendar-check fs-1 opacity-25"></i>
@@ -33,11 +33,57 @@
                             <small>{{ __('Check notification settings in Registration settings.') }}</small>
                         </div>
                     @else
-                        <div class="table-responsive">
+                        {{-- Floating Toolbar (shows when items selected) --}}
+                        @can('edit-employees')
+                        <div class="bulk-action-bar align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+                             id="upcoming-toolbar"
+                             style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="upcoming-select-all-cb">
+                                <label class="form-check-label fw-bold small" for="upcoming-select-all-cb">
+                                    {{ __('Select All') }} (<span id="upcoming-selected-count">0</span>)
+                                </label>
+                            </div>
+                            <div class="vr mx-1"></div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-secondary dropdown-toggle" id="upcoming-bulk-btn"
+                                        type="button" data-bs-toggle="dropdown" disabled>
+                                    <i class="bi bi-lightning-fill me-1"></i>{{ __('Actions') }}
+                                </button>
+                                <ul class="dropdown-menu shadow">
+                                    <li><a class="dropdown-item upcoming-action" data-action="advanced-edit" href="#">
+                                        <i class="bi bi-pencil-square me-2 text-primary"></i>{{ __('Advanced Edit') }}</a></li>
+                                    <li><a class="dropdown-item upcoming-action" data-action="advanced-export" href="#">
+                                        <i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>{{ __('Advanced Export') }}</a></li>
+                                    <li><a class="dropdown-item upcoming-action" data-action="download" href="#">
+                                        <i class="bi bi-download me-2 text-info"></i>{{ __('Download Files') }}</a></li>
+                                    @can('manage-tickets')
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item upcoming-action" data-action="generate-pdf" href="#">
+                                        <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>{{ __('Automated PDF') }}</a></li>
+                                    @endcan
+                                </ul>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" id="upcoming-clear-btn" disabled
+                                    onclick="if(window.clearGlobalSelection) window.clearGlobalSelection();">
+                                <i class="bi bi-x-circle me-1"></i>{{ __('Clear Selection') }}
+                            </button>
+                            <button class="btn btn-sm btn-info text-white" id="upcoming-view-btn" disabled
+                                    onclick="if(window.openViewSelectedModal) window.openViewSelectedModal();">
+                                <i class="bi bi-eye me-1"></i>{{ __('View Selected') }}
+                                <span class="badge bg-white text-info ms-1" id="upcoming-view-count">0</span>
+                            </button>
+                        </div>
+                        @endcan
+
+                        <div class="table-responsive" style="max-height: 370px; overflow-y: auto;">
                             <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light">
+                                <thead class="bg-light" style="position: sticky; top: 0; z-index: 1;">
                                     <tr>
-                                        <th class="ps-4">{{ __('Date / Time') }}</th>
+                                        @can('edit-employees')
+                                        <th style="width: 40px;" class="ps-3"></th>
+                                        @endcan
+                                        <th class="ps-2">{{ __('Date / Time') }}</th>
                                         <th>{{ __('Details') }}</th>
                                         <th class="text-end pe-4">{{ __('Action') }}</th>
                                     </tr>
@@ -53,7 +99,26 @@
                                             $formatted = $date->format('d/m/Y H:i');
                                         @endphp
                                         <tr>
-                                            <td class="ps-4">
+                                            @can('edit-employees')
+                                            <td class="ps-3">
+                                                <input class="form-check-input upcoming-employee-cb employee-checkbox"
+                                                       type="checkbox"
+                                                       style="width:17px; height:17px; cursor:pointer;"
+                                                       value="{{ $item->id }}"
+                                                       data-employee-id="{{ $item->id }}"
+                                                       data-employer-id="{{ $item->employer_id }}"
+                                                       data-name-th="{{ $item->employeeNameTh ?? '' }}"
+                                                       data-name-en="{{ $item->employeeNameEn ?? '' }}"
+                                                       data-title-th="{{ $item->employeeTitleTh ?? '' }}"
+                                                       data-title-en="{{ $item->employeeTitleEn ?? '' }}"
+                                                       data-nationality="{{ $item->employeeNationality ?? '' }}"
+                                                       data-photo="{{ $item->employeePhoto ? asset('storage/'.$item->employeePhoto) : '' }}"
+                                                       data-employer-name="{{ $item->employer->employerNameTh ?? '' }}"
+                                                       data-insurance-type="{{ $item->insurance_type ?? '' }}"
+                                                       data-passport="{{ $item->employeePassport ?? '' }}">
+                                            </td>
+                                            @endcan
+                                            <td class="ps-2">
                                                 <div class="{{ $colorClass }}">
                                                     <i class="bi bi-clock me-1"></i> {{ $formatted }}
                                                     @if($isToday) <span class="badge bg-danger ms-1">TODAY</span> @endif
@@ -406,6 +471,106 @@
     }
 </script>
 <script>
+    // ── Upcoming Appointments table: selection & bulk actions ──
+    (function() {
+        const toolbar     = document.getElementById('upcoming-toolbar');
+        const selectAllCb = document.getElementById('upcoming-select-all-cb');
+        const countSpan   = document.getElementById('upcoming-selected-count');
+        const viewCountBadge = document.getElementById('upcoming-view-count');
+        const bulkBtn     = document.getElementById('upcoming-bulk-btn');
+        const viewBtn     = document.getElementById('upcoming-view-btn');
+        const clearBtn    = document.getElementById('upcoming-clear-btn');
+        const csrfToken   = document.querySelector('meta[name="csrf-token"]').content;
+
+        function syncUpcomingToolbar() {
+            const data  = window.getGlobalSelectedData ? window.getGlobalSelectedData() : [];
+            const count = data.length;
+            const ids   = data.map(i => String(i.id));
+
+            // Show/hide floating bar
+            if (toolbar) toolbar.style.display = count > 0 ? 'flex' : 'none';
+
+            if (countSpan) countSpan.textContent = count;
+            if (viewCountBadge) viewCountBadge.textContent = count;
+            if (bulkBtn)   bulkBtn.disabled  = count === 0;
+            if (viewBtn)   viewBtn.disabled  = count === 0;
+            if (clearBtn)  clearBtn.disabled = count === 0;
+
+            document.querySelectorAll('.upcoming-employee-cb').forEach(cb => {
+                cb.checked = ids.includes(String(cb.value));
+            });
+
+            if (selectAllCb) {
+                const allCbs = document.querySelectorAll('.upcoming-employee-cb');
+                const checked = Array.from(allCbs).filter(cb => cb.checked).length;
+                selectAllCb.checked       = allCbs.length > 0 && checked === allCbs.length;
+                selectAllCb.indeterminate = checked > 0 && checked < allCbs.length;
+            }
+        }
+
+        document.addEventListener('global-selection-updated', syncUpcomingToolbar);
+
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', function() {
+                document.querySelectorAll('.upcoming-employee-cb').forEach(cb => {
+                    cb.checked = this.checked;
+                    cb.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
+        }
+
+        document.querySelectorAll('.upcoming-action').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const action = this.dataset.action;
+                const ids = window.getGlobalSelectedIds ? window.getGlobalSelectedIds() : [];
+
+                if (!ids.length) {
+                    Swal.fire({ toast:true, icon:'warning', title:'{{ __("Please select employees first.") }}', position:'top-end', showConfirmButton:false, timer:2000 });
+                    return;
+                }
+
+                if (action === 'advanced-edit') {
+                    const form = document.createElement('form');
+                    form.method = 'POST'; form.action = '{{ route("employees.bulk_edit.select_fields") }}';
+                    [['_token', csrfToken], ['redirect_to', window.location.href]].forEach(([n,v]) => {
+                        const i = document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i);
+                    });
+                    ids.forEach(id => { const i=document.createElement('input'); i.type='hidden'; i.name='employee_ids[]'; i.value=id; form.appendChild(i); });
+                    document.body.appendChild(form); form.submit();
+
+                } else if (action === 'advanced-export') {
+                    const el  = document.getElementById('export_employee_ids');
+                    const src = document.getElementById('export_source_menu');
+                    if (el) el.value = JSON.stringify(ids);
+                    if (src) src.value = 'registration';
+                    const modal = document.getElementById('advancedExportModal');
+                    if (modal) bootstrap.Modal.getOrCreateInstance(modal).show();
+
+                } else if (action === 'download') {
+                    if (window.openBulkDownloadModal) {
+                        window.openBulkDownloadModal(ids);
+                    } else {
+                        const modal = document.getElementById('downloadOptionsModal');
+                        if (modal) bootstrap.Modal.getOrCreateInstance(modal).show();
+                    }
+
+                } else if (action === 'generate-pdf') {
+                    const form = document.createElement('form');
+                    form.method = 'POST'; form.action = '{{ route("admin.pdf-templates.generate.modal", [], false) }}';
+                    [['_token', csrfToken], ['redirect_url', window.location.href]].forEach(([n,v]) => {
+                        const i = document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i);
+                    });
+                    ids.forEach(id => { const i=document.createElement('input'); i.type='hidden'; i.name='employees[]'; i.value=id; form.appendChild(i); });
+                    document.body.appendChild(form); form.submit();
+                }
+            });
+        });
+
+        if (window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
+        else syncUpcomingToolbar();
+    })();
+
     window.markAppointmentCompleted = function(employeeId, module, btnElement) {
         Swal.fire({
             title: '{{ __("Complete Appointment?") }}',

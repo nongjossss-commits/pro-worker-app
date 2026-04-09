@@ -5,9 +5,30 @@
     </div>
 @else
 
-    {{-- ═══ Toolbar ═══ --}}
-    <div class="d-flex flex-wrap align-items-center gap-2 p-2 bg-white border-bottom sticky-top" id="wf-appt-toolbar">
-        @can('edit-employees')
+    {{-- ═══ Search Bar (inline) ═══ --}}
+    <div class="d-flex flex-wrap align-items-center gap-2 p-2 bg-white border-bottom">
+        <div class="input-group input-group-sm" style="min-width: 200px; flex: 1;">
+            <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" id="wf-search-input"
+                   class="form-control border-start-0 border-end-0 bg-light"
+                   placeholder="{{ __('Search employee, employer, work type...') }}">
+            <button class="btn btn-light border" type="button" id="wf-search-btn">
+                <i class="bi bi-funnel"></i>
+            </button>
+            <button class="btn btn-outline-secondary d-none" type="button" id="wf-search-clear-btn">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <span class="text-muted small ms-1" id="wf-result-count">{{ $items->count() }} {{ __('record(s)') }}</span>
+    </div>
+
+    {{-- ═══ Floating Selection Toolbar ═══ --}}
+    @can('edit-employees')
+    <div class="bulk-action-bar align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+         id="wf-appt-toolbar"
+         style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;">
         <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="wf-select-all-cb">
             <label class="form-check-label fw-bold small" for="wf-select-all-cb">
@@ -15,7 +36,6 @@
             </label>
         </div>
         <div class="vr mx-1"></div>
-
         <div class="dropdown">
             <button class="btn btn-sm btn-secondary dropdown-toggle" id="wf-bulk-btn"
                     type="button" data-bs-toggle="dropdown" disabled>
@@ -35,35 +55,17 @@
                 @endcan
             </ul>
         </div>
-
-        <button class="btn btn-sm btn-info text-white" id="wf-view-btn" disabled
-                onclick="if(window.openViewSelectedModal) window.openViewSelectedModal();">
-            <i class="bi bi-eye me-1"></i>{{ __('View Selected') }}
-        </button>
-
         <button class="btn btn-sm btn-outline-danger" id="wf-clear-btn" disabled
                 onclick="if(window.clearGlobalSelection) window.clearGlobalSelection();">
             <i class="bi bi-x-circle me-1"></i>{{ __('Clear Selection') }}
         </button>
-        <div class="vr mx-1"></div>
-        @endcan
-
-        <div class="input-group input-group-sm" style="min-width: 200px; flex: 1;">
-            <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-search text-muted"></i>
-            </span>
-            <input type="text" id="wf-search-input"
-                   class="form-control border-start-0 border-end-0 bg-light"
-                   placeholder="{{ __('Search employee, employer, work type...') }}">
-            <button class="btn btn-light border" type="button" id="wf-search-btn">
-                <i class="bi bi-funnel"></i>
-            </button>
-            <button class="btn btn-outline-secondary d-none" type="button" id="wf-search-clear-btn">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-        <span class="text-muted small ms-1" id="wf-result-count">{{ $items->count() }} {{ __('record(s)') }}</span>
+        <button class="btn btn-sm btn-info text-white" id="wf-view-btn" disabled
+                onclick="if(window.openViewSelectedModal) window.openViewSelectedModal();">
+            <i class="bi bi-eye me-1"></i>{{ __('View Selected') }}
+            <span class="badge bg-white text-info ms-1" id="wf-view-count">0</span>
+        </button>
     </div>
+    @endcan
 
     {{-- ═══ Cards ═══ --}}
     <div class="p-3">
@@ -265,7 +267,9 @@
     <script>
     (function() {
         const selectAllCb    = document.getElementById('wf-select-all-cb');
+        const floatingBar    = document.getElementById('wf-appt-toolbar');
         const countSpan      = document.getElementById('wf-selected-count');
+        const viewCountBadge = document.getElementById('wf-view-count');
         const bulkBtn        = document.getElementById('wf-bulk-btn');
         const viewBtn        = document.getElementById('wf-view-btn');
         const clearBtn       = document.getElementById('wf-clear-btn');
@@ -277,15 +281,17 @@
         const csrfToken      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 
         // ── Sync toolbar state with global selection ──
-        // รวมการ query DOM และการอัปเดต UI ให้ทำในรอบเดียวผ่าน requestAnimationFrame
-        // เพื่อลดการ repaint ที่ไม่จำเป็น
         function syncToolbar() {
             const data  = window.getGlobalSelectedData ? window.getGlobalSelectedData() : [];
             const count = data.length;
             const ids   = data.map(i => String(i.id));
 
             requestAnimationFrame(() => {
+                // Show/hide floating bar
+                if (floatingBar) floatingBar.style.display = count > 0 ? 'flex' : 'none';
+
                 if (countSpan) countSpan.textContent = count;
+                if (viewCountBadge) viewCountBadge.textContent = count;
                 if (bulkBtn)   bulkBtn.disabled  = count === 0;
                 if (viewBtn)   viewBtn.disabled  = count === 0;
                 if (clearBtn)  clearBtn.disabled = count === 0;

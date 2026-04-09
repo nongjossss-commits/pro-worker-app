@@ -1,6 +1,7 @@
-@props(['id' => 'bulk-action-bar', 'checkboxSelector' => '.employee-checkbox'])
+@props(['id' => 'bulk-action-bar', 'checkboxSelector' => '.employee-checkbox', 'floating' => true])
 
-<div id="{{ $id }}" class="bulk-action-bar mb-3 align-items-center gap-2" style="display: none;">
+<div id="{{ $id }}" class="bulk-action-bar align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+     style="display: none;{{ $floating ? ' position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;' : '' }}">
     <button class="btn btn-sm btn-info text-white me-2" onclick="window.openViewSelectedModal()">
         <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
         <span class="badge bg-white text-info ms-1" id="view-selected-count">0</span>

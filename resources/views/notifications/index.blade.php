@@ -96,27 +96,31 @@
         </div>
     </div>
 
-    {{-- NEW: Bulk Action Bar --}}
-    <div id="bulk-action-bar-notifications" class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 py-2 px-3 bg-light border rounded gap-2" style="display: none;">
-        <div>
+    {{-- Bulk Action Bar (matching standard design from other menus) --}}
+    <div id="bulk-action-bar-notifications" class="bulk-action-bar align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+         style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;">
+        <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="select-all-checkbox-notifications">
-            <label class="form-check-label ms-2" for="select-all-checkbox-notifications">
+            <label class="form-check-label fw-bold" for="select-all-checkbox-notifications">
                 {{ __('Select All') }} (<span id="selected-count-notifications">0</span>)
             </label>
         </div>
 
-        <div class="dropdown w-100 w-md-auto" style="max-width: 300px; position: relative; z-index: 1000;">
-            <button class="btn btn-primary btn-sm dropdown-toggle w-100" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
-                {{ __('Action on selected items') }}
+        <div class="vr mx-2"></div>
+
+        <div class="dropdown">
+            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="notificationBulkActionBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+                {{ __('Actions') }}
             </button>
-            <ul class="dropdown-menu w-100" aria-labelledby="notificationBulkActionBtn">
-                <li><a class="dropdown-item" href="#" id="notification-bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
-                <li><a class="dropdown-item" href="#" id="notification-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
-                <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+            <ul class="dropdown-menu" aria-labelledby="notificationBulkActionBtn">
+                <li><a class="dropdown-item" href="#" id="notification-bulk-advanced-edit-btn"><i class="bi bi-pencil-square me-2 text-primary"></i>{{ __('Advanced Edit') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="notification-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>{{ __('Advanced Export') }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="notification-bulk-download-btn"><i class="bi bi-download me-2 text-info"></i>{{ __('Download Files') }}</a></li>
                 <li><a class="dropdown-item" href="#" id="notification-bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
                 <li><a class="dropdown-item" href="#" id="notification-bulk-send-production-btn"><i class="bi bi-clipboard-data me-2"></i>{{ __('Send to P Production') }}</a></li>
                 @can('manage-tickets')
-                <li><a class="dropdown-item" href="#" id="notification-bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
+                <li><a class="dropdown-item" href="#" id="notification-bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>{{ __('Automated PDF') }}</a></li>
                 @endcan
                 <li><hr class="dropdown-divider"></li>
                 @can('view-finance')
@@ -124,11 +128,13 @@
                 @endcan
             </ul>
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-danger" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
-            <button class="btn btn-sm btn-info text-white" onclick="window.openViewSelectedModal()">
-                <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
-            </button>
+        <button class="btn btn-sm btn-outline-danger" id="notification-clear-selection-btn">{{ __('Clear Selection') }}</button>
+        <button class="btn btn-sm btn-info text-white" id="notification-view-selected-btn">
+            <i class="bi bi-eye me-1"></i> {{ __('View Selected') }}
+            <span class="badge bg-white text-info ms-1" id="notification-view-selected-count">0</span>
+        </button>
+        <div class="ms-auto text-muted small d-none d-md-block">
+            <i class="bi bi-arrows-move me-1"></i> {{ __('Drag to Chat') }}
         </div>
     </div>
 
@@ -566,8 +572,29 @@
         const selectAllCheckboxMOU1 = document.getElementById('select-all-checkbox-notifications-mou1');
         const selectAllCheckboxMOU2 = document.getElementById('select-all-checkbox-notifications-mou2');
         const selectedCountSpan = document.getElementById('selected-count-notifications');
+        const viewSelectedCountBadge = document.getElementById('notification-view-selected-count');
         const actionButton = document.getElementById('notificationBulkActionBtn');
         const downloadBtn = document.getElementById('notification-bulk-download-btn');
+        const clearSelectionBtn = document.getElementById('notification-clear-selection-btn');
+        const viewSelectedBtn = document.getElementById('notification-view-selected-btn');
+
+        // Clear Selection button
+        if (clearSelectionBtn) {
+            clearSelectionBtn.addEventListener('click', function() {
+                const activePane = document.querySelector('.tab-content .tab-pane.active');
+                if (!activePane) return;
+                activePane.querySelectorAll('.bulk-action-checkbox:checked').forEach(cb => cb.checked = false);
+                if (window.clearGlobalSelection) window.clearGlobalSelection();
+                updateActionBar();
+            });
+        }
+
+        // View Selected button
+        if (viewSelectedBtn) {
+            viewSelectedBtn.addEventListener('click', function() {
+                if (window.openViewSelectedModal) window.openViewSelectedModal();
+            });
+        }
 
         function updateActionBar() {
             const activePane = document.querySelector('.tab-content .tab-pane.active');
@@ -580,17 +607,30 @@
             if (count > 0) {
                 actionBar.style.display = 'flex';
                 selectedCountSpan.textContent = count;
+                if (viewSelectedCountBadge) viewSelectedCountBadge.textContent = count;
                 actionButton.disabled = false;
             } else {
                 actionBar.style.display = 'none';
                 selectedCountSpan.textContent = 0;
+                if (viewSelectedCountBadge) viewSelectedCountBadge.textContent = 0;
                 actionButton.disabled = true;
             }
 
+            // Select All checkbox state
             const allChecked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
-            if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
-            if (selectAllCheckboxStd) selectAllCheckboxStd.checked = allChecked;
-            if (selectAllCheckboxEmployer) selectAllCheckboxEmployer.checked = allChecked;
+            const someChecked = count > 0 && !allChecked;
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked;
+            }
+            if (selectAllCheckboxStd) {
+                selectAllCheckboxStd.checked = allChecked;
+                selectAllCheckboxStd.indeterminate = someChecked;
+            }
+            if (selectAllCheckboxEmployer) {
+                selectAllCheckboxEmployer.checked = allChecked;
+                selectAllCheckboxEmployer.indeterminate = someChecked;
+            }
         }
 
         // Use the previously defined 'container' if available or query it

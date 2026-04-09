@@ -1997,6 +1997,12 @@ class RegistrationController extends Controller
     private function applySearchToQuery($query, $search)
     {
         $search = trim($search);
+
+        // Support ID:123 format for direct employee ID lookup
+        if (preg_match('/^ID:\s*(\d+)$/i', $search, $matches)) {
+            return $query->where('id', (int) $matches[1]);
+        }
+
         $cleanedSearch = str_replace(' ', '', $search);
 
         return $query->where(function($q) use ($search, $cleanedSearch) {

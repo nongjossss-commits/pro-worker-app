@@ -541,6 +541,8 @@ use App\Http\Controllers\Admin\ActivityLogController;
 Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->middleware('menu:activity_logs')->name('activity-logs.index');
     Route::get('/activity-logs/search', [ActivityLogController::class, 'search'])->name('activity-logs.search');
+    Route::get('/activity-logs/search-subject', [ActivityLogController::class, 'searchSubject'])->name('activity-logs.search-subject');
+    Route::get('/activity-logs/subject-history', [ActivityLogController::class, 'subjectHistory'])->name('activity-logs.subject-history');
     Route::get('/activity-logs/{year}', [ActivityLogController::class, 'showYear'])->name('activity-logs.year');
     Route::get('/activity-logs/{year}/{month}', [ActivityLogController::class, 'showMonth'])->name('activity-logs.month');
     Route::get('/activity-logs/{year}/{month}/{day}', [ActivityLogController::class, 'showDay'])->name('activity-logs.day');

@@ -106,9 +106,11 @@
     </div>
 </div>
 
-<div class="bulk-action-bar mb-3 align-items-center gap-2"
-     style="display: none;"
-     id="bulkActionBar">
+<div class="bulk-action-bar align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+     style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;"
+     id="bulkActionBar"
+     draggable="true"
+     ondragstart="window.startDragBulk && window.startDragBulk(event)">
     <div class="form-check mb-0">
         <input class="form-check-input" type="checkbox" id="select-all-checkbox">
         <label class="form-check-label" for="select-all-checkbox">

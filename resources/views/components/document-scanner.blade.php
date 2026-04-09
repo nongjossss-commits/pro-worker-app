@@ -356,10 +356,10 @@
                                 <rect x="0" y="0" :width="canvasWidth" :height="canvasHeight" fill="rgba(0,0,0,0.4)" mask="url(#cropMask)" />
 
                                 <!-- Border Lines (green) -->
-                                <line :x1="corners[0].x" :y1="corners[0].y" :x2="corners[1].x" :y2="corners[1].y" stroke="#22c55e" stroke-width="3" />
-                                <line :x1="corners[1].x" :y1="corners[1].y" :x2="corners[2].x" :y2="corners[2].y" stroke="#22c55e" stroke-width="3" />
-                                <line :x1="corners[2].x" :y1="corners[2].y" :x2="corners[3].x" :y2="corners[3].y" stroke="#22c55e" stroke-width="3" />
-                                <line :x1="corners[3].x" :y1="corners[3].y" :x2="corners[0].x" :y2="corners[0].y" stroke="#22c55e" stroke-width="3" />
+                                <line :x1="corners[0].x" :y1="corners[0].y" :x2="corners[1].x" :y2="corners[1].y" stroke="#22c55e" stroke-width="5" />
+                                <line :x1="corners[1].x" :y1="corners[1].y" :x2="corners[2].x" :y2="corners[2].y" stroke="#22c55e" stroke-width="5" />
+                                <line :x1="corners[2].x" :y1="corners[2].y" :x2="corners[3].x" :y2="corners[3].y" stroke="#22c55e" stroke-width="5" />
+                                <line :x1="corners[3].x" :y1="corners[3].y" :x2="corners[0].x" :y2="corners[0].y" stroke="#22c55e" stroke-width="5" />
 
                                 <!-- Invisible thick edge hit areas for dragging (Edge 0-3) -->
                                 <line :x1="corners[0].x" :y1="corners[0].y" :x2="corners[1].x" :y2="corners[1].y" stroke="transparent" stroke-width="30" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('edge', 0, $event)" @touchstart.prevent="startDrag('edge', 0, $event)" />
@@ -368,37 +368,37 @@
                                 <line :x1="corners[3].x" :y1="corners[3].y" :x2="corners[0].x" :y2="corners[0].y" stroke="transparent" stroke-width="30" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('edge', 3, $event)" @touchstart.prevent="startDrag('edge', 3, $event)" />
 
                                 <!-- Midpoint Square Handles (center of each edge) - invisible hit area + visible handle -->
-                                <rect :x="(corners[0].x + corners[1].x) / 2 - 22" :y="(corners[0].y + corners[1].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 0, $event)" @touchstart.prevent="startDrag('midpoint', 0, $event)" />
-                                <rect :x="(corners[0].x + corners[1].x) / 2 - 12" :y="(corners[0].y + corners[1].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 0 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+                                <rect :x="(corners[0].x + corners[1].x) / 2 - 28" :y="(corners[0].y + corners[1].y) / 2 - 28" width="56" height="56" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 0, $event)" @touchstart.prevent="startDrag('midpoint', 0, $event)" />
+                                <rect :x="(corners[0].x + corners[1].x) / 2 - 16" :y="(corners[0].y + corners[1].y) / 2 - 16" width="32" height="32" rx="5" :fill="activeDragMidpoint === 0 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3.5" style="pointer-events: none;" />
 
-                                <rect :x="(corners[1].x + corners[2].x) / 2 - 22" :y="(corners[1].y + corners[2].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 1, $event)" @touchstart.prevent="startDrag('midpoint', 1, $event)" />
-                                <rect :x="(corners[1].x + corners[2].x) / 2 - 12" :y="(corners[1].y + corners[2].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 1 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+                                <rect :x="(corners[1].x + corners[2].x) / 2 - 28" :y="(corners[1].y + corners[2].y) / 2 - 28" width="56" height="56" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 1, $event)" @touchstart.prevent="startDrag('midpoint', 1, $event)" />
+                                <rect :x="(corners[1].x + corners[2].x) / 2 - 16" :y="(corners[1].y + corners[2].y) / 2 - 16" width="32" height="32" rx="5" :fill="activeDragMidpoint === 1 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3.5" style="pointer-events: none;" />
 
-                                <rect :x="(corners[2].x + corners[3].x) / 2 - 22" :y="(corners[2].y + corners[3].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 2, $event)" @touchstart.prevent="startDrag('midpoint', 2, $event)" />
-                                <rect :x="(corners[2].x + corners[3].x) / 2 - 12" :y="(corners[2].y + corners[3].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 2 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+                                <rect :x="(corners[2].x + corners[3].x) / 2 - 28" :y="(corners[2].y + corners[3].y) / 2 - 28" width="56" height="56" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 2, $event)" @touchstart.prevent="startDrag('midpoint', 2, $event)" />
+                                <rect :x="(corners[2].x + corners[3].x) / 2 - 16" :y="(corners[2].y + corners[3].y) / 2 - 16" width="32" height="32" rx="5" :fill="activeDragMidpoint === 2 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3.5" style="pointer-events: none;" />
 
-                                <rect :x="(corners[3].x + corners[0].x) / 2 - 22" :y="(corners[3].y + corners[0].y) / 2 - 22" width="44" height="44" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 3, $event)" @touchstart.prevent="startDrag('midpoint', 3, $event)" />
-                                <rect :x="(corners[3].x + corners[0].x) / 2 - 12" :y="(corners[3].y + corners[0].y) / 2 - 12" width="24" height="24" rx="4" :fill="activeDragMidpoint === 3 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="2.5" style="pointer-events: none;" />
+                                <rect :x="(corners[3].x + corners[0].x) / 2 - 28" :y="(corners[3].y + corners[0].y) / 2 - 28" width="56" height="56" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('midpoint', 3, $event)" @touchstart.prevent="startDrag('midpoint', 3, $event)" />
+                                <rect :x="(corners[3].x + corners[0].x) / 2 - 16" :y="(corners[3].y + corners[0].y) / 2 - 16" width="32" height="32" rx="5" :fill="activeDragMidpoint === 3 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3.5" style="pointer-events: none;" />
 
                                 <!-- Corner 0 (TL) -->
-                                <circle :cx="corners[0].x" :cy="corners[0].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 0, $event)" @touchstart.prevent="startDrag('corner', 0, $event)" />
-                                <circle x-show="activeDragIndex === 0" :cx="corners[0].x" :cy="corners[0].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
-                                <circle :cx="corners[0].x" :cy="corners[0].y" :r="activeDragIndex === 0 ? 22 : 18" :fill="activeDragIndex === 0 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+                                <circle :cx="corners[0].x" :cy="corners[0].y" r="50" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 0, $event)" @touchstart.prevent="startDrag('corner', 0, $event)" />
+                                <circle x-show="activeDragIndex === 0" :cx="corners[0].x" :cy="corners[0].y" r="42" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[0].x" :cy="corners[0].y" :r="activeDragIndex === 0 ? 30 : 26" :fill="activeDragIndex === 0 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="4" style="pointer-events: none;" />
 
                                 <!-- Corner 1 (TR) -->
-                                <circle :cx="corners[1].x" :cy="corners[1].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 1, $event)" @touchstart.prevent="startDrag('corner', 1, $event)" />
-                                <circle x-show="activeDragIndex === 1" :cx="corners[1].x" :cy="corners[1].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
-                                <circle :cx="corners[1].x" :cy="corners[1].y" :r="activeDragIndex === 1 ? 22 : 18" :fill="activeDragIndex === 1 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+                                <circle :cx="corners[1].x" :cy="corners[1].y" r="50" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 1, $event)" @touchstart.prevent="startDrag('corner', 1, $event)" />
+                                <circle x-show="activeDragIndex === 1" :cx="corners[1].x" :cy="corners[1].y" r="42" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[1].x" :cy="corners[1].y" :r="activeDragIndex === 1 ? 30 : 26" :fill="activeDragIndex === 1 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="4" style="pointer-events: none;" />
 
                                 <!-- Corner 2 (BR) -->
-                                <circle :cx="corners[2].x" :cy="corners[2].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 2, $event)" @touchstart.prevent="startDrag('corner', 2, $event)" />
-                                <circle x-show="activeDragIndex === 2" :cx="corners[2].x" :cy="corners[2].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
-                                <circle :cx="corners[2].x" :cy="corners[2].y" :r="activeDragIndex === 2 ? 22 : 18" :fill="activeDragIndex === 2 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+                                <circle :cx="corners[2].x" :cy="corners[2].y" r="50" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 2, $event)" @touchstart.prevent="startDrag('corner', 2, $event)" />
+                                <circle x-show="activeDragIndex === 2" :cx="corners[2].x" :cy="corners[2].y" r="42" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[2].x" :cy="corners[2].y" :r="activeDragIndex === 2 ? 30 : 26" :fill="activeDragIndex === 2 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="4" style="pointer-events: none;" />
 
                                 <!-- Corner 3 (BL) -->
-                                <circle :cx="corners[3].x" :cy="corners[3].y" r="40" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 3, $event)" @touchstart.prevent="startDrag('corner', 3, $event)" />
-                                <circle x-show="activeDragIndex === 3" :cx="corners[3].x" :cy="corners[3].y" r="32" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
-                                <circle :cx="corners[3].x" :cy="corners[3].y" :r="activeDragIndex === 3 ? 22 : 18" :fill="activeDragIndex === 3 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="3" style="pointer-events: none;" />
+                                <circle :cx="corners[3].x" :cy="corners[3].y" r="50" fill="transparent" style="pointer-events: auto; cursor: move; touch-action: none;" @mousedown="startDrag('corner', 3, $event)" @touchstart.prevent="startDrag('corner', 3, $event)" />
+                                <circle x-show="activeDragIndex === 3" :cx="corners[3].x" :cy="corners[3].y" r="42" fill="rgba(34, 197, 94, 0.25)" stroke="#22c55e" stroke-width="2" style="pointer-events: none;" />
+                                <circle :cx="corners[3].x" :cy="corners[3].y" :r="activeDragIndex === 3 ? 30 : 26" :fill="activeDragIndex === 3 ? '#16a34a' : '#22c55e'" stroke="white" stroke-width="4" style="pointer-events: none;" />
                             </svg>
                         </div>
                     </div>

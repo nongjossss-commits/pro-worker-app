@@ -5,10 +5,30 @@
     </div>
 @else
 
-    {{-- ═══ Toolbar ═══ --}}
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 bg-white border rounded shadow-sm" id="appt-toolbar">
-        @can('edit-employees')
-        {{-- Select All --}}
+    {{-- ═══ Search Bar (inline) ═══ --}}
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 bg-white border rounded shadow-sm">
+        <div class="input-group" style="min-width:220px; flex:1;">
+            <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" id="appt-search-input"
+                   class="form-control border-start-0 border-end-0 bg-light"
+                   placeholder="{{ __('Search name, passport, reference, RA, employer...') }}">
+            <button class="btn btn-light border" type="button" id="appt-search-btn">
+                <i class="bi bi-funnel"></i>
+            </button>
+            <button class="btn btn-outline-secondary d-none" type="button" id="appt-search-clear-btn">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <span class="text-muted small ms-1" id="appt-result-count">{{ $employees->count() }} {{ __('record(s)') }}</span>
+    </div>
+
+    {{-- ═══ Floating Selection Toolbar ═══ --}}
+    @can('edit-employees')
+    <div class="bulk-action-bar align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+         id="appt-toolbar"
+         style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 400px;">
         <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="appt-select-all-cb">
             <label class="form-check-label fw-bold small" for="appt-select-all-cb">
@@ -16,8 +36,6 @@
             </label>
         </div>
         <div class="vr mx-1"></div>
-
-        {{-- Actions --}}
         <div class="dropdown">
             <button class="btn btn-sm btn-secondary dropdown-toggle" id="appt-bulk-btn"
                     type="button" data-bs-toggle="dropdown" disabled>
@@ -37,38 +55,17 @@
                 @endcan
             </ul>
         </div>
-
-        {{-- View Selected --}}
-        <button class="btn btn-sm btn-info text-white" id="appt-view-btn" disabled
-                onclick="if(window.openViewSelectedModal) window.openViewSelectedModal();">
-            <i class="bi bi-eye me-1"></i>{{ __('View Selected') }}
-        </button>
-
-        {{-- Clear --}}
         <button class="btn btn-sm btn-outline-danger" id="appt-clear-btn" disabled
                 onclick="if(window.clearGlobalSelection) window.clearGlobalSelection();">
             <i class="bi bi-x-circle me-1"></i>{{ __('Clear Selection') }}
         </button>
-        <div class="vr mx-1"></div>
-        @endcan
-
-        {{-- Search --}}
-        <div class="input-group" style="min-width:220px; flex:1;">
-            <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-search text-muted"></i>
-            </span>
-            <input type="text" id="appt-search-input"
-                   class="form-control border-start-0 border-end-0 bg-light"
-                   placeholder="{{ __('Search name, passport, reference, RA, employer...') }}">
-            <button class="btn btn-light border" type="button" id="appt-search-btn">
-                <i class="bi bi-funnel"></i>
-            </button>
-            <button class="btn btn-outline-secondary d-none" type="button" id="appt-search-clear-btn">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-        <span class="text-muted small ms-1" id="appt-result-count">{{ $employees->count() }} {{ __('record(s)') }}</span>
+        <button class="btn btn-sm btn-info text-white" id="appt-view-btn" disabled
+                onclick="if(window.openViewSelectedModal) window.openViewSelectedModal();">
+            <i class="bi bi-eye me-1"></i>{{ __('View Selected') }}
+            <span class="badge bg-white text-info ms-1" id="appt-view-count">0</span>
+        </button>
     </div>
+    @endcan
 
     {{-- ═══ Cards ═══ --}}
     <div class="row g-3">
@@ -234,8 +231,10 @@
 
     <script>
     (function() {
+        const floatingBar    = document.getElementById('appt-toolbar');
         const selectAllCb    = document.getElementById('appt-select-all-cb');
         const countSpan      = document.getElementById('appt-selected-count');
+        const viewCountBadge = document.getElementById('appt-view-count');
         const bulkBtn        = document.getElementById('appt-bulk-btn');
         const viewBtn        = document.getElementById('appt-view-btn');
         const clearBtn       = document.getElementById('appt-clear-btn');
@@ -251,7 +250,11 @@
             const count = data.length;
             const ids   = data.map(i => String(i.id));
 
+            // Show/hide floating bar
+            if (floatingBar) floatingBar.style.display = count > 0 ? 'flex' : 'none';
+
             if (countSpan) countSpan.textContent = count;
+            if (viewCountBadge) viewCountBadge.textContent = count;
             if (bulkBtn)   bulkBtn.disabled   = count === 0;
             if (viewBtn)   viewBtn.disabled   = count === 0;
             if (clearBtn)  clearBtn.disabled  = count === 0;

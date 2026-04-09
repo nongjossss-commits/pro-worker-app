@@ -357,7 +357,9 @@
 
         /* ─── Bulk Action Bar: ปรับขนาดบน mobile ─── */
         @media (max-width: 767.98px) {
-            #bulkActionBar {
+            #bulkActionBar,
+            #bulk-action-bar-notifications,
+            .bulk-action-bar[style*="position: fixed"] {
                 width: calc(100vw - 1.5rem) !important;
                 min-width: unset !important;
                 left: 50% !important;

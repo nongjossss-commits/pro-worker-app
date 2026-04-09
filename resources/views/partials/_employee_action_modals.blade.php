@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
 
                 {{-- REPLACED: Use the component instead of manual HTML --}}
-                <x-bulk-action-bar id="history-bulk-action-bar" checkboxSelector=".history-employee-checkbox">
+                <x-bulk-action-bar id="history-bulk-action-bar" checkboxSelector=".history-employee-checkbox" :floating="false">
                     <li>
                         <a class="dropdown-item" href="#" id="history-bulk-transfer-btn">
                             <i class="bi bi-person-up me-2"></i>{{ __('ย้ายนายจ้าง') }}
