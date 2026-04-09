@@ -2,7 +2,7 @@
 <div class="modal fade" id="createSalesLeadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="{{ route('sales.store') }}" method="POST">
+            <form action="{{ route('sales.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>สร้างรายการเสนอราคาใหม่</h5>
@@ -44,6 +44,10 @@
                                 <div class="col-md-6">
                                     <label class="form-label">ชื่อลูกค้า (ไทย) <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" name="employerNameTh" id="employerNameTh_new">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">ต่อท้ายชื่อ</label>
+                                    <input type="text" class="form-control" name="name_suffix" placeholder="ข้อความต่อท้ายชื่อนายจ้าง">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">ชื่อลูกค้า (อังกฤษ)</label>
@@ -173,12 +177,39 @@
             });
         }
 
+        // Reset modal ทุกครั้งที่เปิดใหม่ เพื่อให้สร้างได้ไม่จำกัด
+        const createModal = document.getElementById('createSalesLeadModal');
+        createModal.addEventListener('show.bs.modal', function () {
+            const form = createModal.querySelector('form');
+            form.reset();
+            // Reset Select2
+            if (typeof jQuery !== 'undefined') {
+                $('#employer_id').val(null).trigger('change');
+            }
+            // Reset file inputs
+            form.querySelectorAll('input[type="file"]').forEach(function(input) {
+                input.value = '';
+            });
+            // Reset to first tab (existing employer)
+            const existingTab = document.getElementById('existing-tab');
+            if (existingTab && typeof bootstrap !== 'undefined') {
+                new bootstrap.Tab(existingTab).show();
+            }
+            // Reset submit button
+            const submitBtn = document.getElementById('submitCreateLead');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-save me-1"></i> บันทึกและสร้างใบเสนอราคา';
+            }
+        });
+
         // Logic to clear inputs based on active tab to pass validation
         const form = document.querySelector('#createSalesLeadModal form');
         const employerSelect = document.getElementById('employer_id');
         const employerNameInput = document.getElementById('employerNameTh_new');
 
         form.addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submitCreateLead');
             const isNewTabActive = document.getElementById('new-tab').classList.contains('active');
 
             if (isNewTabActive) {
@@ -195,6 +226,12 @@
                     return;
                 }
                 if(employerNameInput) employerNameInput.value = ''; // Clear new input
+            }
+
+            // ป้องกัน double submit
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังบันทึก...';
             }
         });
 

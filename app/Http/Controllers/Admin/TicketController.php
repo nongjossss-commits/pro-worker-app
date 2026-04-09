@@ -93,7 +93,8 @@ class TicketController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhereHas('employer', function($subQ) use ($search) {
                       $subQ->where('employerNameTh', 'like', "%{$search}%")
-                           ->orWhere('employerNameEn', 'like', "%{$search}%");
+                           ->orWhere('employerNameEn', 'like', "%{$search}%")
+                           ->orWhere('name_suffix', 'like', "%{$search}%");
                   });
             });
         }

@@ -63,11 +63,13 @@ class TrashController extends Controller
                         case 'employees':
                             $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
                                 ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                                ->orWhere('name_suffix', 'like', "%{$searchTerm}%")
                                 ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
                             break;
                         case 'employers':
                             $q->where('employerNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
+                                ->orWhere('employerNameEn', 'like', "%{$searchTerm}%")
+                                ->orWhere('name_suffix', 'like', "%{$searchTerm}%");
                             break;
                         case 'agents':
                             $q->where('agentNameEn', 'like', "%{$searchTerm}%");
@@ -180,11 +182,13 @@ class TrashController extends Controller
                     case 'employees':
                         $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
                             ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                            ->orWhere('name_suffix', 'like', "%{$searchTerm}%")
                             ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
                         break;
                     case 'employers':
                         $q->where('employerNameTh', 'like', "%{$searchTerm}%")
-                            ->orWhere('employerNameEn', 'like', "%{$searchTerm}%");
+                            ->orWhere('employerNameEn', 'like', "%{$searchTerm}%")
+                            ->orWhere('name_suffix', 'like', "%{$searchTerm}%");
                         break;
                     case 'agents':
                         // This is the corrected logic from the index method

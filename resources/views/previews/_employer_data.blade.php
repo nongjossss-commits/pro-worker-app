@@ -17,6 +17,14 @@
             <p class="form-control-plaintext">{{ $employer->employerNameEn ?? 'N/A' }}</p>
         </div>
     </div>
+    @if($employer->name_suffix)
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">ต่อท้ายชื่อ</label>
+            <p class="form-control-plaintext">{{ $employer->name_suffix }}</p>
+        </div>
+    </div>
+    @endif
     <div class="row mb-3">
         <div class="col-md-6">
             <label class="form-label fw-bold">รหัสนายจ้าง</label>

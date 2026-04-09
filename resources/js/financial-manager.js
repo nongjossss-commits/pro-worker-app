@@ -553,6 +553,8 @@ if (typeof window.financialManager === 'undefined') {
                 formData.append('amount', this.editingTransaction.amount); // V2.6: Allow amount update from items
                 formData.append('status', this.editingTransaction.status);
                 formData.append('notes', this.editingTransaction.notes || '');
+                formData.append('discount_amount', this.editingTransaction.discount_amount || 0);
+                formData.append('discount_description', this.editingTransaction.discount_description || '');
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
 
                 this.selectedTransactionItems.forEach(val => {

@@ -59,7 +59,18 @@
                     <label for="edit_employeeNameEn" class="form-label">Full Name (EN) <span class="text-danger">*</span>
                         @if(isset($missingFields) && in_array('employeeNameEn', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
                     </label>
-                    <input type="text" class="form-control" id="edit_employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn', $employee->employeeNameEn) }}" required>
+                    <input type="text" class="form-control" id="edit_employeeNameEn" name="employeeNameEn" value="{{ old('employeeNameEn', $employee->getRawOriginal('employeeNameEn')) }}" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="edit_name_suffix" class="form-label">ต่อท้ายชื่อ (EN)</label>
+                    <input type="text" class="form-control" id="edit_name_suffix" name="name_suffix" value="{{ old('name_suffix', $employee->name_suffix) }}" placeholder="ข้อความต่อท้ายชื่อภาษาอังกฤษ">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label text-muted">ตัวอย่างการแสดงผล</label>
+                    <p class="form-control-plaintext text-muted mb-0">{{ ($employee->employeeTitleEn ?? '') }} {{ $employee->getRawOriginal('employeeNameEn') ?? '' }} {{ $employee->name_suffix ? '(' . $employee->name_suffix . ')' : '' }}</p>
                 </div>
             </div>
 

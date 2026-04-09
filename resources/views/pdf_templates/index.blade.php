@@ -5,6 +5,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-2xl font-bold text-gray-800">PDF Templates</h2>
         <div class="d-flex gap-2">
+            @can('view-pdf-templates')
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#quickPrintModal">
+                <i class="bi bi-printer me-2"></i>พิมพ์เอกสาร
+            </button>
+            @endcan
             @can('create-pdf-templates')
             <button type="button" @click="openModal()" class="btn btn-outline-info">
                 <i class="bi bi-people me-2"></i>ตั้งค่ารายชื่อพยาน
@@ -218,6 +223,41 @@
             {{ $templates->links() }}
         </div>
         @endif
+    </div>
+
+    <!-- Quick Print Modal -->
+    <div class="modal fade" id="quickPrintModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-printer me-2"></i>พิมพ์เอกสาร (Quick Print)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">เลือก Template <span class="text-danger">*</span></label>
+                        <select class="form-select" id="quickPrintTemplateId">
+                            <option value="">-- เลือก Template --</option>
+                            @foreach($templates as $tpl)
+                                <option value="{{ $tpl->id }}">{{ $tpl->name }} ({{ $tpl->type === 'global' ? 'Global' : optional($tpl->employer)->employerNameTh }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="alert alert-info py-2 small">
+                        <i class="bi bi-info-circle me-1"></i> สำหรับพิมพ์เอกสารที่ไม่ต้องใช้ข้อมูลลูกจ้าง เช่น แบบฟอร์มเปล่า, เอกสารบริษัท เป็นต้น
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <a href="#" id="quickPrintDownloadBtn" class="btn btn-outline-primary" target="_blank" onclick="return quickPrintAction('download')">
+                        <i class="bi bi-download me-1"></i> ดาวน์โหลด
+                    </a>
+                    <a href="#" id="quickPrintPreviewBtn" class="btn btn-success" target="_blank" onclick="return quickPrintAction('preview')">
+                        <i class="bi bi-printer me-1"></i> พิมพ์ / Preview
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Witness Management Modal -->
@@ -460,6 +500,24 @@
             }
         }));
     });
+
+    function quickPrintAction(mode) {
+        const templateId = document.getElementById('quickPrintTemplateId').value;
+        if (!templateId) {
+            Swal.fire('Warning', 'กรุณาเลือก Template ก่อน', 'warning');
+            return false;
+        }
+
+        let url;
+        if (mode === 'preview') {
+            url = '/admin/pdf-templates/' + templateId + '/preview';
+        } else {
+            url = '/admin/pdf-templates/' + templateId + '/file?download=1';
+        }
+
+        window.open(url, '_blank');
+        return false;
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.btn-submit-swal').forEach(button => {

@@ -16,7 +16,7 @@ class SalesLeadController extends Controller
     public function index()
     {
         $leads = SalesLead::with(['employees', 'employer', 'quotation'])->orderBy('updated_at', 'desc')->get();
-        $employers = Employer::all(['id', 'employerNameTh', 'employerNameEn', 'employerTaxId']);
+        $employers = Employer::all(['id', 'employerNameTh', 'employerNameEn', 'name_suffix', 'employerTaxId']);
 
         $quoted = $leads->where('status', 'quoted');
         $deciding = $leads->where('status', 'deciding');
@@ -36,6 +36,7 @@ class SalesLeadController extends Controller
             'employer_id' => 'nullable|exists:employers,id',
             'employerNameTh' => 'required_without:employer_id|string|max:255|nullable',
             'employerNameEn' => 'nullable|string|max:255',
+            'name_suffix' => 'nullable|string|max:255',
             'employerTaxId' => 'nullable|string|max:255',
             'employerPhone' => 'nullable|string|max:255',
             'jobOwner' => 'nullable|string|max:255',
@@ -64,8 +65,9 @@ class SalesLeadController extends Controller
 
         if ($request->filled('employer_id')) {
             $employer = Employer::find($request->employer_id);
-            $validated['employerNameTh'] = $employer->employerNameTh;
+            $validated['employerNameTh'] = $employer->getRawOriginal('employerNameTh');
             $validated['employerNameEn'] = $employer->employerNameEn;
+            $validated['name_suffix'] = $employer->name_suffix;
             $validated['employerTaxId'] = $employer->employerTaxId;
             $validated['employerPhone'] = $employer->employerPhone;
             $validated['jobOwner'] = $employer->jobOwner ? $employer->jobOwner->name_th : null;
@@ -114,6 +116,7 @@ class SalesLeadController extends Controller
         $validated = $request->validate([
             'employerNameTh' => 'required|string|max:255',
             'employerNameEn' => 'nullable|string|max:255',
+            'name_suffix' => 'nullable|string|max:255',
             'employerTaxId' => 'nullable|string|max:255',
             'employerPhone' => 'nullable|string|max:255',
             'jobOwner' => 'nullable|string|max:255',
@@ -205,6 +208,7 @@ class SalesLeadController extends Controller
         $textRules = [
             'employee_id' => 'nullable|exists:employees,id',
             'employeeNameEn' => 'required_without:employee_id|string|max:255|nullable',
+            'name_suffix' => 'nullable|string|max:255',
             'employeeNameTh' => 'nullable|string|max:255',
             'employeeTitleTh' => 'nullable|string|max:50',
             'employeeTitleEn' => 'nullable|string|max:50',
@@ -283,7 +287,8 @@ class SalesLeadController extends Controller
 
         if ($request->filled('employee_id')) {
             $employee = Employee::find($request->employee_id);
-            $validated['employeeNameEn'] = $employee->employeeNameEn;
+            $validated['employeeNameEn'] = $employee->getRawOriginal('employeeNameEn');
+            $validated['name_suffix'] = $employee->name_suffix;
             $validated['employeeNameTh'] = $employee->employeeNameTh;
             $validated['employeeGender'] = $employee->employeeGender;
             $validated['employeePassport'] = $employee->employeePassport;
@@ -316,6 +321,7 @@ class SalesLeadController extends Controller
     {
         $textRules = [
             'employeeNameEn' => 'required|string|max:255',
+            'name_suffix' => 'nullable|string|max:255',
             'employeeNameTh' => 'nullable|string|max:255',
             'employeeTitleTh' => 'nullable|string|max:50',
             'employeeTitleEn' => 'nullable|string|max:50',
@@ -607,8 +613,9 @@ class SalesLeadController extends Controller
 
                 $realEmployer = Employer::create([
                     'employerId' => $employerId,
-                    'employerNameTh' => $sales->employerNameTh,
+                    'employerNameTh' => $sales->getRawOriginal('employerNameTh'),
                     'employerNameEn' => $sales->employerNameEn,
+                    'name_suffix' => $sales->name_suffix,
                     'employerTaxId' => $sales->employerTaxId,
                     'employerPhone' => $sales->employerPhone,
                     'employerEmail' => $sales->employerEmail,
@@ -645,7 +652,8 @@ class SalesLeadController extends Controller
                 } else {
                     $newEmp = Employee::create([
                         'employer_id' => $realEmployer->id,
-                        'employeeNameEn' => $slEmp->employeeNameEn,
+                        'employeeNameEn' => $slEmp->getRawOriginal('employeeNameEn'),
+                        'name_suffix' => $slEmp->name_suffix,
                         'employeeNameTh' => $slEmp->employeeNameTh,
                         'employeeGender' => $slEmp->employeeGender ?? 'Not Specified',
                         'employeePassport' => $slEmp->employeePassport,

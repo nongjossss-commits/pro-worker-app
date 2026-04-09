@@ -134,6 +134,7 @@ class ActivityLogController extends Controller
         $employees = Employee::where(function ($query) use ($q) {
                 $query->where('employeeNameTh', 'like', "%{$q}%")
                       ->orWhere('employeeNameEn', 'like', "%{$q}%")
+                      ->orWhere('name_suffix', 'like', "%{$q}%")
                       ->orWhere('employeePassport', 'like', "%{$q}%")
                       ->orWhere('employee_reference_id', 'like', "%{$q}%")
                       ->orWhere('request_number', 'like', "%{$q}%")
@@ -165,6 +166,7 @@ class ActivityLogController extends Controller
         $employers = Employer::where(function ($query) use ($q) {
                 $query->where('employerNameTh', 'like', "%{$q}%")
                       ->orWhere('employerNameEn', 'like', "%{$q}%")
+                      ->orWhere('name_suffix', 'like', "%{$q}%")
                       ->orWhere('id', $q);
             })
             ->limit(10)
@@ -220,6 +222,7 @@ class ActivityLogController extends Controller
         // Filter parameters
         $userId = $request->query('user_id');
         $actionFilter = $request->query('action');
+        $categoryFilter = $request->query('category');
 
         $query = ActivityLog::with(['user'])
             ->where('subject_type', $subjectType)
@@ -231,6 +234,15 @@ class ActivityLogController extends Controller
         }
         if ($actionFilter) {
             $query->where('action', $actionFilter);
+        }
+
+        // Category filter: group actions into categories
+        if ($categoryFilter === 'changes') {
+            // แก้ไข/เปลี่ยนแปลง/ดาวน์โหลด/อัพโหลด
+            $query->whereIn('action', ['create', 'update', 'delete', 'restore', 'force_delete', 'download', 'upload', 'export', 'import', 'generate_document', 'print']);
+        } elseif ($categoryFilter === 'movement') {
+            // แจ้งออก/ย้ายนายจ้าง/คืนสภาพ/เปลี่ยนสถานะ/ดำเนินการ
+            $query->whereIn('action', ['terminate', 'reinstate', 'transfer', 'status_change', 'workflow_process', 'bulk_action']);
         }
 
         $logs = $query->paginate(50)->withQueryString();
@@ -248,7 +260,7 @@ class ActivityLogController extends Controller
 
         return view('admin.activity_logs.subject_history', compact(
             'logs', 'subject', 'subjectType', 'subjectId', 'subjectLabel',
-            'users', 'userId', 'actions', 'actionFilter'
+            'users', 'userId', 'actions', 'actionFilter', 'categoryFilter'
         ));
     }
 }

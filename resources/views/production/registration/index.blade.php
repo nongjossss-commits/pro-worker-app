@@ -30,13 +30,13 @@
         content: counter(employer-counter);
     }
     .employer-sequence-number {
-        /* Ensure it doesn't shift when content changes */
-        min-width: 50px;
-        text-align: center;
-        font-size: 2.5rem; /* display-5 size approx */
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        font-size: 1.1rem;
         font-weight: bold;
-        color: #6c757d; /* text-muted */
-        opacity: 0.5;
+        color: #adb5bd;
+        z-index: 1;
     }
 
     /* CSS Counters for Employees (Per Employer) */
@@ -50,11 +50,33 @@
         content: counter(employee-counter);
     }
     .employee-sequence-number {
-        /* Ensure it doesn't shift when content changes */
-        min-width: 40px; /* Increased to fit 3 digits */
-        text-align: right;
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        font-size: 0.8rem;
         font-weight: bold;
-        white-space: nowrap; /* Prevent wrapping for large numbers */
+        color: #adb5bd;
+        z-index: 1;
+    }
+
+    /* Mobile/Tablet optimizations for employee cards */
+    @media (max-width: 1024px) {
+        .employee-card-wrapper .card-body { padding: 0.5rem !important; padding-top: 0.75rem !important; }
+        .employee-card-wrapper .emp-info-section,
+        .employee-card-wrapper .emp-info-section > .d-flex,
+        .employee-card-wrapper .emp-info-section .d-flex.align-items-center.gap-3,
+        .employee-card-wrapper .emp-info-section [id^="info-container-"] {
+            flex-direction: column !important; align-items: center !important; text-align: center; width: 100% !important;
+        }
+        .employee-card-wrapper .emp-info-section .form-check:has(.employee-checkbox) { position: absolute; top: 28px; left: 8px; z-index: 2; }
+        .employee-card-wrapper .position-absolute.bottom-0.end-0 { position: absolute !important; bottom: 8px !important; right: 8px !important; top: auto !important; left: auto !important; margin: 0 !important; }
+        .employee-card-wrapper [style*="min-width: 250px"] { min-width: unset !important; width: 100% !important; }
+    }
+
+    @media (max-width: 576px) {
+        .employee-card-wrapper .card-body { padding: 0.4rem !important; padding-top: 0.6rem !important; }
+        .employee-card-wrapper .fw-bold.text-dark { font-size: 0.85rem; }
+        .employee-card-wrapper .small, .employee-card-wrapper .text-muted.small { font-size: 0.7rem !important; }
     }
 </style>
 
@@ -385,11 +407,9 @@
                 $employerHeaderClass = $isEmployerCancelled ? 'bg-light' : 'bg-white';
             @endphp
 
-            <div class="d-flex align-items-start employer-card-container w-100 mb-4" id="employer-card-{{ $employer->id }}" data-is-cancelled="{{ $isEmployerCancelled ? 'true' : 'false' }}">
-                {{-- Sequence Number (CSS Counter will handle number) --}}
-                <div class="employer-sequence-number me-3 pt-2"></div>
-
-                <div class="card flex-grow-1 shadow-sm overflow-visible {{ $employerCardClass }}" style="position: relative;">
+            <div class="employer-card-container w-100 mb-4" id="employer-card-{{ $employer->id }}" data-is-cancelled="{{ $isEmployerCancelled ? 'true' : 'false' }}">
+                <div class="card shadow-sm overflow-visible {{ $employerCardClass }}" style="position: relative;">
+                <div class="employer-sequence-number"></div>
                     <x-last-edited-badge :model="$employer" />
                     {{-- Status/Note Tab/Drawer --}}
                     <div class="position-absolute d-flex align-items-center gap-1 shadow-sm border border-secondary border-bottom-0 rounded-top bg-white px-2 py-1"

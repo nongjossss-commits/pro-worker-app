@@ -58,12 +58,32 @@
                 </div>
             </div>
 
-            {{-- ตัวกรอง --}}
+            {{-- ตัวกรองหมวดหมู่ --}}
+            @php $currentCategory = $categoryFilter ?? ''; @endphp
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a href="{{ route('admin.activity-logs.subject-history', ['subject_type' => $subjectType, 'subject_id' => $subjectId, 'user_id' => $userId ?? '', 'action' => $actionFilter ?? '']) }}"
+                   class="btn btn-sm {{ $currentCategory === '' ? 'btn-primary' : 'btn-outline-primary' }}">
+                    <i class="bi bi-list-ul me-1"></i> ประวัติทั้งหมด
+                </a>
+                <a href="{{ route('admin.activity-logs.subject-history', ['subject_type' => $subjectType, 'subject_id' => $subjectId, 'category' => 'changes', 'user_id' => $userId ?? '', 'action' => $actionFilter ?? '']) }}"
+                   class="btn btn-sm {{ $currentCategory === 'changes' ? 'btn-info' : 'btn-outline-info' }}">
+                    <i class="bi bi-pencil-square me-1"></i> แก้ไข/เปลี่ยนแปลง/ดาวน์โหลด
+                </a>
+                <a href="{{ route('admin.activity-logs.subject-history', ['subject_type' => $subjectType, 'subject_id' => $subjectId, 'category' => 'movement', 'user_id' => $userId ?? '', 'action' => $actionFilter ?? '']) }}"
+                   class="btn btn-sm {{ $currentCategory === 'movement' ? 'btn-warning' : 'btn-outline-warning' }}">
+                    <i class="bi bi-arrow-left-right me-1"></i> แจ้งออก/ย้ายนายจ้าง/ดำเนินการ
+                </a>
+            </div>
+
+            {{-- ตัวกรองละเอียด --}}
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>ประวัติการแก้ไขทั้งหมด</h5>
+                <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>ประวัติการดำเนินการ</h5>
                 <form action="{{ route('admin.activity-logs.subject-history') }}" method="GET" class="d-flex flex-wrap align-items-center gap-2">
                     <input type="hidden" name="subject_type" value="{{ $subjectType }}">
                     <input type="hidden" name="subject_id" value="{{ $subjectId }}">
+                    @if($currentCategory)
+                        <input type="hidden" name="category" value="{{ $currentCategory }}">
+                    @endif
                     <select name="user_id" class="form-select form-select-sm" style="width: auto; min-width: 180px;" onchange="this.form.submit()">
                         <option value="">-- ทุกผู้ใช้ --</option>
                         @foreach($users as $u)
@@ -80,9 +100,9 @@
                             </option>
                         @endforeach
                     </select>
-                    @if(($userId ?? '') || ($actionFilter ?? ''))
+                    @if(($userId ?? '') || ($actionFilter ?? '') || $currentCategory)
                         <a href="{{ route('admin.activity-logs.subject-history', ['subject_type' => $subjectType, 'subject_id' => $subjectId]) }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-x-lg"></i> ล้าง
+                            <i class="bi bi-x-lg"></i> ล้างทั้งหมด
                         </a>
                     @endif
                 </form>
@@ -137,6 +157,10 @@
                                             'bulk_action' => 'primary',
                                             'import' => 'info',
                                             'status_change' => 'primary',
+                                            'terminate' => 'danger',
+                                            'reinstate' => 'success',
+                                            'transfer' => 'warning',
+                                            'workflow_process' => 'info',
                                             default => 'secondary',
                                         };
                                     @endphp
@@ -150,6 +174,32 @@
                                         <div class="small text-muted">
                                             <span class="badge bg-light text-dark border me-1">ID: {{ $log->subject_id }}</span>
                                             {{ \App\Helpers\ActivityLogHelper::formatModel($log->subject_type) }}
+                                        </div>
+                                    @endif
+
+                                    {{-- Special detail for transfer --}}
+                                    @if($log->action === 'transfer' && $log->properties)
+                                        <div class="mt-1 small">
+                                            <span class="badge bg-secondary">จาก:</span> {{ $log->properties['old_employer_name'] ?? '-' }}
+                                            <i class="bi bi-arrow-right mx-1"></i>
+                                            <span class="badge bg-warning text-dark">ไป:</span> {{ $log->properties['new_employer_name'] ?? '-' }}
+                                        </div>
+                                    @endif
+
+                                    {{-- Special detail for terminate --}}
+                                    @if($log->action === 'terminate' && $log->properties)
+                                        <div class="mt-1 small">
+                                            <span class="badge bg-danger">นายจ้าง:</span> {{ $log->properties['employer_name'] ?? '-' }}
+                                            @if($log->properties['termination_reason'] ?? null)
+                                                | <strong>เหตุผล:</strong> {{ $log->properties['termination_reason'] }}
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    {{-- Special detail for reinstate --}}
+                                    @if($log->action === 'reinstate' && $log->properties)
+                                        <div class="mt-1 small">
+                                            <span class="badge bg-success">กลับเข้า:</span> {{ $log->properties['employer_name'] ?? '-' }}
                                         </div>
                                     @endif
                                 </td>

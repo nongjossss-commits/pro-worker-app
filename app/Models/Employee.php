@@ -45,6 +45,7 @@ class Employee extends Model
         'english_prefix',
         'employeeNameTh',
         'employeeNameEn',
+        'name_suffix',
         'employeeNationality',
         'employeePassport',
         'passportExpiryDate',
@@ -179,6 +180,16 @@ class Employee extends Model
         'sso_expiry_date' => 'date:Y-m-d',
         'terminated_at' => 'datetime',
     ];
+
+    protected function employeeNameEn(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                $suffix = $this->attributes['name_suffix'] ?? null;
+                return $suffix ? $value . ' (' . $suffix . ')' : $value;
+            },
+        );
+    }
 
     protected function photoUrl(): Attribute
     {

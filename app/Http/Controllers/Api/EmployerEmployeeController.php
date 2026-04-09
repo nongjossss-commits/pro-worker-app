@@ -77,6 +77,7 @@ class EmployerEmployeeController extends Controller
                        ->where(function($q) use ($searchTerm) {
                            $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
                              ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                             ->orWhere('name_suffix', 'like', "%{$searchTerm}%")
                              ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
                        })
                        ->limit(50); // Limit results for performance

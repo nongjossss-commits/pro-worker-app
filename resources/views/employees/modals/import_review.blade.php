@@ -184,6 +184,7 @@ document.addEventListener('alpine:init', () => {
             this.filteredEmployees = this.employees.filter(emp => {
                 const matchesName = (emp.employeeNameTh && emp.employeeNameTh.toLowerCase().includes(lowerSearch)) ||
                                     (emp.employeeNameEn && emp.employeeNameEn.toLowerCase().includes(lowerSearch)) ||
+                                    (emp.name_suffix && emp.name_suffix.toLowerCase().includes(lowerSearch)) ||
                                     (emp.employeePassport && emp.employeePassport.toLowerCase().includes(lowerSearch));
 
                 const matchesNation = this.nationality === '' || emp.employeeNationality === this.nationality;

@@ -16,12 +16,16 @@ class SalesQuotation extends Model
         'quotation_date',
         'payment_terms',
         'grand_total',
-        'items_data'
+        'total_paid',
+        'payment_status',
+        'items_data',
+        'payments_data',
     ];
 
     protected $casts = [
         'quotation_date' => 'date',
-        'items_data' => 'array'
+        'items_data' => 'array',
+        'payments_data' => 'array',
     ];
 
     public function salesLead()

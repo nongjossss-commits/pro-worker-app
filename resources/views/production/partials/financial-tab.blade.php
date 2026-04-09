@@ -1023,7 +1023,8 @@ class="row">
                                                 <template x-if="!pay.receipt_generated_at">
                                                     <span class="badge bg-secondary" style="font-size: 0.6rem;" title="Not Generated"><i class="bi bi-dash-circle"></i> Not Generated</span>
                                                 </template>
-                                                <a x-show="pay.slip_path" href="#" @click.prevent="viewPDF('/storage/' + pay.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
+                                                <a x-show="pay.slip_path" :href="'/storage/' + pay.slip_path" target="_blank" class="badge bg-success text-decoration-none" title="ดูไฟล์"><i class="bi bi-eye-fill"></i></a>
+                                                <a x-show="pay.slip_path" href="#" @click.prevent="viewPDF('/storage/' + pay.slip_path, 'View Slip')" class="badge bg-danger text-decoration-none" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
                                             </div>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mt-2">
@@ -1082,15 +1083,23 @@ class="row">
                                         </select>
                                     </div>
                                     <div class="mb-2">
-                                        <label class="form-label small mb-0">Slip</label>
-                                        <input type="file" id="paymentSlipInput" class="form-control form-control-sm" @change="handlePaymentSlipSelect" accept=".jpg,.jpeg,.png,.pdf">
-                                        <div x-show="editingPaymentId && newPayment.slip_path && !paymentSlipFile" class="mt-1 small">
-                                            <a :href="'/storage/' + newPayment.slip_path" target="_blank" class="text-decoration-none">
-                                                <i class="bi bi-file-earmark-text"></i> View Current Slip
+                                        <label class="form-label small mb-0">Slip / หลักฐานการจ่ายเงิน</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="file" id="paymentSlipInput" class="form-control form-control-sm" onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)" @change="handlePaymentSlipSelect" accept="image/*,application/pdf" multiple>
+                                            <button type="button" class="btn btn-outline-secondary" title="สแกน/ถ่ายรูป" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'paymentSlipInput' } }))">
+                                                <i class="bi bi-camera"></i>
+                                            </button>
+                                        </div>
+                                        <div x-show="editingPaymentId && newPayment.slip_path && !paymentSlipFile" class="mt-1 d-flex gap-1">
+                                            <a :href="'/storage/' + newPayment.slip_path" target="_blank" class="btn btn-success btn-sm py-0 px-2" title="ดูไฟล์">
+                                                <i class="bi bi-eye-fill"></i> ดูไฟล์
+                                            </a>
+                                            <a href="#" @click.prevent="viewPDF('/storage/' + newPayment.slip_path, 'View Slip')" class="btn btn-danger btn-sm py-0 px-2" title="ดู PDF">
+                                                <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                                             </a>
                                         </div>
-                                        <div x-show="editingPaymentId && paymentSlipFile" class="mt-1 small text-warning">
-                                            <i class="bi bi-info-circle"></i> New file selected.
+                                        <div x-show="paymentSlipFile" class="mt-1 small text-warning">
+                                            <i class="bi bi-info-circle"></i> เลือกไฟล์ใหม่แล้ว
                                         </div>
                                     </div>
                                     <div class="mb-2">

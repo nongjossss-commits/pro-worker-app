@@ -1598,6 +1598,31 @@
                     ctx.drawImage(img, drawX, drawY, drawW, drawH);
                 };
 
+                // Helper to draw image with rounded corners (card-like)
+                const drawFitRounded = (img, x, y, w, h, radius) => {
+                    const scale = Math.min(w / img.width, h / img.height);
+                    const drawW = img.width * scale;
+                    const drawH = img.height * scale;
+                    const drawX = x + (w - drawW) / 2;
+                    const drawY = y + (h - drawH) / 2;
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(drawX + radius, drawY);
+                    ctx.lineTo(drawX + drawW - radius, drawY);
+                    ctx.quadraticCurveTo(drawX + drawW, drawY, drawX + drawW, drawY + radius);
+                    ctx.lineTo(drawX + drawW, drawY + drawH - radius);
+                    ctx.quadraticCurveTo(drawX + drawW, drawY + drawH, drawX + drawW - radius, drawY + drawH);
+                    ctx.lineTo(drawX + radius, drawY + drawH);
+                    ctx.quadraticCurveTo(drawX, drawY + drawH, drawX, drawY + drawH - radius);
+                    ctx.lineTo(drawX, drawY + radius);
+                    ctx.quadraticCurveTo(drawX, drawY, drawX + radius, drawY);
+                    ctx.closePath();
+                    ctx.clip();
+                    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                    ctx.restore();
+                };
+
                 if (type === 'full') {
                     // 1 Image Full Page (with margin)
                     if(images[0]) drawFit(images[0], margin, margin, a4w - 2*margin, a4h - 2*margin);
@@ -1621,12 +1646,12 @@
                     if(images[0]) drawFit(images[0], (a4w - pw)/2, (a4h - ph)/2, pw, ph);
                 }
                 else if (type === 'card') {
-                    // Credit Card (ID-1): 85.6mm x 54mm @ 150DPI
-                    // W: (85.6 / 25.4) * 150 = 506 px -> +15% = 582 px
-                    // H: (54 / 25.4) * 150 = 319 px -> +15% = 367 px
+                    // Credit Card (ID-1): 85.6mm x 54mm @ 300DPI
                     const cw = 1164; // 300 DPI ID Card
                     const ch = 734; // 300 DPI ID Card
-                    if(images[0]) drawFit(images[0], (a4w - cw)/2, (a4h - ch)/2, cw, ch);
+                    // Real card corner radius ~3mm = (3/25.4)*300 ≈ 35px
+                    const cardRadius = 35;
+                    if(images[0]) drawFitRounded(images[0], (a4w - cw)/2, (a4h - ch)/2, cw, ch, cardRadius);
                 }
                 else if (type === 'half_v') {
                     // Top / Bottom
@@ -1650,15 +1675,16 @@
                 }
                 else if (type === 'id_card_pair') {
                     // Specific ID Card Layout (Center Top / Center Bottom)
-                    // Standard ID-1 Size: 506 x 319 px -> +15% = 582 x 367 px
                     const cardW = 1164; // 300 DPI ID Card
                     const cardH = 734; // 300 DPI ID Card
+                    // Real card corner radius ~3mm = (3/25.4)*300 ≈ 35px
+                    const cardRadius = 35;
 
                     const topY = a4h/4 - cardH/2;
                     const botY = a4h*3/4 - cardH/2;
 
-                    if(images[0]) drawFit(images[0], (a4w - cardW)/2, topY, cardW, cardH);
-                    if(images[1]) drawFit(images[1], (a4w - cardW)/2, botY, cardW, cardH);
+                    if(images[0]) drawFitRounded(images[0], (a4w - cardW)/2, topY, cardW, cardH, cardRadius);
+                    if(images[1]) drawFitRounded(images[1], (a4w - cardW)/2, botY, cardW, cardH, cardRadius);
                 }
                 else if (type === 'grid') {
                     // 2x2 Grid for 3 or 4 images

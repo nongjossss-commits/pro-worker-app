@@ -27,6 +27,10 @@
                 @enderror
             </div>
             <div class="col-md-6">
+                <label for="name_suffix" class="form-label">ต่อท้ายชื่อ</label>
+                <input type="text" class="form-control" id="name_suffix" name="name_suffix" value="{{ old('name_suffix') }}" placeholder="ข้อความต่อท้ายชื่อนายจ้าง">
+            </div>
+            <div class="col-md-6">
                 <label for="employerNameEn" class="form-label">{{ __('Employer Name (English)') }}</label>
                 <input type="text" class="form-control @error('employerNameEn') is-invalid @enderror" id="employerNameEn" name="employerNameEn" value="{{ old('employerNameEn') }}">
                 @error('employerNameEn')

@@ -97,48 +97,63 @@
 
 @push('scripts')
 <script>
-    function loadFinancialTabModal(url, title) {
+    let _fmScriptPromise = null;
+
+    function _ensureFinancialManagerScript() {
+        if (!_fmScriptPromise) {
+            _fmScriptPromise = new Promise((resolve, reject) => {
+                if (typeof financialManager === 'function') { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = '{{ asset("js/financial-manager.js") }}';
+                s.onload  = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+        return _fmScriptPromise;
+    }
+
+    async function loadFinancialTabModal(url, title) {
         document.getElementById('financialTabModalLabel').innerText = "{{ __('Financial Data') }} - " + title;
-        document.getElementById('financialTabModalBody').innerHTML = `
+        const body = document.getElementById('financialTabModalBody');
+        body.innerHTML = `
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
         `;
-        let modal = new bootstrap.Modal(document.getElementById('financialTabModal'));
+        let modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('financialTabModal'));
         modal.show();
 
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error("Network response was not ok");
-            return response.text();
-        })
-        .then(html => {
-            document.getElementById('financialTabModalBody').innerHTML = html;
-            // Execute scripts inside the modal if any
-            let scripts = document.getElementById('financialTabModalBody').querySelectorAll('script');
-            scripts.forEach(script => {
-                let newScript = document.createElement('script');
-                newScript.text = script.innerHTML;
-                document.body.appendChild(newScript).parentNode.removeChild(newScript);
-            });
-            if (typeof initFinancialTab === 'function') {
-                initFinancialTab();
-            }
-        })
-        .catch(error => {
+        try {
+            const [html] = await Promise.all([
+                fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' }
+                }).then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.text();
+                }),
+                _ensureFinancialManagerScript()
+            ]);
+
+            // Parse HTML and remove <script> tags (financial-manager.js already loaded)
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            doc.querySelectorAll('script').forEach(s => s.remove());
+            body.innerHTML = doc.body.innerHTML;
+
+            // Initialize Alpine.js for the dynamically injected component
+            if (window.Alpine) Alpine.initTree(body);
+
+        } catch (error) {
             console.error('Error fetching financial tab:', error);
-            document.getElementById('financialTabModalBody').innerHTML = `
+            body.innerHTML = `
                 <div class="alert alert-danger">
                     Error loading financial data. Please try again or check your permissions.
                 </div>
             `;
-        });
+        }
     }
 
     // Refresh page when modal is closed to update stats

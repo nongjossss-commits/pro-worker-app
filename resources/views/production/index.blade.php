@@ -28,12 +28,13 @@
         content: counter(employer-counter);
     }
     .employer-sequence-number {
-        min-width: 50px;
-        text-align: center;
-        font-size: 2.5rem;
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        font-size: 1.1rem;
         font-weight: bold;
-        color: #6c757d;
-        opacity: 0.5;
+        color: #adb5bd;
+        z-index: 1;
     }
 
     /* CSS Counters for Employees (Per Employer) */
@@ -53,11 +54,31 @@
     }
     .item-sequence-number,
     .employee-sequence-number {
-        min-width: 40px;
-        text-align: right;
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        font-size: 0.8rem;
         font-weight: bold;
-        white-space: nowrap;
+        color: #adb5bd;
+        z-index: 1;
     }
+    /* Mobile/Tablet optimizations */
+    @media (max-width: 1024px) {
+        .item-card-wrapper .card-body { padding: 0.5rem !important; padding-top: 0.75rem !important; }
+        .item-card-wrapper .item-info-section { flex-direction: column !important; align-items: center !important; text-align: center; width: 100% !important; }
+        .item-card-wrapper .item-info-section > .d-flex.align-items-center.gap-3,
+        .item-card-wrapper .item-info-section [id^="info-container-"] { flex-direction: column !important; align-items: center !important; text-align: center; width: 100% !important; }
+        .item-card-wrapper .item-info-section > .form-check:has(.employee-checkbox) { position: absolute; top: 28px; left: 8px; z-index: 2; }
+        .item-card-wrapper .position-absolute.bottom-0.end-0 { position: absolute !important; bottom: 8px !important; right: 8px !important; top: auto !important; left: auto !important; margin: 0 !important; }
+        .item-card-wrapper [style*="min-width: 250px"],
+        .item-card-wrapper [style*="min-width: 220px"] { min-width: unset !important; width: 100% !important; }
+    }
+    @media (max-width: 576px) {
+        .item-card-wrapper .card-body { padding: 0.4rem !important; padding-top: 0.6rem !important; }
+        .item-card-wrapper .fw-bold.text-dark { font-size: 0.85rem; }
+        .item-card-wrapper .small { font-size: 0.7rem !important; }
+    }
+
     .filter-active {
         transform: scale(1.05);
         border: 2px solid #3b82f6 !important;
@@ -303,10 +324,9 @@
                  // This matches the Controller logic, but for UI styling
                  $isActive = $computed['active_items_count'] > 0;
             @endphp
-            <div class="d-flex align-items-start production-order-card-container w-100 mb-4">
-                <div class="employer-sequence-number me-3 pt-2"></div>
-
-                <div class="card border-0 shadow-sm flex-grow-1 production-order-card {{ !$isActive ? 'grayscale-mode' : '' }}">
+            <div class="production-order-card-container w-100 mb-4">
+                <div class="card border-0 shadow-sm production-order-card position-relative {{ !$isActive ? 'grayscale-mode' : '' }}">
+                <div class="employer-sequence-number"></div>
                     <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
                     {{-- Inline Note Editor (Top Center) --}}

@@ -415,6 +415,7 @@ class RegistrationController extends Controller
                        ->where(function($sub) use ($search, $cleanedSearch) {
                            $sub->where('employeeNameTh', 'like', "%{$search}%")
                                ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                               ->orWhere('name_suffix', 'like', "%{$search}%")
                                ->orWhere('employeePassport', 'like', "%{$search}%")
                                ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
                                ->orWhere('employee_id_number', 'like', "%{$search}%")
@@ -567,6 +568,7 @@ class RegistrationController extends Controller
                  $query->where(function($q) use ($trimmedSearch, $cleanedSearch) {
                         $q->where('employeeNameTh', 'like', "%{$trimmedSearch}%")
                                ->orWhere('employeeNameEn', 'like', "%{$trimmedSearch}%")
+                               ->orWhere('name_suffix', 'like', "%{$trimmedSearch}%")
                                ->orWhere('employeePassport', 'like', "%{$trimmedSearch}%")
                                ->orWhere('employeeWorkPermit', 'like', "%{$trimmedSearch}%")
                                ->orWhere('employee_id_number', 'like', "%{$trimmedSearch}%")
@@ -2008,6 +2010,7 @@ class RegistrationController extends Controller
         return $query->where(function($q) use ($search, $cleanedSearch) {
             $q->where('employeeNameTh', 'like', "%{$search}%")
               ->orWhere('employeeNameEn', 'like', "%{$search}%")
+              ->orWhere('name_suffix', 'like', "%{$search}%")
               ->orWhere('employeePassport', 'like', "%{$search}%")
               ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
               ->orWhere('employee_id_number', 'like', "%{$search}%")
@@ -2082,6 +2085,7 @@ class RegistrationController extends Controller
             return $query->where(function($q) use ($search, $cleanedSearch) {
                 $q->where('employeeNameTh', 'like', "%{$search}%")
                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('name_suffix', 'like', "%{$search}%")
                   ->orWhere('employeePassport', 'like', "%{$search}%")
                   ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
                   ->orWhere('employee_id_number', 'like', "%{$search}%")
@@ -2287,6 +2291,7 @@ class RegistrationController extends Controller
              $query->where(function($q) use ($search) {
                  $q->where('employeeNameTh', 'like', "%{$search}%")
                    ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                   ->orWhere('name_suffix', 'like', "%{$search}%")
                    ->orWhere('employeePassport', 'like', "%{$search}%")
                    ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
                    ->orWhere('employee_id_number', 'like', "%{$search}%")

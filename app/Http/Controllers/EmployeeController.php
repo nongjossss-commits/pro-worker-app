@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ActivityLogHelper;
 use App\Models\Employee;
+use App\Models\Employer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -46,8 +47,17 @@ class EmployeeController extends Controller
             'termination_reason' => 'nullable|string',
         ]);
 
+        $employerName = $employee->employer ? $employee->employer->getRawOriginal('employerNameTh') : 'N/A';
+
         $employee->update([
             'terminated_at' => $validated['termination_date'],
+            'termination_reason' => $validated['termination_reason'],
+        ]);
+
+        ActivityLogHelper::logAction('terminate', 'แจ้งออกลูกจ้าง ' . $employee->getRawOriginal('employeeNameEn') . ' จากนายจ้าง ' . $employerName, Employee::class, $employee->id, [
+            'employer_id' => $employee->employer_id,
+            'employer_name' => $employerName,
+            'termination_date' => $validated['termination_date'],
             'termination_reason' => $validated['termination_reason'],
         ]);
 
@@ -88,7 +98,15 @@ class EmployeeController extends Controller
 public function reinstate(Employee $employee)
 {
     $this->authorize('terminate', $employee); // Use the 'terminate' policy action
+
+    $employerName = $employee->employer ? $employee->employer->getRawOriginal('employerNameTh') : 'N/A';
+
     $employee->update(['terminated_at' => null]);
+
+    ActivityLogHelper::logAction('reinstate', 'คืนสภาพลูกจ้าง ' . $employee->getRawOriginal('employeeNameEn') . ' กลับเข้านายจ้าง ' . $employerName, Employee::class, $employee->id, [
+        'employer_id' => $employee->employer_id,
+        'employer_name' => $employerName,
+    ]);
 
     return response()->json(['success' => 'Employee reinstated successfully.']);
 }
@@ -113,6 +131,7 @@ public function reinstate(Employee $employee)
             $query->where(function ($q) use ($term) {
                 $q->where("employeeNameTh", "like", $term)
                   ->orWhere("employeeNameEn", "like", $term)
+                  ->orWhere("name_suffix", "like", $term)
                   ->orWhere("employeePassport", "like", $term)
                   ->orWhere("pinkCardNo", "like", $term)
                   ->orWhere("employeeWorkPermit", "like", $term)
@@ -124,7 +143,7 @@ public function reinstate(Employee $employee)
         }
 
         $limit = min((int) $request->input('limit', 30), 200);
-        $employees = $query->select("id", "employeeNameEn", "employeeNameTh", "employeePassport", "employeeTitleEn", "employeePhoto")
+        $employees = $query->select("id", "employeeNameEn", "employeeNameTh", "employeePassport", "employeeTitleEn", "employeePhoto", "name_suffix")
             ->limit($limit)
             ->get();
 
@@ -161,6 +180,7 @@ public function reinstate(Employee $employee)
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm)
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
@@ -171,6 +191,7 @@ public function reinstate(Employee $employee)
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
                                     ->orWhere('employerNameEn', 'like', $searchTerm)
+                                    ->orWhere('name_suffix', 'like', $searchTerm)
                                     ->orWhere(function($addrQ) use ($searchTerm) {
                                         $addrQ->filterByAddress($searchTerm);
                                     });
@@ -314,6 +335,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeNameTh' => 'nullable|string|max:255',
             'employeeTitleEn' => 'nullable|string|max:255',
             'employeeNameEn' => 'required|string|max:255',
+            'name_suffix' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
             'weight' => 'nullable|string|max:255',
@@ -628,6 +650,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeNameTh' => 'nullable|string|max:255',
             'employeeTitleEn' => 'nullable|string|max:255',
             'employeeNameEn' => 'required|string|max:255',
+            'name_suffix' => 'nullable|string|max:255',
             'department' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
             'weight' => 'nullable|string|max:255',
@@ -943,6 +966,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm)
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
@@ -953,6 +977,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
                                     ->orWhere('employerNameEn', 'like', $searchTerm)
+                                    ->orWhere('name_suffix', 'like', $searchTerm)
                                     ->orWhere(function($addrQ) use ($searchTerm) {
                                         $addrQ->filterByAddress($searchTerm);
                                     });
@@ -1063,9 +1088,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         foreach ($employees as $employee) {
             $row = [
-                'Employer Name'      => $employee->employer->employerNameTh ?? 'N/A',
+                'Employer Name'      => $employee->employer->getRawOriginal('employerNameTh') ?? 'N/A',
                 'Employee Name (TH)' => $employee->employeeNameTh,
-                'Employee Name (EN)' => $employee->employeeNameEn,
+                'Employee Name (EN)' => $employee->getRawOriginal('employeeNameEn'),
                 'Nationality'        => $employee->employeeNationality,
                 'Passport No'        => $employee->employeePassport,
                 'Passport Expiry'    => $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
@@ -1126,6 +1151,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
                   ->orWhere('pinkCardNo', 'like', $searchTerm)
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
@@ -1136,6 +1162,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                   ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
                       $employerQuery->where('employerNameTh', 'like', $searchTerm)
                                     ->orWhere('employerNameEn', 'like', $searchTerm)
+                                    ->orWhere('name_suffix', 'like', $searchTerm)
                                     ->orWhere(function($addrQ) use ($searchTerm) {
                                         $addrQ->filterByAddress($searchTerm);
                                     });
@@ -1360,10 +1387,24 @@ public function create(Request $request) // เพิ่ม Request $request เ
             return response()->json(['success' => false, 'message' => 'Employee is not terminated and cannot be transferred.'], 422);
         }
 
+        $oldEmployer = $employee->employer;
+        $oldEmployerName = $oldEmployer ? $oldEmployer->getRawOriginal('employerNameTh') : 'N/A';
+        $oldEmployerId = $employee->employer_id;
+
+        $newEmployer = Employer::find($validated['new_employer_id']);
+        $newEmployerName = $newEmployer ? $newEmployer->getRawOriginal('employerNameTh') : 'N/A';
+
         $employee->update([
             'employer_id' => $validated['new_employer_id'],
             'terminated_at' => null, // Make the employee active again
             'termination_reason' => null, // Clear the old reason
+        ]);
+
+        ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $employee->getRawOriginal('employeeNameEn') . ' จาก ' . $oldEmployerName . ' ไป ' . $newEmployerName, Employee::class, $employee->id, [
+            'old_employer_id' => $oldEmployerId,
+            'old_employer_name' => $oldEmployerName,
+            'new_employer_id' => $validated['new_employer_id'],
+            'new_employer_name' => $newEmployerName,
         ]);
 
         return response()->json(['success' => true, 'message' => 'Employee transferred successfully.']);
@@ -1396,13 +1437,33 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
-        Employee::whereIn('id', $validated['employee_ids'])
-            ->whereNotNull('terminated_at') // Ensure we only transfer terminated employees
-            ->update([
+        $newEmployer = Employer::find($validated['new_employer_id']);
+        $newEmployerName = $newEmployer ? $newEmployer->getRawOriginal('employerNameTh') : 'N/A';
+
+        // Log each employee transfer individually for full audit trail
+        $employeesToTransfer = Employee::whereIn('id', $validated['employee_ids'])
+            ->whereNotNull('terminated_at')
+            ->with('employer')
+            ->get();
+
+        foreach ($employeesToTransfer as $emp) {
+            $oldEmployerName = $emp->employer ? $emp->employer->getRawOriginal('employerNameTh') : 'N/A';
+            $oldEmployerId = $emp->employer_id;
+
+            $emp->update([
                 'employer_id' => $validated['new_employer_id'],
                 'terminated_at' => null,
                 'termination_reason' => null,
             ]);
+
+            ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $emp->getRawOriginal('employeeNameEn') . ' จาก ' . $oldEmployerName . ' ไป ' . $newEmployerName . ' (ย้ายแบบกลุ่ม)', Employee::class, $emp->id, [
+                'old_employer_id' => $oldEmployerId,
+                'old_employer_name' => $oldEmployerName,
+                'new_employer_id' => $validated['new_employer_id'],
+                'new_employer_name' => $newEmployerName,
+                'bulk_transfer' => true,
+            ]);
+        }
 
         return response()->json(['success' => true, 'message' => 'Selected employees transferred successfully.']);
     }
@@ -1762,6 +1823,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $employeeIds = json_decode($validated['employee_ids'], true);
         $selectedColumns = $validated['columns'];
         $sourceMenu = $validated['export_source_menu'] ?? null;
+        $includeNameSuffix = $request->boolean('include_name_suffix');
 
         if (empty($employeeIds)) {
             return back()->with('error', 'No employees selected.');
@@ -1945,7 +2007,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 } elseif ($col === 'job_owner_id') {
                     $cell->setValue($employee->employer->jobOwner->name ?? '-');
                 } elseif ($col === 'employerNameTh') {
-                    $cell->setValue($employee->employer->employerNameTh ?? '-');
+                    $val = $includeNameSuffix
+                        ? ($employee->employer->employerNameTh ?? '-')
+                        : ($employee->employer->getRawOriginal('employerNameTh') ?? '-');
+                    $cell->setValue($val);
                 } elseif ($col === 'employerNameEn') {
                     $cell->setValue($employee->employer->employerNameEn ?? '-');
                 } elseif ($col === 'employerAddressTh') {
@@ -2001,7 +2066,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $cell->setValue($val);
                     }
                 } else {
-                    $val = $employee->$col ?? '-';
+                    // Handle name_suffix toggle for employee name
+                    if ($col === 'employeeNameEn' && !$includeNameSuffix) {
+                        $val = $employee->getRawOriginal('employeeNameEn') ?? '-';
+                    } else {
+                        $val = $employee->$col ?? '-';
+                    }
                     // List of columns that might contain long numbers (e.g. 13 digits) and should be explicitly set as text
                     $textColumns = [
                         'employeePassport', 'employeeWorkPermit', 'pinkCardNo', 'tax_id_number',

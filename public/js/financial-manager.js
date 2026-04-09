@@ -61,7 +61,7 @@ if (typeof window.financialManager === 'undefined') {
 
             // Transaction State
             transactions: initialData.transactions || [],
-            newTransaction: { type: 'installment', amount: '', due_date: '', notes: '' },
+            newTransaction: { type: 'installment', amount: '', due_date: '', notes: '', discount_amount: '', discount_description: '' },
             editingTransaction: { payments: [] },
             selectedFile: null,
             editingPaymentId: null,
@@ -584,7 +584,7 @@ if (typeof window.financialManager === 'undefined') {
                             bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
                         }
 
-                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '' };
+                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '', discount_amount: '', discount_description: '' };
                         this.selectedTransactionItems = [];
 
                         if (data.transaction.items) {
@@ -627,7 +627,8 @@ if (typeof window.financialManager === 'undefined') {
                 this.editingTransaction.wht_file = null;
 
                 // Initialize default payment
-                let defaultAmount = (t.amount - (t.paid_amount || 0)).toFixed(2);
+                let effectiveAmount = t.amount - (parseFloat(t.discount_amount) || 0);
+                let defaultAmount = (effectiveAmount - (t.paid_amount || 0)).toFixed(2);
                 if (defaultAmount < 0) defaultAmount = 0;
 
                 let today = new Date().toISOString().split('T')[0];
@@ -682,7 +683,8 @@ if (typeof window.financialManager === 'undefined') {
                         this.editingTransaction = { ...data.transaction };
 
                         // Reset form
-                        let defaultAmount = (data.transaction.amount - (data.transaction.paid_amount || 0)).toFixed(2);
+                        let effectiveAmt = data.transaction.amount - (parseFloat(data.transaction.discount_amount) || 0);
+                        let defaultAmount = (effectiveAmt - (data.transaction.paid_amount || 0)).toFixed(2);
                         if (defaultAmount < 0) defaultAmount = 0;
                         this.editingPaymentId = null;
                         this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '', slip_path: null };
@@ -714,7 +716,8 @@ if (typeof window.financialManager === 'undefined') {
 
             cancelEditPayment() {
                 this.editingPaymentId = null;
-                let defaultAmount = (this.editingTransaction.amount - (this.editingTransaction.paid_amount || 0)).toFixed(2);
+                let effectiveAmt = this.editingTransaction.amount - (parseFloat(this.editingTransaction.discount_amount) || 0);
+                let defaultAmount = (effectiveAmt - (this.editingTransaction.paid_amount || 0)).toFixed(2);
                 if (defaultAmount < 0) defaultAmount = 0;
                 this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '', slip_path: null };
                 this.paymentSlipFile = null;
@@ -803,6 +806,8 @@ if (typeof window.financialManager === 'undefined') {
                 formData.append('bank_account_id', this.editingTransaction.bank_account_id || '');
                 formData.append('wht_status', this.editingTransaction.wht_status || 'not_required');
                 formData.append('withholding_tax_amount', this.editingTransaction.withholding_tax_amount || '');
+                formData.append('discount_amount', this.editingTransaction.discount_amount || 0);
+                formData.append('discount_description', this.editingTransaction.discount_description || '');
 
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
                 if (this.editingTransaction.wht_file) formData.append('wht_document', this.editingTransaction.wht_file);

@@ -25,3 +25,9 @@ Thumbs.db
 /public/data/thai-address-data.json
 __pycache__/
 *.pyc
+
+# AI Model Weights (downloaded automatically)
+*.pth
+gfpgan/
+public/gfpgan/
+.claude/

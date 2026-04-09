@@ -397,6 +397,17 @@
                         </div>
 
                     </div>
+
+                    <hr class="my-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_name_suffix" value="1" id="include_name_suffix">
+                            <label class="form-check-label fw-bold" for="include_name_suffix">
+                                <i class="bi bi-tag me-1"></i> รวมข้อความต่อท้ายชื่อ (Name Suffix)
+                            </label>
+                        </div>
+                        <small class="text-muted">เมื่อเลือก จะต่อท้ายชื่อลูกจ้าง (EN) และชื่อนายจ้าง (ไทย) ด้วยข้อความที่กำหนดไว้</small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>

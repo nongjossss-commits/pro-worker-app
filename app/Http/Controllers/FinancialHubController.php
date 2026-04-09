@@ -56,7 +56,8 @@ class FinancialHubController extends Controller
                           $po->where('project_name', 'like', "%{$search}%")
                              ->orWhereHas('employer', function($e) use ($search) {
                                  $e->where('employerNameTh', 'like', "%{$search}%")
-                                   ->orWhere('employerNameEn', 'like', "%{$search}%");
+                                   ->orWhere('employerNameEn', 'like', "%{$search}%")
+                                   ->orWhere('name_suffix', 'like', "%{$search}%");
                              });
                       });
                 });
@@ -92,7 +93,8 @@ class FinancialHubController extends Controller
                     $q->where('project_name', 'like', "%{$search}%")
                       ->orWhereHas('employer', function($e) use ($search) {
                           $e->where('employerNameTh', 'like', "%{$search}%")
-                            ->orWhere('employerNameEn', 'like', "%{$search}%");
+                            ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhere('name_suffix', 'like', "%{$search}%");
                       });
                 });
             }
@@ -110,7 +112,8 @@ class FinancialHubController extends Controller
                 $search = $request->search;
                 $query->whereHas('employer', function($e) use ($search) {
                     $e->where('employerNameTh', 'like', "%{$search}%")
-                      ->orWhere('employerNameEn', 'like', "%{$search}%");
+                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                      ->orWhere('name_suffix', 'like', "%{$search}%");
                 });
             }
 
@@ -176,7 +179,8 @@ class FinancialHubController extends Controller
                 $search = $request->search;
                 $query->whereHas('employer', function($e) use ($search) {
                     $e->where('employerNameTh', 'like', "%{$search}%")
-                      ->orWhere('employerNameEn', 'like', "%{$search}%");
+                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                      ->orWhere('name_suffix', 'like', "%{$search}%");
                 });
             }
 
@@ -245,14 +249,74 @@ class FinancialHubController extends Controller
                     $q->where('project_name', 'like', "%{$search}%")
                       ->orWhereHas('employer', function($e) use ($search) {
                           $e->where('employerNameTh', 'like', "%{$search}%")
-                            ->orWhere('employerNameEn', 'like', "%{$search}%");
+                            ->orWhere('employerNameEn', 'like', "%{$search}%")
+                            ->orWhere('name_suffix', 'like', "%{$search}%");
                       });
                 });
             }
             $orders = $query->paginate(20)->withQueryString();
         }
 
-        return view('financial.index', compact('tab', 'stats', 'transactions', 'orders'));
+        $expenses = null;
+
+        if ($tab === 'wht') {
+            // WHT Tab: transactions with pending WHT documents
+            $query = FinancialTransaction::with(['productionOrder.employer', 'financialGroup'])
+                ->where(function($q) {
+                    $q->where('wht_status', 'pending')
+                      ->orWhere(function($q2) {
+                          $q2->whereIn('wht_status', ['pending', 'received'])
+                             ->whereNull('wht_document_path');
+                      });
+                })
+                ->latest('created_at');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('id', 'like', "%{$search}%")
+                      ->orWhereHas('productionOrder', function($po) use ($search) {
+                          $po->whereHas('employer', function($e) use ($search) {
+                              $e->where('employerNameTh', 'like', "%{$search}%")
+                                ->orWhere('employerNameEn', 'like', "%{$search}%")
+                                ->orWhere('name_suffix', 'like', "%{$search}%");
+                          });
+                      });
+                });
+            }
+
+            $transactions = $query->paginate(20)->withQueryString();
+
+            // WHT stats
+            $stats['pending_wht_count'] = FinancialTransaction::where('wht_status', 'pending')->count();
+            $stats['pending_wht_amount'] = FinancialTransaction::where('wht_status', 'pending')->sum('withholding_tax_amount');
+        }
+
+        if ($tab === 'expenses') {
+            $query = \App\Models\Expense::with(['category', 'bankAccount'])
+                ->latest('expense_date');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->where('description', 'like', "%{$search}%")
+                      ->orWhereHas('category', function($c) use ($search) {
+                          $c->where('name', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('expense_date', '>=', $request->date_from);
+            }
+            if ($request->filled('date_to')) {
+                $query->whereDate('expense_date', '<=', $request->date_to);
+            }
+
+            $expenses = $query->paginate(20)->withQueryString();
+        }
+
+        return view('financial.index', compact('tab', 'stats', 'transactions', 'orders', 'expenses'));
     }
 
     /**
@@ -509,7 +573,7 @@ class FinancialHubController extends Controller
         $employeeIds = $request->input('employee_ids', old('employee_ids'));
         if ($employeeIds && is_array($employeeIds)) {
             $selectedEmployees = \App\Models\Employee::whereIn('id', $employeeIds)
-                ->select('id', 'employeeNameTh', 'employeeNameEn', 'employer_employee_id')
+                ->select('id', 'employeeNameTh', 'employeeNameEn', 'name_suffix', 'employer_employee_id')
                 ->get();
         }
 

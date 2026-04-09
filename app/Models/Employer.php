@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -38,6 +39,7 @@ class Employer extends Model
     protected $fillable = [
         'employerNameTh',
         'employerNameEn',
+        'name_suffix',
         'employerId',
         'employerTaxId',
         'employerEmail',
@@ -84,6 +86,16 @@ class Employer extends Model
     protected $casts = [
         'regDate' => 'date:Y-m-d',
     ];
+
+    protected function employerNameTh(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                $suffix = $this->attributes['name_suffix'] ?? null;
+                return $suffix ? $value . ' (' . $suffix . ')' : $value;
+            },
+        );
+    }
 
     public function employees()
     {

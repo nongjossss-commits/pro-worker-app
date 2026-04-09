@@ -365,6 +365,7 @@ function hybridAttachmentManager(config = {}) {
             return this.availableEmployees.filter(emp =>
                 (emp.employeeNameTh && emp.employeeNameTh.toLowerCase().includes(query)) ||
                 (emp.employeeNameEn && emp.employeeNameEn.toLowerCase().includes(query)) ||
+                (emp.name_suffix && emp.name_suffix.toLowerCase().includes(query)) ||
                 (emp.employeePassport && emp.employeePassport.toLowerCase().includes(query))
             );
         },

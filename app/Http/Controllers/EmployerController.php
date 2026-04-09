@@ -50,6 +50,7 @@ class EmployerController extends Controller
                 $query->where(function($q) use ($searchTerm) {
                     $q->where('employerNameTh', 'like', $searchTerm)
                       ->orWhere('employerNameEn', 'like', $searchTerm)
+                      ->orWhere('name_suffix', 'like', $searchTerm)
                       ->orWhere('businessType', 'like', $searchTerm)
                       ->orWhere('employerId', 'like', $searchTerm)
                       ->orWhere('employerTaxId', 'like', $searchTerm)
@@ -92,6 +93,7 @@ class EmployerController extends Controller
         $validated = $request->validate([
             'employerNameTh' => 'required|string|max:255',
             'employerNameEn' => 'nullable|string|max:255',
+            'name_suffix' => 'nullable|string|max:255',
             'employerTaxId' => 'nullable|string|max:255',
             'employerEmail' => 'nullable|string|max:255|unique:employers,employerEmail',
             'employerPassword' => 'nullable|string|max:255',
@@ -200,6 +202,7 @@ class EmployerController extends Controller
             $employeeQuery->where(function ($q) use ($searchTerm) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
@@ -300,6 +303,7 @@ class EmployerController extends Controller
         $validated = $request->validate([
             'employerNameTh' => 'required|string|max:255',
             'employerNameEn' => 'nullable|string|max:255',
+            'name_suffix' => 'nullable|string|max:255',
             'employerId' => ['required', 'string', Rule::unique('employers')->ignore($employer->id), 'max:255'],
             'employerTaxId' => 'nullable|string|max:255',
             'employerEmail' => ['nullable', 'string', 'max:255', Rule::unique('employers', 'employerEmail')->ignore($employer->id)],
@@ -482,6 +486,7 @@ class EmployerController extends Controller
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
@@ -538,6 +543,7 @@ class EmployerController extends Controller
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employeePassport', 'like', $searchTerm)
                   ->orWhere('employeeWorkPermit', 'like', $searchTerm)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
@@ -644,7 +650,7 @@ class EmployerController extends Controller
         foreach ($employees as $employee) {
             $row = [
                 'Employee Name (TH)'   => $employee->employeeNameTh,
-                'Employee Name (EN)'   => $employee->employeeNameEn,
+                'Employee Name (EN)'   => $employee->getRawOriginal('employeeNameEn'),
                 'Nationality'          => $employee->employeeNationality,
                 'Passport No'          => $employee->employeePassport,
                 'Passport Expiry'      => $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
@@ -709,6 +715,7 @@ class EmployerController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employerId', 'like', $searchTerm)
                   ->orWhere('employerTaxId', 'like', $searchTerm)
                   ->orWhereHas('jobOwner', function($subQ) use ($searchTerm) {
@@ -761,7 +768,7 @@ class EmployerController extends Controller
         foreach ($employers as $employer) {
             $row = [
                 'Employer ID'        => $employer->employerId,
-                'Employer Name (TH)' => $employer->employerNameTh,
+                'Employer Name (TH)' => $employer->getRawOriginal('employerNameTh'),
                 'Employer Name (EN)' => $employer->employerNameEn,
                 'Job Owner'          => $employer->jobOwner->name ?? 'N/A',
                 'Business Type'      => $employer->businessType,
@@ -814,6 +821,7 @@ class EmployerController extends Controller
             $query->where(function($q) use ($searchTerm) {
                 $q->where('employerNameTh', 'like', $searchTerm)
                   ->orWhere('employerNameEn', 'like', $searchTerm)
+                  ->orWhere('name_suffix', 'like', $searchTerm)
                   ->orWhere('employerId', 'like', $searchTerm)
                   ->orWhere('employerTaxId', 'like', $searchTerm)
                   ->orWhere(function($subQ) use ($searchTerm) {
@@ -822,7 +830,7 @@ class EmployerController extends Controller
             });
         }
 
-        $employers = $query->select(['id', 'employerNameTh', 'employerNameEn', 'employerId'])->take(10)->get();
+        $employers = $query->select(['id', 'employerNameTh', 'employerNameEn', 'name_suffix', 'employerId'])->take(10)->get();
         return response()->json($employers);
     }
 

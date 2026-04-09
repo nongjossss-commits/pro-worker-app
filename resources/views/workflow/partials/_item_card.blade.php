@@ -105,10 +105,8 @@
      data-status="{{ $status }}"
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
 
-    {{-- Sequence Number (CSS Counter can handle this if parent has counter-reset) --}}
-    <div class="item-sequence-number me-2 fs-5 fw-bold text-muted opacity-50 text-end" style="min-width: 30px;"></div>
-
     <div class="card {{ $cardClass }} w-100 position-relative">
+    <div class="item-sequence-number"></div>
 
     {{-- Operator Badge (Bottom Right) --}}
     <div class="position-absolute bottom-0 end-0 m-2 z-index-10">
@@ -130,9 +128,9 @@
     </div>
 
     <div class="card-body p-3 pt-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
+        <div class="d-flex flex-column justify-content-between align-items-start gap-3">
             {{-- Checkbox & Basic Info --}}
-            <div class="d-flex align-items-center gap-3 w-100">
+            <div class="d-flex align-items-center gap-3 w-100 item-info-section">
                 {{-- Checkbox (Optional, for bulk actions if implemented later) --}}
                 <div class="form-check" id="checkbox-container-{{ $item->id }}">
                 <input class="form-check-input employee-checkbox"

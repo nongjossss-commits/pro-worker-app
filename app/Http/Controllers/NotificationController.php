@@ -156,6 +156,7 @@ class NotificationController extends Controller
                     $q->whereHas('employer', function ($q_employer) use ($search) {
                         $q_employer->where('employerNameTh', 'like', "%{$search}%")
                                    ->orWhere('employerNameEn', 'like', "%{$search}%")
+                                   ->orWhere('name_suffix', 'like', "%{$search}%")
                                    ->orWhere(function($addrQ) use ($search) {
                                        $addrQ->filterByAddress($search);
                                    });
@@ -164,6 +165,7 @@ class NotificationController extends Controller
                     $q->whereHas('employee', function ($q_employee) use ($search) {
                         $q_employee->where('employeeNameTh', 'like', "%{$search}%")
                                    ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                                   ->orWhere('name_suffix', 'like', "%{$search}%")
                                    ->orWhere('employeePassport', 'like', "%{$search}%")
                                    ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
                                    ->orWhere('employee_id_number', 'like', "%{$search}%")
@@ -173,6 +175,7 @@ class NotificationController extends Controller
                                    ->orWhereHas('employer', function ($q_employer) use ($search) {
                                        $q_employer->where('employerNameTh', 'like', "%{$search}%")
                                                   ->orWhere('employerNameEn', 'like', "%{$search}%") // Added employerNameEn
+                                                  ->orWhere('name_suffix', 'like', "%{$search}%")
                                                   ->orWhere(function($addrQ) use ($search) {
                                                       $addrQ->filterByAddress($search);
                                                   });
@@ -507,6 +510,7 @@ class NotificationController extends Controller
                 $q->where(function ($q) use ($searchTerm) {
                     $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
                       ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
+                      ->orWhere('name_suffix', 'like', "%{$searchTerm}%")
                       ->orWhere('employeePassport', 'like', "%{$searchTerm}%")
                       ->orWhere('employeeWorkPermit', 'like', "%{$searchTerm}%")
                       ->orWhere('employee_id_number', 'like', "%{$searchTerm}%")

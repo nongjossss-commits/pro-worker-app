@@ -157,6 +157,13 @@
 
         <div class="row">
             <div class="col-md-6 mb-3">
+                <label for="name_suffix" class="form-label">ต่อท้ายชื่อ (EN)</label>
+                <input type="text" class="form-control" id="name_suffix" name="name_suffix" value="{{ old('name_suffix') }}" placeholder="ข้อความต่อท้ายชื่อภาษาอังกฤษ">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
                 <label for="height" class="form-label">{{ __('Height') }} (cm)</label>
                 <input type="text" class="form-control" id="height" name="height" value="{{ old('height') }}">
             </div>

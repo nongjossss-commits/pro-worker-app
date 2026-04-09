@@ -23,6 +23,12 @@
                     <label class="form-label fw-bold">ชื่อพนักงาน (อังกฤษ)</label>
                     <p class="form-control-plaintext">{{ trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->employeeNameEn ?? '')) ?: 'N/A' }}</p>
                 </div>
+                @if($employee->name_suffix)
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">ต่อท้ายชื่อ (EN)</label>
+                    <p class="form-control-plaintext">{{ $employee->name_suffix }}</p>
+                </div>
+                @endif
                 <div class="col-md-3">
                     <label class="form-label fw-bold">{{ __('Height') }}</label>
                     <p class="form-control-plaintext">{{ $employee->height ? $employee->height . ' cm' : 'N/A' }}</p>

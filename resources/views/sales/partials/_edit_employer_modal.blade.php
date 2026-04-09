@@ -12,7 +12,11 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">ชื่อลูกค้า (ไทย) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="employerNameTh" value="{{ $lead->employerNameTh }}" required>
+                            <input type="text" class="form-control" name="employerNameTh" value="{{ $lead->getRawOriginal('employerNameTh') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">ต่อท้ายชื่อ</label>
+                            <input type="text" class="form-control" name="name_suffix" value="{{ $lead->name_suffix }}" placeholder="ข้อความต่อท้ายชื่อนายจ้าง">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">ชื่อลูกค้า (อังกฤษ)</label>

@@ -13,7 +13,7 @@
             max-width: 210mm;
             margin: 0 auto;
             background: white;
-            padding: 40px;
+            padding: 30px 35px;
             border: 1px solid #ddd;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             position: relative;
@@ -46,51 +46,51 @@
         table.header-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
         table.header-table td { vertical-align: top; }
 
-        .company-logo { height: 60px; margin-bottom: 10px; max-width: 200px; object-fit: contain; }
-        .company-name { font-size: 20px; font-weight: bold; color: #F97316; margin-bottom: 5px; }
-        .company-address { font-size: 14px; color: #555; line-height: 1.4; }
-        .tax-id { font-size: 14px; margin-top: 5px; }
+        .company-logo { height: 50px; margin-bottom: 8px; max-width: 180px; object-fit: contain; }
+        .company-name { font-size: 14px; font-weight: bold; color: #F97316; margin-bottom: 4px; line-height: 1.3; }
+        .company-address { font-size: 11px; color: #555; line-height: 1.4; }
+        .tax-id { font-size: 11px; margin-top: 3px; }
 
         .doc-title { text-align: right; vertical-align: top; }
         .doc-title h1 {
-            margin: 0 0 10px 0;
-            font-size: 20px;
+            margin: 0 0 8px 0;
+            font-size: 17px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #333;
             white-space: nowrap;
         }
-        .meta-table { float: right; font-size: 14px; border-collapse: collapse; }
-        .meta-table td { padding: 3px 0 3px 15px; }
+        .meta-table { float: right; font-size: 12px; border-collapse: collapse; }
+        .meta-table td { padding: 2px 0 2px 12px; }
         .meta-label { font-weight: bold; text-align: right; color: #555; }
 
         /* Client Info */
         .client-box {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border: 1px solid #eee;
-            padding: 15px;
+            padding: 12px;
             border-radius: 5px;
             background: #fdfdfd;
-            font-size: 14px;
+            font-size: 12px;
         }
-        .client-label { font-weight: bold; color: #888; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
-        .client-name { font-weight: bold; font-size: 16px; margin-bottom: 3px; }
+        .client-label { font-weight: bold; color: #888; font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }
+        .client-name { font-weight: bold; font-size: 13px; margin-bottom: 2px; }
 
         /* Items Table */
         table.items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
         table.items-table th {
             background: #f3f4f6;
-            padding: 10px;
+            padding: 8px;
             text-align: left;
             font-weight: bold;
             border-top: 1px solid #ddd;
             border-bottom: 1px solid #ddd;
-            font-size: 14px;
+            font-size: 12px;
         }
         table.items-table td {
-            padding: 10px;
+            padding: 8px;
             border-bottom: 1px solid #eee;
-            font-size: 14px;
+            font-size: 12px;
             vertical-align: top;
         }
         .text-right { text-align: right; }
@@ -98,7 +98,7 @@
 
         /* Totals Section */
         .totals-container { width: 50%; margin-left: auto; }
-        table.totals-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table.totals-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         table.totals-table td { padding: 5px 0; }
         .total-label { text-align: left; color: #555; }
         .total-value { text-align: right; }
@@ -106,9 +106,9 @@
         .grand-total-row td {
             border-top: 2px solid #333;
             border-bottom: double 4px #333;
-            padding: 10px 0;
+            padding: 8px 0;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 15px;
             color: #000;
         }
 
@@ -123,7 +123,7 @@
         .signatures { display: flex; justify-content: space-between; page-break-inside: avoid; margin-bottom: 40px; }
         .sig-block { width: 40%; text-align: center; position: relative; }
         .sig-line { border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%; }
-        .sig-text { font-size: 14px; color: #555; }
+        .sig-text { font-size: 12px; color: #555; }
         .sig-title { font-weight: bold; margin-bottom: 40px; }
 
         /* Footer */
@@ -153,11 +153,11 @@
 
         .section-header {
             background-color: #e5e7eb;
-            padding: 5px 10px;
+            padding: 4px 8px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 11px;
             text-transform: uppercase;
-            margin-top: 10px;
+            margin-top: 8px;
             border-bottom: 1px solid #ccc;
         }
 
@@ -224,7 +224,7 @@
             @else
                  @php
                      $emp = $production->employer;
-                     $empName = array_filter([$emp->employerNameTh, $emp->employerNameEn]);
+                     $empName = array_filter([$emp->getRawOriginal('employerNameTh'), $emp->employerNameEn]);
                      $empNameStr = !empty($empName) ? implode(' / ', $empName) : 'N/A';
 
                      $empAddress = '';
@@ -265,11 +265,20 @@
 
             $serviceTotal = 0;
             $advanceTotal = 0;
+            $discount = 0;
+            $discountDescription = '';
 
             if ($hasSpecificTransactions) {
                 $serviceTotal = $serviceTransactions->sum(function($t) use ($isReceiptContext) {
                     return $isReceiptContext ? ($t->paid_amount ?? 0) : $t->amount;
                 });
+                // Calculate total discount from all service transactions
+                $discount = $serviceTransactions->sum(function($t) { return $t->discount_amount ?? 0; });
+                $discountDescription = '';
+                if ($discount > 0 && $serviceTransactions->count() === 1) {
+                    $discountDescription = $serviceTransactions->first()->discount_description ?? '';
+                }
+                $serviceTotal = max(0, $serviceTotal - $discount);
             } elseif ($showService) {
                 // If it's a full document (like Quotation without transactions), we must calculate
                 // the total service fee correctly if in per_head mode.
@@ -283,8 +292,10 @@
                         $price = $tier['price'] ?? 0;
                         $calculatedTotal += ($count * $price);
                     }
-                    // Apply discount if any exists in financial data
-                    $discount = $financial['discount'] ?? 0;
+                    // Apply discount from financial_data (group-level) for quotation-style
+                    if (isset($financial['discount']) && $financial['discount'] > 0) {
+                        $discount = $financial['discount'];
+                    }
                     $serviceTotal = max(0, $calculatedTotal - $discount);
                 } else {
                     $serviceTotal = $financial['total_amount'] ?? 0;
@@ -543,6 +554,16 @@
         <div class="totals-container">
             <table class="totals-table">
                 @if($showService)
+                    @if(isset($discount) && $discount > 0)
+                        <tr>
+                            <td class="total-label"><strong>Service Fee (Gross) <span class="en-label">/ ค่าบริการ (ก่อนส่วนลด)</span></strong></td>
+                            <td class="total-value">{{ number_format($serviceTotal + $discount, 2) }}</td>
+                        </tr>
+                        <tr style="color: #dc3545;">
+                            <td class="total-label"><strong>Discount <span class="en-label">/ ส่วนลด</span></strong> @if(!empty($discountDescription))<small>({{ $discountDescription }})</small>@endif</td>
+                            <td class="total-value">-{{ number_format($discount, 2) }}</td>
+                        </tr>
+                    @endif
                     @if($vatEnabled && $vatRate > 0)
                         <tr>
                             <td class="total-label"><strong>Service Base <span class="en-label">/ มูลค่าบริการ (ก่อน VAT)</span></strong></td>

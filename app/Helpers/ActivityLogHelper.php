@@ -30,6 +30,10 @@ class ActivityLogHelper
             'bulk_action' => 'ดำเนินการแบบกลุ่ม',
             'import' => 'นำเข้าข้อมูล (Import)',
             'status_change' => 'เปลี่ยนสถานะ',
+            'terminate' => 'แจ้งออก',
+            'reinstate' => 'คืนสภาพ',
+            'transfer' => 'ย้ายนายจ้าง',
+            'workflow_process' => 'ดำเนินการในเมนูงาน',
         ];
         return $map[$action] ?? $action;
     }

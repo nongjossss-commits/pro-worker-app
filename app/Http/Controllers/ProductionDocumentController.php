@@ -274,9 +274,15 @@ class ProductionDocumentController extends Controller
         // This makes the existing generic document views work without massive rewrites
         $mockTransaction = clone $payment->transaction;
         $mockTransaction->amount = $payment->amount; // Override the transaction amount with the payment amount
+        $mockTransaction->paid_amount = $payment->amount; // Override paid_amount to match this specific payment
+        $mockTransaction->discount_amount = 0; // Discount already factored into transaction, don't double-subtract
         $mockTransaction->id = $payment->transaction->id; // Keep ID
         $mockTransaction->type = $payment->transaction->type;
         $mockTransaction->notes = "Payment: " . ($payment->notes ?? "Partial/Full Payment");
+
+        // Clear items relationship so the layout uses fixed-amount display
+        // instead of per_head breakdown (which would show original tier prices, not payment amount)
+        $mockTransaction->setRelation('items', collect());
 
         $transactions = collect([$mockTransaction]);
 

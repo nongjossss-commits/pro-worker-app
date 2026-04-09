@@ -27,7 +27,8 @@ class GroupTeamController extends Controller
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('employerNameTh', 'like', "%{$search}%")
-                  ->orWhere('employerNameEn', 'like', "%{$search}%");
+                  ->orWhere('employerNameEn', 'like', "%{$search}%")
+                  ->orWhere('name_suffix', 'like', "%{$search}%");
             });
         }
 
@@ -79,6 +80,7 @@ class GroupTeamController extends Controller
                         $query->where(function($q) use ($search) {
                             $q->where('employeeNameTh', 'like', "%{$search}%")
                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('name_suffix', 'like', "%{$search}%")
                               ->orWhere('employeePassport', 'like', "%{$search}%")
                               ->orWhere('pinkCardNo', 'like', "%{$search}%");
                         });
@@ -162,6 +164,7 @@ class GroupTeamController extends Controller
                         $query->where(function($q) use ($search) {
                             $q->where('employeeNameTh', 'like', "%{$search}%")
                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                              ->orWhere('name_suffix', 'like', "%{$search}%")
                               ->orWhere('employeePassport', 'like', "%{$search}%")
                               ->orWhere('pinkCardNo', 'like', "%{$search}%");
                         });
@@ -304,6 +307,7 @@ class GroupTeamController extends Controller
             ->where(function($q) use ($term) {
                 $q->where('employeeNameTh', 'like', "%{$term}%")
                   ->orWhere('employeeNameEn', 'like', "%{$term}%")
+                  ->orWhere('name_suffix', 'like', "%{$term}%")
                   ->orWhere('employeePassport', 'like', "%{$term}%")
                   ->orWhere('employeeWorkPermit', 'like', "%{$term}%")
                   ->orWhere('employee_reference_id', 'like', "%{$term}%")
@@ -315,7 +319,8 @@ class GroupTeamController extends Controller
                   ->orWhere('renewal_request_number', 'like', "%{$term}%")
                   ->orWhereHas('employer', function($q2) use ($term) {
                       $q2->where('employerNameTh', 'like', "%{$term}%")
-                         ->orWhere('employerNameEn', 'like', "%{$term}%");
+                         ->orWhere('employerNameEn', 'like', "%{$term}%")
+                         ->orWhere('name_suffix', 'like', "%{$term}%");
                   });
             });
 

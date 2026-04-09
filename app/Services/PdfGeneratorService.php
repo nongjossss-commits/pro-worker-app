@@ -1052,6 +1052,10 @@ class PdfGeneratorService
         if (str_starts_with($key, 'employer.')) {
             if (!$effectiveEmployer) return '';
             $subKey = substr($key, 9); // Remove 'employer.'
+            // Use raw value for name fields to exclude name_suffix in documents
+            if ($subKey === 'employerNameTh' && method_exists($effectiveEmployer, 'getRawOriginal')) {
+                return $effectiveEmployer->getRawOriginal('employerNameTh') ?? '';
+            }
             return data_get($effectiveEmployer, $subKey) ?? '';
         }
 
@@ -1141,7 +1145,12 @@ class PdfGeneratorService
         }
 
         // 5. Handle Standard Employee Fields
-        $value = data_get($employee, $key);
+        // Use raw value for name fields to exclude name_suffix in documents
+        if ($key === 'employeeNameEn' && method_exists($employee, 'getRawOriginal')) {
+            $value = $employee->getRawOriginal('employeeNameEn');
+        } else {
+            $value = data_get($employee, $key);
+        }
 
         // 6. Auto-Prefix Logic (NEW)
         if ($template && !empty($template->meta_data['auto_prefix_titles'])) {
@@ -1333,8 +1342,8 @@ class PdfGeneratorService
 
     public function generateFilename(PdfTemplate $template, Employee $employee)
     {
-        // Use Thai name if available
-        $employeeName = $employee->employeeNameTh ?: ($employee->employeeNameEn ?: 'Unknown');
+        // Use Thai name if available (raw value without suffix for clean filenames)
+        $employeeName = $employee->employeeNameTh ?: ($employee->getRawOriginal('employeeNameEn') ?: 'Unknown');
 
         // Construct descriptive filename: [TemplateName]_[EmployeeName]_[EmployeeID].pdf
         $filename = "{$template->name}_{$employeeName}_{$employee->id}.pdf";

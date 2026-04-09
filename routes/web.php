@@ -60,6 +60,7 @@ Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'inde
 
 Route::middleware('auth')->group(function () {
     Route::get('/preview', [PreviewController::class, 'show'])->name('global.preview');
+    Route::post('/api/image-enhance', [\App\Http\Controllers\ImageEnhanceController::class, 'enhance'])->name('api.image-enhance');
     // Profile routes from Breeze
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -473,7 +474,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('production/transactions/{id}', [FinancialController::class, 'updateTransaction']); // For file uploads (method spoofing)
         Route::delete('production/transactions/{id}', [FinancialController::class, 'destroyTransaction']);
         Route::post('production/transactions/{id}/payments', [FinancialController::class, 'storePayment']);
-        Route::post('production/payments/{id}', [FinancialController::class, 'updatePayment']);
+        Route::match(['post', 'put'], 'production/payments/{id}', [FinancialController::class, 'updatePayment']);
         Route::delete('production/payments/{id}', [FinancialController::class, 'destroyPayment']);
     });
     // Replaced by dedicated ProductionDocumentController

@@ -440,7 +440,7 @@ function filterBulkEmpList(leadId, query) {
     }
     var q = query.toLowerCase().trim();
     var filtered = data.filter(function(emp) {
-        var searchStr = ((emp.employeeNameEn || '') + ' ' + (emp.employeeNameTh || '') + ' ' + (emp.employeePassport || '') + ' ' + emp.id).toLowerCase();
+        var searchStr = ((emp.employeeNameEn || '') + ' ' + (emp.employeeNameTh || '') + ' ' + (emp.name_suffix || '') + ' ' + (emp.employeePassport || '') + ' ' + emp.id).toLowerCase();
         return searchStr.indexOf(q) !== -1;
     });
     renderBulkEmpList(leadId, filtered, existingIds);

@@ -313,11 +313,9 @@
                 if(!reviewImage.src) return;
 
                 try {
-                    // Show Loading
                     if (loadingOverlay) loadingOverlay.classList.remove('d-none');
-                    if (loadingText) loadingText.textContent = 'กำลังปรับใบหน้าให้ชัด...';
+                    if (loadingText) loadingText.textContent = 'กำลังปรับภาพให้ชัด...';
 
-                    // Convert src to Image object to draw on canvas
                     const img = new Image();
                     img.crossOrigin = 'Anonymous';
                     await new Promise((resolve, reject) => {
@@ -326,154 +324,46 @@
                         img.src = reviewImage.src;
                     });
 
-                    // 1. Ensure MediaPipe Body Segmentation is loaded dynamically
-                    if (!window.ImageSegmenter) {
-                         if (loadingText) loadingText.textContent = 'กำลังโหลด AI Models...';
-                         try {
-                             // Use native dynamic import
-                             const mediapipe = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs");
-                             window.ImageSegmenter = mediapipe.ImageSegmenter;
-                             window.FilesetResolver = mediapipe.FilesetResolver;
-                         } catch (error) {
-                             console.error("Failed to load Mediapipe via dynamic import:", error);
-                             throw new Error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อโหลด AI Model (CDN Error)");
-                         }
-                    }
+                    if (loadingText) loadingText.textContent = 'กำลังส่งภาพไป AI Server...';
+                    await new Promise(r => setTimeout(r, 50));
 
-                    if (!window.ImageSegmenter) {
-                         throw new Error("ไม่พบโมเดล AI กรุณาลองใหม่อีกครั้ง");
-                    }
+                    // Convert current image to blob for upload
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = img.width;
+                    tempCanvas.height = img.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0);
 
-                    if (loadingText) loadingText.textContent = 'กำลังแยกส่วนบุคคล...';
+                    const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/jpeg', 0.95));
 
-                    // 2. Initialize Segmenter
-                    const vision = await window.FilesetResolver.forVisionTasks(
-                        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm"
-                    );
+                    // Send to AI endpoint
+                    const formData = new FormData();
+                    formData.append('image', blob, 'enhance.jpg');
+                    formData.append('mode', 'auto');
+                    formData.append('upscale', '2');
 
-                    const segmenter = await window.ImageSegmenter.createFromOptions(vision, {
-                        baseOptions: {
-                            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
-                            delegate: "GPU"
+                    if (loadingText) loadingText.textContent = 'AI กำลังประมวลผล... (อาจใช้เวลา 1-3 นาที)';
+
+                    const response = await fetch('/api/image-enhance', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
                         },
-                        runningMode: "IMAGE",
-                        outputCategoryMask: true,
-                        outputConfidenceMasks: false
+                        body: formData
                     });
 
-                    // 3. Run Segmentation
-                    const segmentationResult = segmenter.segment(img);
-                    let mask = segmentationResult.categoryMask.getAsUint8Array();
-                    const maskWidth = segmentationResult.categoryMask.width;
-                    const maskHeight = segmentationResult.categoryMask.height;
+                    const result = await response.json();
 
-                    if (loadingText) loadingText.textContent = 'กำลังประมวลผล...';
-
-                    // 4. Upscale (2x) using Canvas
-                    const upscaleFactor = 2;
-                    const c = document.createElement('canvas');
-                    c.width = img.width * upscaleFactor;
-                    c.height = img.height * upscaleFactor;
-                    const ctx = c.getContext('2d');
-
-                    // Use High Quality Smoothing for upscaling original
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(img, 0, 0, c.width, c.height);
-
-                    // Create mask canvas to upscale the mask smoothly
-                    const maskCanvas = document.createElement('canvas');
-                    maskCanvas.width = maskWidth;
-                    maskCanvas.height = maskHeight;
-                    const maskCtx = maskCanvas.getContext('2d');
-                    const maskImgData = maskCtx.createImageData(maskWidth, maskHeight);
-                    // selfie_segmenter: 255 is background, 0 is person (sometimes varies, but usually 0 is background if only 1 class).
-                    // Actually, category mask for selfie returns 0 for background, 1-255 for person classes.
-                    for(let i=0; i<mask.length; i++) {
-                        const isPerson = mask[i] > 0;
-                        const val = isPerson ? 255 : 0;
-
-                        maskImgData.data[i*4] = val; // R
-                        maskImgData.data[i*4+1] = val; // G
-                        maskImgData.data[i*4+2] = val; // B
-                        maskImgData.data[i*4+3] = 255; // Alpha
-                    }
-                    maskCtx.putImageData(maskImgData, 0, 0);
-
-                    // Upscale mask to match working canvas
-                    const upscaledMaskCanvas = document.createElement('canvas');
-                    upscaledMaskCanvas.width = c.width;
-                    upscaledMaskCanvas.height = c.height;
-                    const upscaledMaskCtx = upscaledMaskCanvas.getContext('2d');
-                    upscaledMaskCtx.imageSmoothingEnabled = true;
-                    upscaledMaskCtx.drawImage(maskCanvas, 0, 0, c.width, c.height);
-
-                    const upscaledMaskData = upscaledMaskCtx.getImageData(0, 0, c.width, c.height).data;
-
-                    // 5. Apply Sharpening Filter ONLY to the Person
-                    const imageData = ctx.getImageData(0, 0, c.width, c.height);
-                    const data = imageData.data;
-                    const width = c.width;
-                    const height = c.height;
-
-                    // Sharpen matrix (Unsharp Mask style)
-                    const weights = [
-                         0, -1,  0,
-                        -1,  5, -1,
-                         0, -1,  0
-                    ];
-
-                    const side = Math.round(Math.sqrt(weights.length));
-                    const halfSide = Math.floor(side/2);
-                    const srcData = new Uint8ClampedArray(data); // Copy original data
-                    const w = width;
-                    const h = height;
-
-                    for (let y = 0; y < h; y++) {
-                        for (let x = 0; x < w; x++) {
-                            const dstOff = (y * w + x) * 4;
-
-                            // Check mask: is this pixel part of the person? (Check Red channel of upscaled mask)
-                            // If mask value is > 128, it's person.
-                            const isPerson = upscaledMaskData[dstOff] > 128;
-
-                            if (isPerson) {
-                                let r = 0, g = 0, b = 0;
-
-                                for (let cy = 0; cy < side; cy++) {
-                                    for (let cx = 0; cx < side; cx++) {
-                                        const scy = y + cy - halfSide;
-                                        const scx = x + cx - halfSide;
-
-                                        if (scy >= 0 && scy < h && scx >= 0 && scx < w) {
-                                            const srcOff = (scy * w + scx) * 4;
-                                            const wt = weights[cy * side + cx];
-                                            r += srcData[srcOff] * wt;
-                                            g += srcData[srcOff + 1] * wt;
-                                            b += srcData[srcOff + 2] * wt;
-                                        } else {
-                                            const wt = weights[cy * side + cx];
-                                            r += srcData[dstOff] * wt;
-                                            g += srcData[dstOff + 1] * wt;
-                                            b += srcData[dstOff + 2] * wt;
-                                        }
-                                    }
-                                }
-
-                                // Update RGB with clamping
-                                data[dstOff] = Math.max(0, Math.min(255, r));
-                                data[dstOff + 1] = Math.max(0, Math.min(255, g));
-                                data[dstOff + 2] = Math.max(0, Math.min(255, b));
-                            }
-                            // If it's background (!isPerson), we leave the pixel as the original smoothed upscale.
-                        }
+                    if (!result.success) {
+                        throw new Error(result.message + (result.details ? '\n' + result.details : ''));
                     }
 
-                    ctx.putImageData(imageData, 0, 0);
+                    // Apply AI result directly
+                    reviewImage.src = result.image;
 
-                    // Output back to reviewImage
-                    const newUrl = c.toDataURL('image/jpeg', 0.98);
-                    reviewImage.src = newUrl;
+                    // Update mimeType
+                    window.cropperManager.mimeType = 'image/jpeg';
 
                 } catch (err) {
                     console.error("Enhancement Error:", err);
@@ -565,7 +455,15 @@
         lastPos: { x: 0, y: 0 },
 
         // Smart Erase State
-        tolerance: 30, // Default tolerance for Magic Wand
+        tolerance: 20, // Default tolerance for Magic Wand (reduced for precision)
+
+        // Zoom & Pan State
+        zoomLevel: 1,
+        panX: 0,
+        panY: 0,
+        isPanning: false,
+        panStartX: 0,
+        panStartY: 0,
 
         init: function() {
             if (this.initialized) return;
@@ -615,6 +513,46 @@
             this.displayCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); this.onMouseDown(e.touches[0]); }, { passive: false });
             this.displayCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); this.onMouseMove(e.touches[0]); }, { passive: false });
             this.displayCanvas.addEventListener('touchend', (e) => { e.preventDefault(); this.onMouseUp(); });
+
+            // Set custom orange cursor via JS (avoid broken SVG in HTML attributes)
+            const wrapperEl = document.getElementById('refineCanvasWrapper');
+            if (wrapperEl) {
+                const svgCursor = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cline x1='16' y1='0' x2='16' y2='32' stroke='%23FF6600' stroke-width='2'/%3E%3Cline x1='0' y1='16' x2='32' y2='16' stroke='%23FF6600' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23FF6600'/%3E%3C/svg%3E") 16 16, crosshair`;
+                wrapperEl.style.cursor = svgCursor;
+            }
+
+            // Zoom buttons
+            const zoomInBtn = document.getElementById('refineZoomIn');
+            const zoomOutBtn = document.getElementById('refineZoomOut');
+            const zoomResetBtn = document.getElementById('refineZoomReset');
+            if (zoomInBtn) zoomInBtn.addEventListener('click', () => { this.zoomLevel = Math.min(5, Math.round((this.zoomLevel + 0.25) * 100) / 100); this.applyZoom(); });
+            if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { this.zoomLevel = Math.max(0.5, Math.round((this.zoomLevel - 0.25) * 100) / 100); this.applyZoom(); });
+            if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => this.resetZoom());
+
+            // Zoom with Ctrl+wheel (normal wheel = scroll/pan)
+            const wrapper = document.getElementById('refineCanvasWrapper');
+            if (wrapper) {
+                wrapper.addEventListener('wheel', (e) => {
+                    if (!this.isActive) return;
+                    if (e.ctrlKey) {
+                        // Ctrl+wheel = zoom
+                        e.preventDefault();
+                        const delta = e.deltaY > 0 ? -0.15 : 0.15;
+                        this.zoomLevel = Math.max(0.5, Math.min(5, Math.round((this.zoomLevel + delta) * 100) / 100));
+                        this.applyZoom();
+                    }
+                    // Without Ctrl = normal scroll (native scrollbar handles pan)
+                }, { passive: false });
+
+                // Update magnifier on mouse move
+                wrapper.addEventListener('mousemove', (e) => {
+                    if (this.isActive) this.updateMagnifier(e);
+                });
+                wrapper.addEventListener('mouseleave', () => {
+                    const mag = document.getElementById('refineMagnifier');
+                    if (mag) mag.style.display = 'none';
+                });
+            }
         },
 
         async start() {
@@ -686,6 +624,7 @@
 
                 // 4. Initial Render
                 this.render();
+                this.resetZoom();
 
                 // 5. Save Initial State for Undo
                 this.pushHistory();
@@ -766,6 +705,9 @@
             this.tempCanvas = null;
             this.originalImage = null;
             this.smartPoints = [];
+            this.resetZoom();
+            const mag = document.getElementById('refineMagnifier');
+            if (mag) mag.style.display = 'none';
 
             // Re-enable/Sync Cropper View
             if (window.cropperManager.instance) {
@@ -833,9 +775,93 @@
 
         // --- Drawing Logic ---
 
+        applyZoom() {
+            // Use CSS width/height for zoom so native scrollbars work
+            const wrapper = document.getElementById('refineCanvasWrapper');
+            if (this.displayCanvas && wrapper) {
+                const baseW = this.displayCanvas.width;
+                const baseH = this.displayCanvas.height;
+                // Fit to wrapper at zoom=1
+                const wrapperW = wrapper.clientWidth;
+                const fitScale = wrapperW / baseW;
+                const displayW = baseW * fitScale * this.zoomLevel;
+                const displayH = baseH * fitScale * this.zoomLevel;
+                this.displayCanvas.style.width = displayW + 'px';
+                this.displayCanvas.style.height = displayH + 'px';
+            }
+            const pct = Math.round(this.zoomLevel * 100) + '%';
+            const indicator = document.getElementById('refineZoomIndicator');
+            if (indicator) indicator.textContent = pct;
+            const btnLabel = document.getElementById('refineZoomBtnLabel');
+            if (btnLabel) btnLabel.textContent = pct;
+        },
+
+        resetZoom() {
+            this.zoomLevel = 1;
+            this.panX = 0;
+            this.panY = 0;
+            this.applyZoom();
+            // Scroll to top-left
+            const wrapper = document.getElementById('refineCanvasWrapper');
+            if (wrapper) { wrapper.scrollTop = 0; wrapper.scrollLeft = 0; }
+        },
+
+        updateMagnifier(evt) {
+            const mag = document.getElementById('refineMagnifier');
+            const magCanvas = document.getElementById('refineMagnifierCanvas');
+            if (!mag || !magCanvas || !this.workCanvas) return;
+
+            const pos = this.getMousePos(evt);
+            const magCtx = magCanvas.getContext('2d');
+            const magSize = 150;
+            const zoomFactor = 3; // 3x magnification
+            const srcSize = magSize / zoomFactor;
+
+            // Draw checkerboard background
+            magCtx.fillStyle = '#fff';
+            magCtx.fillRect(0, 0, magSize, magSize);
+            for (let i = 0; i < magSize; i += 10) {
+                for (let j = 0; j < magSize; j += 10) {
+                    if ((i + j) % 20 === 0) {
+                        magCtx.fillStyle = '#ddd';
+                        magCtx.fillRect(i, j, 10, 10);
+                    }
+                }
+            }
+
+            // Draw magnified area from work canvas
+            magCtx.drawImage(this.workCanvas,
+                pos.x - srcSize / 2, pos.y - srcSize / 2, srcSize, srcSize,
+                0, 0, magSize, magSize
+            );
+
+            // Draw crosshair (orange for visibility)
+            magCtx.strokeStyle = '#FF6600';
+            magCtx.lineWidth = 2;
+            magCtx.beginPath();
+            magCtx.moveTo(magSize / 2, 0);
+            magCtx.lineTo(magSize / 2, magSize);
+            magCtx.moveTo(0, magSize / 2);
+            magCtx.lineTo(magSize, magSize / 2);
+            magCtx.stroke();
+
+            // Draw brush circle (orange)
+            const brushRadius = (this.currentTool === 'smart_erase' ? 3 : this.brushSize / 2) * zoomFactor;
+            magCtx.strokeStyle = '#FF6600';
+            magCtx.lineWidth = 2;
+            magCtx.beginPath();
+            magCtx.arc(magSize / 2, magSize / 2, brushRadius, 0, Math.PI * 2);
+            magCtx.stroke();
+
+            // Position magnifier near cursor (offset to top-right)
+            mag.style.display = 'block';
+            mag.style.left = (evt.clientX + 20) + 'px';
+            mag.style.top = (evt.clientY - 170) + 'px';
+        },
+
         getMousePos(evt) {
             const rect = this.displayCanvas.getBoundingClientRect();
-            // Scale if canvas display size differs from resolution
+            // Scale accounts for both CSS display size AND zoom level
             const scaleX = this.displayCanvas.width / rect.width;
             const scaleY = this.displayCanvas.height / rect.height;
 
@@ -1039,10 +1065,12 @@
                         return;
                     }
 
-                    // Use tolerance (1-100 mapped to RGB distance squared)
-                    // Max distance is 255^2 * 3 = 195075.
-                    // A tolerance of 100 maps to a reasonable max distance, e.g. 150^2 * 3 = 67500
-                    const maxDist = Math.pow((this.tolerance / 100) * 150, 2) * 3;
+                    // Improved tolerance: use percentage of max possible distance
+                    // tolerance 1-100 → mapped to tighter range for precision
+                    // At tolerance 20: maxDist = (20/100 * 80)^2 * 3 = 16^2 * 3 = 768 (very precise)
+                    // At tolerance 50: maxDist = (50/100 * 80)^2 * 3 = 40^2 * 3 = 4800 (moderate)
+                    // At tolerance 100: maxDist = (100/100 * 80)^2 * 3 = 80^2 * 3 = 19200 (generous)
+                    const maxDist = Math.pow((this.tolerance / 100) * 80, 2) * 3;
 
                     const matchColor = (pos) => {
                         const a = data[pos + 3];
@@ -1052,20 +1080,40 @@
                         const g = data[pos + 1];
                         const b = data[pos + 2];
 
+                        // Compare against TARGET color (the pixel that was clicked)
                         const distSq = Math.pow(r - targetR, 2) + Math.pow(g - targetG, 2) + Math.pow(b - targetB, 2);
                         return distSq <= maxDist;
                     };
 
-                    // Implement Scanline Flood Fill for better performance than naive stack
+                    // Edge detection: check if neighbor has sharp color change
+                    const isEdge = (pos) => {
+                        const r = data[pos], g = data[pos+1], b = data[pos+2];
+                        // Check 4 neighbors for sharp change
+                        const neighbors = [pos - width*4, pos + width*4, pos - 4, pos + 4];
+                        for (const nPos of neighbors) {
+                            if (nPos < 0 || nPos >= data.length - 3) continue;
+                            if (data[nPos+3] === 0) continue; // Skip transparent
+                            const nr = data[nPos], ng = data[nPos+1], nb = data[nPos+2];
+                            const edgeDist = Math.pow(r-nr,2) + Math.pow(g-ng,2) + Math.pow(b-nb,2);
+                            if (edgeDist > 3000) return true; // Strong edge detected
+                        }
+                        return false;
+                    };
+
+                    // Implement Scanline Flood Fill with edge detection
                     let stack = [[x, y]];
                     const visited = new Uint8Array(width * height);
+                    const maxPixels = width * height * 0.4; // Safety: max 40% of image
+                    let filledCount = 0;
 
-                    while(stack.length > 0) {
+                    while(stack.length > 0 && filledCount < maxPixels) {
                         let [cx, cy] = stack.pop();
                         let currentX = cx;
 
                         // Move left to find the start of the span
-                        while(currentX > 0 && matchColor((cy * width + (currentX - 1)) * 4) && !visited[cy * width + (currentX - 1)]) {
+                        while(currentX > 0) {
+                            const pIdx = (cy * width + (currentX - 1)) * 4;
+                            if (!matchColor(pIdx) || visited[cy * width + (currentX - 1)] || isEdge(pIdx)) break;
                             currentX--;
                         }
 
@@ -1073,21 +1121,14 @@
                         let spanDown = false;
 
                         // Move right and fill
-                        while(currentX < width) {
+                        while(currentX < width && filledCount < maxPixels) {
                             const p = (cy * width + currentX) * 4;
-                            // Check if current pixel matches AND is not visited, OR it's the exact starting pixel we popped from stack
-                            const isMatch = matchColor(p);
-                            const isStartPixel = (currentX === cx && cy === stack[stack.length] /* not actually accessing stack here but we know cx cy was valid */);
-                            // To fix redundancy correctly without infinite loop or breaking fill:
-                            if (!isMatch && currentX !== cx) {
-                                break; // end of span
-                            }
-                            if (visited[cy * width + currentX] && currentX !== cx) {
-                                break;
-                            }
+                            if (visited[cy * width + currentX]) { currentX++; continue; }
+                            if (!matchColor(p) || isEdge(p)) break;
 
                             data[p + 3] = 0; // Erase (set alpha to 0)
                             visited[cy * width + currentX] = 1;
+                            filledCount++;
 
                             // Check up
                             if (cy > 0) {

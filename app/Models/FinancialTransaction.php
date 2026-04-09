@@ -14,6 +14,8 @@ class FinancialTransaction extends Model
         'production_financial_group_id',
         'type', // installment, down_payment, full_payment
         'amount',
+        'discount_amount',
+        'discount_description',
         'due_date',
         'paid_at',
         'paid_amount',
@@ -29,6 +31,7 @@ class FinancialTransaction extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'due_date' => 'date',
         'paid_at' => 'datetime',

@@ -47,7 +47,19 @@
                                 <i class="bi bi-circle-fill" style="font-size: 1.2rem;"></i>
                             </div>
                         </div>
-                        <div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <!-- Zoom Controls -->
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-dark btn-sm" id="refineZoomOut" title="ซูมออก (-)">
+                                    <i class="bi bi-dash-lg"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-dark btn-sm" id="refineZoomReset" title="รีเซ็ตซูม" style="min-width:50px;">
+                                    <span id="refineZoomBtnLabel">100%</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-dark btn-sm" id="refineZoomIn" title="ซูมเข้า (+)">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
                             <button type="button" class="btn btn-secondary btn-sm" id="refineBtnUndo" disabled>
                                 <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
                             </button>
@@ -55,11 +67,17 @@
                     </div>
 
                     <!-- Canvas Area -->
-                    <div class="flex-grow-1 position-relative bg-secondary bg-opacity-10 overflow-hidden d-flex justify-content-center align-items-center" id="refineCanvasWrapper">
-                         <!-- Checkerboard Background for Transparency -->
-                        <div class="position-absolute w-100 h-100" style="background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px; opacity: 0.5; z-index: 0;"></div>
+                    <div class="flex-grow-1 position-relative" id="refineCanvasWrapper" style="cursor: crosshair; overflow: auto; background-image: linear-gradient(45deg, #e0e0e0 25%, transparent 25%), linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0e0e0 75%), linear-gradient(-45deg, transparent 75%, #e0e0e0 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;">
 
-                        <canvas id="refineCanvas" style="z-index: 1; max-width: 100%; max-height: 100%; box-shadow: 0 0 10px rgba(0,0,0,0.1); cursor: crosshair;"></canvas>
+                        <canvas id="refineCanvas" style="position: relative; z-index: 1; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: block;"></canvas>
+
+                        <!-- Magnifier Circle -->
+                        <div id="refineMagnifier" style="display:none; position:fixed; width:150px; height:150px; border-radius:50%; border:3px solid #FF6600; box-shadow:0 0 15px rgba(255,102,0,0.5); overflow:hidden; pointer-events:none; z-index:100;">
+                            <canvas id="refineMagnifierCanvas" width="150" height="150" style="width:150px; height:150px;"></canvas>
+                        </div>
+
+                        <!-- Zoom Level Indicator -->
+                        <div id="refineZoomIndicator" class="position-absolute bottom-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white px-2 py-1" style="z-index:5; font-size:0.75rem;">100%</div>
                     </div>
 
                     <!-- Footer -->
