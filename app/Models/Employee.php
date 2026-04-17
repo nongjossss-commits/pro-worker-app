@@ -17,6 +17,30 @@ class Employee extends Model
 
     protected static function booted(): void
     {
+        static::deleted(function ($employee) {
+            // Cancel active production/workflow items
+            $employee->productionItems()
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->update(['status' => 'cancelled']);
+
+            // Cancel active notifications
+            $employee->notifications()
+                ->whereNotIn('status', ['cancelled'])
+                ->update([
+                    'status' => 'cancelled',
+                    'cancellation_reason' => 'Employee moved to trash',
+                    'cancelled_at' => now(),
+                ]);
+
+            // Cancel active Registration/Renewal resolutions
+            if (in_array($employee->status, ['registration_pending', 'renewal_pending'])) {
+                $newStatus = $employee->status === 'registration_pending' ? 'registration_cancelled' : 'renewal_cancelled';
+                // Use DB facade or query builder to update without triggering further model events
+                // if we just want to suppress updated_at changes, but it's fine to use regular update:
+                $employee->updateQuietly(['status' => $newStatus]);
+            }
+        });
+
         static::addGlobalScope('employerTenancy', function (Builder $builder) {
             if (Auth::check()) {
                 $user = Auth::user();
