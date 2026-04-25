@@ -205,27 +205,6 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->p
     Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
-    // PDF Generation
-    Route::post('pdf-templates/generate', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'showGenerateModal'])->name('pdf-templates.generate.modal');
-    Route::get('pdf-templates/generate', function () {
-        return redirect()->route('employees.index')->with('error', 'Please select employees to generate PDF.');
-    });
-    Route::post('pdf-templates/generate/process', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'process'])->name('pdf-templates.generate.process');
-
-    // Custom Witnesses API
-    Route::get('pdf-templates/witnesses', [\App\Http\Controllers\Admin\WitnessController::class, 'index'])->name('pdf-templates.witnesses.index');
-    Route::post('pdf-templates/witnesses', [\App\Http\Controllers\Admin\WitnessController::class, 'store'])->name('pdf-templates.witnesses.store');
-    Route::post('pdf-templates/witnesses/{id}', [\App\Http\Controllers\Admin\WitnessController::class, 'update'])->name('pdf-templates.witnesses.update'); // using POST instead of PUT because FormData handles files better with POST
-    Route::delete('pdf-templates/witnesses/{id}', [\App\Http\Controllers\Admin\WitnessController::class, 'destroy'])->name('pdf-templates.witnesses.destroy');
-
-    // PDF Templates
-    Route::post('pdf-templates/upload-image', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'uploadImage'])->name('pdf-templates.upload-image');
-    Route::get('pdf-templates/list-templates', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'listTemplates'])->name('pdf-templates.list'); // AJAX API
-    Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
-    Route::get('pdf-templates/{pdf_template}/preview', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'preview'])->name('pdf-templates.preview');
-    Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->middleware('menu:pdf_templates')->except(['show']);
-    Route::get('pdf-templates/{pdf_template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
-
     Route::post('tickets/{ticket}/resolve', [TicketStatusController::class, 'resolve'])->name('tickets.resolve');
     Route::post('tickets/{ticket}/reject', [TicketStatusController::class, 'reject'])->name('tickets.reject');
     Route::post('tickets/{ticket}/forward', [TicketStatusController::class, 'forward'])->name('tickets.forward');
@@ -245,11 +224,40 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->p
     Route::put('/witnesses/{id}', [App\Http\Controllers\Admin\GlobalWitnessController::class, 'update'])->name('witnesses.update');
 });
 
+// === PDF Templates (separate group — NOT tied to ticket_inbox menu) ===
+Route::middleware(['auth', 'permission:manage-tickets', 'menu:pdf_templates'])->prefix('admin')->name('admin.')->group(function () {
+    // PDF Generation (used from employees page — generate PDF for selected employees)
+    Route::post('pdf-templates/generate', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'showGenerateModal'])->name('pdf-templates.generate.modal');
+    Route::get('pdf-templates/generate', function () {
+        return redirect()->route('employees.index')->with('error', 'Please select employees to generate PDF.');
+    });
+    Route::post('pdf-templates/generate/process', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'process'])->name('pdf-templates.generate.process');
+
+    // Custom Witnesses API
+    Route::get('pdf-templates/witnesses', [\App\Http\Controllers\Admin\WitnessController::class, 'index'])->name('pdf-templates.witnesses.index');
+    Route::post('pdf-templates/witnesses', [\App\Http\Controllers\Admin\WitnessController::class, 'store'])->name('pdf-templates.witnesses.store');
+    Route::post('pdf-templates/witnesses/{id}', [\App\Http\Controllers\Admin\WitnessController::class, 'update'])->name('pdf-templates.witnesses.update');
+    Route::delete('pdf-templates/witnesses/{id}', [\App\Http\Controllers\Admin\WitnessController::class, 'destroy'])->name('pdf-templates.witnesses.destroy');
+
+    // PDF Templates CRUD
+    Route::post('pdf-templates/upload-image', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'uploadImage'])->name('pdf-templates.upload-image');
+    Route::get('pdf-templates/list-templates', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'listTemplates'])->name('pdf-templates.list');
+    Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
+    Route::get('pdf-templates/{pdf_template}/preview', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'preview'])->name('pdf-templates.preview');
+    Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->except(['show']);
+    Route::get('pdf-templates/{pdf_template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
+});
+
 // === Production & Workflow User Routes ===
 Route::middleware(['auth'])->group(function () {
-    // Registration Resolution Routes (P Production > Registration)
-    // MOVED ABOVE 'production' resource to prevent route masking
-    Route::prefix('production/registration')->middleware('menu:registration_resolution')->name('production.registration.')->group(function () {
+    // Registration Resolution — Redirect base URL to default tab
+    Route::get('production/registration', function () {
+        $tab = \App\Models\ResolutionTab::where('type', 'registration')->ordered()->first();
+        return redirect()->route('production.registration.index', ['resolutionTab' => $tab->id]);
+    })->middleware('menu:registration_resolution')->name('production.registration.redirect');
+
+    // Registration Resolution Routes (with tab parameter)
+    Route::prefix('production/registration/{resolutionTab}')->middleware('menu:registration_resolution')->name('production.registration.')->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'dashboard'])->name('index');
         Route::get('/operations', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('operations');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RegistrationController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
@@ -283,7 +291,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/employer-custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'updateEmployerCustomField'])->name('employer_custom_fields.update');
         Route::delete('/employer-custom-fields/{field}', [App\Http\Controllers\Production\RegistrationController::class, 'destroyEmployerCustomField'])->name('employer_custom_fields.destroy');
 
-        // Finalize & Restore (NEW)
+        // Finalize & Restore
         Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RegistrationController::class, 'finalize'])->name('finalize');
         Route::post('/{employee}/restore-state', [App\Http\Controllers\Production\RegistrationController::class, 'restoreState'])->name('restore_state');
         Route::post('/bulk-finalize', [App\Http\Controllers\Production\RegistrationController::class, 'bulkFinalize'])->name('bulk_finalize');
@@ -293,7 +301,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restore'])->name('restore');
         Route::delete('/{employee}/destroy', [App\Http\Controllers\Production\RegistrationController::class, 'destroy'])->name('destroy');
 
-        // Employer Actions (NEW)
+        // Employer Actions
         Route::post('/employer/{employer}/cancel', [App\Http\Controllers\Production\RegistrationController::class, 'cancelEmployer'])->name('cancel_employer');
         Route::post('/employer/{employer}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restoreEmployer'])->name('restore_employer');
         Route::post('/employer/{employer}/resolution-status', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionStatus'])->name('employer_resolution.update');
@@ -306,7 +314,7 @@ Route::middleware(['auth'])->group(function () {
         // Remarks
         Route::post('/{employee}/remarks', [App\Http\Controllers\Production\RegistrationController::class, 'updateRemarks'])->name('remarks');
 
-        // Appointments (NEW)
+        // Appointments
         Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RegistrationController::class, 'updateAppointment'])->name('appointment');
         Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RegistrationController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
 
@@ -324,8 +332,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/trash/{id}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restoreTrash'])->name('trash.restore');
     });
 
-    // Renewal Resolution Routes (NEW)
-    Route::prefix('production/renewal')->middleware('menu:renewal_resolution')->name('production.renewal.')->group(function () {
+    // Renewal Resolution — Redirect base URL to default tab
+    Route::get('production/renewal', function () {
+        $tab = \App\Models\ResolutionTab::where('type', 'renewal')->ordered()->first();
+        return redirect()->route('production.renewal.index', ['resolutionTab' => $tab->id]);
+    })->middleware('menu:renewal_resolution')->name('production.renewal.redirect');
+
+    // Renewal Resolution Routes (with tab parameter)
+    Route::prefix('production/renewal/{resolutionTab}')->middleware('menu:renewal_resolution')->name('production.renewal.')->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RenewalController::class, 'dashboard'])->name('index');
         Route::get('/operations', [App\Http\Controllers\Production\RenewalController::class, 'index'])->name('operations');
         Route::get('/create', [App\Http\Controllers\Production\RenewalController::class, 'create'])->name('create');
@@ -338,15 +352,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/employer/{employer}/finance-tab', [App\Http\Controllers\Production\RenewalController::class, 'loadFinancialTab'])->name('finance.tab');
         Route::get('/import', [App\Http\Controllers\Production\RenewalController::class, 'importView'])->name('import');
         Route::post('/configure-expiry', [App\Http\Controllers\Production\RenewalController::class, 'configureExpiry'])->name('configure_expiry');
-        Route::post('/steps/reorder', [App\Http\Controllers\Production\RenewalController::class, 'reorderSteps'])->name('steps.reorder');
-        Route::get('/employer/{employer}/finance-tab', [App\Http\Controllers\Production\RenewalController::class, 'loadFinancialTab'])->name('finance.tab');
 
-        // Step Management (Missing in original file for Renewal, adding now for consistency)
+        // Step Management
         Route::post('/steps', [App\Http\Controllers\Production\RenewalController::class, 'storeStep'])->name('steps.store');
         Route::put('/steps/{step}', [App\Http\Controllers\Production\RenewalController::class, 'updateStep'])->name('steps.update');
+        Route::post('/steps/reorder', [App\Http\Controllers\Production\RenewalController::class, 'reorderSteps'])->name('steps.reorder');
         Route::delete('/steps/{step}', [App\Http\Controllers\Production\RenewalController::class, 'destroyStep'])->name('steps.destroy');
 
-        // Progress Updates (Missing in original file, needed for Renewal toggle step)
+        // Progress Updates
         Route::post('/progress/{employee}', [App\Http\Controllers\Production\RenewalController::class, 'updateProgress'])->name('progress.update');
 
         // Operator
@@ -595,6 +608,17 @@ Route::middleware(['auth', 'permission:view-trash', 'menu:central_trash'])->pref
     Route::delete('/trash/{model}/{id}/force-delete', [\App\Http\Controllers\Admin\TrashController::class, 'forceDelete'])
          ->name('trash.forceDelete')
          ->withTrashed();
+});
+
+// === Resolution Tabs Management (Super Admin Only) ===
+Route::middleware(['auth', 'role:super-admin'])->prefix('admin/resolution-tabs')->name('admin.resolution-tabs.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'store'])->name('store');
+    Route::put('/{resolutionTab}', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'update'])->name('update');
+    Route::post('/reorder', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'reorder'])->name('reorder');
+    Route::delete('/{resolutionTab}', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/restore', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'restore'])->name('restore');
+    Route::delete('/{id}/force-delete', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'forceDelete'])->name('force-delete');
 });
 
 require __DIR__.'/auth.php';

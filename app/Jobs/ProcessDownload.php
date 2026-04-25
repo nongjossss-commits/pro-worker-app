@@ -107,7 +107,12 @@ class ProcessDownload implements ShouldQueue
                 define('FPDF_FONTPATH', $fontPath);
             }
 
-            $employees = Employee::whereIn('id', $this->employeeIds)->get();
+            $employeesUnsorted = Employee::whereIn('id', $this->employeeIds)->get();
+            // Sort employees by the order of IDs passed from frontend (preserves user selection order)
+            $idOrder = array_flip(array_map('intval', $this->employeeIds));
+            $employees = $employeesUnsorted->sort(function ($a, $b) use ($idOrder) {
+                return ($idOrder[$a->id] ?? PHP_INT_MAX) - ($idOrder[$b->id] ?? PHP_INT_MAX);
+            })->values();
             $tempDir = storage_path('app/temp_downloads/' . $task->id);
             if (!file_exists($tempDir)) {
                 mkdir($tempDir, 0755, true);
@@ -167,6 +172,7 @@ class ProcessDownload implements ShouldQueue
             $hasThaiFont = true;
         }
 
+        $sequenceNumber = 1;
         foreach ($employees as $employee) {
             // Use English Title + Name if available, per user request
             if (!empty($employee->employeeNameEn)) {
@@ -176,7 +182,7 @@ class ProcessDownload implements ShouldQueue
                 $rawName = $employee->employeeNameTh ?? 'Employee';
             }
 
-            $safeName = $this->sanitizeFileName($rawName) . '_' . $employee->id;
+            $safeName = $sequenceNumber . '. ' . $this->sanitizeFileName($rawName) . '_' . $employee->id;
 
             // If singleFolder is true, we use an empty folder name (root),
             // but we might want to prefix the file with the employee name to avoid collisions.
@@ -187,6 +193,7 @@ class ProcessDownload implements ShouldQueue
             foreach ($this->selectedFiles as $fileType) {
                 $this->addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix, $hasThaiFont);
             }
+            $sequenceNumber++;
         }
 
         $zip->close();
@@ -264,6 +271,7 @@ class ProcessDownload implements ShouldQueue
             $hasThaiFont = true;
         }
 
+        $sequenceNumber = 1;
         foreach ($employees as $employee) {
             try {
                 $pdf = new Fpdi();
@@ -295,7 +303,7 @@ class ProcessDownload implements ShouldQueue
                         $rawName = $employee->employeeNameTh ?? 'Employee';
                     }
 
-                    $safeName = $this->sanitizeFileName($rawName) . '_' . $employee->id;
+                    $safeName = $sequenceNumber . '. ' . $this->sanitizeFileName($rawName) . '_' . $employee->id;
                     $pdfPath = $tempDir . '/' . $safeName . '.pdf';
 
                     $pdf->Output('F', $pdfPath);
@@ -304,6 +312,7 @@ class ProcessDownload implements ShouldQueue
             } catch (Throwable $e) {
                 Log::warning("Failed to create individual PDF for employee {$employee->id}: " . $e->getMessage());
             }
+            $sequenceNumber++;
         }
 
         $zip->close();

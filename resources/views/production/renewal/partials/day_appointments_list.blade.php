@@ -7,6 +7,15 @@
 
     {{-- ═══ Search Bar (inline) ═══ --}}
     <div class="d-flex flex-wrap align-items-center gap-2 mb-3 p-2 bg-white border rounded shadow-sm">
+        @can('edit-employees')
+        <div class="form-check mb-0 me-1">
+            <input class="form-check-input" type="checkbox" id="appt-inline-select-all" style="width:18px; height:18px; cursor:pointer;">
+            <label class="form-check-label small fw-bold text-nowrap" for="appt-inline-select-all" style="cursor:pointer;">
+                {{ __('Select All') }}
+            </label>
+        </div>
+        <div class="vr"></div>
+        @endcan
         <div class="input-group" style="min-width:220px; flex:1;">
             <span class="input-group-text bg-light border-end-0">
                 <i class="bi bi-search text-muted"></i>
@@ -233,6 +242,7 @@
     (function() {
         const floatingBar    = document.getElementById('appt-toolbar');
         const selectAllCb    = document.getElementById('appt-select-all-cb');
+        const inlineSelectAllCb = document.getElementById('appt-inline-select-all');
         const countSpan      = document.getElementById('appt-selected-count');
         const viewCountBadge = document.getElementById('appt-view-count');
         const bulkBtn        = document.getElementById('appt-bulk-btn');
@@ -263,28 +273,41 @@
                 cb.checked = ids.includes(String(cb.value));
             });
 
-            if (selectAllCb) {
-                const visible = Array.from(document.querySelectorAll('.employee-checkbox')).filter(cb =>
-                    cb.closest('.appt-card-item') && cb.closest('.appt-card-item').style.display !== 'none'
-                );
-                const checkedVisible = visible.filter(cb => cb.checked).length;
-                selectAllCb.checked       = visible.length > 0 && checkedVisible === visible.length;
-                selectAllCb.indeterminate = checkedVisible > 0 && checkedVisible < visible.length;
-            }
+            // Select All state (sync both floating toolbar and inline checkboxes)
+            const allCbs = document.querySelectorAll('.employee-checkbox');
+            const visible = Array.from(allCbs).filter(cb =>
+                cb.closest('.appt-card-item') && cb.closest('.appt-card-item').style.display !== 'none'
+            );
+            const checkedVisible = visible.filter(cb => cb.checked).length;
+            const isAllChecked = visible.length > 0 && checkedVisible === visible.length;
+            const isIndeterminate = checkedVisible > 0 && checkedVisible < visible.length;
+
+            [selectAllCb, inlineSelectAllCb].forEach(cb => {
+                if (cb) {
+                    cb.checked = isAllChecked;
+                    cb.indeterminate = isIndeterminate;
+                }
+            });
         }
 
         document.addEventListener('global-selection-updated', syncToolbar);
 
-        if (selectAllCb) {
-            selectAllCb.addEventListener('change', function() {
-                const visible = Array.from(document.querySelectorAll('.employee-checkbox')).filter(cb =>
-                    cb.closest('.appt-card-item') && cb.closest('.appt-card-item').style.display !== 'none'
-                );
-                visible.forEach(cb => {
-                    cb.checked = this.checked;
-                    cb.dispatchEvent(new Event('change', { bubbles: true }));
-                });
+        // ── Select All (shared handler for both floating toolbar and inline) ──
+        function handleSelectAll(isChecked) {
+            const visible = Array.from(document.querySelectorAll('.employee-checkbox')).filter(cb =>
+                cb.closest('.appt-card-item') && cb.closest('.appt-card-item').style.display !== 'none'
+            );
+            visible.forEach(cb => {
+                cb.checked = isChecked;
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
             });
+        }
+
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', function() { handleSelectAll(this.checked); });
+        }
+        if (inlineSelectAllCb) {
+            inlineSelectAllCb.addEventListener('change', function() { handleSelectAll(this.checked); });
         }
 
         function doFilter() {

@@ -12,9 +12,9 @@
              <div class="d-flex flex-column gap-2" style="pointer-events: auto;">
                 @foreach($employee->active_workflows as $wf)
                 <a href="{{ $wf->url }}"
-                       class="badge bg-warning text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
-                       style="max-width: 90%;">
-                       <i class="bi bi-gear-fill me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
+                       class="badge bg-warning text-dark text-decoration-none shadow-sm border border-dark resolution-badge"
+                       title="@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}">
+                       <i class="bi bi-gear-fill"></i><span class="rb-text">@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}</span>
                     </a>
                 @endforeach
              </div>

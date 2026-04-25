@@ -83,10 +83,10 @@
                         }
                     @endphp
                     <a href="{{ $url }}"
-                       class="badge {{ $badgeClass }} text-dark text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
+                       class="badge {{ $badgeClass }} text-dark text-decoration-none shadow-sm border border-dark resolution-badge"
                        title="{{ $tooltip }}"
-                       style="max-width: 90%; {{ $style }}">
-                       <i class="bi {{ $icon }} me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
+                       style="{{ $style }}">
+                       <i class="bi {{ $icon }}"></i><span class="rb-text">@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}</span>
                     </a>
                 @endforeach
              </div>
@@ -220,9 +220,10 @@
                             }
                         @endphp
                         <a href="{{ $url }}"
-                           class="badge text-decoration-none shadow-sm"
-                           style="{{ $mStyle }} font-size: 0.8rem; padding: 0.4em 0.7em; touch-action: auto;">
-                           <i class="bi {{ $mIcon }} me-1"></i> {{ $wf->status_label }}: {{ Str::limit($wf->name, 20) }}
+                           class="badge text-decoration-none shadow-sm resolution-badge"
+                           title="@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}"
+                           style="{{ $mStyle }} touch-action: auto;">
+                           <i class="bi {{ $mIcon }}"></i><span class="rb-text">@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}</span>
                         </a>
                     @endforeach
                 </div>

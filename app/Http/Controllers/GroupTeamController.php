@@ -8,6 +8,7 @@ use App\Models\EmployeeGroup;
 use App\Models\EmployeeTeam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Traits\AddressFilterTrait;
 
 class GroupTeamController extends Controller
@@ -22,24 +23,29 @@ class GroupTeamController extends Controller
     public function indexAffiliated(Request $request)
     {
         $search = $request->input('search');
-        $query = Employer::with('addresses');
+        $hasFilters = $search || $request->filled('addrProvince');
 
-        if ($search) {
-            $query->where(function($q) use ($search) {
-                $q->where('employerNameTh', 'like', "%{$search}%")
-                  ->orWhere('employerNameEn', 'like', "%{$search}%")
-                  ->orWhere('name_suffix', 'like', "%{$search}%");
-            });
-        }
-
-        // Address options (before address filtering)
-        $addressOptions = $this->getAddressOptions($query);
-
-        // Apply address filters
-        $query = $this->applyAddressFilters($query, $request);
-
+        // Perf: Only build query + fetch address options when user actually searches/filters
+        // Initial page load (no search) skips ALL queries for speed
+        $addressOptions = ['provinces' => [], 'districts' => [], 'subDistricts' => []];
         $employers = collect();
-        if ($search || $request->filled('addrProvince')) {
+
+        if ($hasFilters) {
+            $query = Employer::with('addresses');
+
+            if ($search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('employerNameTh', 'like', "%{$search}%")
+                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                      ->orWhere('name_suffix', 'like', "%{$search}%");
+                });
+            }
+
+            // Address options only when filtering (computed from current search results)
+            $addressOptions = $this->getAddressOptions($query);
+
+            // Apply address filters and fetch
+            $query = $this->applyAddressFilters($query, $request);
             $employers = $query->limit(20)->get();
         }
 
@@ -59,8 +65,10 @@ class GroupTeamController extends Controller
         $addrDistrict = $request->input('addrDistrict');
         $addrSubDistrict = $request->input('addrSubDistrict');
 
-        // Fetch distinct nationalities for dropdown
-        $nationalities = Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
+        // Perf: Cache distinct nationalities for 1 hour (rarely changes)
+        $nationalities = Cache::remember('employee_nationalities', 3600, function () {
+            return Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
+        });
 
         // 1. Get all groups for tabs (lightweight)
         $allGroups = EmployeeGroup::where('employer_id', $employer->id)
@@ -71,11 +79,14 @@ class GroupTeamController extends Controller
         $activeGroupId = $request->input('active_group') ?? ($allGroups->first()->id ?? null);
         $activeGroup = null;
 
+        // Perf: Only eager load address relation when address filter is actually used
+        $hasAddressFilter = $addrProvince || $addrDistrict || $addrSubDistrict;
+
         if ($activeGroupId) {
              $activeGroup = EmployeeGroup::where('id', $activeGroupId)
                 ->where('employer_id', $employer->id) // Ensure belongs to this employer
                 ->where('type', 'affiliated')
-                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard, $addrProvince, $addrDistrict, $addrSubDistrict) {
+                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard, $addrProvince, $addrDistrict, $addrSubDistrict, $hasAddressFilter) {
                     if ($search) {
                         $query->where(function($q) use ($search) {
                             $q->where('employeeNameTh', 'like', "%{$search}%")
@@ -104,7 +115,7 @@ class GroupTeamController extends Controller
                         }
                     }
 
-                    if ($addrProvince || $addrDistrict || $addrSubDistrict) {
+                    if ($hasAddressFilter) {
                         $query->whereHas('employer.addresses', function($q) use ($addrProvince, $addrDistrict, $addrSubDistrict) {
                             if ($addrProvince) $q->where('addrProvince', $addrProvince);
                             if ($addrDistrict) $q->where('addrDistrict', $addrDistrict);
@@ -112,7 +123,19 @@ class GroupTeamController extends Controller
                         });
                     }
 
-                    $query->with(['employer.addresses', 'employer.jobOwner']);
+                    // Perf: Conditionally load addresses only when filter is active (big saving on large groups)
+                    // Always eager load productionItems for active_workflows accessor (prevents N+1)
+                    $eagerLoads = [
+                        'employer',
+                        'productionItems' => function($q) {
+                            $q->whereNotIn('status', ['completed', 'cancelled'])
+                              ->with(['order.workType']);
+                        },
+                    ];
+                    if ($hasAddressFilter) {
+                        $eagerLoads['employer.addresses'] = fn($q) => $q;
+                    }
+                    $query->with($eagerLoads);
                 }])
                 ->first();
         }
@@ -144,8 +167,10 @@ class GroupTeamController extends Controller
         $addrDistrict = $request->input('addrDistrict');
         $addrSubDistrict = $request->input('addrSubDistrict');
 
-        // Fetch distinct nationalities for dropdown
-        $nationalities = Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
+        // Perf: Cache distinct nationalities for 1 hour
+        $nationalities = Cache::remember('employee_nationalities', 3600, function () {
+            return Employee::distinct('employeeNationality')->whereNotNull('employeeNationality')->pluck('employeeNationality');
+        });
 
         // 1. Get all groups for tabs (lightweight)
         $allGroups = EmployeeGroup::where('type', 'independent')->get(['id', 'name']);
@@ -156,10 +181,13 @@ class GroupTeamController extends Controller
 
         $addressOptions = ['provinces' => [], 'districts' => [], 'subDistricts' => []];
 
+        // Perf: Track whether address filter is active
+        $hasAddressFilter = $addrProvince || $addrDistrict || $addrSubDistrict;
+
         if ($activeGroupId) {
              $activeGroup = EmployeeGroup::where('id', $activeGroupId)
                 ->where('type', 'independent')
-                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard, $addrProvince, $addrDistrict, $addrSubDistrict) {
+                ->with(['teams.employees' => function($query) use ($search, $nationality, $passportTypeMyanmar, $passportTypeCambodia, $pinkCard, $addrProvince, $addrDistrict, $addrSubDistrict, $hasAddressFilter) {
                     if ($search) {
                         $query->where(function($q) use ($search) {
                             $q->where('employeeNameTh', 'like', "%{$search}%")
@@ -188,7 +216,7 @@ class GroupTeamController extends Controller
                         }
                     }
 
-                    if ($addrProvince || $addrDistrict || $addrSubDistrict) {
+                    if ($hasAddressFilter) {
                         $query->whereHas('employer.addresses', function($q) use ($addrProvince, $addrDistrict, $addrSubDistrict) {
                             if ($addrProvince) $q->where('addrProvince', $addrProvince);
                             if ($addrDistrict) $q->where('addrDistrict', $addrDistrict);
@@ -196,20 +224,40 @@ class GroupTeamController extends Controller
                         });
                     }
 
-                    // Load employer and sort by it for the grouping requirement
-                    $query->with(['employer.addresses', 'employer.jobOwner'])
-                          ->orderBy('employer_id');
+                    // Perf: Conditionally load addresses only when filter is active
+                    // Always eager load productionItems for active_workflows accessor (prevents N+1)
+                    $eagerLoads = [
+                        'employer',
+                        'productionItems' => function($q) {
+                            $q->whereNotIn('status', ['completed', 'cancelled'])
+                              ->with(['order.workType']);
+                        },
+                    ];
+                    if ($hasAddressFilter) {
+                        $eagerLoads['employer.addresses'] = fn($q) => $q;
+                    }
+                    $query->with($eagerLoads)->orderBy('employer_id');
                 }])
                 ->first();
 
-             // Address options based on employers IN the group
-             $employerIdsQuery = DB::table('employee_team_members')
-                ->join('employee_teams', 'employee_team_members.employee_team_id', '=', 'employee_teams.id')
-                ->join('employees', 'employee_team_members.employee_id', '=', 'employees.id')
-                ->where('employee_teams.employee_group_id', $activeGroupId)
-                ->select('employees.employer_id');
+             // Perf: Only compute address options when filter dropdown is being used
+             if ($hasAddressFilter) {
+                 $employerIdsQuery = DB::table('employee_team_members')
+                    ->join('employee_teams', 'employee_team_members.employee_team_id', '=', 'employee_teams.id')
+                    ->join('employees', 'employee_team_members.employee_id', '=', 'employees.id')
+                    ->where('employee_teams.employee_group_id', $activeGroupId)
+                    ->select('employees.employer_id');
 
-             $addressOptions = $this->getAddressOptions(Employer::whereIn('id', $employerIdsQuery));
+                 $addressOptions = $this->getAddressOptions(Employer::whereIn('id', $employerIdsQuery));
+             } else {
+                 // Still need provinces list for dropdown, but keep lightweight
+                 $employerIdsQuery = DB::table('employee_team_members')
+                    ->join('employee_teams', 'employee_team_members.employee_team_id', '=', 'employee_teams.id')
+                    ->join('employees', 'employee_team_members.employee_id', '=', 'employees.id')
+                    ->where('employee_teams.employee_group_id', $activeGroupId)
+                    ->select('employees.employer_id');
+                 $addressOptions = $this->getAddressOptions(Employer::whereIn('id', $employerIdsQuery));
+             }
         }
 
         return view('groups.manage', [

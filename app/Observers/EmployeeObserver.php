@@ -48,54 +48,107 @@ class EmployeeObserver
             }
         }
 
-        // 2. Renewal Auto-Import Logic
-        // Check if expiry dates changed OR if status changed (to avoid loops, we check specific fields)
+        // 2. Renewal Auto-Sync Logic
+        // When expiry dates or MOU change: add/reassign/remove based on matching tabs
         if ($employee->isDirty(['workPermitExpiryDate', 'visaExpiryDate', 'workPermitMOUGroup'])) {
-            $this->checkRenewalAutoImport($employee);
+            $this->syncRenewalStatus($employee);
         }
     }
 
     /**
-     * Check if employee matches the Renewal Target Date and auto-import.
+     * Find the renewal tab (if any) whose target expiry date matches the employee's WP or Visa.
+     * Returns tab ID or null.
      */
-    protected function checkRenewalAutoImport(Employee $employee)
+    protected function findMatchingRenewalTab(Employee $employee): ?int
+    {
+        // Skip MOU types — they don't qualify for renewal
+        if ($employee->workPermitMOUGroup && stripos($employee->workPermitMOUGroup, 'MOU') !== false) {
+            return null;
+        }
+
+        // 1. Per-tab configs
+        $tabConfigs = SystemConfig::where('key', 'like', 'renewal_target_expiry_date_%')->get();
+
+        foreach ($tabConfigs as $config) {
+            $tabId = (int) str_replace('renewal_target_expiry_date_', '', $config->key);
+            $targetDate = $config->value;
+            if (!$tabId || !$targetDate) continue;
+
+            // Verify tab still exists (not soft-deleted)
+            $tabExists = \App\Models\ResolutionTab::where('id', $tabId)->where('type', 'renewal')->exists();
+            if (!$tabExists) continue;
+
+            $wpMatch = $employee->workPermitExpiryDate && $employee->workPermitExpiryDate->format('Y-m-d') === $targetDate;
+            $visaMatch = $employee->visaExpiryDate && $employee->visaExpiryDate->format('Y-m-d') === $targetDate;
+            if ($wpMatch || $visaMatch) {
+                return $tabId;
+            }
+        }
+
+        // 2. Legacy fallback — global key (old data, pre-tab era)
+        $legacyDate = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
+        if ($legacyDate) {
+            $wpMatch = $employee->workPermitExpiryDate && $employee->workPermitExpiryDate->format('Y-m-d') === $legacyDate;
+            $visaMatch = $employee->visaExpiryDate && $employee->visaExpiryDate->format('Y-m-d') === $legacyDate;
+            if ($wpMatch || $visaMatch) {
+                return \App\Models\ResolutionTab::where('type', 'renewal')
+                    ->where('is_default', true)
+                    ->value('id');
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Sync employee's renewal status based on current expiry dates.
+     * - Match found: add to tab / reassign to different tab
+     * - No match: remove from renewal (back to 'active')
+     * - Finalized (completed/cancelled): never touched
+     */
+    protected function syncRenewalStatus(Employee $employee)
     {
         try {
-            // 1. Check if configured
-            $targetDate = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
-            if (!$targetDate) return;
-
-            // 2. Check Expiry Match
-            $matches = false;
-            // Check Work Permit
-            if ($employee->workPermitExpiryDate && $employee->workPermitExpiryDate->format('Y-m-d') === $targetDate) {
-                $matches = true;
-            }
-            // Check Visa
-            if (!$matches && $employee->visaExpiryDate && $employee->visaExpiryDate->format('Y-m-d') === $targetDate) {
-                $matches = true;
-            }
-
-            if (!$matches) return;
-
-            // 3. Check Exclusion (MOU)
-            if ($employee->workPermitMOUGroup && stripos($employee->workPermitMOUGroup, 'MOU') !== false) {
+            // Preserve finalized states
+            if (in_array($employee->status, ['renewal_completed', 'renewal_cancelled'])) {
                 return;
             }
 
-            // 4. Check Status safety (Don't overwrite existing resolution status unless it's null or active?)
-            // Or just force it? The requirement says "system will check 100% sync".
-            // Let's protect completed/cancelled/pending of OTHER types if possible, but
-            // for now, if it's not already in Renewal process, add it.
-            if (in_array($employee->status, ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])) {
-                return; // Already tracked
+            $matchedTabId = $this->findMatchingRenewalTab($employee);
+
+            // --- Case 1: Match found ---
+            if ($matchedTabId) {
+                $needsUpdate = ($employee->resolution_tab_id !== $matchedTabId)
+                            || ($employee->status !== 'renewal_pending');
+
+                if ($needsUpdate) {
+                    $updateData = ['resolution_tab_id' => $matchedTabId];
+                    if ($employee->status !== 'renewal_pending') {
+                        $updateData['status'] = 'renewal_pending';
+                    }
+                    $employee->updateQuietly($updateData);
+                }
+                return;
             }
 
-            // Update status
-            $employee->updateQuietly(['status' => 'renewal_pending']);
+            // --- Case 2: No match, and employee is currently renewal_pending → remove ---
+            if ($employee->status === 'renewal_pending') {
+                $employee->updateQuietly([
+                    'status' => 'active',
+                    'resolution_tab_id' => null,
+                ]);
+            }
 
         } catch (\Throwable $e) {
-            Log::error("Failed auto-import renewal for employee {$employee->id}: " . $e->getMessage());
+            Log::error("Failed renewal sync for employee {$employee->id}: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Legacy alias — kept for backward compatibility with `created` event.
+     */
+    protected function checkRenewalAutoImport(Employee $employee)
+    {
+        $this->syncRenewalStatus($employee);
     }
 }

@@ -102,6 +102,13 @@ class Employer extends Model
         return $this->hasMany(Employee::class);
     }
 
+    public function resolutionTabs()
+    {
+        return $this->belongsToMany(\App\Models\ResolutionTab::class, 'employer_resolution_tab')
+                    ->withPivot('resolution_status', 'resolution_note')
+                    ->withTimestamps();
+    }
+
     public function productionOrders()
     {
         return $this->hasMany(ProductionOrder::class);

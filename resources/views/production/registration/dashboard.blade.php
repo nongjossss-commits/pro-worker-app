@@ -9,11 +9,13 @@
             <h2 class="fw-bold mb-0">{{ __('Dashboard & Appointments') }}</h2>
         </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('production.registration.operations') }}" class="btn btn-primary shadow-sm fw-bold">
+            <a href="{{ route('production.registration.operations', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-primary shadow-sm fw-bold">
                 <i class="bi bi-list-task me-1"></i> {{ __('Go to Operations') }}
             </a>
         </div>
     </div>
+
+    <x-resolution-tab-bar :currentTab="$currentTab" :allTabs="$allTabs" type="registration" routePrefix="production.registration" />
 
     <!-- Layout with Upcoming Appointments -->
     {{-- align-items-start: ให้แต่ละคอลัมน์สูงตามเนื้อหาของตัวเอง ไม่ยืดตามกัน --}}
@@ -143,7 +145,7 @@
                                                 @endif
                                             </td>
                                             <td class="text-end pe-4">
-                                                <a href="{{ route('production.registration.operations') }}"
+                                                <a href="{{ route('production.registration.operations', ['resolutionTab' => $currentTab->id]) }}"
                                                    class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-arrow-right"></i>
                                                 </a>
@@ -235,7 +237,6 @@
 </div>
 
 @include('employees.modals.advanced_export')
-@include('components.download-modals')
 
 @endsection
 
@@ -259,7 +260,7 @@
             init() {
                 this.generateCalendar();
                 this.fetchCounts();
-                window.currentAppointmentContext = { module: 'production/registration' };
+                window.currentAppointmentContext = { module: 'production/registration', tabId: {{ $currentTab->id }} };
 
                 this.$watch('searchQuery', (value) => {
                     const cards = document.querySelectorAll('.appointment-card');
@@ -356,7 +357,7 @@
             },
 
             fetchCounts() {
-                fetch(`{{ route('production.registration.api.calendar') }}?month=${this.month + 1}&year=${this.year}`)
+                fetch(`{{ route('production.registration.api.calendar', ['resolutionTab' => $currentTab->id]) }}?month=${this.month + 1}&year=${this.year}`)
                     .then(res => res.json())
                     .then(data => {
                         this.counts = data;
@@ -370,7 +371,7 @@
                 this.isLoading = true;
                 this.appointmentsLoaded = true;
 
-                fetch(`{{ route('production.registration.api.appointments_by_date') }}?date=${dateStr}`)
+                fetch(`{{ route('production.registration.api.appointments_by_date', ['resolutionTab' => $currentTab->id]) }}?date=${dateStr}`)
                     .then(res => res.json())
                     .then(data => {
                         const apptContainer = document.getElementById('dayAppointmentsContent');
@@ -425,8 +426,9 @@
             if (result.isConfirmed) {
                 const data = result.value;
                 const moduleUrl = window.currentAppointmentContext ? window.currentAppointmentContext.module : 'production/registration';
+                const tabId = (window.currentAppointmentContext && window.currentAppointmentContext.tabId) ? window.currentAppointmentContext.tabId : {{ $currentTab->id }};
 
-                fetch(`/${moduleUrl}/${employeeId}/appointment`, {
+                fetch(`/${moduleUrl}/${tabId}/${employeeId}/appointment`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -439,7 +441,7 @@
                     })
                 }).then(res => res.json()).then(response => {
                     if (data.isComplete !== isCompleted) {
-                        return fetch(`/${moduleUrl}/${employeeId}/appointment-complete`, {
+                        return fetch(`/${moduleUrl}/${tabId}/${employeeId}/appointment-complete`, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
@@ -583,12 +585,13 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 let modulePath = module || window.currentAppointmentContext?.module || 'production/registration';
+                let tabId = window.currentAppointmentContext?.tabId || {{ $currentTab->id }};
 
                 const originalHtml = btnElement.innerHTML;
                 btnElement.innerHTML = '<i class="spinner-border spinner-border-sm"></i>';
                 btnElement.disabled = true;
 
-                fetch(`/${modulePath}/${employeeId}/appointment-complete`, {
+                fetch(`/${modulePath}/${tabId}/${employeeId}/appointment-complete`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -607,9 +610,23 @@
                             timer: 2000
                         });
 
-                        const cardElement = btnElement.closest('.appointment-card');
+                        // Hide the card with animation
+                        const cardElement = btnElement.closest('.appt-card-item') || btnElement.closest('.col-12');
                         if (cardElement) {
-                            cardElement.style.display = 'none';
+                            cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            cardElement.style.opacity = '0';
+                            cardElement.style.transform = 'translateX(50px)';
+                            setTimeout(() => {
+                                cardElement.style.display = 'none';
+                                // Update visible count
+                                const resultCount = document.getElementById('appt-result-count');
+                                if (resultCount) {
+                                    const visibleCards = document.querySelectorAll('.appt-card-item:not([style*="display: none"])');
+                                    resultCount.textContent = visibleCards.length + ' {{ __("record(s)") }}';
+                                }
+                                // Refresh selection UI
+                                if (window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
+                            }, 300);
                         }
 
                         const calendarScope = Alpine.$data(document.querySelector('[x-data="calendarApp()"]'));

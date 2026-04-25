@@ -1,6 +1,12 @@
-@props(['employee', 'steps', 'isHistory' => false, 'show_employer' => false])
+@props(['employee', 'steps', 'isHistory' => false, 'show_employer' => false, 'currentTab' => null, 'allTabs' => null])
 
 @php
+    // Fallback for $currentTab if not passed (shouldn't happen in normal flow but safe guard)
+    if (!isset($currentTab) || $currentTab === null) {
+        $isRenewalCtx = request()->is('production/renewal*');
+        $currentTab = \App\Models\ResolutionTab::where('type', $isRenewalCtx ? 'renewal' : 'registration')
+            ->where('is_default', true)->first();
+    }
     $isCompleted = in_array($employee->status, ['registration_completed', 'renewal_completed']);
     $isCancelled = in_array($employee->status, ['registration_cancelled', 'renewal_cancelled']);
 
@@ -66,6 +72,8 @@
      data-status="{{ $itemStatus }}"
      data-is-not-started="{{ $isNotStarted ? 'true' : 'false' }}"
      data-employer-id="{{ $employee->employer_id }}"
+     data-has-appointment="{{ $employee->appointment_date ? 'true' : 'false' }}"
+     data-appointment-completed="{{ $employee->appointment_completed_at ? 'true' : 'false' }}"
      data-biometrics-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
 
@@ -78,8 +86,8 @@
     <div class="position-absolute bottom-0 end-0 m-2 z-index-10">
         @php
             $toggleUrl = request()->is('production/renewal*')
-                ? route('production.renewal.toggle_operator', $employee->id)
-                : route('production.registration.toggle_operator', $employee->id);
+                ? route('production.renewal.toggle_operator', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id])
+                : route('production.registration.toggle_operator', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]);
 
             $btnClass = 'btn-outline-secondary';
             if ($customOperatorName) {
@@ -345,7 +353,7 @@
                     $appLocation = $employee->appointment_location ?? '';
                     $isAppCompleted = $employee->appointment_completed_at ? true : false;
                     $isRenewalContext = request()->is('production/renewal*');
-                    $modulePath = $isRenewalContext ? 'production/renewal' : 'production/registration';
+                    $modulePath = $isRenewalContext ? 'production/renewal/' . $currentTab->id : 'production/registration/' . $currentTab->id;
                 @endphp
                 <div class="mt-2" style="min-width: 250px;" x-data="{
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
@@ -468,8 +476,8 @@
                 // Need absolute or generated URL because we are in shared partial, but we will use route named params if possible
                 // It's safer to generate based on request
                 $remarkUrl = $isRenewal
-                    ? route('production.renewal.remarks', $employee->id)
-                    : route('production.registration.remarks', $employee->id);
+                    ? route('production.renewal.remarks', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id])
+                    : route('production.registration.remarks', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]);
             @endphp
             <div x-data="{
                 isEditing: false,
@@ -832,7 +840,7 @@
                     isPending: {{ $employee->is_daily_check_pending ? 'true' : 'false' }},
                     checking: false,
                     toggleDailyCheck() {
-                        let url = '{{ request()->is('production/registration*') ? route('production.registration.toggle_daily_check', $employee->id) : route('production.renewal.toggle_daily_check', $employee->id) }}';
+                        let url = '{{ request()->is('production/registration*') ? route('production.registration.toggle_daily_check', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]) : route('production.renewal.toggle_daily_check', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]) }}';
                         fetch(url, {
                             method: 'POST',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
@@ -849,7 +857,7 @@
                     checkDaily() {
                         if(this.checking) return;
                         this.checking = true;
-                        let url = '{{ request()->is('production/registration*') ? route('production.registration.check_daily', $employee->id) : route('production.renewal.check_daily', $employee->id) }}';
+                        let url = '{{ request()->is('production/registration*') ? route('production.registration.check_daily', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]) : route('production.renewal.check_daily', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]) }}';
                         fetch(url, {
                             method: 'POST',
                             headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }

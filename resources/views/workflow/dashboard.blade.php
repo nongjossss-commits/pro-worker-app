@@ -241,7 +241,6 @@
 
 {{-- Bulk Action Modals (required for Advanced Export & Download) --}}
 @include('employees.modals.advanced_export')
-@include('components.download-modals')
 
 {{-- Edit Employee Modal (Full Form) --}}
 <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">

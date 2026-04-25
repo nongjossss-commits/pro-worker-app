@@ -52,7 +52,7 @@
                         <td class="text-end text-warning fw-bold">{{ number_format($order->pending_amount, 2) }}</td>
                         <td class="text-center">
                             @if($order->employer)
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadFinancialTabModal('{{ route('production.registration.finance.tab', $order->employer->id) }}', '{{ $order->employer->employerNameTh }}')">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadFinancialTabModal('{{ route('production.registration.finance.tab', ['resolutionTab' => $order->resolution_tab_id ?? \App\Models\ResolutionTab::where('type', 'registration')->where('is_default', true)->value('id'), 'employer' => $order->employer->id]) }}', '{{ $order->employer->employerNameTh }}')">
                                     <i class="bi bi-wallet2"></i> {{ __('Manage Finance') }}
                                 </button>
                             @endif

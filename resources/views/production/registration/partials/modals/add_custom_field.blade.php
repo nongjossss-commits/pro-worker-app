@@ -1,3 +1,11 @@
+@php
+    // Fallback for $currentTab — this modal is shared across Workflow/Production pages
+    if (!isset($currentTab) || $currentTab === null) {
+        $isRenewalCtx = request()->is('production/renewal*');
+        $currentTab = \App\Models\ResolutionTab::where('type', $isRenewalCtx ? 'renewal' : 'registration')
+            ->where('is_default', true)->first();
+    }
+@endphp
 <div class="modal fade" id="addCustomFieldModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -60,13 +68,13 @@
 
         // Set Form Action based on Context
         if (context === 'employer') {
-            form.action = `/production/registration/employer-custom-fields/${modelId}`;
+            form.action = `/production/registration/{{ $currentTab->id }}/employer-custom-fields/${modelId}`;
             // Store employer ID for post-success logic
             form.dataset.employerId = modelId;
             form.dataset.context = 'employer';
             delete form.dataset.employeeId;
         } else {
-            form.action = `/production/registration/custom-fields/${modelId}`;
+            form.action = `/production/registration/{{ $currentTab->id }}/custom-fields/${modelId}`;
             // Store employee ID for post-success logic
             form.dataset.employeeId = modelId;
             form.dataset.context = 'employee';

@@ -82,6 +82,8 @@
 </style>
 
 <div class="container-fluid">
+    <x-resolution-tab-bar :currentTab="$currentTab" :allTabs="$allTabs" type="renewal" routePrefix="production.renewal" />
+
     {{-- Top Stats --}}
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         {{-- Total Employees --}}
@@ -107,25 +109,41 @@
             </div>
         </div>
 
-        {{-- Appointments (Pending / Completed) --}}
+        {{-- Appointment: Not Scheduled --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
-                 id="filter-total_appointments"
-                 onclick="toggleFilter('total_appointments')"
+                 id="filter-appointment_not_scheduled"
+                 onclick="toggleFilter('appointment_not_scheduled')"
+                 style="background-color: #F97316; border: none; transition: transform 0.2s;"> {{-- Orange --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-not-scheduled-count">{{ $totalNotScheduled ?? 0 }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Not Scheduled') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Appointment: Pending --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-appointment_pending"
+                 onclick="toggleFilter('appointment_pending')"
                  style="background-color: #8B5CF6; border: none; transition: transform 0.2s;"> {{-- Purple --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-3">
-                    <div class="d-flex justify-content-around w-100">
-                        <div class="text-center">
-                            <h2 class="display-5 fw-bold mb-0" id="global-appointments-pending-count">{{ $totalAppointmentsPending ?? 0 }}</h2>
-                            <small class="fw-light">{{ __('Pending') }}</small>
-                        </div>
-                        <div class="border-end border-white opacity-50 mx-2"></div>
-                        <div class="text-center">
-                            <h2 class="display-5 fw-bold mb-0" id="global-appointments-completed-count">{{ $totalAppointmentsCompleted ?? 0 }}</h2>
-                            <small class="fw-light">{{ __('Completed') }}</small>
-                        </div>
-                    </div>
-                    <p class="fs-6 fw-bold mb-0 mt-2 text-uppercase" style="letter-spacing: 1px;">{{ __('Appointments') }}</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-appointments-pending-count">{{ $totalAppointmentsPending ?? 0 }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Appointment Pending') }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- Appointment: Completed --}}
+        <div class="col">
+            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
+                 id="filter-appointment_completed"
+                 onclick="toggleFilter('appointment_completed')"
+                 style="background-color: #059669; border: none; transition: transform 0.2s;"> {{-- Emerald --}}
+                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                    <h1 class="display-4 fw-bold mb-0" id="global-appointments-completed-count">{{ $totalAppointmentsCompleted ?? 0 }}</h1>
+                    <p class="fs-6 fw-light mb-0">{{ __('Appointment Completed') }}</p>
                 </div>
             </div>
         </div>
@@ -268,19 +286,19 @@
         <div class="card-body p-3">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3">
                 <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('production.renewal.index') }}" class="btn btn-outline-secondary btn-sm" title="{{ __('Back to Dashboard') }}">
+                    <a href="{{ route('production.renewal.index', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-outline-secondary btn-sm" title="{{ __('Back to Dashboard') }}">
                         <i class="bi bi-arrow-left"></i>
                     </a>
                     <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-arrow-repeat me-2"></i>{{ __('Renewal Resolution') }}</h4>
                 </div>
 
-                <form action="{{ route('production.renewal.operations') }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
+                <form action="{{ route('production.renewal.operations', ['resolutionTab' => $currentTab->id]) }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
                     <div class="input-group input-group-lg">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search employee or employer...') }}" value="{{ request('search') }}">
                         <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
                         @if(request('search'))
-                            <a href="{{ route('production.renewal.operations') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
+                            <a href="{{ route('production.renewal.operations', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
                         @endif
                     </div>
                 </form>
@@ -295,12 +313,12 @@
                         @endif
                     </button>
                     <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;">
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['operator_filter' => null])) }}">{{ __('All Operators') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['operator_filter' => null, 'resolutionTab' => $currentTab->id])) }}">{{ __('All Operators') }}</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item {{ request('operator_filter') == 'external' ? 'active' : '' }}" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['operator_filter' => 'external'])) }}">ผู้ยื่นภายนอก (พิมพ์ชื่อเอง)</a></li>
+                        <li><a class="dropdown-item {{ request('operator_filter') == 'external' ? 'active' : '' }}" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['operator_filter' => 'external', 'resolutionTab' => $currentTab->id])) }}">ผู้ยื่นภายนอก (พิมพ์ชื่อเอง)</a></li>
                         <li><hr class="dropdown-divider"></li>
                         @foreach($activeOperators as $user)
-                            <li><a class="dropdown-item {{ request('operator_filter') == $user->id ? 'active' : '' }}" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['operator_filter' => $user->id])) }}">{{ $user->name }}</a></li>
+                            <li><a class="dropdown-item {{ request('operator_filter') == $user->id ? 'active' : '' }}" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['operator_filter' => $user->id, 'resolutionTab' => $currentTab->id])) }}">{{ $user->name }}</a></li>
                         @endforeach
                     </ul>
                 </div>
@@ -312,21 +330,21 @@
                         {{ request('insurance_filter') ? (request('insurance_filter') === 'none' ? __('No Insurance') : request('insurance_filter')) : __('Insurance') }}
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => null])) }}">{{ __('All Types') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => null, 'resolutionTab' => $currentTab->id])) }}">{{ __('All Types') }}</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'ประกันสังคม'])) }}">{{ __('ประกันสังคม') }}</a></li>
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'ประกันเอกชน'])) }}">{{ __('ประกันเอกชน') }}</a></li>
-                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'ประกันโรงพยาบาล'])) }}">{{ __('ประกันโรงพยาบาล') }}</a></li>
-                        <li><a class="dropdown-item text-muted" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'none'])) }}">{{ __('No Insurance') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'ประกันสังคม', 'resolutionTab' => $currentTab->id])) }}">{{ __('ประกันสังคม') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'ประกันเอกชน', 'resolutionTab' => $currentTab->id])) }}">{{ __('ประกันเอกชน') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'ประกันโรงพยาบาล', 'resolutionTab' => $currentTab->id])) }}">{{ __('ประกันโรงพยาบาล') }}</a></li>
+                        <li><a class="dropdown-item text-muted" href="{{ route('production.renewal.operations', array_merge(request()->query(), ['insurance_filter' => 'none', 'resolutionTab' => $currentTab->id])) }}">{{ __('No Insurance') }}</a></li>
                     </ul>
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
                     @can('edit-employees')
-                    <a href="{{ route('production.renewal.create') }}" class="btn btn-warning text-white fw-bold">
+                    <a href="{{ route('production.renewal.create', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-warning text-white fw-bold">
                         <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
                     </a>
-                    <a href="{{ route('production.renewal.import') }}" class="btn btn-success fw-bold">
+                    <a href="{{ route('production.renewal.import', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-success fw-bold">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import Employees') }}
                     </a>
                     <button class="btn btn-dark fw-bold" data-bs-toggle="modal" data-bs-target="#expiryConfigModal">
@@ -453,7 +471,7 @@
                             },
                             saveNote() {
                                 this.saving = true;
-                                fetch(`{{ url('production/renewal/employer') }}/{{ $employer->id }}/resolution-note`, {
+                                fetch(`{{ url('production/renewal/' . $currentTab->id . '/employer') }}/{{ $employer->id }}/resolution-note`, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -540,7 +558,7 @@
                             @if($employer->jobOwner)
                                 <div class="text-muted small border-start ps-3">
                                     <i class="bi bi-person-badge me-1"></i>
-                                    <a href="{{ route('production.renewal.operations', ['search' => $employer->jobOwner->name]) }}" class="text-decoration-none text-secondary">
+                                    <a href="{{ route('production.renewal.operations', ['search' => $employer->jobOwner->name, 'resolutionTab' => $currentTab->id]) }}" class="text-decoration-none text-secondary">
                                         {{ $employer->jobOwner->name }}
                                     </a>
                                 </div>
@@ -579,7 +597,7 @@
 
                                  @can('edit-employees')
                                  {{-- Add Employee Button --}}
-                                 <a href="{{ route('production.renewal.create', ['employer_id' => $employer->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
+                                 <a href="{{ route('production.renewal.create', ['employer_id' => $employer->id, 'resolutionTab' => $currentTab->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </a>
 
@@ -739,7 +757,7 @@
                 <h5 class="modal-title"><i class="bi bi-calendar-check me-2"></i>{{ __('Import Employees by Expiry') }}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('production.renewal.configure_expiry') }}" method="POST">
+            <form action="{{ route('production.renewal.configure_expiry', ['resolutionTab' => $currentTab->id]) }}" method="POST">
                 @csrf
                 <div class="modal-body p-4">
                     <p class="text-muted mb-3">
@@ -1114,7 +1132,7 @@
             init() {
                 this.generateCalendar();
                 this.fetchCounts();
-                window.currentAppointmentContext = { module: 'production/renewal' };
+                window.currentAppointmentContext = { module: 'production/renewal', tabId: {{ $currentTab->id }} };
 
                 this.$watch('searchQuery', (value) => {
                     const cards = document.querySelectorAll('.appointment-card');
@@ -1211,7 +1229,7 @@
             },
 
             fetchCounts() {
-                fetch(`{{ route('production.renewal.api.calendar') }}?month=${this.month + 1}&year=${this.year}`)
+                fetch(`{{ route('production.renewal.api.calendar', ['resolutionTab' => $currentTab->id]) }}?month=${this.month + 1}&year=${this.year}`)
                     .then(res => res.json())
                     .then(data => {
                         this.counts = data;
@@ -1225,7 +1243,7 @@
                 this.isLoading = true;
                 this.appointmentsLoaded = true;
 
-                fetch(`{{ route('production.renewal.api.appointments_by_date') }}?date=${dateStr}`)
+                fetch(`{{ route('production.renewal.api.appointments_by_date', ['resolutionTab' => $currentTab->id]) }}?date=${dateStr}`)
                     .then(res => res.json())
                     .then(data => {
                         document.getElementById('dayAppointmentsContent').innerHTML = data.html;
@@ -1272,9 +1290,10 @@
             if (result.isConfirmed) {
                 const data = result.value;
                 const moduleUrl = window.currentAppointmentContext ? window.currentAppointmentContext.module : 'production/renewal';
+                const tabId = (window.currentAppointmentContext && window.currentAppointmentContext.tabId) ? window.currentAppointmentContext.tabId : {{ $currentTab->id }};
 
                 // First update the details
-                fetch(`/${moduleUrl}/${employeeId}/appointment`, {
+                fetch(`/${moduleUrl}/${tabId}/${employeeId}/appointment`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1288,7 +1307,7 @@
                 }).then(res => res.json()).then(response => {
                     // Then handle the complete toggle if it changed
                     if (data.isComplete !== isCompleted) {
-                        return fetch(`/${moduleUrl}/${employeeId}/appointment-complete`, {
+                        return fetch(`/${moduleUrl}/${tabId}/${employeeId}/appointment-complete`, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
@@ -1360,7 +1379,7 @@
 
         // Base URL for the new AJAX route
         // Use the saved page state if available, otherwise default to first page
-        let baseUrl = pageUrl || window.employerCurrentPages[employerId] || `/production/renewal/employer/${employerId}/employees`;
+        let baseUrl = pageUrl || window.employerCurrentPages[employerId] || `/production/renewal/{{ $currentTab->id }}/employer/${employerId}/employees`;
 
         // Append current search/filter params
         const url = new URL(baseUrl, window.location.origin);
@@ -1413,7 +1432,7 @@
         if(e.target.classList.contains('per-page-selector')) {
             const employerId = e.target.dataset.employerId;
             const perPage = e.target.value;
-            const baseUrl = `/production/renewal/employer/${employerId}/employees`;
+            const baseUrl = `/production/renewal/{{ $currentTab->id }}/employer/${employerId}/employees`;
             const url = new URL(baseUrl, window.location.origin);
             url.searchParams.append('per_page', perPage);
             url.searchParams.append('page', 1); // Reset to page 1 on resize
@@ -1430,7 +1449,7 @@
         const body = document.getElementById(`finance-modal-body-${employerId}`);
         if (body.querySelector('[x-data]')) return;
 
-        fetch(`/production/renewal/employer/${employerId}/finance-tab`)
+        fetch(`/production/renewal/{{ $currentTab->id }}/employer/${employerId}/finance-tab`)
             .then(res => {
                 if (!res.ok) throw new Error('Failed to load');
                 return res.text();
@@ -1453,7 +1472,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const search = urlParams.get('search');
 
-        fetch('{{ route("production.renewal.stats.batch") }}', {
+        fetch('{{ route("production.renewal.stats.batch", ["resolutionTab" => $currentTab->id]) }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1516,6 +1535,10 @@
              else if (currentStepFilter === 'saved') document.getElementById('filter-saved')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled_employer') document.getElementById('filter-cancelled-employer')?.classList.add('filter-active');
+             else if (currentStepFilter === 'appointment_not_scheduled') document.getElementById('filter-appointment_not_scheduled')?.classList.add('filter-active');
+             else if (currentStepFilter === 'appointment_pending') document.getElementById('filter-appointment_pending')?.classList.add('filter-active');
+             else if (currentStepFilter === 'appointment_completed') document.getElementById('filter-appointment_completed')?.classList.add('filter-active');
+             else if (currentStepFilter === 'pending_daily_check') document.getElementById('filter-pending_daily_check')?.classList.add('filter-active');
              else {
                  const pill = document.getElementById(`filter-step-${currentStepFilter}`);
                  if (pill) pill.classList.add('filter-active');
@@ -1611,7 +1634,7 @@
                             }
                         }
 
-                        const fetchUrl = url || `/production/renewal/${employeeId}/toggle-operator`;
+                        const fetchUrl = url || `/production/renewal/{{ $currentTab->id }}/${employeeId}/toggle-operator`;
 
                         return fetch(fetchUrl, {
                             method: 'POST',
@@ -1657,7 +1680,7 @@
     // Make global for onclick
     window.updateResolutionStatus = function(employerId, status) {
         // Reuse registration route for employer status update as it's shared on Employer model
-        fetch(`/production/registration/employer/${employerId}/resolution-status`, {
+        fetch(`/production/registration/{{ \App\Models\ResolutionTab::where('type', 'registration')->where('is_default', true)->value('id') }}/employer/${employerId}/resolution-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1685,7 +1708,7 @@
         const body = document.getElementById('historyModalBody');
         body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-secondary" role="status"></div></div>';
 
-        fetch(`/production/renewal/employer/${employerId}/history`)
+        fetch(`/production/renewal/{{ $currentTab->id }}/employer/${employerId}/history`)
             .then(res => res.text())
             .then(html => {
                 body.innerHTML = html;
@@ -1750,7 +1773,7 @@
         if(container) {
             container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div><span class="ms-2 small text-muted">Loading employees...</span></div>';
 
-            let baseUrl = `/production/renewal/employer/${employerId}/employees`;
+            let baseUrl = `/production/renewal/{{ $currentTab->id }}/employer/${employerId}/employees`;
             const url = new URL(baseUrl, window.location.origin);
             const currentParams = new URLSearchParams(window.location.search);
             currentParams.forEach((value, key) => {
@@ -1804,7 +1827,7 @@
         const note = document.getElementById('resolutionNoteText').value;
 
         // Reuse registration route for employer status update as it's shared on Employer model
-        fetch(`/production/registration/employer/${employerId}/resolution-status`, {
+        fetch(`/production/registration/{{ \App\Models\ResolutionTab::where('type', 'registration')->where('is_default', true)->value('id') }}/employer/${employerId}/resolution-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1865,6 +1888,12 @@
                  visible = (card.dataset.status === 'renewal_completed');
             } else if (filter === 'cancelled') {
                  visible = (card.dataset.status === 'renewal_cancelled');
+            } else if (filter === 'appointment_not_scheduled') {
+                 visible = (card.dataset.hasAppointment === 'false' && card.dataset.status !== 'renewal_cancelled');
+            } else if (filter === 'appointment_pending') {
+                 visible = (card.dataset.hasAppointment === 'true' && card.dataset.appointmentCompleted === 'false');
+            } else if (filter === 'appointment_completed') {
+                 visible = (card.dataset.hasAppointment === 'true' && card.dataset.appointmentCompleted === 'true');
             } else if (!isNaN(filter)) {
                  // Step ID
                  visible = (card.dataset.highestStepId == filter && card.dataset.status !== 'renewal_cancelled');
@@ -2063,7 +2092,7 @@
         e.preventDefault();
         const name = document.getElementById('newStepName').value;
 
-        fetch('{{ route("production.renewal.steps.store") }}', {
+        fetch('{{ route("production.renewal.steps.store", ["resolutionTab" => $currentTab->id]) }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ name: name })
@@ -2093,7 +2122,7 @@
             confirmButtonText: '{{ __('Yes, delete it!') }}'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`/production/renewal/steps/${id}`, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/steps/${id}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -2120,7 +2149,7 @@
         const item = document.getElementById(`step-item-${id}`);
         const newName = item.querySelector('.step-edit-input').value;
 
-        fetch(`/production/renewal/steps/${id}`, {
+        fetch(`/production/renewal/{{ $currentTab->id }}/steps/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ name: newName })
@@ -2145,7 +2174,7 @@
         const autoVisa = document.getElementById('autoVisaInput').value;
         const autoMou = document.getElementById('autoMouInput').value;
 
-        fetch('{{ route("production.renewal.settings.resolution") }}', {
+        fetch('{{ route("production.renewal.settings.resolution", ["resolutionTab" => $currentTab->id]) }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
             body: JSON.stringify({
@@ -2165,7 +2194,7 @@
 
     // Helper for submitting step reorder
     function submitReorder(order, behavior) {
-        fetch('{{ route("production.renewal.steps.reorder") }}', {
+        fetch('{{ route("production.renewal.steps.reorder", ["resolutionTab" => $currentTab->id]) }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({
@@ -2268,7 +2297,7 @@
             confirmButtonText: '{{ __('Yes, Save') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/renewal/${id}/finalize` + window.location.search, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/${id}/finalize` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -2303,7 +2332,7 @@
             confirmButtonText: '{{ __('Yes, Restore') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/renewal/${id}/restore` + window.location.search, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/${id}/restore` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -2330,7 +2359,7 @@
             confirmButtonText: '{{ __('Yes, Cancel') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/renewal/${id}/cancel` + window.location.search, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/${id}/cancel` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -2357,7 +2386,7 @@
             confirmButtonText: '{{ __('Yes, Cancel Employer') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/renewal/employer/${id}/cancel` + window.location.search, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/employer/${id}/cancel` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -2381,7 +2410,7 @@
             confirmButtonText: '{{ __('Yes, Restore') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/renewal/employer/${id}/restore` + window.location.search, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/employer/${id}/restore` + window.location.search, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -2406,7 +2435,7 @@
             confirmButtonText: '{{ __('Yes, Delete') }}'
         }).then((result) => {
              if (result.isConfirmed) {
-                fetch(`/production/renewal/${id}/destroy` + window.location.search, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/${id}/destroy` + window.location.search, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
                 })
@@ -2459,7 +2488,7 @@
             btn.style.opacity = '0.5';
         }
 
-        fetch(`/production/renewal/progress/${employeeId}` + window.location.search, {
+        fetch(`/production/renewal/{{ $currentTab->id }}/progress/${employeeId}` + window.location.search, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ step_id: stepId, completed: completed })
@@ -2683,7 +2712,7 @@
         const body = document.getElementById('trashModalBody');
         body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-danger" role="status"></div></div>';
 
-        fetch(url || '{{ route("production.renewal.trash") }}')
+        fetch(url || '{{ route("production.renewal.trash", ["resolutionTab" => $currentTab->id]) }}')
             .then(res => res.text())
             .then(html => {
                 body.innerHTML = html;
@@ -2709,7 +2738,7 @@
             confirmButtonText: '{{ __("Yes, Restore") }}'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`/production/renewal/trash/${id}/restore`, {
+                fetch(`/production/renewal/{{ $currentTab->id }}/trash/${id}/restore`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken }
                 })
@@ -2825,13 +2854,14 @@
             if (result.isConfirmed) {
                 // Determine module path based on current view or explicit pass
                 let modulePath = module || window.currentAppointmentContext?.module || 'production/renewal';
+                let tabId = window.currentAppointmentContext?.tabId || {{ $currentTab->id }};
 
                 // Show loading state on button
                 const originalHtml = btnElement.innerHTML;
                 btnElement.innerHTML = '<i class="spinner-border spinner-border-sm"></i>';
                 btnElement.disabled = true;
 
-                fetch(`/${modulePath}/${employeeId}/appointment-complete`, {
+                fetch(`/${modulePath}/${tabId}/${employeeId}/appointment-complete`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -2851,9 +2881,20 @@
                         });
 
                         // Hide the card instantly to give immediate feedback
-                        const cardElement = btnElement.closest('.appointment-card');
+                        const cardElement = btnElement.closest('.appt-card-item') || btnElement.closest('.col-12');
                         if (cardElement) {
-                            cardElement.style.display = 'none';
+                            cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                            cardElement.style.opacity = '0';
+                            cardElement.style.transform = 'translateX(50px)';
+                            setTimeout(() => {
+                                cardElement.style.display = 'none';
+                                const resultCount = document.getElementById('appt-result-count');
+                                if (resultCount) {
+                                    const visibleCards = document.querySelectorAll('.appt-card-item:not([style*="display: none"])');
+                                    resultCount.textContent = visibleCards.length + ' {{ __("record(s)") }}';
+                                }
+                                if (window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
+                            }, 300);
                         }
 
                         // Also find the main employee card and update it to reflect the completed state

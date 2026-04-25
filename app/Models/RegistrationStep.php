@@ -10,7 +10,12 @@ class RegistrationStep extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'order', 'color', 'type'];
+    protected $fillable = ['name', 'order', 'color', 'type', 'resolution_tab_id'];
+
+    public function resolutionTab()
+    {
+        return $this->belongsTo(\App\Models\ResolutionTab::class);
+    }
 
     public function employees()
     {

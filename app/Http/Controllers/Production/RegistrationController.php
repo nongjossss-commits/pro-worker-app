@@ -21,10 +21,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\AddressFilterTrait;
 use App\Traits\DailyCheckTrait;
+use App\Traits\HasResolutionTab;
 
 class RegistrationController extends Controller
 {
-    use AddressFilterTrait, DailyCheckTrait;
+    use AddressFilterTrait, DailyCheckTrait, HasResolutionTab;
 
     public function __construct()
     {
@@ -36,8 +37,9 @@ class RegistrationController extends Controller
     /**
      * Update employer registration resolution note (inline).
      */
-    public function updateResolutionNote(Request $request, Employer $employer)
+    public function updateResolutionNote(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -54,13 +56,16 @@ class RegistrationController extends Controller
     /**
      * Display the new calendar dashboard for Registration Resolution.
      */
-    public function dashboard(Request $request)
+    public function dashboard(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $days = \App\Models\NotificationSetting::where('notification_type', 'registration_appointment')->first()->days_before_expiry ?? 3;
         $start = \Carbon\Carbon::now()->startOfDay();
         $end = \Carbon\Carbon::now()->addDays($days)->endOfDay();
 
         $query = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['registration_pending', 'registration_completed'])
             ->whereNotNull('appointment_date')
             ->whereBetween('appointment_date', [$start, $end])
@@ -73,20 +78,23 @@ class RegistrationController extends Controller
 
         $upcomingAppointments = $query->orderBy('appointment_date', 'asc')->get();
 
-        return view('production.registration.dashboard', compact('upcomingAppointments'));
+        return view('production.registration.dashboard', array_merge(compact('upcomingAppointments'), $this->getTabViewData('registration')));
     }
 
     /**
      * Display the main operations view for Registration Resolution.
      */
-    public function index(Request $request)
+    public function index(Request $request, $resolutionTab)
     {
-        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        $this->resolveTab($resolutionTab, 'registration');
+
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
         $lastStepId = $steps->sortByDesc('order')->first()?->id;
 
         // --- 1. Global Stats Query (No Fetching All Models) ---
-        $statsQuery = Employee::query();
+        $statsQuery = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id);
 
         if (auth()->user()->can('manage-tickets')) {
             $statsQuery->withoutGlobalScope('employerTenancy');
@@ -130,6 +138,15 @@ class RegistrationController extends Controller
                        ->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
                  $totalEmployeesQuery->whereNotNull('appointment_date');
+            } elseif ($filter === 'appointment_not_scheduled') {
+                 $totalEmployeesQuery->whereIn('status', ['registration_pending', 'registration_completed'])
+                       ->whereNull('appointment_date');
+            } elseif ($filter === 'appointment_pending') {
+                 $totalEmployeesQuery->whereNotNull('appointment_date')
+                       ->whereNull('appointment_completed_at');
+            } elseif ($filter === 'appointment_completed') {
+                 $totalEmployeesQuery->whereNotNull('appointment_date')
+                       ->whereNotNull('appointment_completed_at');
             } elseif ($filter === 'pending_daily_check') {
                  $totalEmployeesQuery->where('daily_check_enabled', true)
                        ->where(function ($sub) {
@@ -166,21 +183,20 @@ class RegistrationController extends Controller
         $stepStatsQuery = (clone $statsQuery)->where('status', '!=', 'registration_cancelled');
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
-        // Total Appointments
-        $appointmentsQuery = Employee::query();
-        if (auth()->user()->can('manage-tickets')) {
-            $appointmentsQuery->withoutGlobalScope('employerTenancy');
-        }
-        $appointmentsQuery->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+        // Total Appointments (use same base query with search/operator filters)
+        $appointmentsBaseQuery = clone $statsQuery;
 
-        $totalAppointmentsPending = (clone $appointmentsQuery)
+        $totalNotScheduled = (clone $appointmentsBaseQuery)
+            ->whereIn('status', ['registration_pending', 'registration_completed'])
+            ->whereNull('appointment_date')
+            ->count();
 
+        $totalAppointmentsPending = (clone $appointmentsBaseQuery)
             ->whereNotNull('appointment_date')
             ->whereNull('appointment_completed_at')
             ->count();
 
-        $totalAppointmentsCompleted = (clone $appointmentsQuery)
-
+        $totalAppointmentsCompleted = (clone $appointmentsBaseQuery)
             ->whereNotNull('appointment_date')
             ->whereNotNull('appointment_completed_at')
             ->count();
@@ -217,7 +233,8 @@ class RegistrationController extends Controller
 
         // Always scope to employers who have relevant employees for this menu
         $employerQuery->whereHas('employees', function($q) {
-             $q->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+             $q->where('resolution_tab_id', $this->currentTab->id)
+               ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
         });
 
         // Apply Search to Employer Query
@@ -247,19 +264,22 @@ class RegistrationController extends Controller
             });
         }
 
-        // Eager load Production Orders to avoid N+1
-        $employerQuery->with(['productionOrders' => function($q) {
-             $q->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled']);
+        // Eager load Production Orders to avoid N+1 (scoped to current tab)
+        $tabId = $this->currentTab->id;
+        $employerQuery->with(['productionOrders' => function($q) use ($tabId) {
+             $q->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+               ->where('resolution_tab_id', $tabId);
         }]);
 
-        // Sort and Paginate
+        // Sort and Paginate — cancelled orders last (scoped to current tab)
         $employerQuery->orderByRaw("(
             SELECT CASE WHEN status = 'registration_resolution_cancelled' THEN 1 ELSE 0 END
             FROM production_orders
             WHERE production_orders.employer_id = employers.id
             AND production_orders.status IN ('registration_resolution', 'registration_resolution_cancelled')
+            AND production_orders.resolution_tab_id = ?
             LIMIT 1
-        ) ASC");
+        ) ASC", [$tabId]);
 
         $perPage = $request->input('per_page', 20);
         // Ensure per_page is handled correctly as integer for pagination
@@ -287,7 +307,10 @@ class RegistrationController extends Controller
         // But $employerQuery has pagination. We need a separate query with same filters.
         // To be safe and performant, let's just count global cancelled employers matching search (if any).
         $cancelledEmployersQuery = Employer::whereHas('productionOrders', function($q) {
-                $q->where('status', 'registration_resolution_cancelled');
+                $q->where('status', 'registration_resolution_cancelled')
+                  ->where('resolution_tab_id', $this->currentTab->id);
+            })->whereHas('employees', function($q) {
+                $q->where('resolution_tab_id', $this->currentTab->id);
             });
         if (auth()->user()->can('manage-tickets')) {
             $cancelledEmployersQuery->withoutGlobalScope('employerTenancy');
@@ -330,7 +353,7 @@ class RegistrationController extends Controller
             // activeEmployeesList is removed as it's now loaded in the financial tab AJAX call
         }
 
-        return view('production.registration.index', compact(
+        return view('production.registration.index', array_merge(compact(
             'totalEmployees',
             'totalCancelled',
             'totalSaved',
@@ -338,6 +361,7 @@ class RegistrationController extends Controller
             'cancelledEmployersCount',
             'notStartedCount',
             'totalBiometricsCollected',
+            'totalNotScheduled',
             'totalAppointmentsPending',
             'totalAppointmentsCompleted',
             'totalDailyCheckPending',
@@ -350,7 +374,7 @@ class RegistrationController extends Controller
             'resolutionSettings',
             'activeOperators',
             'allUsers'
-        ));
+        ), $this->getTabViewData('registration')));
     }
 
     private function getGlobalStepStats($baseQuery, $steps)
@@ -434,11 +458,11 @@ class RegistrationController extends Controller
     private function applyFilterToEmployerQuery($query, $filter, $stepOneId)
     {
         if ($filter === 'cancelled_employer') {
-            // Handled via Query (whereHas) logic in main index if needed, but here we can enforce it.
-            // Actually, the main index checks this explicitly for sorting purposes or pagination.
-            // But strict filtering:
-            $query->whereHas('productionOrders', function($q) {
-                $q->where('status', 'registration_resolution_cancelled');
+            // Scope cancelled employer check to current tab
+            $tabId = $this->currentTab->id;
+            $query->whereHas('productionOrders', function($q) use ($tabId) {
+                $q->where('status', 'registration_resolution_cancelled')
+                  ->where('resolution_tab_id', $tabId);
             });
             return;
         }
@@ -461,8 +485,16 @@ class RegistrationController extends Controller
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
-                 $q
-                   ->whereNotNull('appointment_date');
+                 $q->whereNotNull('appointment_date');
+            } elseif ($filter === 'appointment_not_scheduled') {
+                 $q->whereIn('status', ['registration_pending', 'registration_completed'])
+                   ->whereNull('appointment_date');
+            } elseif ($filter === 'appointment_pending') {
+                 $q->whereNotNull('appointment_date')
+                   ->whereNull('appointment_completed_at');
+            } elseif ($filter === 'appointment_completed') {
+                 $q->whereNotNull('appointment_date')
+                   ->whereNotNull('appointment_completed_at');
             } elseif ($filter === 'pending_daily_check') {
                  $q
                    ->where('daily_check_enabled', true)
@@ -488,8 +520,10 @@ class RegistrationController extends Controller
     /**
      * AJAX: Fetch stats for a batch of employers (to avoid N+1 on initial load).
      */
-    public function batchStats(Request $request)
+    public function batchStats(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $request->validate([
             'employer_ids' => 'required|array',
             'employer_ids.*' => 'exists:employers,id',
@@ -501,7 +535,7 @@ class RegistrationController extends Controller
 
         // Fetch visible employers to apply logic
         $employers = Employer::with(['jobOwner', 'addresses'])->whereIn('id', $employerIds)->get();
-        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         $results = [];
@@ -550,7 +584,8 @@ class RegistrationController extends Controller
             }
 
             // Base status filter
-            $query->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+            $query->where('resolution_tab_id', $this->currentTab->id)
+                  ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
 
             // Operator Filter
             if ($request->has('operator_filter') && $request->operator_filter) {
@@ -646,22 +681,28 @@ class RegistrationController extends Controller
     /**
      * AJAX: Load Financial Tab Content (Lazy Load).
      */
-    public function loadFinancialTab(Request $request, Employer $employer)
+    public function loadFinancialTab(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         // Permission Check
         if (!auth()->user()->can('view-finance') && !auth()->user()->can('edit-employees')) {
              abort(403);
         }
 
-        // Finance Order Logic
-        $financeOrder = $employer->productionOrders()->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])->first();
+        // Finance Order Logic (scoped per-tab)
+        $financeOrder = $employer->productionOrders()
+            ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+            ->where('resolution_tab_id', $this->currentTab->id)
+            ->first();
 
         if (!$financeOrder) {
             $financeOrder = ProductionOrder::create([
                 'employer_id' => $employer->id,
+                'resolution_tab_id' => $this->currentTab->id,
                 'status'      => 'registration_resolution',
                 'type'         => 'employer',
-                'project_name' => 'Registration Resolution - ' . $employer->employerNameTh,
+                'project_name' => 'Registration Resolution (' . $this->currentTab->name . ') - ' . $employer->employerNameTh,
                 'financial_data' => []
             ]);
         }
@@ -678,6 +719,7 @@ class RegistrationController extends Controller
 
         // Fetch ALL Active Employees for this employer (ignoring search)
         $query = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
@@ -699,19 +741,22 @@ class RegistrationController extends Controller
     /**
      * AJAX Method to fetch employee list for an employer.
      */
-    public function fetchEmployees(Request $request, $employerId)
+    public function fetchEmployees(Request $request, $resolutionTab, $employerId)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $employerQuery = Employer::query();
         if (auth()->user()->can('manage-tickets')) {
             $employerQuery->withoutGlobalScope('employerTenancy');
         }
         $employer = $employerQuery->withTrashed()->findOrFail($employerId);
 
-        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         // Apply the same base status filter as the index method to ensure consistency
-        $query = $employer->employees();
+        $query = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id);
 
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
@@ -820,34 +865,39 @@ class RegistrationController extends Controller
             $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
         }
 
-        return view('production.registration._employee_list_content', [
+        return view('production.registration._employee_list_content', array_merge([
             'employees' => $employees,
             'steps' => $steps,
             'employer' => $employer
-        ]);
+        ], $this->getTabViewData('registration')));
     }
 
     /**
      * Cancel an Employer.
      */
-    public function cancelEmployer(Request $request, Employer $employer)
+    public function cancelEmployer(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employers')) {
             abort(403);
         }
 
-        DB::transaction(function () use ($employer) {
-            // 1. Update Order Status
+        $tabId = $this->currentTab->id;
+        DB::transaction(function () use ($employer, $tabId) {
+            // 1. Update Order Status (scoped to current tab)
             $order = ProductionOrder::where('employer_id', $employer->id)
                 ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+                ->where('resolution_tab_id', $tabId)
                 ->first();
 
             if ($order) {
                 $order->update(['status' => 'registration_resolution_cancelled']);
             }
 
-            // 2. Update Employees (Only Pending ones get cancelled)
+            // 2. Update Employees (Only Pending ones in this tab get cancelled)
             $employer->employees()
+                ->where('resolution_tab_id', $tabId)
                 ->where('status', 'registration_pending')
                 ->update(['status' => 'registration_cancelled']);
         });
@@ -861,24 +911,29 @@ class RegistrationController extends Controller
     /**
      * Restore an Employer.
      */
-    public function restoreEmployer(Request $request, Employer $employer)
+    public function restoreEmployer(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employers')) {
             abort(403);
         }
 
-        DB::transaction(function () use ($employer) {
-            // 1. Update Order Status
+        $tabId = $this->currentTab->id;
+        DB::transaction(function () use ($employer, $tabId) {
+            // 1. Update Order Status (scoped to current tab)
             $order = ProductionOrder::where('employer_id', $employer->id)
                 ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
+                ->where('resolution_tab_id', $tabId)
                 ->first();
 
             if ($order) {
                 $order->update(['status' => 'registration_resolution']);
             }
 
-            // 2. Update Employees (Cancelled -> Pending)
+            // 2. Update Employees (Cancelled -> Pending, scoped to current tab)
             $employer->employees()
+                ->where('resolution_tab_id', $tabId)
                 ->where('status', 'registration_cancelled')
                 ->update(['status' => 'registration_pending']);
         });
@@ -892,8 +947,10 @@ class RegistrationController extends Controller
     /**
      * Finalize an employee (Save to Database).
      */
-    public function finalize(Request $request, Employee $employee)
+    public function finalize(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -917,8 +974,10 @@ class RegistrationController extends Controller
     /**
      * Cancel an employee (Grey out).
      */
-    public function cancel(Request $request, Employee $employee)
+    public function cancel(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -938,14 +997,17 @@ class RegistrationController extends Controller
     /**
      * Restore an employee (Back to pending).
      */
-    public function restore(Request $request, Employee $employee)
+    public function restore(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
         $employee->update([
             'status' => 'registration_pending',
+            'resolution_tab_id' => $this->currentTab->id,
             'resolution_completed_at' => null
         ]);
 
@@ -962,11 +1024,14 @@ class RegistrationController extends Controller
     /**
      * Fetch Historic Items (Completed > 24h).
      */
-    public function fetchHistory(Request $request, $employerId)
+    public function fetchHistory(Request $request, $resolutionTab, $employerId)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $employer = Employer::findOrFail($employerId);
 
         $employees = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->where('status', 'registration_completed')
             ->where(function($q) {
                  $q->whereNotNull('resolution_completed_at')
@@ -977,18 +1042,20 @@ class RegistrationController extends Controller
 
         $steps = RegistrationStep::registration()->orderBy('order')->get();
 
-        return view('production.registration._employee_list_content', [
+        return view('production.registration._employee_list_content', array_merge([
             'employees' => $employees,
             'steps' => $steps,
             'employer' => $employer
-        ])->with('isHistory', true);
+        ], $this->getTabViewData('registration')))->with('isHistory', true);
     }
 
     /**
      * Soft delete an employee.
      */
-    public function destroy(Request $request, Employee $employee)
+    public function destroy(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1008,8 +1075,10 @@ class RegistrationController extends Controller
     /**
      * Bulk Finalize employees.
      */
-    public function bulkFinalize(Request $request)
+    public function bulkFinalize(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1034,16 +1103,17 @@ class RegistrationController extends Controller
      * Restore state (Undo Finalize).
      * @deprecated Use restore() instead for general restore. Kept for backward compat if needed.
      */
-    public function restoreState(Request $request, Employee $employee)
+    public function restoreState(Request $request, $resolutionTab, Employee $employee)
     {
-        return $this->restore($request, $employee);
+        return $this->restore($request, $resolutionTab, $employee);
     }
 
     /**
      * Display the Import View for Registration Resolution.
      */
-    public function importView(Request $request)
+    public function importView(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         $employers = collect();
         if (auth()->user()->can('view-employers')) {
              $employers = Employer::orderBy('employerNameTh')->get(['id', 'employerNameTh', 'employerNameEn']);
@@ -1056,7 +1126,7 @@ class RegistrationController extends Controller
 
         $request->merge(['target_status' => 'registration_pending']);
 
-        session()->flash('finish_route', route('production.registration.index'));
+        session()->flash('finish_route', route('production.registration.index', ['resolutionTab' => $this->currentTab->id]));
 
         // Hydrate imported employees from session IDs if available (Restoring Preview Feature)
         $sessionImportedEmployees = collect();
@@ -1064,16 +1134,18 @@ class RegistrationController extends Controller
             $sessionImportedEmployees = Employee::whereIn('id', session('imported_employee_ids'))->get();
         }
 
-        return view('employees.import', [
+        return view('employees.import', array_merge([
             'employers' => $employers,
             'production' => null,
-            'back_route' => route('production.registration.index'),
+            'back_route' => route('production.registration.index', ['resolutionTab' => $this->currentTab->id]),
             'sessionImportedEmployees' => $sessionImportedEmployees,
-        ]);
+        ], $this->getTabViewData('registration')));
     }
 
-    public function create(Request $request)
+    public function create(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1085,18 +1157,20 @@ class RegistrationController extends Controller
             $selectedEmployer = \App\Models\Employer::find($request->employer_id);
         }
 
-        return view('production.registration.create', [
+        return view('production.registration.create', array_merge([
             'employers' => $employers,
             'employer' => $selectedEmployer,
-            'formAction' => route('production.registration.store')
-        ]);
+            'formAction' => route('production.registration.store', ['resolutionTab' => $this->currentTab->id])
+        ], $this->getTabViewData('registration')));
     }
 
     /**
      * Store a newly created registration employee.
      */
-    public function store(Request $request)
+    public function store(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1196,6 +1270,7 @@ class RegistrationController extends Controller
 
         // Forced Status
         $validated['status'] = 'registration_pending';
+        $validated['resolution_tab_id'] = $this->currentTab->id;
 
         // Insurance Mapping (Same as EmployeeController)
         $validated['insuranceType'] = $validated['insurance_type'] ?? null;
@@ -1273,25 +1348,28 @@ class RegistrationController extends Controller
 
         Employee::create($validated);
 
-        return redirect()->route('production.registration.operations', ['highlight_employer_id' => $validated['employer_id']])
+        return redirect()->route('production.registration.operations', ['resolutionTab' => $this->currentTab->id, 'highlight_employer_id' => $validated['employer_id']])
                          ->with('success', 'Registration Employee created successfully.');
     }
 
     /**
      * Store a new registration step.
      */
-    public function storeStep(Request $request)
+    public function storeStep(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
         ]);
 
-        $maxOrder = RegistrationStep::registration()->max('order') ?? 0;
+        $maxOrder = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->max('order') ?? 0;
 
         RegistrationStep::create([
             'name' => $validated['name'],
             'order' => $maxOrder + 1,
             'type' => 'registration',
+            'resolution_tab_id' => $this->currentTab->id,
         ]);
 
         return response()->json(['success' => true]);
@@ -1300,8 +1378,9 @@ class RegistrationController extends Controller
     /**
      * Update a step (rename/color).
      */
-    public function updateStep(Request $request, RegistrationStep $step)
+    public function updateStep(Request $request, $resolutionTab, RegistrationStep $step)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
         ]);
@@ -1316,8 +1395,9 @@ class RegistrationController extends Controller
     /**
      * Delete a step.
      */
-    public function destroyStep(RegistrationStep $step)
+    public function destroyStep($resolutionTab, RegistrationStep $step)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         $step->delete();
         return response()->json(['success' => true]);
     }
@@ -1325,8 +1405,9 @@ class RegistrationController extends Controller
     /**
      * Reorder steps.
      */
-    public function reorderSteps(Request $request)
+    public function reorderSteps(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         $request->validate([
             'order' => 'required|array',
             'order.*' => 'exists:registration_steps,id',
@@ -1368,8 +1449,10 @@ class RegistrationController extends Controller
     /**
      * Update progress (Toggle a step for an employee).
      */
-    public function updateProgress(Request $request, $employeeId)
+    public function updateProgress(Request $request, $resolutionTab, $employeeId)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1559,8 +1642,10 @@ class RegistrationController extends Controller
     /**
      * Store a custom ad-hoc field for an employee.
      */
-    public function storeCustomField(Request $request, Employee $employee)
+    public function storeCustomField(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1610,8 +1695,10 @@ class RegistrationController extends Controller
     /**
      * Store a custom field for an EMPLOYER.
      */
-    public function storeEmployerCustomField(Request $request, Employer $employer)
+    public function storeEmployerCustomField(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) { // Assuming same permission
             abort(403);
         }
@@ -1659,8 +1746,10 @@ class RegistrationController extends Controller
     /**
      * Update employer registration resolution status and note.
      */
-    public function updateResolutionStatus(Request $request, Employer $employer)
+    public function updateResolutionStatus(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) { // Assuming 'edit-employees' or similar is enough
             abort(403);
         }
@@ -1686,8 +1775,10 @@ class RegistrationController extends Controller
     /**
      * Update employer registration custom field.
      */
-    public function updateEmployerCustomField(Request $request, ProductionCustomField $field)
+    public function updateEmployerCustomField(Request $request, $resolutionTab, ProductionCustomField $field)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1751,8 +1842,9 @@ class RegistrationController extends Controller
         return back()->with('success', 'Field updated successfully.');
     }
 
-    public function destroyCustomField(EmployeeCustomField $field)
+    public function destroyCustomField($resolutionTab, EmployeeCustomField $field)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1764,8 +1856,9 @@ class RegistrationController extends Controller
         return back()->with('success', 'Field removed.');
     }
 
-    public function destroyEmployerCustomField(ProductionCustomField $field)
+    public function destroyEmployerCustomField($resolutionTab, ProductionCustomField $field)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1927,8 +2020,10 @@ class RegistrationController extends Controller
     /**
      * Update Biometrics Collection Status and File.
      */
-    public function updateBiometrics(Request $request, Employee $employee)
+    public function updateBiometrics(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1968,8 +2063,10 @@ class RegistrationController extends Controller
     /**
      * Toggle Biometrics Collected Status (without file).
      */
-    public function toggleBiometrics(Request $request, Employee $employee)
+    public function toggleBiometrics(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -2104,8 +2201,10 @@ class RegistrationController extends Controller
     /**
      * API: Update Appointment Date & Location
      */
-    public function updateAppointment(Request $request, Employee $employee)
+    public function updateAppointment(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -2148,8 +2247,10 @@ class RegistrationController extends Controller
     /**
      * API: Toggle Appointment Complete
      */
-    public function toggleAppointmentComplete(Request $request, Employee $employee)
+    public function toggleAppointmentComplete(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -2166,8 +2267,10 @@ class RegistrationController extends Controller
     /**
      * API: Update Resolution Auto-Settings
      */
-    public function updateResolutionSettings(Request $request)
+    public function updateResolutionSettings(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('manage-settings')) {
             abort(403);
         }
@@ -2201,8 +2304,10 @@ class RegistrationController extends Controller
     /**
      * API: Update Notification Settings
      */
-    public function updateNotificationSettings(Request $request)
+    public function updateNotificationSettings(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('manage-settings')) {
             abort(403);
         }
@@ -2222,15 +2327,18 @@ class RegistrationController extends Controller
     /**
      * API: Get Calendar Data (Counts per day)
      */
-    public function getCalendarData(Request $request)
+    public function getCalendarData(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $month = $request->input('month', now()->month);
         $year = $request->input('year', now()->year);
 
         $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $query = Employee::query();
+        $query = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
@@ -2251,12 +2359,15 @@ class RegistrationController extends Controller
     /**
      * API: Get Appointments for a specific Date (Modal list -> Rendered HTML)
      */
-    public function getAppointmentsByDate(Request $request)
+    public function getAppointmentsByDate(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $request->validate(['date' => 'required|date']);
         $date = Carbon::parse($request->date);
 
-        $query = Employee::query();
+        $query = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
@@ -2278,10 +2389,13 @@ class RegistrationController extends Controller
     /**
      * Fetch Trash (Deleted Employees with Registration Status)
      */
-    public function fetchTrash(Request $request)
+    public function fetchTrash(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         $query = Employee::onlyTrashed()
             ->with(['employer' => fn($q) => $q->withTrashed(), 'registrationSteps'])
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
             ->latest('deleted_at');
 
@@ -2316,8 +2430,10 @@ class RegistrationController extends Controller
     /**
      * Restore Trash
      */
-    public function restoreTrash(Request $request, $id)
+    public function restoreTrash(Request $request, $resolutionTab, $id)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -2339,16 +2455,20 @@ class RegistrationController extends Controller
      */
     private function getEmployeeCardHtml(Employee $employee)
     {
-        $steps = RegistrationStep::registration()->orderBy('order')->get();
-        return view('production.registration._employee_card', [
+        $steps = RegistrationStep::registration()
+            ->where('resolution_tab_id', $this->currentTab->id)
+            ->orderBy('order')->get();
+        return view('production.registration._employee_card', array_merge([
             'employee' => $employee,
             'steps' => $steps,
             'isHistory' => false
-        ])->render();
+        ], $this->getTabViewData('registration')))->render();
     }
 
-    public function updateRemarks(Request $request, Employee $employee)
+    public function updateRemarks(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'registration');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -2366,8 +2486,9 @@ class RegistrationController extends Controller
         ]);
     }
 
-    public function toggleOperator(Request $request, $employeeId)
+    public function toggleOperator(Request $request, $resolutionTab, $employeeId)
     {
+        $this->resolveTab($resolutionTab, 'registration');
         $employee = Employee::findOrFail($employeeId);
 
         // Check for specific user assignment
@@ -2418,6 +2539,53 @@ class RegistrationController extends Controller
             'success' => true,
             'message' => $message,
             'html' => $this->getEmployeeCardHtml($employee)
+        ]);
+    }
+
+    /**
+     * Override DailyCheckTrait to accept $resolutionTab parameter.
+     */
+    public function toggleDailyCheck(Request $request, $resolutionTab, Employee $employee)
+    {
+        $this->resolveTab($resolutionTab, 'registration');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $employee->daily_check_enabled = !$employee->daily_check_enabled;
+        $employee->save();
+
+        return response()->json([
+            'success' => true,
+            'enabled' => $employee->daily_check_enabled,
+            'message' => $employee->daily_check_enabled ? 'Daily check enabled' : 'Daily check disabled',
+            'pending' => $employee->is_daily_check_pending
+        ]);
+    }
+
+    /**
+     * Override DailyCheckTrait to accept $resolutionTab parameter.
+     */
+    public function checkDaily(Request $request, $resolutionTab, Employee $employee)
+    {
+        $this->resolveTab($resolutionTab, 'registration');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        if (!$employee->daily_check_enabled) {
+            return response()->json(['success' => false, 'message' => 'Daily check is disabled for this employee.'], 400);
+        }
+
+        $employee->last_daily_checked_at = now();
+        $employee->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checked successfully',
+            'last_checked_at' => $employee->last_daily_checked_at->format('d/m/Y H:i')
         ]);
     }
 }

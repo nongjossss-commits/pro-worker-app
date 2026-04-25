@@ -87,8 +87,8 @@
                                 <a href="{{ $wf->url }}"
                                    class="badge {{ $badgeClass }} text-decoration-none ms-1 border border-dark shadow-sm"
                                    style="{{ $style }}"
-                                   title="{{ $wf->status_label }}: {{ $wf->name }}">
-                                   <i class="bi {{ $icon }} me-1"></i>{{ $wf->status_label }}
+                                   title="@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}">
+                                   <i class="bi {{ $icon }} me-1"></i>{{ $wf->status_label ?: $wf->name }}
                                 </a>
                             @endforeach
                         @endif

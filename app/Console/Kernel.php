@@ -31,6 +31,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:prune-soft-deletes')->daily();
         $schedule->command('app:process-employee-transfers')->hourly();
         $schedule->command('app:update-resolution-data')->hourly();
+        $schedule->command('resolution-tabs:purge')->daily()->timezone('Asia/Bangkok');
     }
 
     /**

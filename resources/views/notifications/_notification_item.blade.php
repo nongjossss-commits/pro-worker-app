@@ -98,9 +98,10 @@
                         }
                     @endphp
                     <a href="{{ $wf->url }}"
-                       class="badge {{ $badgeClass }} text-decoration-none shadow-sm border border-dark fs-6 text-truncate"
-                       style="max-width: 90%; {{ $style }}">
-                       <i class="bi {{ $icon }} me-1"></i> {{ $wf->status_label }}: {{ $wf->name }}
+                       class="badge {{ $badgeClass }} text-decoration-none shadow-sm border border-dark resolution-badge"
+                       title="@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}"
+                       style="{{ $style }}">
+                       <i class="bi {{ $icon }}"></i><span class="rb-text">@if(!empty($wf->status_label)){{ $wf->status_label }}: @endif{{ $wf->name }}</span>
                     </a>
                 @endforeach
              </div>

@@ -19,10 +19,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\AddressFilterTrait;
 use App\Traits\DailyCheckTrait;
+use App\Traits\HasResolutionTab;
 
 class RenewalController extends Controller
 {
-    use AddressFilterTrait, DailyCheckTrait;
+    use AddressFilterTrait, DailyCheckTrait, HasResolutionTab;
 
     public function __construct()
     {
@@ -35,8 +36,10 @@ class RenewalController extends Controller
     /**
      * Update employer renewal resolution note (inline).
      */
-    public function updateResolutionNote(Request $request, Employer $employer)
+    public function updateResolutionNote(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -50,13 +53,16 @@ class RenewalController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function dashboard(Request $request)
+    public function dashboard(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $days = \App\Models\NotificationSetting::where('notification_type', 'renewal_appointment')->first()->days_before_expiry ?? 3;
         $start = \Carbon\Carbon::now()->startOfDay();
         $end = \Carbon\Carbon::now()->addDays($days)->endOfDay();
 
         $query = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['renewal_pending', 'renewal_completed'])
             ->whereNotNull('appointment_date')
             ->whereBetween('appointment_date', [$start, $end])
@@ -69,17 +75,20 @@ class RenewalController extends Controller
 
         $upcomingAppointments = $query->orderBy('appointment_date', 'asc')->get();
 
-        return view('production.renewal.dashboard', compact('upcomingAppointments'));
+        return view('production.renewal.dashboard', array_merge(compact('upcomingAppointments'), $this->getTabViewData('renewal')));
     }
 
-    public function index(Request $request)
+    public function index(Request $request, $resolutionTab)
     {
-        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
         $lastStepId = $steps->sortByDesc('order')->first()?->id;
 
         // --- 1. Global Stats Query (No Fetching All Models) ---
         $statsQuery = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
 
         if (auth()->user()->can('manage-tickets')) {
@@ -124,6 +133,17 @@ class RenewalController extends Controller
                  $totalEmployeesQuery->where('status', 'renewal_completed');
             } elseif ($filter === 'cancelled') {
                  $totalEmployeesQuery->where('status', 'renewal_cancelled');
+            } elseif ($filter === 'total_appointments') {
+                 $totalEmployeesQuery->whereNotNull('appointment_date');
+            } elseif ($filter === 'appointment_not_scheduled') {
+                 $totalEmployeesQuery->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                       ->whereNull('appointment_date');
+            } elseif ($filter === 'appointment_pending') {
+                 $totalEmployeesQuery->whereNotNull('appointment_date')
+                       ->whereNull('appointment_completed_at');
+            } elseif ($filter === 'appointment_completed') {
+                 $totalEmployeesQuery->whereNotNull('appointment_date')
+                       ->whereNotNull('appointment_completed_at');
             } elseif ($filter === 'pending_daily_check') {
                  $totalEmployeesQuery->where('daily_check_enabled', true)
                    ->where(function ($sub) {
@@ -156,21 +176,20 @@ class RenewalController extends Controller
         $stepStatsQuery = (clone $statsQuery)->where('status', '!=', 'renewal_cancelled');
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
-        // Total Appointments
-        $appointmentsQuery = Employee::query()
-            ->whereIn('status', ['renewal_pending', 'renewal_completed']);
-        if (auth()->user()->can('manage-tickets')) {
-            $appointmentsQuery->withoutGlobalScope('employerTenancy');
-        }
+        // Total Appointments (use same base query with search/operator filters)
+        $appointmentsBaseQuery = clone $statsQuery;
 
-        $totalAppointmentsPending = (clone $appointmentsQuery)
+        $totalNotScheduled = (clone $appointmentsBaseQuery)
+            ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+            ->whereNull('appointment_date')
+            ->count();
 
+        $totalAppointmentsPending = (clone $appointmentsBaseQuery)
             ->whereNotNull('appointment_date')
             ->whereNull('appointment_completed_at')
             ->count();
 
-        $totalAppointmentsCompleted = (clone $appointmentsQuery)
-
+        $totalAppointmentsCompleted = (clone $appointmentsBaseQuery)
             ->whereNotNull('appointment_date')
             ->whereNotNull('appointment_completed_at')
             ->count();
@@ -202,7 +221,8 @@ class RenewalController extends Controller
 
         // Always scope to employers who have relevant employees for this menu
         $employerQuery->whereHas('employees', function($q) {
-             $q->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
+             $q->where('resolution_tab_id', $this->currentTab->id)
+               ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
         });
 
         // Apply Search to Employer Query
@@ -246,19 +266,22 @@ class RenewalController extends Controller
             });
         }
 
-        // Eager load Production Orders to avoid N+1
-        $employerQuery->with(['productionOrders' => function($q) {
-             $q->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled']);
+        // Eager load Production Orders to avoid N+1 (scoped to current tab)
+        $tabId = $this->currentTab->id;
+        $employerQuery->with(['productionOrders' => function($q) use ($tabId) {
+             $q->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])
+               ->where('resolution_tab_id', $tabId);
         }]);
 
-        // Sort and Paginate
+        // Sort and Paginate — cancelled orders last (scoped to current tab)
         $employerQuery->orderByRaw("(
             SELECT CASE WHEN status = 'renewal_resolution_cancelled' THEN 1 ELSE 0 END
             FROM production_orders
             WHERE production_orders.employer_id = employers.id
             AND production_orders.status IN ('renewal_resolution', 'renewal_resolution_cancelled')
+            AND production_orders.resolution_tab_id = ?
             LIMIT 1
-        ) ASC");
+        ) ASC", [$tabId]);
 
         $perPage = $request->input('per_page', 20);
         $perPage = in_array((int)$perPage, [20, 25, 50, 100]) ? (int)$perPage : 20;
@@ -280,7 +303,10 @@ class RenewalController extends Controller
         $employers = $employerQuery->paginate($perPage)->withQueryString();
 
         $cancelledEmployersQuery = Employer::whereHas('productionOrders', function($q) {
-                $q->where('status', 'renewal_resolution_cancelled');
+                $q->where('status', 'renewal_resolution_cancelled')
+                  ->where('resolution_tab_id', $this->currentTab->id);
+            })->whereHas('employees', function($q) {
+                $q->where('resolution_tab_id', $this->currentTab->id);
             });
         if (auth()->user()->can('manage-tickets')) {
             $cancelledEmployersQuery->withoutGlobalScope('employerTenancy');
@@ -315,15 +341,20 @@ class RenewalController extends Controller
             $employer->dailyCheckPendingCount = 0;
         }
 
-        $currentExpiryConfig = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
+        // Per-tab target expiry config (fallback to legacy global key)
+        $currentExpiryConfig = SystemConfig::where('key', 'renewal_target_expiry_date_' . $this->currentTab->id)->value('value')
+            ?? SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
 
-        return view('production.renewal.index', compact(
+        return view('production.renewal.index', array_merge(compact(
             'totalEmployees',
             'totalCancelled',
             'totalSaved',
             'totalEmployers',
             'cancelledEmployersCount',
             'notStartedCount',
+            'totalNotScheduled',
+            'totalAppointmentsPending',
+            'totalAppointmentsCompleted',
             'totalDailyCheckPending',
             'steps',
             'stepStats',
@@ -334,7 +365,7 @@ class RenewalController extends Controller
             'resolutionSettings',
             'activeOperators',
             'allUsers'
-        ));
+        ), $this->getTabViewData('renewal')));
     }
 
     private function getGlobalStepStats($baseQuery, $steps)
@@ -417,8 +448,10 @@ class RenewalController extends Controller
     private function applyFilterToEmployerQuery($query, $filter, $stepOneId)
     {
         if ($filter === 'cancelled_employer') {
-            $query->whereHas('productionOrders', function($q) {
-                $q->where('status', 'renewal_resolution_cancelled');
+            $tabId = $this->currentTab->id;
+            $query->whereHas('productionOrders', function($q) use ($tabId) {
+                $q->where('status', 'renewal_resolution_cancelled')
+                  ->where('resolution_tab_id', $tabId);
             });
             return;
         }
@@ -433,6 +466,17 @@ class RenewalController extends Controller
                  $q->where('status', 'renewal_completed');
             } elseif ($filter === 'cancelled') {
                  $q->where('status', 'renewal_cancelled');
+            } elseif ($filter === 'total_appointments') {
+                 $q->whereNotNull('appointment_date');
+            } elseif ($filter === 'appointment_not_scheduled') {
+                 $q->whereIn('status', ['renewal_pending', 'renewal_completed'])
+                   ->whereNull('appointment_date');
+            } elseif ($filter === 'appointment_pending') {
+                 $q->whereNotNull('appointment_date')
+                   ->whereNull('appointment_completed_at');
+            } elseif ($filter === 'appointment_completed') {
+                 $q->whereNotNull('appointment_date')
+                   ->whereNotNull('appointment_completed_at');
             } elseif ($filter === 'pending_daily_check') {
                  $q
                    ->where('daily_check_enabled', true)
@@ -457,8 +501,10 @@ class RenewalController extends Controller
     /**
      * AJAX: Fetch stats for a batch of employers (to avoid N+1 on initial load).
      */
-    public function batchStats(Request $request)
+    public function batchStats(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $request->validate([
             'employer_ids' => 'required|array',
             'employer_ids.*' => 'exists:employers,id',
@@ -470,7 +516,7 @@ class RenewalController extends Controller
 
         // Fetch visible employers to apply logic
         $employers = Employer::with(['jobOwner', 'addresses'])->whereIn('id', $employerIds)->get();
-        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         $results = [];
@@ -517,7 +563,8 @@ class RenewalController extends Controller
             }
 
             // Base status filter
-            $query->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
+            $query->where('resolution_tab_id', $this->currentTab->id)
+                  ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
 
             // Operator Filter
             if ($request->has('operator_filter') && $request->operator_filter) {
@@ -614,18 +661,21 @@ class RenewalController extends Controller
     /**
      * AJAX Method to fetch employee list for an employer.
      */
-    public function fetchEmployees(Request $request, $employerId)
+    public function fetchEmployees(Request $request, $resolutionTab, $employerId)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $employerQuery = Employer::query();
         if (auth()->user()->can('manage-tickets')) {
             $employerQuery->withoutGlobalScope('employerTenancy');
         }
         $employer = $employerQuery->withTrashed()->findOrFail($employerId);
 
-        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
-        $query = $employer->employees();
+        $query = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id);
 
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
@@ -731,18 +781,20 @@ class RenewalController extends Controller
             $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
         }
 
-        return view('production.renewal._employee_list_content', [
+        return view('production.renewal._employee_list_content', array_merge([
             'employees' => $employees,
             'employer' => $employer,
             'steps' => $steps
-        ]);
+        ], $this->getTabViewData('renewal')));
     }
 
     /**
      * Import View
      */
-    public function importView(Request $request)
+    public function importView(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $employers = collect();
         if (auth()->user()->can('view-employers')) {
              $employers = Employer::orderBy('employerNameTh')->get(['id', 'employerNameTh', 'employerNameEn']);
@@ -754,7 +806,7 @@ class RenewalController extends Controller
         }
 
         $request->merge(['target_status' => 'renewal_pending']);
-        session()->flash('finish_route', route('production.renewal.index'));
+        session()->flash('finish_route', route('production.renewal.index', ['resolutionTab' => $this->currentTab->id]));
 
         // Hydrate imported employees from session IDs if available (Restoring Preview Feature)
         $sessionImportedEmployees = collect();
@@ -765,7 +817,7 @@ class RenewalController extends Controller
         return view('employees.import', [
             'employers' => $employers,
             'production' => null,
-            'back_route' => route('production.renewal.index'),
+            'back_route' => route('production.renewal.index', ['resolutionTab' => $this->currentTab->id]),
             'sessionImportedEmployees' => $sessionImportedEmployees,
         ]);
     }
@@ -773,8 +825,10 @@ class RenewalController extends Controller
     /**
      * Create View
      */
-    public function create(Request $request)
+    public function create(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -786,28 +840,31 @@ class RenewalController extends Controller
             $selectedEmployer = \App\Models\Employer::find($request->employer_id);
         }
 
-        return view('production.renewal.create', [
+        return view('production.renewal.create', array_merge([
             'employers' => $employers,
             'employer' => $selectedEmployer,
-            'formAction' => route('production.renewal.store')
-        ]);
+            'formAction' => route('production.renewal.store', ['resolutionTab' => $this->currentTab->id])
+        ], $this->getTabViewData('renewal')));
     }
 
     /**
      * Store a new renewal step.
      */
-    public function storeStep(Request $request)
+    public function storeStep(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
         ]);
 
-        $maxOrder = RegistrationStep::renewal()->max('order') ?? 0;
+        $maxOrder = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->max('order') ?? 0;
 
         RegistrationStep::create([
             'name' => $validated['name'],
             'order' => $maxOrder + 1,
             'type' => 'renewal',
+            'resolution_tab_id' => $this->currentTab->id,
         ]);
 
         return response()->json(['success' => true]);
@@ -816,8 +873,10 @@ class RenewalController extends Controller
     /**
      * Update a step (rename/color).
      */
-    public function updateStep(Request $request, RegistrationStep $step)
+    public function updateStep(Request $request, $resolutionTab, RegistrationStep $step)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
         ]);
@@ -835,22 +894,28 @@ class RenewalController extends Controller
      */
 
 
-    public function loadFinancialTab(Request $request, Employer $employer)
+    public function loadFinancialTab(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         // Permission Check
         if (!auth()->user()->can('view-finance') && !auth()->user()->can('edit-employees')) {
              abort(403);
         }
 
-        // Finance Order Logic
-        $financeOrder = $employer->productionOrders()->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])->first();
+        // Finance Order Logic (scoped per-tab)
+        $financeOrder = $employer->productionOrders()
+            ->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])
+            ->where('resolution_tab_id', $this->currentTab->id)
+            ->first();
 
         if (!$financeOrder) {
             $financeOrder = ProductionOrder::create([
                 'employer_id' => $employer->id,
+                'resolution_tab_id' => $this->currentTab->id,
                 'status'      => 'renewal_resolution',
                 'type'         => 'employer',
-                'project_name' => 'Renewal Resolution - ' . $employer->employerNameTh,
+                'project_name' => 'Renewal Resolution (' . $this->currentTab->name . ') - ' . $employer->employerNameTh,
                 'financial_data' => []
             ]);
         }
@@ -867,6 +932,7 @@ class RenewalController extends Controller
 
         // Fetch ALL Active Employees for this employer (ignoring search)
         $query = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
@@ -884,8 +950,10 @@ class RenewalController extends Controller
             'employees' => $employees
         ]);
     }
-    public function reorderSteps(Request $request)
+    public function reorderSteps(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $request->validate([
             'order' => 'required|array',
             'order.*' => 'exists:registration_steps,id',
@@ -928,8 +996,10 @@ class RenewalController extends Controller
     /**
      * Delete a step.
      */
-    public function destroyStep(RegistrationStep $step)
+    public function destroyStep($resolutionTab, RegistrationStep $step)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $step->delete();
         return response()->json(['success' => true]);
     }
@@ -937,8 +1007,10 @@ class RenewalController extends Controller
     /**
      * Store a newly created renewal employee.
      */
-    public function store(Request $request)
+    public function store(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1038,6 +1110,7 @@ class RenewalController extends Controller
 
         // Forced Status
         $validated['status'] = 'renewal_pending';
+        $validated['resolution_tab_id'] = $this->currentTab->id;
 
         // Insurance Mapping (Same as EmployeeController)
         $validated['insuranceType'] = $validated['insurance_type'] ?? null;
@@ -1115,71 +1188,92 @@ class RenewalController extends Controller
 
         Employee::create($validated);
 
-        return redirect()->route('production.renewal.operations', ['highlight_employer_id' => $validated['employer_id']])
+        return redirect()->route('production.renewal.operations', ['resolutionTab' => $this->currentTab->id, 'highlight_employer_id' => $validated['employer_id']])
                          ->with('success', 'Renewal Employee created successfully.');
     }
 
     /**
      * Save Configuration & Auto-Import by Expiry
      */
-    public function configureExpiry(Request $request)
+    public function configureExpiry(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $request->validate([
             'target_expiry_date' => 'required|date',
         ]);
 
         $date = $request->target_expiry_date;
+        $tabId = $this->currentTab->id;
 
-        // 1. Save Config
+        // 1. Save Config (per-tab)
         SystemConfig::updateOrCreate(
-            ['key' => 'renewal_target_expiry_date'],
+            ['key' => 'renewal_target_expiry_date_' . $tabId],
             ['value' => $date]
         );
 
-        // 2. Sync Employees
-        // Find employees with matching expiry date
-        // Logic: Expiry matches AND (MOU Group is NOT 'MOU' or similar exclusions if needed)
-        // User text: "whose Work Permit OR Visa expires on this date (excluding MOU types)"
+        // 2. Sync Employees — assign/move to this tab
+        $newlyAdded = 0;
+        $reassigned = 0;
 
-        $count = 0;
-        $updated = 0;
-
-        DB::transaction(function() use ($date, &$count, &$updated) {
-            $query = Employee::where(function($q) use ($date) {
+        DB::transaction(function() use ($date, $tabId, &$newlyAdded, &$reassigned) {
+            // Find all employees with matching expiry, excluding MOU types
+            $baseQuery = Employee::where(function($q) use ($date) {
                 $q->whereDate('workPermitExpiryDate', $date)
                   ->orWhereDate('visaExpiryDate', $date);
             })
-            // Exclude MOU types (heuristic based on text "excluding MOU types")
             ->where(function($q) {
                 $q->whereNull('workPermitMOUGroup')
                   ->orWhere('workPermitMOUGroup', 'not like', '%MOU%');
-            })
-            // Only touch active employees or those not already in a specific resolution process?
-            // "If future employees... non-renewal resolution... system should check 100%"
-            // We should probably only pick up 'active' or null status, OR override?
-            // Safer to only pick up 'active' or 'pending' or null.
-            ->whereNotIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled', 'registration_pending', 'registration_completed']);
+            });
 
-            $employees = $query->get();
-            $count = $employees->count();
+            // Group A: Newly added (not currently in any resolution process)
+            $newEmployees = (clone $baseQuery)
+                ->whereNotIn('status', [
+                    'renewal_pending', 'renewal_completed', 'renewal_cancelled',
+                    'registration_pending', 'registration_completed', 'registration_cancelled'
+                ])->pluck('id');
+            $newlyAdded = $newEmployees->count();
 
-            // Bulk Update
-            if ($count > 0) {
-                Employee::whereIn('id', $employees->pluck('id'))
-                    ->update(['status' => 'renewal_pending']);
-                $updated = $count;
+            if ($newlyAdded > 0) {
+                Employee::whereIn('id', $newEmployees)->update([
+                    'status' => 'renewal_pending',
+                    'resolution_tab_id' => $tabId,
+                ]);
+            }
+
+            // Group B: Reassigned (currently renewal_pending in OTHER tabs — move them here)
+            // Skip completed/cancelled to preserve finalized work
+            $reassignEmployees = (clone $baseQuery)
+                ->where('status', 'renewal_pending')
+                ->where(function($q) use ($tabId) {
+                    $q->whereNull('resolution_tab_id')
+                      ->orWhere('resolution_tab_id', '!=', $tabId);
+                })
+                ->pluck('id');
+            $reassigned = $reassignEmployees->count();
+
+            if ($reassigned > 0) {
+                Employee::whereIn('id', $reassignEmployees)->update([
+                    'resolution_tab_id' => $tabId,
+                ]);
             }
         });
 
-        return redirect()->route('production.renewal.index')
-            ->with('success', "Configuration saved. {$updated} employees imported to Renewal list.");
+        $total = $newlyAdded + $reassigned;
+        $msg = "บันทึกการตั้งค่าเรียบร้อย — นำเข้าลูกจ้าง {$total} ราย (ใหม่ {$newlyAdded}, ย้ายจาก tab อื่น {$reassigned})";
+
+        return redirect()->route('production.renewal.index', ['resolutionTab' => $this->currentTab->id])
+            ->with('success', $msg);
     }
 
     /**
      * API: Update Appointment Date & Location
      */
-    public function updateAppointment(Request $request, Employee $employee)
+    public function updateAppointment(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1222,8 +1316,10 @@ class RenewalController extends Controller
     /**
      * API: Toggle Appointment Complete
      */
-    public function toggleAppointmentComplete(Request $request, Employee $employee)
+    public function toggleAppointmentComplete(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1240,8 +1336,10 @@ class RenewalController extends Controller
     /**
      * API: Update Notification Settings
      */
-    public function updateNotificationSettings(Request $request)
+    public function updateNotificationSettings(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('manage-settings')) {
             abort(403);
         }
@@ -1261,8 +1359,10 @@ class RenewalController extends Controller
     /**
      * API: Get Calendar Data (Counts per day)
      */
-    public function getCalendarData(Request $request)
+    public function getCalendarData(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $month = $request->input('month', now()->month);
         $year = $request->input('year', now()->year);
 
@@ -1270,6 +1370,7 @@ class RenewalController extends Controller
         $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
         $query = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['renewal_pending', 'renewal_completed']);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
@@ -1291,12 +1392,15 @@ class RenewalController extends Controller
     /**
      * API: Get Appointments for a specific Date (Modal list -> Rendered HTML)
      */
-    public function getAppointmentsByDate(Request $request)
+    public function getAppointmentsByDate(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $request->validate(['date' => 'required|date']);
         $date = Carbon::parse($request->date);
 
         $query = Employee::query()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['renewal_pending', 'renewal_completed']);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
@@ -1318,8 +1422,10 @@ class RenewalController extends Controller
     /**
      * API: Update Resolution Auto-Settings
      */
-    public function updateResolutionSettings(Request $request)
+    public function updateResolutionSettings(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('manage-settings')) {
             abort(403);
         }
@@ -1355,8 +1461,10 @@ class RenewalController extends Controller
     /**
      * Update progress (Toggle a step for an employee).
      */
-    public function updateProgress(Request $request, $employeeId)
+    public function updateProgress(Request $request, $resolutionTab, $employeeId)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1521,8 +1629,10 @@ class RenewalController extends Controller
         }
     }
 
-    public function finalize(Request $request, Employee $employee)
+    public function finalize(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) abort(403);
         $employee->update([
             'status' => 'renewal_completed',
@@ -1537,8 +1647,10 @@ class RenewalController extends Controller
         return back()->with('success', 'Employee saved.');
     }
 
-    public function cancel(Request $request, Employee $employee)
+    public function cancel(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) abort(403);
         $employee->update(['status' => 'renewal_cancelled']);
         if ($request->ajax()) {
@@ -1550,11 +1662,14 @@ class RenewalController extends Controller
         return back()->with('success', 'Employee cancelled.');
     }
 
-    public function restore(Request $request, Employee $employee)
+    public function restore(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) abort(403);
         $employee->update([
             'status' => 'renewal_pending',
+            'resolution_tab_id' => $this->currentTab->id,
             'resolution_completed_at' => null
         ]);
         if ($request->ajax()) {
@@ -1569,11 +1684,14 @@ class RenewalController extends Controller
     /**
      * Fetch Historic Items (Completed > 24h).
      */
-    public function fetchHistory(Request $request, $employerId)
+    public function fetchHistory(Request $request, $resolutionTab, $employerId)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $employer = Employer::findOrFail($employerId);
 
         $employees = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->where('status', 'renewal_completed')
             ->where(function($q) {
                  $q->whereNotNull('resolution_completed_at')
@@ -1584,15 +1702,17 @@ class RenewalController extends Controller
 
         $steps = RegistrationStep::renewal()->orderBy('order')->get();
 
-        return view('production.renewal._employee_list_content', [
+        return view('production.renewal._employee_list_content', array_merge([
             'employees' => $employees,
             'employer' => $employer,
             'steps' => $steps
-        ])->with('isHistory', true);
+        ], $this->getTabViewData('renewal')))->with('isHistory', true);
     }
 
-    public function destroy(Request $request, Employee $employee)
+    public function destroy(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) abort(403);
         $employee->delete();
         if ($request->ajax()) {
@@ -1601,15 +1721,22 @@ class RenewalController extends Controller
         return back()->with('success', 'Employee deleted.');
     }
 
-    public function cancelEmployer(Request $request, Employer $employer)
+    public function cancelEmployer(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employers')) abort(403);
-        DB::transaction(function () use ($employer) {
+        $tabId = $this->currentTab->id;
+        DB::transaction(function () use ($employer, $tabId) {
+            // Scope order update to current tab
             ProductionOrder::where('employer_id', $employer->id)
                 ->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])
+                ->where('resolution_tab_id', $tabId)
                 ->update(['status' => 'renewal_resolution_cancelled']);
 
+            // Scope employee updates to current tab
             $employer->employees()
+                ->where('resolution_tab_id', $tabId)
                 ->where('status', 'renewal_pending')
                 ->update(['status' => 'renewal_cancelled']);
         });
@@ -1617,15 +1744,22 @@ class RenewalController extends Controller
         return back()->with('success', 'Employer renewal cancelled.');
     }
 
-    public function restoreEmployer(Request $request, Employer $employer)
+    public function restoreEmployer(Request $request, $resolutionTab, Employer $employer)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employers')) abort(403);
-        DB::transaction(function () use ($employer) {
+        $tabId = $this->currentTab->id;
+        DB::transaction(function () use ($employer, $tabId) {
+            // Scope order update to current tab
             ProductionOrder::where('employer_id', $employer->id)
                 ->whereIn('status', ['renewal_resolution', 'renewal_resolution_cancelled'])
+                ->where('resolution_tab_id', $tabId)
                 ->update(['status' => 'renewal_resolution']);
 
+            // Scope employee updates to current tab
             $employer->employees()
+                ->where('resolution_tab_id', $tabId)
                 ->where('status', 'renewal_cancelled')
                 ->update(['status' => 'renewal_pending']);
         });
@@ -1728,10 +1862,13 @@ class RenewalController extends Controller
     /**
      * Fetch Trash
      */
-    public function fetchTrash(Request $request)
+    public function fetchTrash(Request $request, $resolutionTab)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $query = Employee::onlyTrashed()
             ->with(['employer' => fn($q) => $q->withTrashed(), 'registrationSteps'])
+            ->where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
             ->latest('deleted_at');
 
@@ -1765,8 +1902,10 @@ class RenewalController extends Controller
     /**
      * Restore Trash
      */
-    public function restoreTrash(Request $request, $id)
+    public function restoreTrash(Request $request, $resolutionTab, $id)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1787,17 +1926,21 @@ class RenewalController extends Controller
      */
     private function getEmployeeCardHtml(Employee $employee)
     {
-        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+        $steps = RegistrationStep::renewal()
+            ->where('resolution_tab_id', $this->currentTab->id)
+            ->orderBy('order')->get();
         // Uses the shared partial but with renewal steps
-        return view('production.registration._employee_card', [
+        return view('production.registration._employee_card', array_merge([
             'employee' => $employee,
             'steps' => $steps,
             'isHistory' => false
-        ])->render();
+        ], $this->getTabViewData('renewal')))->render();
     }
 
-    public function updateRemarks(Request $request, Employee $employee)
+    public function updateRemarks(Request $request, $resolutionTab, Employee $employee)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
@@ -1815,8 +1958,10 @@ class RenewalController extends Controller
         ]);
     }
 
-    public function toggleOperator(Request $request, $employeeId)
+    public function toggleOperator(Request $request, $resolutionTab, $employeeId)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $employee = Employee::findOrFail($employeeId);
 
         if ($request->has('operator_id') || $request->has('custom_operator_name')) {
@@ -1865,8 +2010,10 @@ class RenewalController extends Controller
         ]);
     }
 
-    public function updateInsurance(Request $request, $employeeId)
+    public function updateInsurance(Request $request, $resolutionTab, $employeeId)
     {
+        $this->resolveTab($resolutionTab, 'renewal');
+
         $employee = Employee::findOrFail($employeeId);
 
         if (!auth()->user()->can('edit-employees')) {
@@ -1912,6 +2059,53 @@ class RenewalController extends Controller
             'success' => true,
             'message' => 'Insurance updated.',
             'html' => $this->getEmployeeCardHtml($employee)
+        ]);
+    }
+
+    /**
+     * Override DailyCheckTrait to accept $resolutionTab parameter.
+     */
+    public function toggleDailyCheck(Request $request, $resolutionTab, Employee $employee)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $employee->daily_check_enabled = !$employee->daily_check_enabled;
+        $employee->save();
+
+        return response()->json([
+            'success' => true,
+            'enabled' => $employee->daily_check_enabled,
+            'message' => $employee->daily_check_enabled ? 'Daily check enabled' : 'Daily check disabled',
+            'pending' => $employee->is_daily_check_pending
+        ]);
+    }
+
+    /**
+     * Override DailyCheckTrait to accept $resolutionTab parameter.
+     */
+    public function checkDaily(Request $request, $resolutionTab, Employee $employee)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        if (!$employee->daily_check_enabled) {
+            return response()->json(['success' => false, 'message' => 'Daily check is disabled for this employee.'], 400);
+        }
+
+        $employee->last_daily_checked_at = now();
+        $employee->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checked successfully',
+            'last_checked_at' => $employee->last_daily_checked_at->format('d/m/Y H:i')
         ]);
     }
 }

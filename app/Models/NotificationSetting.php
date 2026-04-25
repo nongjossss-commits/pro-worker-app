@@ -13,5 +13,11 @@ class NotificationSetting extends Model
         'notification_type',
         'days_before_expiry',
         'is_enabled',
+        'resolution_tab_id',
     ];
+
+    public function resolutionTab()
+    {
+        return $this->belongsTo(\App\Models\ResolutionTab::class);
+    }
 }

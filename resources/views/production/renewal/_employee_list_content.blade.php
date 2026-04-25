@@ -20,7 +20,9 @@
         'steps' => $steps,
         'loop' => $loop,
         'isHistory' => $isHistory ?? false,
-        'show_employer' => true
+        'show_employer' => true,
+        'currentTab' => $currentTab ?? null,
+        'allTabs' => $allTabs ?? collect()
     ])
 @endforeach
 

@@ -1,3 +1,12 @@
+@php
+    // Fallback for $currentTab — this partial is shared across Workflow/Production pages
+    // where $currentTab is not defined in the view context.
+    if (!isset($currentTab) || $currentTab === null) {
+        $isRenewalCtx = request()->is('production/renewal*');
+        $currentTab = \App\Models\ResolutionTab::where('type', $isRenewalCtx ? 'renewal' : 'registration')
+            ->where('is_default', true)->first();
+    }
+@endphp
 {{-- Inline Drawer Template --}}
 {{-- We use a script to populate this --}}
 {{-- Inline Drawer Template for EMPLOYEES --}}
@@ -74,12 +83,12 @@
 
             // Determine routes based on context
             const updateUrl = context === 'employer'
-                ? `/production/registration/employer-custom-fields/${field.id}`
-                : `/production/registration/custom-fields/${field.id}`;
+                ? `/production/registration/{{ $currentTab->id }}/employer-custom-fields/${field.id}`
+                : `/production/registration/{{ $currentTab->id }}/custom-fields/${field.id}`;
 
             const deleteUrl = context === 'employer'
-                ? `/production/registration/employer-custom-fields/${field.id}`
-                : `/production/registration/custom-fields/${field.id}`;
+                ? `/production/registration/{{ $currentTab->id }}/employer-custom-fields/${field.id}`
+                : `/production/registration/{{ $currentTab->id }}/custom-fields/${field.id}`;
 
 
             // Edit Form (Hidden by default)

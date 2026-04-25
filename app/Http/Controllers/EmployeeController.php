@@ -1837,7 +1837,13 @@ public function create(Request $request) // เพิ่ม Request $request เ
              }]);
         }
 
-        $employees = $employeesQuery->get();
+        $employeesUnsorted = $employeesQuery->get();
+
+        // Sort employees by the order of IDs in the request (preserves user selection order)
+        $idOrder = array_flip(array_map('intval', $employeeIds));
+        $employees = $employeesUnsorted->sort(function ($a, $b) use ($idOrder) {
+            return ($idOrder[$a->id] ?? PHP_INT_MAX) - ($idOrder[$b->id] ?? PHP_INT_MAX);
+        })->values();
 
         // Define labels for the header
         $columnLabels = [
@@ -1914,6 +1920,27 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Style the header row
         $headerRow = 1;
         $columnIndex = 1;
+
+        // Add "No." column as the first column
+        $noCell = $sheet->getCell([$columnIndex, $headerRow]);
+        $noCell->setValue('No.');
+        $sheet->getStyle([$columnIndex, $headerRow])->applyFromArray([
+            'font' => ['bold' => true],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FFF2F2F2'],
+            ],
+        ]);
+        $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(6);
+        $columnIndex++;
+
         foreach ($selectedColumns as $col) {
             $label = $columnLabels[$col] ?? $col;
             $cell = $sheet->getCell([$columnIndex, $headerRow]);
@@ -1947,6 +1974,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // Add Data Rows
         $currentRow = 2;
+        $rowNumber = 1;
         foreach ($employees as $employee) {
             $columnIndex = 1;
 
@@ -1956,6 +1984,20 @@ public function create(Request $request) // เพิ่ม Request $request เ
             } else {
                 $sheet->getRowDimension($currentRow)->setRowHeight(20);
             }
+
+            // Add row number in the "No." column
+            $noCell = $sheet->getCell([$columnIndex, $currentRow]);
+            $noCell->setValue($rowNumber);
+            $sheet->getStyle($noCell->getCoordinate())->applyFromArray([
+                'alignment' => [
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                ]
+            ]);
+            $columnIndex++;
 
             foreach ($selectedColumns as $col) {
                 $cellAddress = $sheet->getCell([$columnIndex, $currentRow])->getCoordinate();
@@ -2090,6 +2132,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $columnIndex++;
             }
             $currentRow++;
+            $rowNumber++;
         }
 
         $fileName = "advanced_employee_export_" . date('Y-m-d_H-i') . ".xlsx";

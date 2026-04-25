@@ -40,6 +40,7 @@ class Employee extends Model
 
     protected $fillable = [
         'employer_id',
+        'resolution_tab_id',
         'status', // Added status
         'signature_path', // Added for persistence
         'english_prefix',
@@ -267,6 +268,11 @@ class Employee extends Model
                     ->withTimestamps();
     }
 
+    public function resolutionTab()
+    {
+        return $this->belongsTo(\App\Models\ResolutionTab::class);
+    }
+
     // --- New Relationships for Registration Process ---
     public function registrationSteps()
     {
@@ -285,22 +291,57 @@ class Employee extends Model
         return !empty($this->visaExpiryDate);
     }
 
+    /**
+     * Request-level cache of ResolutionTab lookups — avoids repeated DB queries
+     * when `active_workflows` is called for many employees in the same request.
+     */
+    protected static array $resolutionTabCache = [];
+
+    protected static function getCachedResolutionTab(string $type, ?int $tabId): ?\App\Models\ResolutionTab
+    {
+        $cacheKey = $type . ':' . ($tabId ?? 'default');
+
+        if (array_key_exists($cacheKey, self::$resolutionTabCache)) {
+            return self::$resolutionTabCache[$cacheKey];
+        }
+
+        $tab = $tabId
+            ? \App\Models\ResolutionTab::find($tabId)
+            : \App\Models\ResolutionTab::where('type', $type)->where('is_default', true)->first();
+
+        self::$resolutionTabCache[$cacheKey] = $tab;
+        return $tab;
+    }
+
     public function getActiveWorkflowsAttribute()
     {
-        $workflows = $this->productionItems()
-            ->whereNotIn('status', ['completed', 'cancelled'])
-            ->whereHas('order', function ($query) {
-                $query->whereNotIn('status', ['completed', 'cancelled'])
-                      ->whereNotNull('work_type_id'); // Exclude manual bills which have no work_type
-            })
-            ->with(['order.workType'])
-            ->get()
-            ->map(function ($item) {
-                // Determine status label based on Order status
+        // --- Perf: Use eager-loaded productionItems if available to avoid N+1 queries ---
+        // Controllers should eager load: productionItems.order.workType
+        if ($this->relationLoaded('productionItems')) {
+            $items = $this->productionItems->filter(function ($item) {
+                if (in_array($item->status, ['completed', 'cancelled'])) return false;
+                if (!$item->order) return false;
+                if (in_array($item->order->status, ['completed', 'cancelled'])) return false;
+                if (!$item->order->work_type_id) return false;
+                return true;
+            });
+        } else {
+            $items = $this->productionItems()
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->whereHas('order', function ($query) {
+                    $query->whereNotIn('status', ['completed', 'cancelled'])
+                          ->whereNotNull('work_type_id');
+                })
+                ->with(['order.workType'])
+                ->get();
+        }
+
+        $workflows = $items->map(function ($item) {
                 $isPreProduction = $item->order->status === 'pre_production';
+                // Concise, translatable status labels
                 $statusLabel = $isPreProduction
-                    ? 'Preparing (Pre-Production)'
-                    : 'Processing';
+                    ? __('Preparing')
+                    : __('Processing');
 
                 $routeName = $isPreProduction ? 'production.index' : 'workflow.index';
                 $url = route($routeName, [
@@ -312,7 +353,7 @@ class Employee extends Model
                 ]);
 
                 return (object) [
-                    'name' => $item->order->workType->name ?? 'Unknown',
+                    'name' => $item->order->workType->name ?? __('Unknown'),
                     'status_label' => $statusLabel,
                     'is_pre_production' => $isPreProduction,
                     'is_registration' => false,
@@ -327,16 +368,23 @@ class Employee extends Model
         // Check if resolution was completed more than 24 hours ago
         $resolutionCompletedOlderThan24h = $this->resolution_completed_at && $this->resolution_completed_at->diffInHours(now()) >= 24;
 
-        // Add Registration Resolution (Purple)
+        // Add Registration Resolution (Purple) — show resolution tab NAME (concise)
         if (in_array($this->status, ['registration_pending', 'registration_completed'])) {
             if (!($this->status === 'registration_completed' && $resolutionCompletedOlderThan24h)) {
+                // Perf: Use in-memory cache (request-level) — avoid repeated ResolutionTab lookups across many employees
+                $regTab = self::getCachedResolutionTab('registration', $this->resolution_tab_id);
+
+                $regTabId = $regTab?->id;
+                $regTabName = $regTab?->name ?? __('Registration Resolution');
+
                 $workflows->push((object)[
-                    'name' => 'Registration Resolution',
-                    'status_label' => 'Resolution',
+                    'name' => $regTabName, // tab's own name — e.g. "มติลงทะเบียน31/03/2027"
+                    'status_label' => null, // no prefix — badge shows tab name directly
                     'is_pre_production' => false,
                     'is_registration' => true,
                     'is_renewal' => false,
                     'url' => route('production.registration.operations', [
+                        'resolutionTab' => $regTabId,
                         'highlight_employer_id' => $this->employer_id,
                         'highlight_employee_id' => $this->id
                     ]),
@@ -344,16 +392,23 @@ class Employee extends Model
             }
         }
 
-        // Add Renewal Resolution (Pink)
+        // Add Renewal Resolution (Pink) — show resolution tab NAME (concise)
         if (in_array($this->status, ['renewal_pending', 'renewal_completed'])) {
             if (!($this->status === 'renewal_completed' && $resolutionCompletedOlderThan24h)) {
+                // Perf: Use in-memory cache (request-level) — avoid repeated ResolutionTab lookups across many employees
+                $renTab = self::getCachedResolutionTab('renewal', $this->resolution_tab_id);
+
+                $renTabId = $renTab?->id;
+                $renTabName = $renTab?->name ?? __('Renewal Resolution');
+
                 $workflows->push((object)[
-                    'name' => 'Renewal Resolution',
-                    'status_label' => 'Resolution',
+                    'name' => $renTabName, // tab's own name — e.g. "มติต่ออายุ11/12/2026"
+                    'status_label' => null, // no prefix — badge shows tab name directly
                     'is_pre_production' => false,
                     'is_registration' => false,
                     'is_renewal' => true,
                     'url' => route('production.renewal.operations', [
+                        'resolutionTab' => $renTabId,
                         'highlight_employer_id' => $this->employer_id,
                         'highlight_employee_id' => $this->id
                     ]),

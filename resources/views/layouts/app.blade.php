@@ -709,6 +709,46 @@
                 padding: 0.2rem 0.45rem;
             }
         }
+
+        /* ═══ Resolution / Workflow Badges — uniform size with auto-shrink text ═══ */
+        .resolution-badge {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 240px;
+            min-height: 42px;
+            max-height: 42px;
+            line-height: 1.15;
+            padding: 4px 10px;
+            font-size: 13px;
+            white-space: normal !important;
+            overflow: hidden;
+            word-break: break-word;
+            box-sizing: border-box;
+        }
+        .resolution-badge > i {
+            flex-shrink: 0;
+            margin-right: 4px;
+        }
+        .resolution-badge .rb-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.15;
+        }
+        /* Mobile */
+        @media (max-width: 576px) {
+            .resolution-badge {
+                width: 200px;
+                min-height: 38px;
+                max-height: 38px;
+                font-size: 12px;
+                padding: 3px 8px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2032,18 +2072,32 @@ window.getGlobalSelectedData = function() {
     }
 };
 
-// Helper: Get just IDs (compatibility)
+// Helper: Get just IDs sorted by selection order
 window.getGlobalSelectedIds = function() {
-    return window.getGlobalSelectedData().map(item => item.id);
+    return window.getGlobalSelectedData()
+        .sort((a, b) => (a.selection_order || 0) - (b.selection_order || 0))
+        .map(item => item.id);
 };
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Stores array of objects: { id: "1", employer_id: "5" }
+    // Stores array of objects: { id: "1", employer_id: "5", selection_order: 1 }
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
     const employeeCheckboxes = document.querySelectorAll('.employee-checkbox');
     const bulkActionBar = document.querySelector('.bulk-action-bar');
     const selectedCountSpan = document.getElementById('selected-count');
     const bulkActionButton = bulkActionBar ? bulkActionBar.querySelector('button') : null;
+
+    // Counter for tracking selection order
+    window._selectionOrderCounter = (function() {
+        const existing = window.getGlobalSelectedData();
+        let maxOrder = 0;
+        existing.forEach(item => {
+            if (item.selection_order && item.selection_order > maxOrder) {
+                maxOrder = item.selection_order;
+            }
+        });
+        return maxOrder;
+    })();
 
     // Helper: Save data
     window.setGlobalSelectedData = function(data) {
@@ -2066,6 +2120,13 @@ document.addEventListener('DOMContentLoaded', function () {
         // Filter out existing items that are being re-added (to update them with potentially newer data)
         const newIds = newItems.map(i => String(i.id));
         const currentFiltered = current.filter(i => !newIds.includes(String(i.id)));
+        // Assign selection_order to new items that don't have one
+        newItems.forEach(item => {
+            if (!item.selection_order) {
+                window._selectionOrderCounter++;
+                item.selection_order = window._selectionOrderCounter;
+            }
+        });
         const combined = [...currentFiltered, ...newItems];
         window.setGlobalSelectedData(combined);
     }
@@ -2207,6 +2268,90 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // 2.5 ═══ Selection Mode — Click anywhere on card to toggle checkbox ═══
+    // After user manually checks the FIRST checkbox, subsequent clicks anywhere on
+    // an employee card will toggle that card's checkbox (no need to aim at the
+    // small checkbox). Text selection (long-press + drag) still works normally.
+    (function() {
+        let mouseDownPos = null;
+        const DRAG_THRESHOLD = 6; // px — anything beyond this is treated as a drag, not a click
+
+        // Elements that should NEVER trigger toggle (interactive elements)
+        const INTERACTIVE_SELECTOR = 'a, button, input, textarea, select, label, [contenteditable], [role="button"], .form-check-input, .btn, .dropdown, .dropdown-menu, .dropdown-item, .swal2-container, .modal, .accordion-button, [onclick], img, .badge';
+
+        function isInSelectionMode() {
+            return (window.getGlobalSelectedData?.() || []).length > 0;
+        }
+
+        // Walk up from click target to find the smallest containing element
+        // that has exactly one .employee-checkbox descendant — that's the card.
+        function findCard(target) {
+            let el = target;
+            let safety = 0;
+            while (el && el !== document.body && safety++ < 20) {
+                // Looking for the immediate ancestor that contains an .employee-checkbox
+                const cb = el.querySelector('.employee-checkbox');
+                if (cb) {
+                    // Make sure this is the only checkbox under this element
+                    // (otherwise we'd be matching the page-level container)
+                    const allCbs = el.querySelectorAll('.employee-checkbox');
+                    if (allCbs.length === 1) {
+                        return { card: el, checkbox: cb };
+                    }
+                    // If multiple, we've gone too far up — return null
+                    return null;
+                }
+                el = el.parentElement;
+            }
+            return null;
+        }
+
+        function recordMouseDown(e) {
+            if (e.button !== 0) return;
+            mouseDownPos = { x: e.clientX, y: e.clientY };
+        }
+
+        function handleCardClick(e) {
+            if (!isInSelectionMode()) return;
+
+            // Skip if click was on an interactive element
+            if (e.target.closest(INTERACTIVE_SELECTOR)) return;
+
+            // Find the card by walking up from the click target
+            const result = findCard(e.target);
+            if (!result) return;
+            const { checkbox } = result;
+
+            // Skip cancelled cards (employees in cancelled state shouldn't be selectable here)
+            if (checkbox.disabled || checkbox.closest('.d-none, [style*="display: none"], [style*="display:none"]')) return;
+
+            // Skip if user was dragging (text selection)
+            if (mouseDownPos) {
+                const dx = e.clientX - mouseDownPos.x;
+                const dy = e.clientY - mouseDownPos.y;
+                if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) return;
+            }
+
+            // Skip if user has selected text (don't break copy)
+            const selection = window.getSelection();
+            if (selection && selection.toString().trim().length > 0) return;
+
+            // Toggle the checkbox
+            e.preventDefault();
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        document.body.addEventListener('mousedown', recordMouseDown, true);
+        document.body.addEventListener('touchstart', function(e) {
+            if (e.touches && e.touches[0]) {
+                mouseDownPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+        }, { passive: true });
+
+        document.body.addEventListener('click', handleCardClick);
+    })();
+
     // 3. Handle "Select All" Checkbox
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function () {
@@ -2221,13 +2366,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 return !isHidden;
             });
 
-            const visibleItems = visibleCheckboxes.map(cb => getEmployeeData(cb));
+            const visibleItems = visibleCheckboxes.map((cb, index) => {
+                const data = getEmployeeData(cb);
+                // Select All: assign order based on DOM position (1-based)
+                data.selection_order = index + 1;
+                return data;
+            });
             const visibleIds = visibleItems.map(item => item.id);
 
             if (this.checked) {
                 // Check all visible and add to storage
+                // Reset counter since Select All replaces all selections
+                window._selectionOrderCounter = visibleItems.length;
                 visibleCheckboxes.forEach(cb => cb.checked = true);
-                addItems(visibleItems);
+                // Clear existing and set fresh with DOM order
+                const currentData = window.getGlobalSelectedData();
+                const nonVisibleData = currentData.filter(i => !visibleIds.includes(String(i.id)));
+                window.setGlobalSelectedData([...nonVisibleData, ...visibleItems]);
             } else {
                 // Uncheck all visible and remove from storage
                 visibleCheckboxes.forEach(cb => cb.checked = false);
@@ -2270,7 +2425,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
             `;
         } else {
-            data.forEach(item => {
+            // Sort by selection order before displaying
+            const sortedData = [...data].sort((a, b) => (a.selection_order || 0) - (b.selection_order || 0));
+            sortedData.forEach((item, index) => {
+                const orderNum = index + 1;
                 const titleTh = item.title_th || '';
                 const nameTh = item.name_th || '-';
                 const fullNameTh = titleTh + ' ' + nameTh;
@@ -2286,6 +2444,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cardHtml = `
                     <div class="col" id="modal-item-${item.id}">
                         <div class="card h-100 shadow-sm border position-relative hover-shadow transition-all">
+                            <span class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill shadow-sm" style="z-index: 5; font-size: 0.75rem;">${orderNum}</span>
                             <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 rounded-circle shadow-sm bg-white"
                                     onclick="window.removeSelectedItemFromModal('${item.id}', '${customStorageKey || ''}')"
                                     title="{{ __('Remove') }}" style="width: 28px; height: 28px; padding: 0; z-index: 5;">
@@ -2544,6 +2703,50 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 300);
         }
     });
+</script>
+
+<script>
+    // ═══ Resolution Badge Auto-Fit ═══
+    // Auto-shrinks font size so long tab names fit within the uniform-size badge
+    window.fitResolutionBadges = function(root = document) {
+        const badges = root.querySelectorAll('.resolution-badge .rb-text');
+        const maxFont = 13; // px
+        const minFont = 9;  // px
+        badges.forEach(el => {
+            // Reset to max before measuring
+            let size = maxFont;
+            el.style.fontSize = size + 'px';
+            // Shrink until content fits
+            let safety = 20;
+            while (safety-- > 0 && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) && size > minFont) {
+                size -= 0.5;
+                el.style.fontSize = size + 'px';
+            }
+        });
+    };
+
+    // Run on page load
+    document.addEventListener('DOMContentLoaded', () => window.fitResolutionBadges());
+
+    // Run again when window resizes (size changes between mobile/desktop)
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => window.fitResolutionBadges(), 150);
+    });
+
+    // Observe DOM for dynamically added badges (AJAX content)
+    const badgeObserver = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            for (const node of m.addedNodes) {
+                if (node.nodeType === 1 && (node.classList?.contains('resolution-badge') || node.querySelector?.('.resolution-badge'))) {
+                    window.fitResolutionBadges(node.parentNode || document);
+                    return;
+                }
+            }
+        }
+    });
+    badgeObserver.observe(document.body, { childList: true, subtree: true });
 </script>
 
 </body>

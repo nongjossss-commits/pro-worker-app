@@ -560,6 +560,7 @@
     "Failed to update status": "更新状态失败",
     "Network error": "网络错误",
     "Preparing": "准备中",
+    "Processing": "处理中",
     "Waiting for Order": "等待订单",
     "Ready to Proceed": "准备继续",
     "Add": "添加",

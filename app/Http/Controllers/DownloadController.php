@@ -37,16 +37,23 @@ class DownloadController extends Controller
         // If user is NOT admin/staff (can't manage tickets), we must filter the IDs to ensure they own them.
         // Using Employee::whereIn automatically applies the 'employerTenancy' global scope for employers.
         // This means querying for IDs that don't belong to the employer will return nothing.
-        $authorizedEmployeeIds = Employee::whereIn('id', $validated['employee_ids'])
+        $authorizedIds = Employee::whereIn('id', $validated['employee_ids'])
             ->pluck('id')
             ->toArray();
 
-        if (empty($authorizedEmployeeIds)) {
+        if (empty($authorizedIds)) {
             return response()->json([
                 'success' => false,
                 'message' => 'No valid employees selected or you do not have permission to view them.'
             ], 403);
         }
+
+        // Preserve the original order from the request (user selection order)
+        $authorizedIdsMap = array_flip(array_map('intval', $authorizedIds));
+        $authorizedEmployeeIds = array_values(array_filter(
+            array_map('intval', $validated['employee_ids']),
+            fn($id) => isset($authorizedIdsMap[$id])
+        ));
 
         $task = DownloadTask::create([
             'user_id' => Auth::id(),
