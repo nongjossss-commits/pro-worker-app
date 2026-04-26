@@ -237,6 +237,7 @@
 </div>
 
 @include('employees.modals.advanced_export')
+<x-edit-employee-modal />
 
 @endsection
 

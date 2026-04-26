@@ -124,6 +124,11 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/photo/enhance', [EmployeeController::class, 'enhancePhoto'])->name('employees.photo.enhance');
 
     Route::get('employees/search', [EmployeeController::class, 'search'])->name('employees.search');
+    // Signal endpoint — when editing employee from a modal iframe, the form redirects here
+    // so the parent window can detect "save complete" and close the modal.
+    Route::get('employees/edit-modal-saved', function () {
+        return response('<!doctype html><html><body><script>/* Edit Modal Save Signal */</script></body></html>');
+    })->name('employees.edit-modal-saved');
     Route::resource('employees', EmployeeController::class)->middleware('menu:employees');
     Route::get('/importers/{importer}/documents/{field}/pdf', [ImporterController::class, 'downloadDocumentAsPdf'])->name('importers.documents.pdf');
     Route::resource('importers', ImporterController::class)->middleware('menu:importers');

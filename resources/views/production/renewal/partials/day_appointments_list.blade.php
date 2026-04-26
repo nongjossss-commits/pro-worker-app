@@ -206,11 +206,12 @@
                         {{-- Action buttons (right side) --}}
                         <div class="flex-shrink-0 d-flex flex-column gap-2 align-items-end">
                             {{-- Edit employee button --}}
-                            <a href="{{ route('employees.edit', $employee->id) }}" target="_blank"
-                               class="btn btn-sm btn-outline-secondary"
-                               title="{{ __('Edit Employee') }}">
+                            <button type="button"
+                                    onclick="window.openEditEmployeeModal({{ $employee->id }})"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    title="{{ __('Edit Employee') }}">
                                 <i class="bi bi-pencil me-1"></i>{{ __('Edit') }}
-                            </a>
+                            </button>
                             {{-- Appointment buttons --}}
                             <div class="d-flex gap-1">
                                 <button class="btn btn-sm fw-bold {{ $employee->appointment_completed_at ? 'btn-success' : 'btn-warning text-dark' }}"
