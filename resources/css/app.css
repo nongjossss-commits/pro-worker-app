@@ -11,6 +11,15 @@
     background-color: #e2e8f0;
 }
 
+/* Preview button (magnifying glass) — must stay above workflow overlay (z-index 10)
+   so it's visible and clickable even on cards that have an active_workflows overlay,
+   and after edit-save when .highlight adds transform creating a new stacking context. */
+.btn-preview {
+    position: relative;
+    z-index: 11;
+    pointer-events: auto;
+}
+
 /*
  * Modal Z-index Fix
  * Ensures modals always appear on top of their backdrops.
