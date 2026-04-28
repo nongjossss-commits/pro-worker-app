@@ -947,6 +947,18 @@
         }
     });
 
+    // After expansion completes (and the previous card has fully collapsed,
+    // shifting the layout), focus the heading of the just-opened card so
+    // the user doesn't need to scroll up to find it.
+    document.getElementById('workflowAccordion')?.addEventListener('shown.bs.collapse', function (e) {
+        if (!e.target.classList.contains('accordion-collapse')) return;
+        const headingId = e.target.getAttribute('aria-labelledby');
+        const heading = headingId ? document.getElementById(headingId) : null;
+        if (heading) {
+            heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+
     // --- Filter Logic ---
     const currentStepFilter = @json(request('filter'));
 
