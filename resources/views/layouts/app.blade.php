@@ -163,6 +163,16 @@
             background-color: #fff7ed !important;
             z-index: 10;
         }
+
+        /* Drag-and-drop reorder in the Selected Items modal */
+        .selected-item-card { transition: box-shadow 0.15s, transform 0.15s; }
+        .selected-item-card:active { cursor: grabbing; }
+        .selected-item-card.drag-over-before {
+            box-shadow: 0 -4px 0 0 #0dcaf0, 0 0.125rem 0.25rem rgba(0,0,0,.075) !important;
+        }
+        .selected-item-card.drag-over-after {
+            box-shadow: 0 4px 0 0 #0dcaf0, 0 0.125rem 0.25rem rgba(0,0,0,.075) !important;
+        }
         .modal-backdrop.fade.show{
             display: none;
         }
@@ -2462,16 +2472,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const cardHtml = `
                     <div class="col" id="modal-item-${item.id}">
-                        <div class="card h-100 shadow-sm border position-relative hover-shadow transition-all">
-                            <span class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill shadow-sm" style="z-index: 5; font-size: 0.75rem;">${orderNum}</span>
+                        <div class="card h-100 shadow-sm border position-relative hover-shadow transition-all selected-item-card"
+                             draggable="true"
+                             data-item-id="${item.id}"
+                             style="cursor: grab; user-select: none;">
+                            <span class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill shadow-sm modal-item-order" style="z-index: 5; font-size: 0.75rem;">${orderNum}</span>
                             <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 rounded-circle shadow-sm bg-white"
+                                    draggable="false"
                                     onclick="window.removeSelectedItemFromModal('${item.id}', '${customStorageKey || ''}')"
                                     title="{{ __('Remove') }}" style="width: 28px; height: 28px; padding: 0; z-index: 5;">
                                 <i class="bi bi-x-lg"></i>
                             </button>
                             <div class="card-body d-flex align-items-center gap-3 p-3">
                                 <div class="flex-shrink-0">
-                                    <img src="${photo}" class="rounded-circle shadow-sm border" width="60" height="60" style="object-fit: cover;">
+                                    <img src="${photo}" class="rounded-circle shadow-sm border" width="60" height="60" style="object-fit: cover;" draggable="false">
                                 </div>
                                 <div class="flex-grow-1 overflow-hidden">
                                     <div class="fw-bold text-dark d-flex align-items-center gap-1" title="${fullNameEn}">
@@ -2491,10 +2505,126 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
                 container.innerHTML += cardHtml;
             });
+
+            // --- Drag-and-drop reorder ---
+            // Cards are rebuilt every render, so we attach listeners fresh each time.
+            window._setupSelectedItemsDnD(container, customData, customTitle, customStorageKey);
         }
 
         const modal = new bootstrap.Modal(modalEl);
         modal.show();
+    };
+
+    // Internal helper exposed only because openViewSelectedModal is a window.* function
+    // and re-rendering after a drop calls it back through the window scope.
+    window._setupSelectedItemsDnD = function(container, customData, customTitle, customStorageKey) {
+        let draggedId = null;
+
+        const clearIndicators = () => {
+            container.querySelectorAll('.drag-over-before, .drag-over-after').forEach(el => {
+                el.classList.remove('drag-over-before', 'drag-over-after');
+            });
+        };
+
+        const cards = container.querySelectorAll('.selected-item-card');
+        cards.forEach(card => {
+            card.addEventListener('dragstart', (e) => {
+                // Don't start drag from interactive children (the X / preview buttons
+                // already have draggable="false" but be defensive).
+                if (e.target.closest('button, a, .btn-preview')) {
+                    e.preventDefault();
+                    return;
+                }
+                draggedId = card.dataset.itemId;
+                card.style.opacity = '0.4';
+                e.dataTransfer.effectAllowed = 'move';
+                // Required for Firefox to actually start a drag
+                try { e.dataTransfer.setData('text/plain', draggedId); } catch (_) {}
+            });
+
+            card.addEventListener('dragend', () => {
+                card.style.opacity = '';
+                clearIndicators();
+                draggedId = null;
+            });
+
+            card.addEventListener('dragover', (e) => {
+                if (!draggedId || draggedId === card.dataset.itemId) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                clearIndicators();
+                const rect = card.getBoundingClientRect();
+                const before = (e.clientY - rect.top) < (rect.height / 2);
+                card.classList.add(before ? 'drag-over-before' : 'drag-over-after');
+            });
+
+            card.addEventListener('dragleave', (e) => {
+                // Only clear if leaving the card entirely
+                if (!card.contains(e.relatedTarget)) {
+                    card.classList.remove('drag-over-before', 'drag-over-after');
+                }
+            });
+
+            card.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (!draggedId || draggedId === card.dataset.itemId) {
+                    clearIndicators();
+                    return;
+                }
+                const rect = card.getBoundingClientRect();
+                const dropBefore = (e.clientY - rect.top) < (rect.height / 2);
+                window._reorderSelectedItems(draggedId, card.dataset.itemId, dropBefore, customData, customTitle, customStorageKey);
+                clearIndicators();
+            });
+        });
+    };
+
+    window._reorderSelectedItems = function(draggedId, targetId, dropBefore, customData, customTitle, customStorageKey) {
+        // Pull the freshest copy from the source of truth — sessionStorage for
+        // custom mode, the global selection for default mode — so concurrent
+        // ticking elsewhere doesn't get stomped.
+        let data = [];
+        if (customStorageKey) {
+            try {
+                const stored = sessionStorage.getItem(customStorageKey);
+                data = stored ? JSON.parse(stored) : (customData || []);
+            } catch (_) {
+                data = customData || [];
+            }
+        } else {
+            data = window.getGlobalSelectedData();
+        }
+
+        // Sort by current selection_order so splicing reflects the visible order
+        data.sort((a, b) => (a.selection_order || 0) - (b.selection_order || 0));
+
+        const fromIdx = data.findIndex(i => String(i.id) === String(draggedId));
+        if (fromIdx === -1) return;
+        const draggedItem = data.splice(fromIdx, 1)[0];
+
+        let toIdx = data.findIndex(i => String(i.id) === String(targetId));
+        if (toIdx === -1) {
+            data.push(draggedItem);
+        } else {
+            if (!dropBefore) toIdx++;
+            data.splice(toIdx, 0, draggedItem);
+        }
+
+        // Re-number selection_order so future renders stay consistent
+        data.forEach((it, idx) => { it.selection_order = idx + 1; });
+
+        // Persist
+        if (customStorageKey) {
+            sessionStorage.setItem(customStorageKey, JSON.stringify(data));
+            window.dispatchEvent(new CustomEvent('custom-selection-changed', { detail: { key: customStorageKey } }));
+        } else {
+            window.setGlobalSelectedData(data);
+            if (window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
+        }
+
+        // Re-render the modal in place. Pass customData=data to keep the modal
+        // working off the freshly reordered array even in employer/custom mode.
+        window.openViewSelectedModal(customStorageKey ? data : null, customTitle, customStorageKey);
     };
 
     window.removeSelectedItemFromModal = function(id, customStorageKey = null) {
