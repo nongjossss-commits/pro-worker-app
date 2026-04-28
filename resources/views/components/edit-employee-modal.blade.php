@@ -113,48 +113,107 @@
             });
         }
 
-        // Refresh the day appointments list (Alpine calendar) and scroll
         const empId = lastEditedEmployeeId;
-        setTimeout(() => {
-            // Try to refresh the current day if calendar is available
-            try {
-                const calendarRoot = document.querySelector('[x-data="calendarApp()"]');
-                if (calendarRoot && window.Alpine) {
-                    const scope = window.Alpine.$data(calendarRoot);
-                    if (scope && scope.selectedDate && typeof scope.openDay === 'function') {
-                        scope.openDay(scope.selectedDate);
-                    }
-                }
-            } catch(e) {
-                // Fallback: just scroll
+
+        // Capture state to restore once the day appointments list reloads.
+        // openDay() resets searchQuery to '', so we save it here and put it
+        // back after the new list is in the DOM — keeping the user's filter,
+        // selected date, and visual position intact.
+        const calendarScope = getCalendarScope();
+        const prevSearchQuery = (calendarScope && typeof calendarScope.searchQuery === 'string') ? calendarScope.searchQuery : '';
+        const prevPageScrollY = window.scrollY;
+
+        // Trigger refresh of the day appointments list (Alpine fetches fresh HTML)
+        const refreshed = refreshDayAppointments();
+
+        if (!refreshed) {
+            // No calendar on this page — fall back to a soft scroll-to-card
+            findCardForEmployee(empId).then(card => {
+                if (card) scrollToCardAndHighlight(card);
+            });
+            return;
+        }
+
+        // Wait for the freshly-rendered card to appear (the fetch + Alpine
+        // re-render is variable in latency, so polling is safer than a
+        // fixed setTimeout). Scroll first, then restore the search filter
+        // so the user gets a visual confirmation before the filter (which
+        // may hide the card) reapplies.
+        findCardForEmployee(empId, 6000).then(card => {
+            if (card) {
+                scrollToCardAndHighlight(card);
+            } else {
+                // Card never appeared — at least restore the page scroll
+                // the user had before so the world doesn't jump.
+                window.scrollTo({ top: prevPageScrollY, behavior: 'auto' });
             }
 
-            // Scroll to the edited employee card after content reloads
-            setTimeout(() => scrollToEmployeeCard(empId), 500);
-        }, 100);
+            // Restore the search filter — Alpine's $watch will re-filter cards.
+            // Setting it back after the list is repopulated is essential because
+            // openDay() unconditionally clears searchQuery.
+            if (calendarScope && prevSearchQuery) {
+                try { calendarScope.searchQuery = prevSearchQuery; } catch(_) {}
+            }
+        });
     }
 
-    function scrollToEmployeeCard(empId) {
-        if (!empId) return;
-        // Try multiple selectors used across the app
-        const selectors = [
-            `[data-employee-id="${empId}"]`,
-            `#employee-card-${empId}`,
-            `.employee-checkbox[value="${empId}"]`
-        ];
-        for (const sel of selectors) {
-            const el = document.querySelector(sel);
-            if (el) {
-                const card = el.closest('.appt-card-item, .employee-card-wrapper, .employee-card-outer') || el;
-                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Highlight briefly
-                card.style.transition = 'background-color 0.5s ease';
-                const orig = card.style.backgroundColor;
-                card.style.backgroundColor = '#fff7ed';
-                setTimeout(() => { card.style.backgroundColor = orig; }, 1500);
-                return;
-            }
+    function getCalendarScope() {
+        try {
+            const root = document.querySelector('[x-data="calendarApp()"]');
+            if (root && window.Alpine) return window.Alpine.$data(root);
+        } catch(_) {}
+        return null;
+    }
+
+    function refreshDayAppointments() {
+        const scope = getCalendarScope();
+        if (scope && scope.selectedDate && typeof scope.openDay === 'function') {
+            scope.openDay(scope.selectedDate);
+            return true;
         }
+        return false;
+    }
+
+    function findCardForEmployee(empId, timeoutMs = 0) {
+        // Promise-based polling: resolves with the card element as soon as it
+        // appears in the DOM, or null if the timeout expires first.
+        return new Promise((resolve) => {
+            if (!empId) return resolve(null);
+
+            const selectors = [
+                `[data-employee-id="${empId}"]`,
+                `#employee-card-${empId}`,
+                `.employee-checkbox[value="${empId}"]`
+            ];
+
+            const find = () => {
+                for (const sel of selectors) {
+                    const el = document.querySelector(sel);
+                    if (el) return el.closest('.appt-card-item, .employee-card-wrapper, .employee-card-outer') || el;
+                }
+                return null;
+            };
+
+            const immediate = find();
+            if (immediate || timeoutMs <= 0) return resolve(immediate);
+
+            const start = Date.now();
+            const tick = () => {
+                const card = find();
+                if (card) return resolve(card);
+                if (Date.now() - start >= timeoutMs) return resolve(null);
+                setTimeout(tick, 100);
+            };
+            setTimeout(tick, 100);
+        });
+    }
+
+    function scrollToCardAndHighlight(card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.style.transition = 'background-color 0.5s ease';
+        const orig = card.style.backgroundColor;
+        card.style.backgroundColor = '#fff7ed';
+        setTimeout(() => { card.style.backgroundColor = orig; }, 1500);
     }
 
     // Reset iframe when modal closes (free memory)
