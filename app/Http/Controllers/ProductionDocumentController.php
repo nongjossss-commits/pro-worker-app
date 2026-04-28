@@ -159,6 +159,7 @@ class ProductionDocumentController extends Controller
                     // Determine Price
                     $price = 0;
                     $isAssignedToTier = false;
+                    $tierNote = null;
 
                     if ($pricingMode === 'per_head') {
                         // Find the tier this item belongs to
@@ -173,6 +174,7 @@ class ProductionDocumentController extends Controller
                         if ($tier) {
                             $price = $tier['price'] ?? 0;
                             $isAssignedToTier = true;
+                            $tierNote = $tier['note'] ?? null;
                         } else {
                             // Default tier fallback
                             $defaultTier = $pricingTiers->first(function ($t) {
@@ -180,6 +182,7 @@ class ProductionDocumentController extends Controller
                             });
                             if ($defaultTier) {
                                 $price = $defaultTier['price'] ?? 0;
+                                $tierNote = $defaultTier['note'] ?? null;
                                 // We don't mark as explicitly assigned to a tier if they are just catching the default,
                                 // but we might want them to show up if the project relies on default tiers.
                                 // Typically, employees without explicit tier mapping in 'per_head' mode shouldn't show
@@ -203,6 +206,7 @@ class ProductionDocumentController extends Controller
                         'nationality' => $emp->employeeNationality,
                         'price' => $price,
                         'employee_id' => 'EMP' . str_pad($emp->id, 5, '0', STR_PAD_LEFT),
+                        'note' => $tierNote,
                     ];
                 }
             }

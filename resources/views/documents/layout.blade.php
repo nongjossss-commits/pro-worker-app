@@ -686,12 +686,13 @@
         <table class="items-table" style="font-size: 12px;">
             <thead>
                 <tr>
-                    <th style="width: 5%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
-                    <th style="width: 15%; text-align: center;">รูปถ่าย<br><span class="en-label">Photo</span></th>
-                    <th style="width: 15%;">รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
-                    <th style="width: 35%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
-                    <th style="width: 15%; text-align: center;">สัญชาติ<br><span class="en-label">Nationality</span></th>
-                    <th style="width: 15%; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
+                    <th style="width: 4%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
+                    <th style="width: 12%; text-align: center;">รูปถ่าย<br><span class="en-label">Photo</span></th>
+                    <th style="width: 12%;">รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
+                    <th style="width: 26%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
+                    <th style="width: 11%; text-align: center;">สัญชาติ<br><span class="en-label">Nationality</span></th>
+                    <th style="width: 23%;">หมายเหตุ<br><span class="en-label">Notes</span></th>
+                    <th style="width: 12%; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -708,6 +709,7 @@
                     <td style="vertical-align: middle;">{{ $emp['employee_id'] ?: '-' }}</td>
                     <td style="vertical-align: middle;">{{ $emp['prefix'] }} {{ $emp['name'] }}</td>
                     <td style="text-align: center; vertical-align: middle;">{{ $emp['nationality'] ?: '-' }}</td>
+                    <td style="vertical-align: middle;">{{ !empty($emp['note']) ? $emp['note'] : '-' }}</td>
                     <td style="text-align: right; vertical-align: middle;">{{ number_format($emp['price'], 2) }}</td>
                 </tr>
                 @endforeach

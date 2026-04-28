@@ -77,6 +77,11 @@ if (typeof window.financialManager === 'undefined') {
             documentTypeToGenerate: '',
             includeEmployeeList: false,
 
+            // Quick Create Invoice Modal (per-row in Income transactions)
+            invoiceModalTransactionId: null,
+            invoiceModalLabel: '',
+            invoiceModalIncludeList: false,
+
             // Context
             productionId: initialData.productionId,
             csrfToken: initialData.csrfToken,
@@ -1225,6 +1230,17 @@ if (typeof window.financialManager === 'undefined') {
                 this.selectedTransactionIds = [];
                 this.includeEmployeeList = false;
                 bootstrap.Modal.getOrCreateInstance(this.$refs.docSelectionModal).show();
+            },
+            openCreateInvoiceModal(t) {
+                this.invoiceModalTransactionId = t.id;
+                this.invoiceModalLabel = `${this.formatType(t.type)} — ${this.formatCurrency(t.amount)}`;
+                this.invoiceModalIncludeList = false;
+                bootstrap.Modal.getOrCreateInstance(this.$refs.createInvoiceModal).show();
+            },
+            generateInvoiceFromButton() {
+                if (!this.invoiceModalTransactionId) return;
+                this.openDocument('invoice', String(this.invoiceModalTransactionId), null, this.invoiceModalIncludeList);
+                bootstrap.Modal.getInstance(this.$refs.createInvoiceModal).hide();
             },
             generateSelectedDocument() {
                 if (this.selectedTransactionIds.length === 0) return;

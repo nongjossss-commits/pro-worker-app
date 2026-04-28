@@ -503,6 +503,9 @@ class="row">
                                             <button class="btn btn-sm btn-outline-success py-0" @click="openPayModal(t)" title="Update Payment">
                                                 <i class="bi bi-cash"></i>
                                             </button>
+                                            <button class="btn btn-sm btn-outline-primary py-0" @click="openCreateInvoiceModal(t)" title="สร้างใบแจ้งหนี้ / Create Invoice">
+                                                <i class="bi bi-receipt"></i>
+                                            </button>
                                             <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -1364,6 +1367,41 @@ class="row">
                     <button class="btn btn-primary btn-sm w-100" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
                         Generate
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Invoice Modal (per-row from Income transactions) -->
+    <div class="modal fade" :id="'createInvoiceModal-' + productionId" tabindex="-1" x-ref="createInvoiceModal">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">
+                        <i class="bi bi-receipt me-1 text-primary"></i> สร้างใบแจ้งหนี้ / Create Invoice
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3 small text-muted">
+                        งวดงาน: <span class="fw-bold text-dark" x-text="invoiceModalLabel"></span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" :id="'invoiceIncludeList-' + productionId" x-model="invoiceModalIncludeList">
+                        <label class="form-check-label small fw-bold" :for="'invoiceIncludeList-' + productionId">
+                            แนบตารางรายชื่อพนักงาน / Include Employee List
+                        </label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-light btn-sm flex-grow-1" data-bs-dismiss="modal">
+                            ยกเลิก
+                        </button>
+                        <button class="btn btn-primary btn-sm flex-grow-1" @click="generateInvoiceFromButton()">
+                            <i class="bi bi-file-earmark-text me-1"></i> สร้าง
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
