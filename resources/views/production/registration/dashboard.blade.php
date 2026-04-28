@@ -238,6 +238,8 @@
 
 @include('employees.modals.advanced_export')
 <x-edit-employee-modal />
+<x-cropper-modal />
+@include('employees.partials._edit_scripts')
 
 @endsection
 

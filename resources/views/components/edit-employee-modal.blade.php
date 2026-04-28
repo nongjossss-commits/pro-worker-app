@@ -1,37 +1,29 @@
 {{--
-  Reusable Edit Employee Modal — opens employee edit page in an iframe.
-  After save: closes modal, refreshes day appointments, scrolls to the edited card.
+  Reusable Edit Employee Modal — fetches the employee edit form via AJAX
+  and renders it inline (no iframe). After save, refreshes the day
+  appointments calendar and scrolls to the edited card.
 
   Usage:
-    Place once in your view: <x-edit-employee-modal />
-    Trigger via JS: window.openEditEmployeeModal(employeeId)
+    Place once in your view:        <x-edit-employee-modal />
+    Also include on the same page:  <x-cropper-modal />
+                                    @include('employees.partials._edit_scripts')
+    Trigger via JS:                 window.openEditEmployeeModal(employeeId)
 --}}
-<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-scrollable" style="max-width: 95vw;">
-        <div class="modal-content" style="height: 95vh;">
-            <div class="modal-header py-2">
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-2">
                 <h5 class="modal-title fw-bold" id="editEmployeeModalLabel">
-                    <i class="bi bi-pencil-square me-2 text-primary"></i>{{ __('Edit Employee') }}
+                    <i class="bi bi-pencil-square me-2"></i>{{ __('Edit Employee') }}
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0 position-relative" style="overflow: hidden;">
-                {{-- Loading spinner --}}
-                <div id="edit-employee-modal-loading"
-                     class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white"
-                     style="z-index: 10;">
-                    <div class="text-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2 small text-muted">{{ __('Loading...') }}</p>
+            <div class="modal-body bg-light" id="editEmployeeModalBody">
+                <div class="d-flex justify-content-center align-items-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
                     </div>
                 </div>
-                {{-- iframe for the edit form --}}
-                <iframe id="edit-employee-iframe"
-                        src="about:blank"
-                        style="width: 100%; height: 100%; border: 0;"
-                        title="Edit Employee"></iframe>
             </div>
         </div>
     </div>
@@ -39,67 +31,146 @@
 
 <script>
 (function() {
-    const SAVE_SIGNAL_PATH = '/employees/edit-modal-saved';
     let lastEditedEmployeeId = null;
 
     /**
      * Open the edit employee modal.
-     * @param {number|string} employeeId - the employee ID to edit
+     * Fetches the form partial via AJAX (X-Requested-With: XMLHttpRequest)
+     * so the server returns the form-only partial (employees.partials._edit_form)
+     * instead of the full layout.
+     *
+     * @param {number|string} employeeId
      */
     window.openEditEmployeeModal = function(employeeId) {
         const modalEl = document.getElementById('editEmployeeModal');
-        if (!modalEl) {
-            console.error('[EditEmployeeModal] Modal element not found.');
+        const modalBody = document.getElementById('editEmployeeModalBody');
+        if (!modalEl || !modalBody) {
+            console.error('[EditEmployeeModal] Modal elements not found.');
             return;
         }
 
-        const iframe = document.getElementById('edit-employee-iframe');
-        const loading = document.getElementById('edit-employee-modal-loading');
-
         lastEditedEmployeeId = employeeId;
 
-        // Show loading spinner before iframe loads
-        loading.style.display = 'flex';
-
-        // Build URL with return signal — after save, form redirects to this URL,
-        // which we detect to know save was successful
-        const editUrl = `/employees/${employeeId}/edit?_previous=${encodeURIComponent(SAVE_SIGNAL_PATH)}&modal=1`;
-        iframe.src = editUrl;
+        // Reset and show spinner immediately
+        modalBody.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">{{ __('Loading...') }}</span>
+                </div>
+            </div>
+        `;
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();
+
+        fetch(`/employees/${employeeId}/edit`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html'
+            },
+            credentials: 'same-origin'
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to load edit form (' + res.status + ')');
+            return res.text();
+        })
+        .then(html => {
+            modalBody.innerHTML = html;
+
+            // Re-initialize any scripts that need to bind to the freshly-injected
+            // form (cropper, datepickers, etc.). Defined in
+            // resources/views/employees/partials/_edit_scripts.blade.php.
+            if (typeof window.initEmployeeEditForm === 'function') {
+                try { window.initEmployeeEditForm(); } catch(e) { console.error(e); }
+            }
+
+            // Wire up the form for AJAX submit
+            const form = modalBody.querySelector('form');
+            if (form) {
+                // Cancel button inside the form should just close the modal
+                const cancelBtn = form.querySelector('.btn-cancel-edit');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', () => modal.hide());
+                }
+                form.addEventListener('submit', handleEditFormSubmit);
+            }
+        })
+        .catch(err => {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>${err.message}
+                </div>
+            `;
+        });
     };
 
-    // --- Iframe onload handler ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const iframe = document.getElementById('edit-employee-iframe');
-        const loading = document.getElementById('edit-employee-modal-loading');
-        if (!iframe || !loading) return;
+    function handleEditFormSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.innerText : '';
 
-        iframe.addEventListener('load', function() {
-            loading.style.display = 'none';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = '{{ __("Saving...") }}';
+        }
 
-            try {
-                const currentPath = iframe.contentWindow.location.pathname;
+        // Clear previous validation errors
+        form.querySelectorAll('.alert-danger.ajax-error').forEach(el => el.remove());
 
-                // Detect save: iframe redirected to our signal path
-                if (currentPath.includes('edit-modal-saved') || currentPath === SAVE_SIGNAL_PATH) {
-                    handleSaveSuccess();
-                }
-            } catch(e) {
-                // Cross-origin error — iframe loaded an external page (shouldn't happen)
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+            method: 'POST', // _method=PUT inside the FormData
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin',
+            body: formData
+        })
+        .then(response => {
+            if (response.status === 422) {
+                return response.json().then(data => {
+                    const errors = data.errors ? Object.values(data.errors).flat() : [data.message || 'Validation failed'];
+                    throw new Error(errors.join('\n'));
+                });
+            }
+            if (!response.ok) {
+                return response.json().catch(() => ({}))
+                    .then(data => { throw new Error(data.message || ('Server error ' + response.status)); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                handleSaveSuccess();
+            } else {
+                throw new Error(data.message || 'Unknown error');
+            }
+        })
+        .catch(err => {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger ajax-error mt-3';
+            errorDiv.style.whiteSpace = 'pre-line';
+            errorDiv.innerHTML = `<strong>{{ __('Error') }}:</strong><br>${err.message}`;
+            form.prepend(errorDiv);
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        })
+        .finally(() => {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
             }
         });
-    });
+    }
 
     function handleSaveSuccess() {
         const modalEl = document.getElementById('editEmployeeModal');
         const modal = bootstrap.Modal.getInstance(modalEl);
 
-        // Close modal
         if (modal) modal.hide();
 
-        // Show success toast
         if (typeof showToast === 'function') {
             showToast('{{ __("Employee updated successfully.") }}', 'success');
         } else if (typeof Swal !== 'undefined') {
@@ -123,34 +194,23 @@
         const prevSearchQuery = (calendarScope && typeof calendarScope.searchQuery === 'string') ? calendarScope.searchQuery : '';
         const prevPageScrollY = window.scrollY;
 
-        // Trigger refresh of the day appointments list (Alpine fetches fresh HTML)
         const refreshed = refreshDayAppointments();
 
         if (!refreshed) {
-            // No calendar on this page — fall back to a soft scroll-to-card
             findCardForEmployee(empId).then(card => {
                 if (card) scrollToCardAndHighlight(card);
             });
             return;
         }
 
-        // Wait for the freshly-rendered card to appear (the fetch + Alpine
-        // re-render is variable in latency, so polling is safer than a
-        // fixed setTimeout). Scroll first, then restore the search filter
-        // so the user gets a visual confirmation before the filter (which
-        // may hide the card) reapplies.
+        // Wait for the freshly-rendered card to appear, then scroll +
+        // highlight, then restore the search filter.
         findCardForEmployee(empId, 6000).then(card => {
             if (card) {
                 scrollToCardAndHighlight(card);
             } else {
-                // Card never appeared — at least restore the page scroll
-                // the user had before so the world doesn't jump.
                 window.scrollTo({ top: prevPageScrollY, behavior: 'auto' });
             }
-
-            // Restore the search filter — Alpine's $watch will re-filter cards.
-            // Setting it back after the list is repopulated is essential because
-            // openDay() unconditionally clears searchQuery.
             if (calendarScope && prevSearchQuery) {
                 try { calendarScope.searchQuery = prevSearchQuery; } catch(_) {}
             }
@@ -175,8 +235,6 @@
     }
 
     function findCardForEmployee(empId, timeoutMs = 0) {
-        // Promise-based polling: resolves with the card element as soon as it
-        // appears in the DOM, or null if the timeout expires first.
         return new Promise((resolve) => {
             if (!empId) return resolve(null);
 
@@ -216,13 +274,15 @@
         setTimeout(() => { card.style.backgroundColor = orig; }, 1500);
     }
 
-    // Reset iframe when modal closes (free memory)
+    // Reset modal body on close to free DOM and avoid stale form state
     document.addEventListener('DOMContentLoaded', function() {
         const modalEl = document.getElementById('editEmployeeModal');
         if (!modalEl) return;
         modalEl.addEventListener('hidden.bs.modal', function() {
-            const iframe = document.getElementById('edit-employee-iframe');
-            if (iframe) iframe.src = 'about:blank';
+            const modalBody = document.getElementById('editEmployeeModalBody');
+            if (modalBody) {
+                modalBody.innerHTML = '';
+            }
         });
     });
 })();
