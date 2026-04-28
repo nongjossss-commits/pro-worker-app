@@ -543,6 +543,11 @@ if (typeof window.financialManager === 'undefined') {
             openAddModal() {
                 this.selectedTransactionItems = [];
                 this.newTransaction.amount = '';
+                // Reset editingTransaction so availableItems treats every existing
+                // transaction's items as "used" — without this, items from the last
+                // transaction the user opened (Update Payment / Edit) would still
+                // appear in the Select Employees list of the Add Installment modal.
+                this.editingTransaction = { payments: [] };
                 if(typeof bootstrap !== 'undefined') {
                     const modal = bootstrap.Modal.getOrCreateInstance(this.$refs.addModal);
                     modal.show();
