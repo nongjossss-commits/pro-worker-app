@@ -374,7 +374,7 @@
                 this.isLoading = true;
                 this.appointmentsLoaded = true;
 
-                fetch(`{{ route('production.renewal.api.appointments_by_date', ['resolutionTab' => $currentTab->id]) }}?date=${dateStr}`)
+                fetch(`{{ route('production.renewal.api.appointments_by_date', ['resolutionTab' => $currentTab->id]) }}?date=${dateStr}&_t=${Date.now()}`)
                     .then(res => res.json())
                     .then(data => {
                         const apptContainer = document.getElementById('dayAppointmentsContent');

@@ -128,7 +128,7 @@
                         {{-- Photo --}}
                         <div class="flex-shrink-0">
                             @if($employee->employeePhoto)
-                                <img src="{{ Storage::disk('public')->url($employee->employeePhoto) }}"
+                                <img src="{{ Storage::disk('public')->url($employee->employeePhoto) }}?v={{ optional($employee->updated_at)->timestamp ?? '0' }}"
                                      class="rounded-circle shadow-sm"
                                      style="width:52px; height:52px; object-fit:cover;">
                             @else

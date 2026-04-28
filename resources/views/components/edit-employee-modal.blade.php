@@ -194,6 +194,16 @@
         const prevSearchQuery = (calendarScope && typeof calendarScope.searchQuery === 'string') ? calendarScope.searchQuery : '';
         const prevPageScrollY = window.scrollY;
 
+        // Broadcast a global event so any container that wants to refresh
+        // (e.g. the calendar dashboards or other listeners) can react. This
+        // is a safety net in case the direct refreshDayAppointments() call
+        // below can't find the calendar scope on a particular page.
+        try {
+            window.dispatchEvent(new CustomEvent('employee-saved', {
+                detail: { id: empId }
+            }));
+        } catch(_) {}
+
         const refreshed = refreshDayAppointments();
 
         if (!refreshed) {
