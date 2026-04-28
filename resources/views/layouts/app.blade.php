@@ -2278,16 +2278,50 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // 2.5 ═══ Selection Mode — Click anywhere on card to toggle checkbox ═══
-    // After user manually checks the FIRST checkbox, subsequent clicks anywhere on
-    // an employee card will toggle that card's checkbox (no need to aim at the
-    // small checkbox). Text selection (long-press + drag) still works normally.
+    // 2.5 ═══ Selection Mode — Click empty card surface to toggle checkbox ═══
+    // After user manually checks the FIRST checkbox, clicking on an empty
+    // (non-interactive) part of another employee card toggles its selection.
+    // Clicks on buttons, links, inputs, badges, drag handles, Alpine @click
+    // bindings, etc. are explicitly excluded so they perform their own action
+    // without ALSO selecting the row.
     (function() {
         let mouseDownPos = null;
         const DRAG_THRESHOLD = 6; // px — anything beyond this is treated as a drag, not a click
 
-        // Elements that should NEVER trigger toggle (interactive elements)
-        const INTERACTIVE_SELECTOR = 'a, button, input, textarea, select, label, [contenteditable], [role="button"], .form-check-input, .btn, .dropdown, .dropdown-menu, .dropdown-item, .swal2-container, .modal, .accordion-button, [onclick], img, .badge';
+        // CSS selectors for elements that should NEVER trigger a card toggle.
+        const INTERACTIVE_SELECTOR = [
+            'a', 'button', 'input', 'textarea', 'select', 'label',
+            '[contenteditable]', '[role="button"]', '[role="link"]',
+            '[onclick]', '[draggable="true"]',
+            '[data-bs-toggle]', '[data-bs-dismiss]', '[data-bs-target]',
+            '.form-check-input',
+            '.btn', '.btn-group',
+            '.dropdown', '.dropdown-toggle', '.dropdown-menu', '.dropdown-item',
+            '.swal2-container', '.modal',
+            '.accordion-button',
+            '.cursor-pointer', '.cursor-grab',
+            '.btn-preview',
+            'img', '.badge'
+        ].join(', ');
+
+        // Alpine.js (and similar libraries) attach click handlers via attributes
+        // such as @click, @click.stop, x-on:click, x-on:click.away, etc.
+        // CSS attribute selectors can't match attribute-name prefixes so we
+        // walk the ancestor chain and inspect attribute names manually.
+        function hasAlpineClickHandler(el) {
+            let n = el;
+            while (n && n.nodeType === 1 && n !== document.body) {
+                const attrs = n.attributes;
+                for (let i = 0; i < attrs.length; i++) {
+                    const name = attrs[i].name;
+                    if (name.startsWith('@click') || name.startsWith('x-on:click')) {
+                        return true;
+                    }
+                }
+                n = n.parentElement;
+            }
+            return false;
+        }
 
         function isInSelectionMode() {
             return (window.getGlobalSelectedData?.() || []).length > 0;
@@ -2324,8 +2358,15 @@ document.addEventListener('DOMContentLoaded', function () {
         function handleCardClick(e) {
             if (!isInSelectionMode()) return;
 
-            // Skip if click was on an interactive element
+            // Skip if the click was on (or inside) any interactive element.
             if (e.target.closest(INTERACTIVE_SELECTOR)) return;
+
+            // Skip if any ancestor has an Alpine @click / x-on:click handler.
+            if (hasAlpineClickHandler(e.target)) return;
+
+            // Skip if some inner handler already handled this click
+            // (e.g. preventDefault'd or stopPropagation'd at a deeper level).
+            if (e.defaultPrevented) return;
 
             // Find the card by walking up from the click target
             const result = findCard(e.target);
