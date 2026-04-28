@@ -221,12 +221,18 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->p
 
     Route::delete('tickets/messages/{message}', [\App\Http\Controllers\TicketMessageController::class, 'destroy'])->name('tickets.messages.destroy');
 
-    // Business Types
-    Route::resource('business-types', \App\Http\Controllers\Admin\BusinessTypeController::class)->only(['index', 'store', 'destroy']);
-
     // Global Witnesses Management
     Route::get('/witnesses', [App\Http\Controllers\Admin\GlobalWitnessController::class, 'index'])->name('witnesses.index');
     Route::put('/witnesses/{id}', [App\Http\Controllers\Admin\GlobalWitnessController::class, 'update'])->name('witnesses.update');
+});
+
+// === Business Types (used by employer create/edit dropdown — must be accessible to any authenticated user) ===
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('business-types', [\App\Http\Controllers\Admin\BusinessTypeController::class, 'index'])->name('business-types.index');
+});
+Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('business-types', [\App\Http\Controllers\Admin\BusinessTypeController::class, 'store'])->name('business-types.store');
+    Route::delete('business-types/{business_type}', [\App\Http\Controllers\Admin\BusinessTypeController::class, 'destroy'])->name('business-types.destroy');
 });
 
 // === PDF Templates (separate group — NOT tied to ticket_inbox menu) ===
