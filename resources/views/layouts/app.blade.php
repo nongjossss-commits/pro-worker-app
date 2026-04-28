@@ -2427,6 +2427,10 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             // Sort by selection order before displaying
             const sortedData = [...data].sort((a, b) => (a.selection_order || 0) - (b.selection_order || 0));
+            // When customStorageKey is set (employer page), each item is an employer
+            // and item.id IS the employer id. Otherwise items are employees with item.id
+            // being the employee id and item.employer_id being the employer id.
+            const isEmployerMode = !!customStorageKey;
             sortedData.forEach((item, index) => {
                 const orderNum = index + 1;
                 const titleTh = item.title_th || '';
@@ -2440,6 +2444,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 const nationality = item.nationality || '-';
                 const employer = item.employer_name || '-';
                 const photo = item.photo || 'https://placehold.co/50x50/e2e8f0/6c757d?text=PIC';
+
+                // Preview buttons — wired to the global universalPreviewModal
+                // via the .btn-preview event-delegated handler in app.js.
+                let namePreviewBtn = '';
+                let employerPreviewBtn = '';
+                if (isEmployerMode) {
+                    // In employer mode the row itself is an employer, attach the
+                    // preview to the name line so the magnifying glass is visible.
+                    namePreviewBtn = `<button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-1" data-model-type="employer" data-model-id="${item.id}" title="{{ __('Preview Data') }}"><i class="bi bi-search"></i></button>`;
+                } else {
+                    namePreviewBtn = `<button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-1" data-model-type="employee" data-model-id="${item.id}" title="{{ __('Preview Employee') }}"><i class="bi bi-search"></i></button>`;
+                    if (item.employer_id) {
+                        employerPreviewBtn = `<button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-1" data-model-type="employer" data-model-id="${item.employer_id}" title="{{ __('Preview Employer') }}"><i class="bi bi-search"></i></button>`;
+                    }
+                }
 
                 const cardHtml = `
                     <div class="col" id="modal-item-${item.id}">
@@ -2455,13 +2474,15 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <img src="${photo}" class="rounded-circle shadow-sm border" width="60" height="60" style="object-fit: cover;">
                                 </div>
                                 <div class="flex-grow-1 overflow-hidden">
-                                    <div class="fw-bold text-dark text-truncate" title="${fullNameEn}">${fullNameEn}</div>
+                                    <div class="fw-bold text-dark d-flex align-items-center gap-1" title="${fullNameEn}">
+                                        <span class="text-truncate">${fullNameEn}</span>${namePreviewBtn}
+                                    </div>
                                     <div class="text-muted small text-truncate" title="${fullNameTh}">${fullNameTh}</div>
                                     <div class="d-flex align-items-center gap-2 mt-1">
                                         <span class="badge bg-light text-dark border"><i class="bi bi-flag me-1"></i>${nationality}</span>
                                     </div>
-                                    <div class="small text-primary mt-1 text-truncate" title="${employer}">
-                                        <i class="bi bi-building me-1"></i>${employer}
+                                    <div class="small text-primary mt-1 d-flex align-items-center gap-1" title="${employer}">
+                                        <i class="bi bi-building"></i><span class="text-truncate">${employer}</span>${employerPreviewBtn}
                                     </div>
                                 </div>
                             </div>
