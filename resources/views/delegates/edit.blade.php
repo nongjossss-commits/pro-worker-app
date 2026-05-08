@@ -29,7 +29,7 @@
                     <div class="col-md-6 text-center border-start">
                         <label class="form-label d-block text-muted mb-2">ลายเซ็นพนักงานบริษัท (Delegate Signature)</label>
                         <div class="mb-3 d-flex gap-2">
-                            <input type="file" name="delegate_signature" id="delegate_signature" class="form-control" accept="image/*" onchange="previewImage(event, 'signaturePreview'); if(window.interceptFileSelect) window.interceptFileSelect(event)">
+                            <input type="file" name="delegate_signature" id="delegate_signature" class="form-control" accept="image/*" onchange="previewImage(event, 'signaturePreview')">
                             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'delegate_signature' } }))" title="สแกนเอกสาร">
                                 <i class="bi bi-camera"></i>
                             </button>
