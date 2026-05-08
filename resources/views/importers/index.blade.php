@@ -36,6 +36,9 @@
                         <td>{{ $importer->importerLicenseNo }}</td>
                         <td class="text-center">
                             <div class="d-flex flex-column flex-md-row justify-content-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="importer" data-model-id="{{ $importer->id }}" title="{{ __('Preview Data') }}">
+                                <i class="bi bi-search"></i>
+                            </button>
                             @can('edit-importers')
                             <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
                             @endcan

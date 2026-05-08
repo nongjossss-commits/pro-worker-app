@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agent;
+use App\Models\Delegate;
 use App\Models\Employee;
 use App\Models\Employer;
+use App\Models\Importer;
 use App\Models\JobOwner;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -98,6 +101,18 @@ class PreviewController extends Controller
                         'employees',
                         'terminatedEmployees'
                     ));
+
+                case 'importer':
+                    $importer = Importer::with('addresses')->findOrFail($id);
+                    return view('previews._importer_data', ['importer' => $importer]);
+
+                case 'agent':
+                    $agent = Agent::findOrFail($id);
+                    return view('previews._agent_data', ['agent' => $agent]);
+
+                case 'delegate':
+                    $delegate = Delegate::with('addresses')->findOrFail($id);
+                    return view('previews._delegate_data', ['delegate' => $delegate]);
 
                 default:
                     return response()->json(['error' => 'Invalid preview type specified.'], 400);

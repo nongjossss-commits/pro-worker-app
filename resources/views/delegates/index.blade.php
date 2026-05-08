@@ -39,6 +39,9 @@
                         <td>{{ $delegate->delegateNameTh }}</td>
                         <td>{{ $delegate->delegateId }}</td>
                         <td>
+                            <button type="button" class="btn btn-sm btn-info text-white btn-preview" data-model-type="delegate" data-model-id="{{ $delegate->id }}" title="{{ __('Preview Data') }}">
+                                <i class="bi bi-search"></i>
+                            </button>
                             @can('edit-delegates')
                             <a href="{{ route('delegates.edit', $delegate->id) }}" class="btn btn-sm btn-primary">Edit</a>
                             @endcan

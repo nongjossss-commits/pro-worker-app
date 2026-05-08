@@ -30,6 +30,9 @@
                         <td>{{ $agent->agentLicense }}</td>
                         <td>{{ $agent->agentPhone }}</td>
                         <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="agent" data-model-id="{{ $agent->id }}" title="{{ __('Preview Data') }}">
+                                <i class="bi bi-search"></i>
+                            </button>
                             @can('edit-agents')
                             <a href="{{ route('agents.edit', $agent) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
                             @endcan
