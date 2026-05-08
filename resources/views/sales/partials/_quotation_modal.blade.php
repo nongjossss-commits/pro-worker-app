@@ -48,7 +48,7 @@
                 return;
             }
             var s = document.createElement('script');
-            s.src = '{{ asset("js/financial-manager.js") }}';
+            s.src = '{{ asset("js/financial-manager.js") }}?v={{ @filemtime(public_path("js/financial-manager.js")) }}';
             s.onload = function() {
                 // Small delay to ensure function is registered
                 setTimeout(resolve, 50);

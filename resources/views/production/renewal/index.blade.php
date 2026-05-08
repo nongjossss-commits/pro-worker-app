@@ -1082,7 +1082,7 @@
 @include('production.registration.partials.edit_modal_script')
 
 @push('scripts')
-<script src="{{ asset('js/financial-manager.js') }}"></script>
+<script src="{{ asset('js/financial-manager.js') }}?v={{ @filemtime(public_path('js/financial-manager.js')) }}"></script>
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('appointmentSearch', () => ({

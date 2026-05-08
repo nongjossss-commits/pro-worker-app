@@ -1408,7 +1408,7 @@ class="row">
     </div>
 </div>
 <!-- Load the external script (ensure it's loaded only once) -->
-<script src="{{ asset('js/financial-manager.js') }}"></script>
+<script src="{{ asset('js/financial-manager.js') }}?v={{ @filemtime(public_path('js/financial-manager.js')) }}"></script>
 @else
     <div class="alert alert-danger">
         <i class="bi bi-lock-fill me-2"></i> {{ __('Access Denied: You do not have permission to view financial data.') }}

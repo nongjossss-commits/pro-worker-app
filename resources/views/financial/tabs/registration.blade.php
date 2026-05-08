@@ -103,7 +103,7 @@
             _fmScriptPromise = new Promise((resolve, reject) => {
                 if (typeof financialManager === 'function') { resolve(); return; }
                 const s = document.createElement('script');
-                s.src = '{{ asset("js/financial-manager.js") }}';
+                s.src = '{{ asset("js/financial-manager.js") }}?v={{ @filemtime(public_path("js/financial-manager.js")) }}';
                 s.onload  = resolve;
                 s.onerror = reject;
                 document.head.appendChild(s);

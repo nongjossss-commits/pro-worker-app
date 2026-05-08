@@ -285,12 +285,47 @@ if (typeof window.financialManager === 'undefined') {
                     }
                 });
 
+                // Lock employees already assigned to OTHER tiers so each employee
+                // belongs to exactly one tier (prevents double-billing). Match BY employee
+                // (not item.id) so it works across Pre-Prod ↔ Workflow where the same
+                // employee may have different ProductionItem IDs. Active tier's
+                // employees stay visible so the user can untick them.
+                const employeesInOtherTiers = new Set();
+                const employeesInActiveTier = new Set();
+                const itemIdsInOtherTiers = new Set();
+                const itemIdsInActiveTier = new Set();
+                const itemIdToEmpId = new Map();
+                this.productionItems.forEach(it => {
+                    if (it.employee_id != null) itemIdToEmpId.set(it.id, it.employee_id);
+                });
+                this.pricingTiers.forEach((tier, idx) => {
+                    if (!tier.item_ids || !Array.isArray(tier.item_ids)) return;
+                    const empSet = (idx === this.activeTierIndex) ? employeesInActiveTier : employeesInOtherTiers;
+                    const idSet = (idx === this.activeTierIndex) ? itemIdsInActiveTier : itemIdsInOtherTiers;
+                    tier.item_ids.forEach(rawId => {
+                        idSet.add(rawId);
+                        let empId = null;
+                        if (typeof rawId === 'string' && rawId.startsWith('emp_')) {
+                            const parsed = parseInt(rawId.substring(4));
+                            if (!isNaN(parsed)) empId = parsed;
+                        } else {
+                            empId = itemIdToEmpId.get(rawId);
+                            if (empId == null) empId = itemIdToEmpId.get(parseInt(rawId));
+                        }
+                        if (empId != null) empSet.add(empId);
+                    });
+                });
                 const list = [];
                 const itemsByEmpId = {};
 
                 // 1. Production Items
                 this.productionItems.forEach(item => {
                     if (usedItemIds.has(item.id)) return; // Locked by installment
+                    // Hide if in another tier (by item ID OR by employee match)
+                    // UNLESS also in active tier (then keep visible so user can untick)
+                    const inOther = itemIdsInOtherTiers.has(item.id) || (item.employee_id != null && employeesInOtherTiers.has(item.employee_id));
+                    const inActive = itemIdsInActiveTier.has(item.id) || (item.employee_id != null && employeesInActiveTier.has(item.employee_id));
+                    if (inOther && !inActive) return;
 
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
 
@@ -305,6 +340,10 @@ if (typeof window.financialManager === 'undefined') {
                 this.employees.forEach(emp => {
                     if (itemsByEmpId[emp.id]) return; // Already exists as item
                     if (usedEmployeeIds.has(emp.id)) return; // Locked
+                    const candidateId = 'emp_' + emp.id;
+                    const inOther = itemIdsInOtherTiers.has(candidateId) || employeesInOtherTiers.has(emp.id);
+                    const inActive = itemIdsInActiveTier.has(candidateId) || employeesInActiveTier.has(emp.id);
+                    if (inOther && !inActive) return;
 
                     const isCancelled = this.isCancelledStatus(emp.status);
                     if (this.tierEmployeeFilter === 'active' && isCancelled) return;
@@ -333,6 +372,14 @@ if (typeof window.financialManager === 'undefined') {
             get availableItems() {
                 if (!this.activeGroupId) return [];
 
+                // Build map of current-view productionItem.id -> employee_id so we can
+                // resolve employee for items even when the transaction's items pivot
+                // doesn't carry employee_id directly (Pre-Prod ↔ Workflow consistency).
+                const itemIdToEmpId = new Map();
+                this.productionItems.forEach(it => {
+                    if (it.employee_id != null) itemIdToEmpId.set(it.id, it.employee_id);
+                });
+
                 const usedItemIds = new Set();
                 const usedEmployeeIds = new Set();
 
@@ -342,7 +389,10 @@ if (typeof window.financialManager === 'undefined') {
                     if (t.items && Array.isArray(t.items)) {
                         t.items.forEach(item => {
                             usedItemIds.add(item.id);
-                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
+                            // Resolve employee_id from the item itself OR from current view's items
+                            let empId = item.employee_id;
+                            if (empId == null) empId = itemIdToEmpId.get(item.id) || itemIdToEmpId.get(parseInt(item.id));
+                            if (empId != null) usedEmployeeIds.add(empId);
                         });
                     }
                 });
@@ -422,9 +472,22 @@ if (typeof window.financialManager === 'undefined') {
             get editModalItems() {
                 if (!this.activeGroupId) return [];
 
+                // Build map of current-view productionItem.id -> employee_id (same robustness
+                // as availableItems — handles cross-stage Pre-Prod/Workflow item ID drift).
+                const itemIdToEmpId = new Map();
+                this.productionItems.forEach(it => {
+                    if (it.employee_id != null) itemIdToEmpId.set(it.id, it.employee_id);
+                });
+
                 const attachedItemIds = new Set();
+                const attachedEmployeeIds = new Set();
                 if (this.editingTransaction.items && Array.isArray(this.editingTransaction.items)) {
-                    this.editingTransaction.items.forEach(item => attachedItemIds.add(item.id));
+                    this.editingTransaction.items.forEach(item => {
+                        attachedItemIds.add(item.id);
+                        let empId = item.employee_id;
+                        if (empId == null) empId = itemIdToEmpId.get(item.id) || itemIdToEmpId.get(parseInt(item.id));
+                        if (empId != null) attachedEmployeeIds.add(empId);
+                    });
                 }
 
                 const usedItemIds = new Set();
@@ -435,7 +498,9 @@ if (typeof window.financialManager === 'undefined') {
                     if (t.items && Array.isArray(t.items)) {
                         t.items.forEach(item => {
                             usedItemIds.add(item.id);
-                            if(item.employee_id) usedEmployeeIds.add(item.employee_id);
+                            let empId = item.employee_id;
+                            if (empId == null) empId = itemIdToEmpId.get(item.id) || itemIdToEmpId.get(parseInt(item.id));
+                            if (empId != null) usedEmployeeIds.add(empId);
                         });
                     }
                 });
@@ -443,18 +508,25 @@ if (typeof window.financialManager === 'undefined') {
                 const list = [];
                 const itemsByEmpId = {};
 
-                // 1. Production Items
+                // 1. Production Items — show if attached to current tx OR (has tier AND not used elsewhere).
+                // Per-head mode requires a tier to be set; attached items remain visible
+                // even without a tier so the user can untick them.
                 this.productionItems.forEach(item => {
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
 
-                    const isAttached = attachedItemIds.has(item.id);
-                    const isUsed = usedItemIds.has(item.id);
+                    const isAttached = attachedItemIds.has(item.id) || (item.employee_id != null && attachedEmployeeIds.has(item.employee_id));
+                    const isUsed = usedItemIds.has(item.id) || (item.employee_id != null && usedEmployeeIds.has(item.employee_id));
 
                     const isCancelled = this.isCancelledStatus(item.status);
                     if (this.editTransactionEmployeeFilter === 'active' && isCancelled) return;
                     if (this.editTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
 
-                    if (isAttached || !isUsed) {
+                    let hasPrice = true;
+                    if (this.pricingMode === 'per_head') {
+                        hasPrice = !!this.getTierForItem(item.id);
+                    }
+
+                    if (isAttached || (hasPrice && !isUsed)) {
                          list.push({
                             id: item.id,
                             name: item.name,
@@ -473,31 +545,34 @@ if (typeof window.financialManager === 'undefined') {
                     }
                 });
 
-                // 2. Candidates
-                this.employees.forEach(emp => {
-                    if (itemsByEmpId[emp.id]) return; // Already has item
-                    if (usedEmployeeIds.has(emp.id)) return; // Used elsewhere
+                // 2. Candidates — skip in per-head mode (matches availableItems behavior;
+                // candidates without tier shouldn't show until tier is set).
+                if (this.pricingMode !== 'per_head') {
+                    this.employees.forEach(emp => {
+                        if (itemsByEmpId[emp.id]) return; // Already has item
+                        if (usedEmployeeIds.has(emp.id) && !attachedEmployeeIds.has(emp.id)) return; // Used elsewhere (and not in current tx)
 
-                    const isCancelled = this.isCancelledStatus(emp.status);
-                    if (this.editTransactionEmployeeFilter === 'active' && isCancelled) return;
-                    if (this.editTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
+                        const isCancelled = this.isCancelledStatus(emp.status);
+                        if (this.editTransactionEmployeeFilter === 'active' && isCancelled) return;
+                        if (this.editTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
 
-                    list.push({
-                        id: 'emp_' + emp.id,
-                        name: emp.name,
-                        photo: emp.photo,
-                        name_en: emp.name_en,
-                        title_en: emp.title_en,
-                        nationality: emp.nationality,
-                        insurance_type: emp.insurance_type,
-                        passport: emp.passport,
-                        has_visa: emp.has_visa,
-                        last_step_name: emp.last_step_name,
-                        status: emp.status,
-                        type: 'employee',
-                        attached: false
+                        list.push({
+                            id: 'emp_' + emp.id,
+                            name: emp.name,
+                            photo: emp.photo,
+                            name_en: emp.name_en,
+                            title_en: emp.title_en,
+                            nationality: emp.nationality,
+                            insurance_type: emp.insurance_type,
+                            passport: emp.passport,
+                            has_visa: emp.has_visa,
+                            last_step_name: emp.last_step_name,
+                            status: emp.status,
+                            type: 'employee',
+                            attached: attachedEmployeeIds.has(emp.id)
+                        });
                     });
-                });
+                }
 
                 return list;
             },
