@@ -53,13 +53,13 @@
                 <input type="text" class="form-control" id="employerNameTh" name="employerNameTh" value="{{ old('employerNameTh', $employer->getRawOriginal('employerNameTh')) }}">
             </div>
             <div class="col-md-6">
-                <label for="name_suffix" class="form-label">ต่อท้ายชื่อ</label>
-                <input type="text" class="form-control" id="name_suffix" name="name_suffix" value="{{ old('name_suffix', $employer->name_suffix) }}" placeholder="ข้อความต่อท้ายชื่อนายจ้าง">
+                <label for="name_suffix" class="form-label">{{ __('Name Suffix') }}</label>
+                <input type="text" class="form-control" id="name_suffix" name="name_suffix" value="{{ old('name_suffix', $employer->name_suffix) }}" placeholder="{{ __('Suffix appended to employer name') }}">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label class="form-label text-muted">ตัวอย่างการแสดงผล</label>
+                <label class="form-label text-muted">{{ __('Display Preview') }}</label>
                 <p class="form-control-plaintext text-muted mb-0">{{ $employer->getRawOriginal('employerNameTh') ?? '' }} {{ $employer->name_suffix ? '(' . $employer->name_suffix . ')' : '' }}</p>
             </div>
             <div class="col-md-6">

@@ -87,6 +87,15 @@ class Employer extends Model
         'regDate' => 'date:Y-m-d',
     ];
 
+    /**
+     * ฟิลด์ที่ห้ามหลุดใน JSON / API response / serialization (เช่น ตอน $employer->toJson())
+     * Password และ outsource_password ต้อง mask ที่ระดับ model — ห้ามเปิดเผย plain-text
+     */
+    protected $hidden = [
+        'employerPassword',
+        'outsource_password',
+    ];
+
     protected function employerNameTh(): Attribute
     {
         return Attribute::make(

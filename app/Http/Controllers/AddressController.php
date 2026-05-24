@@ -55,7 +55,7 @@ class AddressController extends Controller
 
     public function update(Request $request, Address $address)
     {
-        $request->validate([
+        $validated = $request->validate([
             'type' => 'required|string|in:registered,workplace',
             'addrNo' => 'nullable|string|max:255',
             'addrMoo' => 'nullable|string|max:255',
@@ -75,7 +75,7 @@ class AddressController extends Controller
             'addrZipCodeEn' => 'nullable|string|max:255',
         ]);
 
-        $address->update($request->all());
+        $address->update($validated);
 
         return response()->json(['address' => $address]);
     }

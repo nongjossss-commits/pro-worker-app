@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'เพิ่มพนักงานใหม่')
+@section('title', __('Add New Employee'))
 
 @section('content')
 <div class="content-section">
     @if(isset($employer) && $employer)
-        <h2 class="mb-4">เพิ่มพนักงานสำหรับ {{ $employer->employerNameTh }}</h2>
+        <h2 class="mb-4">{{ __('Add Employee for') }} {{ $employer->employerNameTh }}</h2>
     @else
-        <h2 class="mb-4">เพิ่มพนักงานใหม่</h2>
+        <h2 class="mb-4">{{ __('Add New Employee') }}</h2>
     @endif
 
     @if ($errors->any())
@@ -30,8 +30,8 @@
         @include('employees.partials.create_form_partial_content')
 
         <div class="mt-4 d-flex justify-content-end">
-            <a href="{{ isset($employer) ? route('employers.edit', $employer->id) : route('employees.index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
-            <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน</button>
+            <a href="{{ isset($employer) ? route('employers.edit', $employer->id) : route('employees.index') }}" class="btn btn-secondary me-2">{{ __('Cancel') }}</a>
+            <button type="submit" class="btn btn-primary">{{ __('Save Employee Data') }}</button>
         </div>
     </form>
 </div>

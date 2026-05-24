@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'แก้ไขข้อมูลพนักงาน')
+@section('title', __('Edit Employee'))
 
 @section('content')
 <div class="content-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>แก้ไขข้อมูลพนักงาน: <span class="fw-bold">{{ $employee->employeeNameTh }}</span></h2>
-        <a href="{{ route('employers.edit', $employee->employer_id) }}#employee-card-{{ $employee->id }}" class="btn btn-secondary">กลับไปที่นายจ้าง</a>
+        <h2>{{ __('Edit Employee') }}: <span class="fw-bold">{{ $employee->employeeNameTh }}</span></h2>
+        <a href="{{ route('employers.edit', $employee->employer_id) }}#employee-card-{{ $employee->id }}" class="btn btn-secondary">{{ __('Back to Employer') }}</a>
     </div>
 
     @if(isset($missingFields) && count($missingFields) > 0)

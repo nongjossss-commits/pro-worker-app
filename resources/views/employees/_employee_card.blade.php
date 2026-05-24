@@ -139,7 +139,7 @@
                         @endif
                     @endif
                 </h5>
-                <small class="text-muted" title="นายจ้าง">
+                <small class="text-muted" title="{{ __('Employer') }}">
                     {{ $employerName }}
                     @if(request('addrProvince') && $employee->employer)
                         @foreach($employee->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
@@ -160,17 +160,17 @@
             <p class="mb-1">
                 {{ trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})
             </p>
-            <small class="text-muted d-block">Passport: {{ $employee->employeePassport ?? '-' }} (หมดอายุ: {{ optional($employee->passportExpiryDate)->format('d/m/Y') ?? '-' }})</small>
-            <small class="text-muted d-block">Work Permit: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> (หมดอายุ: {{ optional($employee->workPermitExpiryDate)->format('d/m/Y') ?? '-' }})</small>
-            <small class="text-muted d-block">Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ optional($employee->ninetyDayReportDate)->format('d/m/Y') ?? '-' }}</small>
+            <small class="text-muted d-block">{{ __('Passport') }}: {{ $employee->employeePassport ?? '-' }} ({{ __('Expires') }}: {{ optional($employee->passportExpiryDate)->format('d/m/Y') ?? '-' }})</small>
+            <small class="text-muted d-block">{{ __('Work Permit') }}: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> ({{ __('Expires') }}: {{ optional($employee->workPermitExpiryDate)->format('d/m/Y') ?? '-' }})</small>
+            <small class="text-muted d-block">{{ __('Visa') }} ({{ $employee->workPermitMOUGroup ?? '-' }}) | {{ __('90-Day Report') }}: {{ optional($employee->ninetyDayReportDate)->format('d/m/Y') ?? '-' }}</small>
         </div>
 
         {{-- Action Buttons --}}
         <div class="ms-auto ps-3">
              <div class="btn-group-vertical btn-group-sm">
-                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="แก้ไข"><i class="bi bi-pencil-fill"></i></a>
-                 <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="ไปที่ข้อมูลนายจ้าง"><i class="bi bi-geo-alt-fill"></i></a>
-                 <button type="button" class="btn btn-outline-danger" title="ลบ"><i class="bi bi-trash-fill"></i></button>
+                 <a href="{{ route('employees.edit', ['employer' => $employee->employer_id, 'employee' => $employee->id]) }}" class="btn btn-outline-primary" title="{{ __('Edit') }}"><i class="bi bi-pencil-fill"></i></a>
+                 <a href="{{ route('employees.locate', $employee) }}" class="btn btn-outline-info" title="{{ __('Locate Employer') }}"><i class="bi bi-geo-alt-fill"></i></a>
+                 <button type="button" class="btn btn-outline-danger" title="{{ __('Delete') }}"><i class="bi bi-trash-fill"></i></button>
              </div>
         </div>
     </div>

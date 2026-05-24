@@ -213,7 +213,7 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="name_list_number" id="col_namelist">
-                                        <label class="form-check-label" for="col_namelist">เลข RA จากระบบ outsource</label>
+                                        <label class="form-check-label" for="col_namelist">{{ __('RA Number from Outsource') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
@@ -249,13 +249,13 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="bank_name" id="col_bank_name">
-                                        <label class="form-check-label" for="col_bank_name">ชื่อธนาคาร</label>
+                                        <label class="form-check-label" for="col_bank_name">{{ __('Bank Name') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="bank_account_number" id="col_bank_account_number">
-                                        <label class="form-check-label" for="col_bank_account_number">เลขบัญชีธนาคาร</label>
+                                        <label class="form-check-label" for="col_bank_account_number">{{ __('Bank Account Number') }}</label>
                                     </div>
                                 </div>
                             </div>
@@ -335,13 +335,13 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="password" id="col_password">
-                                        <label class="form-check-label" for="col_password">รหัสสำหรับอีเมล</label>
+                                        <label class="form-check-label" for="col_password">{{ __('Email Password') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="outsource_code" id="col_outsource_code">
-                                        <label class="form-check-label" for="col_outsource_code">รหัสสำหรับระบบ Outsource</label>
+                                        <label class="form-check-label" for="col_outsource_code">{{ __('Outsource System Code') }}</label>
                                     </div>
                                 </div>
                             </div>
@@ -354,19 +354,19 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="employerTaxId" id="col_emp_tax_id">
-                                        <label class="form-check-label" for="col_emp_tax_id">เลขประจำตัวนายจ้าง</label>
+                                        <label class="form-check-label" for="col_emp_tax_id">{{ __('Employer Tax ID') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="businessType" id="col_emp_business_type">
-                                        <label class="form-check-label" for="col_emp_business_type">ประเภทกิจการ</label>
+                                        <label class="form-check-label" for="col_emp_business_type">{{ __('Business Type') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="job_owner_id" id="col_emp_job_owner">
-                                        <label class="form-check-label" for="col_emp_job_owner">ชื่อเจ้าของงาน</label>
+                                        <label class="form-check-label" for="col_emp_job_owner">{{ __('Job Owner Name') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
@@ -403,10 +403,10 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="include_name_suffix" value="1" id="include_name_suffix">
                             <label class="form-check-label fw-bold" for="include_name_suffix">
-                                <i class="bi bi-tag me-1"></i> รวมข้อความต่อท้ายชื่อ (Name Suffix)
+                                <i class="bi bi-tag me-1"></i> {{ __('Include Name Suffix') }}
                             </label>
                         </div>
-                        <small class="text-muted">เมื่อเลือก จะต่อท้ายชื่อลูกจ้าง (EN) และชื่อนายจ้าง (ไทย) ด้วยข้อความที่กำหนดไว้</small>
+                        <small class="text-muted">{{ __('When selected, name suffix will be appended to employee (EN) and employer (Thai) names') }}</small>
                     </div>
                 </div>
                 <div class="modal-footer">

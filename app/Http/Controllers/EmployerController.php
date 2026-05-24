@@ -300,150 +300,39 @@ class EmployerController extends Controller
 
     public function update(Request $request, Employer $employer)
     {
-        $validated = $request->validate([
-            'employerNameTh' => 'required|string|max:255',
-            'employerNameEn' => 'nullable|string|max:255',
-            'name_suffix' => 'nullable|string|max:255',
-            'employerId' => ['required', 'string', Rule::unique('employers')->ignore($employer->id), 'max:255'],
-            'employerTaxId' => 'nullable|string|max:255',
-            'employerEmail' => ['nullable', 'string', 'max:255', Rule::unique('employers', 'employerEmail')->ignore($employer->id)],
-            'employerPassword' => 'nullable|string|max:255',
-            'employerPhone' => 'nullable|string|max:255',
-            'outsource_re_code' => 'nullable|string|max:255',
-            'outsource_password' => 'nullable|string|max:255',
-            'socialSecurityHospital' => 'nullable|string|max:255',
-            'businessType' => 'required|string|max:255',
-            'signerNameTh' => 'nullable|string|max:255',
-            'signerNameEn' => 'nullable|string|max:255',
-            'signer_2_name_th' => 'nullable|string|max:255',
-            'signer_2_name_en' => 'nullable|string|max:255',
-            'businessTypeEn' => 'nullable|string|max:255',
-            'regCapital' => 'nullable|numeric',
-            'regDate' => 'nullable|date',
-            'minimum_wage' => 'nullable|numeric',
-            'employer_doc_company' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employer_doc_company_expiry' => 'nullable|date',
-            'employer_doc_lease' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employer_doc_construction' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employer_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employer_doc_other_1_desc' => 'nullable|string|max:255',
-            'employer_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employer_doc_other_2_desc' => 'nullable|string|max:255',
-            'employer_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
-            'employer_doc_other_3_desc' => 'nullable|string|max:255',
-            'job_owner_id' => 'required|exists:job_owners,id',
-            'assigned_staff_ids' => 'nullable|array',
-            'assigned_staff_ids.*' => 'exists:users,id',
-            // Signatures & Stamp
-            'signature_1_action' => 'nullable|in:keep,generate,upload,draw',
-            'signature_1_file' => 'nullable|required_if:signature_1_action,upload|image|max:2048',
-            'signature_1_base64' => 'nullable|string',
-            'signature_2_action' => 'nullable|in:keep,generate,upload,draw',
-            'signature_2_file' => 'nullable|required_if:signature_2_action,upload|image|max:2048',
-            'signature_2_base64' => 'nullable|string',
-            'employer_stamp_action' => 'nullable|in:keep,upload,draw',
-            'employer_stamp_file' => 'nullable|required_if:employer_stamp_action,upload|image|max:2048',
-            'employer_stamp_base64' => 'nullable|string',
-        ]);
+        $validated = $request->validate($this->getEmployerUpdateRules($employer));
 
-        // Employers shouldn't be updating signatures or stamps. Clear them if present just in case.
+        // Employer role ห้ามแก้ลายเซ็นและตราประทับ — ตัด field ที่ส่งมาออกก่อนประมวลผล
         if (auth()->user()->hasRole('employer')) {
-            unset($validated['signature_1_action'], $validated['signature_1_file'], $validated['signature_1_base64']);
-            unset($validated['signature_2_action'], $validated['signature_2_file'], $validated['signature_2_base64']);
-            unset($validated['employer_stamp_action'], $validated['employer_stamp_file'], $validated['employer_stamp_base64']);
+            $this->stripSignatureFields($validated);
         }
 
-        // Handle docs
-        $docFields = ['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'];
-        foreach ($docFields as $field) {
-            if ($request->hasFile($field)) {
-                if ($employer->{$field}) {
-                    Storage::disk('public')->delete($employer->{$field});
-                }
-                $validated[$field] = $request->file($field)->store('employer_documents', 'public');
-            }
-        }
+        $this->applyEmployerDocs($employer, $request, $validated);
 
-        // Handle Signatures
-        $sigService = app(SignatureGeneratorService::class);
+        // Signer 1: รองรับทั้ง 4 modes (keep/generate/upload/draw)
+        $this->applySignatureField($employer, $request, $validated,
+            $request->input('signature_1_action', 'keep'),
+            'signature_1_file', 'signature_1_base64', 'signature_1_path', 'sig1',
+            'EMPR-' . $employer->id . '-1-' . time()
+        );
 
-        // Signer 1
-        $sig1Action = $request->input('signature_1_action', 'keep');
-        if ($sig1Action === 'upload' && $request->hasFile('signature_1_file')) {
-             if ($employer->signature_1_path) Storage::disk('public')->delete($employer->signature_1_path);
-             $validated['signature_1_path'] = $request->file('signature_1_file')->store('signatures/employers', 'public');
-        } elseif ($sig1Action === 'generate') {
-             if ($employer->signature_1_path) Storage::disk('public')->delete($employer->signature_1_path);
-             $seed = 'EMPR-' . $employer->id . '-1-' . time();
-             $content = $sigService->generate($seed);
-             $path = 'signatures/employers/emp_' . $employer->id . '_sig1_' . time() . '.png';
-             Storage::disk('public')->put($path, $content);
-             $validated['signature_1_path'] = $path;
-        } elseif ($sig1Action === 'draw' && $request->filled('signature_1_base64')) {
-             $base64Image = $request->input('signature_1_base64');
-             if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-                 if ($employer->signature_1_path) Storage::disk('public')->delete($employer->signature_1_path);
-                 $data = substr($base64Image, strpos($base64Image, ',') + 1);
-                 $data = base64_decode($data);
-                 $path = 'signatures/employers/emp_' . $employer->id . '_sig1_' . time() . '.' . strtolower($type[1]);
-                 Storage::disk('public')->put($path, $data);
-                 $validated['signature_1_path'] = $path;
-             }
-        }
+        // Signer 2: รองรับเหมือนกัน
+        $this->applySignatureField($employer, $request, $validated,
+            $request->input('signature_2_action', 'keep'),
+            'signature_2_file', 'signature_2_base64', 'signature_2_path', 'sig2',
+            'EMPR-' . $employer->id . '-2-' . time()
+        );
 
-        // Signer 2
-        $sig2Action = $request->input('signature_2_action', 'keep');
-        if ($sig2Action === 'upload' && $request->hasFile('signature_2_file')) {
-             if ($employer->signature_2_path) Storage::disk('public')->delete($employer->signature_2_path);
-             $validated['signature_2_path'] = $request->file('signature_2_file')->store('signatures/employers', 'public');
-        } elseif ($sig2Action === 'generate') {
-             if ($employer->signature_2_path) Storage::disk('public')->delete($employer->signature_2_path);
-             $seed = 'EMPR-' . $employer->id . '-2-' . time();
-             $content = $sigService->generate($seed);
-             $path = 'signatures/employers/emp_' . $employer->id . '_sig2_' . time() . '.png';
-             Storage::disk('public')->put($path, $content);
-             $validated['signature_2_path'] = $path;
-        } elseif ($sig2Action === 'draw' && $request->filled('signature_2_base64')) {
-             $base64Image = $request->input('signature_2_base64');
-             if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-                 if ($employer->signature_2_path) Storage::disk('public')->delete($employer->signature_2_path);
-                 $data = substr($base64Image, strpos($base64Image, ',') + 1);
-                 $data = base64_decode($data);
-                 $path = 'signatures/employers/emp_' . $employer->id . '_sig2_' . time() . '.' . strtolower($type[1]);
-                 Storage::disk('public')->put($path, $data);
-                 $validated['signature_2_path'] = $path;
-             }
-        }
-
-        // Employer Stamp
+        // Stamp: ไม่รองรับ generate (ส่ง null seed) + employer role ห้ามแก้
         if (!auth()->user()->hasRole('employer')) {
-            $stampAction = $request->input('employer_stamp_action', 'keep');
-            if ($stampAction === 'upload' && $request->hasFile('employer_stamp_file')) {
-                if ($employer->employer_stamp_path) Storage::disk('public')->delete($employer->employer_stamp_path);
-                $validated['employer_stamp_path'] = $request->file('employer_stamp_file')->store('signatures/employers', 'public');
-            } elseif ($stampAction === 'draw' && $request->filled('employer_stamp_base64')) {
-                $base64Image = $request->input('employer_stamp_base64');
-                if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-                    if ($employer->employer_stamp_path) Storage::disk('public')->delete($employer->employer_stamp_path);
-                    $data = substr($base64Image, strpos($base64Image, ',') + 1);
-                    $data = base64_decode($data);
-                    $path = 'signatures/employers/emp_' . $employer->id . '_stamp_' . time() . '.' . strtolower($type[1]);
-                    Storage::disk('public')->put($path, $data);
-                    $validated['employer_stamp_path'] = $path;
-                }
-            }
+            $this->applySignatureField($employer, $request, $validated,
+                $request->input('employer_stamp_action', 'keep'),
+                'employer_stamp_file', 'employer_stamp_base64', 'employer_stamp_path', 'stamp',
+                null
+            );
         }
 
-        // Cleanup fields not in DB
-        unset($validated['signature_1_action']);
-        unset($validated['signature_1_file']);
-        unset($validated['signature_1_base64']);
-        unset($validated['signature_2_action']);
-        unset($validated['signature_2_file']);
-        unset($validated['signature_2_base64']);
-        unset($validated['employer_stamp_action']);
-        unset($validated['employer_stamp_file']);
-        unset($validated['employer_stamp_base64']);
+        $this->cleanupSignatureMetaFields($validated);
 
         $staffIds = $validated['assigned_staff_ids'] ?? [];
         unset($validated['assigned_staff_ids']);
@@ -887,5 +776,168 @@ class EmployerController extends Controller
         $disposition = $request->input('disposition', 'inline');
 
         return \App\Helpers\PdfHelper::streamFile($disk, $filePath, $disposition, $filename);
+    }
+
+    // === Helpers ของ update() — แตกออกมาเพื่อให้ orchestrator อ่านง่าย ===
+
+    /** Doc field ทั้งหมดของ employer ที่ใช้ใน update */
+    private const EMPLOYER_DOC_FIELDS = [
+        'employer_doc_company',
+        'employer_doc_lease',
+        'employer_doc_construction',
+        'employer_doc_other_1',
+        'employer_doc_other_2',
+        'employer_doc_other_3',
+    ];
+
+    /** ฟิลด์ meta ของ signature/stamp ที่ไม่อยู่ใน DB — ต้อง unset ก่อน $employer->update() */
+    private const SIGNATURE_META_FIELDS = [
+        'signature_1_action', 'signature_1_file', 'signature_1_base64',
+        'signature_2_action', 'signature_2_file', 'signature_2_base64',
+        'employer_stamp_action', 'employer_stamp_file', 'employer_stamp_base64',
+    ];
+
+    /**
+     * Validation rules ของ update() — แยกเป็น method เพราะมี Rule::unique ที่ต้อง ignore $employer->id
+     */
+    private function getEmployerUpdateRules(Employer $employer): array
+    {
+        return [
+            'employerNameTh'              => 'required|string|max:255',
+            'employerNameEn'              => 'nullable|string|max:255',
+            'name_suffix'                 => 'nullable|string|max:255',
+            'employerId'                  => ['required', 'string', Rule::unique('employers')->ignore($employer->id), 'max:255'],
+            'employerTaxId'               => 'nullable|string|max:255',
+            'employerEmail'               => ['nullable', 'string', 'max:255', Rule::unique('employers', 'employerEmail')->ignore($employer->id)],
+            'employerPassword'            => 'nullable|string|max:255',
+            'employerPhone'               => 'nullable|string|max:255',
+            'outsource_re_code'           => 'nullable|string|max:255',
+            'outsource_password'          => 'nullable|string|max:255',
+            'socialSecurityHospital'      => 'nullable|string|max:255',
+            'businessType'                => 'required|string|max:255',
+            'signerNameTh'                => 'nullable|string|max:255',
+            'signerNameEn'                => 'nullable|string|max:255',
+            'signer_2_name_th'            => 'nullable|string|max:255',
+            'signer_2_name_en'            => 'nullable|string|max:255',
+            'businessTypeEn'              => 'nullable|string|max:255',
+            'regCapital'                  => 'nullable|numeric',
+            'regDate'                     => 'nullable|date',
+            'minimum_wage'                => 'nullable|numeric',
+            'employer_doc_company'        => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_company_expiry' => 'nullable|date',
+            'employer_doc_lease'          => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_construction'   => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_other_1'        => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_other_1_desc'   => 'nullable|string|max:255',
+            'employer_doc_other_2'        => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_other_2_desc'   => 'nullable|string|max:255',
+            'employer_doc_other_3'        => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'employer_doc_other_3_desc'   => 'nullable|string|max:255',
+            'job_owner_id'                => 'required|exists:job_owners,id',
+            'assigned_staff_ids'          => 'nullable|array',
+            'assigned_staff_ids.*'        => 'exists:users,id',
+            // Signatures & Stamp
+            'signature_1_action'          => 'nullable|in:keep,generate,upload,draw',
+            'signature_1_file'            => 'nullable|required_if:signature_1_action,upload|image|max:2048',
+            'signature_1_base64'          => 'nullable|string',
+            'signature_2_action'          => 'nullable|in:keep,generate,upload,draw',
+            'signature_2_file'            => 'nullable|required_if:signature_2_action,upload|image|max:2048',
+            'signature_2_base64'          => 'nullable|string',
+            'employer_stamp_action'       => 'nullable|in:keep,upload,draw',
+            'employer_stamp_file'         => 'nullable|required_if:employer_stamp_action,upload|image|max:2048',
+            'employer_stamp_base64'       => 'nullable|string',
+        ];
+    }
+
+    /** ลบ signature/stamp meta fields จาก validated (ใช้ตอน user role = employer) */
+    private function stripSignatureFields(array &$validated): void
+    {
+        foreach (self::SIGNATURE_META_FIELDS as $field) {
+            unset($validated[$field]);
+        }
+    }
+
+    /** unset signature/stamp meta fields ก่อน $employer->update() — กัน DB error เพราะไม่มี column */
+    private function cleanupSignatureMetaFields(array &$validated): void
+    {
+        foreach (self::SIGNATURE_META_FIELDS as $field) {
+            unset($validated[$field]);
+        }
+    }
+
+    /** จัดการ doc files (6 fields) — ลบไฟล์เก่าก่อน save ใหม่เพื่อไม่ให้ storage รก */
+    private function applyEmployerDocs(Employer $employer, Request $request, array &$validated): void
+    {
+        foreach (self::EMPLOYER_DOC_FIELDS as $field) {
+            if (!$request->hasFile($field)) continue;
+
+            if ($employer->{$field}) {
+                Storage::disk('public')->delete($employer->{$field});
+            }
+            $validated[$field] = $request->file($field)->store('employer_documents', 'public');
+        }
+    }
+
+    /**
+     * Universal handler สำหรับ signature/stamp 1 ตัว
+     *
+     * @param Employer    $employer       Owner
+     * @param Request     $request        HTTP request
+     * @param array       $validated      array ที่จะเซต path ที่ได้ (by-ref)
+     * @param string      $action         Mode: 'keep' | 'generate' | 'upload' | 'draw'
+     * @param string      $fileInput      Name ของ file input (เช่น 'signature_1_file')
+     * @param string      $base64Field    Name ของ base64 input (เช่น 'signature_1_base64')
+     * @param string      $dbField        Field ใน DB ที่จะเก็บ path (เช่น 'signature_1_path')
+     * @param string      $filenameSlug   Slug สำหรับชื่อไฟล์ (เช่น 'sig1', 'sig2', 'stamp')
+     * @param string|null $generateSeed   Seed สำหรับ procedural gen — null = ไม่รองรับ generate (เช่น stamp)
+     */
+    private function applySignatureField(
+        Employer $employer,
+        Request $request,
+        array &$validated,
+        string $action,
+        string $fileInput,
+        string $base64Field,
+        string $dbField,
+        string $filenameSlug,
+        ?string $generateSeed
+    ): void {
+        if ($action === 'upload' && $request->hasFile($fileInput)) {
+            $this->deleteIfExists($employer->{$dbField});
+            $validated[$dbField] = $request->file($fileInput)->store('signatures/employers', 'public');
+            return;
+        }
+
+        if ($action === 'generate' && $generateSeed !== null) {
+            $this->deleteIfExists($employer->{$dbField});
+            $sigService = app(SignatureGeneratorService::class);
+            $content = $sigService->generate($generateSeed);
+            // ใช้ uniqid + microtime แทน time() กัน filename collision เมื่อ concurrent uploads
+            $unique = uniqid('', true);
+            $path = "signatures/employers/emp_{$employer->id}_{$filenameSlug}_{$unique}.png";
+            Storage::disk('public')->put($path, $content);
+            $validated[$dbField] = $path;
+            return;
+        }
+
+        if ($action === 'draw' && $request->filled($base64Field)) {
+            $base64Image = $request->input($base64Field);
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
+                $this->deleteIfExists($employer->{$dbField});
+                $data = base64_decode(substr($base64Image, strpos($base64Image, ',') + 1));
+                $unique = uniqid('', true);
+                $path = "signatures/employers/emp_{$employer->id}_{$filenameSlug}_{$unique}." . strtolower($type[1]);
+                Storage::disk('public')->put($path, $data);
+                $validated[$dbField] = $path;
+            }
+        }
+    }
+
+    /** ลบไฟล์ใน public disk ถ้า path มีค่า */
+    private function deleteIfExists(?string $path): void
+    {
+        if ($path) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

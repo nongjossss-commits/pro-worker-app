@@ -741,27 +741,33 @@ class SalesLeadController extends Controller
      */
     public function loadFinancialTab(SalesLead $sales)
     {
-        // Find or create a production order for this sales lead
-        $financeOrder = ProductionOrder::where('sales_lead_id', $sales->id)->first();
+        // ครอบ DB transaction: 2 user เปิด finance tab พร้อมกันอาจสร้าง ProductionOrder/Group ซ้ำ
+        $financeOrder = \DB::transaction(function () use ($sales) {
+            $order = ProductionOrder::where('sales_lead_id', $sales->id)
+                ->lockForUpdate()
+                ->first();
 
-        if (!$financeOrder) {
-            $financeOrder = ProductionOrder::create([
-                'employer_id'   => $sales->employer_id, // nullable for temp employers
-                'sales_lead_id' => $sales->id,
-                'status'        => 'sales_quotation',
-                'type'          => 'employer',
-                'project_name'  => 'Sales Quotation - ' . $sales->employerNameTh,
-                'financial_data' => [],
-            ]);
-        }
+            if (!$order) {
+                $order = ProductionOrder::create([
+                    'employer_id'   => $sales->employer_id, // nullable for temp employers
+                    'sales_lead_id' => $sales->id,
+                    'status'        => 'sales_quotation',
+                    'type'          => 'employer',
+                    'project_name'  => 'Sales Quotation - ' . $sales->employerNameTh,
+                    'financial_data' => [],
+                ]);
+            }
 
-        // Create default financial group if empty
-        if ($financeOrder->financialGroups->isEmpty()) {
-            $financeOrder->financialGroups()->create([
-                'name' => 'General',
-                'financial_data' => $financeOrder->financial_data ?? [],
-            ]);
-        }
+            // Create default financial group if empty
+            if ($order->financialGroups()->count() === 0) {
+                $order->financialGroups()->create([
+                    'name' => 'General',
+                    'financial_data' => $order->financial_data ?? [],
+                ]);
+            }
+
+            return $order;
+        });
 
         // Load relationships needed by the financial-tab partial
         $financeOrder->load([

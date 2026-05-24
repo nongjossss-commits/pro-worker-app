@@ -27,8 +27,8 @@
                 @enderror
             </div>
             <div class="col-md-6">
-                <label for="name_suffix" class="form-label">ต่อท้ายชื่อ</label>
-                <input type="text" class="form-control" id="name_suffix" name="name_suffix" value="{{ old('name_suffix') }}" placeholder="ข้อความต่อท้ายชื่อนายจ้าง">
+                <label for="name_suffix" class="form-label">{{ __('Name Suffix') }}</label>
+                <input type="text" class="form-control" id="name_suffix" name="name_suffix" value="{{ old('name_suffix') }}" placeholder="{{ __('Suffix appended to employer name') }}">
             </div>
             <div class="col-md-6">
                 <label for="employerNameEn" class="form-label">{{ __('Employer Name (English)') }}</label>
@@ -89,7 +89,7 @@
         <div class="row mb-3">
             <div class="col-md-6">
                 <label for="employerId" class="form-label">{{ __('Employer ID') }}</label>
-                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="" placeholder="สร้างอัตโนมัติเมื่อบันทึก" readonly>
+                <input type="text" class="form-control @error('employerId') is-invalid @enderror" id="employerId" name="employerId" value="" placeholder="{{ __('Auto-generated on save') }}" readonly>
                 @error('employerId')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror

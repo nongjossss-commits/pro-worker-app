@@ -65,7 +65,7 @@
                     <small class="text-muted d-block">Work Permit: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> ({{ $employee->workPermitType ?? '-' }})</small>
                 </div>
                 <div class="col-md-6 d-flex flex-column justify-content-center">
-                    <small class="text-muted d-block">Terminated: <strong>{{ $employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : '-' }}</strong> <span class="badge bg-secondary">{{ $employee->days_since_termination }} วัน</span></small>
+                    <small class="text-muted d-block">{{ __('Terminated') }}: <strong>{{ $employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : '-' }}</strong> <span class="badge bg-secondary">{{ $employee->days_since_termination }} {{ __('Days unit') }}</span></small>
                     <small class="text-muted d-block">Reason: {{ $employee->termination_reason ?: '-' }}</small>
                 </div>
             </div>
@@ -74,10 +74,10 @@
         {{-- Action Buttons --}}
         <div class="ms-auto ps-3 d-flex align-items-center">
             <div class="d-flex flex-column flex-md-row gap-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล">
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('Preview Data') }}">
                     <i class="bi bi-search"></i>
                 </button>
-                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-info" title="ไปที่ข้อมูลนายจ้าง">
+                <a href="{{ route('employees.locate', $employee) }}" class="btn btn-sm btn-info" title="{{ __('Locate Employer') }}">
                     <i class="bi bi-geo-alt-fill"></i>
                 </a>
                 <button type="button" class="btn btn-sm btn-outline-primary" title="Create Job (Coming Soon)" disabled>

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'ข้อมูลบริษัทนำเข้า')
+@section('title', __('Importers'))
 
 @section('content')
 <div class="content-section">
@@ -10,10 +10,10 @@
         </div>
     @endif
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-         <h2 class="mb-3 mb-md-0">รายการข้อมูลบริษัทนำเข้า</h2>
+         <h2 class="mb-3 mb-md-0">{{ __('Importer List') }}</h2>
          <div class="d-flex flex-column flex-md-row gap-2">
-            <input type="text" id="importer-search-input" class="form-control form-control-sm" placeholder="ค้นหา...">
-            <a href="{{ route('importers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> เพิ่มข้อมูลใหม่</a>
+            <input type="text" id="importer-search-input" class="form-control form-control-sm" placeholder="{{ __('Search...') }}">
+            <a href="{{ route('importers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> {{ __('Add New') }}</a>
          </div>
     </div>
     <div class="table-responsive">
@@ -21,10 +21,10 @@
             <thead class="table-light">
                 <tr>
                     <th>#</th>
-                    <th>ชื่อบริษัทนำเข้า (ไทย)</th>
-                    <th>รหัสบริษัทนำเข้า</th>
-                    <th>เลขที่ใบอนุญาต</th>
-                    <th class="text-center">จัดการ</th>
+                    <th>{{ __('Importer Name (Thai)') }}</th>
+                    <th>{{ __('Importer ID') }}</th>
+                    <th>{{ __('License Number') }}</th>
+                    <th class="text-center">{{ __('Actions') }}</th>
                 </tr>
             </thead>
             <tbody id="importer-table-body">
@@ -40,13 +40,13 @@
                                 <i class="bi bi-search"></i>
                             </button>
                             @can('edit-importers')
-                            <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">แก้ไข</a>
+                            <a href="{{ route('importers.edit', $importer->id) }}" class="btn btn-sm btn-outline-primary">{{ __('Edit') }}</a>
                             @endcan
                             @can('delete-importers')
                             <form action="{{ route('importers.destroy', $importer->id) }}" method="POST" class="d-grid d-md-inline delete-form">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger">ลบ</button>
+                                <button type="submit" class="btn btn-sm btn-outline-danger">{{ __('Delete') }}</button>
                             </form>
                             @endcan
                             </div>
@@ -54,7 +54,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted">ไม่พบข้อมูลบริษัทนำเข้า</td>
+                        <td colspan="5" class="text-center text-muted">{{ __('No importers found') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -81,14 +81,14 @@
         form.addEventListener('submit', function(event) {
             event.preventDefault();
             Swal.fire({
-                title: 'คุณแน่ใจหรือไม่?',
-                text: "คุณจะไม่สามารถย้อนกลับสิ่งนี้ได้!",
+                title: @json(__('Are you sure?')),
+                text: @json(__('You will not be able to revert this!')),
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'ใช่, ลบเลย!',
-                cancelButtonText: 'ยกเลิก'
+                confirmButtonText: @json(__('Yes, delete it!')),
+                cancelButtonText: @json(__('Cancel'))
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(form.action, {
@@ -103,24 +103,24 @@
                     .then(data => {
                         if (data.success) {
                             Swal.fire(
-                                'ลบแล้ว!',
-                                'ข้อมูลของคุณถูกลบแล้ว',
+                                @json(__('Deleted!')),
+                                @json(__('Your data has been deleted')),
                                 'success'
                             ).then(() => {
                                 window.location.reload();
                             });
                         } else {
                             Swal.fire(
-                                'เกิดข้อผิดพลาด!',
-                                data.error || 'ไม่สามารถลบข้อมูลได้',
+                                @json(__('Error!')),
+                                data.error || @json(__('Could not delete data')),
                                 'error'
                             );
                         }
                     })
                     .catch(error => {
                         Swal.fire(
-                            'เกิดข้อผิดพลาด!',
-                            'เกิดข้อผิดพลาดในการส่งข้อมูล',
+                            @json(__('Error!')),
+                            @json(__('Error submitting data')),
                             'error'
                         );
                     });

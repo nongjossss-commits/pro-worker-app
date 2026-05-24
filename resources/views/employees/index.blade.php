@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'ข้อมูลลูกจ้าง')
+@section('title', __('Employees'))
 
 @push('styles')
 {{-- Styles are now handled in app.css or inline for guarantee --}}
@@ -67,8 +67,8 @@
             </select>
             <select name="visa_status" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- {{ __('Visa Status') }} --</option>
-                <option value="has_visa" {{ request('visa_status') == 'has_visa' ? 'selected' : '' }}>{{ __('มีวีซ่า') }}</option>
-                <option value="no_visa" {{ request('visa_status') == 'no_visa' ? 'selected' : '' }}>{{ __('ไม่มีวีซ่า') }}</option>
+                <option value="has_visa" {{ request('visa_status') == 'has_visa' ? 'selected' : '' }}>{{ __('Has Visa') }}</option>
+                <option value="no_visa" {{ request('visa_status') == 'no_visa' ? 'selected' : '' }}>{{ __('No Visa') }}</option>
             </select>
             <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
@@ -81,9 +81,9 @@
                 <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('Inter Book') }}</option>
             </select>
             <select name="bank_account_status" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- สถานะบัญชีธนาคาร --</option>
-                <option value="opened" {{ request('bank_account_status') == 'opened' ? 'selected' : '' }}>เปิดบัญชีแล้ว</option>
-                <option value="not_opened" {{ request('bank_account_status') == 'not_opened' ? 'selected' : '' }}>ยังไม่เปิดบัญชี</option>
+                <option value="">-- {{ __('Bank Account Status') }} --</option>
+                <option value="opened" {{ request('bank_account_status') == 'opened' ? 'selected' : '' }}>{{ __('Account Opened') }}</option>
+                <option value="not_opened" {{ request('bank_account_status') == 'not_opened' ? 'selected' : '' }}>{{ __('Account Not Opened') }}</option>
             </select>
             <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
             <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
@@ -135,7 +135,7 @@
             @endcan
             <li><hr class="dropdown-divider"></li>
             @can('view-finance')
-            <li><a class="dropdown-item text-primary" href="#" id="bulk-finance-btn"><i class="bi bi-cash-stack me-2"></i>{{ __('การเงิน (Finance)') }}</a></li>
+            <li><a class="dropdown-item text-primary" href="#" id="bulk-finance-btn"><i class="bi bi-cash-stack me-2"></i>{{ __('Finance') }}</a></li>
             @endcan
         </ul>
     </div>

@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'เพิ่มข้อมูลบริษัทนำเข้า')
+@section('title', __('Add Importer'))
 
 @section('content')
 <div class="content-section">
-    <h2 class="mb-4">เพิ่มข้อมูลบริษัทนำเข้า</h2>
+    <h2 class="mb-4">{{ __('Add Importer') }}</h2>
     @if ($errors->any())
         <div class="alert alert-danger">
             <ul>
@@ -18,31 +18,31 @@
         @csrf
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerNameTh" class="form-label">ชื่อ บนจ. (ไทย)</label>
+                <label for="importerNameTh" class="form-label">{{ __('Importer Name (Thai)') }}</label>
                 <input type="text" class="form-control" id="importerNameTh" name="importerNameTh" required>
             </div>
             <div class="col-md-6">
-                <label for="importerNameEn" class="form-label">ชื่อ บนจ. (อังกฤษ)</label>
+                <label for="importerNameEn" class="form-label">{{ __('Importer Name (English)') }}</label>
                 <input type="text" class="form-control" id="importerNameEn" name="importerNameEn">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="importerId" class="form-label">เลขประจำตัว</label>
+                <label for="importerId" class="form-label">{{ __('ID Number') }}</label>
                 <input type="text" class="form-control" id="importerId" name="importerId">
             </div>
         </div>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="importerLicenseNo" class="form-label">เลขที่ใบอนุญาต</label>
+                <label for="importerLicenseNo" class="form-label">{{ __('License Number') }}</label>
                 <input type="text" class="form-control" id="importerLicenseNo" name="importerLicenseNo">
             </div>
             <div class="col-md-4">
-                <label for="importerLicenseIssueDate" class="form-label">วันที่ออกใบอนุญาต</label>
+                <label for="importerLicenseIssueDate" class="form-label">{{ __('License Issue Date') }}</label>
                 <input type="date" class="form-control" id="importerLicenseIssueDate" name="importerLicenseIssueDate">
             </div>
             <div class="col-md-4">
-                <label for="importerLicenseExpiryDate" class="form-label">วันสิ้นสุดใบอนุญาต</label>
+                <label for="importerLicenseExpiryDate" class="form-label">{{ __('License Expiry Date') }}</label>
                 <input type="date" class="form-control" id="importerLicenseExpiryDate" name="importerLicenseExpiryDate">
             </div>
         </div>
@@ -50,14 +50,14 @@
         <!-- Signer 1 -->
         <div class="card bg-light mb-3">
             <div class="card-body">
-                <h6 class="card-title text-muted fw-bold">คนเซ็น 1</h6>
+                <h6 class="card-title text-muted fw-bold">{{ __('Signer 1') }}</h6>
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="importerSignerTh" class="form-label">คนเซ็น (ไทย)</label>
+                        <label for="importerSignerTh" class="form-label">{{ __('Signer Name (Thai)') }}</label>
                         <input type="text" class="form-control" id="importerSignerTh" name="importerSignerTh">
                     </div>
                     <div class="col-md-6">
-                        <label for="importerSignerEn" class="form-label">คนเซ็น (อังกฤษ)</label>
+                        <label for="importerSignerEn" class="form-label">{{ __('Signer Name (English)') }}</label>
                         <input type="text" class="form-control" id="importerSignerEn" name="importerSignerEn">
                     </div>
                 </div>
@@ -75,14 +75,14 @@
         <!-- Signer 2 -->
         <div class="card bg-light mb-3">
             <div class="card-body">
-                <h6 class="card-title text-muted fw-bold">คนเซ็น 2 (ไม่บังคับ)</h6>
+                <h6 class="card-title text-muted fw-bold">{{ __('Signer 2 (Optional)') }}</h6>
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="signer_2_name_th" class="form-label">คนเซ็น (ไทย)</label>
+                        <label for="signer_2_name_th" class="form-label">{{ __('Signer Name (Thai)') }}</label>
                         <input type="text" class="form-control" id="signer_2_name_th" name="signer_2_name_th">
                     </div>
                     <div class="col-md-6">
-                        <label for="signer_2_name_en" class="form-label">คนเซ็น (อังกฤษ)</label>
+                        <label for="signer_2_name_en" class="form-label">{{ __('Signer Name (English)') }}</label>
                         <input type="text" class="form-control" id="signer_2_name_en" name="signer_2_name_en">
                     </div>
                 </div>
@@ -194,8 +194,8 @@
         <input type="hidden" name="workplace_addresses" id="workplace_addresses_json">
 
         <div class="mt-4">
-            <button type="submit" class="btn btn-primary">บันทึก</button>
-            <a href="{{ route('importers.index') }}" class="btn btn-secondary">ยกเลิก</a>
+            <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+            <a href="{{ route('importers.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
         </div>
     </form>
 </div>
