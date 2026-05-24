@@ -69,16 +69,23 @@
         // Set Form Action based on Context
         if (context === 'employer') {
             form.action = `/production/registration/{{ $currentTab->id }}/employer-custom-fields/${modelId}`;
-            // Store employer ID for post-success logic
             form.dataset.employerId = modelId;
             form.dataset.context = 'employer';
             delete form.dataset.employeeId;
+            delete form.dataset.orderId;
+        } else if (context === 'order') {
+            // Production Order (MOU demand card) — ใช้ route ใหม่ที่ไม่ผูกกับ resolution tab
+            form.action = `/production/order/${modelId}/custom-fields`;
+            form.dataset.orderId = modelId;
+            form.dataset.context = 'order';
+            delete form.dataset.employeeId;
+            delete form.dataset.employerId;
         } else {
             form.action = `/production/registration/{{ $currentTab->id }}/custom-fields/${modelId}`;
-            // Store employee ID for post-success logic
             form.dataset.employeeId = modelId;
             form.dataset.context = 'employee';
             delete form.dataset.employerId;
+            delete form.dataset.orderId;
         }
 
         const modal = new bootstrap.Modal(modalEl);
@@ -105,7 +112,14 @@
         const originalText = btn.innerText;
 
         const context = form.dataset.context || 'employee';
-        const modelId = context === 'employer' ? form.dataset.employerId : form.dataset.employeeId;
+        let modelId;
+        if (context === 'employer') {
+            modelId = form.dataset.employerId;
+        } else if (context === 'order') {
+            modelId = form.dataset.orderId;
+        } else {
+            modelId = form.dataset.employeeId;
+        }
 
         btn.disabled = true;
         btn.innerText = 'Adding...';
@@ -129,7 +143,14 @@
         .then(data => {
             if (data.success) {
                 // Update the drawer content if it exists/is visible
-                const containerId = context === 'employer' ? `drawer-content-employer-${modelId}` : `drawer-content-${modelId}`;
+                let containerId;
+                if (context === 'employer') {
+                    containerId = `drawer-content-employer-${modelId}`;
+                } else if (context === 'order') {
+                    containerId = `drawer-content-order-${modelId}`;
+                } else {
+                    containerId = `drawer-content-${modelId}`;
+                }
                 const container = document.getElementById(containerId);
 
                 if (container) {
@@ -141,14 +162,20 @@
                         const noMsg = fieldsContainer.querySelector('.no-fields-msg');
                         if(noMsg) noMsg.remove();
 
-                        // Regenerate list
-                        if (typeof generateFieldsHtml === 'function') {
-                             // data.employee OR data.employer depending on response
-                             const customFields = context === 'employer'
-                                ? data.employer.custom_fields
-                                : data.employee.custom_fields;
+                        // Regenerate list using context-appropriate renderer
+                        let customFields;
+                        if (context === 'employer') {
+                            customFields = data.employer.custom_fields;
+                        } else if (context === 'order') {
+                            customFields = data.order.custom_fields;
+                        } else {
+                            customFields = data.employee.custom_fields;
+                        }
 
-                             fieldsContainer.innerHTML = generateFieldsHtml(customFields, csrfToken, context);
+                        if (context === 'order' && typeof window.generateOrderFieldsHtml === 'function') {
+                            fieldsContainer.innerHTML = window.generateOrderFieldsHtml(customFields, csrfToken);
+                        } else if (typeof generateFieldsHtml === 'function') {
+                            fieldsContainer.innerHTML = generateFieldsHtml(customFields, csrfToken, context);
                         }
                     }
                 }

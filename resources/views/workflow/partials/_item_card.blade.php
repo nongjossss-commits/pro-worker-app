@@ -163,6 +163,27 @@
                         <span id="badge-cancelled-{{ $item->id }}" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary border border-white {{ !$isCancelled ? 'd-none' : '' }}">
                             <i class="bi bi-x"></i>
                         </span>
+
+                        {{-- ป้ายสถานะทางการเงิน (จ่ายแล้ว/บางส่วน/สร้าง installment/ตั้งราคาแล้ว) --}}
+                        @if(isset($item->employee->financialStatus))
+                            @if($item->employee->financialStatus === 'paid')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-success border border-white" title="{{ __('Fully Paid') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @elseif($item->employee->financialStatus === 'partial')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-primary border border-white" title="{{ __('Partial/Pending Payment') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @elseif($item->employee->financialStatus === 'installment_created')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-warning text-dark border border-white" title="{{ __('Installment Created') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @elseif($item->employee->financialStatus === 'priced')
+                                <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill bg-secondary border border-white" title="{{ __('Priced') }}">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </span>
+                            @endif
+                        @endif
                     </div>
 
                     {{-- Info --}}

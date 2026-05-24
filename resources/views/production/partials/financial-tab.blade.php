@@ -1,4 +1,14 @@
 @can('view-finance')
+@php
+    // ตรวจให้แน่ใจว่า relations ที่ x-data ต้องใช้โหลดครบ
+    // สำคัญสำหรับ Workflow ที่ controller ไม่ได้ eager load financialGroups
+    // ใช้ loadMissing เพื่อ no-op ถ้า controller โหลดมาแล้ว (Pre-Prod, Sales, Registration, Renewal)
+    $production->loadMissing([
+        'financialGroups.transactions.items',
+        'financialGroups.transactions.payments',
+        'financialGroups.advanceItems',
+    ]);
+@endphp
 <div x-data="financialManager({
     financialGroups: {{ json_encode($production->financialGroups) }},
     transactions: {{ json_encode($production->financialGroups->pluck('transactions')->flatten()) }},
@@ -1357,11 +1367,26 @@ class="row">
                         </div>
                     </div>
 
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" :id="'includeEmployeeList-' + productionId" x-model="includeEmployeeList">
-                        <label class="form-check-label small fw-bold" :for="'includeEmployeeList-' + productionId">
-                            แนบตารางรายชื่อพนักงาน / Include Employee List
-                        </label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold mb-2">{{ __('Document Variant') }}</label>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="radio" :id="'docVariantInvoice-' + productionId" value="invoice" x-model="docVariant">
+                            <label class="form-check-label" :for="'docVariantInvoice-' + productionId">
+                                {{ __('Document only (no list)') }}
+                            </label>
+                        </div>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="radio" :id="'docVariantWithList-' + productionId" value="with_list" x-model="docVariant">
+                            <label class="form-check-label" :for="'docVariantWithList-' + productionId">
+                                {{ __('Document + Employee List') }}
+                            </label>
+                        </div>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="radio" :id="'docVariantListOnly-' + productionId" value="list_only" x-model="docVariant">
+                            <label class="form-check-label" :for="'docVariantListOnly-' + productionId">
+                                {{ __('Employee List only (no document)') }}
+                            </label>
+                        </div>
                     </div>
 
                     <button class="btn btn-primary btn-sm w-100" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">
@@ -1387,11 +1412,26 @@ class="row">
                         งวดงาน: <span class="fw-bold text-dark" x-text="invoiceModalLabel"></span>
                     </div>
 
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" :id="'invoiceIncludeList-' + productionId" x-model="invoiceModalIncludeList">
-                        <label class="form-check-label small fw-bold" :for="'invoiceIncludeList-' + productionId">
-                            แนบตารางรายชื่อพนักงาน / Include Employee List
-                        </label>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold mb-2">{{ __('Document Variant') }}</label>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="radio" :id="'invVariantInvoice-' + productionId" value="invoice" x-model="invoiceModalVariant">
+                            <label class="form-check-label" :for="'invVariantInvoice-' + productionId">
+                                {{ __('Document only (no list)') }}
+                            </label>
+                        </div>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="radio" :id="'invVariantWithList-' + productionId" value="with_list" x-model="invoiceModalVariant">
+                            <label class="form-check-label" :for="'invVariantWithList-' + productionId">
+                                {{ __('Document + Employee List') }}
+                            </label>
+                        </div>
+                        <div class="form-check small">
+                            <input class="form-check-input" type="radio" :id="'invVariantListOnly-' + productionId" value="list_only" x-model="invoiceModalVariant">
+                            <label class="form-check-label" :for="'invVariantListOnly-' + productionId">
+                                {{ __('Employee List only (no document)') }}
+                            </label>
+                        </div>
                     </div>
 
                     <div class="d-flex gap-2">

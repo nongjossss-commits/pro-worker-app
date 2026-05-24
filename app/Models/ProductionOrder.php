@@ -29,12 +29,18 @@ class ProductionOrder extends Model
         'missing_documents',
         'financial_approved_at',
         'financial_approved_by',
+        // MOU Import demand card fields (เฉพาะ work_type=mou_import)
+        'mou_nationality',
+        'mou_male_count',
+        'mou_female_count',
     ];
 
     protected $casts = [
         'financial_data' => 'array',
         'document_ready_at' => 'datetime',
         'financial_approved_at' => 'datetime',
+        'mou_male_count' => 'integer',
+        'mou_female_count' => 'integer',
     ];
 
     protected static function booted()
@@ -79,5 +85,10 @@ class ProductionOrder extends Model
     public function financialGroups()
     {
         return $this->hasMany(ProductionFinancialGroup::class);
+    }
+
+    public function customFields()
+    {
+        return $this->morphMany(ProductionCustomField::class, 'model');
     }
 }

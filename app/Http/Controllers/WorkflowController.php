@@ -183,7 +183,7 @@ class WorkflowController extends Controller
 
         // Calculate Stats PER ORDER for the view (Accordion Header)
         // We defer loading items directly and calculate minimal per-order stats instead to save memory
-        $orders->load(['employer.addresses']);
+        $orders->load(['employer.addresses', 'customFields']);
 
         // Employers for Dropdown
         $employers = Employer::orderBy('employerNameTh')->get();
@@ -855,6 +855,36 @@ class WorkflowController extends Controller
             });
         }
 
+        // คำนวณสถานะทางการเงินของลูกจ้างทุกคน เพื่อให้ blade แสดง financial badge ได้
+        // (Workflow ใช้ FinancialGroup แบบ shared ผ่าน employer+work_type ที่ผูกกับ Pre-Prod's order
+        //  → ต้อง load shared groups + merge items ของทุก order ที่เกี่ยวข้องก่อนเรียก service)
+        $empIds = $items->pluck('employee_id')->filter()->unique();
+        $sharedGroups = $order->financialGroups;
+        if ($order->work_type_id !== null) {
+            $sharedGroups = \App\Models\ProductionFinancialGroup::where('employer_id', $order->employer_id)
+                ->where('work_type_id', $order->work_type_id)
+                ->with(['transactions.items', 'transactions.payments', 'advanceItems'])
+                ->get();
+            if ($sharedGroups->isEmpty()) {
+                $sharedGroups = $order->financialGroups;
+            }
+        }
+        $order->setRelation('financialGroups', $sharedGroups);
+
+        $relevantOrderIds = $sharedGroups->pluck('production_order_id')->filter()->push($order->id)->unique();
+        $mergedItems = \App\Models\ProductionItem::whereIn('production_order_id', $relevantOrderIds)
+            ->whereIn('employee_id', $empIds)
+            ->get();
+        $order->setRelation('items', $mergedItems);
+
+        $employeeFinancialStatus = \App\Services\FinancialStatusService::calculateStatusForEmployees($order, $empIds);
+
+        foreach ($items as $item) {
+            if ($item->employee) {
+                $item->employee->financialStatus = $employeeFinancialStatus[$item->employee->id] ?? null;
+            }
+        }
+
         // Group the items collection by group_name for easier view rendering
         $groupedItems = $items->groupBy('group_name');
 
@@ -1369,13 +1399,18 @@ class WorkflowController extends Controller
             $request->validate([
                 'work_type_id' => 'required|exists:work_types,id',
                 'employer_id' => 'required|exists:employers,id',
+                'mou_nationality' => 'nullable|in:myanmar,laos,cambodia,vietnam',
+                'mou_male_count' => 'nullable|integer|min:0|max:9999',
+                'mou_female_count' => 'nullable|integer|min:0|max:9999',
             ]);
 
             $workType = WorkType::findOrFail($request->work_type_id);
+            $isMouImport = in_array($workType->slug, ['mou', 'mou_import']);
 
             // Bucket Logic (Merge into existing if applicable)
             // Note: notify_out is handled above for existing employees, but if "New Employee" is created,
             // it falls through here. For New Employee, we use the selected employer (request->employer_id).
+            // MOU Import จะไม่ bucket — สร้าง demand card ใหม่ทุกครั้ง (1 employer = หลาย demands ได้)
             if (in_array($workType->slug, ['notify_in', 'notify_out', 'mou_renewal'])) {
                 $order = ProductionOrder::firstOrCreate(
                     [
@@ -1390,14 +1425,23 @@ class WorkflowController extends Controller
                     ]
                 );
             } else {
-                $order = ProductionOrder::create([
+                $orderData = [
                     'employer_id' => $request->employer_id,
                     'work_type_id' => $workType->id,
                     'type' => 'employer',
                     'project_name' => $request->project_name ?? ($workType->name . ' - ' . now()->format('d/m/Y')),
                     'status' => $targetStatus,
                     'created_by' => auth()->id()
-                ]);
+                ];
+
+                // MOU Import — บันทึก nationality + เป้าหมายจำนวนชาย/หญิงของ demand card
+                if ($isMouImport) {
+                    $orderData['mou_nationality'] = $request->mou_nationality;
+                    $orderData['mou_male_count'] = (int) ($request->mou_male_count ?? 0);
+                    $orderData['mou_female_count'] = (int) ($request->mou_female_count ?? 0);
+                }
+
+                $order = ProductionOrder::create($orderData);
             }
         }
 
@@ -1621,6 +1665,32 @@ class WorkflowController extends Controller
         $orderStats = $this->calculateOrderStats($item->order);
 
         return response()->json(['success' => true, 'order_stats' => $orderStats]);
+    }
+
+    /**
+     * ส่ง ProductionOrder ทั้งใบกลับไป Pre-Production (เปลี่ยน status: active → pre_production)
+     * ใช้กับ MOU demand card ที่ต้องการแก้ไขก่อนส่งใหม่
+     */
+    public function sendOrderBackToPreProduction(Request $request, ProductionOrder $order)
+    {
+        if ($order->status === 'pre_production') {
+            return response()->json(['success' => false, 'message' => 'Order is already in Pre-Production stage.'], 400);
+        }
+
+        if ($order->status === 'cancelled') {
+            return response()->json(['success' => false, 'message' => 'Cannot send a cancelled order back.'], 400);
+        }
+
+        try {
+            \DB::transaction(function () use ($order) {
+                $order->status = 'pre_production';
+                $order->save();
+            });
+
+            return response()->json(['success' => true, 'message' => 'Order returned to Pre-Production successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -2087,6 +2157,17 @@ class WorkflowController extends Controller
             }
         }
         $order->setRelation('financialGroups', $sharedGroups);
+
+        // Workflow ใช้ FinancialGroup แบบ shared ผ่าน employer+work_type ซึ่ง groups เหล่านั้นมัก
+        // ผูกกับ Pre-Prod's order (production_order_id ต่างจาก Workflow's order)
+        // tier['item_ids'] จึงเก็บ ProductionItem.id ของ Pre-Prod's items ไม่ใช่ของ Workflow
+        // → load items ของทุก order ที่เกี่ยวข้อง เพื่อให้ FinancialStatusService map empId ↔ item.id ได้ครบ
+        $relevantOrderIds = $sharedGroups->pluck('production_order_id')->filter()->push($order->id)->unique();
+        $mergedItems = \App\Models\ProductionItem::whereIn('production_order_id', $relevantOrderIds)
+            ->whereIn('employee_id', $empIds)
+            ->with('employee')
+            ->get();
+        $order->setRelation('items', $mergedItems);
 
         $employeeFinancialStatus = \App\Services\FinancialStatusService::calculateStatusForEmployees($order, $empIds);
 

@@ -450,6 +450,13 @@ Route::middleware(['auth'])->group(function () {
     // NEW: Pre-Production Routes
     Route::post('production/{item}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendToWorkflow'])->name('production.item.send_to_workflow');
     Route::post('production/bulk-send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'bulkSendToWorkflow'])->name('production.bulk_send_to_workflow');
+    // ส่ง ProductionOrder ทั้งใบไป Workflow (ใช้กับ MOU demand card ส่งทั้งใบ)
+    Route::post('production/order/{order}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendOrderToWorkflow'])->name('production.order.send_to_workflow');
+
+    // ProductionOrder custom fields (ใช้กับปุ่ม Fields บนการ์ด MOU ทั้ง Pre-Prod และ Workflow)
+    Route::post('production/order/{order}/custom-fields', [\App\Http\Controllers\ProductionController::class, 'storeOrderCustomField'])->name('production.order.custom_fields.store');
+    Route::put('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'updateOrderCustomField'])->name('production.order.custom_fields.update');
+    Route::delete('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'destroyOrderCustomField'])->name('production.order.custom_fields.destroy');
     Route::post('production/steps', [\App\Http\Controllers\ProductionController::class, 'storeStep'])->name('production.steps.store');
 
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
@@ -473,6 +480,11 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('bank-accounts', App\Http\Controllers\Finance\BankAccountController::class)->except(['create', 'edit', 'show']);
         Route::resource('expense-categories', App\Http\Controllers\Finance\ExpenseCategoryController::class)->except(['create', 'edit', 'show']);
         Route::resource('expenses', App\Http\Controllers\Finance\ExpenseController::class)->only(['index', 'store', 'destroy']);
+
+        // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
+        Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->name('wht_inbox');
+        Route::post('/wht-inbox/{transaction}/received', [\App\Http\Controllers\FinancialController::class, 'markWhtReceived'])->name('wht_received');
+        Route::post('/wht-inbox/{transaction}/no-certificate', [\App\Http\Controllers\FinancialController::class, 'markWhtNoCertificate'])->name('wht_no_certificate');
 
         Route::get('/', [App\Http\Controllers\FinancialHubController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
@@ -527,6 +539,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');
     Route::post('workflow/item/{item}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreItem'])->name('workflow.item.restore');
     Route::post('workflow/item/{item}/send-back', [\App\Http\Controllers\WorkflowController::class, 'sendBackToPreProduction'])->name('workflow.item.send_back');
+    // ส่ง ProductionOrder ทั้งใบกลับไป Pre-Production (สำหรับ MOU demand card)
+    Route::post('workflow/order/{order}/send-back', [\App\Http\Controllers\WorkflowController::class, 'sendOrderBackToPreProduction'])->name('workflow.order.send_back');
     Route::delete('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'destroyItem'])->name('workflow.item.destroy');
     Route::get('workflow/api/resigned-employees', [\App\Http\Controllers\WorkflowController::class, 'searchResignedEmployees'])->name('workflow.api.resigned');
     Route::get('workflow/api/global-employees', [\App\Http\Controllers\WorkflowController::class, 'searchGlobalEmployees'])->name('workflow.api.global');

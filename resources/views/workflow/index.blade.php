@@ -246,7 +246,7 @@
             <button class="btn btn-secondary shadow-sm" onclick="openTrashModal()">
                 <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
             </button>
-            @if(isset($activeTab) && $activeTab->slug === 'mou')
+            @if(isset($activeTab) && in_array($activeTab->slug, ['mou', 'mou_import']))
                 <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
                     <i class="bi bi-plus-lg me-1"></i> {{ __('Create Job') }}
                 </button>
@@ -432,6 +432,31 @@
                                         <div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
                                     @endif
 
+                                    {{-- MOU Import demand card info: สัญชาติ + เป้าหมายจำนวนคน --}}
+                                    @if($order->mou_nationality)
+                                        @php
+                                            $natFlags = ['myanmar' => '🇲🇲', 'laos' => '🇱🇦', 'cambodia' => '🇰🇭', 'vietnam' => '🇻🇳'];
+                                            $natLabels = ['myanmar' => __('Myanmar'), 'laos' => __('Laos'), 'cambodia' => __('Cambodia'), 'vietnam' => __('Vietnam')];
+                                            $male = (int) ($order->mou_male_count ?? 0);
+                                            $female = (int) ($order->mou_female_count ?? 0);
+                                            $total = $male + $female;
+                                        @endphp
+                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                                {{ $natFlags[$order->mou_nationality] ?? '' }} {{ $natLabels[$order->mou_nationality] ?? $order->mou_nationality }}
+                                            </span>
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                                                <i class="bi bi-people-fill me-1"></i>{{ __('Total') }}: {{ $total }}
+                                            </span>
+                                            @if($male > 0)
+                                                <span class="badge bg-light text-dark border">{{ __('Male') }}: {{ $male }}</span>
+                                            @endif
+                                            @if($female > 0)
+                                                <span class="badge bg-light text-dark border">{{ __('Female') }}: {{ $female }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
+
                                     @if($order->employer && $order->employer->jobOwner)
                                         <div class="text-muted small border-start ps-2 mt-1 ms-1">
                                             <i class="bi bi-person-badge me-1"></i>
@@ -525,18 +550,17 @@
                                      <i class="bi bi-eye"></i>
                                  </button>
 
-                                 @if(isset($activeTab) && $activeTab->slug !== 'mou')
-                                     <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'workflow')">
-                                        <i class="bi bi-plus-lg"></i> {{ __('Add') }}
-                                     </button>
+                                 {{-- Add Employee + Import — แสดงทุก tab รวม MOU --}}
+                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'workflow')">
+                                    <i class="bi bi-plus-lg"></i> {{ __('Add') }}
+                                 </button>
 
-                                     <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold">
-                                        <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
-                                     </a>
-                                 @endif
+                                 <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
+                                 </a>
                                  @endif
 
-                                @if(isset($activeTab) && $activeTab->slug === 'mou')
+                                @if(isset($activeTab) && in_array($activeTab->slug, ['mou', 'mou_import']))
                                 {{-- Custom Fields Button (Order/Job) --}}
                                 <button class="btn btn-outline-secondary btn-sm ms-2 fw-bold" onclick="toggleOrderInlineDrawer({{ $order->id }}, {{ json_encode($order->customFields ?? []) }}); event.stopPropagation();">
                                     <i class="bi bi-list-task"></i> {{ __('Fields') }}
@@ -558,7 +582,7 @@
                     </div>
 
                     {{-- Order Custom Fields Drawer --}}
-                    @if(isset($activeTab) && $activeTab->slug === 'mou')
+                    @if(isset($activeTab) && in_array($activeTab->slug, ['mou', 'mou_import']))
                     <div class="collapse mt-3 mx-4" id="drawer-order-{{ $order->id }}">
                         <div class="card card-body bg-light border-0 rounded-3 shadow-sm">
                             <div id="drawer-content-order-{{ $order->id }}" class="position-relative" style="min-height: 100px;">
@@ -826,11 +850,43 @@
 @include('employees.modals.advanced_export')
 @include('production.registration.partials.offcanvas_drawer')
 @include('production.registration.partials.modals.add_custom_field')
+@include('production.partials.order_fields_drawer')
 
 @push('scripts')
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const activeTabId = @json($activeTab->id ?? null);
+
+    // ส่ง ProductionOrder ทั้งใบกลับไป Pre-Production (MOU demand card)
+    window.sendOrderBackToPreProduction = function(orderId) {
+        Swal.fire({
+            title: @json(__('Send back to Pre-Production?')),
+            text: @json(__('This will move the entire demand card back to Pre-Production.')),
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#17a2b8',
+            confirmButtonText: @json(__('Yes, send back')),
+            cancelButtonText: @json(__('Cancel'))
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            fetch(`/workflow/order/${orderId}/send-back`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: data.message, timer: 1800, showConfirmButton: false })
+                        .then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', data.message || 'Failed', 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', err.message, 'error'));
+        });
+    };
+
+    // Order custom fields drawer — implementation อยู่ใน production/partials/order_fields_drawer.blade.php
 
     // --- Global Toggle Cancelled ---
     window.toggleGlobalCancelled = function() {

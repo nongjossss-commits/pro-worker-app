@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductionOrder;
 use App\Models\ProductionItem;
 use App\Models\ProductionFinancialGroup;
+use App\Models\ProductionCustomField;
 use App\Models\Employer;
 use App\Models\Employee;
 use App\Models\WorkType;
@@ -12,6 +13,8 @@ use App\Models\WorkTypeStep;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Traits\AddressFilterTrait;
 
 class ProductionController extends Controller
@@ -211,7 +214,8 @@ class ProductionController extends Controller
 
             // Load Relations - Do not eager load ALL items to save memory, they will be lazy loaded!
             $orders->load([
-                'employer.addresses'
+                'employer.addresses',
+                'customFields',
             ]);
 
             foreach ($orders as $order) {
@@ -450,6 +454,149 @@ class ProductionController extends Controller
         ]);
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * ส่ง ProductionOrder ทั้งใบไป Workflow (เปลี่ยน status: pre_production → active)
+     * ใช้กับ MOU demand card ที่ส่งทั้งใบเป็น case-based
+     */
+    public function sendOrderToWorkflow(Request $request, ProductionOrder $order)
+    {
+        if ($order->status !== 'pre_production') {
+            return response()->json(['success' => false, 'message' => 'Order is not in Pre-Production stage.'], 400);
+        }
+
+        try {
+            \DB::transaction(function () use ($order) {
+                $order->status = 'active';
+                $order->save();
+
+                // ปรับ items: ที่ยังเป็น pending ให้คงเดิม (พร้อมให้ workflow ดำเนินการ)
+                // ที่ completed/cancelled คงไว้
+            });
+
+            return response()->json(['success' => true, 'message' => 'Order sent to Workflow successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * เพิ่ม custom field ให้ ProductionOrder (ใช้กับปุ่ม Fields บนการ์ด MOU)
+     * รูปแบบเหมือน storeEmployerCustomField ในเมนูมติลงทะเบียน
+     */
+    public function storeOrderCustomField(Request $request, ProductionOrder $order)
+    {
+        $validated = $request->validate([
+            'field_name' => 'required|string|max:255',
+            'field_type' => 'required|in:text,date,file',
+            'field_value' => 'nullable|string',
+            'field_file' => 'nullable|file|max:102400', // 100MB
+        ]);
+
+        $data = [
+            'field_name' => $validated['field_name'],
+            'field_type' => $validated['field_type'],
+        ];
+
+        if ($validated['field_type'] === 'file' && $request->hasFile('field_file')) {
+            $file = $request->file('field_file');
+            $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs("order_files/{$order->id}/custom", $filename, 'public');
+            $data['file_path'] = $path;
+            if ($request->filled('field_value_desc')) {
+                $data['field_value'] = $request->field_value_desc;
+            }
+        } else {
+            $data['field_value'] = $validated['field_value'] ?? null;
+            if ($validated['field_type'] === 'date' && $request->has('field_date_value')) {
+                $data['field_value'] = $request->field_date_value;
+            }
+        }
+
+        $field = $order->customFields()->create($data);
+
+        if ($request->ajax()) {
+            $order->load('customFields');
+            return response()->json([
+                'success' => true,
+                'message' => 'Field added successfully.',
+                'order' => [
+                    'id' => $order->id,
+                    'custom_fields' => $order->customFields,
+                ],
+                'newField' => $field,
+            ]);
+        }
+
+        return back()->with('success', 'Field added successfully.');
+    }
+
+    /**
+     * แก้ไข custom field ของ ProductionOrder
+     */
+    public function updateOrderCustomField(Request $request, ProductionCustomField $field)
+    {
+        if ($field->model_type !== ProductionOrder::class) {
+            abort(404);
+        }
+
+        $rules = ['field_name' => 'required|string|max:255'];
+
+        if ($field->field_type === 'file') {
+            $rules['field_file'] = 'nullable|file|max:102400';
+        } else {
+            $rules['field_value'] = 'nullable|string';
+            if ($field->field_type === 'date') {
+                $rules['field_date_value'] = 'nullable|date';
+            }
+        }
+
+        $validated = $request->validate($rules);
+        $data = ['field_name' => $validated['field_name']];
+
+        if ($field->field_type === 'file') {
+            if ($request->hasFile('field_file')) {
+                if ($field->file_path) {
+                    Storage::disk('public')->delete($field->file_path);
+                }
+                $file = $request->file('field_file');
+                $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
+                $orderId = $field->model_id;
+                $path = $file->storeAs("order_files/{$orderId}/custom", $filename, 'public');
+                $data['file_path'] = $path;
+                if ($request->filled('field_value')) {
+                    $data['field_value'] = $request->field_value;
+                }
+            } elseif ($request->filled('field_value')) {
+                $data['field_value'] = $request->field_value;
+            }
+        } else {
+            $data['field_value'] = $validated['field_value'] ?? null;
+            if ($field->field_type === 'date' && $request->has('field_date_value')) {
+                $data['field_value'] = $request->field_date_value;
+            }
+        }
+
+        $field->update($data);
+
+        return back()->with('success', 'Field updated successfully.');
+    }
+
+    /**
+     * ลบ custom field ของ ProductionOrder
+     */
+    public function destroyOrderCustomField(ProductionCustomField $field)
+    {
+        if ($field->model_type !== ProductionOrder::class) {
+            abort(404);
+        }
+
+        if ($field->field_type === 'file' && $field->file_path) {
+            Storage::disk('public')->delete($field->file_path);
+        }
+        $field->delete();
+        return back()->with('success', 'Field removed.');
     }
 
     public function bulkSendToWorkflow(Request $request)
