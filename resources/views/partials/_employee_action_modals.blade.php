@@ -5,11 +5,11 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="centralDeleteConfirmationModalLabel">ยืนยันการดำเนินการ</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="centralDeleteConfirmationModalLabel">{{ __('Confirm Action') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
             </div>
             <div class="modal-body">
-                <p id="central-delete-modal-message">คุณแน่ใจหรือไม่ที่จะดำเนินการนี้?</p>
+                <p id="central-delete-modal-message">{{ __('Are you sure you want to proceed?') }}</p>
             </div>
             <div class="modal-footer">
                 <form id="central-delete-form" method="POST" action="">
@@ -17,9 +17,9 @@
                     {{-- The method will be dynamically set, defaulting to DELETE for soft deletes --}}
                     <input type="hidden" name="_method" value="DELETE" id="central-delete-form-method">
 
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     {{-- The button's text and class will be set dynamically --}}
-                    <button type="submit" class="btn" id="central-delete-confirm-btn">ยืนยัน</button>
+                    <button type="submit" class="btn" id="central-delete-confirm-btn">{{ __('Confirm') }}</button>
                 </form>
             </div>
         </div>
@@ -70,19 +70,19 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="employmentHistoryModalLabel">ประวัติการจ้างงาน</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="employmentHistoryModalLabel">{{ __('Employment History') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-between mb-3">
-                    <input type="text" id="history-search-input" class="form-control" style="max-width: 300px;" placeholder="ค้นหาตามชื่อ หรือ เลขพาสปอร์ต...">
+                    <input type="text" id="history-search-input" class="form-control" style="max-width: 300px;" placeholder="{{ __('Search by name or passport...') }}">
                 </div>
 
                 {{-- REPLACED: Use the component instead of manual HTML --}}
                 <x-bulk-action-bar id="history-bulk-action-bar" checkboxSelector=".history-employee-checkbox" :floating="false">
                     <li>
                         <a class="dropdown-item" href="#" id="history-bulk-transfer-btn">
-                            <i class="bi bi-person-up me-2"></i>{{ __('ย้ายนายจ้าง') }}
+                            <i class="bi bi-person-up me-2"></i>{{ __('Transfer Employer') }}
                         </a>
                     </li>
                 </x-bulk-action-bar>

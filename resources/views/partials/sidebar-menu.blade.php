@@ -113,7 +113,20 @@
 </div>
 
 <div class="collapse {{ $isFinanceSubMenuActive ? 'show' : '' }}" id="financeSubMenu">
-    <a href="{{ route('finance.bank-accounts.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.bank-accounts.*') ? 'active' : '' }}" style="padding-left: 3rem; border-top: none;">
+    @php
+        // Badge: นับ transactions ที่ paid > 0 แต่ wht ยังไม่ได้รับ
+        $whtPendingCount = \App\Models\FinancialTransaction::where('paid_amount', '>', 0)
+            ->where('withholding_tax_amount', '>', 0)
+            ->where('wht_status', 'pending')
+            ->count();
+    @endphp
+    <a href="{{ route('finance.wht_inbox') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.wht_inbox') || request()->routeIs('finance.wht_received') ? 'active' : '' }}" style="padding-left: 3rem; border-top: none;">
+        <i class="bi bi-inbox-fill me-2"></i>{{ __('WHT Inbox') }}
+        @if($whtPendingCount > 0)
+            <span class="badge bg-warning text-dark ms-1">{{ $whtPendingCount }}</span>
+        @endif
+    </a>
+    <a href="{{ route('finance.bank-accounts.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.bank-accounts.*') ? 'active' : '' }}" style="padding-left: 3rem;">
         <i class="bi bi-bank me-2"></i>{{ __('Bank Accounts') }}
     </a>
     <a href="{{ route('finance.expense-categories.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expense-categories.*') ? 'active' : '' }}" style="padding-left: 3rem;">
