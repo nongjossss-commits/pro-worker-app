@@ -19,6 +19,7 @@ class Delegate extends Model
         'delegateExpiryDate',
         'delegatePhone',
         'delegateEmail',
+        'outsource_password',
         'delegatePhoto',
         'signature_path',
         'delegate_doc_other_1',

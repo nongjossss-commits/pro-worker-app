@@ -76,6 +76,20 @@
             <p class="form-control-plaintext">{{ $delegate->delegateEmail ?? 'N/A' }}</p>
         </div>
     </div>
+    @if($delegate->outsource_password)
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <label class="form-label fw-bold">{{ __('Outsource Password') }}</label>
+            <div class="input-group">
+                {{-- เปิดเผยรหัส + ปุ่ม copy เพื่อให้นำไปใช้ได้สะดวก --}}
+                <input type="text" class="form-control" id="preview_outsource_password" value="{{ $delegate->outsource_password }}" readonly>
+                <button type="button" class="btn btn-outline-secondary copy-btn" data-copy-target="#preview_outsource_password" title="{{ __('Copy') }}">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <hr class="my-4">
 

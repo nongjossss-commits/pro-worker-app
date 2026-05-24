@@ -9,8 +9,37 @@ use Illuminate\Support\Facades\Storage;
 class DelegateController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Validation rules ของ Delegate — ใช้ทั้ง store และ update
      */
+    private const DELEGATE_RULES = [
+        'delegateNameTh'              => 'required|string|max:255',
+        'delegateNameEn'              => 'nullable|string|max:255',
+        'delegateId'                  => 'nullable|string|max:255',
+        'delegateEmployeeId'          => 'nullable|string|max:255',
+        'delegateIssueDate'           => 'nullable|date',
+        'delegateExpiryDate'          => 'nullable|date',
+        'delegatePhone'               => 'nullable|string|max:255',
+        'delegateEmail'               => 'nullable|email|max:255',
+        'outsource_password'          => 'nullable|string|max:255',
+        'delegatePhoto'               => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
+        'delegate_doc_other_1'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'delegate_doc_other_1_desc'   => 'nullable|string|max:255',
+        'delegate_doc_other_2'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'delegate_doc_other_2_desc'   => 'nullable|string|max:255',
+        'delegate_doc_other_3'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'delegate_doc_other_3_desc'   => 'nullable|string|max:255',
+        'delegate_signature'          => 'nullable|image|max:5120',
+    ];
+
+    /** Authorization: ต้องมี permission ตามแต่ละ action */
+    public function __construct()
+    {
+        $this->middleware('permission:view-delegates')->only(['index', 'show']);
+        $this->middleware('permission:create-delegates')->only(['create', 'store']);
+        $this->middleware('permission:edit-delegates')->only(['edit', 'update']);
+        $this->middleware('permission:delete-delegates')->only(['destroy']);
+    }
+
     public function index()
     {
         $delegates = Delegate::all();
@@ -30,26 +59,7 @@ class DelegateController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'delegateNameTh' => 'required|string|max:255',
-            'delegateNameEn' => 'nullable|string|max:255',
-            'delegateId' => 'nullable|string|max:255',
-            'delegateEmployeeId' => 'nullable|string|max:255',
-            'delegateIssueDate' => 'nullable|date',
-            'delegateExpiryDate' => 'nullable|date',
-            'delegatePhone' => 'nullable|string|max:255',
-            'delegateEmail' => 'nullable|email|max:255',
-            'delegatePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
-            'delegate_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'delegate_doc_other_1_desc' => 'nullable|string|max:255',
-            'delegate_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'delegate_doc_other_2_desc' => 'nullable|string|max:255',
-            'delegate_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'delegate_doc_other_3_desc' => 'nullable|string|max:255',
-            'delegate_signature' => 'nullable|image|max:5120',
-        ]);
-
-        $data = $request->all();
+        $data = $request->validate(self::DELEGATE_RULES);
 
         if ($request->hasFile('delegate_signature')) {
             $data['signature_path'] = $request->file('delegate_signature')->store('signatures/delegates', 'public');
@@ -114,26 +124,7 @@ class DelegateController extends Controller
      */
     public function update(Request $request, Delegate $delegate)
     {
-        $request->validate([
-            'delegateNameTh' => 'required|string|max:255',
-            'delegateNameEn' => 'nullable|string|max:255',
-            'delegateId' => 'nullable|string|max:255',
-            'delegateEmployeeId' => 'nullable|string|max:255',
-            'delegateIssueDate' => 'nullable|date',
-            'delegateExpiryDate' => 'nullable|date',
-            'delegatePhone' => 'nullable|string|max:255',
-            'delegateEmail' => 'nullable|email|max:255',
-            'delegatePhoto' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
-            'delegate_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'delegate_doc_other_1_desc' => 'nullable|string|max:255',
-            'delegate_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'delegate_doc_other_2_desc' => 'nullable|string|max:255',
-            'delegate_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'delegate_doc_other_3_desc' => 'nullable|string|max:255',
-            'delegate_signature' => 'nullable|image|max:5120',
-        ]);
-
-        $data = $request->all();
+        $data = $request->validate(self::DELEGATE_RULES);
 
         if ($request->hasFile('delegate_signature')) {
             if ($delegate->signature_path) {

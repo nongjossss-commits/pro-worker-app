@@ -22,10 +22,10 @@
 
                     @if(auth()->user()->hasAnyRole(['super-admin', 'admin', 'staff']))
                     <div class="col-md-6 text-center border-start">
-                        <label class="form-label d-block text-muted mb-2">ลายเซ็นพนักงานบริษัท (Delegate Signature)</label>
+                        <label class="form-label d-block text-muted mb-2">{{ __('Delegate Signature') }}</label>
                         <div class="mb-3 d-flex gap-2">
                             <input type="file" name="delegate_signature" id="delegate_signature" class="form-control" accept="image/*" onchange="previewImage(event, 'signaturePreview')">
-                            <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'delegate_signature' } }))" title="สแกนเอกสาร">
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'delegate_signature' } }))" title="{{ __('Scan Document') }}">
                                 <i class="bi bi-camera"></i>
                             </button>
                         </div>
@@ -87,6 +87,20 @@
                         <div class="form-group">
                             <label for="delegateEmail">Email</label>
                             <input type="email" name="delegateEmail" id="delegateEmail" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="outsource_password">{{ __('Outsource Password') }}</label>
+                            <div class="input-group">
+                                {{-- type=text เปิดเผยรหัส (user ต้องการ copy ได้สะดวก) --}}
+                                <input type="text" name="outsource_password" id="outsource_password" class="form-control" autocomplete="off" value="{{ old('outsource_password') }}">
+                                <button type="button" class="btn btn-outline-secondary copy-btn" data-copy-target="#outsource_password" title="{{ __('Copy') }}">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

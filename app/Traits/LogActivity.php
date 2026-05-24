@@ -46,6 +46,23 @@ trait LogActivity
         }
     }
 
+    /**
+     * คืนชื่อสำหรับแสดงของ model ตาม class — ใช้สำหรับ snapshot ตอน delete
+     */
+    protected static function resolveSubjectName(Model $model): ?string
+    {
+        return match (class_basename($model)) {
+            'Employee'  => $model->employeeNameEn ?: $model->employeeNameTh,
+            'Employer'  => $model->employerNameTh ?: $model->employerNameEn,
+            'Agent'     => $model->agentNameEn ?? null,
+            'Importer'  => $model->importerNameTh ?? $model->importerNameEn ?? null,
+            'Delegate'  => $model->delegateNameTh ?? $model->delegateNameEn ?? null,
+            'User'      => $model->name ?? null,
+            'JobTicket' => $model->title ?? $model->subject ?? null,
+            default     => null,
+        };
+    }
+
     protected static function logChange(Model $model, string $action)
     {
         $user = Auth::user();
@@ -90,6 +107,15 @@ trait LogActivity
                 $attributes['password'] = '********';
             }
             $properties = ['attributes' => $attributes];
+        }
+
+        // Snapshot ชื่อ subject สำหรับ delete/force_delete เพื่อให้ activity log
+        // ยังแสดงชื่อได้แม้ record ถูกลบถาวรไปแล้ว
+        if (in_array($action, ['delete', 'force_delete', 'restore'], true)) {
+            $snapshot = static::resolveSubjectName($model);
+            if ($snapshot !== null) {
+                $properties['subject_name'] = $snapshot;
+            }
         }
 
         ActivityLog::create([

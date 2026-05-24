@@ -22,6 +22,12 @@ class UserController extends Controller
         $search = $request->input('search');
         $query = User::with('roles')->latest();
 
+        // Security: เฉพาะ super-admin เท่านั้นที่เห็น super-admin users คนอื่น
+        // role อื่น (admin/staff/caretaker/employer) จะไม่เห็น super-admin users เลย
+        if (!Auth::user()->hasRole('super-admin')) {
+            $query->whereDoesntHave('roles', fn($q) => $q->where('name', 'super-admin'));
+        }
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -35,6 +41,7 @@ class UserController extends Controller
         $activeTab = 'admin';
         if ($search && $users->isNotEmpty()) {
             $counts = [
+                'super-admin' => $users->filter(fn($u) => $u->roles->contains('name', 'super-admin'))->count(),
                 'admin' => $users->filter(fn($u) => $u->roles->contains('name', 'admin'))->count(),
                 'caretaker' => $users->filter(fn($u) => $u->roles->contains('name', 'caretaker'))->count(),
                 'staff' => $users->filter(fn($u) => $u->roles->contains('name', 'staff'))->count(),

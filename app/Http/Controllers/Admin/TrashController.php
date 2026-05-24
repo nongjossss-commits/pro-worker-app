@@ -57,39 +57,13 @@ class TrashController extends Controller
 
             // --- Search Logic ---
             if ($searchTerm) {
-                // We apply model-specific search logic based on common fields.
                 $query->where(function ($q) use ($searchTerm, $modelName) {
-                    switch ($modelName) {
-                        case 'employees':
-                            $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                                ->orWhere('name_suffix', 'like', "%{$searchTerm}%")
-                                ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'employers':
-                            $q->where('employerNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('employerNameEn', 'like', "%{$searchTerm}%")
-                                ->orWhere('name_suffix', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'agents':
-                            $q->where('agentNameEn', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'importers':
-                            $q->where('importerNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('importerNameEn', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'delegates':
-                            $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
-                                ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
-                            break;
-                        case 'tickets':
-                            $q->where('subject', 'like', "%{$searchTerm}%");
-                            break;
-                        // No default case: if a model has no specific search, we don't apply a search filter.
-                        // This prevents errors on models like 'Address' that don't have a standard searchable name field.
-                    }
+                    $this->applySearchFilter($q, $modelName, $searchTerm);
                 });
             }
+
+            // เรียงตามเวลาที่ลบล่าสุดอยู่บนสุด ผู้ใช้ต้องการเห็นรายการที่เพิ่งลบก่อน
+            $query->orderBy('deleted_at', 'desc');
 
             $trashedData[$modelName] = $query->paginate($perPage, ['*'], $modelName . '_page')
                 ->withQueryString()
@@ -177,37 +151,11 @@ class TrashController extends Controller
 
         if ($searchTerm) {
             $query->where(function ($q) use ($searchTerm, $modelName) {
-                // This switch MUST be kept in sync with the index method's search logic
-                switch ($modelName) {
-                    case 'employees':
-                        $q->where('employeeNameTh', 'like', "%{$searchTerm}%")
-                            ->orWhere('employeeNameEn', 'like', "%{$searchTerm}%")
-                            ->orWhere('name_suffix', 'like', "%{$searchTerm}%")
-                            ->orWhere('employeePassport', 'like', "%{$searchTerm}%");
-                        break;
-                    case 'employers':
-                        $q->where('employerNameTh', 'like', "%{$searchTerm}%")
-                            ->orWhere('employerNameEn', 'like', "%{$searchTerm}%")
-                            ->orWhere('name_suffix', 'like', "%{$searchTerm}%");
-                        break;
-                    case 'agents':
-                        // This is the corrected logic from the index method
-                        $q->where('agentNameEn', 'like', "%{$searchTerm}%");
-                        break;
-                    case 'importers':
-                        $q->where('importerNameTh', 'like', "%{$searchTerm}%")
-                            ->orWhere('importerNameEn', 'like', "%{$searchTerm}%");
-                        break;
-                    case 'delegates':
-                        $q->where('delegateNameTh', 'like', "%{$searchTerm}%")
-                            ->orWhere('delegateNameEn', 'like', "%{$searchTerm}%");
-                        break;
-                    case 'tickets':
-                        $q->where('subject', 'like', "%{$searchTerm}%");
-                        break;
-                }
+                $this->applySearchFilter($q, $modelName, $searchTerm);
             });
         }
+
+        $query->orderBy('deleted_at', 'desc');
 
         $recordsToExport = $query->get();
 
@@ -330,6 +278,73 @@ class TrashController extends Controller
         $item->forceDelete();
 
         return response()->json(['success' => class_basename($modelClass) . ' permanently deleted successfully.']);
+    }
+
+    /**
+     * Apply per-model search filter to a query builder.
+     *
+     * ครอบคลุมทั้งชื่อ / เลขประจำตัว / passport / ID / reference number / email / phone
+     * เพื่อให้ผู้ใช้ค้นหาในถังขยะได้เหมือนเมนูอื่นๆ
+     */
+    private function applySearchFilter($q, string $modelName, string $searchTerm): void
+    {
+        $like = "%{$searchTerm}%";
+        $isNumeric = is_numeric($searchTerm);
+
+        switch ($modelName) {
+            case 'employees':
+                $q->where('employeeNameTh', 'like', $like)
+                    ->orWhere('employeeNameEn', 'like', $like)
+                    ->orWhere('name_suffix', 'like', $like)
+                    ->orWhere('employeePassport', 'like', $like)
+                    ->orWhere('employee_reference_id', 'like', $like)
+                    ->orWhere('employer_employee_id', 'like', $like)
+                    ->orWhere('request_number', 'like', $like)
+                    ->orWhere('registration_request_number', 'like', $like)
+                    ->orWhere('renewal_request_number', 'like', $like)
+                    ->orWhere('pinkCardNo', 'like', $like)
+                    ->orWhere('socialSecurityNo', 'like', $like)
+                    ->orWhere('employeeWorkPermit', 'like', $like);
+                if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
+                break;
+            case 'employers':
+                $q->where('employerNameTh', 'like', $like)
+                    ->orWhere('employerNameEn', 'like', $like)
+                    ->orWhere('name_suffix', 'like', $like)
+                    ->orWhere('employerId', 'like', $like)
+                    ->orWhere('employerTaxId', 'like', $like)
+                    ->orWhere('employerEmail', 'like', $like)
+                    ->orWhere('employerPhone', 'like', $like);
+                if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
+                break;
+            case 'agents':
+                $q->where('agentNameEn', 'like', $like);
+                if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
+                break;
+            case 'importers':
+                $q->where('importerNameTh', 'like', $like)
+                    ->orWhere('importerNameEn', 'like', $like);
+                if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
+                break;
+            case 'delegates':
+                $q->where('delegateNameTh', 'like', $like)
+                    ->orWhere('delegateNameEn', 'like', $like);
+                if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
+                break;
+            case 'tickets':
+                $q->where('subject', 'like', $like);
+                if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
+                break;
+            case 'addresses':
+                $q->where('addrNo', 'like', $like)
+                    ->orWhere('addrRoad', 'like', $like)
+                    ->orWhere('addrProvince', 'like', $like)
+                    ->orWhere('addrDistrict', 'like', $like)
+                    ->orWhere('addrSubDistrict', 'like', $like)
+                    ->orWhere('addrZipCode', 'like', $like);
+                if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
+                break;
+        }
     }
 
     /**

@@ -37,6 +37,14 @@
 
                 {{-- Role Tabs --}}
                 <ul class="nav nav-tabs mb-3" id="userRoleTabs" role="tablist">
+                    {{-- Super Admin tab — แสดงเฉพาะ user ที่เป็น super-admin (กัน admin/staff เห็นบัญชี super-admin) --}}
+                    @if(auth()->user()->hasRole('super-admin'))
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ ($activeTab ?? 'admin') == 'super-admin' ? 'active' : '' }}" id="super-admin-tab" data-bs-toggle="tab" data-bs-target="#super-admin-pane" type="button" role="tab" aria-controls="super-admin-pane" aria-selected="{{ ($activeTab ?? 'admin') == 'super-admin' ? 'true' : 'false' }}">
+                            <i class="bi bi-shield-fill-check me-1 text-danger"></i> {{ __('Super Admin') }}
+                        </button>
+                    </li>
+                    @endif
                     <li class="nav-item" role="presentation">
                         <button class="nav-link {{ ($activeTab ?? 'admin') == 'admin' ? 'active' : '' }}" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin-pane" type="button" role="tab" aria-controls="admin-pane" aria-selected="true">
                             <i class="bi bi-shield-lock me-1"></i> {{ __('Admin') }}
@@ -60,6 +68,13 @@
                 </ul>
 
                 <div class="tab-content" id="userRoleTabsContent">
+
+                    {{-- Super Admin Tab Pane — เฉพาะ super-admin --}}
+                    @if(auth()->user()->hasRole('super-admin'))
+                    <div class="tab-pane fade {{ ($activeTab ?? 'admin') == 'super-admin' ? 'show active' : '' }}" id="super-admin-pane" role="tabpanel" aria-labelledby="super-admin-tab">
+                        @include('admin.users.partials.table', ['users' => $users->filter(fn($u) => $u->roles->contains('name', 'super-admin'))])
+                    </div>
+                    @endif
 
                     {{-- Admin Tab Pane --}}
                     <div class="tab-pane fade {{ ($activeTab ?? 'admin') == 'admin' ? 'show active' : '' }}" id="admin-pane" role="tabpanel" aria-labelledby="admin-tab">
