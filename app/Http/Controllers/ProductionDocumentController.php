@@ -128,8 +128,16 @@ class ProductionDocumentController extends Controller
         $pageTitle = "{$title}_{$employerName}_PROD-{$production->id}";
 
         // --- Employee List Data Logic ---
-        $includeEmployeeList = $request->query('include_employee_list') == 1;
+        // list_only = ออกเฉพาะตารางรายชื่อ ไม่มี header invoice (force include list)
+        $listOnly = $request->query('list_only') == 1;
+        $includeEmployeeList = $listOnly || $request->query('include_employee_list') == 1;
         $employeeList = [];
+
+        // list-only mode: ปรับ title + filename ให้สื่อความหมายตรง
+        if ($listOnly) {
+            $title = 'ตารางรายชื่อพนักงาน / Employee List';
+            $pageTitle = "EmployeeList_{$employerName}_PROD-{$production->id}";
+        }
 
         if ($includeEmployeeList) {
             $pricingMode = $financialData['pricing_mode'] ?? 'per_head';
@@ -226,6 +234,7 @@ class ProductionDocumentController extends Controller
         $data = [
             'production' => $production,
             'includeEmployeeList' => $includeEmployeeList,
+            'listOnly' => $listOnly,
             'employeeList' => $employeeList,
             'profile' => $companyProfile, // Fix: layout expects 'profile'
             'company' => $companyProfile, // Keep for backward compat if any

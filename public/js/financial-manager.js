@@ -76,11 +76,15 @@ if (typeof window.financialManager === 'undefined') {
             selectedTransactionIds: [],
             documentTypeToGenerate: '',
             includeEmployeeList: false,
+            // รูปแบบเอกสาร: 'invoice' = ใบเท่านั้น, 'with_list' = ใบ+รายชื่อ, 'list_only' = รายชื่อเท่านั้น
+            docVariant: 'invoice',
 
             // Quick Create Invoice Modal (per-row in Income transactions)
             invoiceModalTransactionId: null,
             invoiceModalLabel: '',
             invoiceModalIncludeList: false,
+            // รูปแบบเอกสารใน modal สร้าง invoice รายการเดียว — สอดคล้องกับ docVariant
+            invoiceModalVariant: 'invoice',
 
             // Context
             productionId: initialData.productionId,
@@ -267,9 +271,8 @@ if (typeof window.financialManager === 'undefined') {
 
             get allEmployeesForTier() {
                 // Return Merged List for Price Tier Modal
-                // This includes Existing ProductionItems AND Candidates (Employees not yet in Order)
-                // This is SCOPED to the current Order (Pre-Prod OR Workflow) because `this.productionItems`
-                // and `this.employees` are filtered by the backend Controller to only include current stage items.
+                // กัน crash ถ้า data load fail — return empty list ดีกว่า throw
+                if (!Array.isArray(this.transactions) || !Array.isArray(this.productionItems)) return [];
 
                 // Filter logic: Exclude items that are currently used in an Installment (Transaction)
                 // Note: Transactions are GLOBAL/SHARED. If an item in Pre-Prod has an installment, it's locked.
@@ -660,7 +663,7 @@ if (typeof window.financialManager === 'undefined') {
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 })
-                .then(res => res.json())
+                .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                 .then(data => {
                     if(data.success) {
                         this.transactions.push(data.transaction);
@@ -759,7 +762,7 @@ if (typeof window.financialManager === 'undefined') {
                     headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: formData
                 })
-                .then(res => res.json())
+                .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                 .then(data => {
                     if(data.success) {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
@@ -781,7 +784,13 @@ if (typeof window.financialManager === 'undefined') {
                     }
                 })
                 .catch(err => Swal.fire('Error', err.message, 'error'))
-                .finally(() => this.isSavingPayment = false);
+                .finally(() => {
+                    this.isSavingPayment = false;
+                    // Clear file input element เสมอ ทั้งใน success และ error path กัน file ค้าง
+                    this.paymentSlipFile = null;
+                    const fileInput = document.getElementById('paymentSlipInput');
+                    if (fileInput) fileInput.value = '';
+                });
             },
 
             editPayment(payment) {
@@ -832,7 +841,7 @@ if (typeof window.financialManager === 'undefined') {
                     headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: formData
                 })
-                .then(res => res.json())
+                .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                 .then(data => {
                     if(data.success) {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
@@ -864,7 +873,7 @@ if (typeof window.financialManager === 'undefined') {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
-                        .then(res => res.json())
+                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                         .then(data => {
                             if(data.success) {
                                 const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
@@ -910,7 +919,7 @@ if (typeof window.financialManager === 'undefined') {
                     headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: formData
                 })
-                .then(res => res.json())
+                .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                 .then(data => {
                     if(data.success) {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
@@ -931,7 +940,8 @@ if (typeof window.financialManager === 'undefined') {
                             });
                         }
 
-                        bootstrap.Modal.getInstance(this.$refs.payModal).hide();
+                        const payModal = bootstrap.Modal.getInstance(this.$refs.payModal);
+                        if (payModal) payModal.hide();
 
                         const Toast = Swal.mixin({
                             toast: true,
@@ -966,7 +976,7 @@ if (typeof window.financialManager === 'undefined') {
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                             body: JSON.stringify({ name: result.value })
                         })
-                        .then(res => res.json())
+                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                         .then(data => {
                             if (data.success) {
                                 // Ensure reactivity and defaults for empty arrays
@@ -993,7 +1003,7 @@ if (typeof window.financialManager === 'undefined') {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
-                        .then(res => res.json())
+                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                         .then(data => {
                             if (data.success) {
                                 this.financialGroups = this.financialGroups.filter(g => g.id !== groupId);
@@ -1021,7 +1031,7 @@ if (typeof window.financialManager === 'undefined') {
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                             body: JSON.stringify({ name: result.value })
                         })
-                        .then(res => res.json())
+                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                         .then(data => {
                             if (data.success) {
                                  const group = this.financialGroups.find(g => g.id === groupId);
@@ -1078,7 +1088,8 @@ if (typeof window.financialManager === 'undefined') {
 
                 const el = document.getElementById('manageEmployeesModal-' + this.productionId);
                 if (el && typeof bootstrap !== 'undefined') {
-                    bootstrap.Modal.getInstance(el).hide();
+                    const inst = bootstrap.Modal.getInstance(el);
+                    if (inst) inst.hide();
                 }
             },
 
@@ -1214,7 +1225,7 @@ if (typeof window.financialManager === 'undefined') {
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify(payload)
                 })
-                .then(res => res.json())
+                .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                 .then(data => {
                     if (data.success) {
                         if (data.group) {
@@ -1274,13 +1285,16 @@ if (typeof window.financialManager === 'undefined') {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
-                        .then(res => res.json())
+                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                         .then(data => {
                             if(data.success) {
                                 this.transactions = this.transactions.filter(t => t.id !== id);
                                 Swal.fire('Deleted!', 'Transaction has been deleted.', 'success');
+                            } else {
+                                throw new Error(data.message || 'Failed to delete transaction');
                             }
-                        });
+                        })
+                        .catch(err => Swal.fire('Error', err.message, 'error'));
                     }
                 });
             },
@@ -1309,18 +1323,24 @@ if (typeof window.financialManager === 'undefined') {
                 this.documentTypeToGenerate = type;
                 this.selectedTransactionIds = [];
                 this.includeEmployeeList = false;
+                this.docVariant = 'invoice'; // reset เริ่มต้นเป็นเอกสารธรรมดา
                 bootstrap.Modal.getOrCreateInstance(this.$refs.docSelectionModal).show();
             },
             openCreateInvoiceModal(t) {
                 this.invoiceModalTransactionId = t.id;
                 this.invoiceModalLabel = `${this.formatType(t.type)} — ${this.formatCurrency(t.amount)}`;
                 this.invoiceModalIncludeList = false;
+                this.invoiceModalVariant = 'invoice'; // reset เริ่มต้น
                 bootstrap.Modal.getOrCreateInstance(this.$refs.createInvoiceModal).show();
             },
             generateInvoiceFromButton() {
                 if (!this.invoiceModalTransactionId) return;
-                this.openDocument('invoice', String(this.invoiceModalTransactionId), null, this.invoiceModalIncludeList);
-                bootstrap.Modal.getInstance(this.$refs.createInvoiceModal).hide();
+                // แปลง variant → flags ที่ส่งไป backend
+                const includeList = this.invoiceModalVariant !== 'invoice';
+                const listOnly = this.invoiceModalVariant === 'list_only';
+                this.openDocument('invoice', String(this.invoiceModalTransactionId), null, includeList, listOnly);
+                const inst = bootstrap.Modal.getInstance(this.$refs.createInvoiceModal);
+                if (inst) inst.hide();
             },
             generateSelectedDocument() {
                 if (this.selectedTransactionIds.length === 0) return;
@@ -1329,10 +1349,13 @@ if (typeof window.financialManager === 'undefined') {
                 if (this.documentTypeToGenerate === 'advance_receipt') {
                     mode = 'advance_only';
                 }
-                this.openDocument(this.documentTypeToGenerate, ids, mode, this.includeEmployeeList);
-                bootstrap.Modal.getInstance(this.$refs.docSelectionModal).hide();
+                const includeList = this.docVariant !== 'invoice';
+                const listOnly = this.docVariant === 'list_only';
+                this.openDocument(this.documentTypeToGenerate, ids, mode, includeList, listOnly);
+                const inst = bootstrap.Modal.getInstance(this.$refs.docSelectionModal);
+                if (inst) inst.hide();
             },
-            openDocument(type, transactionIds = null, mode = null, includeEmployeeList = false) {
+            openDocument(type, transactionIds = null, mode = null, includeEmployeeList = false, listOnly = false) {
                 let url = `/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
@@ -1345,6 +1368,9 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 if (includeEmployeeList) {
                     url += `&include_employee_list=1`;
+                }
+                if (listOnly) {
+                    url += `&list_only=1`;
                 }
                 window.open(url, '_blank');
             },

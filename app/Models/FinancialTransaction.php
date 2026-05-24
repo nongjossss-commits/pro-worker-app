@@ -26,6 +26,8 @@ class FinancialTransaction extends Model
         'withholding_tax_amount',
         'wht_document_path',
         'wht_status',
+        'wht_received_at',
+        'wht_no_cert_reason',
         'financial_profile_id',
     ];
 
@@ -35,6 +37,7 @@ class FinancialTransaction extends Model
         'paid_amount' => 'decimal:2',
         'due_date' => 'date',
         'paid_at' => 'datetime',
+        'wht_received_at' => 'datetime',
     ];
 
     public function productionOrder()

@@ -173,6 +173,8 @@
         </div>
     </div>
 
+    {{-- list-only mode: ข้าม invoice content ทั้งหมด ออกเฉพาะตารางรายชื่อท้ายไฟล์ --}}
+    @unless(!empty($listOnly) && $listOnly)
     <div class="page">
         <!-- Header -->
         <table class="header-table">
@@ -242,10 +244,10 @@
         </div>
 
         @php
-            use Illuminate\Support\Str;
-
+            // ใช้ FQN แทน use Illuminate\Support\Str; เพราะบล็อกนี้อยู่ภายใน @unless
+            // และ use statement ไม่อนุญาตให้อยู่ใน conditional block ของ PHP
             $mode = $mode ?? 'combined';
-            $isReceiptContext = Str::contains($type, ['Receipt', 'Tax Invoice']);
+            $isReceiptContext = \Illuminate\Support\Str::contains($type, ['Receipt', 'Tax Invoice']);
 
             $serviceTransactions = collect();
             $advanceTransactions = collect();
@@ -679,9 +681,11 @@
             </div>
         </div>
     </div>
+    @endunless
 
     @if(!empty($includeEmployeeList) && $includeEmployeeList)
-    <div class="page" style="page-break-before: always; margin-top: 20px;">
+    {{-- ใน list-only mode ไม่ใส่ page-break-before เพราะไม่มีหน้าก่อนหน้า --}}
+    <div class="page" style="@unless(!empty($listOnly) && $listOnly) page-break-before: always; @endunless margin-top: 20px;">
         <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px;">ตารางรายชื่อพนักงาน / Employee List</h2>
         <table class="items-table" style="font-size: 12px;">
             <thead>

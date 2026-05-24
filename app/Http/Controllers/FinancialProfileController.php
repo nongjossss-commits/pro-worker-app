@@ -8,6 +8,15 @@ use Illuminate\Support\Facades\Storage;
 
 class FinancialProfileController extends Controller
 {
+    /**
+     * Authorization: ทุก method ต้องมี permission manage-finance หรือ admin/super-admin
+     * (Spatie Gate::before bypass admin/super-admin โดย default ใน AuthServiceProvider)
+     */
+    public function __construct()
+    {
+        $this->middleware('permission:manage-finance');
+    }
+
     // Fetch all profiles
     public function index(Request $request)
     {

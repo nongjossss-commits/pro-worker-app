@@ -375,7 +375,7 @@ class PdfGeneratorService
             $seed = 'EMP-' . $employee->id . '-' . uniqid(more_entropy: true);
             $content = $this->signatureService->generate($seed);
 
-            $filename = 'signatures/employees/emp_' . $employee->id . '_' . time() . '.png';
+            $filename = 'signatures/employees/emp_' . $employee->id . '_' . uniqid('', true) . '.png';
             Storage::disk('public')->put($filename, $content);
             $employee->update(['signature_path' => $filename]);
 
@@ -415,7 +415,7 @@ class PdfGeneratorService
                 // Generate persistent unique signature
                 $seed = 'EMPR-' . $effectiveEmployer->id . '-1-' . uniqid(more_entropy: true);
                 $content = $this->signatureService->generate($seed);
-                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_1_' . time() . '.png';
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_1_' . uniqid('', true) . '.png';
                 Storage::disk('public')->put($filename, $content);
 
                 // Update employer model
@@ -430,7 +430,7 @@ class PdfGeneratorService
                 // Generate persistent unique signature
                 $seed = 'EMPR-' . $effectiveEmployer->id . '-2-' . uniqid(more_entropy: true);
                 $content = $this->signatureService->generate($seed);
-                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_2_' . time() . '.png';
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_2_' . uniqid('', true) . '.png';
                 Storage::disk('public')->put($filename, $content);
 
                 // Update employer model
@@ -660,7 +660,7 @@ class PdfGeneratorService
             } else {
                 $seed = 'EMP-' . $emp->id . '-' . uniqid(more_entropy: true);
                 $content = $this->signatureService->generate($seed);
-                $filename = 'signatures/employees/emp_' . $emp->id . '_' . time() . '.png';
+                $filename = 'signatures/employees/emp_' . $emp->id . '_' . uniqid('', true) . '.png';
                 Storage::disk('public')->put($filename, $content);
                 $emp->update(['signature_path' => $filename]);
                 $employeeSigPaths[$emp->id] = Storage::disk('public')->path($filename);
@@ -697,7 +697,7 @@ class PdfGeneratorService
             } else {
                 $seed = 'EMPR-' . $effectiveEmployer->id . '-1-' . uniqid(more_entropy: true);
                 $content = $this->signatureService->generate($seed);
-                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_1_' . time() . '.png';
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_1_' . uniqid('', true) . '.png';
                 Storage::disk('public')->put($filename, $content);
                 $effectiveEmployer->update(['signature_1_path' => $filename]);
                 $emprSig1Path = Storage::disk('public')->path($filename);
@@ -708,7 +708,7 @@ class PdfGeneratorService
             } else {
                 $seed = 'EMPR-' . $effectiveEmployer->id . '-2-' . uniqid(more_entropy: true);
                 $content = $this->signatureService->generate($seed);
-                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_2_' . time() . '.png';
+                $filename = 'signatures/employers/empr_' . $effectiveEmployer->id . '_2_' . uniqid('', true) . '.png';
                 Storage::disk('public')->put($filename, $content);
                 $effectiveEmployer->update(['signature_2_path' => $filename]);
                 $emprSig2Path = Storage::disk('public')->path($filename);
@@ -986,7 +986,9 @@ class PdfGeneratorService
             if (file_exists($outputPath)) @unlink($outputPath);
         }
 
-        // If we reach here, all strategies failed
+        // If we reach here, all strategies failed — ลบ temp file ที่สร้างไว้กัน orphan
+        if (file_exists($outputPath)) @unlink($outputPath);
+
         $errorMsg = "Automatic PDF repair failed. The system attempted to convert the PDF to version 1.4 but could not find the necessary tools (Node.js, Ghostscript, or Python).\n\n" .
                     "SOLUTION: Please ensure 'node' is installed and run 'npm install' to install 'pdf-lib'. Alternatively, install Ghostscript or Python with 'pypdf'.";
 
@@ -1295,7 +1297,7 @@ class PdfGeneratorService
         if (str_starts_with($slotName, 'employee_doc_')) {
             // Standard Employee Documents
             // Path: employee_files/{id}/{slotName}_{timestamp}.pdf
-            $filePath = 'employee_files/' . $employee->id . '/' . $slotName . '_' . time() . '.pdf';
+            $filePath = 'employee_files/' . $employee->id . '/' . $slotName . '_' . uniqid('', true) . '.pdf';
             Storage::disk('public')->put($filePath, $content);
 
             // Update Employee Record
@@ -1314,7 +1316,7 @@ class PdfGeneratorService
             // Employer Documents (attached via Employee context)
             if ($employee->employer) {
                 $employer = $employee->employer;
-                $filePath = 'employer_documents/' . $employer->id . '/' . $slotName . '_' . $employee->id . '_' . time() . '.pdf';
+                $filePath = 'employer_documents/' . $employer->id . '/' . $slotName . '_' . $employee->id . '_' . uniqid('', true) . '.pdf';
                 Storage::disk('public')->put($filePath, $content);
 
                 $employer->update([$slotName => $filePath]);
@@ -1326,7 +1328,7 @@ class PdfGeneratorService
             }
         } else {
             // Fallback for unknown slots (e.g. generated/) - mostly for audit history
-            $filePath = 'generated/' . $employee->id . '/' . Str::slug($slotName) . '_' . time() . '.pdf';
+            $filePath = 'generated/' . $employee->id . '/' . Str::slug($slotName) . '_' . uniqid('', true) . '.pdf';
             Storage::disk('public')->put($filePath, $content);
         }
 
