@@ -19,9 +19,11 @@
                 <table class="table table-bordered">
                     <thead>
                         <tr>
+                            <th>{{ __('Code') }}</th>
                             <th>{{ __('Name') }}</th>
                             <th>{{ __('Description') }}</th>
                             <th>{{ __('Tax Deductible') }}</th>
+                            <th>{{ __('WHT Default') }}</th>
                             <th>{{ __('Status') }}</th>
                             <th>{{ __('Actions') }}</th>
                         </tr>
@@ -29,6 +31,7 @@
                     <tbody>
                         @foreach($categories as $category)
                             <tr>
+                                <td>{{ $category->code ?? '-' }}</td>
                                 <td>{{ $category->name }}</td>
                                 <td>{{ $category->description }}</td>
                                 <td>
@@ -36,6 +39,15 @@
                                         <span class="badge bg-success">{{ __('Yes') }}</span>
                                     @else
                                         <span class="badge bg-secondary">{{ __('No') }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if(($category->default_wht_type ?? 'none') === 'none')
+                                        <span class="text-muted">—</span>
+                                    @else
+                                        <span class="badge bg-info-subtle text-info">
+                                            {{ strtoupper($category->default_wht_type) }} {{ rtrim(rtrim($category->default_wht_rate ?? 0, '0'), '.') }}%
+                                        </span>
                                     @endif
                                 </td>
                                 <td>
@@ -64,13 +76,33 @@
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label>{{ __('Name') }} *</label>
-                                                    <input type="text" name="name" class="form-control" value="{{ $category->name }}" required>
+                                                <div class="row g-2">
+                                                    <div class="col-md-4 mb-3">
+                                                        <label>{{ __('Code') }}</label>
+                                                        <input type="text" name="code" class="form-control" value="{{ $category->code }}" maxlength="20">
+                                                    </div>
+                                                    <div class="col-md-8 mb-3">
+                                                        <label>{{ __('Name') }} *</label>
+                                                        <input type="text" name="name" class="form-control" value="{{ $category->name }}" required>
+                                                    </div>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label>{{ __('Description') }}</label>
                                                     <textarea name="description" class="form-control">{{ $category->description }}</textarea>
+                                                </div>
+                                                <div class="row g-2">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label>{{ __('WHT Type') }}</label>
+                                                        <select name="default_wht_type" class="form-select">
+                                                            <option value="none" {{ ($category->default_wht_type ?? 'none') === 'none' ? 'selected' : '' }}>None</option>
+                                                            <option value="pnd3" {{ ($category->default_wht_type ?? '') === 'pnd3' ? 'selected' : '' }}>ภ.ง.ด.3 (บุคคล)</option>
+                                                            <option value="pnd53" {{ ($category->default_wht_type ?? '') === 'pnd53' ? 'selected' : '' }}>ภ.ง.ด.53 (นิติบุคคล)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label>{{ __('WHT Rate (%)') }}</label>
+                                                        <input type="number" step="0.01" min="0" max="100" name="default_wht_rate" class="form-control" value="{{ $category->default_wht_rate ?? 0 }}">
+                                                    </div>
                                                 </div>
                                                 <div class="mb-3 form-check">
                                                     <input type="checkbox" name="is_tax_deductible" class="form-check-input" value="1" {{ $category->is_tax_deductible ? 'checked' : '' }}>
@@ -109,13 +141,33 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label>{{ __('Name') }} *</label>
-                        <input type="text" name="name" class="form-control" required placeholder="e.g., Visa Fee, Office Supplies">
+                    <div class="row g-2">
+                        <div class="col-md-4 mb-3">
+                            <label>{{ __('Code') }}</label>
+                            <input type="text" name="code" class="form-control" maxlength="20" placeholder="e.g., EXP-001">
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label>{{ __('Name') }} *</label>
+                            <input type="text" name="name" class="form-control" required placeholder="e.g., Visa Fee, Office Supplies">
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label>{{ __('Description') }}</label>
                         <textarea name="description" class="form-control"></textarea>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label>{{ __('WHT Type') }}</label>
+                            <select name="default_wht_type" class="form-select">
+                                <option value="none">None</option>
+                                <option value="pnd3">ภ.ง.ด.3 (บุคคล)</option>
+                                <option value="pnd53">ภ.ง.ด.53 (นิติบุคคล)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>{{ __('WHT Rate (%)') }}</label>
+                            <input type="number" step="0.01" min="0" max="100" name="default_wht_rate" class="form-control" value="0">
+                        </div>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" name="is_tax_deductible" class="form-check-input" value="1">

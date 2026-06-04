@@ -72,7 +72,7 @@
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">
             <input type="hidden" name="tab" value="overview">
             <div class="col-md-4">
-                <input type="text" name="search" class="form-control" placeholder="{{ __('Search Transaction ID, Employer, Project...') }}" value="{{ request('search') }}">
+                <input type="text" name="search" class="form-control" placeholder="{{ __('Search Bill #, Employer, Project, Job Owner...') }}" value="{{ request('search') }}">
             </div>
             <div class="col-md-2">
                 <select name="status" class="form-select">
@@ -96,6 +96,82 @@
     </div>
 </div>
 
+{{-- Filtered Summary — แสดงเมื่อมี filter active --}}
+@if(!empty($filteredStats))
+<div class="card border-info shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="m-0 fw-bold text-info">
+                <i class="bi bi-funnel-fill me-1"></i>
+                {{ __('Filtered Summary') }}
+                @if(request('search'))
+                    <span class="badge bg-info-subtle text-info ms-2">{{ __('Search') }}: "{{ request('search') }}"</span>
+                @endif
+                @if(request('status'))
+                    <span class="badge bg-info-subtle text-info ms-1">{{ __('Status') }}: {{ ucfirst(request('status')) }}</span>
+                @endif
+                @if(request('date_from') || request('date_to'))
+                    <span class="badge bg-info-subtle text-info ms-1">
+                        {{ request('date_from', '…') }} → {{ request('date_to', '…') }}
+                    </span>
+                @endif
+            </h6>
+            <a href="{{ route('finance.index', ['tab' => 'overview']) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> {{ __('Clear Filter') }}
+            </a>
+        </div>
+        <div class="row g-2 text-center">
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-2 bg-light">
+                    <div class="small text-muted">{{ __('Total Bills') }}</div>
+                    <div class="h5 mb-0 fw-bold text-dark">{{ number_format($filteredStats['total_count']) }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-2 bg-light">
+                    <div class="small text-muted">{{ __('Paid in Full') }}</div>
+                    <div class="h5 mb-0 fw-bold text-success">{{ number_format($filteredStats['paid_count']) }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-2 bg-light">
+                    <div class="small text-muted">{{ __('Unpaid / Partial') }}</div>
+                    <div class="h5 mb-0 fw-bold text-warning">{{ number_format($filteredStats['unpaid_count']) }}</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-2 bg-light">
+                    <div class="small text-muted">{{ __('Overdue') }}</div>
+                    <div class="h5 mb-0 fw-bold text-danger">{{ number_format($filteredStats['overdue_count']) }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-2 text-center mt-1">
+            <div class="col-md-4">
+                <div class="border rounded p-2">
+                    <div class="small text-muted">{{ __('Total Billed') }}</div>
+                    <div class="h5 mb-0 fw-bold text-dark">{{ number_format($filteredStats['total_amount'], 2) }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-2">
+                    <div class="small text-muted">{{ __('Received') }}</div>
+                    <div class="h5 mb-0 fw-bold text-success">{{ number_format($filteredStats['total_paid'], 2) }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-2 {{ $filteredStats['total_outstanding'] > 0 ? 'bg-danger-subtle' : '' }}">
+                    <div class="small text-muted">{{ __('Outstanding') }}</div>
+                    <div class="h5 mb-0 fw-bold {{ $filteredStats['total_outstanding'] > 0 ? 'text-danger' : 'text-muted' }}">
+                        {{ number_format($filteredStats['total_outstanding'], 2) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- Transactions Table --}}
 <div class="card shadow mb-4">
     <div class="card-header py-3">
@@ -109,15 +185,21 @@
                         <th>{{ __('Date') }}</th>
                         <th>{{ __('Bill No.') }}</th>
                         <th>{{ __('Employer / Project') }}</th>
+                        <th>{{ __('Job Owner') }}</th>
                         <th>{{ __('Type') }}</th>
                         <th class="text-end">{{ __('Amount') }}</th>
                         <th class="text-end">{{ __('Paid') }}</th>
+                        <th class="text-end">{{ __('Outstanding') }}</th>
                         <th class="text-center">{{ __('Status') }}</th>
                         <th class="text-center">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($transactions as $txn)
+                    @php
+                        $outstanding = (float) $txn->amount - (float) $txn->paid_amount;
+                        $jobOwnerName = optional(optional(optional($txn->productionOrder)->employer)->jobOwner)->name;
+                    @endphp
                     <tr>
                         <td>{{ $txn->created_at->format('d/m/Y') }}</td>
                         <td>
@@ -134,11 +216,21 @@
                             @endif
                         </td>
                         <td>
+                            @if($jobOwnerName)
+                                <span class="badge bg-secondary-subtle text-dark border">{{ $jobOwnerName }}</span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        <td>
                             <span class="badge bg-light text-dark border">{{ ucfirst(str_replace('_', ' ', $txn->type)) }}</span>
                         </td>
                         <td class="text-end">{{ number_format($txn->amount, 2) }}</td>
                         <td class="text-end {{ $txn->paid_amount >= $txn->amount ? 'text-success' : 'text-warning' }}">
                             {{ number_format($txn->paid_amount, 2) }}
+                        </td>
+                        <td class="text-end {{ $outstanding > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                            {{ number_format($outstanding, 2) }}
                         </td>
                         <td class="text-center">
                             @php
@@ -165,7 +257,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">{{ __('No transactions found.') }}</td>
+                        <td colspan="10" class="text-center text-muted py-4">{{ __('No transactions found.') }}</td>
                     </tr>
                     @endforelse
                 </tbody>

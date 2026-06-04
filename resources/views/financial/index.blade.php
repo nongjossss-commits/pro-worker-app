@@ -22,6 +22,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" href="{{ route('finance.ledger.index') }}">
+                <i class="bi bi-journal-bookmark me-1"></i> {{ __('Ledger') }}
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link {{ $tab == 'wht' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'wht']) }}">
                 <i class="bi bi-receipt me-1"></i> {{ __('WHT Tracking') }}
             </a>

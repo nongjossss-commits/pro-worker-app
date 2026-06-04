@@ -23,10 +23,19 @@ class FinancialProfile extends Model
         'signature_position',
         'stamp_path',
         'stamp_position',
+        'is_vat_registered',
+        'vat_rate',
     ];
 
     protected $casts = [
         'signature_position' => 'array',
         'stamp_position' => 'array',
+        'is_vat_registered' => 'boolean',
+        'vat_rate' => 'decimal:2',
     ];
+
+    public function bankAccounts()
+    {
+        return $this->hasMany(BankAccount::class);
+    }
 }

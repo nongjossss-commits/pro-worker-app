@@ -479,7 +479,15 @@ Route::middleware(['auth'])->group(function () {
         // Finance Additions
         Route::resource('bank-accounts', App\Http\Controllers\Finance\BankAccountController::class)->except(['create', 'edit', 'show']);
         Route::resource('expense-categories', App\Http\Controllers\Finance\ExpenseCategoryController::class)->except(['create', 'edit', 'show']);
+        Route::resource('income-categories', App\Http\Controllers\Finance\IncomeCategoryController::class)->except(['create', 'edit', 'show']);
         Route::resource('expenses', App\Http\Controllers\Finance\ExpenseController::class)->only(['index', 'store', 'destroy']);
+
+        // Ledger (Phase 1 — universal income/expense ledger)
+        Route::get('/ledger', [App\Http\Controllers\Finance\LedgerEntryController::class, 'index'])->name('ledger.index');
+        Route::post('/ledger', [App\Http\Controllers\Finance\LedgerEntryController::class, 'store'])->name('ledger.store');
+        Route::get('/ledger/{ledger}', [App\Http\Controllers\Finance\LedgerEntryController::class, 'show'])->name('ledger.show');
+        Route::match(['put', 'post'], '/ledger/{ledger}/update', [App\Http\Controllers\Finance\LedgerEntryController::class, 'update'])->name('ledger.update');
+        Route::delete('/ledger/{ledger}', [App\Http\Controllers\Finance\LedgerEntryController::class, 'destroy'])->name('ledger.destroy');
 
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
         Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->name('wht_inbox');

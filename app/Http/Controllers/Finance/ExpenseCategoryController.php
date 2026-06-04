@@ -16,12 +16,7 @@ class ExpenseCategoryController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'is_tax_deductible' => 'boolean',
-        ]);
-
+        $validated = $this->validatePayload($request);
         $validated['is_tax_deductible'] = $request->has('is_tax_deductible');
         $validated['is_active'] = true;
 
@@ -32,19 +27,26 @@ class ExpenseCategoryController extends Controller
 
     public function update(Request $request, ExpenseCategory $expenseCategory)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'is_tax_deductible' => 'boolean',
-            'is_active' => 'boolean',
-        ]);
-
+        $validated = $this->validatePayload($request, $expenseCategory->id);
         $validated['is_tax_deductible'] = $request->has('is_tax_deductible');
         $validated['is_active'] = $request->has('is_active');
 
         $expenseCategory->update($validated);
 
         return back()->with('success', 'Expense Category updated successfully.');
+    }
+
+    protected function validatePayload(Request $request, $ignoreId = null): array
+    {
+        return $request->validate([
+            'code' => 'nullable|string|max:20|unique:expense_categories,code' . ($ignoreId ? ",{$ignoreId}" : ''),
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'default_wht_type' => 'nullable|in:none,pnd3,pnd53',
+            'default_wht_rate' => 'nullable|numeric|min:0|max:100',
+            'is_tax_deductible' => 'boolean',
+            'is_active' => 'boolean',
+        ]);
     }
 
     public function destroy(ExpenseCategory $expenseCategory)

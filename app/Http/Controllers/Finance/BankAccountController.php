@@ -10,8 +10,9 @@ class BankAccountController extends Controller
 {
     public function index()
     {
-        $accounts = BankAccount::orderBy('bank_name')->paginate(15);
-        return view('financial.bank_accounts.index', compact('accounts'));
+        $accounts = BankAccount::with('financialProfile')->orderBy('account_type')->orderBy('bank_name')->paginate(15);
+        $profiles = \App\Models\FinancialProfile::orderBy('name')->get();
+        return view('financial.bank_accounts.index', compact('accounts', 'profiles'));
     }
 
     public function store(Request $request)
@@ -21,7 +22,11 @@ class BankAccountController extends Controller
             'account_name' => 'nullable|string|max:255',
             'account_number' => 'nullable|string|max:255',
             'branch' => 'nullable|string|max:255',
+            'account_type' => 'required|in:personal,company',
+            'financial_profile_id' => 'nullable|exists:financial_profiles,id',
+            'tax_id' => 'nullable|string|max:15',
             'initial_balance' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
         ]);
 
         $validated['current_balance'] = $validated['initial_balance'];
@@ -39,8 +44,13 @@ class BankAccountController extends Controller
             'account_name' => 'nullable|string|max:255',
             'account_number' => 'nullable|string|max:255',
             'branch' => 'nullable|string|max:255',
+            'account_type' => 'required|in:personal,company',
+            'financial_profile_id' => 'nullable|exists:financial_profiles,id',
+            'tax_id' => 'nullable|string|max:15',
+            'notes' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
+        $validated['is_active'] = $request->has('is_active');
 
         $bankAccount->update($validated);
 

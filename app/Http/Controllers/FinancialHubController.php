@@ -29,6 +29,7 @@ class FinancialHubController extends Controller
         ];
         $transactions = null;
         $orders = null;
+        $filteredStats = null;
 
         if ($tab === 'overview') {
             // 1. Calculate Stats (Efficiently)
@@ -43,10 +44,9 @@ class FinancialHubController extends Controller
             ];
 
             // 2. Query Transactions
-            $query = FinancialTransaction::with(['productionOrder.employer', 'financialGroup'])
-                ->latest('created_at');
+            $query = FinancialTransaction::query()->latest('created_at');
 
-            // Search
+            // Search — id, notes, project, employer (Th/En/suffix), job owner
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
@@ -57,7 +57,10 @@ class FinancialHubController extends Controller
                              ->orWhereHas('employer', function($e) use ($search) {
                                  $e->where('employerNameTh', 'like', "%{$search}%")
                                    ->orWhere('employerNameEn', 'like', "%{$search}%")
-                                   ->orWhere('name_suffix', 'like', "%{$search}%");
+                                   ->orWhere('name_suffix', 'like', "%{$search}%")
+                                   ->orWhereHas('jobOwner', function($jo) use ($search) {
+                                       $jo->where('name', 'like', "%{$search}%");
+                                   });
                              });
                       });
                 });
@@ -75,7 +78,37 @@ class FinancialHubController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
-            $transactions = $query->paginate(20)->withQueryString();
+            // Filtered Summary — aggregate ของผลลัพธ์ทั้งหมด (ก่อน paginate) แสดงเฉพาะตอนมี filter
+            $filteredStats = null;
+            $hasFilter = $request->filled('search')
+                || $request->filled('status')
+                || $request->filled('date_from')
+                || $request->filled('date_to');
+
+            if ($hasFilter) {
+                $agg = (clone $query)->reorder()->selectRaw("
+                    COUNT(*) as total_count,
+                    COALESCE(SUM(amount), 0) as total_amount,
+                    COALESCE(SUM(paid_amount), 0) as total_paid,
+                    COALESCE(SUM(amount - paid_amount), 0) as total_outstanding,
+                    SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid_count,
+                    SUM(CASE WHEN status IN ('pending', 'partial') THEN 1 ELSE 0 END) as unpaid_count,
+                    SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_count
+                ")->first();
+
+                $filteredStats = [
+                    'total_count' => (int) ($agg->total_count ?? 0),
+                    'total_amount' => (float) ($agg->total_amount ?? 0),
+                    'total_paid' => (float) ($agg->total_paid ?? 0),
+                    'total_outstanding' => (float) ($agg->total_outstanding ?? 0),
+                    'paid_count' => (int) ($agg->paid_count ?? 0),
+                    'unpaid_count' => (int) ($agg->unpaid_count ?? 0),
+                    'overdue_count' => (int) ($agg->overdue_count ?? 0),
+                ];
+            }
+
+            $transactions = $query->with(['productionOrder.employer.jobOwner', 'financialGroup'])
+                ->paginate(20)->withQueryString();
         }
         elseif ($tab === 'workflow') {
             $baseQuery = ProductionOrder::whereNotIn('status', ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'])
@@ -316,7 +349,7 @@ class FinancialHubController extends Controller
             $expenses = $query->paginate(20)->withQueryString();
         }
 
-        return view('financial.index', compact('tab', 'stats', 'transactions', 'orders', 'expenses'));
+        return view('financial.index', compact('tab', 'stats', 'transactions', 'orders', 'expenses', 'filteredStats'));
     }
 
     /**
