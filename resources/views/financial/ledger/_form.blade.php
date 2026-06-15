@@ -118,4 +118,25 @@
         <label class="form-label">{{ __('Notes') }}</label>
         <textarea name="notes" class="form-control" rows="2"></textarea>
     </div>
+
+    {{-- Phase 2.1: auto-generate linked documents --}}
+    <div class="col-12">
+        <div class="border-top pt-3">
+            <div class="form-check" x-show="type === 'income' && vatTreatment === 'taxable' && !isPersonal()">
+                <input type="checkbox" name="generate_tax_invoice" value="1" class="form-check-input" id="genInvoice_{{ $type }}">
+                <label class="form-check-label" for="genInvoice_{{ $type }}">
+                    <i class="bi bi-receipt"></i> {{ __('Generate Tax Invoice (ใบกำกับภาษี) automatically') }}
+                    <small class="text-muted d-block">{{ __('Requires bank account linked to a biller profile.') }}</small>
+                </label>
+            </div>
+            <div class="form-check mt-2" x-show="whtType !== 'none' && whtRate > 0 && !isPersonal()">
+                <input type="checkbox" name="generate_wht_cert" value="1" class="form-check-input" id="genWht_{{ $type }}">
+                <label class="form-check-label" for="genWht_{{ $type }}">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span x-show="type === 'expense'">{{ __('Generate WHT Certificate (Issued — ที่เราออกให้ supplier)') }}</span>
+                    <span x-show="type === 'income'">{{ __('Generate WHT Certificate (Received — ที่ลูกค้าออกให้เรา)') }}</span>
+                </label>
+            </div>
+        </div>
+    </div>
 </div>

@@ -27,6 +27,16 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" href="{{ route('finance.tax-invoices.index') }}">
+                <i class="bi bi-receipt-cutoff me-1"></i> {{ __('Tax Invoices') }}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('finance.wht-certificates.index') }}">
+                <i class="bi bi-file-earmark-text me-1"></i> {{ __('WHT Certs') }}
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link {{ $tab == 'wht' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'wht']) }}">
                 <i class="bi bi-receipt me-1"></i> {{ __('WHT Tracking') }}
             </a>

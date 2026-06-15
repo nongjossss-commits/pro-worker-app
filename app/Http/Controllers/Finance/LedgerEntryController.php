@@ -8,13 +8,19 @@ use App\Models\ExpenseCategory;
 use App\Models\IncomeCategory;
 use App\Models\LedgerEntry;
 use App\Services\LedgerService;
+use App\Services\TaxInvoiceService;
+use App\Services\WhtCertificateService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class LedgerEntryController extends Controller
 {
-    public function __construct(protected LedgerService $service)
-    {
+    public function __construct(
+        protected LedgerService $service,
+        protected TaxInvoiceService $taxInvoiceService,
+        protected WhtCertificateService $whtCertificateService,
+    ) {
     }
 
     public function index(Request $request)
@@ -70,8 +76,52 @@ class LedgerEntryController extends Controller
 
         $entry = $this->service->createEntry($data);
 
+        // Phase 2.1 integration — สร้าง Tax Invoice / WHT Cert คู่กัน (optional)
+        $extras = $this->generateLinkedDocuments($request, $entry);
+
+        $message = __('Ledger entry :no saved.', ['no' => $entry->entry_no]);
+        if (!empty($extras)) {
+            $message .= ' ' . implode(' ', $extras);
+        }
+
         return redirect()->route('finance.ledger.show', $entry)
-            ->with('success', __('Ledger entry :no saved.', ['no' => $entry->entry_no]));
+            ->with('success', $message);
+    }
+
+    /**
+     * Optionally generate Tax Invoice + WHT Certificate from the ledger entry.
+     * Returns array of localized status messages.
+     */
+    protected function generateLinkedDocuments(Request $request, $entry): array
+    {
+        $messages = [];
+
+        if ($request->boolean('generate_tax_invoice')
+            && $entry->type === 'income'
+            && $entry->vat_treatment === 'taxable') {
+            try {
+                $invoice = $this->taxInvoiceService->createFromLedger($entry);
+                $messages[] = __('Tax Invoice :no issued.', ['no' => $invoice->invoice_no]);
+            } catch (\Throwable $e) {
+                Log::warning('Auto Tax Invoice failed', ['ledger_id' => $entry->id, 'error' => $e->getMessage()]);
+                $messages[] = __('(Tax Invoice skipped: :reason)', ['reason' => $e->getMessage()]);
+            }
+        }
+
+        if ($request->boolean('generate_wht_cert')
+            && in_array($entry->wht_type, ['pnd3', 'pnd53'], true)
+            && (float) $entry->wht_amount > 0) {
+            $direction = $entry->type === 'expense' ? 'issued' : 'received';
+            try {
+                $cert = $this->whtCertificateService->createFromLedger($entry, $direction);
+                $messages[] = __('WHT Cert :no created.', ['no' => $cert->cert_no]);
+            } catch (\Throwable $e) {
+                Log::warning('Auto WHT Cert failed', ['ledger_id' => $entry->id, 'direction' => $direction, 'error' => $e->getMessage()]);
+                $messages[] = __('(WHT Cert skipped: :reason)', ['reason' => $e->getMessage()]);
+            }
+        }
+
+        return $messages;
     }
 
     public function show(LedgerEntry $ledger)

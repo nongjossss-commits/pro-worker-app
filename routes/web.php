@@ -489,6 +489,12 @@ Route::middleware(['auth'])->group(function () {
         Route::match(['put', 'post'], '/ledger/{ledger}/update', [App\Http\Controllers\Finance\LedgerEntryController::class, 'update'])->name('ledger.update');
         Route::delete('/ledger/{ledger}', [App\Http\Controllers\Finance\LedgerEntryController::class, 'destroy'])->name('ledger.destroy');
 
+        // Tax Invoices (Phase 2.1 — ใบกำกับภาษีขาย)
+        Route::resource('tax-invoices', App\Http\Controllers\Finance\TaxInvoiceController::class)->except(['edit']);
+
+        // WHT Certificates (Phase 2.1 — ใบหัก ณ ที่จ่าย ทั้ง issued+received)
+        Route::resource('wht-certificates', App\Http\Controllers\Finance\WhtCertificateController::class)->except(['edit']);
+
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
         Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->name('wht_inbox');
         Route::post('/wht-inbox/{transaction}/received', [\App\Http\Controllers\FinancialController::class, 'markWhtReceived'])->name('wht_received');
