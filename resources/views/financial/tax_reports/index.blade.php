@@ -88,9 +88,25 @@
         </div>
     </div>
 
-    <div class="alert alert-info mt-3 mb-0">
+    <div class="alert alert-info mt-3 mb-3">
         <i class="bi bi-info-circle"></i>
         {{ __('รายงานทั้ง 3 ฉบับสร้างจากข้อมูลในระบบ Ledger v2 (Tax Invoices + WHT Certificates) ของเดือนภาษีที่เลือก ใช้ประกอบการยื่นกรมสรรพากร') }}
+    </div>
+
+    {{-- Monthly Bundle — 1-click sum-it-all-up --}}
+    <div class="card shadow border-success">
+        <div class="card-header bg-success-subtle">
+            <strong class="text-success"><i class="bi bi-archive me-1"></i> {{ __('Monthly Bundle — สรุปเดือนปุ่มเดียวจบ') }}</strong>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                {{ __('ดาวน์โหลดไฟล์ ZIP ที่รวมทุกอย่างของเดือนนี้ไว้ในแพ็คเดียว — Summary.xlsx (รวมยอด/รายบัญชี/หมวด/รายวัน), Ledger.xlsx (รายการละเอียด), ภ.พ.30/ภ.ง.ด.3/53, พร้อมไฟล์แนบทั้งหมด (ใบกำกับ, ใบหัก, สลิป).') }}
+            </p>
+            <a href="{{ route('finance.monthly-bundle.export', ['period' => sprintf('%04d-%02d', $year, $month)]) }}" class="btn btn-success btn-lg">
+                <i class="bi bi-download me-1"></i> {{ __('Download Monthly Bundle ZIP') }}
+                <span class="badge bg-light text-success ms-2">{{ sprintf('%04d-%02d', $year, $month) }}</span>
+            </a>
+        </div>
     </div>
 </div>
 @endsection

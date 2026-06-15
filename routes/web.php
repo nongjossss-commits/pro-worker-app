@@ -511,6 +511,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('tax-reports/wht', [App\Http\Controllers\Finance\TaxReportController::class, 'wht'])->name('tax-reports.wht');
         Route::get('tax-reports/wht/export', [App\Http\Controllers\Finance\TaxReportController::class, 'exportWht'])->name('tax-reports.wht.export');
 
+        // Monthly Bundle (Phase 4 — 1-click ZIP: Summary + Ledger + tax forms + attachments)
+        Route::get('monthly-bundle/export', [App\Http\Controllers\Finance\MonthlyExportController::class, 'export'])->name('monthly-bundle.export');
+
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
         Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->name('wht_inbox');
         Route::post('/wht-inbox/{transaction}/received', [\App\Http\Controllers\FinancialController::class, 'markWhtReceived'])->name('wht_received');
