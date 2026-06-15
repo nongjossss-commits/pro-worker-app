@@ -8,6 +8,9 @@
             <h1 class="h3 text-gray-800 mb-0 mt-1">{{ __('Ledger — สมุดบัญชี') }}</h1>
         </div>
         <div>
+            <a href="{{ route('finance.ledger.capture') }}" class="btn btn-outline-primary me-2">
+                <i class="bi bi-magic me-1"></i> {{ __('Quick Capture') }}
+            </a>
             <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#createIncomeModal">
                 <i class="bi bi-arrow-down-circle me-1"></i> {{ __('Record Income') }}
             </button>

@@ -485,6 +485,13 @@ Route::middleware(['auth'])->group(function () {
         // Ledger (Phase 1 — universal income/expense ledger)
         Route::get('/ledger', [App\Http\Controllers\Finance\LedgerEntryController::class, 'index'])->name('ledger.index');
         Route::post('/ledger', [App\Http\Controllers\Finance\LedgerEntryController::class, 'store'])->name('ledger.store');
+
+        // Quick Capture (Phase 3 — AI extraction, manual fallback)
+        // Must come before /ledger/{ledger} so 'capture' isn't captured as an ID.
+        Route::get('/ledger/capture', [App\Http\Controllers\Finance\QuickCaptureController::class, 'show'])->name('ledger.capture');
+        Route::post('/ledger/capture/extract', [App\Http\Controllers\Finance\QuickCaptureController::class, 'extract'])->name('ledger.capture.extract');
+        Route::post('/ledger/capture', [App\Http\Controllers\Finance\QuickCaptureController::class, 'save'])->name('ledger.capture.save');
+
         Route::get('/ledger/{ledger}', [App\Http\Controllers\Finance\LedgerEntryController::class, 'show'])->name('ledger.show');
         Route::match(['put', 'post'], '/ledger/{ledger}/update', [App\Http\Controllers\Finance\LedgerEntryController::class, 'update'])->name('ledger.update');
         Route::delete('/ledger/{ledger}', [App\Http\Controllers\Finance\LedgerEntryController::class, 'destroy'])->name('ledger.destroy');
