@@ -497,6 +497,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('wht-certificates/{whtCertificate}/pdf', [App\Http\Controllers\Finance\WhtCertificateController::class, 'pdf'])->name('wht-certificates.pdf');
         Route::resource('wht-certificates', App\Http\Controllers\Finance\WhtCertificateController::class)->except(['edit']);
 
+        // Tax Reports (Phase 2.3 — ภ.พ.30 + ภ.ง.ด.3/53)
+        Route::get('tax-reports', [App\Http\Controllers\Finance\TaxReportController::class, 'index'])->name('tax-reports.index');
+        Route::get('tax-reports/vat', [App\Http\Controllers\Finance\TaxReportController::class, 'vat'])->name('tax-reports.vat');
+        Route::get('tax-reports/vat/export', [App\Http\Controllers\Finance\TaxReportController::class, 'exportVat'])->name('tax-reports.vat.export');
+        Route::get('tax-reports/wht', [App\Http\Controllers\Finance\TaxReportController::class, 'wht'])->name('tax-reports.wht');
+        Route::get('tax-reports/wht/export', [App\Http\Controllers\Finance\TaxReportController::class, 'exportWht'])->name('tax-reports.wht.export');
+
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
         Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->name('wht_inbox');
         Route::post('/wht-inbox/{transaction}/received', [\App\Http\Controllers\FinancialController::class, 'markWhtReceived'])->name('wht_received');

@@ -37,6 +37,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" href="{{ route('finance.tax-reports.index') }}">
+                <i class="bi bi-bar-chart-line me-1"></i> {{ __('Tax Reports') }}
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link {{ $tab == 'wht' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'wht']) }}">
                 <i class="bi bi-receipt me-1"></i> {{ __('WHT Tracking') }}
             </a>
