@@ -4,13 +4,38 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\WhtCertificate;
+use App\Services\WhtCertificatePdfService;
 use App\Services\WhtCertificateService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class WhtCertificateController extends Controller
 {
-    public function __construct(protected WhtCertificateService $service)
+    public function __construct(
+        protected WhtCertificateService $service,
+        protected WhtCertificatePdfService $pdfService,
+    ) {
+    }
+
+    /**
+     * Stream the certificate PDF. Prefers the certificate_path snapshot
+     * (legally locked) once the cert is issued/submitted; falls back to
+     * a fresh render for drafts.
+     */
+    public function pdf(Request $request, WhtCertificate $whtCertificate)
     {
+        if ($whtCertificate->certificate_path
+            && Storage::disk('public')->exists($whtCertificate->certificate_path)) {
+            $binary = Storage::disk('public')->get($whtCertificate->certificate_path);
+        } else {
+            $binary = $this->pdfService->generate($whtCertificate);
+        }
+
+        $filename = $whtCertificate->cert_no . '.pdf';
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        ]);
     }
 
     public function index(Request $request)
@@ -75,6 +100,7 @@ class WhtCertificateController extends Controller
 
         if ($request->input('action') === 'issue') {
             $cert = $this->service->issue($cert);
+            $cert = $this->persistPdf($cert);
         }
 
         return redirect()->route('finance.wht-certificates.show', $cert)
@@ -90,7 +116,8 @@ class WhtCertificateController extends Controller
     public function update(Request $request, WhtCertificate $whtCertificate)
     {
         if ($request->has('action_issue')) {
-            $this->service->issue($whtCertificate);
+            $cert = $this->service->issue($whtCertificate);
+            $this->persistPdf($cert);
             return redirect()->route('finance.wht-certificates.show', $whtCertificate)
                 ->with('success', __('WHT certificate issued.'));
         }
@@ -116,6 +143,28 @@ class WhtCertificateController extends Controller
         $whtCertificate->delete();
         return redirect()->route('finance.wht-certificates.index')
             ->with('success', __('WHT certificate deleted.'));
+    }
+
+    /**
+     * Render + persist PDF to certificate_path. Does NOT overwrite an
+     * existing certificate_path (e.g. supplier-uploaded PDF for received certs).
+     * Soft-failure: log + continue.
+     */
+    protected function persistPdf(WhtCertificate $cert): WhtCertificate
+    {
+        if ($cert->certificate_path) {
+            return $cert;
+        }
+        try {
+            $path = $this->pdfService->generateAndStore($cert);
+            $cert->update(['certificate_path' => $path]);
+        } catch (\Throwable $e) {
+            \Log::warning('WHT cert PDF persist failed', [
+                'cert_id' => $cert->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+        return $cert->fresh();
     }
 
     protected function validatePayload(Request $request): array

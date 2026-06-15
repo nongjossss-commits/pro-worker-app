@@ -490,9 +490,11 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/ledger/{ledger}', [App\Http\Controllers\Finance\LedgerEntryController::class, 'destroy'])->name('ledger.destroy');
 
         // Tax Invoices (Phase 2.1 — ใบกำกับภาษีขาย)
+        Route::get('tax-invoices/{taxInvoice}/pdf', [App\Http\Controllers\Finance\TaxInvoiceController::class, 'pdf'])->name('tax-invoices.pdf');
         Route::resource('tax-invoices', App\Http\Controllers\Finance\TaxInvoiceController::class)->except(['edit']);
 
         // WHT Certificates (Phase 2.1 — ใบหัก ณ ที่จ่าย ทั้ง issued+received)
+        Route::get('wht-certificates/{whtCertificate}/pdf', [App\Http\Controllers\Finance\WhtCertificateController::class, 'pdf'])->name('wht-certificates.pdf');
         Route::resource('wht-certificates', App\Http\Controllers\Finance\WhtCertificateController::class)->except(['edit']);
 
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย

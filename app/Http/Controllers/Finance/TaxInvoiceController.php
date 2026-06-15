@@ -5,13 +5,50 @@ namespace App\Http\Controllers\Finance;
 use App\Http\Controllers\Controller;
 use App\Models\FinancialProfile;
 use App\Models\TaxInvoice;
+use App\Services\TaxInvoicePdfService;
 use App\Services\TaxInvoiceService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class TaxInvoiceController extends Controller
 {
-    public function __construct(protected TaxInvoiceService $service)
+    public function __construct(
+        protected TaxInvoiceService $service,
+        protected TaxInvoicePdfService $pdfService,
+    ) {
+    }
+
+    /**
+     * Stream the invoice PDF. Draft = regenerate every time (preview).
+     * Issued/Void = serve persisted copy from storage if available.
+     * `?copy=copy` to mark "สำเนา" instead of "ต้นฉบับ".
+     */
+    public function pdf(Request $request, TaxInvoice $taxInvoice)
     {
+        $taxInvoice->loadMissing('issuerProfile');
+        $copyLabel = $request->input('copy') === 'copy' ? 'copy' : 'original';
+
+        // Issued/void invoices have an immutable persisted PDF in `notes` metadata path
+        $persistedPath = $this->resolvePersistedPath($taxInvoice);
+        if ($persistedPath && Storage::disk('public')->exists($persistedPath)) {
+            $binary = Storage::disk('public')->get($persistedPath);
+        } else {
+            $binary = $this->pdfService->generate($taxInvoice, $copyLabel);
+        }
+
+        $filename = $taxInvoice->invoice_no . '.pdf';
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Derive the storage path used by TaxInvoicePdfService::generateAndStore().
+     */
+    protected function resolvePersistedPath(TaxInvoice $invoice): string
+    {
+        return sprintf('tax_invoices/%04d/%s.pdf', $invoice->fiscal_year, $invoice->invoice_no);
     }
 
     public function index(Request $request)
@@ -63,6 +100,7 @@ class TaxInvoiceController extends Controller
 
         if ($request->input('action') === 'issue') {
             $invoice = $this->service->issue($invoice);
+            $this->persistPdf($invoice);
         }
 
         return redirect()->route('finance.tax-invoices.show', $invoice)
@@ -85,7 +123,8 @@ class TaxInvoiceController extends Controller
         }
 
         if ($request->has('action_issue')) {
-            $this->service->issue($taxInvoice);
+            $invoice = $this->service->issue($taxInvoice);
+            $this->persistPdf($invoice);
             return redirect()->route('finance.tax-invoices.show', $taxInvoice)
                 ->with('success', __('Tax invoice issued.'));
         }
@@ -104,6 +143,21 @@ class TaxInvoiceController extends Controller
         $taxInvoice->delete();
         return redirect()->route('finance.tax-invoices.index')
             ->with('success', __('Draft tax invoice deleted.'));
+    }
+
+    /**
+     * Snapshot the issued invoice to storage. Soft-failure: log + continue.
+     */
+    protected function persistPdf(TaxInvoice $invoice): void
+    {
+        try {
+            $this->pdfService->generateAndStore($invoice);
+        } catch (\Throwable $e) {
+            \Log::warning('Tax invoice PDF persist failed', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     protected function validatePayload(Request $request): array

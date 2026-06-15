@@ -18,6 +18,14 @@
         </div>
 
         <div class="d-flex gap-2">
+            <a href="{{ route('finance.tax-invoices.pdf', $invoice) }}" target="_blank" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-pdf"></i> {{ __('View PDF') }}
+            </a>
+            @if($invoice->status === 'issued')
+                <a href="{{ route('finance.tax-invoices.pdf', ['taxInvoice' => $invoice, 'copy' => 'copy']) }}" target="_blank" class="btn btn-outline-secondary">
+                    <i class="bi bi-file-earmark-pdf"></i> {{ __('Copy (สำเนา)') }}
+                </a>
+            @endif
             @if($invoice->status === 'draft')
                 <form action="{{ route('finance.tax-invoices.update', $invoice) }}" method="POST" class="d-inline">
                     @csrf @method('PUT')

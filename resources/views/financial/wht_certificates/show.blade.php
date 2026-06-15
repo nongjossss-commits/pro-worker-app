@@ -23,6 +23,9 @@
         </div>
 
         <div class="d-flex gap-2">
+            <a href="{{ route('finance.wht-certificates.pdf', $cert) }}" target="_blank" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-pdf"></i> {{ __('View PDF') }}
+            </a>
             @if($cert->status === 'draft')
                 <form action="{{ route('finance.wht-certificates.update', $cert) }}" method="POST">
                     @csrf @method('PUT')
