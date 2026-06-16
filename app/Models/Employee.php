@@ -186,8 +186,16 @@ class Employee extends Model
     {
         return Attribute::make(
             get: function ($value) {
+                // Idempotent: skip the concat if the raw column already
+                // ends with "(suffix)" so display never doubles up — even
+                // on legacy rows where a corrupted save embedded the
+                // suffix into the column itself.
                 $suffix = $this->attributes['name_suffix'] ?? null;
-                return $suffix ? $value . ' (' . $suffix . ')' : $value;
+                if (!$suffix || !$value) return $value;
+                if (str_ends_with(trim($value), '(' . $suffix . ')')) {
+                    return $value;
+                }
+                return $value . ' (' . $suffix . ')';
             },
         );
     }
