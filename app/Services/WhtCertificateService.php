@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\LedgerEntry;
 use App\Models\WhtCertificate;
 use Carbon\Carbon;
@@ -31,7 +32,7 @@ class WhtCertificateService
                 $month
             );
 
-            return WhtCertificate::create(array_merge($data, [
+            $cert = WhtCertificate::create(array_merge($data, [
                 'cert_no' => $certNo,
                 'tax_period_year' => $year,
                 'tax_period_month' => $month,
@@ -39,6 +40,16 @@ class WhtCertificateService
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]));
+
+            ActivityLogHelper::logAction(
+                'create',
+                "สร้างใบหัก ณ ที่จ่าย {$cert->cert_no} ({$cert->type}, {$cert->wht_amount} บาท)",
+                WhtCertificate::class,
+                $cert->id,
+                ['cert_no' => $cert->cert_no, 'type' => $cert->type, 'wht_amount' => (float) $cert->wht_amount],
+            );
+
+            return $cert;
         });
     }
 
@@ -109,6 +120,14 @@ class WhtCertificateService
             'updated_by' => Auth::id(),
         ]);
 
+        ActivityLogHelper::logAction(
+            'status_change',
+            "ออกใบหัก ณ ที่จ่าย {$cert->cert_no} (issued)",
+            WhtCertificate::class,
+            $cert->id,
+            ['cert_no' => $cert->cert_no, 'from' => 'draft', 'to' => 'issued'],
+        );
+
         return $cert->fresh();
     }
 
@@ -122,6 +141,14 @@ class WhtCertificateService
             'status' => 'submitted',
             'updated_by' => Auth::id(),
         ]);
+
+        ActivityLogHelper::logAction(
+            'status_change',
+            "ยื่นใบหัก ณ ที่จ่าย {$cert->cert_no} ต่อกรมสรรพากร (submitted)",
+            WhtCertificate::class,
+            $cert->id,
+            ['cert_no' => $cert->cert_no, 'from' => 'issued', 'to' => 'submitted'],
+        );
 
         return $cert->fresh();
     }

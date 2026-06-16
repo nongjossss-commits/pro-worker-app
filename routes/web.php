@@ -514,6 +514,12 @@ Route::middleware(['auth'])->group(function () {
         // Monthly Bundle (Phase 4 — 1-click ZIP: Summary + Ledger + tax forms + attachments)
         Route::get('monthly-bundle/export', [App\Http\Controllers\Finance\MonthlyExportController::class, 'export'])->name('monthly-bundle.export');
 
+        // Bank Reconciliation + Finance Audit (Phase 5)
+        Route::get('reconciliation', [App\Http\Controllers\Finance\ReconciliationController::class, 'index'])->name('reconciliation.index');
+        Route::get('reconciliation/{bankAccount}', [App\Http\Controllers\Finance\ReconciliationController::class, 'account'])->name('reconciliation.account');
+        Route::post('reconciliation/{bankAccount}/repair', [App\Http\Controllers\Finance\ReconciliationController::class, 'repair'])->name('reconciliation.repair');
+        Route::get('audit', [App\Http\Controllers\Finance\FinanceAuditController::class, 'index'])->name('audit.index');
+
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
         Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->name('wht_inbox');
         Route::post('/wht-inbox/{transaction}/received', [\App\Http\Controllers\FinancialController::class, 'markWhtReceived'])->name('wht_received');

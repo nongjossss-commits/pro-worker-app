@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\LedgerEntry;
 use App\Models\TaxInvoice;
 use Carbon\Carbon;
@@ -23,13 +24,23 @@ class TaxInvoiceService
             $fiscalYear = (int) ($data['fiscal_year'] ?? Carbon::parse($data['invoice_date'])->year);
             $invoiceNo = $this->generateInvoiceNo($fiscalYear);
 
-            return TaxInvoice::create(array_merge($data, [
+            $invoice = TaxInvoice::create(array_merge($data, [
                 'invoice_no' => $invoiceNo,
                 'fiscal_year' => $fiscalYear,
                 'status' => $data['status'] ?? 'draft',
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]));
+
+            ActivityLogHelper::logAction(
+                'create',
+                "สร้างใบกำกับภาษี {$invoice->invoice_no} (ยอด {$invoice->total} บาท)",
+                TaxInvoice::class,
+                $invoice->id,
+                ['invoice_no' => $invoice->invoice_no, 'total' => (float) $invoice->total, 'status' => $invoice->status],
+            );
+
+            return $invoice;
         });
     }
 
@@ -80,6 +91,14 @@ class TaxInvoiceService
             'updated_by' => Auth::id(),
         ]);
 
+        ActivityLogHelper::logAction(
+            'status_change',
+            "ออกใบกำกับภาษี {$invoice->invoice_no} (issued)",
+            TaxInvoice::class,
+            $invoice->id,
+            ['invoice_no' => $invoice->invoice_no, 'from' => 'draft', 'to' => 'issued'],
+        );
+
         return $invoice->fresh();
     }
 
@@ -99,6 +118,14 @@ class TaxInvoiceService
             'void_reason' => $reason,
             'updated_by' => Auth::id(),
         ]);
+
+        ActivityLogHelper::logAction(
+            'status_change',
+            "ยกเลิกใบกำกับภาษี {$invoice->invoice_no} (void)",
+            TaxInvoice::class,
+            $invoice->id,
+            ['invoice_no' => $invoice->invoice_no, 'reason' => $reason],
+        );
 
         return $invoice->fresh();
     }

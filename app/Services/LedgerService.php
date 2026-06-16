@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\ActivityLogHelper;
 use App\Models\BankAccount;
 use App\Models\LedgerEntry;
 use Illuminate\Support\Facades\Auth;
@@ -117,6 +118,14 @@ class LedgerService
 
             $this->applyBalanceImpact($account, $entry->type, $entry->net_amount, +1);
 
+            ActivityLogHelper::logAction(
+                'create',
+                "บันทึก Ledger Entry {$entry->entry_no} ({$entry->type} {$entry->net_amount} บาท)",
+                LedgerEntry::class,
+                $entry->id,
+                ['entry_no' => $entry->entry_no, 'type' => $entry->type, 'net_amount' => (float) $entry->net_amount],
+            );
+
             return $entry->fresh();
         });
     }
@@ -147,6 +156,14 @@ class LedgerService
 
             $this->applyBalanceImpact($newAccount, $entry->type, $entry->net_amount, +1);
 
+            ActivityLogHelper::logAction(
+                'update',
+                "แก้ไข Ledger Entry {$entry->entry_no}",
+                LedgerEntry::class,
+                $entry->id,
+                ['entry_no' => $entry->entry_no, 'changed' => array_keys($data)],
+            );
+
             return $entry->fresh();
         });
     }
@@ -163,7 +180,17 @@ class LedgerService
             $entry->updated_by = Auth::id();
             $entry->save();
 
-            return (bool) $entry->delete();
+            $result = (bool) $entry->delete();
+
+            ActivityLogHelper::logAction(
+                'delete',
+                "ลบ Ledger Entry {$entry->entry_no} (กู้คืน balance {$entry->net_amount} บาท)",
+                LedgerEntry::class,
+                $entry->id,
+                ['entry_no' => $entry->entry_no, 'type' => $entry->type, 'net_amount' => (float) $entry->net_amount],
+            );
+
+            return $result;
         });
     }
 

@@ -42,6 +42,16 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" href="{{ route('finance.reconciliation.index') }}">
+                <i class="bi bi-check2-square me-1"></i> {{ __('Reconciliation') }}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ route('finance.audit.index') }}">
+                <i class="bi bi-clock-history me-1"></i> {{ __('Audit Log') }}
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link {{ $tab == 'wht' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'wht']) }}">
                 <i class="bi bi-receipt me-1"></i> {{ __('WHT Tracking') }}
             </a>
