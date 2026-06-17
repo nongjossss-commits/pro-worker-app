@@ -182,6 +182,71 @@ class Employee extends Model
         'terminated_at' => 'datetime',
     ];
 
+    /**
+     * Renewal-progress state for a Registration/Renewal Resolution card.
+     *
+     * Returns one of:
+     *   - 'completed'      — finalize() pressed (status = registration_completed / renewal_completed)
+     *   - 'both'           — both visa AND work-permit expiry are >= target (ready to finalize)
+     *   - 'visa_only'      — only visa expiry is >= target
+     *   - 'work_permit_only' — only work-permit expiry is >= target
+     *   - 'none'           — neither has been renewed yet (default colour)
+     *
+     * The "target" for each side is the SystemSetting value the admin saved
+     * for the current tab group (registration_auto_visa_expiry /
+     * registration_auto_work_permit_expiry — and the same for renewal).
+     *
+     * Settings are loaded on demand, so calling code can override them by
+     * setting `$this->renewalProgressTargets = ['visa' => ..., 'wp' => ...]`
+     * to avoid an N+1 SystemSetting lookup per card. The index controllers
+     * use that override path.
+     */
+    public ?array $renewalProgressTargets = null;
+
+    public function getRenewalProgressAttribute(): string
+    {
+        if (in_array($this->status, ['registration_completed', 'renewal_completed'], true)) {
+            return 'completed';
+        }
+
+        $targets = $this->renewalProgressTargets ?? $this->resolveRenewalTargetsFromSettings();
+        $visaTarget = $targets['visa'] ?? null;
+        $wpTarget = $targets['wp'] ?? null;
+
+        if (!$visaTarget && !$wpTarget) {
+            return 'none';
+        }
+
+        $visaRenewed = $visaTarget && $this->visaExpiryDate
+            && \Carbon\Carbon::parse($this->visaExpiryDate)->gte(\Carbon\Carbon::parse($visaTarget));
+        $wpRenewed = $wpTarget && $this->workPermitExpiryDate
+            && \Carbon\Carbon::parse($this->workPermitExpiryDate)->gte(\Carbon\Carbon::parse($wpTarget));
+
+        if ($visaRenewed && $wpRenewed) return 'both';
+        if ($visaRenewed)               return 'visa_only';
+        if ($wpRenewed)                 return 'work_permit_only';
+        return 'none';
+    }
+
+    protected function resolveRenewalTargetsFromSettings(): array
+    {
+        $group = match (true) {
+            in_array($this->status, ['registration_pending', 'registration_completed', 'registration_cancelled'], true) => 'registration',
+            in_array($this->status, ['renewal_pending', 'renewal_completed', 'renewal_cancelled'], true)                => 'renewal',
+            default => null,
+        };
+        if (!$group) return ['visa' => null, 'wp' => null];
+
+        $rows = \App\Models\SystemSetting::where('group', $group)
+            ->whereIn('key', ["{$group}_auto_visa_expiry", "{$group}_auto_work_permit_expiry"])
+            ->pluck('value', 'key');
+
+        return [
+            'visa' => $rows["{$group}_auto_visa_expiry"] ?? null,
+            'wp'   => $rows["{$group}_auto_work_permit_expiry"] ?? null,
+        ];
+    }
+
     protected function employeeNameEn(): Attribute
     {
         return Attribute::make(

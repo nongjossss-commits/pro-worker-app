@@ -369,7 +369,10 @@ class WorkflowController extends Controller
             }
         }
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users'));
+        $workflowAutoSettings = $this->loadWorkflowAutoSettings();
+        $mouGroupOptions = ['MOU', 'MOU 2 ปีหลัง', 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน', 'อื่นๆ'];
+
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users', 'workflowAutoSettings', 'mouGroupOptions'));
     }
 
     /**
@@ -695,6 +698,64 @@ class WorkflowController extends Controller
         $wt->update(['notify_days_advance' => $request->notify_days_advance]);
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * API: Save per-WorkType "auto MOU after 24h" settings.
+     *
+     * Stored under SystemSetting group='workflow' with keys suffixed by
+     * the work-type id so each Workflow tab can have its own MOU group
+     * (e.g. tab "MOU Renewal" → "MOU 2 ปีหลัง"). The hourly cron
+     * `app:apply-workflow-settings` reads these.
+     *
+     * Expiry is intentionally optional — MOU border-crossing dates vary
+     * per worker so admins usually leave it blank.
+     */
+    public function updateAutoSettings(Request $request)
+    {
+        if (!auth()->user()->can('manage-settings')) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'work_type_id'             => 'required|exists:work_types,id',
+            'auto_mou_group'           => 'nullable|string|max:255',
+            'auto_work_permit_expiry'  => 'nullable|date',
+        ]);
+
+        $workTypeId = (int) $data['work_type_id'];
+
+        SystemSetting::updateOrCreate(
+            ['key' => "workflow_auto_mou_group_{$workTypeId}"],
+            ['value' => $data['auto_mou_group'] ?: null, 'group' => 'workflow']
+        );
+
+        SystemSetting::updateOrCreate(
+            ['key' => "workflow_auto_work_permit_expiry_{$workTypeId}"],
+            ['value' => $data['auto_work_permit_expiry'] ?: null, 'group' => 'workflow']
+        );
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Pull the per-WorkType workflow settings into a map keyed by
+     * work_type_id, so the Auto Settings modal can pre-fill its
+     * dropdown the moment the admin opens it.
+     *
+     *   [ workTypeId => ['mou_group' => 'MOU 2 ปีหลัง', 'wp_expiry' => '2027-05-01'], ... ]
+     */
+    protected function loadWorkflowAutoSettings(): array
+    {
+        $map = [];
+        $rows = SystemSetting::where('group', 'workflow')->get();
+        foreach ($rows as $row) {
+            if (preg_match('/^workflow_auto_(mou_group|work_permit_expiry)_(\d+)$/', $row->key, $m)) {
+                $field = $m[1] === 'mou_group' ? 'mou_group' : 'wp_expiry';
+                $map[(int) $m[2]][$field] = $row->value;
+            }
+        }
+        return $map;
     }
 
     /**
@@ -1625,7 +1686,10 @@ class WorkflowController extends Controller
 
             $item->update([
                 'status' => 'completed',
-                'completed_at' => now()
+                'completed_at' => now(),
+                // Reset the 24h MOU auto-apply flag so a re-finalize re-applies
+                // the latest admin-configured settings (see ApplyWorkflowSettings).
+                'workflow_settings_applied' => false,
             ]);
         });
 
@@ -1655,10 +1719,13 @@ class WorkflowController extends Controller
     public function restoreItem(Request $request, $itemId)
     {
         $item = ProductionItem::findOrFail($itemId);
-        // Reset completed_at so if finalized again, timer restarts
+        // Reset completed_at so if finalized again, timer restarts.
+        // Also clear the MOU-applied flag so the next finalize gets a fresh
+        // 24h window and re-evaluates the admin settings.
         $item->update([
             'status' => 'pending',
-            'completed_at' => null
+            'completed_at' => null,
+            'workflow_settings_applied' => false,
         ]);
 
         // Recalculate Stats

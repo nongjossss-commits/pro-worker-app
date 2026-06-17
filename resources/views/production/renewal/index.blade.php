@@ -19,6 +19,27 @@
         filter: grayscale(100%);
         opacity: 0.8;
     }
+
+    /* Renewal-progress card colours — match the legend at the top of the page.
+       "both" uses a deeper blue + thick saturated border so it's clearly
+       distinct from the purple "visa_only" state at a glance. */
+    .renewal-progress-visa-only { background-color: #f3e8ff; border-color: #c084fc !important; }
+    .renewal-progress-wp-only   { background-color: #fce7f3; border-color: #f472b6 !important; }
+    .renewal-progress-both      { background-color: #bfdbfe; border: 2px solid #1d4ed8 !important; }
+
+    .renewal-progress-legend .legend-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 999px;
+        font-size: 0.8rem; border: 1px solid transparent;
+    }
+    .renewal-progress-legend .legend-chip .swatch {
+        width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1);
+    }
+    .renewal-progress-legend .swatch-none      { background: #fff; }
+    .renewal-progress-legend .swatch-visa      { background: #f3e8ff; border-color: #c084fc; }
+    .renewal-progress-legend .swatch-wp        { background: #fce7f3; border-color: #f472b6; }
+    .renewal-progress-legend .swatch-both      { background: #bfdbfe; border-color: #1d4ed8; }
+    .renewal-progress-legend .swatch-completed { background: #d1fae5; border-color: #34d399; }
     /* CSS Counters for persistent slot numbering */
     #employersAccordion {
         counter-reset: employer-counter;
@@ -83,6 +104,30 @@
 
 <div class="container-fluid">
     <x-resolution-tab-bar :currentTab="$currentTab" :allTabs="$allTabs" type="renewal" routePrefix="production.renewal" />
+
+    {{-- Renewal-Progress Legend (guide for the 4-colour card system) --}}
+    <div class="alert alert-light border shadow-sm mb-3 renewal-progress-legend">
+        <div class="d-flex flex-wrap align-items-center gap-3">
+            <div class="fw-bold text-secondary">
+                <i class="bi bi-palette me-1"></i> {{ __('Card colour legend') }}:
+            </div>
+            <span class="legend-chip">
+                <span class="swatch swatch-none"></span> {{ __('Not renewed yet') }}
+            </span>
+            <span class="legend-chip">
+                <span class="swatch swatch-visa"></span> {{ __('Visa renewed only') }}
+            </span>
+            <span class="legend-chip">
+                <span class="swatch swatch-wp"></span> {{ __('Work permit renewed only') }}
+            </span>
+            <span class="legend-chip">
+                <span class="swatch swatch-both"></span> {{ __('Both renewed — ready to finalize') }}
+            </span>
+            <span class="legend-chip">
+                <span class="swatch swatch-completed"></span> {{ __('Finalized') }}
+            </span>
+        </div>
+    </div>
 
     {{-- Top Stats --}}
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
@@ -209,6 +254,80 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    {{-- Renewal-Progress Filter Pills — multi-select toggle (see registration/index.blade.php for the same widget). --}}
+    @php
+        $currentRenewalFilters = collect(explode(',', (string) request('renewal_filters', '')))
+            ->map(fn($s) => trim($s))
+            ->filter()
+            ->values()
+            ->all();
+
+        // Strip the legacy single-select `filter=renewal_*` value if present.
+        $renewalScrubParams = function () {
+            $params = request()->except(['renewal_filters', 'page']);
+            if (isset($params['filter']) && is_string($params['filter']) && str_starts_with($params['filter'], 'renewal_')) {
+                unset($params['filter']);
+            }
+            return $params;
+        };
+
+        $buildToggleUrl = function ($state) use ($currentRenewalFilters, $renewalScrubParams) {
+            $arr = in_array($state, $currentRenewalFilters, true)
+                ? array_values(array_diff($currentRenewalFilters, [$state]))
+                : array_merge($currentRenewalFilters, [$state]);
+            $params = $renewalScrubParams();
+            if (!empty($arr)) {
+                $params['renewal_filters'] = implode(',', $arr);
+            }
+            return '?' . http_build_query($params);
+        };
+        $clearRenewalFiltersUrl = '?' . http_build_query($renewalScrubParams());
+        $isRenewalActive = fn($state) => in_array($state, $currentRenewalFilters, true);
+    @endphp
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+        <span class="text-secondary small fw-bold me-1"><i class="bi bi-funnel-fill"></i> {{ __('Renewal status') }}:</span>
+
+        <a href="{{ $buildToggleUrl('none') }}"
+           class="btn btn-sm {{ $isRenewalActive('none') ? 'btn-secondary' : 'btn-outline-secondary' }}">
+            {{ $isRenewalActive('none') ? '✓ ' : '' }}{{ __('Not renewed') }}
+            <span class="badge bg-light text-dark ms-1">{{ $progressCounts['none'] ?? 0 }}</span>
+        </a>
+
+        <a href="{{ $buildToggleUrl('visa_only') }}"
+           class="btn btn-sm {{ $isRenewalActive('visa_only') ? 'text-white' : '' }}"
+           style="{{ $isRenewalActive('visa_only') ? 'background:#a855f7;border-color:#9333ea;' : 'background:#f3e8ff;border:1px solid #c084fc;color:#6b21a8;' }}">
+            {{ $isRenewalActive('visa_only') ? '✓ ' : '' }}{{ __('Visa renewed only') }}
+            <span class="badge bg-light text-dark ms-1">{{ $progressCounts['visa_only'] ?? 0 }}</span>
+        </a>
+
+        <a href="{{ $buildToggleUrl('work_permit_only') }}"
+           class="btn btn-sm {{ $isRenewalActive('work_permit_only') ? 'text-white' : '' }}"
+           style="{{ $isRenewalActive('work_permit_only') ? 'background:#ec4899;border-color:#db2777;' : 'background:#fce7f3;border:1px solid #f472b6;color:#9d174d;' }}">
+            {{ $isRenewalActive('work_permit_only') ? '✓ ' : '' }}{{ __('Work permit renewed only') }}
+            <span class="badge bg-light text-dark ms-1">{{ $progressCounts['work_permit_only'] ?? 0 }}</span>
+        </a>
+
+        <a href="{{ $buildToggleUrl('both') }}"
+           class="btn btn-sm {{ $isRenewalActive('both') ? 'text-white' : '' }}"
+           style="{{ $isRenewalActive('both') ? 'background:#1d4ed8;border-color:#1e3a8a;' : 'background:#bfdbfe;border:2px solid #1d4ed8;color:#1e3a8a;font-weight:600;' }}">
+            {{ $isRenewalActive('both') ? '✓ ' : '' }}{{ __('Both renewed — ready') }}
+            <span class="badge bg-light text-dark ms-1">{{ $progressCounts['both'] ?? 0 }}</span>
+        </a>
+
+        <a href="{{ $buildToggleUrl('completed') }}"
+           class="btn btn-sm {{ $isRenewalActive('completed') ? 'btn-success' : 'btn-outline-success' }}">
+            {{ $isRenewalActive('completed') ? '✓ ' : '' }}{{ __('Finalized') }}
+            <span class="badge bg-light text-dark ms-1">{{ $progressCounts['completed'] ?? 0 }}</span>
+        </a>
+
+        @if(!empty($currentRenewalFilters))
+            <a href="{{ $clearRenewalFiltersUrl }}" class="btn btn-sm btn-danger ms-2">
+                <i class="bi bi-x-circle-fill me-1"></i> {{ __('Clear filters') }}
+                <span class="badge bg-white text-danger ms-1">{{ count($currentRenewalFilters) }}</span>
+            </a>
+        @endif
     </div>
 
     {{-- Global Workflow Progress --}}
@@ -411,8 +530,10 @@
         @foreach($employers as $employer)
             @php
                 $isEmployerCancelled = $employer->financeOrder && $employer->financeOrder->status === 'registration_resolution_cancelled';
-                $employerCardClass = $isEmployerCancelled ? 'border-secondary grayscale-mode' : 'border-primary border-2';
-                $employerHeaderClass = $isEmployerCancelled ? 'bg-light' : 'bg-white';
+                $hasNoActiveEmployees = ($employer->active_employees_in_tab ?? 0) === 0;
+                $isInactive = $isEmployerCancelled || $hasNoActiveEmployees;
+                $employerCardClass = $isInactive ? 'border-secondary grayscale-mode' : 'border-primary border-2';
+                $employerHeaderClass = $isInactive ? 'bg-light' : 'bg-white';
             @endphp
 
             <div class="employer-card-container w-100 mb-4" id="employer-card-{{ $employer->id }}" data-is-cancelled="{{ $isEmployerCancelled ? 'true' : 'false' }}">
@@ -601,10 +722,8 @@
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </a>
 
-                                 {{-- History Button --}}
-                                 <button class="btn btn-outline-secondary btn-sm" onclick="openHistoryModal({{ $employer->id }})" title="{{ __('View History') }}">
-                                     <i class="bi bi-clock-history"></i>
-                                 </button>
+                                 {{-- History Button removed — completed employees now stay in the main list
+                                      as green cards instead of being archived after 24 hours. --}}
                                  @endcan
 
                                  {{-- Finance Button --}}

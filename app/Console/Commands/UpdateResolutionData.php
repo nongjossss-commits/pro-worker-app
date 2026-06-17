@@ -25,18 +25,18 @@ class UpdateResolutionData extends Command
 
     /**
      * Execute the console command.
+     *
+     * NOTE: The 24-hour auto-apply of resolution settings was replaced by
+     * the user-driven 4-colour card progression (visa renewed / WP renewed /
+     * both / finalized). This command is intentionally left as a no-op
+     * to keep any pre-existing external cron entries from erroring out;
+     * the schedule entry has been removed from Kernel.php.
      */
     public function handle()
     {
-        $this->info('Starting UpdateResolutionData job...');
-
-        // 1. Process Registration
-        $this->processGroup('registration_completed', 'registration');
-
-        // 2. Process Renewal
-        $this->processGroup('renewal_completed', 'renewal');
-
-        $this->info('UpdateResolutionData job completed.');
+        $this->info('UpdateResolutionData is disabled — replaced by manual renewal-progress workflow.');
+        Log::info('UpdateResolutionData skipped: command is now a no-op (manual renewal-progress workflow).');
+        return self::SUCCESS;
     }
 
     private function processGroup($status, $settingGroup)

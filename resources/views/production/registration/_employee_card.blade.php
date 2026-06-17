@@ -20,17 +20,47 @@
         // $isCompleted = true; // Force completed styling if not already
     }
 
-    // Style: if completed/cancelled, flat/grey out.
-    // Cancelled gets a specific flat grey look.
-    $cardClass = 'bg-white border shadow-sm';
-    $overlayClass = ''; // Added to the avatar/info container and steps container
+    // Style: 4-colour renewal-progress badge + completed/cancelled overrides.
+    //   completed -> green (status set by finalize())
+    //   both      -> blue   (visa AND work permit renewed to target — ready to finalize)
+    //   visa_only -> purple (visa renewed, work permit still pending)
+    //   work_permit_only -> pink (work permit renewed, visa still pending)
+    //   none      -> default white (no renewal progress yet)
+    //   cancelled -> flat grey (overrides everything below completed)
+    //
+    // The card view receives $renewalTargets from the parent index controller
+    // so we hand it to the accessor up-front and skip an N+1 SystemSetting lookup.
+    if (!isset($renewalTargets)) { $renewalTargets = null; }
+    if ($renewalTargets !== null) {
+        $employee->renewalProgressTargets = $renewalTargets;
+    }
+    $renewalProgress = ($isCompleted || $isCancelled)
+        ? ($isCancelled ? 'cancelled' : 'completed')
+        : $employee->renewal_progress;
 
-    if ($isCompleted) {
-        $cardClass = 'bg-success bg-opacity-10 border-0 text-muted';
-        $overlayClass = 'opacity-75 pointer-events-none';
-    } elseif ($isCancelled) {
-        $cardClass = 'bg-light border-0 text-secondary grayscale-mode'; // Add grayscale class or inline style
-        $overlayClass = 'opacity-50 pointer-events-none';
+    $cardClass = 'bg-white border shadow-sm';
+    $overlayClass = '';
+    switch ($renewalProgress) {
+        case 'completed':
+            $cardClass = 'bg-success bg-opacity-10 border-0 text-muted';
+            $overlayClass = 'opacity-75 pointer-events-none';
+            break;
+        case 'cancelled':
+            $cardClass = 'bg-light border-0 text-secondary grayscale-mode';
+            $overlayClass = 'opacity-50 pointer-events-none';
+            break;
+        case 'both':
+            // ready to finalize — light blue
+            $cardClass = 'border shadow-sm renewal-progress-both';
+            break;
+        case 'visa_only':
+            // visa renewed — purple
+            $cardClass = 'border shadow-sm renewal-progress-visa-only';
+            break;
+        case 'work_permit_only':
+            // work permit renewed — pink
+            $cardClass = 'border shadow-sm renewal-progress-wp-only';
+            break;
     }
 
     // Determine the relevant steps relationship depending on the active module
@@ -75,6 +105,8 @@
      data-has-appointment="{{ $employee->appointment_date ? 'true' : 'false' }}"
      data-appointment-completed="{{ $employee->appointment_completed_at ? 'true' : 'false' }}"
      data-biometrics-collected="{{ $employee->biometrics_collected_at ? 'true' : 'false' }}"
+     data-terminated="{{ $employee->terminated_at ? 'true' : 'false' }}"
+     data-renewal-progress="{{ $renewalProgress }}"
      style="transition: all 0.3s ease; {{ $isCancelled ? 'filter: grayscale(100%);' : '' }}">
 
     <div class="card {{ $cardClass }} w-100 position-relative">

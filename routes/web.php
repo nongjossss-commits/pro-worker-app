@@ -610,6 +610,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('workflow/steps/{id}', [\App\Http\Controllers\WorkflowController::class, 'destroyStep'])->name('workflow.steps.destroy');
     Route::post('workflow/steps/reorder', [\App\Http\Controllers\WorkflowController::class, 'reorderSteps'])->name('workflow.steps.reorder');
     Route::post('workflow/settings/{workTypeId}/notification', [\App\Http\Controllers\WorkflowController::class, 'updateNotificationSettings'])->name('workflow.settings.notification');
+    Route::post('workflow/settings/auto', [\App\Http\Controllers\WorkflowController::class, 'updateAutoSettings'])->name('workflow.settings.auto');
 });
 
 use App\Http\Controllers\Admin\NotificationSettingController;

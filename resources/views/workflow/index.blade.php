@@ -179,6 +179,9 @@
                         <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#notificationSettingsModal">
                             <i class="bi bi-bell-fill me-1"></i> {{ __('Notify Settings') }}
                         </button>
+                        <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#workflowAutoSettingsModal">
+                            <i class="bi bi-robot me-1"></i> {{ __('Auto MOU Settings') }}
+                        </button>
                         <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
                             <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
                         </button>
@@ -676,6 +679,119 @@
 @if(!$isReadOnly)
 @include('workflow.partials.add_employee_modal')
 @endif
+
+{{-- Auto MOU Settings Modal — admin sets a default workPermitMOUGroup
+     (and optional expiry) per WorkType. After a user clicks "Finish" on
+     an item under that WorkType, the hourly app:apply-workflow-settings
+     cron waits 24 hours and then writes those values onto the employee.
+     The 24-hour delay is the safety window so users can `restoreItem`
+     to undo the finalize. --}}
+<div class="modal fade" id="workflowAutoSettingsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-robot me-2"></i> {{ __('Auto MOU Settings (24h delay)') }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" x-data="workflowAutoSettings({
+                tabs: {{ Js::from($tabs->map->only(['id', 'name', 'slug'])) }},
+                mouOptions: {{ Js::from($mouGroupOptions) }},
+                settings: {{ Js::from($workflowAutoSettings) }},
+                saveUrl: '{{ route('workflow.settings.auto') }}',
+                csrf: '{{ csrf_token() }}',
+            })">
+                <p class="text-muted small mb-3">
+                    {{ __('Pick a Workflow tab, then choose the MOU group employees should land on after finishing that flow. After the 24h safety window, the cron applies it automatically — admins do not have to remember to update each worker.') }}
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold">{{ __('Workflow Tab') }} *</label>
+                        <select class="form-select" x-model="selectedTabId" @change="loadFromSettings">
+                            <option value="">— {{ __('Select tab') }} —</option>
+                            <template x-for="tab in tabs" :key="tab.id">
+                                <option :value="tab.id" x-text="tab.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">{{ __('Auto MOU Group') }}</label>
+                        <select class="form-select" x-model="mouGroup">
+                            <option value="">— {{ __('Do not change') }} —</option>
+                            <template x-for="opt in mouOptions" :key="opt">
+                                <option :value="opt" x-text="opt"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{{ __('Auto Expiry (optional)') }}</label>
+                        <input type="date" class="form-control" x-model="wpExpiry">
+                        <div class="form-text small">{{ __('Leave blank — MOU dates vary per worker.') }}</div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-3 small mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    {{ __('After 24h the system overrides whatever value the employee had — make sure the MOU group above is correct for this tab.') }}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-info text-white px-4" :disabled="!selectedTabId || saving" @click="save">
+                        <span x-show="!saving"><i class="bi bi-save-fill me-1"></i> {{ __('Save Settings') }}</span>
+                        <span x-show="saving"><span class="spinner-border spinner-border-sm me-1"></span> {{ __('Saving...') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('workflowAutoSettings', ({ tabs, mouOptions, settings, saveUrl, csrf }) => ({
+        tabs, mouOptions, settings, saveUrl, csrf,
+        selectedTabId: '',
+        mouGroup: '',
+        wpExpiry: '',
+        saving: false,
+        loadFromSettings() {
+            const s = this.settings[this.selectedTabId] || {};
+            this.mouGroup = s.mou_group || '';
+            this.wpExpiry = s.wp_expiry || '';
+        },
+        async save() {
+            this.saving = true;
+            try {
+                const form = new FormData();
+                form.append('_token', this.csrf);
+                form.append('work_type_id', this.selectedTabId);
+                form.append('auto_mou_group', this.mouGroup || '');
+                form.append('auto_work_permit_expiry', this.wpExpiry || '');
+                const resp = await fetch(this.saveUrl, {
+                    method: 'POST', body: form,
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': this.csrf },
+                });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                // Refresh local cache so the dropdown stays in sync.
+                this.settings[this.selectedTabId] = { mou_group: this.mouGroup, wp_expiry: this.wpExpiry };
+                if (window.Swal) {
+                    Swal.fire({ icon: 'success', title: '{{ __('Saved') }}', timer: 1200, showConfirmButton: false });
+                } else {
+                    alert('{{ __('Saved') }}');
+                }
+            } catch (e) {
+                if (window.Swal) Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+                else alert('Save failed: ' + e.message);
+            } finally {
+                this.saving = false;
+            }
+        },
+    }));
+});
+</script>
 
 {{-- Notification Settings Modal --}}
 <div class="modal fade" id="notificationSettingsModal" tabindex="-1">

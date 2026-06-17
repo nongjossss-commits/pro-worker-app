@@ -182,19 +182,25 @@
 
             const checkboxes = container.querySelectorAll('.employee-checkbox');
 
+            // Select-all should skip employees that are no longer actionable:
+            // completed work, cancelled at any of the four resolution statuses,
+            // or terminated (terminated_at is set). The data attributes are
+            // emitted by the employee card partials.
+            const NON_SELECTABLE_STATUSES = [
+                'completed',
+                'cancelled',
+                'registration_cancelled',
+                'renewal_cancelled',
+            ];
             checkboxes.forEach(cb => {
-                // Determine if employee is eligible for selection
                 const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
-
-                // Only select visible cards (allow cancelled if visible)
                 const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled'));
-                const status = cardWrapper ? cardWrapper.dataset.status : '';
-                // Since user wants to be able to select cancelled if shown, remove strict isPending check
-                const isSelectable = status !== 'completed'; // Maybe exclude completed if desired, but let's just use visibility
+                const status = cardWrapper ? (cardWrapper.dataset.status || '') : '';
+                const isTerminated = cardWrapper && cardWrapper.dataset.terminated === 'true';
+                const isSelectable = !NON_SELECTABLE_STATUSES.includes(status) && !isTerminated;
 
-                // Pre-production uses status = pending usually, but generally we just exclude cancelled
                 if (!isHidden && isSelectable) {
-                    if(cb.checked !== isChecked) {
+                    if (cb.checked !== isChecked) {
                         cb.checked = isChecked;
                         cb.dispatchEvent(new Event('change', { bubbles: true }));
                     }

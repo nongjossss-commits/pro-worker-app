@@ -23,7 +23,12 @@
 
         <div class="item-list">
             @foreach($items as $item)
-                <div class="item-card-wrapper mb-3 {{ $item->status === 'cancelled' ? 'status-cancelled' : '' }}">
+                {{-- data-status + data-terminated drive the Select-All
+                     filter in _index_scripts.blade.php so cancelled and
+                     terminated rows are skipped. --}}
+                <div class="item-card-wrapper mb-3 {{ $item->status === 'cancelled' ? 'status-cancelled' : '' }}"
+                     data-status="{{ $item->status }}"
+                     data-terminated="{{ ($item->employee && $item->employee->terminated_at) ? 'true' : 'false' }}">
                     @include('workflow.partials._item_card', [
                         'item' => $item,
                         'steps' => $steps,

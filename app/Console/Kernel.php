@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\PruneSoftDeletes::class,
         \App\Console\Commands\ProcessEmployeeTransfers::class,
         \App\Console\Commands\UpdateResolutionData::class,
+        \App\Console\Commands\ApplyWorkflowSettings::class,
         \App\Console\Commands\PruneOrphanFiles::class,
         \App\Console\Commands\PruneActivityLogs::class,
     ];
@@ -32,7 +33,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:check-expiries')->daily()->timezone('Asia/Bangkok');
         $schedule->command('app:prune-soft-deletes')->daily();
         $schedule->command('app:process-employee-transfers')->hourly();
-        $schedule->command('app:update-resolution-data')->hourly();
+        // NOTE: app:update-resolution-data was removed when the 24-hour auto-apply
+        // was replaced by the user-driven 4-colour renewal-progress workflow.
+        // The command file remains as a no-op (UpdateResolutionData::handle).
         $schedule->command('resolution-tabs:purge')->daily()->timezone('Asia/Bangkok');
         // ลบ orphan/temp files รายวัน — ไฟล์ใน temp_uploads/, temp/batches/, temp/
         $schedule->command('app:prune-orphan-files')->daily()->timezone('Asia/Bangkok');

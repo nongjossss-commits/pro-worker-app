@@ -25,6 +25,7 @@ class ProductionItem extends Model
         'status',
         'completed_at', // NEW: Workflow finished
         'is_transfer_processed', // NEW: Flag to prevent duplicate delayed transfers
+        'workflow_settings_applied', // Flag for ApplyWorkflowSettings (24h MOU auto-apply)
         'new_employee_data', // JSON for temp employees
         'operator_id',
         'custom_operator_name', // NEW: Assigned Operator
@@ -33,6 +34,14 @@ class ProductionItem extends Model
 
     protected $appends = ['has_visa'];
 
+    /**
+     * Bump the parent ProductionOrder's updated_at whenever this item changes.
+     * Lets the 4 menus (Pre-Prod / Workflow / Registration / Renewal) sort
+     * employer cards by latest activity on the next page load — not in real
+     * time, so the user's current click flow doesn't get reshuffled mid-edit.
+     */
+    protected $touches = ['order'];
+
     protected $casts = [
         'new_employee_data' => 'array',
         'appointment_date' => 'datetime',
@@ -40,6 +49,7 @@ class ProductionItem extends Model
         'appointment_completed_at' => 'datetime',
         'appointment_updated_at' => 'datetime',
         'completed_at' => 'datetime',
+        'workflow_settings_applied' => 'boolean',
     ];
 
     protected static function booted()

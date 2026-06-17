@@ -22,7 +22,8 @@
         'isHistory' => $isHistory ?? false,
         'show_employer' => true,
         'currentTab' => $currentTab ?? null,
-        'allTabs' => $allTabs ?? collect()
+        'allTabs' => $allTabs ?? collect(),
+        'renewalTargets' => $renewalTargets ?? null,
     ])
 @endforeach
 

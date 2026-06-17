@@ -120,6 +120,20 @@ class RenewalController extends Controller
             }
         }
 
+        // Load resolution settings + targets up front so the filter cases
+        // below (and the count subqueries / view) can reuse them.
+        $resolutionSettingsRaw = SystemSetting::where('group', 'renewal')->get();
+        $resolutionSettings = $resolutionSettingsRaw->pluck('value', 'key')->toArray();
+        $renewalTargets = [
+            'visa' => $resolutionSettings['renewal_auto_visa_expiry'] ?? null,
+            'wp'   => $resolutionSettings['renewal_auto_work_permit_expiry'] ?? null,
+        ];
+        $renewalStatuses = [
+            'pending'   => 'renewal_pending',
+            'completed' => 'renewal_completed',
+            'cancelled' => 'renewal_cancelled',
+        ];
+
         // Apply additional filter for total employees if present
         $totalEmployeesQuery = clone $statsQuery;
         if ($request->has('filter') && $request->filter) {
@@ -209,8 +223,8 @@ class RenewalController extends Controller
             ->distinct('employer_id')
             ->count('employer_id');
 
-        // Resolution Auto-Settings
-        $resolutionSettingsRaw = SystemSetting::where('group', 'renewal')->get();
+        // Resolution settings already loaded above — reused here.
+        $resolutionSettingsRaw = $resolutionSettingsRaw ?? SystemSetting::where('group', 'renewal')->get();
         $resolutionSettings = $resolutionSettingsRaw->pluck('value', 'key')->toArray();
 
         // --- 2. Employer List Query (Pagination) ---
@@ -236,7 +250,20 @@ class RenewalController extends Controller
 
         // Apply "Filter" pills (Server-Side)
         if ($request->has('filter') && $request->filter) {
-            $this->applyFilterToEmployerQuery($employerQuery, $request->filter, $stepOneId);
+            $this->applyFilterToEmployerQuery($employerQuery, $request->filter, $stepOneId, $renewalTargets, $renewalStatuses);
+        }
+
+        // Renewal-progress multi-select filter (independent of the primary
+        // filter pill so users can combine renewal status with any other
+        // filter). Scope to the current tab so we don't pull in employers
+        // who only match because of an employee under a different tab.
+        $renewalFilters = $this->parseRenewalFilters($request);
+        if (!empty($renewalFilters)) {
+            $tabId = $this->currentTab->id;
+            $employerQuery->whereHas('employees', function ($q) use ($renewalFilters, $renewalTargets, $renewalStatuses, $tabId) {
+                $q->where('resolution_tab_id', $tabId);
+                $this->applyRenewalProgressMultiScope($q, $renewalFilters, $renewalTargets['visa'], $renewalTargets['wp'], $renewalStatuses);
+            });
         }
 
         // Operator Filter (Server-Side)
@@ -273,7 +300,29 @@ class RenewalController extends Controller
                ->where('resolution_tab_id', $tabId);
         }]);
 
-        // Sort and Paginate — cancelled orders last (scoped to current tab)
+        // Counts the employees that are still actively under this tab —
+        // excludes terminated and only counts the renewal statuses.
+        // Used by the view to grey out the card when this drops to zero.
+        $employerQuery->withCount(['employees as active_employees_in_tab' => function($q) use ($tabId) {
+            $q->where('resolution_tab_id', $tabId)
+              ->whereIn('status', ['renewal_pending', 'renewal_completed'])
+              ->whereNull('terminated_at');
+        }]);
+
+        // Sort and Paginate — applied in priority order:
+        //   1. Employer cards with zero active employees go to the bottom.
+        //   2. Cancelled production orders go below active ones.
+        //   3. Most recently touched orders come first. ProductionItem::$touches
+        //      bumps the parent ProductionOrder's updated_at on every change.
+        $employerQuery->orderByRaw("(
+            SELECT CASE WHEN COUNT(*) = 0 THEN 1 ELSE 0 END
+            FROM employees
+            WHERE employees.employer_id = employers.id
+            AND employees.resolution_tab_id = ?
+            AND employees.status IN ('renewal_pending', 'renewal_completed')
+            AND employees.terminated_at IS NULL
+        ) ASC", [$tabId]);
+
         $employerQuery->orderByRaw("(
             SELECT CASE WHEN status = 'renewal_resolution_cancelled' THEN 1 ELSE 0 END
             FROM production_orders
@@ -282,6 +331,13 @@ class RenewalController extends Controller
             AND production_orders.resolution_tab_id = ?
             LIMIT 1
         ) ASC", [$tabId]);
+
+        $employerQuery->orderByRaw("(
+            SELECT MAX(production_orders.updated_at)
+            FROM production_orders
+            WHERE production_orders.employer_id = employers.id
+            AND production_orders.resolution_tab_id = ?
+        ) DESC", [$tabId]);
 
         $perPage = $request->input('per_page', 20);
         $perPage = in_array((int)$perPage, [20, 25, 50, 100]) ? (int)$perPage : 20;
@@ -345,6 +401,14 @@ class RenewalController extends Controller
         $currentExpiryConfig = SystemConfig::where('key', 'renewal_target_expiry_date_' . $this->currentTab->id)->value('value')
             ?? SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
 
+        // Renewal-progress pill counts
+        $progressCounts = [];
+        foreach (['none', 'visa_only', 'work_permit_only', 'both', 'completed'] as $state) {
+            $progressCounts[$state] = (clone $statsQuery)
+                ->tap(fn($q) => $this->applyRenewalProgressScope($q, $state, $renewalTargets['visa'], $renewalTargets['wp'], $renewalStatuses))
+                ->count();
+        }
+
         return view('production.renewal.index', array_merge(compact(
             'totalEmployees',
             'totalCancelled',
@@ -363,6 +427,8 @@ class RenewalController extends Controller
             'addressOptions',
             'currentExpiryConfig',
             'resolutionSettings',
+            'renewalTargets',
+            'progressCounts',
             'activeOperators',
             'allUsers'
         ), $this->getTabViewData('renewal')));
@@ -445,8 +511,107 @@ class RenewalController extends Controller
         });
     }
 
-    private function applyFilterToEmployerQuery($query, $filter, $stepOneId)
+    /**
+     * Tab-group renewal targets — single-query helper reused by the index()
+     * stats path and every AJAX endpoint that re-renders an employee list,
+     * so the card partial can short-circuit its per-row SystemSetting lookup.
+     */
+    protected function getRenewalTargets(string $group = 'renewal'): array
     {
+        $rows = SystemSetting::where('group', $group)
+            ->whereIn('key', ["{$group}_auto_visa_expiry", "{$group}_auto_work_permit_expiry"])
+            ->pluck('value', 'key');
+        return [
+            'visa' => $rows["{$group}_auto_visa_expiry"] ?? null,
+            'wp'   => $rows["{$group}_auto_work_permit_expiry"] ?? null,
+        ];
+    }
+
+    /**
+     * Multi-select variant — combine several renewal-progress states with OR.
+     */
+    protected function applyRenewalProgressMultiScope($q, array $progresses, ?string $visaTarget, ?string $wpTarget, array $statuses): void
+    {
+        $valid = array_values(array_intersect($progresses, ['none', 'visa_only', 'work_permit_only', 'both', 'completed']));
+        if (empty($valid)) return;
+
+        $q->where(function ($outer) use ($valid, $visaTarget, $wpTarget, $statuses) {
+            foreach ($valid as $state) {
+                $outer->orWhere(function ($inner) use ($state, $visaTarget, $wpTarget, $statuses) {
+                    $this->applyRenewalProgressScope($inner, $state, $visaTarget, $wpTarget, $statuses);
+                });
+            }
+        });
+    }
+
+    /**
+     * Pulls the comma-separated renewal_filters query value into a clean array.
+     */
+    protected function parseRenewalFilters(Request $request): array
+    {
+        $raw = $request->input('renewal_filters');
+        if (!$raw) return [];
+        if (is_array($raw)) {
+            $items = $raw;
+        } else {
+            $items = explode(',', (string) $raw);
+        }
+        $items = array_map('trim', $items);
+        $items = array_filter($items, fn($v) => $v !== '');
+        return array_values(array_intersect($items, ['none', 'visa_only', 'work_permit_only', 'both', 'completed']));
+    }
+
+    /**
+     * Scope an employee-table query down to one of the renewal-progress states.
+     * Mirrors RegistrationController for the renewal status set.
+     *
+     * @param string  $progress   none | visa_only | work_permit_only | both | completed
+     * @param ?string $visaTarget configured visa expiry target (Y-m-d) — null = unset
+     * @param ?string $wpTarget   configured work-permit expiry target
+     * @param array   $statuses   ['pending'=>..., 'completed'=>..., 'cancelled'=>...]
+     */
+    protected function applyRenewalProgressScope($q, string $progress, ?string $visaTarget, ?string $wpTarget, array $statuses): void
+    {
+        if ($progress === 'completed') {
+            $q->where('status', $statuses['completed']);
+            return;
+        }
+
+        $q->whereNotIn('status', [$statuses['completed'], $statuses['cancelled']]);
+
+        $visaNotRenewed = function ($v) use ($visaTarget) {
+            $v->whereNull('visaExpiryDate')->orWhere('visaExpiryDate', '<', $visaTarget);
+        };
+        $wpNotRenewed = function ($w) use ($wpTarget) {
+            $w->whereNull('workPermitExpiryDate')->orWhere('workPermitExpiryDate', '<', $wpTarget);
+        };
+
+        if ($progress === 'visa_only') {
+            if (!$visaTarget) { $q->whereRaw('1=0'); return; }
+            $q->whereNotNull('visaExpiryDate')->where('visaExpiryDate', '>=', $visaTarget);
+            if ($wpTarget) { $q->where($wpNotRenewed); }
+        } elseif ($progress === 'work_permit_only') {
+            if (!$wpTarget) { $q->whereRaw('1=0'); return; }
+            $q->whereNotNull('workPermitExpiryDate')->where('workPermitExpiryDate', '>=', $wpTarget);
+            if ($visaTarget) { $q->where($visaNotRenewed); }
+        } elseif ($progress === 'both') {
+            if (!$visaTarget || !$wpTarget) { $q->whereRaw('1=0'); return; }
+            $q->whereNotNull('visaExpiryDate')->where('visaExpiryDate', '>=', $visaTarget)
+              ->whereNotNull('workPermitExpiryDate')->where('workPermitExpiryDate', '>=', $wpTarget);
+        } elseif ($progress === 'none') {
+            if ($visaTarget) { $q->where($visaNotRenewed); }
+            if ($wpTarget)   { $q->where($wpNotRenewed); }
+        }
+    }
+
+    private function applyFilterToEmployerQuery($query, $filter, $stepOneId, ?array $renewalTargets = null, ?array $renewalStatuses = null)
+    {
+        // Legacy single-select renewal filter — superseded by `renewal_filters`.
+        // See RegistrationController for the matching comment.
+        if (is_string($filter) && str_starts_with($filter, 'renewal_')) {
+            return;
+        }
+
         if ($filter === 'cancelled_employer') {
             $tabId = $this->currentTab->id;
             $query->whereHas('productionOrders', function($q) use ($tabId) {
@@ -683,17 +848,12 @@ class RenewalController extends Controller
 
         $query->where(function($q) use ($request) {
                 if ($request->boolean('hide_cancelled', true)) {
-                    $q->where('status', 'renewal_pending');
+                    // Completed employees now stay in the main list (green card)
+                    // instead of being hidden after 24 hours.
+                    $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
                 } else {
-                    $q->whereIn('status', ['renewal_pending', 'renewal_cancelled']);
+                    $q->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
                 }
-                $q->orWhere(function($sub) {
-                      $sub->where('status', 'renewal_completed')
-                          ->where(function($t) {
-                              $t->whereNull('resolution_completed_at')
-                                ->orWhere('resolution_completed_at', '>=', now()->subHours(24));
-                          });
-                  });
             })
             ->with(['registrationSteps', 'customFields']);
 
@@ -743,6 +903,18 @@ class RenewalController extends Controller
             }
         }
 
+        // Renewal-progress multi-select filter (employee level — so opening
+        // an employer drawer only shows employees matching the selected states).
+        $renewalFilters = $this->parseRenewalFilters($request);
+        if (!empty($renewalFilters)) {
+            $targets = $this->getRenewalTargets('renewal');
+            $this->applyRenewalProgressMultiScope($query, $renewalFilters, $targets['visa'], $targets['wp'], [
+                'pending'   => 'renewal_pending',
+                'completed' => 'renewal_completed',
+                'cancelled' => 'renewal_cancelled',
+            ]);
+        }
+
         $employees = $query->get();
 
         // If filtering by step in PHP, we must get all first, filter, then manually paginate
@@ -784,7 +956,8 @@ class RenewalController extends Controller
         return view('production.renewal._employee_list_content', array_merge([
             'employees' => $employees,
             'employer' => $employer,
-            'steps' => $steps
+            'steps' => $steps,
+            'renewalTargets' => $this->getRenewalTargets('renewal'),
         ], $this->getTabViewData('renewal')));
     }
 
@@ -1705,7 +1878,8 @@ class RenewalController extends Controller
         return view('production.renewal._employee_list_content', array_merge([
             'employees' => $employees,
             'employer' => $employer,
-            'steps' => $steps
+            'steps' => $steps,
+            'renewalTargets' => $this->getRenewalTargets('renewal'),
         ], $this->getTabViewData('renewal')))->with('isHistory', true);
     }
 
