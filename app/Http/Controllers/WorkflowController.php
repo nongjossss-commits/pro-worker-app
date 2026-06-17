@@ -143,10 +143,20 @@ class WorkflowController extends Controller
                             ->orWhereDate('last_checked_at', '<', Carbon::today());
                     })->whereNotIn('status', ['cancelled', 'completed']);
                 } elseif (is_numeric($filter)) {
-                    // Highest Step ID match (approx for SQL: has this step)
-                    $q->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
-                        $s->where('work_type_steps.id', $filter);
-                    });
+                    // Match the same semantics as the step pill: the item's
+                    // HIGHEST completed step must equal $filter. A plain
+                    // whereHas would also match items that passed this step
+                    // and moved on to a later one, which is why employers
+                    // with a "step X = 0" pill were still leaking in.
+                    $q->whereNotIn('status', ['cancelled', 'completed'])
+                      ->whereRaw("(
+                          SELECT work_type_step_id
+                          FROM production_item_step
+                          JOIN work_type_steps ON production_item_step.work_type_step_id = work_type_steps.id
+                          WHERE production_item_step.production_item_id = production_items.id
+                          ORDER BY work_type_steps.`order` DESC
+                          LIMIT 1
+                      ) = ?", [$filter]);
                 }
             });
         }
@@ -326,9 +336,17 @@ class WorkflowController extends Controller
                                 ->orWhereDate('last_checked_at', '<', now()->today());
                         })->whereNotIn('status', ['cancelled', 'completed']);
                     } elseif (is_numeric($filter)) {
-                        $totalItemQuery->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
-                            $s->where('work_type_steps.id', $filter);
-                        });
+                        // Highest-step semantics, matching the employer-level
+                        // filter and the step-pill counters.
+                        $totalItemQuery->whereNotIn('status', ['cancelled', 'completed'])
+                          ->whereRaw("(
+                              SELECT work_type_step_id
+                              FROM production_item_step
+                              JOIN work_type_steps ON production_item_step.work_type_step_id = work_type_steps.id
+                              WHERE production_item_step.production_item_id = production_items.id
+                              ORDER BY work_type_steps.`order` DESC
+                              LIMIT 1
+                          ) = ?", [$filter]);
                     }
                 }
 
