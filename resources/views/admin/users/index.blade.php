@@ -101,5 +101,54 @@
             </div>
         </div>
     </div>
+
+    {{-- Roles & Permissions (merged from /admin/roles-permissions to keep the
+         sidebar lean — this is read-only reference data, doesn't deserve its
+         own menu entry). Only shown to users who can manage roles/settings. --}}
+    @canany(['manage-roles', 'manage-settings'])
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light d-flex align-items-center">
+            <i class="bi bi-shield-lock-fill me-2 text-primary"></i>
+            <h5 class="mb-0">{{ __('Roles and Permissions') }}</h5>
+            <span class="text-muted small ms-2">— {{ __('read-only reference') }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {{-- Roles + their permissions --}}
+                <div class="col-lg-8 mb-3 mb-lg-0">
+                    <h6 class="text-muted small fw-bold mb-3">{{ __('Roles') }}</h6>
+                    @foreach ($roles as $role)
+                        <div class="mb-3 pb-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-primary mb-0">{{ ucfirst(__($role->name)) }}</h6>
+                                <span class="badge bg-light text-dark border">{{ $role->permissions->count() }} {{ __('permissions') }}</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1">
+                                @forelse ($role->permissions as $permission)
+                                    <span class="badge bg-secondary fw-normal">{{ __($permission->name) }}</span>
+                                @empty
+                                    <span class="text-muted fst-italic small">{{ __('No permissions assigned.') }}</span>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- All permissions --}}
+                <div class="col-lg-4">
+                    <h6 class="text-muted small fw-bold mb-3">
+                        {{ __('All Available Permissions') }}
+                        <span class="badge bg-light text-dark border ms-1">{{ $permissions->count() }}</span>
+                    </h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach ($permissions as $permission)
+                            <span class="badge bg-info text-dark fw-normal">{{ __($permission->name) }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcanany
 </div>
 @endsection

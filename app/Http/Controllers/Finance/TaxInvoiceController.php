@@ -88,8 +88,9 @@ class TaxInvoiceController extends Controller
 
     public function create()
     {
-        $profiles = FinancialProfile::orderBy('name')->get();
-        return view('financial.tax_invoices.create', compact('profiles'));
+        $profiles = FinancialProfile::with('bankAccounts')->orderBy('name')->get();
+        $thaiBanks = config('thai_banks', []);
+        return view('financial.tax_invoices.create', compact('profiles', 'thaiBanks'));
     }
 
     public function store(Request $request)
@@ -162,6 +163,14 @@ class TaxInvoiceController extends Controller
 
     protected function validatePayload(Request $request): array
     {
+        // payment_methods arrives as a JSON string from the Alpine hidden input.
+        // Decode it before validation so the array rules apply, and so the
+        // controller hands a real array to TaxInvoiceService.
+        if ($request->has('payment_methods') && is_string($request->payment_methods)) {
+            $decoded = json_decode($request->payment_methods, true);
+            $request->merge(['payment_methods' => is_array($decoded) ? $decoded : []]);
+        }
+
         return $request->validate([
             'invoice_date' => 'required|date',
             'fiscal_year' => 'nullable|integer|min:2000|max:2100',
@@ -175,6 +184,14 @@ class TaxInvoiceController extends Controller
             'vat_amount' => 'required|numeric|min:0',
             'total' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
+            'payment_methods' => 'nullable|array',
+            'payment_methods.*.type' => 'required_with:payment_methods|in:cash,transfer,promptpay,other',
+            'payment_methods.*.bank_name' => 'nullable|string|max:255',
+            'payment_methods.*.bank_code' => 'nullable|string|max:20',
+            'payment_methods.*.account_name' => 'nullable|string|max:255',
+            'payment_methods.*.account_number' => 'nullable|string|max:50',
+            'payment_methods.*.promptpay_id' => 'nullable|string|max:20',
+            'payment_methods.*.note' => 'nullable|string|max:255',
         ]);
     }
 }

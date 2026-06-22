@@ -36,6 +36,40 @@ class Employee extends Model
                 }
             }
         });
+
+        // Enforce the Super-Admin-configured employee cap at the model
+        // layer so every insert path (admin form, import, sales-lead
+        // transition, workflow add-employee, etc.) is guarded uniformly.
+        // EmployeeQuotaExceededException renders itself as JSON 422 or
+        // a flash-back depending on the request type.
+        static::creating(function ($employee) {
+            \App\Services\EmployeeQuotaService::ensureCanCreate();
+        });
+
+        // Restore-from-trash also adds to the active count, but `creating`
+        // does not fire for it — Laravel raises `restoring` instead. Guard
+        // it the same way so the cap can't be bypassed by deleting and
+        // then un-deleting an employee. Bust the cache first so the count
+        // reflects any creates/deletes that happened in the last minute.
+        static::restoring(function ($employee) {
+            \App\Services\EmployeeQuotaService::forgetCache();
+            // Skip the check if this restore would re-activate a still-
+            // terminated employee — they won't count toward the cap
+            // anyway (the quota service excludes terminated_at IS NOT NULL).
+            if ($employee->terminated_at !== null) {
+                return;
+            }
+            \App\Services\EmployeeQuotaService::ensureCanCreate();
+        });
+
+        // Bust the cached active-count whenever the population changes,
+        // so the badge on /employees and the bouncer below stay accurate
+        // without waiting for the 60-second TTL.
+        $bust = fn () => \App\Services\EmployeeQuotaService::forgetCache();
+        static::created($bust);
+        static::updated($bust);
+        static::deleted($bust);
+        static::restored($bust);
     }
 
     protected $fillable = [

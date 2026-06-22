@@ -965,6 +965,7 @@
 
                 @if($isPreProductionContext && isset($employee->production_item))
                     @if($activeTab->slug !== 'mou')
+                        @can('approve-production')
                         {{-- SEND TO WORKFLOW (P Production Context) - Not shown in MOU --}}
                         <button class="btn btn-sm btn-primary rounded-pill px-3"
                             id="btn-send-to-workflow-{{ $employee->id }}"
@@ -972,6 +973,7 @@
                             onclick="sendToWorkflow({{ $employee->production_item->id }})">
                             <i class="bi bi-send-check"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
                         </button>
+                        @endcan
                     @endif
 
                     {{-- CANCEL --}}

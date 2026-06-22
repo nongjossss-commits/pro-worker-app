@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid" x-data="profileBuilder()">
+<div class="container-fluid" x-data="profileBuilder({{ Js::from($thaiBanks) }})">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-person-badge"></i> Financial Profiles Builder</h2>
         <div>
@@ -120,6 +120,133 @@
                             </button>
                         </div>
                     </form>
+
+                    {{-- Bank Accounts panel — only visible after the profile has been
+                         saved (we need its id to attach accounts to). New profiles
+                         see this section appear right after the first save. --}}
+                    <hr class="mt-4" x-show="editingProfileId">
+                    <div x-show="editingProfileId" class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><i class="bi bi-bank2 me-1"></i> {{ __('Bank Accounts') }}</h6>
+                            <button type="button" class="btn btn-sm btn-success" @click="openAddBank">
+                                <i class="bi bi-plus-circle"></i> {{ __('Add Bank') }}
+                            </button>
+                        </div>
+
+                        {{-- Existing accounts list --}}
+                        <div x-show="bankFormMode === 'closed'">
+                            <template x-for="acc in bankAccounts" :key="acc.id">
+                                <div class="d-flex align-items-center justify-content-between border rounded p-2 mb-2">
+                                    <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width: 0;">
+                                        <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                              :style="`background:${bankBadge(acc).color}; width:34px; height:34px; font-size:12px;`"
+                                              x-text="bankBadge(acc).initial"></span>
+                                        <div style="min-width: 0;">
+                                            <div class="small fw-bold text-truncate" x-text="bankDisplayName(acc)"></div>
+                                            <div class="small text-muted text-truncate" x-text="bankSubLine(acc)"></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-1 flex-shrink-0 ms-2">
+                                        <button type="button" class="btn btn-sm btn-warning" @click="openEditBank(acc)"><i class="bi bi-pencil"></i></button>
+                                        <button type="button" class="btn btn-sm btn-danger" @click="deleteBankAccount(acc)"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </div>
+                            </template>
+                            <div x-show="bankAccounts.length === 0" class="text-muted small text-center p-3 border rounded">
+                                {{ __('No bank accounts yet — click Add Bank above.') }}
+                            </div>
+                        </div>
+
+                        {{-- Add / Edit Bank form --}}
+                        <div x-show="bankFormMode !== 'closed'" class="border rounded p-3 bg-light">
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">{{ __('Bank Type') }}</label>
+                                <select class="form-select form-select-sm" x-model="bankForm.bank_type">
+                                    <option value="thai_bank">{{ __('Thai bank') }}</option>
+                                    <option value="promptpay">{{ __('PromptPay') }}</option>
+                                    <option value="other">{{ __('Other (custom)') }}</option>
+                                </select>
+                            </div>
+
+                            {{-- Thai bank picker — collapse to a chip after selection,
+                                 expand again on "Change". Without this collapse the
+                                 17-row list stays visible after a pick and users think
+                                 the dropdown is stuck. --}}
+                            <div class="mb-2" x-show="bankForm.bank_type === 'thai_bank'">
+                                <label class="form-label small fw-bold">{{ __('Bank') }} *</label>
+
+                                {{-- Selected-state chip --}}
+                                <div x-show="bankForm.bank_code && !bankPickerOpen"
+                                     class="d-flex align-items-center gap-2 border rounded p-2 bg-white">
+                                    <template x-if="bankForm.bank_code">
+                                        <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                              :style="`background:${(thaiBanks.find(b=>b.code===bankForm.bank_code)||{}).color}; width:28px; height:28px; font-size:11px;`"
+                                              x-text="(thaiBanks.find(b=>b.code===bankForm.bank_code)||{}).initial"></span>
+                                    </template>
+                                    <span class="small fw-bold flex-grow-1" x-text="bankForm.bank_name"></span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" @click="bankPickerOpen = true; bankSearch = '';">
+                                        <i class="bi bi-pencil"></i> {{ __('Change') }}
+                                    </button>
+                                </div>
+
+                                {{-- Picker (open by default when no bank picked yet) --}}
+                                <div x-show="!bankForm.bank_code || bankPickerOpen">
+                                    <input type="text" class="form-control form-control-sm mb-1" x-model="bankSearch" placeholder="{{ __('Search bank name...') }}">
+                                    <div class="border rounded" style="max-height:160px; overflow-y:auto;">
+                                        <template x-for="b in filteredBanks" :key="b.code">
+                                            <div class="d-flex align-items-center gap-2 p-2 bank-pick"
+                                                 :class="bankForm.bank_code === b.code ? 'bg-primary bg-opacity-10 fw-bold' : ''"
+                                                 style="cursor:pointer;"
+                                                 @click="pickBank(b)">
+                                                <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold"
+                                                      :style="`background:${b.color}; width:28px; height:28px; font-size:11px;`"
+                                                      x-text="b.initial"></span>
+                                                <span class="small" x-text="b.name_th"></span>
+                                                <span class="small text-muted ms-auto" x-text="b.name_en"></span>
+                                            </div>
+                                        </template>
+                                        <div x-show="filteredBanks.length === 0" class="text-muted small text-center p-3">{{ __('No bank matches your search.') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Custom / Other bank name --}}
+                            <div class="mb-2" x-show="bankForm.bank_type === 'other'">
+                                <label class="form-label small fw-bold">{{ __('Bank name') }} *</label>
+                                <input type="text" class="form-control form-control-sm" x-model="bankForm.bank_name" placeholder="{{ __('e.g., Wise, foreign bank') }}">
+                            </div>
+
+                            {{-- PromptPay ID --}}
+                            <div class="mb-2" x-show="bankForm.bank_type === 'promptpay'">
+                                <label class="form-label small fw-bold">{{ __('PromptPay ID') }} *</label>
+                                <input type="text" class="form-control form-control-sm" x-model="bankForm.promptpay_id" placeholder="{{ __('Phone (10 digits) or Tax ID (13 digits)') }}">
+                            </div>
+
+                            {{-- Account name / number --}}
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">{{ __('Account name') }}</label>
+                                <input type="text" class="form-control form-control-sm" x-model="bankForm.account_name">
+                            </div>
+
+                            <div class="mb-2" x-show="bankForm.bank_type !== 'promptpay'">
+                                <label class="form-label small fw-bold">{{ __('Account number') }} <span x-show="bankForm.bank_type === 'thai_bank'">*</span></label>
+                                <input type="text" class="form-control form-control-sm" x-model="bankForm.account_number">
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">{{ __('Branch') }}</label>
+                                <input type="text" class="form-control form-control-sm" x-model="bankForm.branch">
+                            </div>
+
+                            <div class="d-flex gap-2 mt-2">
+                                <button type="button" class="btn btn-sm btn-success flex-grow-1" @click="saveBankAccount" :disabled="bankSaving">
+                                    <span x-show="!bankSaving"><i class="bi bi-save"></i> {{ __('Save') }}</span>
+                                    <span x-show="bankSaving">{{ __('Saving...') }}</span>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-secondary" @click="closeBankForm">{{ __('Cancel') }}</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -231,12 +358,30 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
-    Alpine.data('profileBuilder', () => ({
+    Alpine.data('profileBuilder', (thaiBanks = []) => ({
         currentMode: 'list', // 'list' or 'form'
         currentType: 'biller', // 'biller' or 'customer'
         profiles: [],
         editingProfileId: null,
         isSaving: false,
+
+        // Bank-account panel state — only matters when editingProfileId is set.
+        thaiBanks: thaiBanks,
+        bankAccounts: [],
+        bankFormMode: 'closed', // 'closed' | 'add' | 'edit'
+        bankSaving: false,
+        bankSearch: '',
+        bankPickerOpen: false,
+        bankForm: {
+            id: null,
+            bank_type: 'thai_bank',
+            bank_code: '',
+            bank_name: '',
+            account_name: '',
+            account_number: '',
+            branch: '',
+            promptpay_id: '',
+        },
 
         formData: {
             type: 'biller',
@@ -293,6 +438,9 @@ document.addEventListener('alpine:init', () => {
 
         editProfile(profile) {
             this.editingProfileId = profile.id;
+            this.bankAccounts = [];
+            this.closeBankForm();
+            this.loadBankAccounts();
             this.formData = {
                 type: profile.type,
                 name: profile.name,
@@ -432,7 +580,14 @@ document.addEventListener('alpine:init', () => {
                 });
 
                 if (res.ok) {
+                    const saved = await res.json();
                     Swal.fire('Success', 'Profile saved successfully.', 'success');
+                    // Capture the new id so the Bank Accounts panel becomes
+                    // available immediately, without having to re-edit.
+                    if (saved && saved.profile && saved.profile.id) {
+                        this.editingProfileId = saved.profile.id;
+                        this.loadBankAccounts();
+                    }
                     this.loadProfiles(this.currentType);
                 } else {
                     const err = await res.json();
@@ -590,7 +745,144 @@ document.addEventListener('alpine:init', () => {
             if(canvas) {
                 observer.observe(canvas, { childList: true, subtree: true });
             }
-        }
+        },
+
+        // ---- Bank Accounts panel (only active when editingProfileId is set) ----
+
+        get filteredBanks() {
+            const q = (this.bankSearch || '').trim().toLowerCase();
+            if (!q) return this.thaiBanks;
+            return this.thaiBanks.filter(b =>
+                (b.name_th || '').toLowerCase().includes(q) ||
+                (b.name_en || '').toLowerCase().includes(q) ||
+                (b.code || '').toLowerCase().includes(q)
+            );
+        },
+
+        bankBadge(acc) {
+            if (acc.bank_type === 'thai_bank' && acc.bank_code) {
+                const preset = this.thaiBanks.find(b => b.code === acc.bank_code);
+                if (preset) return { initial: preset.initial, color: preset.color };
+            }
+            if (acc.bank_type === 'promptpay') return { initial: 'PP', color: '#0C3CFC' };
+            const ch = (acc.bank_name || '?').charAt(0).toUpperCase();
+            return { initial: ch, color: '#6C757D' };
+        },
+
+        bankDisplayName(acc) {
+            if (acc.bank_type === 'thai_bank' && acc.bank_code) {
+                const preset = this.thaiBanks.find(b => b.code === acc.bank_code);
+                if (preset) return preset.name_th;
+            }
+            if (acc.bank_type === 'promptpay') return 'PromptPay';
+            return acc.bank_name || '—';
+        },
+
+        bankSubLine(acc) {
+            if (acc.bank_type === 'promptpay') return acc.promptpay_id || '';
+            const parts = [];
+            if (acc.account_name) parts.push(acc.account_name);
+            if (acc.account_number) parts.push(acc.account_number);
+            return parts.join(' · ');
+        },
+
+        async loadBankAccounts() {
+            if (!this.editingProfileId) { this.bankAccounts = []; return; }
+            try {
+                const res = await fetch(`/finance/api/profiles/${this.editingProfileId}/bank-accounts`);
+                this.bankAccounts = await res.json();
+            } catch (e) { console.error(e); }
+        },
+
+        openAddBank() {
+            this.bankFormMode = 'add';
+            this.bankSearch = '';
+            this.bankPickerOpen = true;
+            this.bankForm = {
+                id: null,
+                bank_type: 'thai_bank',
+                bank_code: '',
+                bank_name: '',
+                account_name: '',
+                account_number: '',
+                branch: '',
+                promptpay_id: '',
+            };
+        },
+
+        openEditBank(acc) {
+            this.bankFormMode = 'edit';
+            this.bankSearch = '';
+            this.bankPickerOpen = false;
+            this.bankForm = {
+                id: acc.id,
+                bank_type: acc.bank_type || 'thai_bank',
+                bank_code: acc.bank_code || '',
+                bank_name: acc.bank_name || '',
+                account_name: acc.account_name || '',
+                account_number: acc.account_number || '',
+                branch: acc.branch || '',
+                promptpay_id: acc.promptpay_id || '',
+            };
+        },
+
+        closeBankForm() {
+            this.bankFormMode = 'closed';
+            this.bankSaving = false;
+        },
+
+        pickBank(preset) {
+            this.bankForm.bank_code = preset.code;
+            this.bankForm.bank_name = preset.name_th;
+            this.bankPickerOpen = false;
+            this.bankSearch = '';
+        },
+
+        async saveBankAccount() {
+            this.bankSaving = true;
+            try {
+                const isEdit = this.bankFormMode === 'edit' && this.bankForm.id;
+                const url = isEdit
+                    ? `/finance/api/profiles/${this.editingProfileId}/bank-accounts/${this.bankForm.id}`
+                    : `/finance/api/profiles/${this.editingProfileId}/bank-accounts`;
+                const method = isEdit ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify(this.bankForm),
+                });
+                if (res.ok) {
+                    await this.loadBankAccounts();
+                    this.closeBankForm();
+                } else {
+                    const err = await res.json();
+                    let msg = err.message || 'Validation failed';
+                    if (err.errors) msg = Object.values(err.errors).flat().join('\n');
+                    Swal.fire('Error', msg, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Server error.', 'error');
+            } finally {
+                this.bankSaving = false;
+            }
+        },
+
+        async deleteBankAccount(acc) {
+            const confirmed = await Swal.fire({ title: 'Delete this bank account?', icon: 'warning', showCancelButton: true });
+            if (!confirmed.isConfirmed) return;
+            try {
+                await fetch(`/finance/api/profiles/${this.editingProfileId}/bank-accounts/${acc.id}`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                });
+                await this.loadBankAccounts();
+            } catch (e) { console.error(e); }
+        },
     }));
 });
 </script>

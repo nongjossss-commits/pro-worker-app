@@ -86,6 +86,22 @@ if (typeof window.financialManager === 'undefined') {
             // รูปแบบเอกสารใน modal สร้าง invoice รายการเดียว — สอดคล้องกับ docVariant
             invoiceModalVariant: 'invoice',
 
+            // Payment Methods (ช่องทางการชำระเงิน) inside Create Invoice modal.
+            // The chosen banks/methods are serialized to base64 JSON and sent
+            // to ProductionDocumentController via `payment_methods` query arg.
+            invoiceModalBillerProfileId: null,
+            invoiceModalProfileBanks: [],     // bank accounts of the biller profile
+            invoiceModalThaiBanks: [],        // preset Thai banks (loaded once on init)
+            invoiceModalUsingCash: false,
+            invoiceModalUsingTransfer: false,
+            invoiceModalUsingPromptPay: false,
+            invoiceModalPromptPayId: '',
+            invoiceModalTransferList: [],     // [{bank_code,bank_name,account_name,account_number}]
+            invoiceModalBankPickerOpen: false,
+            invoiceModalBankSearch: '',
+            invoiceModalShowCustomBank: false,
+            invoiceModalCustomBank: { bank_name:'', account_name:'', account_number:'' },
+
             // Context
             productionId: initialData.productionId,
             csrfToken: initialData.csrfToken,
@@ -1331,14 +1347,181 @@ if (typeof window.financialManager === 'undefined') {
                 this.invoiceModalLabel = `${this.formatType(t.type)} — ${this.formatCurrency(t.amount)}`;
                 this.invoiceModalIncludeList = false;
                 this.invoiceModalVariant = 'invoice'; // reset เริ่มต้น
+
+                // --- Reset payment-method state ---
+                this.invoiceModalUsingCash = false;
+                this.invoiceModalUsingTransfer = false;
+                this.invoiceModalUsingPromptPay = false;
+                this.invoiceModalPromptPayId = '';
+                this.invoiceModalTransferList = [];
+                this.invoiceModalBankPickerOpen = false;
+                this.invoiceModalBankSearch = '';
+                this.invoiceModalShowCustomBank = false;
+                this.invoiceModalCustomBank = { bank_name:'', account_name:'', account_number:'' };
+                this.invoiceModalProfileBanks = [];
+
+                // Resolve which biller profile is in effect for this group so we
+                // know whose bank accounts to offer in the picker.
+                this.invoiceModalBillerProfileId = this.customHeader?.biller_profile_id || null;
+                if (this.invoiceModalBillerProfileId) {
+                    this.loadInvoiceProfileBanks();
+                }
+                // Lazy-load preset Thai banks once per session.
+                if (this.invoiceModalThaiBanks.length === 0) {
+                    this.loadInvoiceThaiBanks();
+                }
+
                 bootstrap.Modal.getOrCreateInstance(this.$refs.createInvoiceModal).show();
             },
+
+            async loadInvoiceProfileBanks() {
+                try {
+                    const res = await fetch(`/finance/api/profiles/${this.invoiceModalBillerProfileId}/bank-accounts`, {
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    if (res.ok) {
+                        this.invoiceModalProfileBanks = await res.json();
+                    }
+                } catch (e) { console.error('loadInvoiceProfileBanks failed', e); }
+            },
+
+            async loadInvoiceThaiBanks() {
+                // We don't have a dedicated endpoint; reuse the profile builder's
+                // config by hitting a tiny meta endpoint. Fallback to empty if
+                // missing — picker still works using just profile accounts + custom.
+                try {
+                    const res = await fetch('/finance/api/thai-banks', {
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    if (res.ok) {
+                        this.invoiceModalThaiBanks = await res.json();
+                    }
+                } catch (e) { /* optional resource — ignore */ }
+            },
+
+            // --- Picker getters ---
+            get invoiceProfileTransferBanks() {
+                return (this.invoiceModalProfileBanks || []).filter(a => a.bank_type !== 'promptpay');
+            },
+            get invoiceProfilePromptPays() {
+                return (this.invoiceModalProfileBanks || []).filter(a => a.bank_type === 'promptpay');
+            },
+            get filteredInvoiceProfileBanks() {
+                const q = (this.invoiceModalBankSearch || '').trim().toLowerCase();
+                const list = this.invoiceProfileTransferBanks;
+                if (!q) return list;
+                return list.filter(a =>
+                    (a.bank_name || '').toLowerCase().includes(q) ||
+                    (a.account_name || '').toLowerCase().includes(q) ||
+                    (a.account_number || '').toLowerCase().includes(q)
+                );
+            },
+            get filteredInvoiceThaiBanks() {
+                const q = (this.invoiceModalBankSearch || '').trim().toLowerCase();
+                const list = this.invoiceModalThaiBanks || [];
+                if (!q) return list;
+                return list.filter(b =>
+                    (b.name_th || '').toLowerCase().includes(q) ||
+                    (b.name_en || '').toLowerCase().includes(q) ||
+                    (b.code || '').toLowerCase().includes(q)
+                );
+            },
+
+            invoiceBankBadge(item) {
+                if (item.bank_code) {
+                    const preset = (this.invoiceModalThaiBanks || []).find(b => b.code === item.bank_code);
+                    if (preset) return { initial: preset.initial, color: preset.color };
+                }
+                if (item.bank_type === 'promptpay') return { initial: 'PP', color: '#1d4ed8' };
+                const ch = (item.bank_name || '?').charAt(0).toUpperCase();
+                return { initial: ch, color: '#6b7280' };
+            },
+
+            // --- Picker actions ---
+            onInvoiceUsingTransferChange() {
+                if (this.invoiceModalUsingTransfer && this.invoiceModalTransferList.length === 0) {
+                    this.invoiceModalBankPickerOpen = true;
+                    this.invoiceModalBankSearch = '';
+                    this.invoiceModalShowCustomBank = false;
+                } else if (!this.invoiceModalUsingTransfer) {
+                    this.invoiceModalBankPickerOpen = false;
+                    this.invoiceModalShowCustomBank = false;
+                }
+            },
+            openInvoiceBankPicker() {
+                this.invoiceModalBankPickerOpen = true;
+                this.invoiceModalBankSearch = '';
+                this.invoiceModalShowCustomBank = false;
+            },
+            closeInvoiceBankPicker() {
+                this.invoiceModalBankPickerOpen = false;
+                this.invoiceModalBankSearch = '';
+            },
+            addInvoiceProfileTransfer(acc) {
+                this.invoiceModalTransferList.push({
+                    bank_code: acc.bank_code || '',
+                    bank_name: acc.bank_name || '',
+                    account_name: acc.account_name || '',
+                    account_number: acc.account_number || '',
+                });
+                this.invoiceModalBankPickerOpen = false;
+                this.invoiceModalBankSearch = '';
+            },
+            addInvoicePresetTransfer(b) {
+                this.invoiceModalTransferList.push({
+                    bank_code: b.code,
+                    bank_name: b.name_th,
+                    account_name: '',
+                    account_number: '',
+                });
+                this.invoiceModalBankPickerOpen = false;
+                this.invoiceModalBankSearch = '';
+            },
+            openInvoiceCustomBank() {
+                this.invoiceModalShowCustomBank = true;
+                this.invoiceModalBankPickerOpen = false;
+                this.invoiceModalCustomBank = { bank_name:'', account_name:'', account_number:'' };
+            },
+            addInvoiceCustomBank() {
+                if (!this.invoiceModalCustomBank.bank_name.trim()) return;
+                this.invoiceModalTransferList.push({
+                    bank_code: '',
+                    bank_name: this.invoiceModalCustomBank.bank_name.trim(),
+                    account_name: this.invoiceModalCustomBank.account_name.trim(),
+                    account_number: this.invoiceModalCustomBank.account_number.trim(),
+                });
+                this.invoiceModalShowCustomBank = false;
+                this.invoiceModalCustomBank = { bank_name:'', account_name:'', account_number:'' };
+            },
+            removeInvoiceTransfer(idx) {
+                this.invoiceModalTransferList.splice(idx, 1);
+            },
+
+            // --- Build payment_methods payload ---
+            buildInvoicePaymentMethods() {
+                const out = [];
+                if (this.invoiceModalUsingCash) out.push({ type: 'cash' });
+                if (this.invoiceModalUsingTransfer) {
+                    this.invoiceModalTransferList.forEach(t => out.push({
+                        type: 'transfer',
+                        bank_code: t.bank_code || null,
+                        bank_name: t.bank_name || null,
+                        account_name: t.account_name || null,
+                        account_number: t.account_number || null,
+                    }));
+                }
+                if (this.invoiceModalUsingPromptPay && this.invoiceModalPromptPayId.trim()) {
+                    out.push({ type: 'promptpay', promptpay_id: this.invoiceModalPromptPayId.trim() });
+                }
+                return out;
+            },
+
             generateInvoiceFromButton() {
                 if (!this.invoiceModalTransactionId) return;
-                // แปลง variant → flags ที่ส่งไป backend
                 const includeList = this.invoiceModalVariant !== 'invoice';
                 const listOnly = this.invoiceModalVariant === 'list_only';
-                this.openDocument('invoice', String(this.invoiceModalTransactionId), null, includeList, listOnly);
+                const paymentMethods = this.buildInvoicePaymentMethods();
+                this.openDocument('invoice', String(this.invoiceModalTransactionId), null, includeList, listOnly, paymentMethods);
                 const inst = bootstrap.Modal.getInstance(this.$refs.createInvoiceModal);
                 if (inst) inst.hide();
             },
@@ -1355,7 +1538,7 @@ if (typeof window.financialManager === 'undefined') {
                 const inst = bootstrap.Modal.getInstance(this.$refs.docSelectionModal);
                 if (inst) inst.hide();
             },
-            openDocument(type, transactionIds = null, mode = null, includeEmployeeList = false, listOnly = false) {
+            openDocument(type, transactionIds = null, mode = null, includeEmployeeList = false, listOnly = false, paymentMethods = null) {
                 let url = `/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
@@ -1371,6 +1554,13 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 if (listOnly) {
                     url += `&list_only=1`;
+                }
+                if (Array.isArray(paymentMethods) && paymentMethods.length > 0) {
+                    // Base64-encode the JSON so it survives URL transport even when
+                    // bank names contain Thai chars / spaces / punctuation.
+                    const json = JSON.stringify(paymentMethods);
+                    const b64 = btoa(unescape(encodeURIComponent(json)));
+                    url += `&payment_methods=${encodeURIComponent(b64)}`;
                 }
                 window.open(url, '_blank');
             },

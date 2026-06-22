@@ -145,9 +145,11 @@
 @endif
 
 @hasanyrole('admin|super-admin|staff')
+@if(\App\Facades\SuperAdmin::isVisible('sales'))
 <a href="{{ route('sales.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('sales.*') ? 'active' : '' }}">
     <i class="bi bi-megaphone-fill me-2"></i>{{ __('Read and Sale') }}
 </a>
+@endif
 @endhasanyrole
 
 {{-- V2.4-S14: Production & Workflow Menus --}}
@@ -198,11 +200,14 @@
 @endcan
 @endif
 
-@canany(['manage-roles', 'manage-settings'])
+{{-- "Roles & Permissions" menu removed — merged into User Management page
+     bottom section (still reachable via /admin/roles-permissions direct link
+     for any existing bookmarks). --}}
+
+@canany(['manage-roles', 'manage-settings', 'view-pdf-templates'])
 <hr>
-@if(\App\Facades\SuperAdmin::isVisible('roles_permissions'))
-<a href="{{ route('admin.roles_permissions.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.roles_permissions.*') ? 'active' : '' }}"><i class="bi bi-shield-lock-fill me-2"></i>{{ __('Roles & Permissions') }}</a>
-@endif
+@endcanany
+
 @if(\App\Facades\SuperAdmin::isVisible('pdf_templates'))
 @can('view-pdf-templates')
 <a href="{{ route('admin.pdf-templates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.pdf-templates.*') ? 'active' : '' }}">
@@ -210,7 +215,6 @@
 </a>
 @endcan
 @endif
-@endcanany
 @if(\App\Facades\SuperAdmin::isVisible('central_trash'))
 @can('view-trash')
     <a class="list-group-item list-group-item-action {{ request()->routeIs('admin.trash.index') ? 'active' : '' }}" href="{{ route('admin.trash.index') }}">

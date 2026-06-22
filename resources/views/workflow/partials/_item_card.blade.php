@@ -694,12 +694,14 @@
                 @if(!$isReadOnly)
                     @if($isPreProduction)
                         @if($activeTab && $activeTab->slug !== 'mou')
+                            @can('approve-production')
                             {{-- Send to Workflow Button (Only in Pre-Production) --}}
                             <button class="btn btn-primary btn-sm fw-bold shadow-sm px-3"
                                     onclick="sendToWorkflow({{ $item->id }})"
                                     title="{{ __('Send to Workflow') }}">
                                 <i class="bi bi-box-arrow-right"></i> <span class="d-none d-lg-inline">{{ __('Send to Workflow') }}</span>
                             </button>
+                            @endcan
                         @endif
                     @else
                         {{-- Send Back to Pre-Production --}}

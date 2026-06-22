@@ -1399,7 +1399,7 @@ class="row">
 
     <!-- Create Invoice Modal (per-row from Income transactions) -->
     <div class="modal fade" :id="'createInvoiceModal-' + productionId" tabindex="-1" x-ref="createInvoiceModal">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header py-2">
                     <h6 class="modal-title">
@@ -1431,6 +1431,144 @@ class="row">
                             <label class="form-check-label" :for="'invVariantListOnly-' + productionId">
                                 {{ __('Employee List only (no document)') }}
                             </label>
+                        </div>
+                    </div>
+
+                    {{-- Payment Methods (ช่องทางการชำระเงิน) — appears at bottom-left of generated PDF --}}
+                    <div class="border rounded p-2 mb-3 bg-light">
+                        <div class="small fw-bold mb-2">
+                            <i class="bi bi-credit-card-2-front me-1"></i> {{ __('Payment Methods') }}
+                            <span class="text-muted fw-normal">— {{ __('Tick all channels the customer may use to pay this invoice.') }}</span>
+                        </div>
+
+                        {{-- Cash --}}
+                        <div class="form-check form-check-inline small mb-1">
+                            <input type="checkbox" class="form-check-input" :id="'invPmCash-' + productionId" x-model="invoiceModalUsingCash">
+                            <label class="form-check-label" :for="'invPmCash-' + productionId">
+                                <i class="bi bi-cash-stack me-1"></i> {{ __('Cash') }}
+                            </label>
+                        </div>
+
+                        {{-- PromptPay --}}
+                        <div class="form-check form-check-inline small mb-1">
+                            <input type="checkbox" class="form-check-input" :id="'invPmPP-' + productionId" x-model="invoiceModalUsingPromptPay">
+                            <label class="form-check-label" :for="'invPmPP-' + productionId">
+                                <i class="bi bi-qr-code me-1"></i> {{ __('PromptPay') }}
+                            </label>
+                        </div>
+                        <div x-show="invoiceModalUsingPromptPay" class="mb-2">
+                            <input type="text" class="form-control form-control-sm" x-model="invoiceModalPromptPayId" placeholder="{{ __('Phone (10 digits) or Tax ID (13 digits)') }}">
+                        </div>
+
+                        {{-- Bank Transfer --}}
+                        <div class="form-check small mb-1">
+                            <input type="checkbox" class="form-check-input" :id="'invPmTr-' + productionId" x-model="invoiceModalUsingTransfer" @change="onInvoiceUsingTransferChange">
+                            <label class="form-check-label fw-bold" :for="'invPmTr-' + productionId">
+                                <i class="bi bi-bank2 me-1"></i> {{ __('Bank Transfer') }}
+                            </label>
+                        </div>
+
+                        <div x-show="invoiceModalUsingTransfer" class="ms-1">
+                            {{-- Warn if biller profile isn't selected --}}
+                            <div x-show="!invoiceModalBillerProfileId" class="alert alert-warning small py-1 px-2 mb-2">
+                                {{ __('No biller profile attached. You can still add a bank manually with Custom.') }}
+                            </div>
+
+                            {{-- Selected accounts list --}}
+                            <template x-for="(t, idx) in invoiceModalTransferList" :key="idx">
+                                <div class="d-flex align-items-center gap-2 border rounded p-1 mb-1 bg-white">
+                                    <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                          :style="`background:${invoiceBankBadge(t).color}; width:26px; height:26px; font-size:10px;`"
+                                          x-text="invoiceBankBadge(t).initial"></span>
+                                    <div class="small flex-grow-1" style="min-width:0;">
+                                        <div class="fw-bold text-truncate" x-text="t.bank_name || '—'"></div>
+                                        <div class="text-muted text-truncate" style="font-size:11px;">
+                                            <span x-text="t.account_name || ''"></span>
+                                            <span x-show="t.account_name && t.account_number"> · </span>
+                                            <span x-text="t.account_number || ''"></span>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="removeInvoiceTransfer(idx)"><i class="bi bi-x"></i></button>
+                                </div>
+                            </template>
+
+                            {{-- "Add another" button when picker closed --}}
+                            <div x-show="!invoiceModalBankPickerOpen && !invoiceModalShowCustomBank && invoiceModalTransferList.length > 0" class="mt-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary py-0" @click="openInvoiceBankPicker">
+                                    <i class="bi bi-plus-circle"></i> {{ __('Add another bank account') }}
+                                </button>
+                            </div>
+
+                            {{-- Picker dropdown --}}
+                            <div x-show="invoiceModalBankPickerOpen" class="border rounded p-1 mt-1 bg-white">
+                                <div class="d-flex gap-1 align-items-center mb-1">
+                                    <input type="text" class="form-control form-control-sm flex-grow-1" x-model="invoiceModalBankSearch" placeholder="{{ __('Search bank...') }}">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="openInvoiceCustomBank" title="{{ __('Custom') }}">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="closeInvoiceBankPicker" title="{{ __('Close') }}">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                                <div style="max-height:200px; overflow-y:auto;">
+                                    <template x-if="filteredInvoiceProfileBanks.length > 0">
+                                        <div>
+                                            <div class="px-1 py-1 text-muted bg-light fw-bold" style="font-size:11px;">{{ __('From this profile') }}</div>
+                                            <template x-for="acc in filteredInvoiceProfileBanks" :key="'p'+acc.id">
+                                                <div class="d-flex align-items-center gap-2 p-1 bank-pick" style="cursor:pointer;" @click="addInvoiceProfileTransfer(acc)">
+                                                    <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold"
+                                                          :style="`background:${invoiceBankBadge(acc).color}; width:22px; height:22px; font-size:10px;`"
+                                                          x-text="invoiceBankBadge(acc).initial"></span>
+                                                    <div class="small flex-grow-1" style="min-width:0;">
+                                                        <div class="fw-bold text-truncate" x-text="acc.bank_name"></div>
+                                                        <div class="text-muted text-truncate" style="font-size:11px;" x-text="(acc.account_name || '') + ' · ' + (acc.account_number || '')"></div>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    <div x-show="invoiceModalBillerProfileId && invoiceProfileTransferBanks.length === 0" class="px-2 py-1 small text-muted">
+                                        {{ __('No bank accounts on this profile. Use Custom or pick a preset bank below.') }}
+                                    </div>
+
+                                    <template x-if="invoiceModalThaiBanks.length > 0">
+                                        <div>
+                                            <div class="px-1 py-1 text-muted bg-light fw-bold mt-1" style="font-size:11px;">{{ __('Other Thai banks') }}</div>
+                                            <template x-for="b in filteredInvoiceThaiBanks" :key="'b'+b.code">
+                                                <div class="d-flex align-items-center gap-2 p-1 bank-pick" style="cursor:pointer;" @click="addInvoicePresetTransfer(b)">
+                                                    <span class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold"
+                                                          :style="`background:${b.color}; width:22px; height:22px; font-size:10px;`"
+                                                          x-text="b.initial"></span>
+                                                    <span class="small flex-grow-1" x-text="b.name_th"></span>
+                                                    <span class="text-muted" style="font-size:10px;" x-text="b.name_en"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            {{-- Custom inline form --}}
+                            <div x-show="invoiceModalShowCustomBank" class="border rounded p-1 mt-1 bg-white">
+                                <div class="small fw-bold mb-1">{{ __('Custom bank account') }}</div>
+                                <div class="row g-1">
+                                    <div class="col-12">
+                                        <input type="text" class="form-control form-control-sm" x-model="invoiceModalCustomBank.bank_name" placeholder="{{ __('Bank name') }} *">
+                                    </div>
+                                    <div class="col-12">
+                                        <input type="text" class="form-control form-control-sm" x-model="invoiceModalCustomBank.account_name" placeholder="{{ __('Account name') }}">
+                                    </div>
+                                    <div class="col-8">
+                                        <input type="text" class="form-control form-control-sm" x-model="invoiceModalCustomBank.account_number" placeholder="{{ __('Account number') }}">
+                                    </div>
+                                    <div class="col-4 d-grid">
+                                        <button type="button" class="btn btn-sm btn-success" @click="addInvoiceCustomBank">
+                                            <i class="bi bi-check-lg"></i> {{ __('Add') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

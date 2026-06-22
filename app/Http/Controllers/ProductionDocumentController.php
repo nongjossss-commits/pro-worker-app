@@ -231,6 +231,20 @@ class ProductionDocumentController extends Controller
             $customerProfile = \App\Models\FinancialProfile::find($financialData['custom_header']['customer_profile_id']);
         }
 
+        // Payment Methods — passed from the Create Invoice modal as a
+        // base64-encoded JSON array. Quietly drop malformed payloads;
+        // the view treats an empty array as "no payment block".
+        $paymentMethods = [];
+        if ($request->filled('payment_methods')) {
+            $raw = base64_decode($request->query('payment_methods'), true);
+            if ($raw !== false) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $paymentMethods = $decoded;
+                }
+            }
+        }
+
         $data = [
             'production' => $production,
             'includeEmployeeList' => $includeEmployeeList,
@@ -249,7 +263,8 @@ class ProductionDocumentController extends Controller
             'financial' => $financialData,
             'advanceItems' => $advanceItems,
             'activeGroup' => $activeGroup,
-            'mode' => $mode
+            'mode' => $mode,
+            'paymentMethods' => $paymentMethods,
         ];
 
         // Determine View

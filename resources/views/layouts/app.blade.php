@@ -24,9 +24,11 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+    @php $brand = \App\Services\BrandService::current(); @endphp
+
     <!-- PWA Manifest & Meta Tags -->
     <link rel="manifest" href="{{ asset('manifest.json') }}">
-    <meta name="theme-color" content="#F97316">
+    <meta name="theme-color" content="{{ $brand['primary_color'] }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PWL System">
@@ -46,16 +48,23 @@
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    {{-- Brand color overrides — set per-installation via Super Admin → Branding. --}}
     <style>
         :root {
-            --bs-primary: #F97316;
-            --bs-primary-rgb: 249, 115, 22;
-            --bs-primary-dark: #EA580C;
-            --bs-primary-light: #FB923C;
+            --bs-primary: {{ $brand['primary_color'] }};
+            --bs-primary-rgb: {{ \App\Services\BrandService::hexToRgb($brand['primary_color']) }};
+            --bs-primary-dark: {{ \App\Services\BrandService::darken($brand['primary_color'], 0.12) }};
+            --bs-primary-light: {{ $brand['accent_color'] }};
+            --brand-sidebar-bg: {{ $brand['sidebar_color'] }};
+            --brand-accent: {{ $brand['accent_color'] }};
             --bs-body-font-family: 'Inter', 'Sarabun', sans-serif;
             --bs-body-bg: #f8fafc; /* Fallback color */
             --bs-border-color: #e2e8f0;
         }
+        /* Apply sidebar background from brand setting. The sidebar uses
+           Bootstrap's offcanvas — overriding --bs-offcanvas-bg keeps the
+           drawer animations intact while picking up the chosen color. */
+        #sidebar.offcanvas { --bs-offcanvas-bg: var(--brand-sidebar-bg); }
 
         body {
             font-size: 1rem;
@@ -768,15 +777,15 @@
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="sidebarLabel">
                     <a href="{{ route('dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none text-reset">
-                        <img src="{{ asset('images/logo_new.jpg') }}" alt="Logo" style="height: 40px; width: auto;"> Proworker labour
+                        <img src="{{ \App\Services\BrandService::logoUrl() }}" alt="Logo" style="height: 40px; width: auto;"> {{ $brand['short_name'] }}
                     </a>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column p-0">
             <a class="navbar-brand d-flex flex-column align-items-center mb-4 mt-3" href="{{ route('dashboard') }}">
-                <img src="{{ asset('images/logo_new.jpg') }}" alt="Proworker Logo" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
-                <span style="line-height: 1.2;">Proworker labour</span>
+                <img src="{{ \App\Services\BrandService::logoUrl() }}" alt="{{ $brand['app_name'] }}" class="mb-2" style="height: 130px; width: auto; max-width: 100%; border: none;">
+                <span style="line-height: 1.2;">{{ $brand['app_name'] }}</span>
             </a>
             <div class="list-group" id="main-nav">
                 @include('partials.sidebar-menu')

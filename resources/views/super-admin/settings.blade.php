@@ -10,28 +10,43 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
+    {{-- Resolve active tab from the URL once so every <button> + <pane> agrees.
+         Without this, hard-coded `active` on tab 1 fought with `request('tab')`
+         on tabs 4/5, leaving two panes shown after upload redirects. --}}
+    @php $activeTab = request('tab') ?: 'menu-settings'; @endphp
+
     <!-- Tabs Navigation -->
     <ul class="nav nav-tabs mb-4" id="superAdminSettingsTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="menu-settings-tab" data-bs-toggle="tab" data-bs-target="#menu-settings" type="button" role="tab" aria-controls="menu-settings" aria-selected="true">
+            <button class="nav-link {{ $activeTab === 'menu-settings' ? 'active' : '' }}" id="menu-settings-tab" data-bs-toggle="tab" data-bs-target="#menu-settings" type="button" role="tab" aria-controls="menu-settings" aria-selected="{{ $activeTab === 'menu-settings' ? 'true' : 'false' }}">
                 <i class="bi bi-menu-button-wide"></i> Menu Visibility & Access
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="download-profiles-tab" data-bs-toggle="tab" data-bs-target="#download-profiles" type="button" role="tab" aria-controls="download-profiles" aria-selected="false">
+            <button class="nav-link {{ $activeTab === 'download-profiles' ? 'active' : '' }}" id="download-profiles-tab" data-bs-toggle="tab" data-bs-target="#download-profiles" type="button" role="tab" aria-controls="download-profiles" aria-selected="{{ $activeTab === 'download-profiles' ? 'true' : 'false' }}">
                 <i class="bi bi-download"></i> Download Profiles
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="attachment-settings-tab" data-bs-toggle="tab" data-bs-target="#attachment-settings" type="button" role="tab" aria-controls="attachment-settings" aria-selected="false">
+            <button class="nav-link {{ $activeTab === 'attachment-settings' ? 'active' : '' }}" id="attachment-settings-tab" data-bs-toggle="tab" data-bs-target="#attachment-settings" type="button" role="tab" aria-controls="attachment-settings" aria-selected="{{ $activeTab === 'attachment-settings' ? 'true' : 'false' }}">
                 <i class="bi bi-file-earmark-arrow-up"></i> Attachment Files Settings
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $activeTab === 'employee-cap' ? 'active' : '' }}" id="employee-cap-tab" data-bs-toggle="tab" data-bs-target="#employee-cap" type="button" role="tab" aria-controls="employee-cap" aria-selected="{{ $activeTab === 'employee-cap' ? 'true' : 'false' }}">
+                <i class="bi bi-people-fill"></i> {{ __('Employee Cap') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $activeTab === 'branding' ? 'active' : '' }}" id="branding-tab" data-bs-toggle="tab" data-bs-target="#branding" type="button" role="tab" aria-controls="branding" aria-selected="{{ $activeTab === 'branding' ? 'true' : 'false' }}">
+                <i class="bi bi-palette-fill"></i> {{ __('Branding') }}
             </button>
         </li>
     </ul>
 
     <div class="tab-content" id="superAdminSettingsTabContent">
         <!-- Tab 1: Menu Visibility & Access -->
-        <div class="tab-pane fade show active" id="menu-settings" role="tabpanel" aria-labelledby="menu-settings-tab">
+        <div class="tab-pane fade {{ $activeTab === 'menu-settings' ? 'show active' : '' }}" id="menu-settings" role="tabpanel" aria-labelledby="menu-settings-tab">
             <div class="card">
                 <div class="card-body">
                     <div class="table-responsive">
@@ -139,7 +154,7 @@
         </div>
 
         <!-- Tab 2: Download Profiles -->
-        <div class="tab-pane fade" id="download-profiles" role="tabpanel" aria-labelledby="download-profiles-tab">
+        <div class="tab-pane fade {{ $activeTab === 'download-profiles' ? 'show active' : '' }}" id="download-profiles" role="tabpanel" aria-labelledby="download-profiles-tab">
             <div class="d-flex justify-content-end mb-3">
                 <a href="{{ route('super-admin.download-profiles.create') }}" class="btn btn-primary">
                     <i class="bi bi-plus-lg"></i> Create New Profile
@@ -195,7 +210,7 @@
         </div>
 
         <!-- Tab 3: Attachment Files Settings -->
-        <div class="tab-pane fade" id="attachment-settings" role="tabpanel" aria-labelledby="attachment-settings-tab">
+        <div class="tab-pane fade {{ $activeTab === 'attachment-settings' ? 'show active' : '' }}" id="attachment-settings" role="tabpanel" aria-labelledby="attachment-settings-tab">
 
             <div class="row">
                 <!-- Swap Files Section -->
@@ -306,8 +321,295 @@
             </div>
 
         </div>
+
+        {{-- Tab 4: Employee Cap (system-wide max) --}}
+        <div class="tab-pane fade {{ $activeTab === 'employee-cap' ? 'show active' : '' }}" id="employee-cap" role="tabpanel" aria-labelledby="employee-cap-tab">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-people-fill me-2"></i> {{ __('Maximum Active Employees') }}
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        {{ __('Caps how many active employees the whole system can hold. Once reached, new employee saves are blocked until an existing employee is removed or this cap is raised. Leave blank or set 0 for unlimited.') }}
+                    </p>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-light text-center">
+                                <div class="text-muted small">{{ __('Current Active Employees') }}</div>
+                                <div class="display-6 fw-bold text-primary">{{ number_format($currentEmployees) }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 bg-light text-center">
+                                <div class="text-muted small">{{ __('Current Cap') }}</div>
+                                <div class="display-6 fw-bold {{ $maxEmployees ? 'text-dark' : 'text-success' }}">
+                                    {{ $maxEmployees ? number_format($maxEmployees) : '∞' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 text-center {{ $maxEmployees && $currentEmployees >= $maxEmployees ? 'bg-danger-subtle' : 'bg-light' }}">
+                                <div class="text-muted small">{{ __('Remaining Slots') }}</div>
+                                <div class="display-6 fw-bold {{ $maxEmployees && $currentEmployees >= $maxEmployees ? 'text-danger' : 'text-success' }}">
+                                    {{ $maxEmployees ? number_format(max(0, $maxEmployees - $currentEmployees)) : '∞' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form action="{{ route('super-admin.settings.max-employees') }}" method="POST" class="row g-3 align-items-end">
+                        @csrf
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{{ __('Max Employees') }}</label>
+                            <input type="number"
+                                   name="max_employees"
+                                   class="form-control form-control-lg"
+                                   min="0"
+                                   max="1000000"
+                                   placeholder="{{ __('Blank or 0 = unlimited') }}"
+                                   value="{{ $maxEmployees }}">
+                        </div>
+                        <div class="col-md-6 d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save-fill me-1"></i> {{ __('Save Cap') }}
+                            </button>
+                        </div>
+                    </form>
+
+                    @if($maxEmployees && $currentEmployees >= $maxEmployees)
+                        <div class="alert alert-danger mt-3 mb-0">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            {{ __('Cap reached — new employee saves are currently blocked across the whole system.') }}
+                        </div>
+                    @elseif($maxEmployees && ($maxEmployees - $currentEmployees) <= max(5, intdiv($maxEmployees, 20)))
+                        <div class="alert alert-warning mt-3 mb-0">
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>
+                            {{ __('Approaching the cap — only :n slots left.', ['n' => $maxEmployees - $currentEmployees]) }}
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Tab 5: Branding (app name + logo + theme colors) --}}
+        <div class="tab-pane fade {{ $activeTab === 'branding' ? 'show active' : '' }}" id="branding" role="tabpanel" aria-labelledby="branding-tab">
+
+            {{-- App Name --}}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-tag-fill me-2"></i> {{ __('App Name') }}
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        {{ __('Shown next to the logo in the sidebar and on welcome screens. Short name is optional — used in cramped spaces; if blank, the full name is used.') }}
+                    </p>
+                    <form action="{{ route('super-admin.brand.name.update') }}" method="POST" class="row g-3">
+                        @csrf
+                        <div class="col-md-7">
+                            <label class="form-label small fw-bold mb-1">{{ __('Full name') }} *</label>
+                            <input type="text" name="app_name" class="form-control" maxlength="100"
+                                   value="{{ $brand['app_name'] }}" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold mb-1">{{ __('Short name (optional)') }}</label>
+                            <input type="text" name="short_name" class="form-control" maxlength="60"
+                                   value="{{ $brand['short_name'] !== $brand['app_name'] ? $brand['short_name'] : '' }}"
+                                   placeholder="{{ __('Defaults to full name') }}">
+                        </div>
+                        <div class="col-12 d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save-fill me-1"></i> {{ __('Save Name') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row g-3">
+
+                {{-- Logo Manager --}}
+                <div class="col-lg-7">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-image-fill me-2"></i> {{ __('App Logo') }}
+                            </h5>
+                            <p class="text-muted small mb-3">
+                                {{ __('Upload one or more logos and pick which one appears in the sidebar. Recommended: square or wide ratio, PNG/JPG/SVG up to 2 MB.') }}
+                            </p>
+
+                            {{-- Upload form --}}
+                            <form action="{{ route('super-admin.brand.logo.upload') }}" method="POST" enctype="multipart/form-data" class="d-flex gap-2 align-items-end mb-3 border rounded p-2 bg-light">
+                                @csrf
+                                <div class="flex-grow-1">
+                                    <label class="form-label small fw-bold mb-1">{{ __('Upload new logo') }}</label>
+                                    <input type="file" name="logo" class="form-control form-control-sm" accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-upload"></i> {{ __('Upload') }}
+                                </button>
+                            </form>
+
+                            {{-- Existing logos grid --}}
+                            @if(empty($brand['logos']))
+                                <div class="text-muted small text-center p-4 border rounded">
+                                    {{ __('No logos uploaded yet. The app is using the default logo.') }}
+                                </div>
+                            @else
+                                <div class="row g-2">
+                                    @foreach($brand['logos'] as $logo)
+                                        @php $isActive = ($brand['active_logo'] ?? null) === $logo['path']; @endphp
+                                        <div class="col-md-4 col-sm-6">
+                                            <div class="border rounded p-2 h-100 d-flex flex-column {{ $isActive ? 'border-success border-2' : '' }}">
+                                                <div class="text-center bg-light rounded mb-2 d-flex align-items-center justify-content-center" style="height: 110px;">
+                                                    <img src="{{ asset('storage/' . $logo['path']) }}" alt="Logo" style="max-height: 100px; max-width: 100%;">
+                                                </div>
+                                                @if($isActive)
+                                                    <span class="badge bg-success mb-2 align-self-start">
+                                                        <i class="bi bi-check-circle-fill"></i> {{ __('Active') }}
+                                                    </span>
+                                                @endif
+                                                <div class="d-flex gap-1 mt-auto">
+                                                    @unless($isActive)
+                                                        <form action="{{ route('super-admin.brand.logo.active') }}" method="POST" class="flex-grow-1">
+                                                            @csrf
+                                                            <input type="hidden" name="path" value="{{ $logo['path'] }}">
+                                                            <button type="submit" class="btn btn-sm btn-outline-success w-100" title="{{ __('Use this logo') }}">
+                                                                <i class="bi bi-check-lg"></i> {{ __('Use') }}
+                                                            </button>
+                                                        </form>
+                                                    @endunless
+                                                    <form action="{{ route('super-admin.brand.logo.delete') }}" method="POST" onsubmit="return confirm('{{ __('Delete this logo?') }}')">
+                                                        @csrf
+                                                        <input type="hidden" name="path" value="{{ $logo['path'] }}">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Theme Colors --}}
+                <div class="col-lg-5">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-palette-fill me-2"></i> {{ __('Theme Colors') }}
+                            </h5>
+                            <p class="text-muted small mb-3">
+                                {{ __('Pick the three colors that define this installation\'s look. Reload the page after saving to see the change everywhere.') }}
+                            </p>
+
+                            <form action="{{ route('super-admin.brand.colors.update') }}" method="POST" x-data="brandColorForm({
+                                primary: '{{ $brand['primary_color'] }}',
+                                sidebar: '{{ $brand['sidebar_color'] }}',
+                                accent:  '{{ $brand['accent_color'] }}'
+                            })">
+                                @csrf
+
+                                {{-- Primary --}}
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold mb-1">{{ __('Primary color') }}</label>
+                                    <div class="text-muted small mb-1">{{ __('Buttons, links, badges, active highlights.') }}</div>
+                                    <div class="input-group input-group-sm">
+                                        <input type="color" class="form-control form-control-color" x-model="primary" style="max-width: 60px;">
+                                        <input type="text" class="form-control" name="primary_color" x-model="primary" pattern="^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$" required>
+                                    </div>
+                                </div>
+
+                                {{-- Sidebar --}}
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold mb-1">{{ __('Sidebar background') }}</label>
+                                    <div class="text-muted small mb-1">{{ __('Background color of the left menu drawer.') }}</div>
+                                    <div class="input-group input-group-sm">
+                                        <input type="color" class="form-control form-control-color" x-model="sidebar" style="max-width: 60px;">
+                                        <input type="text" class="form-control" name="sidebar_color" x-model="sidebar" pattern="^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$" required>
+                                    </div>
+                                </div>
+
+                                {{-- Accent --}}
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold mb-1">{{ __('Accent color') }}</label>
+                                    <div class="text-muted small mb-1">{{ __('Lighter highlight — hovers, focus rings, soft backgrounds.') }}</div>
+                                    <div class="input-group input-group-sm">
+                                        <input type="color" class="form-control form-control-color" x-model="accent" style="max-width: 60px;">
+                                        <input type="text" class="form-control" name="accent_color" x-model="accent" pattern="^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$" required>
+                                    </div>
+                                </div>
+
+                                {{-- Preview --}}
+                                <div class="border rounded p-3 mb-3" :style="`background:${sidebar};`">
+                                    <div class="text-muted small mb-2">{{ __('Preview') }}</div>
+                                    <button type="button" class="btn btn-sm me-1" :style="`background:${primary}; color:#fff; border-color:${primary};`">{{ __('Primary button') }}</button>
+                                    <span class="badge" :style="`background:${accent}; color:#fff;`">{{ __('Accent') }}</span>
+                                </div>
+
+                                {{-- Preset palettes --}}
+                                <div class="mb-3">
+                                    <div class="small fw-bold mb-1">{{ __('Quick presets') }}</div>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        @foreach([
+                                            ['Orange (default)', '#F97316', '#FFFFFF', '#FB923C'],
+                                            ['Blue', '#2563EB', '#FFFFFF', '#60A5FA'],
+                                            ['Green', '#16A34A', '#FFFFFF', '#4ADE80'],
+                                            ['Purple', '#7C3AED', '#FFFFFF', '#A78BFA'],
+                                            ['Slate Dark', '#0F172A', '#1E293B', '#38BDF8'],
+                                            ['Crimson', '#DC2626', '#FFFFFF', '#F87171'],
+                                        ] as $p)
+                                            <button type="button" class="btn btn-sm border" :style="`background:${'{{ $p[1] }}'}; color:#fff;`"
+                                                    @click="primary='{{ $p[1] }}'; sidebar='{{ $p[2] }}'; accent='{{ $p[3] }}'">
+                                                {{ $p[0] }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary flex-grow-1">
+                                        <i class="bi bi-save-fill me-1"></i> {{ __('Save Colors') }}
+                                    </button>
+                                </div>
+                            </form>
+
+                            <form action="{{ route('super-admin.brand.colors.reset') }}" method="POST" class="mt-2"
+                                  onsubmit="return confirm('{{ __('Reset all theme colors to factory defaults?') }}')">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Reset to defaults') }}
+                                </button>
+                            </form>
+
+                            <div class="alert alert-info small mt-3 mb-0">
+                                <i class="bi bi-info-circle"></i>
+                                {{ __('Tip: press Ctrl+Shift+R to hard-refresh the browser if colors don\'t update right away.') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
 </div>
+
+<script>
+    function brandColorForm(initial) {
+        return {
+            primary: initial.primary || '#F97316',
+            sidebar: initial.sidebar || '#FFFFFF',
+            accent:  initial.accent  || '#FB923C',
+        };
+    }
+</script>
 
 @push('scripts')
 <script>

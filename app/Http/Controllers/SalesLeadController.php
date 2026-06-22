@@ -730,6 +730,12 @@ class SalesLeadController extends Controller
                 'highlight_employer_id' => $realEmployer->id,
             ])->with('success', 'โอนข้อมูลสำเร็จ กรุณาสร้างรายการงานต่อในหน้านี้');
 
+        } catch (\App\Exceptions\EmployeeQuotaExceededException $e) {
+            // Quota hit during a sales-lead transition (creates multiple
+            // employees in one go). Roll back and let the exception's
+            // render() method flash the popup payload.
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());

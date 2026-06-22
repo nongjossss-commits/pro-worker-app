@@ -7,9 +7,30 @@
 
 @section('content')
 <div class="p-4 p-md-5 content-section">
+@php
+    $employeeQuotaMax = \App\Services\EmployeeQuotaService::getMax();
+    $employeeQuotaRemaining = $employeeQuotaMax ? max(0, $employeeQuotaMax - $totalEmployees) : null;
+    $employeeQuotaReached = $employeeQuotaMax && $totalEmployees >= $employeeQuotaMax;
+    $employeeQuotaNearLimit = $employeeQuotaMax
+        && !$employeeQuotaReached
+        && $employeeQuotaRemaining <= max(5, intdiv($employeeQuotaMax, 20));
+@endphp
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">
-        {{ __('Employee List (Total: :total)', ['total' => $totalEmployees]) }}
+        @if($employeeQuotaMax)
+            {{ __('Employee List') }}
+            <span class="badge {{ $employeeQuotaReached ? 'bg-danger' : ($employeeQuotaNearLimit ? 'bg-warning text-dark' : 'bg-secondary') }} ms-1"
+                  title="{{ __('System cap set by Super Admin') }}">
+                {{ number_format($totalEmployees) }} / {{ number_format($employeeQuotaMax) }}
+            </span>
+            @if($employeeQuotaReached)
+                <small class="text-danger ms-1"><i class="bi bi-lock-fill"></i> {{ __('Cap reached') }}</small>
+            @elseif($employeeQuotaNearLimit)
+                <small class="text-warning ms-1"><i class="bi bi-exclamation-triangle-fill"></i> {{ __(':n slots left', ['n' => $employeeQuotaRemaining]) }}</small>
+            @endif
+        @else
+            {{ __('Employee List (Total: :total)', ['total' => $totalEmployees]) }}
+        @endif
     </h4>
     @can('create-employees')
         <div class="btn-group">
@@ -275,6 +296,25 @@
 
 @push('scripts')
 <script>
+    // Surface the EmployeeQuotaExceededException via Swal when a create
+    // or import action got bounced. The exception flashes a payload to
+    // the session; we just render it here once after the redirect.
+    @if(session('quota_exceeded'))
+        @php $qe = session('quota_exceeded'); @endphp
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: @json(__('Employee cap reached')),
+                    html: @json($qe['message']) + '<br><br><b>' + @json(__('Current')) + ':</b> ' + @json($qe['current']) + ' / ' + @json($qe['max']),
+                    confirmButtonText: 'OK',
+                });
+            } else {
+                alert(@json($qe['message']));
+            }
+        });
+    @endif
+
     // Special handler for bulk drag
     window.startDragBulk = function(e) {
         const ids = window.getGlobalSelectedIds();

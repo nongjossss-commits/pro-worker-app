@@ -42,6 +42,7 @@ class TaxInvoicePdfService
         $this->renderInvoiceMeta($pdf, $invoice);
         $this->renderItemsTable($pdf, $invoice);
         $this->renderTotals($pdf, $invoice);
+        $this->renderPaymentInfo($pdf, $invoice);
         $this->renderSignature($pdf, $invoice);
         $this->renderWatermark($pdf, $invoice);
 
@@ -100,113 +101,115 @@ class TaxInvoicePdfService
         $profile = $invoice->issuerProfile;
         $logoY = 10;
 
-        // Issuer logo (top-left)
+        // Issuer logo (top-left) — slimmed to 18mm to free vertical room.
         if ($profile && $profile->logo_path && Storage::disk('public')->exists($profile->logo_path)) {
             try {
-                $pdf->Image(Storage::disk('public')->path($profile->logo_path), 12, $logoY, 25);
+                $pdf->Image(Storage::disk('public')->path($profile->logo_path), 12, $logoY, 18);
             } catch (\Throwable $e) {
                 // ignore — bad image format etc.
             }
         }
 
-        // Issuer block (top-left, beside logo)
-        $pdf->SetXY(40, $logoY);
-        $pdf->SetFont('THSarabunNew', '', 16);
-        $pdf->Cell(120, 7, $this->txt($profile?->name ?: ''), 0, 2, 'L');
-        $pdf->SetFont('THSarabunNew', '', 12);
+        // Issuer block (top-left, beside logo) — name + meta in one tight column.
+        $pdf->SetXY(33, $logoY);
+        $pdf->SetFont('THSarabunNew', '', 14);
+        $pdf->Cell(110, 6, $this->txt($profile?->name ?: ''), 0, 2, 'L');
+        $pdf->SetFont('THSarabunNew', '', 10);
         if ($profile?->address) {
-            $pdf->Cell(120, 5, $this->txt($profile->address), 0, 2, 'L');
+            // Collapse whitespace + newlines so multi-line addresses fold to
+            // a single tight line. Long addresses get clipped via MultiCell.
+            $oneLineAddress = preg_replace('/\s+/u', ' ', trim((string) $profile->address));
+            $pdf->SetX(33);
+            $pdf->MultiCell(110, 4, $this->txt($oneLineAddress), 0, 'L');
         }
-        if ($profile?->phone) {
-            $pdf->Cell(120, 5, $this->txt('โทร. ' . $profile->phone), 0, 2, 'L');
-        }
-        if ($profile?->tax_id) {
-            $pdf->Cell(120, 5, $this->txt('เลขประจำตัวผู้เสียภาษี: ' . $profile->tax_id), 0, 2, 'L');
+        // Phone + tax id on the same line to save a row.
+        $metaParts = [];
+        if ($profile?->phone)  $metaParts[] = 'โทร. ' . $profile->phone;
+        if ($profile?->tax_id) $metaParts[] = 'เลขผู้เสียภาษี: ' . $profile->tax_id;
+        if (!empty($metaParts)) {
+            $pdf->SetX(33);
+            $pdf->Cell(110, 4, $this->txt(implode('   ', $metaParts)), 0, 2, 'L');
         }
 
         // Title (top-right)
         $pdf->SetXY(140, $logoY);
-        $pdf->SetFont('THSarabunNew', '', 18);
-        $pdf->Cell(55, 8, $this->txt('ใบกำกับภาษี'), 0, 2, 'R');
-        $pdf->SetFont('THSarabunNew', '', 12);
-        $pdf->Cell(55, 5, 'TAX INVOICE', 0, 2, 'R');
+        $pdf->SetFont('THSarabunNew', '', 16);
+        $pdf->Cell(55, 7, $this->txt('ใบกำกับภาษี'), 0, 2, 'R');
+        $pdf->SetFont('THSarabunNew', '', 10);
+        $pdf->Cell(55, 4, 'TAX INVOICE', 0, 2, 'R');
 
         // Copy label (ต้นฉบับ / สำเนา)
-        $pdf->SetFont('THSarabunNew', '', 11);
+        $pdf->SetFont('THSarabunNew', '', 9);
         $labelTh = $copyLabel === 'copy' ? 'สำเนา (Copy)' : 'ต้นฉบับ (Original)';
-        $pdf->Cell(55, 5, $this->txt($labelTh), 0, 2, 'R');
+        $pdf->Cell(55, 4, $this->txt($labelTh), 0, 2, 'R');
 
-        // Divider line
+        // Divider line — moved up to Y=32 (was 40) so the customer block starts higher.
         $pdf->SetLineWidth(0.3);
-        $pdf->Line(10, 40, 200, 40);
+        $pdf->Line(10, 32, 200, 32);
     }
 
     protected function renderParties(Fpdi $pdf, TaxInvoice $invoice): void
     {
-        $pdf->SetXY(10, 44);
-        $pdf->SetFont('THSarabunNew', '', 12);
-        $pdf->Cell(190, 6, $this->txt('ลูกค้า / Customer'), 0, 2, 'L');
-
-        $pdf->SetFont('THSarabunNew', '', 13);
-        $pdf->Cell(0, 6, $this->txt($invoice->customer_name), 0, 2, 'L');
-
+        $pdf->SetXY(10, 35);
         $pdf->SetFont('THSarabunNew', '', 11);
+        $pdf->Cell(120, 5, $this->txt('ลูกค้า / Customer'), 0, 2, 'L');
+
+        $pdf->SetFont('THSarabunNew', '', 12);
+        $pdf->Cell(120, 5, $this->txt($invoice->customer_name), 0, 2, 'L');
+
+        $pdf->SetFont('THSarabunNew', '', 10);
         if ($invoice->customer_tax_id) {
             $line = 'เลขประจำตัวผู้เสียภาษี: ' . $invoice->customer_tax_id;
             if ($invoice->customer_branch) {
                 $line .= '   สาขา: ' . $invoice->customer_branch;
             }
-            $pdf->Cell(0, 5, $this->txt($line), 0, 2, 'L');
+            $pdf->Cell(120, 4, $this->txt($line), 0, 2, 'L');
         }
         if ($invoice->customer_address) {
-            $pdf->MultiCell(120, 5, $this->txt($invoice->customer_address), 0, 'L');
+            $oneLine = preg_replace('/\s+/u', ' ', trim((string) $invoice->customer_address));
+            $pdf->MultiCell(120, 4, $this->txt($oneLine), 0, 'L');
         }
     }
 
     protected function renderInvoiceMeta(Fpdi $pdf, TaxInvoice $invoice): void
     {
-        // Top-right meta block (over Customer block)
-        $pdf->SetXY(135, 44);
+        // Top-right meta block (parallel to Customer block).
+        $pdf->SetXY(135, 35);
+        $pdf->SetFont('THSarabunNew', '', 10);
+        $pdf->Cell(25, 5, $this->txt('เลขที่ / No.'), 0, 0, 'L');
         $pdf->SetFont('THSarabunNew', '', 11);
-        $pdf->Cell(30, 6, $this->txt('เลขที่ / No.'), 0, 0, 'L');
-        $pdf->SetFont('THSarabunNew', '', 13);
-        $pdf->Cell(35, 6, $this->txt($invoice->invoice_no), 0, 2, 'L');
+        $pdf->Cell(40, 5, $this->txt($invoice->invoice_no), 0, 2, 'L');
 
         $pdf->SetX(135);
+        $pdf->SetFont('THSarabunNew', '', 10);
+        $pdf->Cell(25, 5, $this->txt('วันที่ / Date'), 0, 0, 'L');
         $pdf->SetFont('THSarabunNew', '', 11);
-        $pdf->Cell(30, 6, $this->txt('วันที่ / Date'), 0, 0, 'L');
-        $pdf->SetFont('THSarabunNew', '', 13);
-        $pdf->Cell(35, 6, $this->txt(optional($invoice->invoice_date)->format('d/m/Y') ?: '-'), 0, 2, 'L');
+        $pdf->Cell(40, 5, $this->txt(optional($invoice->invoice_date)->format('d/m/Y') ?: '-'), 0, 2, 'L');
     }
 
     protected function renderItemsTable(Fpdi $pdf, TaxInvoice $invoice): void
     {
-        $y = 90;
+        // Moved up from Y=90 → Y=70 since the header is now ~25mm shorter.
+        $y = 70;
         $pdf->SetXY(10, $y);
 
         // Header row
         $pdf->SetFillColor(230, 230, 230);
-        $pdf->SetFont('THSarabunNew', '', 12);
-        $pdf->Cell(15, 8, $this->txt('ลำดับ'), 1, 0, 'C', true);
-        $pdf->Cell(115, 8, $this->txt('รายการ / Description'), 1, 0, 'C', true);
-        $pdf->Cell(20, 8, $this->txt('จำนวน'), 1, 0, 'C', true);
-        $pdf->Cell(40, 8, $this->txt('จำนวนเงิน (บาท)'), 1, 1, 'C', true);
+        $pdf->SetFont('THSarabunNew', '', 11);
+        $pdf->Cell(15, 7, $this->txt('ลำดับ'), 1, 0, 'C', true);
+        $pdf->Cell(115, 7, $this->txt('รายการ / Description'), 1, 0, 'C', true);
+        $pdf->Cell(20, 7, $this->txt('จำนวน'), 1, 0, 'C', true);
+        $pdf->Cell(40, 7, $this->txt('จำนวนเงิน (บาท)'), 1, 1, 'C', true);
 
         // Body row — single line of subtotal (extend in future for line items)
-        $pdf->SetFont('THSarabunNew', '', 12);
+        $pdf->SetFont('THSarabunNew', '', 11);
         $description = $invoice->notes ?: 'ค่าบริการ';
-        $pdf->Cell(15, 8, '1', 1, 0, 'C');
-        $pdf->Cell(115, 8, $this->txt($description), 1, 0, 'L');
-        $pdf->Cell(20, 8, '1', 1, 0, 'C');
-        $pdf->Cell(40, 8, number_format($invoice->subtotal, 2), 1, 1, 'R');
+        $pdf->Cell(15, 7, '1', 1, 0, 'C');
+        $pdf->Cell(115, 7, $this->txt($description), 1, 0, 'L');
+        $pdf->Cell(20, 7, '1', 1, 0, 'C');
+        $pdf->Cell(40, 7, number_format($invoice->subtotal, 2), 1, 1, 'R');
 
-        // Empty filler rows for visual balance
-        for ($i = 0; $i < 5; $i++) {
-            $pdf->Cell(15, 7, '', 1, 0, 'C');
-            $pdf->Cell(115, 7, '', 1, 0, 'L');
-            $pdf->Cell(20, 7, '', 1, 0, 'C');
-            $pdf->Cell(40, 7, '', 1, 1, 'R');
-        }
+        // (Filler rows removed — recovered 35mm of vertical space.)
     }
 
     protected function renderTotals(Fpdi $pdf, TaxInvoice $invoice): void
@@ -229,6 +232,168 @@ class TaxInvoicePdfService
         $pdf->SetFont('THSarabunNew', '', 12);
         $bahtText = $this->bahtText((float) $invoice->total);
         $pdf->Cell(190, 7, $this->txt('(' . $bahtText . ')'), 1, 1, 'C');
+    }
+
+    /**
+     * Bottom-left payment block — Thai billing-note (ใบวางบิล) layout, compact.
+     *
+     * Bank Transfer entries get a colored bank badge (square with initials)
+     * so the recipient recognises the bank at a glance — names alone are
+     * confusing in Thai (กสิกร vs กรุงไทย vs กรุงเทพ all start with ก/ก-).
+     *
+     * Layout: dynamic Y — anchored to the totals block so it grows toward
+     * the signature row without leaving dead space at the bottom.
+     */
+    protected function renderPaymentInfo(Fpdi $pdf, TaxInvoice $invoice): void
+    {
+        $methods = $invoice->payment_methods;
+        if (!is_array($methods) || empty($methods)) {
+            return;
+        }
+
+        $boxX = 10;
+        $boxW = 115;
+        // Start right after the totals block + a small gap, with a safety
+        // clamp so the block never collides with the signature anchor (~Y=240).
+        $boxY = max(170, min($pdf->GetY() + 4, 200));
+
+        $pdf->SetXY($boxX, $boxY);
+        $pdf->SetFont('THSarabunNew', '', 10);
+        $pdf->Cell($boxW, 4, $this->txt('ช่องทางการชำระเงิน / Payment'), 0, 2, 'L');
+
+        $pdf->SetFont('THSarabunNew', '', 10);
+        foreach ($methods as $m) {
+            $this->renderPaymentLine($pdf, $m, $boxX, $boxW);
+        }
+    }
+
+    /**
+     * Render one payment-method entry as one or two lines.
+     * Bank Transfer: colored badge + bank name + account on one line, then
+     * "เลขที่บัญชี: xxx" on the second line — no dotted "..บาท" suffix.
+     */
+    protected function renderPaymentLine(Fpdi $pdf, array $m, float $boxX, float $boxW): void
+    {
+        $type = $m['type'] ?? '';
+        if ($type === '') {
+            return;
+        }
+
+        $checkboxSize = 2.8;
+        $textIndent   = 5.5;
+        $lineH        = 4.2;
+        $dots         = ' .................. ';
+
+        $y = $pdf->GetY();
+
+        // Draw the checkbox square (left of every entry).
+        $pdf->SetDrawColor(80, 80, 80);
+        $pdf->Rect($boxX, $y + 1.0, $checkboxSize, $checkboxSize);
+
+        switch ($type) {
+            case 'cash':
+                $pdf->SetXY($boxX + $textIndent, $y);
+                $pdf->Cell($boxW - $textIndent, $lineH, $this->txt('ชำระเป็นเงินสด' . $dots . 'บาท'), 0, 2, 'L');
+                break;
+
+            case 'promptpay':
+                $id = trim((string) ($m['promptpay_id'] ?? ''));
+                $pdf->SetXY($boxX + $textIndent, $y);
+                $pdf->Cell($boxW - $textIndent, $lineH, $this->txt('PromptPay: ' . ($id !== '' ? $id : '-') . $dots . 'บาท'), 0, 2, 'L');
+                break;
+
+            case 'transfer':
+                $bank = trim((string) ($m['bank_name'] ?? ''));
+                $name = trim((string) ($m['account_name'] ?? ''));
+                $num  = trim((string) ($m['account_number'] ?? ''));
+                $code = trim((string) ($m['bank_code'] ?? ''));
+
+                // Bank badge (right next to checkbox) — colored square + initials.
+                $badge = $this->resolveBankBadge($code, $bank);
+                $badgeX = $boxX + $textIndent;
+                $badgeSize = 5.5;
+                $rgb = $this->hexToRgbArray($badge['color']);
+                $pdf->SetFillColor($rgb[0], $rgb[1], $rgb[2]);
+                $pdf->SetDrawColor($rgb[0], $rgb[1], $rgb[2]);
+                $pdf->Rect($badgeX, $y + 0.2, $badgeSize, $badgeSize, 'F');
+
+                // Initials inside the badge (white, very small, centered).
+                $pdf->SetTextColor(255, 255, 255);
+                $pdf->SetFont('THSarabunNew', '', 8);
+                $pdf->SetXY($badgeX, $y + 0.4);
+                $pdf->Cell($badgeSize, $badgeSize - 0.4, $this->txt($badge['initial']), 0, 0, 'C');
+
+                // Reset colors and continue text after the badge.
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetDrawColor(80, 80, 80);
+                $pdf->SetFont('THSarabunNew', '', 10);
+
+                $textX = $badgeX + $badgeSize + 1.5;
+                $pdf->SetXY($textX, $y);
+                $bankLine = 'โอน ' . ($bank !== '' ? $bank : '-');
+                if ($name !== '') {
+                    $bankLine .= '  ·  ' . $name;
+                }
+                $pdf->Cell($boxW - ($textX - $boxX), $lineH, $this->txt($bankLine), 0, 2, 'L');
+
+                if ($num !== '') {
+                    $pdf->SetX($textX);
+                    $pdf->Cell($boxW - ($textX - $boxX), $lineH, $this->txt('เลขที่บัญชี: ' . $num), 0, 2, 'L');
+                }
+                break;
+
+            case 'other':
+                $note = trim((string) ($m['note'] ?? ''));
+                $pdf->SetXY($boxX + $textIndent, $y);
+                $pdf->Cell($boxW - $textIndent, $lineH, $this->txt('อื่นๆ: ' . ($note !== '' ? $note : '-') . $dots . 'บาท'), 0, 2, 'L');
+                break;
+
+            default:
+                $pdf->SetXY($boxX, $y + $lineH);
+                return;
+        }
+    }
+
+    /**
+     * Resolve a bank's brand color + initial from the preset config.
+     * Falls back to a grey badge with the first letter of the bank name.
+     */
+    protected function resolveBankBadge(string $code, string $bankName): array
+    {
+        $presets = config('thai_banks', []);
+        if ($code !== '') {
+            foreach ($presets as $preset) {
+                if (($preset['code'] ?? null) === $code) {
+                    return [
+                        'color'   => $preset['color']   ?? '#6B7280',
+                        'initial' => $preset['initial'] ?? mb_substr($bankName ?: '?', 0, 1),
+                    ];
+                }
+            }
+        }
+        return [
+            'color'   => '#6B7280',
+            'initial' => mb_substr($bankName ?: '?', 0, 1),
+        ];
+    }
+
+    /**
+     * Convert "#RRGGBB" → [r, g, b] for FPDF's SetFillColor.
+     */
+    protected function hexToRgbArray(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+        if (!preg_match('/^[0-9A-Fa-f]{6}$/', $hex)) {
+            return [107, 114, 128]; // fallback grey
+        }
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        ];
     }
 
     protected function renderSignature(Fpdi $pdf, TaxInvoice $invoice): void

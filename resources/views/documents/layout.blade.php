@@ -42,34 +42,34 @@
             tr { page-break-inside: avoid; page-break-after: auto; }
         }
 
-        /* Header Table */
-        table.header-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
+        /* Header Table — slimmed to leave more room for items and footer. */
+        table.header-table { width: 100%; margin-bottom: 10px; border-collapse: collapse; }
         table.header-table td { vertical-align: top; }
 
-        .company-logo { height: 50px; margin-bottom: 8px; max-width: 180px; object-fit: contain; }
-        .company-name { font-size: 14px; font-weight: bold; color: #F97316; margin-bottom: 4px; line-height: 1.3; }
-        .company-address { font-size: 11px; color: #555; line-height: 1.4; }
-        .tax-id { font-size: 11px; margin-top: 3px; }
+        .company-logo { height: 36px; margin-bottom: 4px; max-width: 140px; object-fit: contain; }
+        .company-name { font-size: 13px; font-weight: bold; color: #F97316; margin-bottom: 2px; line-height: 1.2; }
+        .company-address { font-size: 10px; color: #555; line-height: 1.35; }
+        .tax-id { font-size: 10px; margin-top: 1px; color: #555; }
 
         .doc-title { text-align: right; vertical-align: top; }
         .doc-title h1 {
-            margin: 0 0 8px 0;
-            font-size: 17px;
+            margin: 0 0 4px 0;
+            font-size: 15px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #333;
             white-space: nowrap;
         }
-        .meta-table { float: right; font-size: 12px; border-collapse: collapse; }
-        .meta-table td { padding: 2px 0 2px 12px; }
+        .meta-table { float: right; font-size: 11px; border-collapse: collapse; }
+        .meta-table td { padding: 1px 0 1px 12px; }
         .meta-label { font-weight: bold; text-align: right; color: #555; }
 
-        /* Client Info */
+        /* Client Info — tighter padding. */
         .client-box {
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             border: 1px solid #eee;
-            padding: 12px;
-            border-radius: 5px;
+            padding: 8px 10px;
+            border-radius: 4px;
             background: #fdfdfd;
             font-size: 12px;
         }
@@ -185,10 +185,22 @@
                     @elseif(!isset($billerProfile) && $profile->logo_path)
                         <img src="{{ asset('storage/' . $profile->logo_path) }}" class="company-logo" alt="Logo">
                     @endif
-                    <div class="company-name">{{ isset($billerProfile) ? $billerProfile->name : $profile->name }}</div>
-                    <div class="company-address">{!! nl2br(e(isset($billerProfile) ? $billerProfile->address : $profile->address)) !!}</div>
-                    @if(isset($billerProfile) ? $billerProfile->tax_id : $profile->tax_id)<div class="tax-id">Tax ID: {{ isset($billerProfile) ? $billerProfile->tax_id : $profile->tax_id }}</div>@endif
-                    @if(isset($billerProfile) ? $billerProfile->phone : $profile->phone)<div class="tax-id">Tel: {{ isset($billerProfile) ? $billerProfile->phone : $profile->phone }}</div>@endif
+                    @php
+                        // Single source of company info — biller profile wins, else fall through to $profile.
+                        $issuer = isset($billerProfile) ? $billerProfile : $profile;
+                        // Collapse multi-line address to one tight line. Saves 1-2 vertical rows.
+                        $issuerAddress = trim(preg_replace('/\s+/u', ' ', (string) $issuer->address));
+                        $issuerMeta = [];
+                        if ($issuer->tax_id) $issuerMeta[] = 'Tax ID: ' . $issuer->tax_id;
+                        if ($issuer->phone)  $issuerMeta[] = 'Tel: '    . $issuer->phone;
+                    @endphp
+                    <div class="company-name">{{ $issuer->name }}</div>
+                    @if($issuerAddress)
+                        <div class="company-address">{{ $issuerAddress }}</div>
+                    @endif
+                    @if(!empty($issuerMeta))
+                        <div class="tax-id">{{ implode('   ·   ', $issuerMeta) }}</div>
+                    @endif
                 </td>
                 <td style="width: 45%;" class="doc-title">
                     <h1>{{ $title ?? ucfirst($type) }}</h1>
@@ -622,6 +634,72 @@
         <div style="margin-top: 10px; font-style: italic; color: #666; font-size: 13px; text-align: right;">
             ( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )
         </div>
+
+        {{-- Payment Methods (ช่องทางการชำระเงิน) — compact bottom-left block.
+             Bank Transfer rows get a colored brand badge so the recipient
+             recognises the bank at a glance (กสิกร/กรุงไทย/กรุงเทพ all start
+             with ก/ก-, name alone is confusing). Color + initial come from
+             config/thai_banks.php matched by bank_code. --}}
+        @if(!empty($paymentMethods))
+            @php $bankPresets = collect(config('thai_banks', []))->keyBy('code'); @endphp
+            <div style="margin-top: 10px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa; font-size: 12px; line-height: 1.4;">
+                <div style="font-weight: bold; margin-bottom: 4px; color: #333; font-size: 11px;">
+                    ช่องทางการชำระเงิน <span style="color:#999; font-weight: normal;">/ Payment Information</span>
+                </div>
+                @foreach($paymentMethods as $pm)
+                    @php $ptype = $pm['type'] ?? ''; @endphp
+
+                    @if($ptype === 'cash')
+                        <div style="margin-bottom: 2px;">
+                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; margin-right: 5px; vertical-align: middle;"></span>
+                            ชำระเป็นเงินสด
+                            <span style="border-bottom: 1px dotted #888; display: inline-block; min-width: 100px; margin: 0 3px;">&nbsp;</span>
+                            บาท
+                        </div>
+
+                    @elseif($ptype === 'promptpay')
+                        <div style="margin-bottom: 2px;">
+                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; margin-right: 5px; vertical-align: middle;"></span>
+                            PromptPay: <strong>{{ $pm['promptpay_id'] ?? '-' }}</strong>
+                            <span style="border-bottom: 1px dotted #888; display: inline-block; min-width: 80px; margin: 0 3px;">&nbsp;</span>
+                            บาท
+                        </div>
+
+                    @elseif($ptype === 'transfer')
+                        @php
+                            $preset = !empty($pm['bank_code']) ? ($bankPresets[$pm['bank_code']] ?? null) : null;
+                            $badgeColor   = $preset['color']   ?? '#6B7280';
+                            $badgeInitial = $preset['initial'] ?? mb_substr($pm['bank_name'] ?? '?', 0, 1);
+                        @endphp
+                        <div style="margin-bottom: 4px; display: flex; align-items: flex-start; gap: 6px;">
+                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; flex-shrink: 0; margin-top: 3px;"></span>
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: {{ $badgeColor }}; color: #fff; font-weight: bold; font-size: 10px; border-radius: 3px; flex-shrink: 0;">{{ $badgeInitial }}</span>
+                            <div style="flex-grow: 1; min-width: 0;">
+                                <div>
+                                    <strong>{{ $pm['bank_name'] ?? '-' }}</strong>
+                                    @if(!empty($pm['account_name']))
+                                        <span style="color: #555;"> · {{ $pm['account_name'] }}</span>
+                                    @endif
+                                </div>
+                                @if(!empty($pm['account_number']))
+                                    <div style="color: #555; font-size: 11px;">
+                                        เลขที่บัญชี: <strong style="color: #222;">{{ $pm['account_number'] }}</strong>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                    @elseif($ptype === 'other')
+                        <div style="margin-bottom: 2px;">
+                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; margin-right: 5px; vertical-align: middle;"></span>
+                            อื่นๆ: {{ $pm['note'] ?? '-' }}
+                            <span style="border-bottom: 1px dotted #888; display: inline-block; min-width: 80px; margin: 0 3px;">&nbsp;</span>
+                            บาท
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        @endif
 
         <div class="signatures-container">
             <!-- Signatures Section -->

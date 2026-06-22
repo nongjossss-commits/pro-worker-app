@@ -29,6 +29,7 @@ class TaxInvoice extends Model
         'voided_at',
         'void_reason',
         'notes',
+        'payment_methods',
         'created_by',
         'updated_by',
     ];
@@ -41,6 +42,7 @@ class TaxInvoice extends Model
         'vat_rate' => 'decimal:2',
         'vat_amount' => 'decimal:2',
         'total' => 'decimal:2',
+        'payment_methods' => 'array',
     ];
 
     public function issuerProfile()

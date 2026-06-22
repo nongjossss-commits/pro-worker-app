@@ -51,7 +51,12 @@ class UserController extends Controller
             $activeTab = array_keys($counts, max($counts))[0];
         }
 
-        return view('admin.users.index', compact('users', 'search', 'activeTab'));
+        // Roles & Permissions read-only view (merged from the standalone
+        // /admin/roles-permissions page — same data, shown at the bottom).
+        $roles = Role::with('permissions')->orderBy('name')->get();
+        $permissions = Permission::orderBy('name')->get();
+
+        return view('admin.users.index', compact('users', 'search', 'activeTab', 'roles', 'permissions'));
     }
 
     /**

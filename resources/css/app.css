@@ -50,12 +50,10 @@
 
 /* START: Custom Form Styles (from index.html blueprint) */
 
-/* 1. กำหนดสีหลัก (ส้ม) และ Font ที่คุณ Wing เลือก */
+/* 1. Font + base only — color variables (--bs-primary*) are set per-installation
+ *    by Super Admin → Branding via inline <style> in app.blade.php. Removing
+ *    them here lets the user-picked color win without !important hacks. */
 :root {
-    --bs-primary: #F97316;
-    --bs-primary-rgb: 249, 115, 22;
-    --bs-primary-dark: #EA580C;
-    --bs-primary-light: #FB923C;
     --bs-body-font-family: 'Inter', 'Sarabun', sans-serif;
     --bs-border-color: #e2e8f0;
 }

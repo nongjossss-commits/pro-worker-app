@@ -32,6 +32,15 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
 
     Route::post('/attachments/swap', [SuperAdminSettingsController::class, 'swapAttachments'])->name('attachments.swap');
     Route::post('/attachments/descriptions', [SuperAdminSettingsController::class, 'updateAttachmentDescriptions'])->name('attachments.descriptions');
+    Route::post('/settings/max-employees', [SuperAdminSettingsController::class, 'updateMaxEmployees'])->name('settings.max-employees');
+
+    // Branding (logo + theme colors + app name)
+    Route::post('/brand/logo', [SuperAdminSettingsController::class, 'uploadBrandLogo'])->name('brand.logo.upload');
+    Route::post('/brand/logo/active', [SuperAdminSettingsController::class, 'setActiveBrandLogo'])->name('brand.logo.active');
+    Route::post('/brand/logo/delete', [SuperAdminSettingsController::class, 'deleteBrandLogo'])->name('brand.logo.delete');
+    Route::post('/brand/colors', [SuperAdminSettingsController::class, 'updateBrandColors'])->name('brand.colors.update');
+    Route::post('/brand/colors/reset', [SuperAdminSettingsController::class, 'resetBrandColors'])->name('brand.colors.reset');
+    Route::post('/brand/name', [SuperAdminSettingsController::class, 'updateBrandName'])->name('brand.name.update');
 
     Route::resource('download-profiles', DownloadProfileController::class)->except(['show']);
 });
@@ -92,11 +101,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/employers/{employer}/locate', [EmployerController::class, 'locate'])->name('employers.locate');
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
     Route::get('employers/{employer}/history', [EmployerController::class, 'filterHistory'])->name('employers.history.filter');
-    Route::post('employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
+    // Employee state-change routes — guarded at the route level too (defence
+    // in depth on top of the controller __construct middleware).
+    Route::post('employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->middleware('permission:terminate-employees')->name('employees.terminate');
     Route::get('/employers/{employer}/documents/{field}/pdf', [EmployerController::class, 'downloadDocumentAsPdf'])->name('employers.documents.pdf');
-    Route::post('employees/{employee}/reinstate', [EmployeeController::class, 'reinstate'])->name('employees.reinstate');
-    Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
-    Route::delete('/employees/{employee}/force-delete', [EmployeeController::class, 'forceDelete'])->name('employees.forceDelete')->withTrashed();
+    Route::post('employees/{employee}/reinstate', [EmployeeController::class, 'reinstate'])->middleware('permission:terminate-employees')->name('employees.reinstate');
+    Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->middleware('permission:restore-employees')->name('employees.restore')->withTrashed();
+    Route::delete('/employees/{employee}/force-delete', [EmployeeController::class, 'forceDelete'])->middleware('permission:force-delete-employees')->name('employees.forceDelete')->withTrashed();
     Route::get('/employees/{employee}/locate', [EmployeeController::class, 'locate'])->name('employees.locate');
     Route::get('/employees/{employee}/create-job', [JobController::class, 'createFromEmployee'])->name('jobs.create_from_employee');
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
@@ -447,16 +458,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{sales}/finance-tab', [\App\Http\Controllers\SalesLeadController::class, 'loadFinancialTab'])->name('finance.tab');
     });
 
-    // NEW: Pre-Production Routes
-    Route::post('production/{item}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendToWorkflow'])->name('production.item.send_to_workflow');
-    Route::post('production/bulk-send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'bulkSendToWorkflow'])->name('production.bulk_send_to_workflow');
-    // ส่ง ProductionOrder ทั้งใบไป Workflow (ใช้กับ MOU demand card ส่งทั้งใบ)
-    Route::post('production/order/{order}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendOrderToWorkflow'])->name('production.order.send_to_workflow');
+    // NEW: Pre-Production Routes — send-to-workflow gated by approve-production
+    // (seeded but previously unused). Admin + super-admin get it by default;
+    // staff can be granted manually if a particular office allows it.
+    Route::post('production/{item}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendToWorkflow'])->middleware('permission:approve-production')->name('production.item.send_to_workflow');
+    Route::post('production/bulk-send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'bulkSendToWorkflow'])->middleware('permission:approve-production')->name('production.bulk_send_to_workflow');
+    Route::post('production/order/{order}/send-to-workflow', [\App\Http\Controllers\ProductionController::class, 'sendOrderToWorkflow'])->middleware('permission:approve-production')->name('production.order.send_to_workflow');
 
-    // ProductionOrder custom fields (ใช้กับปุ่ม Fields บนการ์ด MOU ทั้ง Pre-Prod และ Workflow)
-    Route::post('production/order/{order}/custom-fields', [\App\Http\Controllers\ProductionController::class, 'storeOrderCustomField'])->name('production.order.custom_fields.store');
-    Route::put('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'updateOrderCustomField'])->name('production.order.custom_fields.update');
-    Route::delete('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'destroyOrderCustomField'])->name('production.order.custom_fields.destroy');
+    // ProductionOrder custom fields — gated by manage-own-workflow (admin + staff).
+    Route::post('production/order/{order}/custom-fields', [\App\Http\Controllers\ProductionController::class, 'storeOrderCustomField'])->middleware('permission:manage-own-workflow')->name('production.order.custom_fields.store');
+    Route::put('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'updateOrderCustomField'])->middleware('permission:manage-own-workflow')->name('production.order.custom_fields.update');
+    Route::delete('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'destroyOrderCustomField'])->middleware('permission:manage-own-workflow')->name('production.order.custom_fields.destroy');
     Route::post('production/steps', [\App\Http\Controllers\ProductionController::class, 'storeStep'])->name('production.steps.store');
 
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
@@ -539,6 +551,18 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/api/profiles', [App\Http\Controllers\FinancialProfileController::class, 'store']);
         Route::match(['put', 'post'], '/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'update']); // Allow both to support FormData with spoofed _method=PUT
         Route::delete('/api/profiles/{profile}', [App\Http\Controllers\FinancialProfileController::class, 'destroy']);
+
+        // Bank Accounts scoped to a Financial Profile (used by both the
+        // builder UI's inline panel and the Tax Invoice form dropdown).
+        Route::get('/api/profiles/{profile}/bank-accounts', [App\Http\Controllers\FinancialProfileController::class, 'listBankAccounts']);
+        Route::post('/api/profiles/{profile}/bank-accounts', [App\Http\Controllers\FinancialProfileController::class, 'storeBankAccount']);
+        Route::match(['put', 'post'], '/api/profiles/{profile}/bank-accounts/{bankAccount}', [App\Http\Controllers\FinancialProfileController::class, 'updateBankAccount']);
+        Route::delete('/api/profiles/{profile}/bank-accounts/{bankAccount}', [App\Http\Controllers\FinancialProfileController::class, 'destroyBankAccount']);
+
+        // Preset Thai banks (read-only) for the Production Invoice picker.
+        Route::get('/api/thai-banks', function () {
+            return response()->json(config('thai_banks', []));
+        });
     });
 
 

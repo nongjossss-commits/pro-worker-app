@@ -21,7 +21,14 @@ class SettingsController extends Controller
      */
     public function index()
     {
-        // Define all menu keys and their labels
+        // Define all menu keys and their labels.
+        //
+        // KEEP THIS IN SYNC WITH:
+        //   1. resources/views/partials/sidebar-menu.blade.php (every @if(SuperAdmin::isVisible('xxx'))
+        //      must have a matching row here, and every row here must be referenced in the sidebar)
+        //   2. database/seeders/SuperAdminSeeder.php $keys array (so fresh installs seed the default rows)
+        //   3. Spatie permission @can()/@role() guards in the sidebar — when adding a new menu, also
+        //      decide which roles should see it and update RoleAndPermissionSeeder accordingly
         $menus = [
             'dashboard' => 'Dashboard',
             'finance' => 'Finance (การเงิน)',
@@ -33,6 +40,7 @@ class SettingsController extends Controller
             'employer_ticket' => 'Employer Ticket',
             'employers' => 'Employers',
             'employees' => 'Employees',
+            'sales' => 'Read and Sale (การขายและใบเสนอราคา)',
             'production' => 'P Production',
             'workflow' => 'Workflow',
             'registration_resolution' => 'Registration Resolution',
@@ -41,7 +49,6 @@ class SettingsController extends Controller
             'agents' => 'Agents',
             'delegates' => 'Delegates',
             'user_management' => 'User Management',
-            'roles_permissions' => 'Roles & Permissions',
             'pdf_templates' => 'PDF Templates',
             'central_trash' => 'Central Trash',
         ];
@@ -51,7 +58,189 @@ class SettingsController extends Controller
 
         $profiles = DownloadProfile::latest()->get();
 
-        return view('super-admin.settings', compact('menus', 'settings', 'profiles'));
+        // Employee cap (system-wide), driven by Super Admin.
+        $maxEmployees = \App\Services\EmployeeQuotaService::getMax();
+        $currentEmployees = \App\Services\EmployeeQuotaService::getCurrentCount();
+
+        // Brand settings (logo + theme colors).
+        $brand = \App\Services\BrandService::current();
+
+        return view('super-admin.settings', compact('menus', 'settings', 'profiles', 'maxEmployees', 'currentEmployees', 'brand'));
+    }
+
+    /**
+     * Upload a new brand logo. Stored in storage/app/public/brand/logos/
+     * and appended to the brand.logos array. First upload also becomes
+     * the active logo so the change is visible immediately.
+     */
+    public function uploadBrandLogo(Request $request)
+    {
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
+        ]);
+
+        $path = $request->file('logo')->store('brand/logos', 'public');
+
+        $brand = \App\Services\BrandService::current();
+        $logos = $brand['logos'];
+        $logos[] = ['path' => $path, 'uploaded_at' => now()->toDateTimeString()];
+
+        SuperAdminSetting::updateOrCreate(
+            ['key' => 'brand.logos'],
+            ['value' => json_encode(array_values($logos))]
+        );
+
+        // First upload? auto-select it.
+        if (empty($brand['active_logo'])) {
+            SuperAdminSetting::updateOrCreate(
+                ['key' => 'brand.active_logo'],
+                ['value' => $path]
+            );
+        }
+
+        \App\Services\BrandService::forgetCache();
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'branding'])
+            ->with('success', __('Logo uploaded.'));
+    }
+
+    public function setActiveBrandLogo(Request $request)
+    {
+        $request->validate(['path' => 'required|string']);
+
+        $brand = \App\Services\BrandService::current();
+        $paths = array_column($brand['logos'], 'path');
+        abort_unless(in_array($request->path, $paths, true), 404);
+
+        SuperAdminSetting::updateOrCreate(
+            ['key' => 'brand.active_logo'],
+            ['value' => $request->path]
+        );
+
+        \App\Services\BrandService::forgetCache();
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'branding'])
+            ->with('success', __('Active logo updated.'));
+    }
+
+    public function deleteBrandLogo(Request $request)
+    {
+        $request->validate(['path' => 'required|string']);
+        $target = $request->path;
+
+        $brand = \App\Services\BrandService::current();
+        $logos = array_values(array_filter(
+            $brand['logos'],
+            fn ($l) => ($l['path'] ?? null) !== $target
+        ));
+
+        SuperAdminSetting::updateOrCreate(
+            ['key' => 'brand.logos'],
+            ['value' => json_encode($logos)]
+        );
+
+        // If we just removed the active one, clear the pointer.
+        if (($brand['active_logo'] ?? null) === $target) {
+            SuperAdminSetting::where('key', 'brand.active_logo')->delete();
+        }
+
+        Storage::disk('public')->delete($target);
+
+        \App\Services\BrandService::forgetCache();
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'branding'])
+            ->with('success', __('Logo deleted.'));
+    }
+
+    public function updateBrandColors(Request $request)
+    {
+        // NOTE: must use array-of-rules (not pipe-string), otherwise Laravel
+        // splits on the "|" inside the regex pattern and the parser blows up.
+        $request->validate([
+            'primary_color' => ['required', 'regex:/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/'],
+            'sidebar_color' => ['required', 'regex:/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/'],
+            'accent_color'  => ['required', 'regex:/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/'],
+        ]);
+
+        foreach (['primary_color', 'sidebar_color', 'accent_color'] as $key) {
+            SuperAdminSetting::updateOrCreate(
+                ['key' => 'brand.' . $key],
+                ['value' => strtoupper($request->input($key))]
+            );
+        }
+
+        \App\Services\BrandService::forgetCache();
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'branding'])
+            ->with('success', __('Theme colors updated.'));
+    }
+
+    public function resetBrandColors()
+    {
+        SuperAdminSetting::whereIn('key', [
+            'brand.primary_color', 'brand.sidebar_color', 'brand.accent_color',
+        ])->delete();
+
+        \App\Services\BrandService::forgetCache();
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'branding'])
+            ->with('success', __('Theme colors reset to defaults.'));
+    }
+
+    /**
+     * Update the installation's app name (long + short).
+     * Short name is what fits in the sidebar header next to the logo;
+     * long name is what shows on the welcome/landing surfaces.
+     */
+    public function updateBrandName(Request $request)
+    {
+        $request->validate([
+            'app_name'   => 'required|string|max:100',
+            'short_name' => 'nullable|string|max:60',
+        ]);
+
+        SuperAdminSetting::updateOrCreate(
+            ['key' => 'brand.app_name'],
+            ['value' => trim($request->input('app_name'))]
+        );
+
+        // Short name is optional; empty string → delete the row so the
+        // fallback in BrandService kicks in (uses app_name).
+        $short = trim((string) $request->input('short_name'));
+        if ($short === '') {
+            SuperAdminSetting::where('key', 'brand.short_name')->delete();
+        } else {
+            SuperAdminSetting::updateOrCreate(
+                ['key' => 'brand.short_name'],
+                ['value' => $short]
+            );
+        }
+
+        \App\Services\BrandService::forgetCache();
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'branding'])
+            ->with('success', __('App name updated.'));
+    }
+
+    /**
+     * Save the system-wide max employees cap. Empty value or 0 = unlimited.
+     */
+    public function updateMaxEmployees(Request $request)
+    {
+        $request->validate([
+            'max_employees' => 'nullable|integer|min:0|max:1000000',
+        ]);
+
+        $value = $request->input('max_employees');
+        SuperAdminSetting::updateOrCreate(
+            ['key' => \App\Services\EmployeeQuotaService::SETTING_KEY],
+            ['value' => ($value === null || $value === '') ? null : (string) $value]
+        );
+
+        \App\Services\EmployeeQuotaService::forgetCache();
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'employee-cap'])
+            ->with('success', __('Employee cap updated.'));
     }
 
     /**

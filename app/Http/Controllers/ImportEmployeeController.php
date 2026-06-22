@@ -687,6 +687,13 @@ class ImportEmployeeController extends Controller
                          ->with('production_id', $productionId)
                          ->with('finish_route', $finishRoute);
 
+        } catch (\App\Exceptions\EmployeeQuotaExceededException $e) {
+            // Bulk imports throw mid-loop when the cap is hit. Roll back
+            // any partial inserts and let the exception's own render()
+            // method redirect with the flash payload the index page uses
+            // to fire the Swal popup.
+            DB::rollBack();
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e);

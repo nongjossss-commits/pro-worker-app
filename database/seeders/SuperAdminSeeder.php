@@ -39,8 +39,14 @@ class SuperAdminSeeder extends Seeder
         $user->assignRole($role);
 
         // 3. Seed Default Settings
+        //
+        // KEEP IN SYNC WITH SettingsController::index() $menus array and the
+        // sidebar's SuperAdmin::isVisible('xxx') calls. New menu? add the key
+        // here too so fresh installs get the default-visible row.
         $keys = [
             'dashboard',
+            'finance',
+            'financial_profiles',
             'activity_logs',
             'notifications',
             'incomplete_data',
@@ -48,6 +54,7 @@ class SuperAdminSeeder extends Seeder
             'employer_ticket',
             'employers',
             'employees',
+            'sales',
             'production',
             'workflow',
             'registration_resolution',
@@ -56,7 +63,6 @@ class SuperAdminSeeder extends Seeder
             'agents',
             'delegates',
             'user_management',
-            'roles_permissions',
             'pdf_templates',
             'central_trash',
         ];
