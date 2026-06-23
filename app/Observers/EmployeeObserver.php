@@ -10,11 +10,24 @@ use Illuminate\Support\Facades\Log;
 class EmployeeObserver
 {
     /**
+     * Statuses that mean "employee is already in some resolution menu".
+     * The Observer never touches resolution_tab_id/status when employee is in any of these
+     * — auto-pull is one-way (add only). Manual completion/cancellation is the only way out.
+     */
+    protected const RESOLUTION_STATUSES = [
+        'registration_pending', 'registration_completed', 'registration_cancelled',
+        'renewal_pending',      'renewal_completed',      'renewal_cancelled',
+    ];
+
+    /**
      * Handle the Employee "created" event.
      */
     public function created(Employee $employee)
     {
-        $this->checkRenewalAutoImport($employee);
+        // New employee: try renewal first (existing behavior), then registration.
+        // If renewal matches, syncRegistrationStatus sees the new status and skips.
+        $this->syncRenewalStatus($employee);
+        $this->syncRegistrationStatus($employee);
     }
 
     /**
@@ -48,10 +61,13 @@ class EmployeeObserver
             }
         }
 
-        // 2. Renewal Auto-Sync Logic
-        // When expiry dates or MOU change: add/reassign/remove based on matching tabs
+        // 2. Auto-pull into renewal / registration menu when expiry dates change.
+        // RULE: add-only — never auto-eject, never auto-move between tabs.
+        // Once an employee is in a resolution menu, only manual completion/cancellation removes them.
+        // Progress within the menu is tracked by getRenewalProgressAttribute (color coding).
         if ($employee->isDirty(['workPermitExpiryDate', 'visaExpiryDate', 'workPermitMOUGroup'])) {
             $this->syncRenewalStatus($employee);
+            $this->syncRegistrationStatus($employee);
         }
     }
 
@@ -101,54 +117,92 @@ class EmployeeObserver
     }
 
     /**
-     * Sync employee's renewal status based on current expiry dates.
-     * - Match found: add to tab / reassign to different tab
-     * - No match: remove from renewal (back to 'active')
-     * - Finalized (completed/cancelled): never touched
+     * Find the default registration tab if employee's WP/Visa matches the registration auto-target.
+     * Registration uses a single SystemSetting target (group=registration) — no per-tab config.
+     */
+    protected function findMatchingRegistrationTab(Employee $employee): ?int
+    {
+        // Skip MOU types
+        if ($employee->workPermitMOUGroup && stripos($employee->workPermitMOUGroup, 'MOU') !== false) {
+            return null;
+        }
+
+        $settings = \App\Models\SystemSetting::where('group', 'registration')
+            ->whereIn('key', ['registration_auto_visa_expiry', 'registration_auto_work_permit_expiry'])
+            ->pluck('value', 'key');
+
+        $visaTarget = $settings['registration_auto_visa_expiry'] ?? null;
+        $wpTarget   = $settings['registration_auto_work_permit_expiry'] ?? null;
+
+        if (!$visaTarget && !$wpTarget) return null;
+
+        $wpMatch = $wpTarget && $employee->workPermitExpiryDate
+            && $employee->workPermitExpiryDate->format('Y-m-d') === $wpTarget;
+        $visaMatch = $visaTarget && $employee->visaExpiryDate
+            && $employee->visaExpiryDate->format('Y-m-d') === $visaTarget;
+
+        if (!$wpMatch && !$visaMatch) return null;
+
+        // Pick the default tab if present, else the oldest registration tab
+        $defaultTab = \App\Models\ResolutionTab::where('type', 'registration')
+            ->where('is_default', true)
+            ->value('id');
+        if ($defaultTab) return $defaultTab;
+
+        return \App\Models\ResolutionTab::where('type', 'registration')
+            ->orderBy('id')
+            ->value('id');
+    }
+
+    /**
+     * Sync employee into the renewal menu when their dates newly match a renewal target.
+     *
+     * RULE (add-only):
+     *  - If the employee is already in ANY resolution menu (registration/renewal — pending or finalized)
+     *    → do nothing. Progress/color is handled by getRenewalProgressAttribute.
+     *  - Otherwise, if dates match a renewal tab target → pull into that tab.
+     *
+     * Never auto-eject, never auto-move between tabs.
      */
     protected function syncRenewalStatus(Employee $employee)
     {
         try {
-            // Preserve finalized states
-            if (in_array($employee->status, ['renewal_completed', 'renewal_cancelled'])) {
-                return;
+            if (in_array($employee->status, self::RESOLUTION_STATUSES, true)) {
+                return; // already in some resolution menu — leave alone
             }
 
             $matchedTabId = $this->findMatchingRenewalTab($employee);
-
-            // --- Case 1: Match found ---
             if ($matchedTabId) {
-                $needsUpdate = ($employee->resolution_tab_id !== $matchedTabId)
-                            || ($employee->status !== 'renewal_pending');
-
-                if ($needsUpdate) {
-                    $updateData = ['resolution_tab_id' => $matchedTabId];
-                    if ($employee->status !== 'renewal_pending') {
-                        $updateData['status'] = 'renewal_pending';
-                    }
-                    $employee->updateQuietly($updateData);
-                }
-                return;
-            }
-
-            // --- Case 2: No match, and employee is currently renewal_pending → remove ---
-            if ($employee->status === 'renewal_pending') {
                 $employee->updateQuietly([
-                    'status' => 'active',
-                    'resolution_tab_id' => null,
+                    'status' => 'renewal_pending',
+                    'resolution_tab_id' => $matchedTabId,
                 ]);
             }
-
         } catch (\Throwable $e) {
             Log::error("Failed renewal sync for employee {$employee->id}: " . $e->getMessage());
         }
     }
 
     /**
-     * Legacy alias — kept for backward compatibility with `created` event.
+     * Mirror of syncRenewalStatus for the registration menu.
+     * Same add-only rule — only pulls employees who aren't yet in any resolution menu.
      */
-    protected function checkRenewalAutoImport(Employee $employee)
+    protected function syncRegistrationStatus(Employee $employee)
     {
-        $this->syncRenewalStatus($employee);
+        try {
+            if (in_array($employee->status, self::RESOLUTION_STATUSES, true)) {
+                return; // already in some resolution menu — leave alone
+            }
+
+            $matchedTabId = $this->findMatchingRegistrationTab($employee);
+            if ($matchedTabId) {
+                $employee->updateQuietly([
+                    'status' => 'registration_pending',
+                    'resolution_tab_id' => $matchedTabId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error("Failed registration sync for employee {$employee->id}: " . $e->getMessage());
+        }
     }
 }
