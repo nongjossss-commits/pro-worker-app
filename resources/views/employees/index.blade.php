@@ -6,6 +6,7 @@
 @endpush
 
 @section('content')
+<x-help-button manual="employees" title="{{ __('Employees') }}" />
 <div class="p-4 p-md-5 content-section">
 @php
     $employeeQuotaMax = \App\Services\EmployeeQuotaService::getMax();

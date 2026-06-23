@@ -3,6 +3,7 @@
 @section('title', 'Registration Resolution')
 
 @section('content')
+<x-help-button manual="registration_resolution" title="{{ __('Registration Resolution') }}" />
 <style>
     .cursor-pointer { cursor: pointer; }
     .filter-active {

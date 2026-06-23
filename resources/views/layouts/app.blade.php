@@ -816,6 +816,11 @@
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">
+                    {{-- Per-page User Manual button — pages render <x-help-button>
+                         which pushes its trigger into this stack so the button
+                         lives in the navbar next to the language switcher. --}}
+                    @stack('navbar-help')
+
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-translate me-1"></i>

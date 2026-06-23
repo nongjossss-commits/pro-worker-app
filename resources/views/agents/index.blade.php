@@ -3,6 +3,7 @@
 @section('title', __('Agents'))
 
 @section('content')
+<x-help-button manual="agents" title="{{ __('Agents') }}" />
 <div class="content-section">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
          <h2 class="mb-3 mb-md-0">{{ __('Agent List') }}</h2>

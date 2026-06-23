@@ -281,39 +281,53 @@
                             <i class="bi bi-fonts"></i> Default Descriptions for "Other Documents"
                         </div>
                         <div class="card-body">
-                            <div class="alert alert-info py-2 small">
-                                Set default text for generic "Other Documents". Saving this will apply the new text to <strong>all existing records</strong> and save it as the default for future records. (Users can still edit individual records later).
+                            <div class="alert alert-info py-2 small mb-3">
+                                <strong>{{ __('แก้ทีละช่อง:') }}</strong> {{ __('พิมพ์รายละเอียดของช่องนั้น แล้วกดปุ่ม Update — ระบบจะอัพเดตทุก record ที่มีอยู่ + ตั้งเป็น default ให้ record ใหม่ที่จะเพิ่มเข้ามา') }}
+                                <br>
+                                <span class="text-muted">{{ __('Record เก่าจะไม่ถูกอัพเดทอัตโนมัติซ้ำ — Super Admin ต้องกดปุ่มที่นี่อีกครั้งเพื่อ force-update') }}</span>
                             </div>
 
-                            <form id="update-descriptions-form" action="{{ route('super-admin.attachments.descriptions') }}" method="POST">
-                                @csrf
+                            <h6 class="fw-bold mt-2 text-secondary"><i class="bi bi-building me-1"></i>Employer - Other Documents</h6>
+                            @for($i = 1; $i <= 3; $i++)
+                                @php
+                                    $key = "employer_other_{$i}_desc";
+                                    $currentValue = $settings[$key]->value ?? '';
+                                @endphp
+                                <div class="mb-2" x-data="otherDocSlotEditor({ entity: 'employer', slot: {{ $i }}, initial: {{ json_encode($currentValue) }} })">
+                                    <label class="form-label small mb-1">Other Doc {{ $i }}</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control" x-model="value" placeholder="Default description (เช่น 'ใบเปลี่ยนนายจ้าง')" :disabled="saving">
+                                        <button type="button" class="btn btn-primary" @click="save()" :disabled="saving || !dirty">
+                                            <span x-show="!saving"><i class="bi bi-cloud-arrow-up me-1"></i>{{ __('Update') }}</span>
+                                            <span x-show="saving" style="display: none;"><span class="spinner-border spinner-border-sm"></span></span>
+                                        </button>
+                                    </div>
+                                    <div class="form-text small text-success" x-show="lastSaved" style="display: none;" x-text="lastSaved"></div>
+                                </div>
+                            @endfor
 
-                                <h6 class="fw-bold mt-3 text-secondary">Employer - Other Documents</h6>
-                                <div class="row">
-                                    @for($i = 1; $i <= 3; $i++)
-                                        @php $key = "employer_other_{$i}_desc"; @endphp
-                                        <div class="col-md-4 mb-2">
-                                            <label class="form-label small">Other Doc {{ $i }}</label>
-                                            <input type="text" class="form-control form-control-sm" name="{{ $key }}" value="{{ $settings[$key]->value ?? '' }}" placeholder="Default description">
+                            <hr>
+
+                            <h6 class="fw-bold mt-3 text-secondary"><i class="bi bi-person me-1"></i>Employee - Other Documents</h6>
+                            <div class="row g-2">
+                                @for($i = 1; $i <= 10; $i++)
+                                    @php
+                                        $key = "employee_other_{$i}_desc";
+                                        $currentValue = $settings[$key]->value ?? '';
+                                    @endphp
+                                    <div class="col-md-6" x-data="otherDocSlotEditor({ entity: 'employee', slot: {{ $i }}, initial: {{ json_encode($currentValue) }} })">
+                                        <label class="form-label small mb-1">Other Doc {{ $i }} <span class="text-muted">(Slot {{ $i + 8 }})</span></label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" x-model="value" placeholder="Default description" :disabled="saving">
+                                            <button type="button" class="btn btn-primary" @click="save()" :disabled="saving || !dirty" :title="dirty ? '{{ __('Save & apply to all') }}' : '{{ __('No changes') }}'">
+                                                <span x-show="!saving"><i class="bi bi-cloud-arrow-up"></i></span>
+                                                <span x-show="saving" style="display: none;"><span class="spinner-border spinner-border-sm"></span></span>
+                                            </button>
                                         </div>
-                                    @endfor
-                                </div>
-
-                                <h6 class="fw-bold mt-4 text-secondary">Employee - Other Documents</h6>
-                                <div class="row">
-                                    @for($i = 1; $i <= 10; $i++)
-                                        @php $key = "employee_other_{$i}_desc"; @endphp
-                                        <div class="col-md-6 mb-2">
-                                            <label class="form-label small">Other Doc {{ $i }} (Slot {{ $i + 8 }})</label>
-                                            <input type="text" class="form-control form-control-sm" name="{{ $key }}" value="{{ $settings[$key]->value ?? '' }}" placeholder="Default description">
-                                        </div>
-                                    @endfor
-                                </div>
-
-                                <div class="d-grid mt-3">
-                                    <button type="button" class="btn btn-primary fw-bold" onclick="confirmUpdateDescriptions()">Save Defaults & Update All Records</button>
-                                </div>
-                            </form>
+                                        <div class="form-text small text-success" x-show="lastSaved" style="display: none;" x-text="lastSaved"></div>
+                                    </div>
+                                @endfor
+                            </div>
 
                         </div>
                     </div>
@@ -392,8 +406,25 @@
             </div>
         </div>
 
-        {{-- Tab 5: Branding (app name + logo + theme colors) --}}
+        {{-- Tab 5: Branding (app name + logo + theme colors + manual export) --}}
         <div class="tab-pane fade {{ $activeTab === 'branding' ? 'show active' : '' }}" id="branding" role="tabpanel" aria-labelledby="branding-tab">
+
+            {{-- Download All Manuals — training booklet branded with this installation's logo + name --}}
+            <div class="card mb-3 border-primary">
+                <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="bi bi-book-half me-2 text-primary"></i> {{ __('Download User Manuals (All-in-One PDF)') }}
+                        </h5>
+                        <p class="text-muted small mb-0">
+                            {{ __('Opens every menu manual on one printable page — use the browser print dialog to save as PDF for training new staff.') }}
+                        </p>
+                    </div>
+                    <a href="{{ route('super-admin.manuals.bundle') }}" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-download me-1"></i> {{ __('Open Manual Bundle') }}
+                    </a>
+                </div>
+            </div>
 
             {{-- App Name --}}
             <div class="card mb-3">
@@ -774,21 +805,60 @@
         });
     }
 
-    function confirmUpdateDescriptions() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "This will overwrite custom descriptions for ALL existing employers and employees with these values. Continue?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#0d6efd',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, update all!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('update-descriptions-form').submit();
+    // Per-slot AJAX editor for "Other Documents" defaults
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('otherDocSlotEditor', ({ entity, slot, initial }) => ({
+            entity, slot,
+            value: initial || '',
+            original: initial || '',
+            saving: false,
+            lastSaved: '',
+            get dirty() { return (this.value || '') !== (this.original || ''); },
+            save() {
+                if (this.saving || !this.dirty) return;
+                const entityLabel = this.entity === 'employer' ? 'นายจ้าง' : 'ลูกจ้าง';
+                const newValue = (this.value || '').trim();
+                const wasEmpty = !this.original;
+                const isEmpty = !newValue;
+                let msg = `จะ${isEmpty ? 'ล้าง' : 'ตั้ง'}ค่า default ของ Other Doc ${this.slot} (${entityLabel}) เป็น:\n\n"${newValue || '(ว่าง)'}"\n\nและจะ force-update ทุก ${entityLabel} ที่มีอยู่แล้ว ให้ตรงกันด้วย\n\nดำเนินการ?`;
+                Swal.fire({
+                    title: 'อัพเดต Slot ' + this.slot,
+                    text: msg,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0d6efd',
+                    confirmButtonText: 'ยืนยัน, อัพเดต',
+                    cancelButtonText: 'ยกเลิก'
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+                    this.saving = true;
+                    const fd = new FormData();
+                    fd.append('_token', '{{ csrf_token() }}');
+                    fd.append('entity', this.entity);
+                    fd.append('slot', this.slot);
+                    fd.append('value', newValue);
+                    fetch('{{ route("super-admin.attachments.descriptions.single") }}', {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: fd
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.value = newValue;
+                            this.original = newValue;
+                            this.lastSaved = '✓ ' + data.message;
+                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message, showConfirmButton: false, timer: 2500 });
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed', 'error');
+                        }
+                    })
+                    .catch(err => Swal.fire('Error', err.message, 'error'))
+                    .finally(() => { this.saving = false; });
+                });
             }
-        });
-    }
+        }));
+    });
 </script>
 @endpush
 @endsection

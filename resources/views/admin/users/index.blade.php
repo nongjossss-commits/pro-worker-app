@@ -9,6 +9,7 @@
 @section('title', __('User Management'))
 
 @section('content')
+<x-help-button manual="user_management" title="{{ __('User Management') }}" />
 <div class="container-fluid content-section">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">

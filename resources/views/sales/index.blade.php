@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<x-help-button manual="sales" title="{{ __('Read and Sale') }}" />
 <style>
     /* CSS Grid: บังคับ 3 คอลัมน์เท่ากันเสมอ ไม่มีทางตกลงด้านล่าง */
     .kanban-board {

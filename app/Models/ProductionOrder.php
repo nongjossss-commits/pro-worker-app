@@ -33,6 +33,7 @@ class ProductionOrder extends Model
         'mou_nationality',
         'mou_male_count',
         'mou_female_count',
+        'mou_import_type', // 'return' | 'new' | null (ยังไม่ระบุ)
     ];
 
     protected $casts = [

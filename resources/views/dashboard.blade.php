@@ -3,6 +3,7 @@
 @section('title', __('Statistics Dashboard'))
 
 @section('content')
+<x-help-button manual="dashboard" title="{{ __('Dashboard') }}" />
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 fw-bold text-dark mb-0"><i class="bi bi-graph-up-arrow me-2"></i>{{ __('Statistics Dashboard') }}</h1>

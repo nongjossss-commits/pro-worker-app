@@ -980,17 +980,32 @@ if (typeof window.financialManager === 'undefined') {
             // --- Groups Logic ---
             addNewGroup() {
                 Swal.fire({
-                    title: 'Add Tab',
+                    title: 'ตั้งชื่อแท็บการเงินใหม่',
+                    text: 'แท็บใช้แยกประเภทการวางบิล เช่น ค่าบริการ MOU, ค่ามัดจำ, งวดเปลี่ยนนายจ้าง',
                     input: 'text',
-                    inputValue: 'New Tab',
+                    inputValue: '',
+                    inputPlaceholder: 'เช่น "ค่าบริการ MOU พม่า" หรือ "งวดเปลี่ยนนายจ้าง"',
+                    inputAttributes: { maxlength: 100, autocapitalize: 'off', autocorrect: 'off' },
                     showCancelButton: true,
-                    confirmButtonText: 'Add'
+                    confirmButtonText: 'สร้างแท็บ',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#3b82f6',
+                    inputValidator: (value) => {
+                        const v = (value || '').trim();
+                        if (!v) return 'กรุณาตั้งชื่อแท็บ';
+                        if (v.length < 2) return 'ชื่อแท็บต้องยาวอย่างน้อย 2 ตัวอักษร';
+                        if (this.financialGroups.some(g => (g.name || '').trim().toLowerCase() === v.toLowerCase())) {
+                            return 'ชื่อแท็บนี้มีอยู่แล้ว — กรุณาเลือกชื่ออื่น';
+                        }
+                        return null;
+                    }
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
+                        const name = result.value.trim();
                         fetch(`/production/${this.productionId}/financial-groups`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                            body: JSON.stringify({ name: result.value })
+                            body: JSON.stringify({ name: name })
                         })
                         .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                         .then(data => {
@@ -999,8 +1014,10 @@ if (typeof window.financialManager === 'undefined') {
                                 const newGroup = { ...data.group, transactions: [] };
                                 this.financialGroups = [...this.financialGroups, newGroup];
                                 this.switchGroup(newGroup.id);
+                                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'สร้างแท็บ "' + name + '" แล้ว', showConfirmButton: false, timer: 2000 });
                             }
-                        });
+                        })
+                        .catch(err => Swal.fire('Error', err.message, 'error'));
                     }
                 });
             },
@@ -1036,28 +1053,49 @@ if (typeof window.financialManager === 'undefined') {
 
             renameGroup(groupId, currentName) {
                 Swal.fire({
-                    title: 'Rename Tab',
+                    title: 'เปลี่ยนชื่อแท็บ',
+                    text: 'ชื่อปัจจุบัน: ' + (currentName || '(ยังไม่ตั้งชื่อ)'),
                     input: 'text',
-                    inputValue: currentName,
+                    inputValue: currentName || '',
+                    inputPlaceholder: 'เช่น "ค่าบริการ MOU พม่า" หรือ "งวดเปลี่ยนนายจ้าง"',
+                    inputAttributes: { maxlength: 100, autocapitalize: 'off', autocorrect: 'off' },
                     showCancelButton: true,
+                    confirmButtonText: 'บันทึก',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#3b82f6',
+                    inputValidator: (value) => {
+                        const v = (value || '').trim();
+                        if (!v) return 'กรุณาตั้งชื่อแท็บ';
+                        if (v.length < 2) return 'ชื่อแท็บต้องยาวอย่างน้อย 2 ตัวอักษร';
+                        if (v === (currentName || '').trim()) return 'ชื่อเดิม — กรุณาเปลี่ยนเป็นชื่อใหม่หรือกดยกเลิก';
+                        if (this.financialGroups.some(g => g.id !== groupId && (g.name || '').trim().toLowerCase() === v.toLowerCase())) {
+                            return 'ชื่อแท็บนี้มีอยู่แล้ว — กรุณาเลือกชื่ออื่น';
+                        }
+                        return null;
+                    }
                 }).then((result) => {
                     if (result.isConfirmed && result.value) {
+                        const newName = result.value.trim();
                         fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
-                            body: JSON.stringify({ name: result.value })
+                            body: JSON.stringify({ name: newName })
                         })
                         .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
                         .then(data => {
                             if (data.success) {
                                  const group = this.financialGroups.find(g => g.id === groupId);
-                                 if(group) {
-                                     group.name = result.value;
+                                 if (group) {
+                                     group.name = newName;
                                      // Trigger reactivity
                                      this.financialGroups = [...this.financialGroups];
                                  }
+                                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เปลี่ยนชื่อเป็น "' + newName + '" แล้ว', showConfirmButton: false, timer: 2000 });
+                            } else {
+                                throw new Error(data.message || 'ไม่สามารถเปลี่ยนชื่อแท็บได้');
                             }
-                        });
+                        })
+                        .catch(err => Swal.fire('Error', err.message, 'error'));
                     }
                 });
             },
@@ -1067,8 +1105,94 @@ if (typeof window.financialManager === 'undefined') {
                 this.pricingTiers.push({ price: 0, count: 0, note: '', item_ids: [] });
             },
             removeTier(index) {
-                this.pricingTiers.splice(index, 1);
-                this.updateTotal();
+                const tier = this.pricingTiers[index];
+                const tierLabel = 'งวด ' + (index + 1) + (tier && tier.price ? ' (' + Number(tier.price).toLocaleString() + ' ฿)' : '');
+                const assigned = tier && tier.item_ids ? tier.item_ids.length : 0;
+                let warnHtml = '<div class="text-start">คุณต้องการลบ <strong>' + tierLabel + '</strong> ออกจากการตั้งค่าราคา ใช่หรือไม่?</div>';
+                if (assigned > 0) {
+                    warnHtml += '<div class="alert alert-warning small mt-3 mb-0 py-2 text-start"><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>' + assigned + ' คน</strong> จะถูกถอดออกจากงวดนี้ — ต้องไป assign ใหม่ภายหลัง</div>';
+                }
+                if (tier && tier.note && tier.note.trim()) {
+                    warnHtml += '<div class="text-muted small mt-2 text-start"><i class="bi bi-chat-quote me-1"></i>หมายเหตุที่มีอยู่: <em>"' + tier.note.substring(0, 60) + (tier.note.length > 60 ? '...' : '') + '"</em></div>';
+                }
+                Swal.fire({
+                    title: 'ลบงวดราคานี้?',
+                    html: warnHtml,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="bi bi-trash me-1"></i> ลบงวด',
+                    cancelButtonText: 'ยกเลิก',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+                    this.pricingTiers.splice(index, 1);
+                    this.updateTotal();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบ ' + tierLabel + ' แล้ว — อย่าลืมกด Save Pricing', showConfirmButton: false, timer: 2500 });
+                });
+            },
+            editTierNote(index) {
+                const tier = this.pricingTiers[index];
+                if (!tier) return;
+                const tierLabel = 'งวด ' + (index + 1) + (tier.price ? ' (' + Number(tier.price).toLocaleString() + ' ฿)' : '');
+                const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                Swal.fire({
+                    title: 'หมายเหตุ — ' + tierLabel,
+                    html: `
+                        <div class="text-muted small mb-3 text-start px-1">
+                            <i class="bi bi-info-circle me-1"></i>
+                            หมายเหตุนี้จะแสดงในใบแจ้งหนี้ / ใบเสร็จ ที่ออกตามงวดนี้ด้วย
+                        </div>
+                        <textarea id="swal-tier-note"
+                            class="swal2-textarea"
+                            placeholder='เช่น "งวดมัดจำ 50%", "งวดเปลี่ยนนายจ้าง - ค่าใช้จ่ายเฉพาะ"'
+                            maxlength="500"
+                            style="width: 100%; min-height: 180px; max-height: 360px; padding: 12px 14px; font-size: 0.95rem; line-height: 1.5; resize: vertical; box-sizing: border-box; margin: 0; display: block;">${escapeHtml(tier.note || '')}</textarea>
+                        <div class="d-flex justify-content-between small text-muted mt-2 px-1">
+                            <span><i class="bi bi-keyboard me-1"></i>กด Ctrl+Enter เพื่อบันทึก</span>
+                            <span><span id="swal-tier-note-count">0</span> / 500</span>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="bi bi-check-lg me-1"></i> บันทึก',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: true,
+                    width: '600px',
+                    focusConfirm: false,
+                    didOpen: () => {
+                        const ta = document.getElementById('swal-tier-note');
+                        const counter = document.getElementById('swal-tier-note-count');
+                        if (ta) {
+                            ta.focus();
+                            const setCount = () => { if (counter) counter.textContent = ta.value.length; };
+                            setCount();
+                            ta.addEventListener('input', setCount);
+                            ta.addEventListener('keydown', (e) => {
+                                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                                    e.preventDefault();
+                                    Swal.clickConfirm();
+                                }
+                            });
+                        }
+                    },
+                    preConfirm: () => {
+                        const ta = document.getElementById('swal-tier-note');
+                        return ta ? ta.value : '';
+                    }
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+                    const newNote = (result.value || '').trim();
+                    tier.note = newNote;
+                    // Trigger Alpine reactivity for in-place display refresh
+                    this.pricingTiers = [...this.pricingTiers];
+                    if (this.pricingTiers[index]) {
+                        this.pricingTiers[index].note = newNote;
+                    }
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'อัพเดตหมายเหตุแล้ว — อย่าลืมกด Save Pricing', showConfirmButton: false, timer: 2500 });
+                });
             },
             get tierCountSum() {
                 // Use item_ids.length for accurate count (including global invisible ones)

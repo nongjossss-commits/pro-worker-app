@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', __('Ticket Inbox') . ' (Admin/Staff)')
 @section('content')
+<x-help-button manual="ticket_inbox" title="{{ __('Ticket Inbox') }}" />
 <div class="content-section">
     @if ($message = Session::get('success'))
     <div class="alert alert-success mb-4" role="alert">

@@ -3,6 +3,7 @@
 @section('title', 'Pre-Production Dashboard')
 
 @section('content')
+<x-help-button manual="production" title="{{ __('P Production') }}" />
 @php
     $user = auth()->user();
     $isEmployer = $user->hasRole('employer');

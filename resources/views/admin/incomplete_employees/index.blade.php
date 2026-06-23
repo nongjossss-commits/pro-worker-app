@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<x-help-button manual="incomplete_data" title="{{ __('Incomplete Data') }}" />
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>

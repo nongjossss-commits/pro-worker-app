@@ -175,6 +175,16 @@ class SettingsController extends Controller
             ->with('success', __('Theme colors updated.'));
     }
 
+    /**
+     * Show all in-app user manuals on a single printable HTML page.
+     * The browser's "Print → Save as PDF" generates a branded training booklet
+     * with the installation's logo + theme color baked in.
+     */
+    public function manualBundle()
+    {
+        return view('manuals._bundle');
+    }
+
     public function resetBrandColors()
     {
         SuperAdminSetting::whereIn('key', [
@@ -463,6 +473,62 @@ class SettingsController extends Controller
             DB::rollBack();
             return redirect()->route('super-admin.settings.index', ['tab' => 'attachment-settings'])
                              ->with('error', 'Error swapping files: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Per-slot update: save one slot's default to SuperAdminSetting AND force-update
+     * every existing record's description column to match. Returns JSON for AJAX.
+     */
+    public function updateSingleAttachmentDescription(Request $request)
+    {
+        $request->validate([
+            'entity' => 'required|in:employer,employee',
+            'slot' => 'required|integer|min:1|max:10',
+            'value' => 'nullable|string|max:255',
+        ]);
+
+        $entity = $request->entity;
+        $slot = (int) $request->slot;
+        $value = trim((string) $request->input('value', ''));
+
+        // Cap slots by entity (employer = 3, employee = 10)
+        if ($entity === 'employer' && $slot > 3) {
+            return response()->json(['success' => false, 'message' => 'Employer has only 3 slots.'], 422);
+        }
+
+        $settingKey = $entity === 'employer'
+            ? "employer_other_{$slot}_desc"
+            : "employee_other_{$slot}_desc";
+
+        $dbColumn = $entity === 'employer'
+            ? "employer_doc_other_{$slot}_desc"
+            : "other_doc_{$slot}_desc";
+
+        DB::beginTransaction();
+        try {
+            // 1) Save default to SuperAdminSetting (drives auto-apply for future records)
+            SuperAdminSetting::updateOrCreate(['key' => $settingKey], ['value' => $value]);
+
+            // 2) Force-update every existing record to match
+            $affected = 0;
+            if ($entity === 'employer') {
+                $affected = Employer::query()->update([$dbColumn => $value !== '' ? $value : null]);
+            } else {
+                $affected = Employee::query()->update([$dbColumn => $value !== '' ? $value : null]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Slot {$slot} ของ" . ($entity === 'employer' ? 'นายจ้าง' : 'ลูกจ้าง') . " อัพเดตแล้ว ({$affected} records)",
+                'affected' => $affected,
+                'value' => $value,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

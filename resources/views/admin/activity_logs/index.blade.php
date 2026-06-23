@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<x-help-button manual="activity_logs" title="{{ __('Activity Logs') }}" />
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">

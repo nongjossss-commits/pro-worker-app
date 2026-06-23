@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<x-help-button manual="finance" title="{{ __('Finance') }}" />
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 text-gray-800">{{ __('Financial Hub') }}</h1>

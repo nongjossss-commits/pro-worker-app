@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<x-help-button manual="financial_profiles" title="{{ __('Financial Profiles') }}" />
 <div class="container-fluid" x-data="profileBuilder({{ Js::from($thaiBanks) }})">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-person-badge"></i> Financial Profiles Builder</h2>

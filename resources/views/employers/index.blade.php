@@ -3,6 +3,7 @@
 @section('title', __('Employer Data'))
 
 @section('content')
+<x-help-button manual="employers" title="{{ __('Employers') }}" />
 <div class="content-section">
     @if ($message = Session::get('success'))
         <div class="alert alert-success mb-4" role="alert">

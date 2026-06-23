@@ -34,6 +34,30 @@ class Employer extends Model
                 }
             }
         });
+
+        // Auto-apply default "employer_doc_other_N_desc" from SuperAdminSetting
+        // ONLY for slots not already set on this employer (preserve any explicit value).
+        // After creation, the description sticks — Super Admin must re-press the per-slot
+        // update button to re-apply changes to existing records.
+        static::creating(function ($employer) {
+            try {
+                $keys = [];
+                for ($i = 1; $i <= 3; $i++) {
+                    $keys[] = "employer_other_{$i}_desc";
+                }
+                $defaults = \App\Models\SuperAdminSetting::whereIn('key', $keys)
+                    ->pluck('value', 'key');
+                for ($i = 1; $i <= 3; $i++) {
+                    $col = "employer_doc_other_{$i}_desc";
+                    $key = "employer_other_{$i}_desc";
+                    if (empty($employer->{$col}) && !empty($defaults[$key])) {
+                        $employer->{$col} = $defaults[$key];
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Employer other_doc defaults autofill failed: ' . $e->getMessage());
+            }
+        });
     }
 
     protected $fillable = [

@@ -411,6 +411,24 @@ class WorkflowController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function updateMouImportType(Request $request, ProductionOrder $order)
+    {
+        if (!auth()->user()->can('manage-own-workflow')) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'mou_import_type' => 'nullable|in:return,new',
+        ]);
+
+        $order->update(['mou_import_type' => $validated['mou_import_type'] ?: null]);
+
+        return response()->json([
+            'success' => true,
+            'mou_import_type' => $order->mou_import_type,
+        ]);
+    }
+
     public function updateRemarks(Request $request, $itemId)
     {
         $request->validate(['remarks' => 'nullable|string']);
@@ -1481,6 +1499,7 @@ class WorkflowController extends Controller
                 'mou_nationality' => 'nullable|in:myanmar,laos,cambodia,vietnam',
                 'mou_male_count' => 'nullable|integer|min:0|max:9999',
                 'mou_female_count' => 'nullable|integer|min:0|max:9999',
+                'mou_import_type' => 'nullable|in:return,new',
             ]);
 
             $workType = WorkType::findOrFail($request->work_type_id);
@@ -1513,11 +1532,12 @@ class WorkflowController extends Controller
                     'created_by' => auth()->id()
                 ];
 
-                // MOU Import — บันทึก nationality + เป้าหมายจำนวนชาย/หญิงของ demand card
+                // MOU Import — บันทึก nationality + เป้าหมายจำนวนชาย/หญิง + ประเภท (return/new) ของ demand card
                 if ($isMouImport) {
                     $orderData['mou_nationality'] = $request->mou_nationality;
                     $orderData['mou_male_count'] = (int) ($request->mou_male_count ?? 0);
                     $orderData['mou_female_count'] = (int) ($request->mou_female_count ?? 0);
+                    $orderData['mou_import_type'] = $request->filled('mou_import_type') ? $request->mou_import_type : null;
                 }
 
                 $order = ProductionOrder::create($orderData);

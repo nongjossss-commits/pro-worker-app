@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', __('Submit Request/Track Work'))
 @section('content')
+<x-help-button manual="employer_ticket" title="{{ __('Employer Ticket') }}" />
 <div class="content-section">
     @if ($message = Session::get('success'))
     <div class="alert alert-success mb-4" role="alert">

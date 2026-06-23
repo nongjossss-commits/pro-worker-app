@@ -2,6 +2,7 @@
 @section('title', __('Notification List'))
 
 @section('content')
+<x-help-button manual="notifications" title="{{ __('Notifications') }}" />
 <div class="content-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">{{ __('Notification List') }}</h2>

@@ -78,7 +78,29 @@ class PdfTemplateController extends Controller
              $employers = $empQuery->orderBy('employerNameTh')->get();
         }
 
-        return view('pdf_templates.index', compact('templates', 'employers'));
+        // Quick Print: lightweight payload (id, name, type, field_mapping) for client-side field analysis
+        $quickPrintTemplates = collect($templates->items())->map(function ($t) {
+            return [
+                'id' => $t->id,
+                'name' => $t->name,
+                'type' => $t->type,
+                'employer_name' => optional($t->employer)->employerNameTh,
+                'field_mapping' => is_array($t->field_mapping) ? $t->field_mapping : [],
+            ];
+        })->values();
+
+        $quickPrintEmployers = Employer::select('id', 'employerNameTh', 'employerNameEn')->orderBy('employerNameTh')->get();
+        $quickPrintImporters = \App\Models\Importer::select('id', 'importerNameTh', 'importerNameEn')->orderBy('importerNameTh')->get();
+        $quickPrintDelegates = \App\Models\Delegate::select('id', 'delegateNameTh', 'delegateNameEn')->orderBy('delegateNameTh')->get();
+
+        return view('pdf_templates.index', compact(
+            'templates',
+            'employers',
+            'quickPrintTemplates',
+            'quickPrintEmployers',
+            'quickPrintImporters',
+            'quickPrintDelegates'
+        ));
     }
 
     public function listTemplates(Request $request)
@@ -127,12 +149,35 @@ class PdfTemplateController extends Controller
         // Admin can choose employer, Employer is fixed
         $employers = Employer::all(); // Should be optimized for large datasets
 
-        return view('pdf_templates.create', compact('employers'));
+        // Build list of cloneable templates respecting user scope
+        $user = Auth::user();
+        $cloneQuery = PdfTemplate::query();
+        if ($user->hasRole('employer')) {
+            $cloneQuery->where(function ($q) use ($user) {
+                $q->where('type', 'global')
+                  ->orWhere('employer_id', optional($user->employer)->id);
+            });
+        } elseif ($user->hasRole('caretaker')) {
+            $cloneQuery->where(function ($q) use ($user) {
+                $q->where('type', 'global')
+                  ->orWhereIn('employer_id', Employer::where('assigned_staff_id', $user->id)->pluck('id'));
+            });
+        }
+        $cloneTemplates = $cloneQuery->latest()
+            ->get(['id', 'name', 'type', 'employer_id', 'field_mapping', 'meta_data']);
+
+        return view('pdf_templates.create', compact('employers', 'cloneTemplates'));
     }
 
     public function store(Request $request, PdfGeneratorService $pdfService)
     {
         $this->authorize('create-pdf-templates');
+
+        $mode = $request->input('source_mode', 'upload');
+
+        if ($mode === 'clone') {
+            return $this->storeFromClone($request);
+        }
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -207,6 +252,66 @@ class PdfTemplateController extends Controller
 
         return redirect()->route('admin.pdf-templates.builder', $template)
             ->with('success', 'Template uploaded. Please configure fields.');
+    }
+
+    protected function storeFromClone(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'source_template_id' => 'required|exists:pdf_templates,id',
+            'type' => 'required|in:global,employer',
+            'employer_id' => 'required_if:type,employer|nullable|exists:employers,id',
+        ]);
+
+        $source = PdfTemplate::findOrFail($request->source_template_id);
+
+        // Scope check — same rules as create() cloneable list
+        $user = Auth::user();
+        $canUseSource = false;
+        if ($user->hasRole('super-admin') || $user->hasRole('admin') || $user->hasRole('staff')) {
+            $canUseSource = true;
+        } elseif ($user->hasRole('employer')) {
+            $canUseSource = $source->type === 'global'
+                || $source->employer_id === optional($user->employer)->id;
+        } elseif ($user->hasRole('caretaker')) {
+            $canUseSource = $source->type === 'global'
+                || ($source->employer_id && Employer::where('assigned_staff_id', $user->id)
+                    ->where('id', $source->employer_id)->exists());
+        }
+        if (!$canUseSource) {
+            return back()->withErrors(['source_template_id' => 'You do not have permission to clone this template.'])->withInput();
+        }
+
+        // Copy the PDF file to a new path so deleting source doesn't break clone
+        $sourcePath = $source->file_path;
+        if (!Storage::disk('public')->exists($sourcePath)) {
+            return back()->withErrors(['source_template_id' => 'Source template file is missing.'])->withInput();
+        }
+
+        $ext = pathinfo($sourcePath, PATHINFO_EXTENSION) ?: 'pdf';
+        $newFilename = 'pdf_templates/' . \Illuminate\Support\Str::random(40) . '.' . $ext;
+        Storage::disk('public')->copy($sourcePath, $newFilename);
+
+        // Copy meta_data; keep original_filename but mark as cloned
+        $newMeta = is_array($source->meta_data) ? $source->meta_data : [];
+        $newMeta['cloned_from_template_id'] = $source->id;
+        $newMeta['cloned_from_name'] = $source->name;
+        if (!isset($newMeta['auto_prefix_titles'])) {
+            $newMeta['auto_prefix_titles'] = false;
+        }
+
+        $template = PdfTemplate::create([
+            'name' => $request->name,
+            'file_path' => $newFilename,
+            'type' => $request->type,
+            'employer_id' => $request->type === 'employer' ? $request->employer_id : null,
+            'created_by' => Auth::id(),
+            'field_mapping' => is_array($source->field_mapping) ? $source->field_mapping : [],
+            'meta_data' => $newMeta,
+        ]);
+
+        return redirect()->route('admin.pdf-templates.builder', $template)
+            ->with('success', 'Template cloned successfully. Adjust fields as needed.');
     }
 
     public function builder(PdfTemplate $pdf_template)

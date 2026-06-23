@@ -44,6 +44,29 @@ class Employee extends Model
         // a flash-back depending on the request type.
         static::creating(function ($employee) {
             \App\Services\EmployeeQuotaService::ensureCanCreate();
+
+            // Auto-apply default "other_doc_N_desc" from SuperAdminSetting
+            // ONLY for slots not already set on this employee (preserve any explicit value).
+            // After creation, the description sticks — Super Admin must re-press the per-slot
+            // update button to re-apply changes to existing records.
+            try {
+                $keys = [];
+                for ($i = 1; $i <= 10; $i++) {
+                    $keys[] = "employee_other_{$i}_desc";
+                }
+                $defaults = \App\Models\SuperAdminSetting::whereIn('key', $keys)
+                    ->pluck('value', 'key');
+                for ($i = 1; $i <= 10; $i++) {
+                    $col = "other_doc_{$i}_desc";
+                    $key = "employee_other_{$i}_desc";
+                    if (empty($employee->{$col}) && !empty($defaults[$key])) {
+                        $employee->{$col} = $defaults[$key];
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Never block creation if defaults lookup fails
+                \Log::warning('Employee other_doc defaults autofill failed: ' . $e->getMessage());
+            }
         });
 
         // Restore-from-trash also adds to the active count, but `creating`

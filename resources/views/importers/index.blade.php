@@ -3,6 +3,7 @@
 @section('title', __('Importers'))
 
 @section('content')
+<x-help-button manual="importers" title="{{ __('Importers') }}" />
 <div class="content-section">
     @if ($message = Session::get('success'))
         <div class="alert alert-success mb-4" role="alert">

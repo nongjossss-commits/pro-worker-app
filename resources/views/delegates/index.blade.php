@@ -3,6 +3,7 @@
 @section('title', 'Delegates List')
 
 @section('content')
+<x-help-button manual="delegates" title="{{ __('Delegates') }}" />
 <div class="container">
     <div class="row">
         <div class="col-md-12">

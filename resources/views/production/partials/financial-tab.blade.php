@@ -72,35 +72,48 @@ class="row">
     <!-- TAB NAVIGATION -->
     <div class="col-12 mb-3">
         <div class="d-flex align-items-center justify-content-between border-bottom pb-2">
-            <ul class="nav nav-tabs border-0" id="financialTabs" role="tablist">
+            <ul class="nav nav-tabs border-0 flex-wrap" id="financialTabs" role="tablist">
                 <template x-for="(group, index) in financialGroups" :key="group.id">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link"
+                    <li class="nav-item d-flex align-items-stretch" role="presentation">
+                        {{-- Tab switch button --}}
+                        <button class="nav-link pe-2"
                                 :class="{ 'active fw-bold': activeGroupId === group.id }"
                                 @click="switchGroup(group.id)"
                                 type="button"
-                                role="tab">
-                            <span x-text="group.name"></span>
-                            <!-- Edit Name Button (Mini) -->
-                            <i class="bi bi-pencil-square ms-2 text-muted small"
-                               @click.stop="renameGroup(group.id, group.name)"
-                               title="{{ __('Rename Tab') }}"
-                               style="font-size: 0.8rem; cursor: pointer;"></i>
-                            <!-- Delete Tab Button (Only for 2nd tab onwards) -->
-                             <i class="bi bi-x-circle-fill ms-1 text-danger small"
-                                x-show="index > 0"
-                                @click.stop="deleteGroup(group.id)"
-                                title="{{ __('Delete Tab') }}"
-                                style="font-size: 0.8rem; cursor: pointer;"></i>
+                                role="tab"
+                                @dblclick.prevent="renameGroup(group.id, group.name)">
+                            <span x-text="group.name || '{{ __('Untitled') }}'"></span>
                         </button>
+                        {{-- Inline action toolbar (sibling of tab button — reliable click, not nested) --}}
+                        <div class="d-flex align-items-center gap-1 ps-1 pe-2"
+                             :style="activeGroupId === group.id ? '' : 'border-bottom: 1px solid #dee2e6;'">
+                            <button type="button"
+                                    class="btn btn-link btn-sm p-1 text-muted"
+                                    @click.prevent="renameGroup(group.id, group.name)"
+                                    :title="'{{ __('Rename Tab') }}'"
+                                    style="line-height: 1;">
+                                <i class="bi bi-pencil-square" style="font-size: 0.85rem;"></i>
+                            </button>
+                            <button type="button"
+                                    class="btn btn-link btn-sm p-1 text-danger"
+                                    x-show="index > 0"
+                                    @click.prevent="deleteGroup(group.id)"
+                                    :title="'{{ __('Delete Tab') }}'"
+                                    style="line-height: 1;">
+                                <i class="bi bi-x-circle-fill" style="font-size: 0.85rem;"></i>
+                            </button>
+                        </div>
                     </li>
                 </template>
-                <li class="nav-item ms-2">
-                    <button class="btn btn-sm btn-outline-success border-0" @click="addNewGroup()">
-                        <i class="bi bi-plus-circle-fill"></i> {{ __('Add Tab') }}
+                <li class="nav-item ms-2 align-self-center">
+                    <button class="btn btn-sm btn-outline-success" @click="addNewGroup()">
+                        <i class="bi bi-plus-circle-fill me-1"></i>{{ __('Add Tab') }}
                     </button>
                 </li>
             </ul>
+        </div>
+        <div class="small text-muted mt-1 ps-1" style="font-size: 0.75rem;">
+            <i class="bi bi-info-circle me-1"></i>{{ __('คลิกที่ไอคอน ดินสอ เพื่อตั้งชื่อแท็บ (เช่น "ค่ามัดจำ", "ค่าวีซ่า", "งวดเปลี่ยนนายจ้าง") — หรือดับเบิ้ลคลิกที่ชื่อแท็บก็ได้') }}
         </div>
     </div>
 
@@ -145,10 +158,10 @@ class="row">
                         <table class="table table-sm table-borderless mb-0">
                             <thead>
                                 <tr class="text-muted small">
-                                    <th>{{ __('Price (฿)') }}</th>
+                                    <th style="width: 120px;">{{ __('Price (฿)') }}</th>
                                     <th style="width: 120px;">{{ __('Assigned') }}</th>
-                                    <th>{{ __('Note') }}</th>
-                                    <th style="width: 30px;"></th>
+                                    <th>{{ __('Note') }} <i class="bi bi-info-circle text-muted" title="{{ __('หมายเหตุจะแสดงในใบแจ้งหนี้/ใบเสร็จด้วย') }}" style="font-size: 0.7rem;"></i></th>
+                                    <th style="width: 50px;" class="text-center">{{ __('Del') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -169,10 +182,35 @@ class="row">
                                                 </button>
                                             </div>
                                         </td>
-                                        <td><input type="text" class="form-control form-control-sm" x-model="tier.note" placeholder="Opt."></td>
+                                        <td class="align-middle">
+                                            {{-- Wrapped, always-visible note display + click pencil to edit in popup --}}
+                                            <div class="d-flex align-items-stretch gap-2">
+                                                <div class="flex-grow-1 small bg-white border rounded px-2 py-1"
+                                                     style="word-break: break-word; white-space: pre-wrap; min-height: 38px; max-height: 96px; overflow-y: auto; cursor: pointer;"
+                                                     @click="editTierNote(index)"
+                                                     :title="'{{ __('คลิกเพื่อแก้ไขหมายเหตุ') }}'">
+                                                    <template x-if="tier.note && tier.note.trim()">
+                                                        <span x-text="tier.note"></span>
+                                                    </template>
+                                                    <template x-if="!tier.note || !tier.note.trim()">
+                                                        <span class="text-muted fst-italic">{{ __('— คลิกเพื่อเพิ่มหมายเหตุ —') }}</span>
+                                                    </template>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                                                        @click.stop="editTierNote(index)"
+                                                        :title="'{{ __('แก้ไขหมายเหตุ') }}'"
+                                                        style="width: 38px; min-height: 38px; padding: 0;">
+                                                    <i class="bi bi-pencil-square" style="font-size: 1rem;"></i>
+                                                </button>
+                                            </div>
+                                        </td>
                                         <td class="text-center align-middle">
-                                            <button class="btn btn-sm btn-link text-danger p-0" @click="removeTier(index)">
-                                                <i class="bi bi-x-circle"></i>
+                                            <button type="button"
+                                                    class="btn btn-outline-danger d-inline-flex align-items-center justify-content-center"
+                                                    @click="removeTier(index)"
+                                                    :title="'{{ __('ลบงวดราคานี้') }}'"
+                                                    style="width: 38px; height: 38px; padding: 0;">
+                                                <i class="bi bi-trash" style="font-size: 1rem;"></i>
                                             </button>
                                         </td>
                                     </tr>

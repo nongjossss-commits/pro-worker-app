@@ -3,6 +3,7 @@
 @section('title', 'Workflow Dashboard')
 
 @section('content')
+<x-help-button manual="workflow" title="{{ __('Workflow') }}" />
 @php
     $user = auth()->user();
     $isEmployer = $user->hasRole('employer');
@@ -335,9 +336,23 @@
                  $computed = $order->computedStats ?? ['total'=>0, 'not_started'=>0, 'cancelled'=>0, 'completed'=>0, 'step_stats'=>[]];
                  $stepStats = $computed['step_stats'];
                  $isActive = ($computed['active_items_count'] ?? 0) > 0;
+
+                 // MOU import type → border color (Return=green, New=blue, Unspecified=orange)
+                 $isMouCard = isset($activeTab) && in_array($activeTab->slug, ['mou', 'mou_import']);
+                 $mouBorderColor = null;
+                 if ($isMouCard) {
+                     if ($order->mou_import_type === 'return') {
+                         $mouBorderColor = '#10b981'; // green
+                     } elseif ($order->mou_import_type === 'new') {
+                         $mouBorderColor = '#3b82f6'; // blue
+                     } else {
+                         $mouBorderColor = '#f59e0b'; // orange = pending classification
+                     }
+                 }
             @endphp
             <div class="production-order-card-container w-100 mb-4">
-                <div class="card border-0 shadow-sm production-order-card position-relative {{ !$isActive ? 'grayscale-mode' : '' }}">
+                <div class="card border-0 shadow-sm production-order-card position-relative {{ !$isActive ? 'grayscale-mode' : '' }}"
+                     @if($mouBorderColor) style="border-left: 5px solid {{ $mouBorderColor }} !important;" @endif>
                 <div class="employer-sequence-number"></div>
                     <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
@@ -435,27 +450,50 @@
                                         <div class="text-muted small fw-bold">{{ $order->employer->employerNameEn }}</div>
                                     @endif
 
-                                    {{-- MOU Import demand card info: สัญชาติ + เป้าหมายจำนวนคน --}}
-                                    @if($order->mou_nationality)
-                                        @php
-                                            $natFlags = ['myanmar' => '🇲🇲', 'laos' => '🇱🇦', 'cambodia' => '🇰🇭', 'vietnam' => '🇻🇳'];
-                                            $natLabels = ['myanmar' => __('Myanmar'), 'laos' => __('Laos'), 'cambodia' => __('Cambodia'), 'vietnam' => __('Vietnam')];
-                                            $male = (int) ($order->mou_male_count ?? 0);
-                                            $female = (int) ($order->mou_female_count ?? 0);
-                                            $total = $male + $female;
-                                        @endphp
-                                        <div class="d-flex flex-wrap gap-1 mt-1">
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
-                                                {{ $natFlags[$order->mou_nationality] ?? '' }} {{ $natLabels[$order->mou_nationality] ?? $order->mou_nationality }}
-                                            </span>
-                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
-                                                <i class="bi bi-people-fill me-1"></i>{{ __('Total') }}: {{ $total }}
-                                            </span>
-                                            @if($male > 0)
-                                                <span class="badge bg-light text-dark border">{{ __('Male') }}: {{ $male }}</span>
-                                            @endif
-                                            @if($female > 0)
-                                                <span class="badge bg-light text-dark border">{{ __('Female') }}: {{ $female }}</span>
+                                    {{-- MOU Import demand card info: subtype + สัญชาติ + เป้าหมายจำนวนคน --}}
+                                    @if($isMouCard)
+                                        <div class="d-flex flex-wrap gap-1 mt-1 align-items-center"
+                                             x-data="mouImportTypePicker({
+                                                 orderId: {{ $order->id }},
+                                                 initial: {{ json_encode($order->mou_import_type) }}
+                                             })">
+                                            {{-- Subtype Badge + click to edit --}}
+                                            <template x-if="value === 'return'">
+                                                <button type="button" class="badge bg-success border-0 d-inline-flex align-items-center gap-1" @click="openPicker()" style="cursor: pointer;" :title="'{{ __('Click to change') }}'">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> {{ __('Return') }}
+                                                </button>
+                                            </template>
+                                            <template x-if="value === 'new'">
+                                                <button type="button" class="badge bg-primary border-0 d-inline-flex align-items-center gap-1" @click="openPicker()" style="cursor: pointer;" :title="'{{ __('Click to change') }}'">
+                                                    <i class="bi bi-airplane"></i> {{ __('New from Origin') }}
+                                                </button>
+                                            </template>
+                                            <template x-if="!value">
+                                                <button type="button" class="badge bg-warning text-dark border-0 d-inline-flex align-items-center gap-1" @click="openPicker()" style="cursor: pointer;" :title="'{{ __('Click to classify') }}'">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> {{ __('Pending Classification') }}
+                                                </button>
+                                            </template>
+
+                                            @if($order->mou_nationality)
+                                                @php
+                                                    $natFlags = ['myanmar' => '🇲🇲', 'laos' => '🇱🇦', 'cambodia' => '🇰🇭', 'vietnam' => '🇻🇳'];
+                                                    $natLabels = ['myanmar' => __('Myanmar'), 'laos' => __('Laos'), 'cambodia' => __('Cambodia'), 'vietnam' => __('Vietnam')];
+                                                    $male = (int) ($order->mou_male_count ?? 0);
+                                                    $female = (int) ($order->mou_female_count ?? 0);
+                                                    $total = $male + $female;
+                                                @endphp
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                                    {{ $natFlags[$order->mou_nationality] ?? '' }} {{ $natLabels[$order->mou_nationality] ?? $order->mou_nationality }}
+                                                </span>
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                                                    <i class="bi bi-people-fill me-1"></i>{{ __('Total') }}: {{ $total }}
+                                                </span>
+                                                @if($male > 0)
+                                                    <span class="badge bg-light text-dark border">{{ __('Male') }}: {{ $male }}</span>
+                                                @endif
+                                                @if($female > 0)
+                                                    <span class="badge bg-light text-dark border">{{ __('Female') }}: {{ $female }}</span>
+                                                @endif
                                             @endif
                                         </div>
                                     @endif
@@ -751,6 +789,62 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
+    // MOU import type inline picker — click badge to change classification
+    Alpine.data('mouImportTypePicker', ({ orderId, initial }) => ({
+        value: initial || null,
+        saving: false,
+        openPicker() {
+            if (this.saving) return;
+            const labels = {
+                'return': '🔄 Return (ลูกจ้างอยู่ในไทยแล้ว)',
+                'new': '✈️ New from Origin (คนใหม่จากต้นทาง)',
+                '': '⚠️ ยังไม่ระบุ'
+            };
+            const current = this.value || '';
+            Swal.fire({
+                title: '{{ __("ประเภท MOU นำเข้า") }}',
+                input: 'radio',
+                inputValue: current,
+                inputOptions: {
+                    'return': labels.return,
+                    'new': labels.new,
+                    '': labels['']
+                },
+                showCancelButton: true,
+                confirmButtonText: '{{ __("Save") }}',
+                cancelButtonText: '{{ __("Cancel") }}',
+                confirmButtonColor: '#3b82f6',
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+                const newVal = result.value === '' ? null : result.value;
+                if (newVal === this.value) return;
+                this.saving = true;
+                fetch('{{ url("workflow/order") }}/' + orderId + '/mou-import-type', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ mou_import_type: newVal || '' })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        this.value = data.mou_import_type;
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '{{ __("Updated") }}', showConfirmButton: false, timer: 1500 });
+                        // Reload to update the card border color
+                        setTimeout(() => window.location.reload(), 600);
+                    } else {
+                        Swal.fire('Error', data.message || 'Failed', 'error');
+                    }
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'))
+                .finally(() => { this.saving = false; });
+            });
+        }
+    }));
+
     Alpine.data('workflowAutoSettings', ({ tabs, mouOptions, settings, saveUrl, csrf }) => ({
         tabs, mouOptions, settings, saveUrl, csrf,
         selectedTabId: '',

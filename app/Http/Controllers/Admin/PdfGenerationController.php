@@ -74,6 +74,45 @@ class PdfGenerationController extends Controller
         ]);
     }
 
+    /**
+     * Quick print for templates that don't require employee data.
+     * Accepts optional target_employer_id / target_importer_id / target_delegate_id.
+     */
+    public function quickPrint(Request $request, PdfTemplate $pdf_template)
+    {
+        $this->authorize('view-pdf-templates');
+
+        $request->validate([
+            'target_employer_id' => 'nullable|exists:employers,id',
+            'target_importer_id' => 'nullable|exists:importers,id',
+            'target_delegate_id' => 'nullable|exists:delegates,id',
+            'mode' => 'nullable|in:preview,download',
+        ]);
+
+        $targetEmployer = $request->target_employer_id ? Employer::find($request->target_employer_id) : null;
+        $targetImporter = $request->target_importer_id ? \App\Models\Importer::find($request->target_importer_id) : null;
+        $targetDelegate = $request->target_delegate_id ? \App\Models\Delegate::find($request->target_delegate_id) : null;
+
+        try {
+            $content = $this->pdfService->generateForOfficeUse($pdf_template, $targetEmployer, $targetImporter, $targetDelegate);
+        } catch (\Throwable $e) {
+            \Log::error('QuickPrint PDF Error: ' . $e->getMessage());
+            return redirect()->back()->with('danger', 'Quick print failed: ' . $e->getMessage());
+        }
+
+        $base = $pdf_template->meta_data['original_filename'] ?? ($pdf_template->name . '.pdf');
+        if (!Str::endsWith($base, '.pdf')) $base .= '.pdf';
+        $filename = 'quickprint_' . $base;
+
+        $mode = $request->input('mode', 'preview');
+        $disposition = $mode === 'download' ? 'attachment' : 'inline';
+
+        return response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
+        ]);
+    }
+
     public function process(Request $request)
     {
         $this->authorize('view-pdf-templates');

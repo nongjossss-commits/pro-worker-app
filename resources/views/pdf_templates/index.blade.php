@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<x-help-button manual="pdf_templates" title="{{ __('PDF Templates') }}" />
 <div class="container-fluid py-4" x-data="witnessManager()">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-2xl font-bold text-gray-800">PDF Templates</h2>
@@ -227,7 +228,7 @@
 
     <!-- Quick Print Modal -->
     <div class="modal fade" id="quickPrintModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg" x-data="quickPrintManager()">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title"><i class="bi bi-printer me-2"></i>พิมพ์เอกสาร (Quick Print)</h5>
@@ -235,26 +236,126 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">เลือก Template <span class="text-danger">*</span></label>
-                        <select class="form-select" id="quickPrintTemplateId">
+                        <label class="form-label fw-bold">1. เลือก Template <span class="text-danger">*</span></label>
+                        <select class="form-select" x-model="selectedId" @change="onTemplateChange()">
                             <option value="">-- เลือก Template --</option>
-                            @foreach($templates as $tpl)
-                                <option value="{{ $tpl->id }}">{{ $tpl->name }} ({{ $tpl->type === 'global' ? 'Global' : optional($tpl->employer)->employerNameTh }})</option>
-                            @endforeach
+                            <template x-for="t in templates" :key="t.id">
+                                <option :value="t.id" x-text="t.name + ' (' + (t.type === 'global' ? 'Global' : (t.employer_name || 'Employer')) + ')'"></option>
+                            </template>
                         </select>
                     </div>
-                    <div class="alert alert-info py-2 small">
-                        <i class="bi bi-info-circle me-1"></i> สำหรับพิมพ์เอกสารที่ไม่ต้องใช้ข้อมูลลูกจ้าง เช่น แบบฟอร์มเปล่า, เอกสารบริษัท เป็นต้น
+
+                    {{-- Field analysis --}}
+                    <div x-show="selectedId" x-transition style="display: none;">
+                        <div class="card border-0 bg-light mb-3">
+                            <div class="card-body py-2 px-3">
+                                <div class="small fw-bold text-muted mb-1">
+                                    <i class="bi bi-diagram-3 me-1"></i> ข้อมูลที่ template นี้ต้องใช้
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="badge bg-warning text-dark" x-show="analysis.employee.count > 0" style="display: none;">
+                                        <i class="bi bi-person-fill me-1"></i> ลูกจ้าง: <span x-text="analysis.employee.count"></span> ช่อง
+                                    </span>
+                                    <span class="badge bg-primary" x-show="analysis.employer.count > 0" style="display: none;">
+                                        <i class="bi bi-building me-1"></i> นายจ้าง: <span x-text="analysis.employer.count"></span> ช่อง
+                                    </span>
+                                    <span class="badge bg-info" x-show="analysis.delegate.count > 0" style="display: none;">
+                                        <i class="bi bi-person-badge me-1"></i> ผู้รับมอบอำนาจ: <span x-text="analysis.delegate.count"></span> ช่อง
+                                    </span>
+                                    <span class="badge bg-success" x-show="analysis.importer.count > 0" style="display: none;">
+                                        <i class="bi bi-box-seam me-1"></i> บริษัทนำเข้า: <span x-text="analysis.importer.count"></span> ช่อง
+                                    </span>
+                                    <span class="badge bg-secondary" x-show="analysis.witness.count > 0" style="display: none;">
+                                        <i class="bi bi-people me-1"></i> พยาน: <span x-text="analysis.witness.count"></span> ช่อง
+                                    </span>
+                                    <span class="badge bg-light text-dark border" x-show="analysis.static.count > 0" style="display: none;">
+                                        <i class="bi bi-type me-1"></i> ข้อความคงที่: <span x-text="analysis.static.count"></span> ช่อง
+                                    </span>
+                                    <span class="badge bg-light text-dark border" x-show="!analysis.employee.count && !analysis.employer.count && !analysis.delegate.count && !analysis.importer.count && !analysis.witness.count && !analysis.static.count">
+                                        — ไม่มีฟิลด์ตั้งค่าใน template นี้ —
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Warning: needs employee data --}}
+                        <div class="alert alert-warning py-2" x-show="analysis.employee.count > 0" style="display: none;">
+                            <div class="d-flex">
+                                <div class="me-2"><i class="bi bi-exclamation-triangle-fill fs-5"></i></div>
+                                <div class="flex-grow-1 small">
+                                    <div class="fw-bold mb-1">Template นี้มีช่องข้อมูลลูกจ้าง</div>
+                                    <div class="mb-2">ไม่สามารถพิมพ์เปล่าได้ — ต้องเลือกลูกจ้างก่อน เพื่อให้ระบบเติมข้อมูลจริง</div>
+                                    <div class="small text-muted mb-1">ช่องลูกจ้างที่จะเติม:</div>
+                                    <ul class="small mb-0 ps-3" style="max-height: 120px; overflow-y: auto;">
+                                        <template x-for="key in analysis.employee.keys" :key="key">
+                                            <li x-text="key"></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="text-end mt-2">
+                                <a href="{{ route('employees.index') }}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-people me-1"></i> ไปเลือกลูกจ้าง
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- Target selectors (only when no employee data needed) --}}
+                        <div x-show="!analysis.employee.count" style="display: none;">
+                            <div class="mb-3" x-show="analysis.employer.count > 0" style="display: none;">
+                                <label class="form-label">2. เลือกนายจ้าง (Target Employer)</label>
+                                <select class="form-select" x-model="targetEmployerId">
+                                    <option value="">-- เว้นว่าง --</option>
+                                    @foreach($quickPrintEmployers ?? [] as $e)
+                                        <option value="{{ $e->id }}">{{ $e->employerNameTh }} ({{ $e->employerNameEn }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-3" x-show="analysis.delegate.count > 0" style="display: none;">
+                                <label class="form-label">เลือกผู้รับมอบอำนาจ (Delegate)</label>
+                                <select class="form-select" x-model="targetDelegateId">
+                                    <option value="">-- เว้นว่าง --</option>
+                                    @foreach($quickPrintDelegates ?? [] as $d)
+                                        <option value="{{ $d->id }}">{{ $d->delegateNameTh }} ({{ $d->delegateNameEn }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-3" x-show="analysis.importer.count > 0" style="display: none;">
+                                <label class="form-label">เลือกบริษัทนำเข้า (Importer)</label>
+                                <select class="form-select" x-model="targetImporterId">
+                                    <option value="">-- เว้นว่าง --</option>
+                                    @foreach($quickPrintImporters ?? [] as $i)
+                                        <option value="{{ $i->id }}">{{ $i->importerNameTh }} ({{ $i->importerNameEn }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="alert alert-info py-2 small mb-0">
+                                <i class="bi bi-info-circle me-1"></i> Template นี้ไม่ต้องใช้ข้อมูลลูกจ้าง สามารถเลือกข้อมูลที่จะเติม (ถ้ามี) แล้วกดพิมพ์ได้เลย
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Initial hint --}}
+                    <div class="alert alert-secondary py-2 small mb-0" x-show="!selectedId">
+                        <i class="bi bi-info-circle me-1"></i> เลือก template เพื่อดูว่าต้องใช้ข้อมูลอะไรบ้าง
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <a href="#" id="quickPrintDownloadBtn" class="btn btn-outline-primary" target="_blank" onclick="return quickPrintAction('download')">
-                        <i class="bi bi-download me-1"></i> ดาวน์โหลด
-                    </a>
-                    <a href="#" id="quickPrintPreviewBtn" class="btn btn-success" target="_blank" onclick="return quickPrintAction('preview')">
+                    <button type="button"
+                            class="btn btn-outline-primary"
+                            :disabled="!canPrint"
+                            @click="doPrint('download')"
+                            x-show="selectedId && !analysis.employee.count" style="display: none;">
+                        <i class="bi bi-download me-1"></i> ดาวน์โหลด PDF
+                    </button>
+                    <button type="button"
+                            class="btn btn-success"
+                            :disabled="!canPrint"
+                            @click="doPrint('preview')"
+                            x-show="selectedId && !analysis.employee.count" style="display: none;">
                         <i class="bi bi-printer me-1"></i> พิมพ์ / Preview
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -501,23 +602,112 @@
         }));
     });
 
-    function quickPrintAction(mode) {
-        const templateId = document.getElementById('quickPrintTemplateId').value;
-        if (!templateId) {
-            Swal.fire('Warning', 'กรุณาเลือก Template ก่อน', 'warning');
-            return false;
-        }
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('quickPrintManager', () => ({
+            templates: @json($quickPrintTemplates ?? collect()),
+            selectedId: '',
+            targetEmployerId: '',
+            targetDelegateId: '',
+            targetImporterId: '',
+            analysis: {
+                employee: { count: 0, keys: [] },
+                employer: { count: 0, keys: [] },
+                delegate: { count: 0, keys: [] },
+                importer: { count: 0, keys: [] },
+                witness: { count: 0, keys: [] },
+                static: { count: 0, keys: [] },
+            },
 
-        let url;
-        if (mode === 'preview') {
-            url = '/admin/pdf-templates/' + templateId + '/preview';
-        } else {
-            url = '/admin/pdf-templates/' + templateId + '/file?download=1';
-        }
+            get canPrint() {
+                return this.selectedId && !this.analysis.employee.count;
+            },
 
-        window.open(url, '_blank');
-        return false;
-    }
+            classifyKey(key) {
+                if (!key) return 'employee';
+                if (key.startsWith('employer.')) return 'employer';
+                if (key.startsWith('importer.')) return 'importer';
+                if (key.startsWith('delegate.')) return 'delegate';
+                if (key.startsWith('witness_')) return 'witness';
+                return 'employee';
+            },
+
+            classifySignatureGroup(group) {
+                if (!group) return 'employee';
+                if (group === 'employer' || group === 'employer_2' || group === 'employer_stamp') return 'employer';
+                if (group === 'delegate') return 'delegate';
+                if (group === 'importer_1' || group === 'importer_2' || group === 'importer_stamp') return 'importer';
+                if (group.startsWith('witness_')) return 'witness';
+                return 'employee';
+            },
+
+            onTemplateChange() {
+                this.targetEmployerId = '';
+                this.targetDelegateId = '';
+                this.targetImporterId = '';
+                this.analyzeFields();
+            },
+
+            analyzeFields() {
+                const reset = () => ({
+                    employee: { count: 0, keys: [] },
+                    employer: { count: 0, keys: [] },
+                    delegate: { count: 0, keys: [] },
+                    importer: { count: 0, keys: [] },
+                    witness: { count: 0, keys: [] },
+                    static: { count: 0, keys: [] },
+                });
+                this.analysis = reset();
+                if (!this.selectedId) return;
+
+                const t = this.templates.find(x => x.id == this.selectedId);
+                if (!t || !Array.isArray(t.field_mapping)) return;
+
+                const seen = { employee: new Set(), employer: new Set(), delegate: new Set(), importer: new Set(), witness: new Set(), static: new Set() };
+
+                t.field_mapping.forEach(item => {
+                    if (!item || !item.type) return;
+                    if (item.type === 'static') {
+                        const label = item.text ? ('"' + item.text.substring(0, 30) + '"') : 'static';
+                        if (!seen.static.has(label)) {
+                            seen.static.add(label);
+                            this.analysis.static.keys.push(label);
+                            this.analysis.static.count++;
+                        }
+                        return;
+                    }
+                    if (item.type === 'db' && item.key) {
+                        const group = this.classifyKey(item.key);
+                        if (!seen[group].has(item.key)) {
+                            seen[group].add(item.key);
+                            this.analysis[group].keys.push(item.key);
+                            this.analysis[group].count++;
+                        }
+                        return;
+                    }
+                    if (item.type === 'signature' || item.type === 'stamp') {
+                        const group = this.classifySignatureGroup(item.signatureGroup || (item.type === 'stamp' ? 'employer_stamp' : 'employee'));
+                        const label = '[' + (item.signatureGroup || item.type) + ']';
+                        if (!seen[group].has(label)) {
+                            seen[group].add(label);
+                            this.analysis[group].keys.push(label);
+                            this.analysis[group].count++;
+                        }
+                    }
+                });
+            },
+
+            doPrint(mode) {
+                if (!this.canPrint) return;
+                const params = new URLSearchParams();
+                if (this.targetEmployerId) params.append('target_employer_id', this.targetEmployerId);
+                if (this.targetDelegateId) params.append('target_delegate_id', this.targetDelegateId);
+                if (this.targetImporterId) params.append('target_importer_id', this.targetImporterId);
+                params.append('mode', mode);
+                const url = '/admin/pdf-templates/' + this.selectedId + '/quick-print?' + params.toString();
+                window.open(url, '_blank');
+            }
+        }));
+    });
 
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.btn-submit-swal').forEach(button => {

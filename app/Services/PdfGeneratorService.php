@@ -300,6 +300,303 @@ class PdfGeneratorService
         return $content;
     }
 
+    /**
+     * Quick-print generator for templates that don't require employee data.
+     * Renders real values for employer/importer/delegate/witness/static fields,
+     * leaves employee-specific fields blank, draws signatures for groups that have data.
+     */
+    public function generateForOfficeUse(PdfTemplate $template, ?Employer $targetEmployer = null, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
+    {
+        $pdf = new Fpdi();
+
+        $reflection = new \ReflectionClass($pdf);
+        if ($reflection->hasProperty('fontpath')) {
+            $property = $reflection->getProperty('fontpath');
+            $property->setAccessible(true);
+            $property->setValue($pdf, public_path('fonts') . DIRECTORY_SEPARATOR);
+        }
+
+        $templatePath = Storage::disk('public')->path($template->file_path);
+
+        $fontLoaded = false;
+        if (file_exists($this->fontPath)) {
+            $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
+            $pdf->SetFont('THSarabunNew', '', 14);
+            $fontLoaded = true;
+        } else {
+            $pdf->SetFont('Arial', '', 12);
+        }
+
+        try {
+            $pageCount = $pdf->setSourceFile($templatePath);
+        } catch (\Exception $e) {
+            try {
+                $normalizedPath = $this->tryNormalizePdf($templatePath);
+                if ($normalizedPath) {
+                    $pageCount = $pdf->setSourceFile($normalizedPath);
+                    $this->tempFiles[] = $normalizedPath;
+                } else {
+                    throw $e;
+                }
+            } catch (\Exception $ex) {
+                throw new \Exception('Failed to process PDF template: ' . $e->getMessage());
+            }
+        }
+
+        // Signature paths (employee skipped intentionally)
+        $emprSig1Path = null;
+        $emprSig2Path = null;
+        $emprStampPath = null;
+        $delegateSigPath = null;
+        $importerSig1Path = null;
+        $importerSig2Path = null;
+        $importerStampPath = null;
+        $tempSigPaths = [];
+
+        if ($targetEmployer) {
+            if ($targetEmployer->signature_1_path && Storage::disk('public')->exists($targetEmployer->signature_1_path)) {
+                $emprSig1Path = Storage::disk('public')->path($targetEmployer->signature_1_path);
+            }
+            if ($targetEmployer->signature_2_path && Storage::disk('public')->exists($targetEmployer->signature_2_path)) {
+                $emprSig2Path = Storage::disk('public')->path($targetEmployer->signature_2_path);
+            }
+            if ($targetEmployer->employer_stamp_path && Storage::disk('public')->exists($targetEmployer->employer_stamp_path)) {
+                $emprStampPath = Storage::disk('public')->path($targetEmployer->employer_stamp_path);
+            }
+        }
+
+        if ($targetDelegate && $targetDelegate->signature_path && Storage::disk('public')->exists($targetDelegate->signature_path)) {
+            $delegateSigPath = Storage::disk('public')->path($targetDelegate->signature_path);
+        }
+
+        if ($targetImporter) {
+            if ($targetImporter->signature_1_path && Storage::disk('public')->exists($targetImporter->signature_1_path)) {
+                $importerSig1Path = Storage::disk('public')->path($targetImporter->signature_1_path);
+            }
+            if ($targetImporter->signature_2_path && Storage::disk('public')->exists($targetImporter->signature_2_path)) {
+                $importerSig2Path = Storage::disk('public')->path($targetImporter->signature_2_path);
+            }
+            if ($targetImporter->importer_stamp_path && Storage::disk('public')->exists($targetImporter->importer_stamp_path)) {
+                $importerStampPath = Storage::disk('public')->path($targetImporter->importer_stamp_path);
+            }
+        }
+
+        // Witness signatures: only use real ones, do NOT auto-generate randoms (office use)
+        $witnessSigPaths = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $alias = "witness_{$i}";
+            $witnessId = $template->meta_data[$alias . '_id'] ?? null;
+            $witness = $witnessId ? Witness::find($witnessId) : null;
+            if ($witness && $witness->signature_path && Storage::disk('public')->exists($witness->signature_path)) {
+                $witnessSigPaths[$alias] = Storage::disk('public')->path($witness->signature_path);
+            }
+        }
+
+        try {
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
+
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($templateId);
+
+                $items = collect($template->field_mapping)->where('page', $pageNo);
+
+                foreach ($items as $item) {
+                    $x = ($item['x'] / 100) * $size['width'];
+                    $y = ($item['y'] / 100) * $size['height'];
+
+                    // Images / Signatures / Stamps
+                    if (isset($item['type']) && in_array($item['type'], ['image', 'signature', 'stamp'])) {
+                        $w = ($item['w'] / 100) * $size['width'];
+                        $h = ($item['h'] / 100) * $size['height'];
+
+                        $targetPath = null;
+
+                        if ($item['type'] === 'image') {
+                            if (!empty($item['path']) && Storage::disk('public')->exists($item['path'])) {
+                                $targetPath = Storage::disk('public')->path($item['path']);
+                            }
+                        } elseif ($item['type'] === 'signature') {
+                            $group = $item['signatureGroup'] ?? 'employee';
+                            if ($group === 'employer') $targetPath = $emprSig1Path;
+                            elseif ($group === 'employer_2') $targetPath = $emprSig2Path;
+                            elseif ($group === 'importer_1') $targetPath = $importerSig1Path;
+                            elseif ($group === 'importer_2') $targetPath = $importerSig2Path;
+                            elseif ($group === 'delegate') $targetPath = $delegateSigPath;
+                            elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
+                            // 'employee' group → skipped intentionally
+                        } elseif ($item['type'] === 'stamp') {
+                            $group = $item['signatureGroup'] ?? 'employer_stamp';
+                            if ($group === 'importer_stamp') $targetPath = $importerStampPath;
+                            else $targetPath = $emprStampPath;
+                        }
+
+                        if ($targetPath && file_exists($targetPath)) {
+                            $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+                            $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+                            if ($imgType === 'JPG') $imgType = 'JPEG';
+                            $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                        }
+                        continue;
+                    }
+
+                    // Text
+                    $text = '';
+                    if ($item['type'] === 'static') {
+                        $text = $item['text'] ?? '';
+                    } elseif ($item['type'] === 'db') {
+                        $text = $this->resolveOfficeValue($item['key'] ?? '', $template, $targetEmployer, $targetImporter, $targetDelegate);
+                    }
+
+                    if ($text !== '' && $text !== null) {
+                        $boxW = ($item['w'] / 100) * $size['width'];
+                        $boxH = ($item['h'] / 100) * $size['height'];
+
+                        if ($fontLoaded) {
+                            $encodedText = @iconv('UTF-8', 'cp874', $text);
+                            if ($encodedText === false) $encodedText = $text;
+                        } else {
+                            $encodedText = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $text);
+                        }
+
+                        $fontSize = $item['fontSize'] ?? 12;
+                        if (!empty($item['autoFit'])) {
+                            $maxFontSizeH = ($boxH * 0.7) * 2.83;
+                            $pdf->SetFontSize($maxFontSizeH);
+                            $textWidth = $pdf->GetStringWidth($encodedText);
+                            if ($textWidth > ($boxW * 0.95)) {
+                                $ratio = ($boxW * 0.95) / $textWidth;
+                                $fontSize = $maxFontSizeH * $ratio;
+                            } else {
+                                $fontSize = $maxFontSizeH;
+                            }
+                        }
+                        $pdf->SetFontSize($fontSize);
+
+                        $align = $item['align'] ?? 'center';
+                        $textWidth = $pdf->GetStringWidth($encodedText);
+                        $textX = $x;
+                        if ($align === 'center') $textX = $x + ($boxW - $textWidth) / 2;
+                        elseif ($align === 'right') $textX = $x + $boxW - $textWidth - 1;
+                        else $textX = $x + 1;
+
+                        $textY = $y + $boxH;
+                        $pdf->Text($textX, $textY, $encodedText);
+                    }
+                }
+            }
+            $content = $pdf->Output('S');
+        } finally {
+            foreach ($tempSigPaths as $path) {
+                if (file_exists($path)) @unlink($path);
+            }
+            foreach ($this->tempFiles as $tempFile) {
+                if (file_exists($tempFile)) @unlink($tempFile);
+            }
+            $this->tempFiles = [];
+        }
+
+        return $content;
+    }
+
+    /**
+     * Resolve field value WITHOUT an employee context.
+     * Employee-specific keys return empty string; office entities resolve normally.
+     */
+    protected function resolveOfficeValue($key, PdfTemplate $template = null, ?Employer $targetEmployer = null, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
+    {
+        if (!$key) return '';
+
+        // Witness fields
+        if (str_starts_with($key, 'witness_')) {
+            $parts = explode('.', $key);
+            if (count($parts) === 2) {
+                $alias = $parts[0];
+                $field = $parts[1];
+                if ($template && !empty($template->meta_data[$alias . '_id'])) {
+                    $witness = Witness::find($template->meta_data[$alias . '_id']);
+                    if ($witness) return (string) $witness->{$field};
+                }
+                $gw = GlobalWitness::where('alias', $alias)->first();
+                return $gw ? (string) $gw->{$field} : '';
+            }
+            return '';
+        }
+
+        // Employer signer 2 + employer.*
+        if ($key === 'employer.signer_2_name_th') return $targetEmployer ? (string) $targetEmployer->signer_2_name_th : '';
+        if ($key === 'employer.signer_2_name_en') return $targetEmployer ? (string) $targetEmployer->signer_2_name_en : '';
+
+        if (str_starts_with($key, 'employer.address_')) {
+            if (!$targetEmployer) return '';
+            $address = $this->getEmployerAddress($targetEmployer);
+            if ($key === 'employer.address_th') return $this->formatAddress($address, 'th');
+            if ($key === 'employer.address_en') return $this->formatAddress($address, 'en');
+            if (!$address) return '-';
+            if (str_starts_with($key, 'employer.address_th.')) {
+                $field = str_replace('employer.address_th.', '', $key);
+                return (string) $address->{$field};
+            }
+            if (str_starts_with($key, 'employer.address_en.')) {
+                $field = str_replace('employer.address_en.', '', $key);
+                return (string) $address->{$field};
+            }
+        }
+
+        if (str_starts_with($key, 'employer.')) {
+            if (!$targetEmployer) return '';
+            $subKey = substr($key, 9);
+            if ($subKey === 'employerNameTh' && method_exists($targetEmployer, 'getRawOriginal')) {
+                return $targetEmployer->getRawOriginal('employerNameTh') ?? '';
+            }
+            return (string) (data_get($targetEmployer, $subKey) ?? '');
+        }
+
+        if (str_starts_with($key, 'importer.')) {
+            if (!$targetImporter) return '';
+            if (str_starts_with($key, 'importer.address_')) {
+                $address = $this->getGenericAddress($targetImporter);
+                if ($key === 'importer.address_th') return $this->formatAddress($address, 'th');
+                if ($key === 'importer.address_en') return $this->formatAddress($address, 'en');
+                if (!$address) return '-';
+                if (str_starts_with($key, 'importer.address_th.')) {
+                    $field = str_replace('importer.address_th.', '', $key);
+                    return (string) $address->{$field};
+                }
+                if (str_starts_with($key, 'importer.address_en.')) {
+                    $field = str_replace('importer.address_en.', '', $key);
+                    return (string) $address->{$field};
+                }
+            }
+            $subKey = substr($key, 9);
+            return (string) (data_get($targetImporter, $subKey) ?? '');
+        }
+
+        if (str_starts_with($key, 'delegate.')) {
+            if (!$targetDelegate) return '';
+            if (str_starts_with($key, 'delegate.address_')) {
+                $address = $this->getGenericAddress($targetDelegate);
+                if ($key === 'delegate.address_th') return $this->formatAddress($address, 'th');
+                if ($key === 'delegate.address_en') return $this->formatAddress($address, 'en');
+                if (!$address) return '-';
+                if (str_starts_with($key, 'delegate.address_th.')) {
+                    $field = str_replace('delegate.address_th.', '', $key);
+                    return (string) $address->{$field};
+                }
+                if (str_starts_with($key, 'delegate.address_en.')) {
+                    $field = str_replace('delegate.address_en.', '', $key);
+                    return (string) $address->{$field};
+                }
+            }
+            $subKey = substr($key, 9);
+            return (string) (data_get($targetDelegate, $subKey) ?? '');
+        }
+
+        // Anything else → employee-related → empty
+        return '';
+    }
+
     public function generateSinglePdf(PdfTemplate $template, Employee $employee, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
     {
         $pdf = new Fpdi();

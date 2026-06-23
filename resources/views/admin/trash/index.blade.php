@@ -9,6 +9,7 @@
 @endsection
 
 @section('content')
+<x-help-button manual="central_trash" title="{{ __('Central Trash') }}" />
 <div class="container-fluid content-section">
     <div class="card">
         <div class="card-body">

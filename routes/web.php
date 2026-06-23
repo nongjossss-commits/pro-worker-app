@@ -32,6 +32,7 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
 
     Route::post('/attachments/swap', [SuperAdminSettingsController::class, 'swapAttachments'])->name('attachments.swap');
     Route::post('/attachments/descriptions', [SuperAdminSettingsController::class, 'updateAttachmentDescriptions'])->name('attachments.descriptions');
+    Route::post('/attachments/descriptions/single', [SuperAdminSettingsController::class, 'updateSingleAttachmentDescription'])->name('attachments.descriptions.single');
     Route::post('/settings/max-employees', [SuperAdminSettingsController::class, 'updateMaxEmployees'])->name('settings.max-employees');
 
     // Branding (logo + theme colors + app name)
@@ -41,6 +42,7 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::post('/brand/colors', [SuperAdminSettingsController::class, 'updateBrandColors'])->name('brand.colors.update');
     Route::post('/brand/colors/reset', [SuperAdminSettingsController::class, 'resetBrandColors'])->name('brand.colors.reset');
     Route::post('/brand/name', [SuperAdminSettingsController::class, 'updateBrandName'])->name('brand.name.update');
+    Route::get('/manuals/bundle', [SuperAdminSettingsController::class, 'manualBundle'])->name('manuals.bundle');
 
     Route::resource('download-profiles', DownloadProfileController::class)->except(['show']);
 });
@@ -254,6 +256,7 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:pdf_templates'])->
         return redirect()->route('employees.index')->with('error', 'Please select employees to generate PDF.');
     });
     Route::post('pdf-templates/generate/process', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'process'])->name('pdf-templates.generate.process');
+    Route::get('pdf-templates/{pdf_template}/quick-print', [\App\Http\Controllers\Admin\PdfGenerationController::class, 'quickPrint'])->name('pdf-templates.quick-print');
 
     // Custom Witnesses API
     Route::get('pdf-templates/witnesses', [\App\Http\Controllers\Admin\WitnessController::class, 'index'])->name('pdf-templates.witnesses.index');
@@ -597,6 +600,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/check-daily', [\App\Http\Controllers\WorkflowController::class, 'checkDaily'])->name('workflow.item.check_daily');
     Route::post('workflow/item/{item}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateRemarks'])->name('workflow.item.remarks');
     Route::post('workflow/order/{order}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateOrderRemarks'])->name('workflow.order.remarks');
+    Route::post('workflow/order/{order}/mou-import-type', [\App\Http\Controllers\WorkflowController::class, 'updateMouImportType'])->name('workflow.order.mou_import_type');
     Route::post('workflow/item/{item}/group', [\App\Http\Controllers\WorkflowController::class, 'updateGroup'])->name('workflow.item.group');
     Route::post('workflow/item/{item}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeItem'])->name('workflow.item.finalize');
     Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');
