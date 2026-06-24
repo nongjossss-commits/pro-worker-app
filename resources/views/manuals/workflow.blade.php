@@ -79,6 +79,29 @@
     บนหน้า Workflow tab "MOU นำเข้า" → คลิกที่ <strong>badge สี (Return/New/Pending)</strong> บน card → เลือกประเภทใหม่ → กด Save
 </div>
 
+<h5>8. แท็บ "แจ้งออก" (Notify Out) — ระบุวันและเหตุผลก่อนปิด</h5>
+<div class="manual-step">
+    <ol class="mb-0">
+        <li>เปิด Tab <strong>"แจ้งออก"</strong> → กดปุ่ม <strong>"+ Add Employee"</strong></li>
+        <li>ค้นหาลูกจ้างได้<strong>ทุกคนในระบบ</strong> (Global search) — ไม่ติด employer scope</li>
+        <li>ลูกจ้างที่อยู่ในงาน <strong>renewal / เปลี่ยนนายจ้าง</strong> อยู่ก็เพิ่มเข้า notify_out ได้ (ทำคู่กันได้)</li>
+        <li>ลูกจ้างคนเดิมที่อยู่ใน notify_out อยู่แล้ว — <strong>เพิ่มซ้ำไม่ได้</strong> จนกว่าจะเสร็จสิ้น</li>
+        <li>ระบบจะ <strong>auto-group ตามนายจ้างปัจจุบัน</strong> ของลูกจ้าง (1 employer = 1 order)</li>
+    </ol>
+</div>
+
+<div class="manual-step">
+    <strong>ก่อนกดเสร็จสิ้นในแถบ notify_out:</strong>
+    <ol class="mb-0">
+        <li>การ์ดลูกจ้างจะมี<strong>แถบสีเหลือง</strong>ด้านล่าง</li>
+        <li>กรอก <strong>วันแจ้งออก</strong> (date picker — required)</li>
+        <li>เลือก <strong>เหตุผล</strong> (dropdown: ลาออก / เลิกจ้าง / ครบสัญญา / เปลี่ยนนายจ้าง / หนีกลับประเทศ / เสียชีวิต) — หรือพิมพ์เองได้</li>
+        <li>ระบบ autosave ทุกการเปลี่ยน → badge เปลี่ยนเป็น <strong>"พร้อมเสร็จสิ้น"</strong> สีเขียว</li>
+        <li>กด "Finish" → ระบบจะ <strong>auto-update employee.terminated_at + termination_reason + status='resigned'</strong> ทันที</li>
+        <li><strong>ถ้ายังไม่กรอกวันแจ้งออก</strong> → กด Finish ไม่ได้ จะเด้งเตือน "ต้องระบุวันแจ้งออกก่อน"</li>
+    </ol>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">
@@ -103,4 +126,10 @@
 
     <dt>Q: ลบ Step ที่กำลังใช้งานอยู่?</dt>
     <dd>A: ห้าม — งานในนั้นจะค้าง ต้องย้ายไป Step อื่นก่อน</dd>
+
+    <dt>Q: notify_out ของลูกจ้างคนนั้นหายไปจากแถบเอง?</dt>
+    <dd>A: ระบบ <strong>auto-cancel</strong> notify_out pending เมื่อลูกจ้างย้ายนายจ้าง — เพราะ notify_out คือการ "ออกจากนายจ้างเก่า" ที่ไม่เกี่ยวข้องอีกแล้ว สามารถดูประวัติได้ที่เมนู "ประวัติการกระทำ" หรือสร้าง notify_out ใหม่ในนายจ้างใหม่หากต้องการ</dd>
+
+    <dt>Q: ทำ notify_out แบบ manual จากเมนูพนักงานได้ไหม?</dt>
+    <dd>A: ได้ — เมนูพนักงาน → ปุ่ม "แจ้งออก" → ระบุวัน+เหตุผล (workflow ไม่บังคับใช้ ถ้าต้องการเร็วๆ ก็ทำตรงนั้นได้)</dd>
 </dl>

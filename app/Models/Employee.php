@@ -294,13 +294,27 @@ class Employee extends Model
         };
         if (!$group) return ['visa' => null, 'wp' => null];
 
+        $globalVisaKey = "{$group}_auto_visa_expiry";
+        $globalWpKey   = "{$group}_auto_work_permit_expiry";
+
+        // Prefer per-tab keys ({key}__tab_{id}) over legacy global keys
+        $keysToFetch = [$globalVisaKey, $globalWpKey];
+        $perTabVisaKey = null;
+        $perTabWpKey = null;
+        if ($this->resolution_tab_id) {
+            $perTabVisaKey = "{$globalVisaKey}__tab_{$this->resolution_tab_id}";
+            $perTabWpKey   = "{$globalWpKey}__tab_{$this->resolution_tab_id}";
+            $keysToFetch[] = $perTabVisaKey;
+            $keysToFetch[] = $perTabWpKey;
+        }
+
         $rows = \App\Models\SystemSetting::where('group', $group)
-            ->whereIn('key', ["{$group}_auto_visa_expiry", "{$group}_auto_work_permit_expiry"])
+            ->whereIn('key', $keysToFetch)
             ->pluck('value', 'key');
 
         return [
-            'visa' => $rows["{$group}_auto_visa_expiry"] ?? null,
-            'wp'   => $rows["{$group}_auto_work_permit_expiry"] ?? null,
+            'visa' => ($perTabVisaKey && isset($rows[$perTabVisaKey])) ? $rows[$perTabVisaKey] : ($rows[$globalVisaKey] ?? null),
+            'wp'   => ($perTabWpKey   && isset($rows[$perTabWpKey]))   ? $rows[$perTabWpKey]   : ($rows[$globalWpKey] ?? null),
         ];
     }
 

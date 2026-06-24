@@ -154,21 +154,19 @@ class="row">
                         </button>
                     </div>
 
-                    <div class="table-responsive border rounded p-2 mb-2 bg-light">
-                        <table class="table table-sm table-borderless mb-0">
-                            <thead>
-                                <tr class="text-muted small">
-                                    <th style="width: 120px;">{{ __('Price (฿)') }}</th>
-                                    <th style="width: 120px;">{{ __('Assigned') }}</th>
-                                    <th>{{ __('Note') }} <i class="bi bi-info-circle text-muted" title="{{ __('หมายเหตุจะแสดงในใบแจ้งหนี้/ใบเสร็จด้วย') }}" style="font-size: 0.7rem;"></i></th>
-                                    <th style="width: 50px;" class="text-center">{{ __('Del') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="(tier, index) in pricingTiers" :key="index">
-                                    <tr>
-                                        <td><input type="number" class="form-control form-control-sm" x-model="tier.price" @input="updateTotal()" placeholder="Price"></td>
-                                        <td>
+                    {{-- Stacked card layout — each tier is a card with controls on top + full-width note below --}}
+                    <div class="border rounded p-2 mb-2 bg-light">
+                        <template x-for="(tier, index) in pricingTiers" :key="index">
+                            <div class="card border mb-2 shadow-sm">
+                                <div class="card-body p-2">
+                                    {{-- Row 1: Price | Assigned | Delete --}}
+                                    <div class="d-flex align-items-end gap-2 flex-wrap mb-2">
+                                        <div style="min-width: 130px; flex: 0 0 auto;">
+                                            <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">{{ __('Price (฿)') }}</label>
+                                            <input type="number" class="form-control form-control-sm" x-model="tier.price" @input="updateTotal()" placeholder="Price">
+                                        </div>
+                                        <div style="min-width: 130px; flex: 0 0 auto;">
+                                            <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">{{ __('Assigned') }}</label>
                                             <div class="input-group input-group-sm">
                                                 <div class="input-group-text p-0 overflow-hidden" style="width: 60px;">
                                                     <div class="d-flex flex-column w-100" style="font-size: 0.65rem; line-height: 1;">
@@ -181,30 +179,8 @@ class="row">
                                                     <i class="bi bi-people-fill"></i>
                                                 </button>
                                             </div>
-                                        </td>
-                                        <td class="align-middle">
-                                            {{-- Wrapped, always-visible note display + click pencil to edit in popup --}}
-                                            <div class="d-flex align-items-stretch gap-2">
-                                                <div class="flex-grow-1 small bg-white border rounded px-2 py-1"
-                                                     style="word-break: break-word; white-space: pre-wrap; min-height: 38px; max-height: 96px; overflow-y: auto; cursor: pointer;"
-                                                     @click="editTierNote(index)"
-                                                     :title="'{{ __('คลิกเพื่อแก้ไขหมายเหตุ') }}'">
-                                                    <template x-if="tier.note && tier.note.trim()">
-                                                        <span x-text="tier.note"></span>
-                                                    </template>
-                                                    <template x-if="!tier.note || !tier.note.trim()">
-                                                        <span class="text-muted fst-italic">{{ __('— คลิกเพื่อเพิ่มหมายเหตุ —') }}</span>
-                                                    </template>
-                                                </div>
-                                                <button type="button" class="btn btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
-                                                        @click.stop="editTierNote(index)"
-                                                        :title="'{{ __('แก้ไขหมายเหตุ') }}'"
-                                                        style="width: 38px; min-height: 38px; padding: 0;">
-                                                    <i class="bi bi-pencil-square" style="font-size: 1rem;"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <td class="text-center align-middle">
+                                        </div>
+                                        <div class="ms-auto">
                                             <button type="button"
                                                     class="btn btn-outline-danger d-inline-flex align-items-center justify-content-center"
                                                     @click="removeTier(index)"
@@ -212,11 +188,40 @@ class="row">
                                                     style="width: 38px; height: 38px; padding: 0;">
                                                 <i class="bi bi-trash" style="font-size: 1rem;"></i>
                                             </button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                        </div>
+                                    </div>
+                                    {{-- Row 2: Note (full-width) + Edit pencil --}}
+                                    <div>
+                                        <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">
+                                            {{ __('Note') }}
+                                            <i class="bi bi-info-circle ms-1" title="{{ __('หมายเหตุจะแสดงในใบแจ้งหนี้/ใบเสร็จด้วย') }}" style="font-size: 0.7rem;"></i>
+                                        </label>
+                                        <div class="d-flex align-items-stretch gap-2">
+                                            <div class="flex-grow-1 small bg-white border rounded px-2 py-1"
+                                                 style="word-break: break-word; word-wrap: break-word; overflow-wrap: anywhere; white-space: pre-wrap; min-height: 38px; max-height: 120px; overflow-y: auto; cursor: pointer;"
+                                                 @click="editTierNote(index)"
+                                                 :title="'{{ __('คลิกเพื่อแก้ไขหมายเหตุ') }}'">
+                                                <template x-if="tier.note && tier.note.trim()">
+                                                    <span x-text="tier.note"></span>
+                                                </template>
+                                                <template x-if="!tier.note || !tier.note.trim()">
+                                                    <span class="text-muted fst-italic">{{ __('— คลิกเพื่อเพิ่มหมายเหตุ —') }}</span>
+                                                </template>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                                                    @click.stop="editTierNote(index)"
+                                                    :title="'{{ __('แก้ไขหมายเหตุ') }}'"
+                                                    style="width: 38px; min-height: 38px; padding: 0;">
+                                                <i class="bi bi-pencil-square" style="font-size: 1rem;"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="pricingTiers.length === 0">
+                            <div class="text-center text-muted small fst-italic py-3">— {{ __('ยังไม่มีงวดราคา — กดปุ่ม "Add Tier" ด้านบนเพื่อเพิ่ม') }} —</div>
+                        </template>
                     </div>
 
                     <!-- Validation Message -->

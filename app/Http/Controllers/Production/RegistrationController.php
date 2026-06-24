@@ -119,8 +119,9 @@ class RegistrationController extends Controller
 
         // Load resolution settings + targets up front so the filter cases
         // below (and the count subqueries / view) can reuse them.
+        // Per-tab keys ({key}__tab_{id}) take precedence over legacy global keys.
         $resolutionSettingsRaw = SystemSetting::where('group', 'registration')->get();
-        $resolutionSettings = $resolutionSettingsRaw->pluck('value', 'key')->toArray();
+        $resolutionSettings = $this->resolvePerTabSettings($resolutionSettingsRaw, 'registration', $this->currentTab->id);
         $renewalTargets = [
             'visa' => $resolutionSettings['registration_auto_visa_expiry'] ?? null,
             'wp'   => $resolutionSettings['registration_auto_work_permit_expiry'] ?? null,
@@ -2456,7 +2457,32 @@ class RegistrationController extends Controller
     }
 
     /**
-     * API: Update Resolution Auto-Settings
+     * Build a {key => value} map for a resolution group's auto-settings, with per-tab keys
+     * ({key}__tab_{id}) taking precedence over the legacy global key.
+     */
+    protected function resolvePerTabSettings($settingsCollection, string $group, int $tabId): array
+    {
+        $byKey = $settingsCollection->pluck('value', 'key')->toArray();
+        $suffix = "__tab_{$tabId}";
+
+        $resolved = [];
+        foreach (['visa_expiry', 'work_permit_expiry', 'mou_group'] as $field) {
+            $globalKey = "{$group}_auto_{$field}";
+            $perTabKey = $globalKey . $suffix;
+            $resolved[$globalKey] = $byKey[$perTabKey] ?? ($byKey[$globalKey] ?? null);
+        }
+
+        foreach ($byKey as $k => $v) {
+            if (!array_key_exists($k, $resolved) && !str_contains($k, '__tab_')) {
+                $resolved[$k] = $v;
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * API: Update Resolution Auto-Settings (per-tab)
      */
     public function updateResolutionSettings(Request $request, $resolutionTab)
     {
@@ -2473,19 +2499,21 @@ class RegistrationController extends Controller
         ]);
 
         $group = 'registration';
+        $tabId = $this->currentTab->id;
+        $suffix = "__tab_{$tabId}";
 
         SystemSetting::updateOrCreate(
-            ['key' => "{$group}_auto_work_permit_expiry"],
+            ['key' => "{$group}_auto_work_permit_expiry{$suffix}"],
             ['value' => $request->auto_work_permit_expiry, 'group' => $group]
         );
 
         SystemSetting::updateOrCreate(
-            ['key' => "{$group}_auto_visa_expiry"],
+            ['key' => "{$group}_auto_visa_expiry{$suffix}"],
             ['value' => $request->auto_visa_expiry, 'group' => $group]
         );
 
         SystemSetting::updateOrCreate(
-            ['key' => "{$group}_auto_mou_group"],
+            ['key' => "{$group}_auto_mou_group{$suffix}"],
             ['value' => $request->auto_mou_group, 'group' => $group]
         );
 

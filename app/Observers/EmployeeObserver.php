@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Employee;
 use App\Models\SystemConfig;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class EmployeeObserver
@@ -69,11 +70,110 @@ class EmployeeObserver
             $this->syncRenewalStatus($employee);
             $this->syncRegistrationStatus($employee);
         }
+
+        // 3. Auto-cancel pending notify_out items when the employee moves to a different employer.
+        // Rationale: notify_out from old employer is no longer relevant if the employee has been
+        // transferred to a new employer (via change-employer workflow, sales transition, manual edit,
+        // or any other path). The notify_out card represents leaving the OLD employer — once the
+        // employee is under a NEW employer, that card should disappear from the notify_out menu.
+        if ($employee->isDirty('employer_id')) {
+            $this->autoCancelStaleNotifyOuts($employee);
+        }
     }
 
     /**
-     * Find the renewal tab (if any) whose target expiry date matches the employee's WP or Visa.
-     * Returns tab ID or null.
+     * Cancel any pending (not completed / not cancelled) notify_out items for this employee.
+     * Triggered when employee.employer_id changes — the old notify_out card is stale.
+     */
+    protected function autoCancelStaleNotifyOuts(Employee $employee): void
+    {
+        try {
+            // Find pending notify_out items for this employee where the order belongs to a DIFFERENT employer
+            // than the one the employee now belongs to (i.e. the "from" employer of the notify_out).
+            \App\Models\ProductionItem::where('employee_id', $employee->id)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->whereHas('order', function ($q) use ($employee) {
+                    $q->where('status', '!=', 'cancelled')
+                      ->whereHas('workType', fn($wt) => $wt->where('slug', 'notify_out'));
+                    // Only cancel items whose order employer != employee's new employer
+                    // (otherwise the notify_out is still happening from the same employer)
+                    if ($employee->employer_id) {
+                        $q->where('employer_id', '!=', $employee->employer_id);
+                    }
+                })
+                ->update([
+                    'status' => 'cancelled',
+                    'remarks' => DB::raw("CONCAT(COALESCE(remarks, ''), ' [Auto-cancelled: employee moved to another employer on " . now()->format('Y-m-d H:i') . "]')"),
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning("autoCancelStaleNotifyOuts failed for employee {$employee->id}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Iterate per-tab Auto Settings of a resolution group and return the first tab
+     * whose visa OR work-permit target date matches the employee.
+     *
+     * Per-tab keys: {group}_auto_visa_expiry__tab_{id} / {group}_auto_work_permit_expiry__tab_{id}
+     * Each tab matched independently — the first tab with a matching field wins.
+     */
+    protected function findMatchingTabByAutoSettings(Employee $employee, string $group): ?int
+    {
+        $rows = \App\Models\SystemSetting::where('group', $group)
+            ->where(function ($q) use ($group) {
+                $q->where('key', 'like', "{$group}_auto_visa_expiry__tab_%")
+                  ->orWhere('key', 'like', "{$group}_auto_work_permit_expiry__tab_%");
+            })
+            ->get();
+
+        // Group settings by tab ID: ['2' => ['visa' => '...', 'wp' => '...'], ...]
+        $byTab = [];
+        $visaPrefix = "{$group}_auto_visa_expiry__tab_";
+        $wpPrefix   = "{$group}_auto_work_permit_expiry__tab_";
+
+        foreach ($rows as $row) {
+            $key = $row->key;
+            if (str_starts_with($key, $visaPrefix)) {
+                $tabId = (int) substr($key, strlen($visaPrefix));
+                $byTab[$tabId]['visa'] = $row->value;
+            } elseif (str_starts_with($key, $wpPrefix)) {
+                $tabId = (int) substr($key, strlen($wpPrefix));
+                $byTab[$tabId]['wp'] = $row->value;
+            }
+        }
+
+        if (empty($byTab)) return null;
+
+        // Validate which tabs still exist (not soft-deleted) — single query
+        $existingTabIds = \App\Models\ResolutionTab::where('type', $group)
+            ->whereIn('id', array_keys($byTab))
+            ->pluck('id')
+            ->all();
+
+        $empWp = $employee->workPermitExpiryDate ? $employee->workPermitExpiryDate->format('Y-m-d') : null;
+        $empVisa = $employee->visaExpiryDate ? $employee->visaExpiryDate->format('Y-m-d') : null;
+
+        // Iterate in stable order so behavior is deterministic when multiple tabs match
+        ksort($byTab);
+        foreach ($byTab as $tabId => $targets) {
+            if (!in_array($tabId, $existingTabIds, true)) continue;
+
+            $wpMatch = !empty($targets['wp']) && $empWp === $targets['wp'];
+            $visaMatch = !empty($targets['visa']) && $empVisa === $targets['visa'];
+            if ($wpMatch || $visaMatch) {
+                return $tabId;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the renewal tab matching this employee.
+     * Priority:
+     *  1. Per-tab Auto Settings (SystemSetting renewal_auto_*__tab_{id}) — single source of truth
+     *  2. Legacy SystemConfig per-tab (renewal_target_expiry_date_{id}) — old code-path
+     *  3. Legacy global SystemConfig (renewal_target_expiry_date) → default tab
      */
     protected function findMatchingRenewalTab(Employee $employee): ?int
     {
@@ -82,15 +182,17 @@ class EmployeeObserver
             return null;
         }
 
-        // 1. Per-tab configs
-        $tabConfigs = SystemConfig::where('key', 'like', 'renewal_target_expiry_date_%')->get();
+        // 1. New source of truth — per-tab SystemSetting
+        $matchedTabId = $this->findMatchingTabByAutoSettings($employee, 'renewal');
+        if ($matchedTabId) return $matchedTabId;
 
+        // 2. Legacy per-tab SystemConfig (single date used for both visa & wp)
+        $tabConfigs = SystemConfig::where('key', 'like', 'renewal_target_expiry_date_%')->get();
         foreach ($tabConfigs as $config) {
             $tabId = (int) str_replace('renewal_target_expiry_date_', '', $config->key);
             $targetDate = $config->value;
             if (!$tabId || !$targetDate) continue;
 
-            // Verify tab still exists (not soft-deleted)
             $tabExists = \App\Models\ResolutionTab::where('id', $tabId)->where('type', 'renewal')->exists();
             if (!$tabExists) continue;
 
@@ -101,7 +203,7 @@ class EmployeeObserver
             }
         }
 
-        // 2. Legacy fallback — global key (old data, pre-tab era)
+        // 3. Legacy global SystemConfig
         $legacyDate = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
         if ($legacyDate) {
             $wpMatch = $employee->workPermitExpiryDate && $employee->workPermitExpiryDate->format('Y-m-d') === $legacyDate;
@@ -117,8 +219,10 @@ class EmployeeObserver
     }
 
     /**
-     * Find the default registration tab if employee's WP/Visa matches the registration auto-target.
-     * Registration uses a single SystemSetting target (group=registration) — no per-tab config.
+     * Find the registration tab matching this employee.
+     * Priority:
+     *  1. Per-tab Auto Settings (SystemSetting registration_auto_*__tab_{id})
+     *  2. Legacy global SystemSetting (no per-tab) → default tab
      */
     protected function findMatchingRegistrationTab(Employee $employee): ?int
     {
@@ -127,6 +231,11 @@ class EmployeeObserver
             return null;
         }
 
+        // 1. New source of truth — per-tab SystemSetting
+        $matchedTabId = $this->findMatchingTabByAutoSettings($employee, 'registration');
+        if ($matchedTabId) return $matchedTabId;
+
+        // 2. Legacy global SystemSetting (single target for whole group)
         $settings = \App\Models\SystemSetting::where('group', 'registration')
             ->whereIn('key', ['registration_auto_visa_expiry', 'registration_auto_work_permit_expiry'])
             ->pluck('value', 'key');
@@ -143,7 +252,6 @@ class EmployeeObserver
 
         if (!$wpMatch && !$visaMatch) return null;
 
-        // Pick the default tab if present, else the oldest registration tab
         $defaultTab = \App\Models\ResolutionTab::where('type', 'registration')
             ->where('is_default', true)
             ->value('id');

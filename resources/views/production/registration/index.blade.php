@@ -1031,10 +1031,17 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-info text-dark">
-                <h5 class="modal-title fw-bold"><i class="bi bi-robot me-2"></i>{{ __('Auto Settings (Resolution)') }}</h5>
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-robot me-2"></i>{{ __('Auto Settings') }} —
+                    <span class="badge bg-white text-info">{{ $currentTab->name }}</span>
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
+                <div class="alert alert-info py-2 px-3 small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    {{ __('การตั้งค่านี้ใช้กับแถบ') }} <strong>"{{ $currentTab->name }}"</strong> {{ __('เท่านั้น — แต่ละแถบมี Auto Settings ของตัวเอง') }}
+                </div>
                 <p class="text-muted small mb-3">{{ __('These settings will automatically update employees 24 hours after they are marked as completed.') }}</p>
                 <div class="mb-3">
                     <label class="form-label fw-bold">{{ __('Auto Work Permit Expiry Date') }}</label>

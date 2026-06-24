@@ -30,6 +30,8 @@ class ProductionItem extends Model
         'operator_id',
         'custom_operator_name', // NEW: Assigned Operator
         'remarks', // Added remarks
+        'notify_out_date',    // Required-before-complete for notify_out items
+        'notify_out_reason',  // Optional reason text, saved to employee.termination_reason on finalize
     ];
 
     protected $appends = ['has_visa'];
@@ -50,6 +52,7 @@ class ProductionItem extends Model
         'appointment_updated_at' => 'datetime',
         'completed_at' => 'datetime',
         'workflow_settings_applied' => 'boolean',
+        'notify_out_date' => 'date',
     ];
 
     protected static function booted()

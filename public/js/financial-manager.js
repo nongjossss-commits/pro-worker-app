@@ -1104,6 +1104,40 @@ if (typeof window.financialManager === 'undefined') {
             addTier() {
                 this.pricingTiers.push({ price: 0, count: 0, note: '', item_ids: [] });
             },
+            // Mount Swal inside any open Bootstrap modal so its focus trap doesn't
+            // fight with the textarea/input — otherwise typing is impossible.
+            _swalTarget() {
+                const openModal = document.querySelector('.modal.show');
+                return openModal || document.body;
+            },
+
+            // Open Swal with Bootstrap-modal-aware config.
+            // Bootstrap 5 modals install a focus trap (focusin listener) that yanks focus
+            // back to the modal whenever it moves outside — preventing typing in Swal
+            // inputs. We deactivate it while Swal is open and reactivate on close.
+            _safeFire(config) {
+                const openModal = document.querySelector('.modal.show');
+                const modalInstance = openModal && window.bootstrap ? bootstrap.Modal.getInstance(openModal) : null;
+                const focusTrap = modalInstance && modalInstance._focustrap ? modalInstance._focustrap : null;
+
+                if (focusTrap) {
+                    try { focusTrap.deactivate(); } catch (e) { /* ignore */ }
+                }
+
+                const originalWillClose = config.willClose;
+                const merged = Object.assign({}, config, {
+                    heightAuto: false,
+                    target: this._swalTarget(),
+                    willClose: (popup) => {
+                        if (focusTrap) {
+                            try { focusTrap.activate(); } catch (e) { /* ignore */ }
+                        }
+                        if (typeof originalWillClose === 'function') originalWillClose(popup);
+                    }
+                });
+                return Swal.fire(merged);
+            },
+
             removeTier(index) {
                 const tier = this.pricingTiers[index];
                 const tierLabel = 'งวด ' + (index + 1) + (tier && tier.price ? ' (' + Number(tier.price).toLocaleString() + ' ฿)' : '');
@@ -1115,7 +1149,7 @@ if (typeof window.financialManager === 'undefined') {
                 if (tier && tier.note && tier.note.trim()) {
                     warnHtml += '<div class="text-muted small mt-2 text-start"><i class="bi bi-chat-quote me-1"></i>หมายเหตุที่มีอยู่: <em>"' + tier.note.substring(0, 60) + (tier.note.length > 60 ? '...' : '') + '"</em></div>';
                 }
-                Swal.fire({
+                this._safeFire({
                     title: 'ลบงวดราคานี้?',
                     html: warnHtml,
                     icon: 'warning',
@@ -1137,7 +1171,7 @@ if (typeof window.financialManager === 'undefined') {
                 if (!tier) return;
                 const tierLabel = 'งวด ' + (index + 1) + (tier.price ? ' (' + Number(tier.price).toLocaleString() + ' ฿)' : '');
                 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-                Swal.fire({
+                this._safeFire({
                     title: 'หมายเหตุ — ' + tierLabel,
                     html: `
                         <div class="text-muted small mb-3 text-start px-1">
@@ -1166,7 +1200,12 @@ if (typeof window.financialManager === 'undefined') {
                         const ta = document.getElementById('swal-tier-note');
                         const counter = document.getElementById('swal-tier-note-count');
                         if (ta) {
-                            ta.focus();
+                            // Force focus into textarea (defeats parent Bootstrap modal focus trap)
+                            setTimeout(() => {
+                                ta.focus();
+                                // Move cursor to end of existing text
+                                ta.setSelectionRange(ta.value.length, ta.value.length);
+                            }, 50);
                             const setCount = () => { if (counter) counter.textContent = ta.value.length; };
                             setCount();
                             ta.addEventListener('input', setCount);

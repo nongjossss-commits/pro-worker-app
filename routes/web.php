@@ -35,6 +35,16 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::post('/attachments/descriptions/single', [SuperAdminSettingsController::class, 'updateSingleAttachmentDescription'])->name('attachments.descriptions.single');
     Route::post('/settings/max-employees', [SuperAdminSettingsController::class, 'updateMaxEmployees'])->name('settings.max-employees');
 
+    // Program Pricelist (SaaS pricing — for selling Pro-Worker to other clients)
+    Route::post('/program-pricelist', [SuperAdminSettingsController::class, 'saveProgramPricelist'])->name('program-pricelist.save');
+    Route::get('/program-pricelist/view', [SuperAdminSettingsController::class, 'programPricelistView'])->name('program-pricelist.view');
+
+    // Program Sales — Provider Info + Trial/Service Contracts
+    Route::post('/program-sales/provider', [SuperAdminSettingsController::class, 'saveProviderInfo'])->name('program-sales.provider.save');
+    Route::get('/program-sales/contract/{type}', [SuperAdminSettingsController::class, 'programContractView'])
+        ->where('type', 'trial|service')
+        ->name('program-sales.contract.view');
+
     // Branding (logo + theme colors + app name)
     Route::post('/brand/logo', [SuperAdminSettingsController::class, 'uploadBrandLogo'])->name('brand.logo.upload');
     Route::post('/brand/logo/active', [SuperAdminSettingsController::class, 'setActiveBrandLogo'])->name('brand.logo.active');
@@ -603,6 +613,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/order/{order}/mou-import-type', [\App\Http\Controllers\WorkflowController::class, 'updateMouImportType'])->name('workflow.order.mou_import_type');
     Route::post('workflow/item/{item}/group', [\App\Http\Controllers\WorkflowController::class, 'updateGroup'])->name('workflow.item.group');
     Route::post('workflow/item/{item}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeItem'])->name('workflow.item.finalize');
+    Route::post('workflow/item/{item}/notify-out-fields', [\App\Http\Controllers\WorkflowController::class, 'updateNotifyOutFields'])->name('workflow.item.notify_out_fields');
     Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');
     Route::post('workflow/item/{item}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreItem'])->name('workflow.item.restore');
     Route::post('workflow/item/{item}/send-back', [\App\Http\Controllers\WorkflowController::class, 'sendBackToPreProduction'])->name('workflow.item.send_back');

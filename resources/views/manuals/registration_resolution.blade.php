@@ -53,6 +53,25 @@
     เลือกหลายสถานะพร้อมกันด้วยการกด Ctrl/Cmd ค้าง — กรองหลายความคืบหน้าได้ในครั้งเดียว
 </div>
 
+<h5>5. Auto Settings — ตั้งค่าแยกแต่ละแถบมติ (Per-tab)</h5>
+<div class="manual-step">
+    <ol class="mb-0">
+        <li>เปิดแถบมติที่ต้องการ → กดปุ่ม <strong>"Auto Settings"</strong></li>
+        <li>หัว popup จะแสดง<strong>ชื่อแถบ</strong> + เตือนว่าใช้กับแถบนี้เท่านั้น</li>
+        <li>กรอก Auto WP/Visa Expiry + MOU Group → Save</li>
+        <li>แต่ละแถบมี Auto Settings ของตัวเอง ไม่ทับซ้อนกัน</li>
+    </ol>
+</div>
+
+<h5>6. Auto-pull ลูกจ้างเข้าเมนูอัตโนมัติ (Add-only)</h5>
+<div class="manual-step">
+    ลูกจ้างที่มี WP หรือ Visa หมดอายุตรงกับ Auto Settings → <strong>auto-pull เข้าเมนูทันที</strong>
+    <br>
+    ลูกจ้างที่อยู่ในเมนูแล้ว <strong>ไม่ถูกดีดออก</strong>เมื่ออัพเดทวันที่ — สีจะเปลี่ยนตาม progress (none / visa_only / work_permit_only / both)
+    <br>
+    เฉพาะการกดเสร็จสิ้น / ยกเลิก manual เท่านั้นที่จะเอาลูกจ้างออกจากเมนู
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

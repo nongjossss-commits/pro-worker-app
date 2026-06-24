@@ -789,6 +789,46 @@
 
 <script>
 document.addEventListener('alpine:init', () => {
+    // notify_out inline editor — date + reason fields per employee item
+    Alpine.data('notifyOutFields', ({ itemId, initialDate, initialReason }) => ({
+        itemId,
+        data: {
+            notify_out_date: initialDate || '',
+            notify_out_reason: initialReason || '',
+        },
+        saving: false,
+        lastSaved: '',
+        _debounce: null,
+        get hasDate() { return !!(this.data.notify_out_date && this.data.notify_out_date.trim()); },
+        save() {
+            clearTimeout(this._debounce);
+            this._debounce = setTimeout(() => this._doSave(), 250);
+        },
+        _doSave() {
+            if (this.saving) return;
+            this.saving = true;
+            const fd = new FormData();
+            fd.append('_token', '{{ csrf_token() }}');
+            fd.append('notify_out_date', this.data.notify_out_date || '');
+            fd.append('notify_out_reason', this.data.notify_out_reason || '');
+            fetch('/workflow/item/' + this.itemId + '/notify-out-fields', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: fd
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    this.lastSaved = '✓ บันทึกแล้ว ' + new Date().toLocaleTimeString();
+                } else {
+                    Swal.fire('Error', data.message || 'Failed', 'error');
+                }
+            })
+            .catch(err => console.error('notify_out save failed', err))
+            .finally(() => { this.saving = false; });
+        }
+    }));
+
     // MOU import type inline picker — click badge to change classification
     Alpine.data('mouImportTypePicker', ({ orderId, initial }) => ({
         value: initial || null,
@@ -1744,11 +1784,18 @@ window.loadBatchStats = function() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                 })
-                .then(res => {
-                    if (!res.ok) throw new Error(res.statusText);
-                    return res.json();
-                })
-                .then(data => {
+                .then(res => res.json().then(data => ({status: res.status, data})))
+                .then(({status, data}) => {
+                    // Handle validation error specifically — notify_out date required
+                    if (status === 422 && data.code === 'NOTIFY_OUT_DATE_REQUIRED') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '{{ __("ต้องระบุวันแจ้งออกก่อน") }}',
+                            html: data.message + '<br><small class="text-muted">{{ __("คลิกที่ช่อง วันแจ้งออก ในการ์ดลูกจ้าง เพื่อกรอกข้อมูล") }}</small>',
+                            confirmButtonText: 'ตกลง'
+                        });
+                        return;
+                    }
                     if(data.success) {
                         // Refresh card to show "Saved/Completed" state (Green/Flat)
                         refreshItemCard(itemId);

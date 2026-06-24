@@ -84,6 +84,8 @@
         ['key' => 'employer_ticket',          'title' => 'ส่งคำขอ / Employer Ticket'],
         ['key' => 'employers',                'title' => 'ข้อมูลนายจ้าง / Employers'],
         ['key' => 'employees',                'title' => 'ข้อมูลลูกจ้าง / Employees'],
+        ['key' => 'employment_history',       'title' => 'ประวัติการจ้างงาน / Employment History'],
+        ['key' => 'group_team',               'title' => 'กลุ่มและทีม / Group & Team'],
         ['key' => 'sales',                    'title' => 'การขายและใบเสนอราคา / Sales'],
         ['key' => 'production',               'title' => 'งานเตรียมการ / P Production'],
         ['key' => 'workflow',                 'title' => 'ขั้นตอนงาน / Workflow'],

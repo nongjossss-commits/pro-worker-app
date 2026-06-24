@@ -51,6 +51,42 @@
     — งานต่ออายุที่ทำใน Workflow จะถูก auto-apply กลับมาที่มติทุก 24 ชม.
 </div>
 
+<h5>5. Auto Settings — ตั้งค่าแยกแต่ละแถบมติ (Per-tab)</h5>
+<div class="manual-step">
+    <ol class="mb-0">
+        <li>เปิดแถบมติที่ต้องการ → กดปุ่ม <strong>"Auto Settings"</strong> ด้านบนขวา</li>
+        <li>หัว popup จะแสดง <strong>ชื่อแถบ</strong> (เช่น "31/03/2026") + เตือนว่าตั้งค่านี้ใช้กับแถบนี้เท่านั้น</li>
+        <li>กรอก:
+            <ul>
+                <li><strong>Auto Work Permit Expiry Date</strong> — วันหมดอายุ WP เป้าหมาย</li>
+                <li><strong>Auto Visa Expiry Date</strong> — วันหมดอายุ Visa เป้าหมาย</li>
+                <li><strong>Auto MOU Group</strong> — กลุ่ม MOU ที่ต้องการ</li>
+            </ul>
+        </li>
+        <li>กด Save → ใช้กับ <strong>แถบนี้เท่านั้น</strong> ไม่กระทบแถบอื่น</li>
+        <li>แต่ละแถบมี Auto Settings ของตัวเอง — ลูกจ้างใน tab 31/03/2026 จะถูกประเมิน color/progress ตาม setting ของ tab นั้น ไม่ใช่ tab อื่น</li>
+    </ol>
+</div>
+
+<h5>6. ระบบสีลูกจ้าง (Progress Colors)</h5>
+<div class="manual-step">
+    ลูกจ้างในแต่ละการ์ดจะมีสีบอกความคืบหน้าตาม Auto Settings:
+    <ul class="mb-0">
+        <li>⚪ <strong>none</strong> = ยังไม่ได้ต่ออายุ</li>
+        <li>🟦 <strong>visa_only</strong> = ต่อ visa แล้ว (รอ WP)</li>
+        <li>🟧 <strong>work_permit_only</strong> = ต่อ WP แล้ว (รอ visa)</li>
+        <li>🟩 <strong>both</strong> = ต่อครบแล้ว พร้อมปิดงาน</li>
+        <li>✅ <strong>completed</strong> = ปิดงานแล้ว</li>
+    </ul>
+</div>
+
+<h5>7. Auto-pull ลูกจ้างเข้าเมนูอัตโนมัติ</h5>
+<div class="manual-step">
+    ลูกจ้างที่มี WP หรือ Visa หมดอายุตรงกับ Auto Settings ของแถบใด → <strong>auto-pull เข้าแถบนั้น</strong>ทันทีเมื่อมีการอัพเดทวันที่
+    <br>
+    <strong>การ "add-only":</strong> ลูกจ้างที่อยู่ในเมนูแล้ว <strong>จะไม่ถูกดีดออก</strong>เมื่ออัพเดทวันที่ — สีจะเปลี่ยนตาม progress เท่านั้น (ต้องกดเสร็จสิ้น/ยกเลิก manual)
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

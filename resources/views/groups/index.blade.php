@@ -3,6 +3,7 @@
 @section('title', 'Group & Team')
 
 @section('content')
+<x-help-button manual="group_team" title="{{ __('Group & Team') }}" />
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">{{ __('Group & Team Management') }}</h1>

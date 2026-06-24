@@ -2,6 +2,7 @@
 @section('title', 'ประวัติการจ้างงาน')
 
 @section('content')
+<x-help-button manual="employment_history" title="{{ __('Employment History') }}" />
 <div class="p-4 p-md-5 content-section">
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">

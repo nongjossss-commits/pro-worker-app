@@ -477,6 +477,184 @@ class SettingsController extends Controller
     }
 
     /**
+     * Save the Program Pricelist config (SaaS pricing shown on the printable pricelist page).
+     * Stored as a single JSON blob in super_admin_settings.program_pricelist_config.
+     */
+    public function saveProgramPricelist(Request $request)
+    {
+        $request->validate([
+            'title'       => 'nullable|string|max:255',
+            'subtitle'    => 'nullable|string|max:255',
+            'currency'    => 'nullable|string|max:5',
+            'footer_note' => 'nullable|string|max:1000',
+            'tiers'       => 'nullable|array',
+            'tiers.*.label'      => 'nullable|string|max:100',
+            'tiers.*.sublabel'   => 'nullable|string|max:100',
+            'tiers.*.setup_fee'  => 'nullable|numeric|min:0',
+            'tiers.*.annual_fee' => 'nullable|numeric|min:0',
+            'features'    => 'nullable|array',
+            'features.*.name'  => 'nullable|string|max:255',
+            'features.*.scope' => 'nullable|string|max:500',
+        ]);
+
+        $config = [
+            'title'       => trim((string) $request->input('title', '')),
+            'subtitle'    => trim((string) $request->input('subtitle', '')),
+            'currency'    => trim((string) $request->input('currency', 'THB')) ?: 'THB',
+            'footer_note' => trim((string) $request->input('footer_note', '')),
+            'tiers'       => array_values(array_map(function ($t) {
+                return [
+                    'label'      => trim((string) ($t['label'] ?? '')),
+                    'sublabel'   => trim((string) ($t['sublabel'] ?? '')),
+                    'setup_fee'  => (float) ($t['setup_fee'] ?? 0),
+                    'annual_fee' => (float) ($t['annual_fee'] ?? 0),
+                ];
+            }, $request->input('tiers', []))),
+            'features'    => array_values(array_map(function ($f) {
+                return [
+                    'name'  => trim((string) ($f['name'] ?? '')),
+                    'scope' => trim((string) ($f['scope'] ?? '')),
+                ];
+            }, $request->input('features', []))),
+        ];
+
+        // Drop blank tiers / features
+        $config['tiers']    = array_values(array_filter($config['tiers'],    fn($t) => $t['label']   !== '' || $t['setup_fee'] > 0 || $t['annual_fee'] > 0));
+        $config['features'] = array_values(array_filter($config['features'], fn($f) => $f['name']    !== '' || $f['scope']     !== ''));
+
+        SuperAdminSetting::updateOrCreate(
+            ['key' => 'program_pricelist_config'],
+            ['value' => json_encode($config, JSON_UNESCAPED_UNICODE)]
+        );
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'program-pricelist'])
+                         ->with('success', 'Program pricelist saved.');
+    }
+
+    /**
+     * Save the Provider Info (used as the issuer on Pricelist + Trial + Service contracts).
+     */
+    public function saveProviderInfo(Request $request)
+    {
+        $request->validate([
+            'name'         => 'required|string|max:255',
+            'address'      => 'nullable|string|max:1000',
+            'tax_id'       => 'nullable|string|max:13',
+            'phone'        => 'nullable|string|max:50',
+            'email'        => 'nullable|email|max:255',
+            'website'      => 'nullable|string|max:255',
+            'signer_name'  => 'nullable|string|max:255',
+            'signer_title' => 'nullable|string|max:255',
+        ]);
+
+        $provider = [
+            'name'         => trim($request->input('name', '')),
+            'address'      => trim($request->input('address', '')),
+            'tax_id'       => trim($request->input('tax_id', '')),
+            'phone'        => trim($request->input('phone', '')),
+            'email'        => trim($request->input('email', '')),
+            'website'      => trim($request->input('website', '')),
+            'signer_name'  => trim($request->input('signer_name', '')),
+            'signer_title' => trim($request->input('signer_title', '')),
+        ];
+
+        SuperAdminSetting::updateOrCreate(
+            ['key' => 'program_provider_info'],
+            ['value' => json_encode($provider, JSON_UNESCAPED_UNICODE)]
+        );
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'program-pricelist'])
+                         ->with('success', 'Provider info saved.');
+    }
+
+    /**
+     * Render a printable Trial or Service contract from query params + provider config.
+     * Customer info is supplied per-document (not stored).
+     */
+    public function programContractView(Request $request, string $type)
+    {
+        if (!in_array($type, ['trial', 'service'], true)) {
+            abort(404);
+        }
+
+        $providerRow = SuperAdminSetting::where('key', 'program_provider_info')->value('value');
+        $provider = $providerRow ? json_decode($providerRow, true) : [];
+        $provider = is_array($provider) ? $provider : [];
+
+        // Sensible defaults if provider config not set yet
+        $provider = array_replace([
+            'name' => '— ยังไม่ได้ตั้งค่าผู้ให้บริการ —',
+            'address' => '', 'tax_id' => '', 'phone' => '', 'email' => '', 'website' => '',
+            'signer_name' => '', 'signer_title' => '',
+        ], $provider);
+
+        $customer = [
+            'name'        => trim((string) $request->query('customer_name', '')),
+            'tax_id'      => trim((string) $request->query('customer_tax_id', '')),
+            'phone'       => trim((string) $request->query('customer_phone', '')),
+            'email'       => trim((string) $request->query('customer_email', '')),
+            'address'     => trim((string) $request->query('customer_address', '')),
+            'signer_name' => trim((string) $request->query('customer_signer_name', '')),
+            'signer_title'=> trim((string) $request->query('customer_signer_title', '')),
+        ];
+
+        $witnesses = [
+            ['name' => trim((string) $request->query('witness_1_name', '')), 'title' => trim((string) $request->query('witness_1_title', ''))],
+            ['name' => trim((string) $request->query('witness_2_name', '')), 'title' => trim((string) $request->query('witness_2_title', ''))],
+        ];
+
+        $contract = [
+            'type' => $type,
+            'date' => date('Y-m-d'),
+            'trial_start' => $request->query('trial_start'),
+            'trial_end'   => $request->query('trial_end'),
+            'test_server_url' => trim((string) $request->query('test_server_url', '')),
+            'service_start' => $request->query('service_start'),
+            'service_years' => (int) ($request->query('service_years', 1)),
+            'package'     => null,
+        ];
+
+        // Parse the package_tier from the service form: "label|sublabel|setup|annual"
+        if ($type === 'service' && $request->filled('package_tier')) {
+            $parts = explode('|', $request->query('package_tier'));
+            if (count($parts) === 4) {
+                $contract['package'] = [
+                    'label'      => $parts[0],
+                    'sublabel'   => $parts[1],
+                    'setup_fee'  => (float) $parts[2],
+                    'annual_fee' => (float) $parts[3],
+                ];
+            }
+        }
+
+        $view = $type === 'trial' ? 'super-admin.contract-trial' : 'super-admin.contract-service';
+        return view($view, compact('provider', 'customer', 'witnesses', 'contract'));
+    }
+
+    /**
+     * Public printable view of the Program Pricelist — designed to be opened in a new tab
+     * and printed (Ctrl+P) to PDF. Uses Brand Settings for logo + name + primary color.
+     */
+    public function programPricelistView()
+    {
+        $row = SuperAdminSetting::where('key', 'program_pricelist_config')->first();
+        $config = $row ? json_decode($row->value, true) : [];
+        $config = is_array($config) ? $config : [];
+
+        $defaults = [
+            'title' => 'Pro-Worker — PRICELIST',
+            'subtitle' => date('Y') . ' Q' . ceil(date('n') / 3),
+            'currency' => 'THB',
+            'footer_note' => '',
+            'tiers' => [],
+            'features' => [],
+        ];
+        $config = array_replace_recursive($defaults, $config);
+
+        return view('super-admin.program-pricelist', ['config' => $config]);
+    }
+
+    /**
      * Per-slot update: save one slot's default to SuperAdminSetting AND force-update
      * every existing record's description column to match. Returns JSON for AJAX.
      */

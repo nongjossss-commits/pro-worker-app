@@ -54,6 +54,28 @@
     ถ้ามีหลายลูกจ้างในใบ MOU เดียวกัน — กดปุ่ม "ส่งทั้งใบ" ที่การ์ด MOU เพื่อส่งครั้งเดียว
 </div>
 
+<h5>6. แท็บการเงิน (Financial Tab) ในใบงาน</h5>
+<div class="manual-step">
+    เมื่อเปิด Edit Job → คลิก tab <strong>"Financial"</strong> หรือกดปุ่ม "การเงิน" ที่การ์ดนายจ้าง
+    <ul class="mb-0">
+        <li><strong>สร้างแท็บการเงินหลายอัน</strong>ในใบงานเดียวได้ (เช่น "ค่าบริการ MOU พม่า", "งวดเปลี่ยนนายจ้าง")
+            กด <strong>"+ เพิ่มแท็บ"</strong> → ตั้งชื่อแท็บ (บังคับ — ห้ามว่าง / ห้ามซ้ำ)</li>
+        <li>กดไอคอน <i class="bi bi-pencil-square"></i> หรือ <strong>double-click ที่ชื่อแท็บ</strong> เพื่อเปลี่ยนชื่อ</li>
+        <li>กดไอคอน <i class="bi bi-trash"></i> เพื่อลบแท็บ (มี confirm + แสดงผลกระทบ)</li>
+    </ul>
+</div>
+
+<h5>7. ตั้งราคา per-head + หมายเหตุงวด</h5>
+<div class="manual-step">
+    ในแท็บการเงิน เลือกโหมด <strong>"ต่อหัว (Per-head)"</strong>:
+    <ul class="mb-0">
+        <li>เพิ่มงวดราคา (Tier) — แต่ละงวดมี ราคา + จำนวนคน + <strong>หมายเหตุ</strong></li>
+        <li>คลิกที่ <strong>กล่องหมายเหตุ</strong>หรือไอคอน <i class="bi bi-pencil-square"></i> เพื่อเปิด popup ใหญ่แก้ไข (มี counter 500 ตัวอักษร + Ctrl+Enter บันทึก)</li>
+        <li>หมายเหตุนี้จะแสดงในใบแจ้งหนี้/ใบเสร็จที่ออกตามงวดนี้ด้วย</li>
+        <li>กด <i class="bi bi-trash"></i> ลบงวด — มี confirm + เตือนถ้ามีลูกจ้าง assigned อยู่</li>
+    </ul>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

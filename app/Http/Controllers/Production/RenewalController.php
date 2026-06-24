@@ -122,8 +122,9 @@ class RenewalController extends Controller
 
         // Load resolution settings + targets up front so the filter cases
         // below (and the count subqueries / view) can reuse them.
+        // Per-tab keys ({key}__tab_{id}) take precedence over legacy global keys.
         $resolutionSettingsRaw = SystemSetting::where('group', 'renewal')->get();
-        $resolutionSettings = $resolutionSettingsRaw->pluck('value', 'key')->toArray();
+        $resolutionSettings = $this->resolvePerTabSettings($resolutionSettingsRaw, 'renewal', $this->currentTab->id);
         $renewalTargets = [
             'visa' => $resolutionSettings['renewal_auto_visa_expiry'] ?? null,
             'wp'   => $resolutionSettings['renewal_auto_work_permit_expiry'] ?? null,
@@ -223,9 +224,9 @@ class RenewalController extends Controller
             ->distinct('employer_id')
             ->count('employer_id');
 
-        // Resolution settings already loaded above — reused here.
+        // Resolution settings already loaded above — reused here (per-tab resolved).
         $resolutionSettingsRaw = $resolutionSettingsRaw ?? SystemSetting::where('group', 'renewal')->get();
-        $resolutionSettings = $resolutionSettingsRaw->pluck('value', 'key')->toArray();
+        $resolutionSettings = $this->resolvePerTabSettings($resolutionSettingsRaw, 'renewal', $this->currentTab->id);
 
         // --- 2. Employer List Query (Pagination) ---
         $employerQuery = Employer::withTrashed()->with(['jobOwner', 'customFields', 'addresses']);
@@ -1595,6 +1596,36 @@ class RenewalController extends Controller
     /**
      * API: Update Resolution Auto-Settings
      */
+    /**
+     * Build a {key => value} map for a resolution group's auto-settings, with per-tab keys
+     * ({key}__tab_{id}) taking precedence over the legacy global key.
+     *
+     * The view templates index by the global key name (e.g. 'renewal_auto_visa_expiry'),
+     * so this helper exposes the per-tab value under the global key name — no view changes.
+     */
+    protected function resolvePerTabSettings($settingsCollection, string $group, int $tabId): array
+    {
+        $byKey = $settingsCollection->pluck('value', 'key')->toArray();
+        $suffix = "__tab_{$tabId}";
+
+        $resolved = [];
+        foreach (['visa_expiry', 'work_permit_expiry', 'mou_group'] as $field) {
+            $globalKey = "{$group}_auto_{$field}";
+            $perTabKey = $globalKey . $suffix;
+            // per-tab wins; fall back to legacy global
+            $resolved[$globalKey] = $byKey[$perTabKey] ?? ($byKey[$globalKey] ?? null);
+        }
+
+        // Also expose any other keys (e.g. unknown fields the view might use) using legacy values
+        foreach ($byKey as $k => $v) {
+            if (!array_key_exists($k, $resolved) && !str_contains($k, '__tab_')) {
+                $resolved[$k] = $v;
+            }
+        }
+
+        return $resolved;
+    }
+
     public function updateResolutionSettings(Request $request, $resolutionTab)
     {
         $this->resolveTab($resolutionTab, 'renewal');
@@ -1610,19 +1641,21 @@ class RenewalController extends Controller
         ]);
 
         $group = 'renewal';
+        $tabId = $this->currentTab->id;
+        $suffix = "__tab_{$tabId}";
 
         SystemSetting::updateOrCreate(
-            ['key' => "{$group}_auto_work_permit_expiry"],
+            ['key' => "{$group}_auto_work_permit_expiry{$suffix}"],
             ['value' => $request->auto_work_permit_expiry, 'group' => $group]
         );
 
         SystemSetting::updateOrCreate(
-            ['key' => "{$group}_auto_visa_expiry"],
+            ['key' => "{$group}_auto_visa_expiry{$suffix}"],
             ['value' => $request->auto_visa_expiry, 'group' => $group]
         );
 
         SystemSetting::updateOrCreate(
-            ['key' => "{$group}_auto_mou_group"],
+            ['key' => "{$group}_auto_mou_group{$suffix}"],
             ['value' => $request->auto_mou_group, 'group' => $group]
         );
 

@@ -1694,6 +1694,35 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Inline-update notify_out fields (date + reason) on a single production_item.
+     * Used from the workflow card so the user can record these without leaving the page.
+     */
+    public function updateNotifyOutFields(Request $request, $itemId)
+    {
+        $request->validate([
+            'notify_out_date'   => 'nullable|date',
+            'notify_out_reason' => 'nullable|string|max:500',
+        ]);
+
+        $item = ProductionItem::with('order.workType')->findOrFail($itemId);
+        $slug = $item->order->workType->slug ?? '';
+        if ($slug !== 'notify_out') {
+            return response()->json(['success' => false, 'message' => 'Item is not part of a notify_out workflow.'], 422);
+        }
+
+        $item->update([
+            'notify_out_date'   => $request->notify_out_date ?: null,
+            'notify_out_reason' => trim((string) $request->notify_out_reason) ?: null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'notify_out_date'   => optional($item->notify_out_date)->format('Y-m-d'),
+            'notify_out_reason' => $item->notify_out_reason,
+        ]);
+    }
+
+    /**
      * Finalize/Complete an Item (Logic depends on WorkType).
      */
     public function finalizeItem(Request $request, $itemId)
@@ -1701,7 +1730,8 @@ class WorkflowController extends Controller
         $item = ProductionItem::with(['order.workType', 'employee'])->findOrFail($itemId);
         $slug = $item->order->workType->slug ?? '';
 
-        DB::transaction(function () use ($item, $slug) {
+        try {
+            DB::transaction(function () use ($item, $slug) {
             // For 'notify_in' (Change Employer), we DELAY the update by 24 hours.
             // So we DO NOT update the employee record here. The Scheduled Job will handle it.
             if (in_array($slug, ['mou_import', 'mou_renewal'])) {
@@ -1714,10 +1744,16 @@ class WorkflowController extends Controller
                     ]);
                 }
             } elseif ($slug === 'notify_out') {
+                // Block completion if the per-item notify_out_date wasn't set yet —
+                // the user must explicitly record WHEN the employee was notified out.
+                if (!$item->notify_out_date) {
+                    throw new \Exception('NOTIFY_OUT_DATE_REQUIRED');
+                }
                 if ($item->employee) {
                     $item->employee->update([
-                        'terminated_at' => now(),
-                        'status' => 'resigned'
+                        'terminated_at' => $item->notify_out_date,
+                        'termination_reason' => $item->notify_out_reason ?: null,
+                        'status' => 'resigned',
                     ]);
                 }
             }
@@ -1729,7 +1765,17 @@ class WorkflowController extends Controller
                 // the latest admin-configured settings (see ApplyWorkflowSettings).
                 'workflow_settings_applied' => false,
             ]);
-        });
+            });
+        } catch (\Throwable $e) {
+            if ($e->getMessage() === 'NOTIFY_OUT_DATE_REQUIRED') {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'NOTIFY_OUT_DATE_REQUIRED',
+                    'message' => 'กรุณาระบุวันแจ้งออกก่อนกดเสร็จสิ้น',
+                ], 422);
+            }
+            throw $e;
+        }
 
         // Recalculate Stats
         $orderStats = $this->calculateOrderStats($item->order);

@@ -42,6 +42,11 @@
                 <i class="bi bi-palette-fill"></i> {{ __('Branding') }}
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $activeTab === 'program-pricelist' ? 'active' : '' }}" id="program-pricelist-tab" data-bs-toggle="tab" data-bs-target="#program-pricelist" type="button" role="tab" aria-controls="program-pricelist" aria-selected="{{ $activeTab === 'program-pricelist' ? 'true' : 'false' }}">
+                <i class="bi bi-tags-fill"></i> {{ __('Program Sales') }}
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content" id="superAdminSettingsTabContent">
@@ -629,10 +634,470 @@
             </div>
         </div>
 
+        {{-- Tab 6: Program Sales (Pricelist + Trial Contract + Service Contract + Provider Info) --}}
+        <div class="tab-pane fade {{ $activeTab === 'program-pricelist' ? 'show active' : '' }}" id="program-pricelist" role="tabpanel" aria-labelledby="program-pricelist-tab">
+            @php
+                // Load all 4 stored configs from SuperAdminSetting
+                $pricelistRaw = $settings['program_pricelist_config']->value ?? null;
+                $pricelist = $pricelistRaw ? json_decode($pricelistRaw, true) : null;
+                $pricelist = is_array($pricelist) ? $pricelist : [];
+
+                $providerRaw = $settings['program_provider_info']->value ?? null;
+                $provider = $providerRaw ? json_decode($providerRaw, true) : null;
+                $provider = is_array($provider) ? $provider : [];
+
+                $defaultPricelist = [
+                    'title' => 'PRICELIST',
+                    'subtitle' => date('Y') . ' Q' . ceil(date('n')/3),
+                    'currency' => 'THB',
+                    'features' => [
+                        ['name' => 'System Implement', 'scope' => 'การพัฒนาและการตั้งค่าระบบมาตรฐาน (ครั้งเดียว)'],
+                        ['name' => 'License + Hosting Management', 'scope' => 'License และ Hosting สำหรับเก็บข้อมูล (รายปี)'],
+                        ['name' => 'Website Usage Training', 'scope' => 'อบรมการใช้งานเว็บไซต์ในบริษัท (3 Hrs.)'],
+                        ['name' => 'Domain Management', 'scope' => 'ใช้ Subdomain ของระบบ'],
+                        ['name' => 'SSL Set Up – Security Socket Layer', 'scope' => 'ติดตั้ง SSL ปกป้องเว็บไซต์ให้ปลอดภัย'],
+                    ],
+                    'tiers' => [
+                        ['label' => '1,000 คน', 'sublabel' => 'STARTER',    'setup_fee' => 25000, 'annual_fee' => 10000],
+                        ['label' => '2,000 คน', 'sublabel' => 'GROWTH',     'setup_fee' => 35000, 'annual_fee' => 15000],
+                        ['label' => '3,000 คน', 'sublabel' => 'BUSINESS',   'setup_fee' => 50000, 'annual_fee' => 25000],
+                        ['label' => '5,000 คน', 'sublabel' => 'ENTERPRISE', 'setup_fee' => 65000, 'annual_fee' => 30000],
+                    ],
+                    'footer_note' => 'ราคายังไม่รวมภาษีมูลค่าเพิ่ม (VAT 7%) — สามารถปรับแต่งตามขอบเขตงานจริงได้',
+                ];
+                $pricelist = array_replace_recursive($defaultPricelist, $pricelist);
+
+                $defaultProvider = [
+                    'name' => '',
+                    'address' => '',
+                    'tax_id' => '',
+                    'phone' => '',
+                    'email' => '',
+                    'website' => '',
+                    'signer_name' => '',
+                    'signer_title' => '',
+                ];
+                $provider = array_replace($defaultProvider, $provider);
+            @endphp
+
+            {{-- Sub-navigation pills inside the tab --}}
+            <ul class="nav nav-pills mb-4 gap-2" id="programSalesSubNav" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="sub-provider-tab" data-bs-toggle="pill" data-bs-target="#sub-provider" type="button" role="tab">
+                        <i class="bi bi-building me-1"></i> {{ __('Provider Info') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sub-pricelist-tab" data-bs-toggle="pill" data-bs-target="#sub-pricelist" type="button" role="tab">
+                        <i class="bi bi-tags-fill me-1"></i> {{ __('Pricelist') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sub-trial-tab" data-bs-toggle="pill" data-bs-target="#sub-trial" type="button" role="tab">
+                        <i class="bi bi-file-earmark-text me-1"></i> {{ __('Trial Contract') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sub-service-tab" data-bs-toggle="pill" data-bs-target="#sub-service" type="button" role="tab">
+                        <i class="bi bi-file-earmark-check-fill me-1"></i> {{ __('Service Contract') }}
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="programSalesSubContent">
+
+                {{-- Sub 1: Provider Info (shared) --}}
+                <div class="tab-pane fade show active" id="sub-provider" role="tabpanel">
+                    <div class="alert alert-warning py-2 small mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        {{ __('ข้อมูลผู้ให้บริการนี้จะถูกใช้ในใบเสนอราคา + สัญญาทดลอง + สัญญาเช่าจริง — สามารถใช้ชื่อบริษัทอะไรก็ได้ในการออกเอกสาร') }}
+                    </div>
+
+                    <form action="{{ route('super-admin.program-sales.provider.save') }}" method="POST">
+                        @csrf
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-bold">{{ __('ชื่อบริษัท / ผู้ให้บริการ') }} <span class="text-danger">*</span></label>
+                                        <input type="text" name="name" class="form-control" value="{{ $provider['name'] }}" required placeholder="เช่น บริษัท XXX จำกัด">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('เลขประจำตัวผู้เสียภาษี') }}</label>
+                                        <input type="text" name="tax_id" class="form-control" value="{{ $provider['tax_id'] }}" maxlength="13">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('ที่อยู่') }}</label>
+                                        <textarea name="address" class="form-control" rows="2">{{ $provider['address'] }}</textarea>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('โทรศัพท์') }}</label>
+                                        <input type="text" name="phone" class="form-control" value="{{ $provider['phone'] }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('Email') }}</label>
+                                        <input type="email" name="email" class="form-control" value="{{ $provider['email'] }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('Website') }}</label>
+                                        <input type="text" name="website" class="form-control" value="{{ $provider['website'] }}">
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('ผู้มีอำนาจลงนาม (ชื่อ)') }}</label>
+                                        <input type="text" name="signer_name" class="form-control" value="{{ $provider['signer_name'] }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('ตำแหน่ง') }}</label>
+                                        <input type="text" name="signer_title" class="form-control" value="{{ $provider['signer_title'] }}" placeholder="กรรมการผู้จัดการ">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="submit" class="btn btn-warning fw-bold px-4">
+                                        <i class="bi bi-save-fill me-1"></i> {{ __('Save Provider Info') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Sub 2: Pricelist (kept from previous version) --}}
+                <div class="tab-pane fade" id="sub-pricelist" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h6 class="mb-0"><i class="bi bi-tags-fill me-1 text-warning"></i>{{ __('Pricelist') }}</h6>
+                            <small class="text-muted">{{ __('ใบเสนอราคาแพ็คเกจ — แยกตามจำนวนคนที่รองรับ') }}</small>
+                        </div>
+                        <a href="{{ route('super-admin.program-pricelist.view') }}" target="_blank" class="btn btn-warning fw-bold">
+                            <i class="bi bi-eye-fill me-1"></i> {{ __('View Pricelist (Print Ready)') }}
+                        </a>
+                    </div>
+
+                    <form action="{{ route('super-admin.program-pricelist.save') }}" method="POST"
+                          x-data="programPricelistForm({{ Js::from($pricelist) }})">
+                        @csrf
+
+                        <div class="card mb-3 border-warning">
+                            <div class="card-header bg-warning bg-opacity-25 fw-bold">
+                                <i class="bi bi-file-text me-1"></i>{{ __('Header') }}
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('Title') }}</label>
+                                        <input type="text" name="title" class="form-control" x-model="data.title" placeholder="PRICELIST">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('Subtitle (รุ่น/ไตรมาส)') }}</label>
+                                        <input type="text" name="subtitle" class="form-control" x-model="data.subtitle" placeholder="2026 Q1">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small fw-bold">{{ __('Currency') }}</label>
+                                        <input type="text" name="currency" class="form-control" x-model="data.currency" maxlength="5" placeholder="THB">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('Footer Note') }}</label>
+                                        <textarea name="footer_note" class="form-control" rows="2" x-model="data.footer_note"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-3 border-warning">
+                            <div class="card-header bg-warning bg-opacity-25 fw-bold d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-people-fill me-1"></i>{{ __('Pricing Tiers (แยกตามจำนวนคน)') }}</span>
+                                <button type="button" class="btn btn-sm btn-warning" @click="addTier()">
+                                    <i class="bi bi-plus-lg me-1"></i>{{ __('Add Tier') }}
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 38px;">#</th>
+                                                <th style="min-width: 140px;">{{ __('Label (จำนวนคน)') }}</th>
+                                                <th style="min-width: 140px;">{{ __('Sublabel (ชื่อแพ็คเกจ)') }}</th>
+                                                <th style="min-width: 140px;">{{ __('Setup Fee (ค่าแรกเข้า)') }}</th>
+                                                <th style="min-width: 140px;">{{ __('Annual Fee (รายปี)') }}</th>
+                                                <th style="width: 50px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="(tier, idx) in data.tiers" :key="idx">
+                                                <tr>
+                                                    <td class="text-center text-muted" x-text="idx + 1"></td>
+                                                    <td><input type="text" :name="'tiers[' + idx + '][label]'" class="form-control form-control-sm" x-model="tier.label"></td>
+                                                    <td><input type="text" :name="'tiers[' + idx + '][sublabel]'" class="form-control form-control-sm" x-model="tier.sublabel"></td>
+                                                    <td><input type="number" :name="'tiers[' + idx + '][setup_fee]'" class="form-control form-control-sm text-end" x-model.number="tier.setup_fee" min="0"></td>
+                                                    <td><input type="number" :name="'tiers[' + idx + '][annual_fee]'" class="form-control form-control-sm text-end" x-model.number="tier.annual_fee" min="0"></td>
+                                                    <td class="text-center">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" @click="removeTier(idx)" :disabled="data.tiers.length <= 1"><i class="bi bi-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-3 border-warning">
+                            <div class="card-header bg-warning bg-opacity-25 fw-bold d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-list-check me-1"></i>{{ __('Scope of Work / Features (รายการที่รวมในแพ็คเกจ)') }}</span>
+                                <button type="button" class="btn btn-sm btn-warning" @click="addFeature()">
+                                    <i class="bi bi-plus-lg me-1"></i>{{ __('Add Feature') }}
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 38px;">#</th>
+                                                <th style="min-width: 180px;">{{ __('Item') }}</th>
+                                                <th>{{ __('Scope of Work') }}</th>
+                                                <th style="width: 50px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="(feature, idx) in data.features" :key="idx">
+                                                <tr>
+                                                    <td class="text-center text-muted" x-text="idx + 1"></td>
+                                                    <td><input type="text" :name="'features[' + idx + '][name]'" class="form-control form-control-sm" x-model="feature.name"></td>
+                                                    <td><input type="text" :name="'features[' + idx + '][scope]'" class="form-control form-control-sm" x-model="feature.scope"></td>
+                                                    <td class="text-center">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" @click="removeFeature(idx)"><i class="bi bi-trash"></i></button>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                            <tr x-show="data.features.length === 0">
+                                                <td colspan="4" class="text-center text-muted fst-italic py-3">— {{ __('ยังไม่มีรายการ — กดปุ่ม Add Feature เพื่อเพิ่ม') }} —</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-warning fw-bold px-4">
+                                <i class="bi bi-save-fill me-1"></i> {{ __('Save Pricelist') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Sub 3: Trial Contract --}}
+                <div class="tab-pane fade" id="sub-trial" role="tabpanel">
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        {{ __('สัญญาทดลองใช้ — ไม่คิดค่าบริการ ลูกค้าทดลองใช้บน Server ทดสอบ ไม่มีการรับประกันข้อมูล สัญญานี้ไม่รวมฟีเจอร์การเงิน') }}
+                    </div>
+
+                    <div class="card border-info">
+                        <div class="card-header bg-info bg-opacity-10 fw-bold"><i class="bi bi-file-earmark-text me-1"></i>{{ __('Generate Trial Contract') }}</div>
+                        <div class="card-body">
+                            <form action="{{ route('super-admin.program-sales.contract.view', ['type' => 'trial']) }}" method="GET" target="_blank">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('ชื่อลูกค้า / บริษัท') }} <span class="text-danger">*</span></label>
+                                        <input type="text" name="customer_name" class="form-control" required placeholder="บริษัท ABC จำกัด">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('เลขประจำตัวผู้เสียภาษี') }}</label>
+                                        <input type="text" name="customer_tax_id" class="form-control" maxlength="13">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('โทรศัพท์') }}</label>
+                                        <input type="text" name="customer_phone" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('Email') }}</label>
+                                        <input type="email" name="customer_email" class="form-control">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('ที่อยู่ลูกค้า') }}</label>
+                                        <textarea name="customer_address" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('ผู้มีอำนาจลงนาม (ฝ่ายลูกค้า)') }}</label>
+                                        <input type="text" name="customer_signer_name" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('ตำแหน่ง') }}</label>
+                                        <input type="text" name="customer_signer_title" class="form-control" placeholder="กรรมการผู้จัดการ">
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('วันที่เริ่มทดลอง') }} <span class="text-danger">*</span></label>
+                                        <input type="date" name="trial_start" class="form-control" required value="{{ date('Y-m-d') }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('วันที่สิ้นสุดทดลอง') }} <span class="text-danger">*</span></label>
+                                        <input type="date" name="trial_end" class="form-control" required value="{{ date('Y-m-d', strtotime('+30 days')) }}">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('URL Server ทดสอบ') }}</label>
+                                        <input type="text" name="test_server_url" class="form-control" placeholder="https://demo.example.com">
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 1 (ชื่อ)') }}</label>
+                                        <input type="text" name="witness_1_name" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 1 (ตำแหน่ง)') }}</label>
+                                        <input type="text" name="witness_1_title" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 2 (ชื่อ)') }}</label>
+                                        <input type="text" name="witness_2_name" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 2 (ตำแหน่ง)') }}</label>
+                                        <input type="text" name="witness_2_title" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-3">
+                                    <button type="submit" class="btn btn-info fw-bold px-4">
+                                        <i class="bi bi-eye-fill me-1"></i> {{ __('Generate Trial Contract') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Sub 4: Service Contract --}}
+                <div class="tab-pane fade" id="sub-service" role="tabpanel">
+                    <div class="alert alert-success py-2 small mb-3">
+                        <i class="bi bi-shield-check me-1"></i>
+                        {{ __('สัญญาเช่าจริง — รองรับมาตรฐานสากล (ISO 27001 alignment, PDPA, TLS, encryption at rest, RBAC, daily backup) สัญญานี้ไม่รวมฟีเจอร์การเงิน') }}
+                    </div>
+
+                    <div class="card border-success">
+                        <div class="card-header bg-success bg-opacity-10 fw-bold"><i class="bi bi-file-earmark-check-fill me-1"></i>{{ __('Generate Service Contract') }}</div>
+                        <div class="card-body">
+                            <form action="{{ route('super-admin.program-sales.contract.view', ['type' => 'service']) }}" method="GET" target="_blank">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('ชื่อลูกค้า / บริษัท') }} <span class="text-danger">*</span></label>
+                                        <input type="text" name="customer_name" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('เลขประจำตัวผู้เสียภาษี') }}</label>
+                                        <input type="text" name="customer_tax_id" class="form-control" maxlength="13">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('โทรศัพท์') }}</label>
+                                        <input type="text" name="customer_phone" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('Email') }}</label>
+                                        <input type="email" name="customer_email" class="form-control">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('ที่อยู่ลูกค้า') }}</label>
+                                        <textarea name="customer_address" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('ผู้มีอำนาจลงนาม (ฝ่ายลูกค้า)') }}</label>
+                                        <input type="text" name="customer_signer_name" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('ตำแหน่ง') }}</label>
+                                        <input type="text" name="customer_signer_title" class="form-control" placeholder="กรรมการผู้จัดการ">
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('แพ็คเกจ (Tier)') }} <span class="text-danger">*</span></label>
+                                        <select name="package_tier" class="form-select" required>
+                                            @foreach($pricelist['tiers'] as $t)
+                                                <option value="{{ $t['label'] }}|{{ $t['sublabel'] }}|{{ $t['setup_fee'] }}|{{ $t['annual_fee'] }}">
+                                                    {{ $t['sublabel'] }} — {{ $t['label'] }} ({{ number_format($t['setup_fee'], 0) }} + {{ number_format($t['annual_fee'], 0) }}/ปี)
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('วันที่เริ่มสัญญา') }} <span class="text-danger">*</span></label>
+                                        <input type="date" name="service_start" class="form-control" required value="{{ date('Y-m-d') }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">{{ __('ระยะเวลาสัญญา (ปี)') }}</label>
+                                        <input type="number" name="service_years" class="form-control" min="1" max="10" value="1">
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 1 (ชื่อ)') }}</label>
+                                        <input type="text" name="witness_1_name" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 1 (ตำแหน่ง)') }}</label>
+                                        <input type="text" name="witness_1_title" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 2 (ชื่อ)') }}</label>
+                                        <input type="text" name="witness_2_name" class="form-control">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">{{ __('พยาน 2 (ตำแหน่ง)') }}</label>
+                                        <input type="text" name="witness_2_title" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-3">
+                                    <button type="submit" class="btn btn-success fw-bold px-4">
+                                        <i class="bi bi-eye-fill me-1"></i> {{ __('Generate Service Contract') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
+    function programPricelistForm(initial) {
+        return {
+            data: {
+                title: initial.title || '',
+                subtitle: initial.subtitle || '',
+                currency: initial.currency || 'THB',
+                footer_note: initial.footer_note || '',
+                tiers: Array.isArray(initial.tiers) ? initial.tiers.map(t => ({
+                    label: t.label || '',
+                    sublabel: t.sublabel || '',
+                    setup_fee: Number(t.setup_fee) || 0,
+                    annual_fee: Number(t.annual_fee) || 0,
+                })) : [],
+                features: Array.isArray(initial.features) ? initial.features.map(f => ({
+                    name: f.name || '',
+                    scope: f.scope || '',
+                })) : [],
+            },
+            addTier() {
+                this.data.tiers.push({ label: '', sublabel: '', setup_fee: 0, annual_fee: 0 });
+            },
+            removeTier(idx) {
+                if (this.data.tiers.length <= 1) return;
+                this.data.tiers.splice(idx, 1);
+            },
+            addFeature() {
+                this.data.features.push({ name: '', scope: '' });
+            },
+            removeFeature(idx) {
+                this.data.features.splice(idx, 1);
+            }
+        };
+    }
+
     function brandColorForm(initial) {
         return {
             primary: initial.primary || '#F97316',
