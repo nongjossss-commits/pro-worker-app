@@ -218,8 +218,16 @@ class ProductionController extends Controller
                 }
             ]);
 
-            $orders = $query->orderByDesc('active_items_count')
-                            ->orderBy('cancelled_items_count')
+            // Sort priority:
+            //   1. Orders with zero active employees → bottom (empty cards go last)
+            //   2. Cancelled orders → bottom
+            //   3. Most recently touched orders → top. ProductionItem::$touches
+            //      bumps the parent order's updated_at on every item change, and
+            //      EmployeeObserver bumps related items when the employee record
+            //      is edited, so any activity surfaces the employer card on the
+            //      next page load.
+            $orders = $query->orderByRaw("CASE WHEN active_items_count = 0 THEN 1 ELSE 0 END ASC")
+                            ->orderByRaw("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END ASC")
                             ->latest('updated_at')
                             ->paginate($perPage)
                             ->withQueryString();

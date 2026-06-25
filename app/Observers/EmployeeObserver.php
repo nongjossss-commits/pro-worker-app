@@ -79,6 +79,47 @@ class EmployeeObserver
         if ($employee->isDirty('employer_id')) {
             $this->autoCancelStaleNotifyOuts($employee);
         }
+
+        // 4. Bump activity timestamp on all non-finalized production_items for this employee.
+        // ProductionItem::$touches = ['order'] cascades to bump the parent order's updated_at,
+        // which surfaces the employer card to the top of Pre-Prod / Workflow / Registration /
+        // Renewal menus on the next page load (no realtime push — purely on next refresh).
+        // NOTE: in the `updated` event, isDirty() returns false because attributes are already
+        // synced. We use getChanges() (the post-save diff) and skip pure-timestamp changes to
+        // avoid self-feedback loops.
+        $changedKeys = array_keys($employee->getChanges());
+        $meaningfulChanges = array_diff($changedKeys, ['updated_at', 'created_at']);
+        if (!empty($meaningfulChanges)) {
+            $this->bumpRelatedProductionItems($employee);
+        }
+    }
+
+    /**
+     * Touch (update updated_at on) every non-finalized ProductionItem belonging to this employee,
+     * plus their parent ProductionOrder. Mass updates bypass $touches, so we update both tables
+     * explicitly in one shot — fast even when an employee belongs to many orders.
+     */
+    protected function bumpRelatedProductionItems(Employee $employee): void
+    {
+        try {
+            $now = now();
+            $orderIds = \App\Models\ProductionItem::where('employee_id', $employee->id)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->pluck('production_order_id')
+                ->unique()
+                ->values();
+
+            if ($orderIds->isEmpty()) return;
+
+            \App\Models\ProductionItem::where('employee_id', $employee->id)
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->update(['updated_at' => $now]);
+
+            \App\Models\ProductionOrder::whereIn('id', $orderIds)
+                ->update(['updated_at' => $now]);
+        } catch (\Throwable $e) {
+            Log::warning("bumpRelatedProductionItems failed for employee {$employee->id}: " . $e->getMessage());
+        }
     }
 
     /**

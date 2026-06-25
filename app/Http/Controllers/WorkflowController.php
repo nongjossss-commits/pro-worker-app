@@ -184,9 +184,15 @@ class WorkflowController extends Controller
             $perPage = 20;
         }
 
-        $orders = $query->orderByRaw("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END")
-                        ->orderByDesc('active_items_count')
-                        ->orderBy('cancelled_items_count')
+        // Sort priority:
+        //   1. Orders with zero active employees → bottom (empty cards go last)
+        //   2. Cancelled orders → bottom
+        //   3. Most recently touched orders → top. ProductionItem::$touches bumps
+        //      the parent order's updated_at on every item change, and
+        //      EmployeeObserver bumps related items when the employee record is
+        //      edited, so the employer card surfaces on the next page load.
+        $orders = $query->orderByRaw("CASE WHEN active_items_count = 0 THEN 1 ELSE 0 END ASC")
+                        ->orderByRaw("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END ASC")
                         ->latest('updated_at')
                         ->paginate($perPage)
                         ->withQueryString();
@@ -1052,6 +1058,11 @@ class WorkflowController extends Controller
         } else {
             $item->completedWorkTypeSteps()->detach($request->step_id);
         }
+
+        // Bump the item so $touches cascades to bump the parent order's updated_at —
+        // this is what surfaces the employer card to the top of Pre-Prod / Workflow
+        // on the next page load. Sync/detach on a pivot doesn't trigger it by default.
+        $item->touch();
 
         // Log step change - reference the employee via production item
         $employeeId = $item->employee_id;

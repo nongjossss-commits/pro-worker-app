@@ -1699,6 +1699,14 @@ class RenewalController extends Controller
                 $employee->registrationSteps()->detach($validated['step_id']);
             }
 
+            // Bump the employer's production_orders for this resolution tab so the
+            // sort in the index view (MAX(production_orders.updated_at) DESC) surfaces
+            // this employer card to the top on next page load. Pivot sync alone doesn't
+            // touch any order, so we update them directly here.
+            \App\Models\ProductionOrder::where('employer_id', $employee->employer_id)
+                ->where('resolution_tab_id', $this->currentTab->id)
+                ->update(['updated_at' => now()]);
+
             // Log step change as activity on the employee
             ActivityLogHelper::logAction('update', ($validated['completed'] ? 'ติ๊กขั้นตอน' : 'ยกเลิกติ๊กขั้นตอน') . ' "' . $stepName . '" ลูกจ้าง ' . ($employee->employeeNameTh ?: $employee->employeeNameEn), Employee::class, $employee->id, [
                 'step_id' => $validated['step_id'],
