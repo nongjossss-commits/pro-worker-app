@@ -25,7 +25,7 @@
        "both" uses a deeper blue + thick saturated border so it's clearly
        distinct from the purple "visa_only" state at a glance. */
     .renewal-progress-visa-only { background-color: #f3e8ff; border-color: #c084fc !important; }
-    .renewal-progress-wp-only   { background-color: #fce7f3; border-color: #f472b6 !important; }
+    .renewal-progress-wp-only   { background-color: #fef9c3; border-color: #fbbf24 !important; }
     .renewal-progress-both      { background-color: #bfdbfe; border: 2px solid #1d4ed8 !important; }
 
     .renewal-progress-legend .legend-chip {
@@ -38,7 +38,7 @@
     }
     .renewal-progress-legend .swatch-none      { background: #fff; }
     .renewal-progress-legend .swatch-visa      { background: #f3e8ff; border-color: #c084fc; }
-    .renewal-progress-legend .swatch-wp        { background: #fce7f3; border-color: #f472b6; }
+    .renewal-progress-legend .swatch-wp        { background: #fef9c3; border-color: #fbbf24; }
     .renewal-progress-legend .swatch-both      { background: #bfdbfe; border-color: #1d4ed8; }
     .renewal-progress-legend .swatch-completed { background: #d1fae5; border-color: #34d399; }
     /* CSS Counters for persistent slot numbering */
@@ -324,7 +324,7 @@
 
         <a href="{{ $buildToggleUrl('work_permit_only') }}"
            class="btn btn-sm {{ $isRenewalActive('work_permit_only') ? 'text-white' : '' }}"
-           style="{{ $isRenewalActive('work_permit_only') ? 'background:#ec4899;border-color:#db2777;' : 'background:#fce7f3;border:1px solid #f472b6;color:#9d174d;' }}">
+           style="{{ $isRenewalActive('work_permit_only') ? 'background:#eab308;border-color:#ca8a04;' : 'background:#fef9c3;border:1px solid #fbbf24;color:#854d0e;' }}">
             {{ $isRenewalActive('work_permit_only') ? '✓ ' : '' }}{{ __('Work permit renewed only') }}
             <span class="badge bg-light text-dark ms-1">{{ $progressCounts['work_permit_only'] ?? 0 }}</span>
         </a>

@@ -185,6 +185,34 @@ class SettingsController extends Controller
         return view('manuals._bundle');
     }
 
+    /**
+     * Finance-only manual bundle — separately distributed because the Finance
+     * feature is sold as a licensed add-on module (see Service Contract clause 8).
+     */
+    public function financeManualBundle()
+    {
+        return view('manuals._finance_bundle');
+    }
+
+    /**
+     * Training Edition bundle — slide-friendly layout with annotated screenshots,
+     * optimized for projection during training sessions or printing as a workbook.
+     * Excludes Finance (which lives in trainingFinanceBundle).
+     */
+    public function trainingBundle()
+    {
+        return view('manuals._training_bundle');
+    }
+
+    /**
+     * Training Edition Finance bundle — slide-friendly add-on training booklet
+     * for the Finance module. Includes Sales (quotation flow) + Finance + Profiles.
+     */
+    public function trainingFinanceBundle()
+    {
+        return view('manuals._training_finance_bundle');
+    }
+
     public function resetBrandColors()
     {
         SuperAdminSetting::whereIn('key', [

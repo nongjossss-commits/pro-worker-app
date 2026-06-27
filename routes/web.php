@@ -53,6 +53,9 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::post('/brand/colors/reset', [SuperAdminSettingsController::class, 'resetBrandColors'])->name('brand.colors.reset');
     Route::post('/brand/name', [SuperAdminSettingsController::class, 'updateBrandName'])->name('brand.name.update');
     Route::get('/manuals/bundle', [SuperAdminSettingsController::class, 'manualBundle'])->name('manuals.bundle');
+    Route::get('/manuals/finance-bundle', [SuperAdminSettingsController::class, 'financeManualBundle'])->name('manuals.finance_bundle');
+    Route::get('/manuals/training-bundle', [SuperAdminSettingsController::class, 'trainingBundle'])->name('manuals.training_bundle');
+    Route::get('/manuals/training-finance-bundle', [SuperAdminSettingsController::class, 'trainingFinanceBundle'])->name('manuals.training_finance_bundle');
 
     Route::resource('download-profiles', DownloadProfileController::class)->except(['show']);
 });

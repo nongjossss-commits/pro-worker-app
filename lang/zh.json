@@ -1014,5 +1014,15 @@
     "Trial Contract Preview": "试用合同预览",
     "Service Contract Preview": "服务合同预览",
     "กด Ctrl+P เพื่อบันทึก PDF": "按 Ctrl+P 保存为 PDF",
-    "Back": "返回"
+    "Back": "返回",
+    "Finance Manual": "财务手册",
+    "Finance Module": "财务模块",
+    "Add-on training booklet for the Finance feature": "财务功能的附加培训手册",
+    "Note:": "备注:",
+    "This booklet covers the Finance feature only — a separately licensed module. The main program manual (other features) is distributed independently and does not include Finance content.": "本手册仅涵盖财务功能 — 独立许可模块。主程序手册(其他功能)单独分发,不包含财务内容。",
+    "Finance feature (Ledger, Tax Invoices, Financial Profiles, etc.) is distributed in a SEPARATE Finance Manual Bundle — download it from Super Admin Settings if your subscription includes the Finance module.": "财务功能(账簿、税务发票、财务配置等)在单独的财务手册中分发 — 如果您的订阅包括财务模块,请从 Super Admin 设置下载。",
+    "Finance module is documented in a SEPARATE bundle below.": "财务模块的文档在下方单独的手册中。",
+    "Download Finance Manual (Add-on Module)": "下载财务手册(附加模块)",
+    "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.": "仅财务手册:财务菜单 + 财务配置。单独分发给订阅财务附加模块的客户。",
+    "Open Finance Manual": "打开财务手册"
 }

@@ -10,6 +10,7 @@ use App\Models\Importer;
 use App\Models\JobOwner;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Exception;
 
 class PreviewController extends Controller
@@ -44,7 +45,15 @@ class PreviewController extends Controller
                     elseif ($employee->employer && $user->id === $employee->employer->user_id) {
                         $canView = true;
                     }
-                    // 3. "Security Rule": Context-aware access via JobTicket
+                    // 3. Caretaker assigned to the employee's employer
+                    // Caretakers have view-employees permission and are assigned to specific
+                    // employers via the employer_caretaker pivot — they should be able to
+                    // preview employees of any employer they look after.
+                    elseif ($user->hasRole('caretaker') && $employee->employer
+                            && $employee->employer->caretakers()->where('users.id', $user->id)->exists()) {
+                        $canView = true;
+                    }
+                    // 4. "Security Rule": Context-aware access via JobTicket
                     // Even if the employee is not yours (and we bypassed the global scope to find it),
                     // we explicitly check if it is attached to a ticket the user has access to.
                     else {
@@ -119,7 +128,12 @@ class PreviewController extends Controller
             }
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'The requested resource was not found.'], 404);
+        } catch (HttpExceptionInterface $e) {
+            // Don't swallow abort(403) / abort(401) etc. — let Laravel handle them
+            // with the correct status code instead of turning every abort into a 500.
+            throw $e;
         } catch (Exception $e) {
+            \Log::error('Preview show error: ' . $e->getMessage(), ['type' => $type, 'id' => $id, 'trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'An unexpected error occurred.'], 500);
         }
     }

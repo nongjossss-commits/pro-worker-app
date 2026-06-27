@@ -1,0 +1,101 @@
+{
+  "_comment": "List of screenshots to capture for the Training Manual. Each entry navigates to `url`, waits for `waitFor` selector (optional), runs `actions` (optional), then saves screenshot to public/images/manuals/{key}.png. Run via: node screenshot-tool/capture.mjs",
+  "_actions_help": "Actions: { type: 'click', selector }, { type: 'wait', ms }, { type: 'waitFor', selector }, { type: 'scrollTo', selector }",
+
+  "entries": [
+    { "key": "dashboard/01-overview",                  "url": "/dashboard" },
+    { "key": "dashboard/02-role-variants",             "url": "/dashboard" },
+
+    { "key": "notifications/01-list",                  "url": "/notifications" },
+    { "key": "notifications/02-types",                 "url": "/notifications" },
+    { "key": "notifications/03-web-push",              "url": "/notifications" },
+
+    { "key": "employers/01-list",                      "url": "/employers" },
+    { "key": "employers/02-create-form",               "url": "/employers/create" },
+    { "key": "employers/03-edit-detail",               "url": "/employers", "actions": [{ "type": "click", "selector": ".btn-outline-primary[href*='/edit']" }, { "type": "wait", "ms": 1200 }] },
+    { "key": "employers/04-preview-modal",             "url": "/employers", "actions": [{ "type": "click", "selector": ".btn-preview" }, { "type": "wait", "ms": 1500 }] },
+
+    { "key": "employees/01-list-view",                 "url": "/employees" },
+    { "key": "employees/02-add-employee",              "url": "/employees/create" },
+    { "key": "employees/03-edit-employee",             "url": "/employees", "actions": [{ "type": "click", "selector": ".btn-outline-primary[href*='/edit']" }, { "type": "wait", "ms": 1200 }] },
+    { "key": "employees/04-preview-popup",             "url": "/employees", "actions": [{ "type": "click", "selector": ".btn-preview" }, { "type": "wait", "ms": 1500 }] },
+    { "key": "employees/05-bulk-actions",              "url": "/employees", "actions": [{ "type": "click", "selector": ".employee-checkbox" }, { "type": "wait", "ms": 800 }] },
+
+    { "key": "employment_history/01-search-filter",    "url": "/employees/history" },
+    { "key": "employment_history/02-bulk-transfer",    "url": "/employees/history", "actions": [{ "type": "click", "selector": ".history-employee-checkbox" }, { "type": "wait", "ms": 800 }] },
+    { "key": "employment_history/03-export-pdf",       "url": "/employees/history" },
+
+    { "key": "group_team/01-type-selection",           "url": "/groups" },
+    { "key": "group_team/02-manage",                   "url": "/groups/independent/manage" },
+    { "key": "group_team/03-use-in-workflow",          "url": "/groups/independent/manage" },
+
+    { "key": "delegates/01-list",                      "url": "/delegates" },
+    { "key": "delegates/02-form",                      "url": "/delegates/create" },
+
+    { "key": "agents/01-list-add",                     "url": "/agents" },
+
+    { "key": "importers/01-list",                      "url": "/importers" },
+    { "key": "importers/02-form",                      "url": "/importers/create" },
+
+    { "key": "workflow/01-main-view",                  "url": "/workflow" },
+    { "key": "workflow/02-tick-step",                  "url": "/workflow", "actions": [{ "type": "click", "selector": "[data-bs-toggle='collapse']" }, { "type": "wait", "ms": 1000 }] },
+    { "key": "workflow/03-add-employee-modal",         "url": "/workflow", "actions": [{ "type": "click", "selector": "button[onclick*='openAddEmployeeModal']" }, { "type": "wait", "ms": 1200 }] },
+    { "key": "workflow/04-notify-out",                 "url": "/workflow?tab=notify_out" },
+    { "key": "workflow/05-mou-import",                 "url": "/workflow?tab=mou_import" },
+
+    { "key": "production/01-main-view",                "url": "/production" },
+    { "key": "production/02-edit-job",                 "url": "/production", "actions": [{ "type": "click", "selector": "a[href*='/edit']" }, { "type": "wait", "ms": 1500 }] },
+    { "key": "production/03-custom-fields",            "url": "/production" },
+    { "key": "production/04-financial-tab",            "url": "/production" },
+    { "key": "production/05-send-to-workflow",         "url": "/production" },
+
+    { "key": "registration_resolution/01-tab-bar",     "url": "/production/registration/{REGISTRATION_TAB_ID}/operations", "needsTabId": "registration" },
+    { "key": "registration_resolution/02-color-legend","url": "/production/registration/{REGISTRATION_TAB_ID}/operations", "needsTabId": "registration" },
+    { "key": "registration_resolution/03-auto-settings","url": "/production/registration/{REGISTRATION_TAB_ID}/operations", "needsTabId": "registration", "actions": [{ "type": "click", "selector": "[data-bs-target='#resolutionSettingsModal']" }, { "type": "wait", "ms": 1200 }] },
+    { "key": "registration_resolution/04-progress",    "url": "/production/registration/{REGISTRATION_TAB_ID}/operations", "needsTabId": "registration", "actions": [{ "type": "click", "selector": "[data-bs-toggle='collapse']" }, { "type": "wait", "ms": 1000 }] },
+
+    { "key": "renewal_resolution/01-tab-bar",          "url": "/production/renewal/{RENEWAL_TAB_ID}/operations", "needsTabId": "renewal" },
+    { "key": "renewal_resolution/02-filter-pills",     "url": "/production/renewal/{RENEWAL_TAB_ID}/operations", "needsTabId": "renewal" },
+    { "key": "renewal_resolution/03-auto-settings",    "url": "/production/renewal/{RENEWAL_TAB_ID}/operations", "needsTabId": "renewal", "actions": [{ "type": "click", "selector": "[data-bs-target='#resolutionSettingsModal']" }, { "type": "wait", "ms": 1200 }] },
+    { "key": "renewal_resolution/04-progress-tracking","url": "/production/renewal/{RENEWAL_TAB_ID}/operations", "needsTabId": "renewal", "actions": [{ "type": "click", "selector": "[data-bs-toggle='collapse']" }, { "type": "wait", "ms": 1000 }] },
+    { "key": "renewal_resolution/05-stats-cards",      "url": "/production/renewal/{RENEWAL_TAB_ID}/operations", "needsTabId": "renewal" },
+
+    { "key": "sales/01-kanban-board",                  "url": "/sales" },
+    { "key": "sales/02-new-lead",                      "url": "/sales", "actions": [{ "type": "click", "selector": "button[data-bs-target='#addLeadModal'], a[href*='create']" }, { "type": "wait", "ms": 1200 }] },
+    { "key": "sales/03-quotation-modal",               "url": "/sales" },
+    { "key": "sales/04-transition-to-production",     "url": "/sales" },
+    { "key": "sales/05-visibility-permissions",        "url": "/super-admin/settings" },
+
+    { "key": "finance/01-main-dashboard",              "url": "/finance" },
+    { "key": "finance/02-ledger-entry",                "url": "/finance" },
+    { "key": "finance/03-tax-invoice",                 "url": "/finance" },
+    { "key": "finance/04-tax-reports",                 "url": "/finance" },
+    { "key": "finance/05-monthly-bundle",              "url": "/finance" },
+
+    { "key": "financial_profiles/01-list",             "url": "/finance/profiles" },
+    { "key": "financial_profiles/02-biller-builder",   "url": "/finance/profiles" },
+    { "key": "financial_profiles/03-bank-accounts",    "url": "/finance/profiles" },
+    { "key": "financial_profiles/04-customer-profiles","url": "/finance/profiles" },
+
+    { "key": "incomplete_data/01-list",                "url": "/admin/incomplete-employees" },
+
+    { "key": "ticket_inbox/01-list-assign",            "url": "/admin/tickets" },
+    { "key": "ticket_inbox/02-chat",                   "url": "/admin/tickets", "actions": [{ "type": "click", "selector": "a[href*='/admin/tickets/'][href$=''], tr td a" }, { "type": "wait", "ms": 1500 }] },
+
+    { "key": "employer_ticket/01-new-ticket",          "url": "/tickets" },
+    { "key": "employer_ticket/02-status-chat",         "url": "/tickets" },
+
+    { "key": "user_management/01-create-user",         "url": "/admin/users/create" },
+    { "key": "user_management/02-roles-permissions",   "url": "/admin/users" },
+    { "key": "user_management/03-caretaker-assign",    "url": "/admin/users" },
+
+    { "key": "pdf_templates/01-create-mode",           "url": "/admin/pdf-templates/create" },
+    { "key": "pdf_templates/02-builder-drag",          "url": "/admin/pdf-templates" },
+    { "key": "pdf_templates/03-quick-print",           "url": "/admin/pdf-templates", "actions": [{ "type": "click", "selector": "[data-bs-target='#quickPrintModal']" }, { "type": "wait", "ms": 1200 }] },
+
+    { "key": "activity_logs/01-list-filter",           "url": "/admin/activity-logs" },
+
+    { "key": "central_trash/01-list",                  "url": "/admin/trash" },
+    { "key": "central_trash/02-restore-delete",        "url": "/admin/trash" }
+  ]
+}

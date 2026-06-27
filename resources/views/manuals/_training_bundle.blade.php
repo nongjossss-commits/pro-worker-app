@@ -1,0 +1,172 @@
+{{--
+    TRAINING EDITION bundle — slide-friendly, large fonts, annotated screenshots.
+    Optimized for projection on screen during training sessions, or printing
+    to PDF as a workbook.
+
+    NOTE: Finance feature documentation is in a SEPARATE training bundle
+    (_training_finance_bundle.blade.php) — distributed only to customers who
+    subscribed to the Finance add-on module.
+--}}
+@php $brand = \App\Services\BrandService::current(); @endphp
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ __('Training Manual') }} — {{ $brand['app_name'] }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root { --brand: {{ $brand['primary_color'] }}; --brand-dark: color-mix(in srgb, var(--brand) 70%, black); }
+
+        @page { size: A4 landscape; margin: 12mm; }
+        body { font-family: 'Sarabun', sans-serif; color: #1f2937; font-size: 16px; line-height: 1.7; max-width: 1100px; margin: 0 auto; padding: 24px; background: #f8fafc; }
+
+        /* ─── Cover ─── */
+        .cover { background: white; text-align: center; padding: 70px 30px; border: 3px solid var(--brand); border-radius: 12px; margin-bottom: 30px; page-break-after: always; }
+        .cover img { max-height: 120px; margin-bottom: 24px; }
+        .cover .edition-badge { display: inline-block; padding: 8px 22px; background: var(--brand); color: white; border-radius: 999px; font-size: 16px; font-weight: 800; margin-bottom: 24px; letter-spacing: 1px; }
+        .cover h1 { font-size: 42px; color: var(--brand); margin: 0 0 12px; font-weight: 800; }
+        .cover .sub { font-size: 20px; color: #6b7280; margin-bottom: 36px; }
+        .cover .meta { font-size: 14px; color: #9ca3af; }
+        .cover .note { margin-top: 36px; padding: 16px 22px; background: #eef2ff; border-left: 6px solid #6366f1; border-radius: 8px; text-align: left; font-size: 14px; color: #3730a3; max-width: 700px; margin-left: auto; margin-right: auto; }
+
+        /* ─── TOC ─── */
+        .toc { background: white; padding: 40px 50px; border-radius: 12px; page-break-after: always; }
+        .toc h2 { color: var(--brand); border-bottom: 3px solid var(--brand); padding-bottom: 10px; font-size: 28px; }
+        .toc ol { padding-left: 24px; font-size: 18px; line-height: 2; }
+        .toc a { color: #1f2937; text-decoration: none; }
+
+        /* ─── Each menu section ─── */
+        .manual-section { page-break-before: always; padding: 30px 40px; background: white; border-radius: 12px; margin-bottom: 30px; }
+        .manual-section > h2 { color: white; background: var(--brand); padding: 16px 24px; border-radius: 8px; font-size: 26px; margin: -20px -20px 24px -20px; display: flex; align-items: center; gap: 12px; }
+
+        /* ─── Training intro per menu ─── */
+        .training-intro { background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 8%, white), white); padding: 24px 28px; border-radius: 10px; border-left: 6px solid var(--brand); margin-bottom: 30px; }
+        .training-intro-title { color: var(--brand-dark); font-size: 22px; font-weight: 800; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .training-intro-desc { font-size: 15px; line-height: 1.8; color: #374151; margin-bottom: 14px; }
+        .training-role-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .role-pill { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+        .role-pill.role-admin { background: #ddd6fe; color: #5b21b6; }
+        .role-pill.role-readonly { background: #fef3c7; color: #92400e; }
+
+        /* ─── Per-step slide ─── */
+        .training-slide { background: #fafbff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 32px 36px; margin: 28px 0; page-break-inside: avoid; position: relative; }
+        .slide-number { position: absolute; top: -16px; left: 24px; background: var(--brand); color: white; padding: 8px 20px; border-radius: 999px; font-weight: 800; font-size: 14px; letter-spacing: 1.5px; }
+        .slide-title { color: var(--brand-dark); font-size: 26px; font-weight: 800; margin: 12px 0 24px; padding-bottom: 12px; border-bottom: 2px dashed var(--brand); }
+        .slide-instructions { background: white; padding: 16px 22px; border-radius: 8px; border-left: 4px solid #10b981; margin-top: 20px; }
+        .slide-instructions ol { padding-left: 22px; line-height: 2; margin: 0; }
+        .slide-instructions strong { color: var(--brand-dark); }
+        .slide-tip { background: #fff8e1; padding: 14px 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-top: 16px; font-size: 14px; color: #6b5800; }
+        .slide-warn { background: #fee2e2; padding: 14px 20px; border-radius: 8px; border-left: 4px solid #dc2626; margin-top: 16px; font-size: 14px; color: #7f1d1d; }
+        .slide-faq dt { font-weight: 700; color: var(--brand-dark); margin-top: 14px; font-size: 16px; }
+        .slide-faq dd { margin-left: 24px; color: #4b5563; line-height: 1.8; }
+
+        /* ─── Screenshot block ─── */
+        .screenshot-block { margin: 20px 0; }
+        .screenshot-figure { margin: 0; text-align: center; }
+        .screenshot-img { max-width: 100%; height: auto; border: 2px solid #d1d5db; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .screenshot-caption { font-size: 13px; color: #6b7280; margin-top: 10px; font-style: italic; }
+        .screenshot-placeholder { background: repeating-linear-gradient(45deg, #f3f4f6, #f3f4f6 10px, #e5e7eb 10px, #e5e7eb 20px); border: 3px dashed #9ca3af; border-radius: 12px; min-height: 280px; display: flex; align-items: center; justify-content: center; padding: 30px; }
+        .screenshot-placeholder-inner { text-align: center; max-width: 500px; }
+        .screenshot-placeholder-icon { font-size: 56px; color: #9ca3af; margin-bottom: 16px; }
+        .screenshot-placeholder-title { font-weight: 800; color: #4b5563; font-size: 16px; margin-bottom: 8px; letter-spacing: 1px; }
+        .screenshot-placeholder-desc { color: #6b7280; font-size: 14px; line-height: 1.7; margin-bottom: 14px; }
+        .screenshot-placeholder-hint { font-size: 12px; color: #9ca3af; }
+        .screenshot-placeholder-hint code { background: white; padding: 3px 10px; border-radius: 4px; color: #6366f1; }
+        .screenshot-callouts { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 24px; margin-top: 14px; counter-reset: callout; list-style: none; padding-left: 16px; }
+        .screenshot-callouts li { position: relative; padding-left: 36px; margin-bottom: 10px; line-height: 1.7; counter-increment: callout; }
+        .screenshot-callouts li::before { content: counter(callout); position: absolute; left: 0; top: 2px; width: 26px; height: 26px; background: var(--brand); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+
+        /* ─── Print hint ─── */
+        .print-hint { background: var(--brand); color: white; padding: 14px 24px; text-align: center; position: sticky; top: 0; z-index: 100; border-radius: 8px 8px 0 0; }
+        .print-hint button { background: white; color: var(--brand); border: 0; padding: 8px 18px; border-radius: 6px; font-weight: 800; cursor: pointer; margin-left: 16px; }
+        @media print {
+            body { background: white; padding: 0; }
+            .print-hint { display: none; }
+            .manual-section, .cover, .toc { background: white; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="print-hint">
+    <i class="bi bi-easel-fill"></i>
+    {{ __('TRAINING EDITION') }} — {{ __('Press Ctrl+P to print or save as PDF.') }}
+    <button onclick="window.print()">{{ __('Print now') }}</button>
+</div>
+
+{{-- Cover --}}
+<div class="cover">
+    @if(!empty($brand['active_logo']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($brand['active_logo']))
+        <img src="{{ asset('storage/' . $brand['active_logo']) }}" alt="Logo">
+    @endif
+    <div class="edition-badge">📚 TRAINING EDITION</div>
+    <h1>{{ __('คู่มือฝึกอบรม') }}</h1>
+    <div class="sub">{{ $brand['app_name'] }}</div>
+    <div class="meta">
+        {{ __('สำหรับฝึกอบรมพนักงานใหม่ — ใช้บน slide projector หรือพิมพ์เป็น workbook') }}<br>
+        {{ __('Generated on') }} {{ now()->format('d/m/Y H:i') }}
+    </div>
+    <div class="note">
+        <strong>{{ __('สำคัญ:') }}</strong>
+        {{ __('คู่มือเล่มนี้เป็น Phase 1 prototype — เริ่มต้นด้วย Workflow + Employees เท่านั้น ภาพประกอบใส่ไว้ที่ public/images/manuals/{menu}/ — เมนูที่ยังไม่มีภาพจะแสดง placeholder') }}
+        <br><br>
+        <strong>{{ __('หมายเหตุ:') }}</strong>
+        {{ __('ฟีเจอร์การเงิน (Finance) อยู่ในคู่มือฝึกอบรมแยกต่างหาก') }}
+    </div>
+</div>
+
+{{-- TOC --}}
+@php
+    // Phase 2 Wave 1 — Production workflow menus (most-trained features).
+    // Order matches the typical end-to-end workflow: Sales → Pre-Prod → Workflow → Resolutions → Employees data.
+    // Sales intentionally moved to the Finance training bundle — it generates
+    // quotations/invoices which belong to the Finance flow (Finance add-on package).
+    // Order: top-of-app (Dashboard) → core production work → master data → admin/support tools.
+    $sections = [
+        ['key' => 'dashboard',                'title' => '📊 แดชบอร์ด — Dashboard'],
+        ['key' => 'notifications',            'title' => '🔔 การแจ้งเตือน — Notifications'],
+        ['key' => 'production',               'title' => '📋 Pre-Production — งานเตรียมการ'],
+        ['key' => 'workflow',                 'title' => '🔧 Workflow — ขั้นตอนงาน'],
+        ['key' => 'registration_resolution',  'title' => '📑 มติลงทะเบียน — Registration Resolution'],
+        ['key' => 'renewal_resolution',       'title' => '🔄 มติต่ออายุ — Renewal Resolution'],
+        ['key' => 'employees',                'title' => '👥 ข้อมูลลูกจ้าง — Employees'],
+        ['key' => 'employment_history',       'title' => '📜 ประวัติการจ้างงาน — Employment History'],
+        ['key' => 'group_team',               'title' => '👨‍👩‍👧 กลุ่มและทีม — Group & Team'],
+        ['key' => 'employers',                'title' => '🏢 ข้อมูลนายจ้าง — Employers'],
+        ['key' => 'delegates',                'title' => '👤 ผู้แทน — Delegates'],
+        ['key' => 'agents',                   'title' => '🤝 ตัวแทน — Agents'],
+        ['key' => 'importers',                'title' => '📦 บริษัทนำเข้า — Importers'],
+        ['key' => 'incomplete_data',          'title' => '⚠️ ข้อมูลไม่ครบ — Incomplete Data'],
+        ['key' => 'ticket_inbox',             'title' => '📥 กล่องรับเรื่อง — Ticket Inbox'],
+        ['key' => 'employer_ticket',          'title' => '✉️ ส่งคำขอ — Employer Ticket'],
+        ['key' => 'pdf_templates',            'title' => '📄 แม่แบบ PDF — PDF Templates'],
+        ['key' => 'user_management',          'title' => '👨‍💻 จัดการผู้ใช้งาน — User Management'],
+        ['key' => 'activity_logs',            'title' => '🕐 ประวัติการกระทำ — Activity Logs'],
+        ['key' => 'central_trash',            'title' => '🗑️ ถังขยะกลาง — Central Trash'],
+    ];
+@endphp
+
+<div class="toc">
+    <h2><i class="bi bi-list-ol"></i> {{ __('Table of Contents') }}</h2>
+    <ol>
+        @foreach($sections as $s)
+            @if(view()->exists('manuals.training.' . $s['key']))
+                <li><a href="#sec-{{ $s['key'] }}">{{ $s['title'] }}</a></li>
+            @endif
+        @endforeach
+    </ol>
+</div>
+
+{{-- All training sections inline --}}
+@foreach($sections as $s)
+    @if(view()->exists('manuals.training.' . $s['key']))
+        <section class="manual-section" id="sec-{{ $s['key'] }}">
+            <h2><i class="bi bi-book-fill"></i> {{ $s['title'] }}</h2>
+            @include('manuals.training.' . $s['key'])
+        </section>
+    @endif
+@endforeach
+
+</body>
+</html>

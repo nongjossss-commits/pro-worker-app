@@ -69,6 +69,10 @@
         {{ __('Training booklet for new staff and end-users') }}<br>
         {{ __('Generated on') }} {{ now()->format('d/m/Y H:i') }}
     </div>
+    <div style="margin-top: 30px; padding: 12px 18px; background: #eef2ff; border-left: 4px solid #6366f1; border-radius: 4px; text-align: left; font-size: 13px; color: #3730a3; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <strong>{{ __('Note:') }}</strong>
+        {{ __('Finance feature (Ledger, Tax Invoices, Financial Profiles, etc.) is distributed in a SEPARATE Finance Manual Bundle — download it from Super Admin Settings if your subscription includes the Finance module.') }}
+    </div>
 </div>
 
 {{-- TOC --}}
@@ -86,7 +90,9 @@
         ['key' => 'employees',                'title' => 'ข้อมูลลูกจ้าง / Employees'],
         ['key' => 'employment_history',       'title' => 'ประวัติการจ้างงาน / Employment History'],
         ['key' => 'group_team',               'title' => 'กลุ่มและทีม / Group & Team'],
-        ['key' => 'sales',                    'title' => 'การขายและใบเสนอราคา / Sales'],
+        // Sales intentionally moved to the Finance bundle — Sales generates
+        // quotations/invoices which are part of the Finance flow, sold as part
+        // of the same add-on package.
         ['key' => 'production',               'title' => 'งานเตรียมการ / P Production'],
         ['key' => 'workflow',                 'title' => 'ขั้นตอนงาน / Workflow'],
         ['key' => 'registration_resolution',  'title' => 'มติลงทะเบียน / Registration Resolution'],
@@ -94,8 +100,8 @@
         ['key' => 'importers',                'title' => 'บริษัทนำเข้า / Importers'],
         ['key' => 'agents',                   'title' => 'ตัวแทน / Agents'],
         ['key' => 'delegates',                'title' => 'ผู้แทน / Delegates'],
-        ['key' => 'finance',                  'title' => 'การเงิน / Finance'],
-        ['key' => 'financial_profiles',       'title' => 'โปรไฟล์การเงิน / Financial Profiles'],
+        // Finance + Financial Profiles intentionally excluded — distributed in
+        // the separate Finance Manual Bundle (sold as an add-on module).
         ['key' => 'user_management',          'title' => 'จัดการผู้ใช้งาน / User Management'],
         ['key' => 'pdf_templates',            'title' => 'แม่แบบ PDF / PDF Templates'],
         ['key' => 'central_trash',            'title' => 'ถังขยะกลาง / Central Trash'],

@@ -819,8 +819,8 @@
     "Custom fields feature is under development.": "ฟีเจอร์ฟิลด์กำหนดเองอยู่ระหว่างการพัฒนา",
     "Card colour legend": "ความหมายของสีการ์ด",
     "Not renewed yet": "ยังไม่ต่ออายุ",
-    "Visa renewed only": "ต่อวีซ่าอย่างเดียว",
-    "Work permit renewed only": "ต่อใบอนุญาตทำงานอย่างเดียว",
+    "Visa renewed only": "อัพเดทวีซ่าแล้ว",
+    "Work permit renewed only": "อัพเดทใบอนุญาตทำงานแล้ว",
     "Both renewed — ready to finalize": "ต่อครบทั้ง 2 — พร้อมกดเสร็จสิ้น",
     "Finalized": "เสร็จสิ้นแล้ว",
     "Renewal status": "สถานะการต่ออายุ",
@@ -1014,5 +1014,15 @@
     "Trial Contract Preview": "ดูตัวอย่างสัญญาทดลอง",
     "Service Contract Preview": "ดูตัวอย่างสัญญาเช่าจริง",
     "กด Ctrl+P เพื่อบันทึก PDF": "กด Ctrl+P เพื่อบันทึก PDF",
-    "Back": "ย้อนกลับ"
+    "Back": "ย้อนกลับ",
+    "Finance Manual": "คู่มือฟีเจอร์การเงิน",
+    "Finance Module": "โมดูลการเงิน",
+    "Add-on training booklet for the Finance feature": "คู่มือฝึกอบรมเพิ่มเติมสำหรับฟีเจอร์การเงิน",
+    "Note:": "หมายเหตุ:",
+    "This booklet covers the Finance feature only — a separately licensed module. The main program manual (other features) is distributed independently and does not include Finance content.": "คู่มือเล่มนี้ครอบคลุมฟีเจอร์การเงินเท่านั้น — เป็นโมดูลแยกที่ออกใบอนุญาตต่างหาก คู่มือหลักของโปรแกรม (ฟีเจอร์อื่นๆ) แจกจ่ายแยกและไม่รวมเนื้อหาการเงิน",
+    "Finance feature (Ledger, Tax Invoices, Financial Profiles, etc.) is distributed in a SEPARATE Finance Manual Bundle — download it from Super Admin Settings if your subscription includes the Finance module.": "ฟีเจอร์การเงิน (Ledger, Tax Invoices, Financial Profiles ฯลฯ) อยู่ในคู่มือ Finance Manual Bundle แยกต่างหาก — ดาวน์โหลดได้ที่ Super Admin Settings หากแพ็คเกจของคุณรวมโมดูลการเงิน",
+    "Finance module is documented in a SEPARATE bundle below.": "ฟีเจอร์การเงินอยู่ใน Bundle แยกด้านล่าง",
+    "Download Finance Manual (Add-on Module)": "ดาวน์โหลดคู่มือการเงิน (โมดูลเสริม)",
+    "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.": "คู่มือเฉพาะการเงิน: เมนูการเงิน + โปรไฟล์การเงิน แจกจ่ายแยกให้ลูกค้าที่สมัครโมดูลเสริม Finance เท่านั้น",
+    "Open Finance Manual": "เปิดคู่มือการเงิน"
 }

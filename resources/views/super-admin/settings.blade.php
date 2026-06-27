@@ -423,10 +423,73 @@
                         </h5>
                         <p class="text-muted small mb-0">
                             {{ __('Opens every menu manual on one printable page — use the browser print dialog to save as PDF for training new staff.') }}
+                            <br>
+                            <span class="text-warning">
+                                <i class="bi bi-info-circle"></i>
+                                {{ __('Finance module is documented in a SEPARATE bundle below.') }}
+                            </span>
                         </p>
                     </div>
                     <a href="{{ route('super-admin.manuals.bundle') }}" target="_blank" class="btn btn-primary">
                         <i class="bi bi-download me-1"></i> {{ __('Open Manual Bundle') }}
+                    </a>
+                </div>
+            </div>
+
+            {{-- Finance-only Manual Bundle — separately distributable add-on --}}
+            <div class="card mb-3 border-success">
+                <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="bi bi-cash-coin me-2 text-success"></i> {{ __('Download Finance Manual (Add-on Module)') }}
+                        </h5>
+                        <p class="text-muted small mb-0">
+                            {{ __('Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.') }}
+                        </p>
+                    </div>
+                    <a href="{{ route('super-admin.manuals.finance_bundle') }}" target="_blank" class="btn btn-success">
+                        <i class="bi bi-download me-1"></i> {{ __('Open Finance Manual') }}
+                    </a>
+                </div>
+            </div>
+
+            {{-- Training Edition — slide-friendly with annotated screenshots --}}
+            <div class="card mb-3 border-warning">
+                <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="bi bi-easel-fill me-2 text-warning"></i> {{ __('Training Edition — Main Bundle') }}
+                            <span class="badge bg-warning text-dark ms-1">BETA</span>
+                        </h5>
+                        <p class="text-muted small mb-0">
+                            {{ __('Slide-friendly training manual with annotated screenshots — optimized for projection during staff training. Excludes Sales + Finance (those are in the Finance Training Bundle).') }}
+                            <br>
+                            <span class="text-info">
+                                <i class="bi bi-info-circle"></i>
+                                {{ __('Upload screenshot files to public/images/manuals/{menu}/ — placeholder boxes show where they belong if missing.') }}
+                            </span>
+                        </p>
+                    </div>
+                    <a href="{{ route('super-admin.manuals.training_bundle') }}" target="_blank" class="btn btn-warning fw-bold">
+                        <i class="bi bi-easel me-1"></i> {{ __('Open Training Bundle') }}
+                    </a>
+                </div>
+            </div>
+
+            {{-- Training Edition — Finance Bundle (Sales + Finance + Financial Profiles) --}}
+            <div class="card mb-3 border-success">
+                <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="bi bi-cash-coin me-2 text-success"></i> {{ __('Training Edition — Finance Bundle (Add-on)') }}
+                            <span class="badge bg-success ms-1">BETA</span>
+                        </h5>
+                        <p class="text-muted small mb-0">
+                            {{ __('Slide-friendly training manual for the Finance add-on module — includes Sales (quotation flow) + Finance + Financial Profiles. Distribute separately to customers who subscribed to the Finance module.') }}
+                        </p>
+                    </div>
+                    <a href="{{ route('super-admin.manuals.training_finance_bundle') }}" target="_blank" class="btn btn-success fw-bold">
+                        <i class="bi bi-cash-coin me-1"></i> {{ __('Open Finance Training Bundle') }}
                     </a>
                 </div>
             </div>

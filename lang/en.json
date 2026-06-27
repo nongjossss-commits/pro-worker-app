@@ -1014,5 +1014,15 @@
     "Trial Contract Preview": "Trial Contract Preview",
     "Service Contract Preview": "Service Contract Preview",
     "กด Ctrl+P เพื่อบันทึก PDF": "Press Ctrl+P to save as PDF",
-    "Back": "Back"
+    "Back": "Back",
+    "Finance Manual": "Finance Manual",
+    "Finance Module": "Finance Module",
+    "Add-on training booklet for the Finance feature": "Add-on training booklet for the Finance feature",
+    "Note:": "Note:",
+    "This booklet covers the Finance feature only — a separately licensed module. The main program manual (other features) is distributed independently and does not include Finance content.": "This booklet covers the Finance feature only — a separately licensed module. The main program manual (other features) is distributed independently and does not include Finance content.",
+    "Finance feature (Ledger, Tax Invoices, Financial Profiles, etc.) is distributed in a SEPARATE Finance Manual Bundle — download it from Super Admin Settings if your subscription includes the Finance module.": "Finance feature (Ledger, Tax Invoices, Financial Profiles, etc.) is distributed in a SEPARATE Finance Manual Bundle — download it from Super Admin Settings if your subscription includes the Finance module.",
+    "Finance module is documented in a SEPARATE bundle below.": "Finance module is documented in a SEPARATE bundle below.",
+    "Download Finance Manual (Add-on Module)": "Download Finance Manual (Add-on Module)",
+    "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.": "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.",
+    "Open Finance Manual": "Open Finance Manual"
 }
