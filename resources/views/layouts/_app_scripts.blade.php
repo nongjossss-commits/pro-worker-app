@@ -11,8 +11,12 @@ document.addEventListener('hidden.bs.modal', function() {
 </script>
 
 <!-- Universal Preview Modal -->
+{{-- modal-fullscreen-sm-down: phones (<576px) get an edge-to-edge fullscreen
+     modal so the compact preview grid actually uses the whole viewport
+     instead of a narrow center column. modal-xl on tablet+ / wide screens is
+     expanded further via a media query inside the preview partial. --}}
 <div class="modal fade" id="universalPreviewModal" tabindex="-1" aria-labelledby="universalPreviewModalLabel" aria-hidden="true" style="z-index: 1090;">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="universalPreviewModalLabel">{{ __('Preview Data') }}</h5>

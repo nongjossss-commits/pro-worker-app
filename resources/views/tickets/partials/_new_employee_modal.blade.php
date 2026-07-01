@@ -139,8 +139,16 @@
                         <input type="text" class="form-control" id="modal_visaType" x-model="newEmployeeForm.visaType">
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="modal_visaExpiryDate" class="form-label">วันหมดอายุวีซ่า</label>
-                        <input type="date" class="form-control" id="modal_visaExpiryDate" x-model="newEmployeeForm.visaExpiryDate">
+                        <label for="modal_visaExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุวีซ่า</label>
+                        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="modal_visaExpiryDate" x-model="newEmployeeForm.visaExpiryDate">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="modal_visaEndorsementDate" class="form-label text-info">🔵 วันที่ตรวจลงตราวีซ่า (ประทับ)</label>
+                        <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="modal_visaEndorsementDate" x-model="newEmployeeForm.visaEndorsementDate">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="modal_visaEndorsementNo" class="form-label text-info">🔵 เลขที่ตรวจลงตราวีซ่า</label>
+                        <input type="text" class="form-control border-info" style="background-color:#f0f9ff" id="modal_visaEndorsementNo" maxlength="50" x-model="newEmployeeForm.visaEndorsementNo">
                     </div>
                 </div>
 

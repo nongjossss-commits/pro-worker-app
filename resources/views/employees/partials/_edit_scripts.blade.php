@@ -80,6 +80,13 @@
         const confirmSaveBtn = document.getElementById('confirmSaveBtn');
         const backToCropBtn = document.getElementById('backToCropBtn');
         const bgToolbarContainer = document.getElementById('bgToolbarContainer');
+        // Extra panels added in Phase A/B/D — toggled alongside bgToolbarContainer
+        const extraPanels = ['rotationToolbarContainer', 'beautyPanelContainer', 'autoToolsContainer']
+            .map(id => document.getElementById(id))
+            .filter(Boolean);
+        function toggleExtraPanels(show) {
+            extraPanels.forEach(el => el.classList.toggle('d-none', !show));
+        }
 
         // Retrieve or create bootstrap modal instance
         let cropperModal = bootstrap.Modal.getOrCreateInstance(cropperModalEl);
@@ -218,6 +225,314 @@
             });
         }
 
+        // ------------------------------------------------------------------
+        // Rotation / Flip / Fine-rotate — Phase A
+        // ------------------------------------------------------------------
+        // Cropper.js already supports rotate() + scaleX() when the instance
+        // is alive, so these handlers just delegate. The fine-rotate slider
+        // stores its previous value so successive drags accumulate correctly.
+        const rotationToolbarContainer = document.getElementById('rotationToolbarContainer');
+        const fineRotationSlider = document.getElementById('fineRotationSlider');
+        const fineRotationLabel = document.getElementById('fineRotationLabel');
+        const fineRotationReset = document.getElementById('fineRotationReset');
+        let fineRotationLast = 0;
+
+        if (rotationToolbarContainer) {
+            rotationToolbarContainer.addEventListener('click', function(e) {
+                const btn = e.target.closest('button[data-rotate], button[data-flip]');
+                if (!btn) return;
+                const cropper = window.cropperManager.instance;
+                if (!cropper) return;
+                if (btn.dataset.rotate) {
+                    cropper.rotate(parseInt(btn.dataset.rotate, 10));
+                } else if (btn.dataset.flip === 'x') {
+                    const data = cropper.getData(true);
+                    // scaleX toggle: we store the current scale on the cropper element
+                    const cur = cropper._proWorkerFlipX ? -1 : 1;
+                    const next = -cur;
+                    cropper.scaleX(next);
+                    cropper._proWorkerFlipX = !cropper._proWorkerFlipX;
+                }
+            });
+        }
+
+        if (fineRotationSlider) {
+            fineRotationSlider.addEventListener('input', function() {
+                const cropper = window.cropperManager.instance;
+                if (!cropper) return;
+                const value = parseInt(this.value, 10);
+                const delta = value - fineRotationLast;
+                fineRotationLast = value;
+                cropper.rotate(delta);
+                if (fineRotationLabel) fineRotationLabel.textContent = value + '°';
+            });
+        }
+
+        if (fineRotationReset) {
+            fineRotationReset.addEventListener('click', function() {
+                const cropper = window.cropperManager.instance;
+                if (!cropper || !fineRotationSlider) return;
+                cropper.rotate(-fineRotationLast);
+                fineRotationLast = 0;
+                fineRotationSlider.value = 0;
+                if (fineRotationLabel) fineRotationLabel.textContent = '0°';
+            });
+        }
+
+        // ------------------------------------------------------------------
+        // Beauty / Adjust — Phase B
+        // ------------------------------------------------------------------
+        // Slider values are live-echoed to the value badges. Applying only
+        // happens when the user presses "ใช้ค่านี้ / Preview" — this avoids
+        // per-stroke re-rendering which would be slow for large ID photos.
+        const beautySliders = document.querySelectorAll('.beauty-slider');
+        const applyBeautyBtn = document.getElementById('applyBeautyBtn');
+        const resetBeautyBtn = document.getElementById('resetBeautyBtn');
+        const autoBeautyBtn = document.getElementById('autoBeautyBtn');
+
+        function readBeautyValues() {
+            const values = {};
+            beautySliders.forEach(s => {
+                values[s.dataset.beautyKey] = parseInt(s.value, 10) || 0;
+            });
+            return values;
+        }
+
+        function setBeautyValues(values) {
+            beautySliders.forEach(s => {
+                const k = s.dataset.beautyKey;
+                if (values[k] !== undefined) {
+                    s.value = values[k];
+                    const label = document.querySelector(`[data-beauty-value="${k}"]`);
+                    if (label) label.textContent = values[k];
+                }
+            });
+        }
+
+        // Live label echo
+        beautySliders.forEach(s => {
+            s.addEventListener('input', function() {
+                const label = document.querySelector(`[data-beauty-value="${this.dataset.beautyKey}"]`);
+                if (label) label.textContent = this.value;
+            });
+        });
+
+        // Undo history for Beauty/Auto-Level/Face-Crop/Rotate operations.
+        // Snapshots the *source image URL* right before we replace it, so the
+        // user can revert to the state before the last transform. Cap the
+        // stack at TRANSFORM_HISTORY_MAX to avoid unbounded memory use on
+        // repeated adjustments.
+        const TRANSFORM_HISTORY_MAX = 10;
+        window.cropperManager.transformHistory = window.cropperManager.transformHistory || [];
+        const undoTransformBtn = document.getElementById('undoTransformBtn');
+
+        function refreshUndoBtn() {
+            if (!undoTransformBtn) return;
+            const canUndo = window.cropperManager.transformHistory.length > 0;
+            undoTransformBtn.disabled = !canUndo;
+            undoTransformBtn.classList.toggle('opacity-50', !canUndo);
+        }
+        refreshUndoBtn();
+
+        // Extract the CURRENT full image (with rotation/flip baked in) from
+        // Cropper.js WITHOUT cropping down to the user-drawn crop box.
+        //
+        // Why not cropper.getCroppedCanvas() alone?
+        //   That returns only the crop-box area, so if the user has drawn a
+        //   small crop rectangle and then presses Auto Beauty, the exported
+        //   canvas is that small rectangle — losing head/arms. Each subsequent
+        //   press cropped again, snowballing the loss.
+        //
+        // Fix: temporarily set the crop box to cover the whole visible canvas,
+        // export, then restore the user's crop selection.
+        function exportFullImageCanvas() {
+            const cropper = window.cropperManager.instance;
+            if (!cropper) return null;
+            const savedCrop = cropper.getCropBoxData();
+            const canvasData = cropper.getCanvasData();
+            try {
+                cropper.setCropBoxData({
+                    left: canvasData.left,
+                    top: canvasData.top,
+                    width: canvasData.width,
+                    height: canvasData.height,
+                });
+                return cropper.getCroppedCanvas({ imageSmoothingQuality: 'high' });
+            } finally {
+                // Always restore the user's crop selection even if export throws.
+                try { cropper.setCropBoxData(savedCrop); } catch (e) { /* ignore */ }
+            }
+        }
+
+        // Common helper: transform the current image in the cropper by a File-
+        // returning async operation, then reload cropper with the result.
+        //
+        // Preserves the full image (does not bake in the crop box) so
+        // adjustments compose without shrinking the frame. Pushes the
+        // pre-transform src into transformHistory so the user can Undo.
+        async function transformCropperImage(fn, loadingLabel) {
+            const cropper = window.cropperManager.instance;
+            if (!cropper) return;
+
+            const canvas = exportFullImageCanvas();
+            if (!canvas) { alert('ไม่สามารถอ่านรูปภาพปัจจุบันได้'); return; }
+            const currentBlob = await new Promise(r => canvas.toBlob(r, window.cropperManager.mimeType || 'image/jpeg', 0.95));
+            if (!currentBlob) return;
+            const currentFile = new File([currentBlob], 'in-progress.jpg', { type: currentBlob.type });
+
+            const allButtons = cropperModalEl.querySelectorAll('button');
+            allButtons.forEach(b => b.disabled = true);
+            if (loadingOverlay) loadingOverlay.classList.remove('d-none');
+            if (loadingText) loadingText.textContent = loadingLabel || 'Processing...';
+
+            try {
+                const newFile = await fn(currentFile);
+                if (!newFile) return;
+
+                // Snapshot pre-transform src for Undo before we replace it.
+                const prevSrc = imageToCrop.src;
+                const prevMime = window.cropperManager.mimeType;
+                window.cropperManager.transformHistory.push({ src: prevSrc, mime: prevMime });
+                while (window.cropperManager.transformHistory.length > TRANSFORM_HISTORY_MAX) {
+                    const dropped = window.cropperManager.transformHistory.shift();
+                    if (dropped && dropped.src && dropped.src.startsWith('blob:')) {
+                        try { URL.revokeObjectURL(dropped.src); } catch (e) { /* ignore */ }
+                    }
+                }
+                refreshUndoBtn();
+
+                // Cache the edited file so the next bg action skips the AI
+                // and uses this file as its foreground source.
+                window.cropperManager.editedFile = newFile;
+                window.cropperManager.mimeType = newFile.type;
+
+                const newUrl = URL.createObjectURL(newFile);
+                imageToCrop.src = newUrl;
+                await new Promise(r => { imageToCrop.onload = r; });
+
+                if (window.cropperManager.instance) {
+                    window.cropperManager.instance.destroy();
+                    window.cropperManager.instance = null;
+                }
+                initCropperInstance();
+            } catch (err) {
+                console.error(err);
+                alert('เกิดข้อผิดพลาด: ' + err.message);
+            } finally {
+                if (loadingOverlay) loadingOverlay.classList.add('d-none');
+                allButtons.forEach(b => b.disabled = false);
+            }
+        }
+
+        // Undo: pop the most recent snapshot and restore it as the cropper source.
+        async function undoLastTransform() {
+            const hist = window.cropperManager.transformHistory;
+            if (!hist.length) return;
+            const prev = hist.pop();
+            refreshUndoBtn();
+
+            const currentSrc = imageToCrop.src;
+            window.cropperManager.mimeType = prev.mime;
+            imageToCrop.src = prev.src;
+            try { await new Promise(r => { imageToCrop.onload = r; }); } catch (e) { /* ignore */ }
+
+            // Revoke the current (post-transform) src blob since we've replaced it.
+            if (currentSrc && currentSrc.startsWith('blob:') && currentSrc !== prev.src) {
+                try { URL.revokeObjectURL(currentSrc); } catch (e) { /* ignore */ }
+            }
+
+            if (window.cropperManager.instance) {
+                window.cropperManager.instance.destroy();
+                window.cropperManager.instance = null;
+            }
+            initCropperInstance();
+
+            // Clear editedFile — the source is now a prior snapshot so any
+            // cached AI-mask should be recomputed on next bg action.
+            window.cropperManager.editedFile = null;
+        }
+
+        if (undoTransformBtn) {
+            undoTransformBtn.addEventListener('click', undoLastTransform);
+        }
+
+        if (applyBeautyBtn) {
+            applyBeautyBtn.addEventListener('click', async function() {
+                const values = readBeautyValues();
+                const anyNonZero = Object.values(values).some(v => v !== 0);
+                if (!anyNonZero) return;
+                await transformCropperImage(
+                    (file) => window.photoEditorTools.applyAdjustments(file, values, window.cropperManager.mimeType || 'image/jpeg'),
+                    'กำลังปรับภาพ...'
+                );
+                // After apply, reset sliders so next Preview is on top of new baseline
+                setBeautyValues({ brightness: 0, contrast: 0, saturation: 0, warmth: 0, sharpness: 0, skinSmooth: 0 });
+            });
+        }
+
+        if (resetBeautyBtn) {
+            resetBeautyBtn.addEventListener('click', function() {
+                setBeautyValues({ brightness: 0, contrast: 0, saturation: 0, warmth: 0, sharpness: 0, skinSmooth: 0 });
+            });
+        }
+
+        if (autoBeautyBtn) {
+            autoBeautyBtn.addEventListener('click', async function() {
+                const preset = window.photoEditorTools.autoBeautyPreset();
+                setBeautyValues(preset);
+                await transformCropperImage(
+                    (file) => window.photoEditorTools.applyAdjustments(file, preset, window.cropperManager.mimeType || 'image/jpeg'),
+                    'Auto Beauty...'
+                );
+                setBeautyValues({ brightness: 0, contrast: 0, saturation: 0, warmth: 0, sharpness: 0, skinSmooth: 0 });
+            });
+        }
+
+        // ------------------------------------------------------------------
+        // Auto-Level + Face-Center Crop — Phase D
+        // ------------------------------------------------------------------
+        const autoLevelBtn = document.getElementById('autoLevelBtn');
+        const autoFaceCropBtn = document.getElementById('autoFaceCropBtn');
+
+        if (autoLevelBtn) {
+            autoLevelBtn.addEventListener('click', async function() {
+                await transformCropperImage(
+                    (file) => window.photoEditorTools.autoLevel(file, window.cropperManager.mimeType || 'image/jpeg'),
+                    'Auto-Level...'
+                );
+            });
+        }
+
+        if (autoFaceCropBtn) {
+            autoFaceCropBtn.addEventListener('click', async function() {
+                if (typeof FaceDetector === 'undefined') {
+                    alert('เบราว์เซอร์นี้ไม่รองรับ FaceDetector — โปรดใช้ Chrome/Edge เวอร์ชั่นล่าสุด');
+                    return;
+                }
+                await transformCropperImage(
+                    (file) => window.photoEditorTools.faceCenterCrop(file, 150 / 180, window.cropperManager.mimeType || 'image/jpeg'),
+                    'ค้นหาใบหน้าและตัดกรอบ...'
+                );
+            });
+        }
+
+        // Also reset the fine-rotation slider whenever we destroy+re-init the cropper
+        // (rotation is baked into the exported canvas, so slider should be 0 again).
+        const _originalInitCropper = initCropperInstance;
+        function _resetFineRotationOnReinit() {
+            if (fineRotationSlider) {
+                fineRotationSlider.value = 0;
+                fineRotationLast = 0;
+                if (fineRotationLabel) fineRotationLabel.textContent = '0°';
+            }
+        }
+        // Monkey-patch so every re-init clears the slider state.
+        // (Safe: initCropperInstance is a closure-local function.)
+        initCropperInstance = function() {
+            _resetFineRotationOnReinit();
+            return _originalInitCropper.apply(this, arguments);
+        };
+
         // --- Event: Modal Shown ---
         cropperModalEl.addEventListener('shown.bs.modal', function () {
             if (cropImageBtn) cropImageBtn.disabled = true;
@@ -228,6 +543,20 @@
             if(cropperReviewContainer) cropperReviewContainer.classList.add('d-none');
             if(reviewToolbar) reviewToolbar.classList.add('d-none');
             if(bgToolbarContainer) bgToolbarContainer.classList.remove('d-none');
+            toggleExtraPanels(true);
+
+            // Clear undo history — a brand-new photo shouldn't inherit undo
+            // snapshots from the previous session. Revoke old blob URLs so
+            // they can be garbage collected.
+            if (window.cropperManager.transformHistory) {
+                window.cropperManager.transformHistory.forEach(h => {
+                    if (h.src && h.src.startsWith('blob:')) {
+                        try { URL.revokeObjectURL(h.src); } catch (e) {}
+                    }
+                });
+                window.cropperManager.transformHistory = [];
+            }
+            refreshUndoBtn();
 
             // Destroy existing cropper if any to be safe
             if (window.cropperManager.instance) {
@@ -290,6 +619,7 @@
             if(cropperContainer) cropperContainer.classList.add('d-none');
             if(cropToolbar) cropToolbar.classList.add('d-none');
             if(bgToolbarContainer) bgToolbarContainer.classList.add('d-none');
+            toggleExtraPanels(false);
 
             if(cropperReviewContainer) cropperReviewContainer.classList.remove('d-none');
             if(reviewToolbar) reviewToolbar.classList.remove('d-none');
@@ -301,6 +631,7 @@
                 if(cropperContainer) cropperContainer.classList.remove('d-none');
                 if(cropToolbar) cropToolbar.classList.remove('d-none');
                 if(bgToolbarContainer) bgToolbarContainer.classList.remove('d-none');
+                toggleExtraPanels(true);
 
                 if(cropperReviewContainer) cropperReviewContainer.classList.add('d-none');
                 if(reviewToolbar) reviewToolbar.classList.add('d-none');

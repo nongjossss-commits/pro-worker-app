@@ -27,6 +27,7 @@
                     {{-- START: Full Details --}}
                     <p class="mb-1 text-muted small">{{ __('Passport') }}: {{ $employee->employeePassport ?? '-' }} ({{ __('Expires') }}: {{ $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-' }})</p>
                     <p class="mb-1 text-muted small">{{ __('Work Permit') }}: {{ $employee->employeeWorkPermit ?? '-' }} ({{ __('Expires') }}: {{ $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-' }})</p>
+                    <p class="mb-1 text-muted small">{{ __('Visa Endorsement') }}: {{ $employee->visaEndorsementNo ?? '-' }} ({{ __('Date') }}: {{ $employee->visaEndorsementDate ? \Carbon\Carbon::parse($employee->visaEndorsementDate)->format('d/m/Y') : '-' }})</p>
                     <p class="mb-0 text-muted small">{{ __('Visa') }} ({{ $employee->workPermitMOUGroup ?? '-' }}) {{ __('Expires') }}: {{ $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-' }} | {{ __('90-Day Report') }}: {{ $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-' }}</p>
                     {{-- END: Full Details --}}
                 </div>

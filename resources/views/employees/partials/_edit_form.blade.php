@@ -224,10 +224,22 @@
             <input type="text" class="form-control" id="edit_visa_issue_place" name="visa_issue_place" value="{{ old('visa_issue_place', $employee->visa_issue_place) }}">
         </div>
         <div class="col-md-3 mb-3">
-            <label for="edit_visaExpiryDate" class="form-label">วันหมดอายุวีซ่า
+            <label for="edit_visaExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุวีซ่า
                 @if(isset($missingFields) && in_array('visaExpiryDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            <input type="date" class="form-control" id="edit_visaExpiryDate" name="visaExpiryDate" value="{{ old('visaExpiryDate', optional($employee->visaExpiryDate)->format('Y-m-d')) }}">
+            <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="edit_visaExpiryDate" name="visaExpiryDate" value="{{ old('visaExpiryDate', optional($employee->visaExpiryDate)->format('Y-m-d')) }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="edit_visaEndorsementDate" class="form-label text-info">🔵 วันที่ตรวจลงตราวีซ่า (ประทับ)
+                @if(isset($missingFields) && in_array('visaEndorsementDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label>
+            <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="edit_visaEndorsementDate" name="visaEndorsementDate" value="{{ old('visaEndorsementDate', optional($employee->visaEndorsementDate)->format('Y-m-d')) }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="edit_visaEndorsementNo" class="form-label text-info">🔵 เลขที่ตรวจลงตราวีซ่า
+                @if(isset($missingFields) && in_array('visaEndorsementNo', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label>
+            <input type="text" class="form-control border-info" style="background-color:#f0f9ff" id="edit_visaEndorsementNo" name="visaEndorsementNo" maxlength="50" value="{{ old('visaEndorsementNo', $employee->visaEndorsementNo) }}">
         </div>
     </div>
 

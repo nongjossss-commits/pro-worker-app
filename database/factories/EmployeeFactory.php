@@ -31,6 +31,8 @@ class EmployeeFactory extends Factory
             'passportExpiryDate' => $this->faker->date(),
             'employeeWorkPermit' => $this->faker->unique()->numerify('WP########'),
             'workPermitExpiryDate' => $this->faker->date(),
+            'visaEndorsementDate' => $this->faker->date(),
+            'visaEndorsementNo' => $this->faker->numerify('VE######'),
             'visaExpiryDate' => $this->faker->date(),
             'ninetyDayReportDate' => $this->faker->date(),
             'employeeDob' => $this->faker->date(),

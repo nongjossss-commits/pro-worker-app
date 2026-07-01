@@ -1480,6 +1480,7 @@
 
     @include('components.download-modals')
     @include('partials.background-removal-scripts')
+    @include('partials.photo-editor-tools')
     @include('partials.view_selected_modal')
     @stack('scripts')
 

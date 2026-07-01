@@ -877,7 +877,7 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             deletePayment(paymentId) {
-                Swal.fire({
+                this._safeFire({
                     title: 'Delete this payment?',
                     text: 'This will revert the paid amount and bank balances.',
                     icon: 'warning',
@@ -979,7 +979,7 @@ if (typeof window.financialManager === 'undefined') {
 
             // --- Groups Logic ---
             addNewGroup() {
-                Swal.fire({
+                this._safeFire({
                     title: 'ตั้งชื่อแท็บการเงินใหม่',
                     text: 'แท็บใช้แยกประเภทการวางบิล เช่น ค่าบริการ MOU, ค่ามัดจำ, งวดเปลี่ยนนายจ้าง',
                     input: 'text',
@@ -1023,7 +1023,7 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             deleteGroup(groupId) {
-                 Swal.fire({
+                this._safeFire({
                     title: 'Delete Tab?',
                     text: "All transactions in this group will be deleted.",
                     icon: 'warning',
@@ -1052,7 +1052,7 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             renameGroup(groupId, currentName) {
-                Swal.fire({
+                this._safeFire({
                     title: 'เปลี่ยนชื่อแท็บ',
                     text: 'ชื่อปัจจุบัน: ' + (currentName || '(ยังไม่ตั้งชื่อ)'),
                     input: 'text',
@@ -1115,6 +1115,9 @@ if (typeof window.financialManager === 'undefined') {
             // Bootstrap 5 modals install a focus trap (focusin listener) that yanks focus
             // back to the modal whenever it moves outside — preventing typing in Swal
             // inputs. We deactivate it while Swal is open and reactivate on close.
+            // We also force-focus the Swal input on open (a bit late) to defeat any
+            // rogue focus event that fires between Swal's own auto-focus and our
+            // trap-deactivation.
             _safeFire(config) {
                 const openModal = document.querySelector('.modal.show');
                 const modalInstance = openModal && window.bootstrap ? bootstrap.Modal.getInstance(openModal) : null;
@@ -1125,9 +1128,25 @@ if (typeof window.financialManager === 'undefined') {
                 }
 
                 const originalWillClose = config.willClose;
+                const originalDidOpen = config.didOpen;
                 const merged = Object.assign({}, config, {
                     heightAuto: false,
                     target: this._swalTarget(),
+                    didOpen: (popup) => {
+                        // If this Swal has an input/textarea, force focus into it after a beat.
+                        // Bootstrap modal's focus trap can grab focus back milliseconds after
+                        // Swal's own auto-focus — this timer wins the race.
+                        setTimeout(() => {
+                            const input = popup.querySelector('.swal2-input, .swal2-textarea, .swal2-file, .swal2-select');
+                            if (input && typeof input.focus === 'function') {
+                                input.focus();
+                                if (typeof input.setSelectionRange === 'function' && typeof input.value === 'string') {
+                                    try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) { /* ignore */ }
+                                }
+                            }
+                        }, 60);
+                        if (typeof originalDidOpen === 'function') originalDidOpen(popup);
+                    },
                     willClose: (popup) => {
                         if (focusTrap) {
                             try { focusTrap.activate(); } catch (e) { /* ignore */ }
@@ -1451,7 +1470,7 @@ if (typeof window.financialManager === 'undefined') {
 
             handleFileSelect(e) { this.selectedFile = e.target.files[0]; },
             deleteTransaction(id) {
-                Swal.fire({
+                this._safeFire({
                     title: 'Are you sure?',
                     text: 'This transaction will be permanently deleted.',
                     icon: 'warning',

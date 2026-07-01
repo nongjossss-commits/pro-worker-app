@@ -287,8 +287,16 @@
         <input type="text" class="form-control" id="visa_issue_place" name="visa_issue_place" value="{{ old('visa_issue_place') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="visaExpiryDate" class="form-label">วันหมดอายุวีซ่า</label>
-        <input type="date" class="form-control" id="visaExpiryDate" name="visaExpiryDate" value="{{ old('visaExpiryDate') }}">
+        <label for="visaExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุวีซ่า</label>
+        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="visaExpiryDate" name="visaExpiryDate" value="{{ old('visaExpiryDate') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label for="visaEndorsementDate" class="form-label text-info">🔵 วันที่ตรวจลงตราวีซ่า (ประทับ)</label>
+        <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="visaEndorsementDate" name="visaEndorsementDate" value="{{ old('visaEndorsementDate') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label for="visaEndorsementNo" class="form-label text-info">🔵 เลขที่ตรวจลงตราวีซ่า</label>
+        <input type="text" class="form-control border-info" style="background-color:#f0f9ff" id="visaEndorsementNo" name="visaEndorsementNo" maxlength="50" value="{{ old('visaEndorsementNo') }}">
     </div>
 </div>
 

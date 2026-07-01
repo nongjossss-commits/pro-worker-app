@@ -82,13 +82,17 @@
                         </td>
                         <td>{{ $loop->iteration }}</td>
                         <td>
+                            {{-- Use @json() so employerNameTh/employerId values
+                                 containing quotes, backslashes or unicode don't
+                                 break the ondragstart JS payload (addslashes()
+                                 handled quotes but not backticks/tags). --}}
                             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                                draggable="true"
                                ondragstart="window.startDragGlobal(event, 'employer', {
                                    id: {{ $employer->id }},
-                                   name: '{{ addslashes($employer->employerNameTh) }}',
-                                   code: '{{ $employer->employerId }}',
-                                   url: '{{ route('employers.edit', $employer->id) }}'
+                                   name: {{ Illuminate\Support\Js::from($employer->employerNameTh ?? '') }},
+                                   code: {{ Illuminate\Support\Js::from($employer->employerId ?? '') }},
+                                   url: {{ Illuminate\Support\Js::from(route('employers.edit', $employer->id)) }}
                                })"
                                title="{{ __('Drag') }}">
                             </i>

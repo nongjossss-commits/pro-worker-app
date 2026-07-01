@@ -89,6 +89,8 @@ class ActivityLogHelper
         'passportExpiryDate'       => 'วันหมดอายุพาสปอร์ต',
         'employeeWorkPermit'       => 'เลขใบอนุญาตทำงาน',
         'workPermitExpiryDate'     => 'วันหมดอายุใบอนุญาตทำงาน',
+        'visaEndorsementDate'      => 'วันที่ตรวจลงตราวีซ่า',
+        'visaEndorsementNo'        => 'เลขที่ตรวจลงตราวีซ่า',
         'visaExpiryDate'           => 'วันหมดอายุวีซ่า',
         'employeeNationality'      => 'สัญชาติ',
         'employeeTitleTh'          => 'คำนำหน้า (ไทย)',

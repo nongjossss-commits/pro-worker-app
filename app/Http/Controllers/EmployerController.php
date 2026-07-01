@@ -498,7 +498,7 @@ class EmployerController extends Controller
         $columns = [
             'Employee Name (TH)', 'Employee Name (EN)', 'Nationality',
             'Passport No', 'Passport Expiry', 'Work Permit No',
-            'Work Permit Expiry', 'Visa Expiry', '90 Day Report', 'Pink Card No'
+            'Work Permit Expiry', 'Visa Endorsement Date', 'Visa Endorsement No', 'Visa Expiry', '90 Day Report', 'Pink Card No'
         ];
 
         if ($isHistoryExport) {
@@ -534,7 +534,7 @@ class EmployerController extends Controller
 
         // Write Data Rows
         $currentRow = 2;
-        $textColumns = ['Passport No', 'Work Permit No', 'Pink Card No'];
+        $textColumns = ['Passport No', 'Work Permit No', 'Pink Card No', 'Visa Endorsement No'];
 
         foreach ($employees as $employee) {
             $row = [
@@ -545,6 +545,8 @@ class EmployerController extends Controller
                 'Passport Expiry'      => $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
                 'Work Permit No'       => $employee->employeeWorkPermit,
                 'Work Permit Expiry'   => $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
+                'Visa Endorsement Date' => $employee->visaEndorsementDate ? \Carbon\Carbon::parse($employee->visaEndorsementDate)->format('d/m/Y') : '-',
+                'Visa Endorsement No'  => $employee->visaEndorsementNo ?? '-',
                 'Visa Expiry'          => $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
                 '90 Day Report'        => $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
                 'Pink Card No'         => $employee->pinkCardNo,

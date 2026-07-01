@@ -53,6 +53,8 @@ class SalesLeadEmployee extends Model
         'passport_issue_place',
         'passport_issue_date',
         'passportExpiryDate',
+        'visaEndorsementDate',
+        'visaEndorsementNo',
         'pinkCardNo',
         'visaType',
         'visa_issue_place',
@@ -136,6 +138,7 @@ class SalesLeadEmployee extends Model
     protected $casts = [
         'employeeDob' => 'date',
         'passportExpiryDate' => 'date',
+        'visaEndorsementDate' => 'date',
         'workPermitExpiryDate' => 'date',
         'visaExpiryDate' => 'date',
         'passport_issue_date' => 'date',

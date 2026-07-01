@@ -112,6 +112,102 @@
                     </div>
                 </div>
 
+                <!-- Rotation / Flip Toolbar -->
+                <div class="mt-3 border-top pt-3" id="rotationToolbarContainer">
+                    <label class="form-label fw-bold mb-2 text-primary"><i class="bi bi-arrow-repeat"></i> {{ __('หมุน / ปรับองศา') }}</label>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-rotate="-90" title="หมุนซ้าย 90°">
+                                <i class="bi bi-arrow-counterclockwise"></i> 90°
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-rotate="90" title="หมุนขวา 90°">
+                                <i class="bi bi-arrow-clockwise"></i> 90°
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-flip="x" title="กลับด้าน (Mirror)">
+                                <i class="bi bi-symmetry-vertical"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width:220px;">
+                            <small class="text-muted" style="min-width:60px;">ปรับเอียง</small>
+                            <input type="range" class="form-range" id="fineRotationSlider" min="-45" max="45" step="1" value="0" style="max-width:220px;">
+                            <span id="fineRotationLabel" class="badge bg-light text-dark" style="min-width:44px;">0°</span>
+                            <button type="button" class="btn btn-link btn-sm p-0 text-muted" id="fineRotationReset" title="Reset">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Beauty / Adjust Panel -->
+                <div class="mt-3 border-top pt-3" id="beautyPanelContainer">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-bold mb-0 text-primary"><i class="bi bi-stars"></i> {{ __('ปรับแสง / แต่งเบื้องต้น') }}</label>
+                        <div class="d-flex gap-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="undoTransformBtn" title="ย้อนกลับก่อนหน้า 1 ครั้ง" disabled>
+                                <i class="bi bi-arrow-90deg-left"></i> ย้อนกลับ
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm text-dark" id="autoBeautyBtn">
+                                <i class="bi bi-magic"></i> Auto Beauty
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="resetBeautyBtn" title="รีเซ็ตค่า slider ทั้งหมด">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row g-2" id="beautySliders">
+                        <div class="col-md-6">
+                            <label class="form-label small mb-0 d-flex justify-content-between">
+                                <span>แสง (Brightness)</span>
+                                <span class="text-muted" data-beauty-value="brightness">0</span>
+                            </label>
+                            <input type="range" class="form-range beauty-slider" data-beauty-key="brightness" min="-50" max="50" step="1" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-0 d-flex justify-content-between">
+                                <span>ความเข้ม (Contrast)</span>
+                                <span class="text-muted" data-beauty-value="contrast">0</span>
+                            </label>
+                            <input type="range" class="form-range beauty-slider" data-beauty-key="contrast" min="-30" max="30" step="1" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-0 d-flex justify-content-between">
+                                <span>สีอิ่มตัว (Saturation)</span>
+                                <span class="text-muted" data-beauty-value="saturation">0</span>
+                            </label>
+                            <input type="range" class="form-range beauty-slider" data-beauty-key="saturation" min="-30" max="30" step="1" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-0 d-flex justify-content-between">
+                                <span>ความอุ่น (Warmth)</span>
+                                <span class="text-muted" data-beauty-value="warmth">0</span>
+                            </label>
+                            <input type="range" class="form-range beauty-slider" data-beauty-key="warmth" min="-30" max="30" step="1" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-0 d-flex justify-content-between">
+                                <span>ความคม (Sharpness)</span>
+                                <span class="text-muted" data-beauty-value="sharpness">0</span>
+                            </label>
+                            <input type="range" class="form-range beauty-slider" data-beauty-key="sharpness" min="0" max="60" step="1" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-0 d-flex justify-content-between">
+                                <span>Smooth ผิว (Skin Smooth)</span>
+                                <span class="text-muted" data-beauty-value="skinSmooth">0</span>
+                            </label>
+                            <input type="range" class="form-range beauty-slider" data-beauty-key="skinSmooth" min="0" max="60" step="1" value="0">
+                        </div>
+                    </div>
+                    <div class="mt-2 d-flex justify-content-end">
+                        <button type="button" class="btn btn-success btn-sm" id="applyBeautyBtn">
+                            <i class="bi bi-check2-circle"></i> ใช้ค่านี้ / Preview
+                        </button>
+                    </div>
+                    <div class="text-muted small mt-1">
+                        <i class="bi bi-info-circle"></i> เลื่อน slider แล้วกด "ใช้ค่านี้" เพื่อประยุกต์ค่าลงบนภาพ
+                    </div>
+                </div>
+
                 <!-- Background Removal Toolbar -->
                 <div class="mt-3 border-top pt-3" id="bgToolbarContainer">
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -141,6 +237,22 @@
                     </div>
                     <div class="text-muted small mt-1">
                         <i class="bi bi-info-circle"></i> {{ __('Select an option to automatically remove and replace the background.') }}
+                    </div>
+                </div>
+
+                <!-- Auto-Level + Face-Center Crop Toolbar -->
+                <div class="mt-3 border-top pt-3" id="autoToolsContainer">
+                    <label class="form-label fw-bold mb-2 text-primary"><i class="bi bi-lightning-charge"></i> {{ __('เครื่องมืออัตโนมัติ') }}</label>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <button type="button" class="btn btn-outline-success btn-sm" id="autoLevelBtn" title="ปรับแสงเงาอัตโนมัติ (Histogram Stretch)">
+                            🎯 Auto-Level
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm" id="autoFaceCropBtn" title="ตัดกรอบให้ใบหน้าอยู่กลาง (ใช้ FaceDetector ของ browser)">
+                            📐 Auto Face Center Crop
+                        </button>
+                        <small class="text-muted ms-2">
+                            <i class="bi bi-info-circle"></i> Face Detect รองรับบน Chrome/Edge เท่านั้น
+                        </small>
                     </div>
                 </div>
             </div>

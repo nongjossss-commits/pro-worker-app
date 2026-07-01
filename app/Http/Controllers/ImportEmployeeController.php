@@ -183,6 +183,8 @@ class ImportEmployeeController extends Controller
             'Start Date',                     // R (New)
             'Employee ID Number',             // S (New)
             'Passport Issue Date',            // T (New)
+            'Visa Endorsement Date',          // U (New)
+            'Visa Endorsement No',            // V (New)
         ];
 
         foreach ($columns as $index => $header) {
@@ -443,6 +445,8 @@ class ImportEmployeeController extends Controller
                 $startDateRaw = $row[16];
                 $employeeIdNumber = $row[17];
                 $passportIssueDateRaw = $row[18];
+                $visaEndorsementDateRaw = $row[19] ?? null;
+                $visaEndorsementNo = $row[20] ?? null;
 
                 // Validate and Parse Dates
                 $dob = $this->parseDateStrict($dobRaw, $sheet->getCell('F' . $rowIdx));
@@ -484,6 +488,12 @@ class ImportEmployeeController extends Controller
                 $passportIssueDate = $this->parseDateStrict($passportIssueDateRaw, $sheet->getCell('T' . $rowIdx));
                 if ($passportIssueDateRaw && !$passportIssueDate) {
                      $errors[] = "Row $rowIdx: Invalid Passport Issue Date format ($passportIssueDateRaw). Expected D/M/Y.";
+                     continue;
+                }
+
+                $visaEndorsementDate = $this->parseDateStrict($visaEndorsementDateRaw, $sheet->getCell('U' . $rowIdx));
+                if ($visaEndorsementDateRaw && !$visaEndorsementDate) {
+                     $errors[] = "Row $rowIdx: Invalid Visa Endorsement Date format ($visaEndorsementDateRaw). Expected D/M/Y.";
                      continue;
                 }
 
@@ -635,6 +645,8 @@ class ImportEmployeeController extends Controller
                     'startDate' => $startDate,
                     'employee_id_number' => $employeeIdNumber,
                     'passport_issue_date' => $passportIssueDate,
+                    'visaEndorsementDate' => $visaEndorsementDate,
+                    'visaEndorsementNo' => $visaEndorsementNo,
                 ];
 
                 if ($nationality === 'กัมพูชา') {

@@ -354,6 +354,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'pinkCardNo' => 'nullable|string|max:255',
             'visaType' => 'nullable|string|max:255',
             'visa_issue_place' => 'nullable|string|max:255',
+            'visaEndorsementDate' => 'nullable|date',
+            'visaEndorsementNo' => 'nullable|string|max:50',
             'visaExpiryDate' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
             'job_description' => 'nullable|string',
@@ -669,6 +671,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'pinkCardNo' => 'nullable|string|max:255',
             'visaType' => 'nullable|string|max:255',
             'visa_issue_place' => 'nullable|string|max:255',
+            'visaEndorsementDate' => 'nullable|date',
+            'visaEndorsementNo' => 'nullable|string|max:50',
             'visaExpiryDate' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
             'job_description' => 'nullable|string',
@@ -1047,7 +1051,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $columns = [
             'Employer Name', 'Employee Name (TH)', 'Employee Name (EN)',
             'Nationality', 'Passport No', 'Passport Expiry',
-            'Work Permit No', 'Work Permit Expiry', 'Visa Expiry',
+            'Work Permit No', 'Work Permit Expiry',
+            'Visa Endorsement Date', 'Visa Endorsement No', 'Visa Expiry',
             '90 Day Report', 'Pink Card No'
         ];
 
@@ -1084,7 +1089,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // Write Data Rows
         $currentRow = 2;
-        $textColumns = ['Passport No', 'Work Permit No', 'Pink Card No'];
+        $textColumns = ['Passport No', 'Work Permit No', 'Pink Card No', 'Visa Endorsement No'];
 
         foreach ($employees as $employee) {
             $row = [
@@ -1096,6 +1101,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'Passport Expiry'    => $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
                 'Work Permit No'     => $employee->employeeWorkPermit,
                 'Work Permit Expiry' => $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
+                'Visa Endorsement Date' => $employee->visaEndorsementDate ? \Carbon\Carbon::parse($employee->visaEndorsementDate)->format('d/m/Y') : '-',
+                'Visa Endorsement No' => $employee->visaEndorsementNo ?? '-',
                 'Visa Expiry'        => $employee->visaExpiryDate ? \Carbon\Carbon::parse($employee->visaExpiryDate)->format('d/m/Y') : '-',
                 '90 Day Report'      => $employee->ninetyDayReportDate ? \Carbon\Carbon::parse($employee->ninetyDayReportDate)->format('d/m/Y') : '-',
                 'Pink Card No'       => $employee->pinkCardNo,
@@ -1513,6 +1520,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'passportType' => 'Passport Type',
                 'passport_type_cambodia' => 'Passport Type (Cambodia)',
                 'visaType' => 'Visa Type',
+                'visaEndorsementDate' => 'วันที่ตรวจลงตราวีซ่า (Visa Endorsement Date)',
+                'visaEndorsementNo' => 'เลขที่ตรวจลงตราวีซ่า (Visa Endorsement No.)',
                 'visaExpiryDate' => 'Visa Expiry Date',
                 'visa_issue_place' => 'Visa Issue Place',
                 'passport_file' => 'Passport File (Upload)',
@@ -1600,6 +1609,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $dateFields = [
             'employeeDob', 'passport_issue_date', 'passportExpiryDate',
+            'visaEndorsementDate',
             'visaExpiryDate', 'workPermitExpiryDate', 'startDate',
             'insurance_expiry_date_hospital', 'insurance_expiry_date_private',
             'sso_issue_date', 'sso_expiry_date',
@@ -1648,6 +1658,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'passport_type_cambodia' => 'Passport Type (Cambodia)',
             'passport_issue_place' => 'Passport Issue Place',
             'visaType' => 'Visa Type',
+            'visaEndorsementDate' => 'Visa Endorsement Date (วันที่ตรวจลงตราวีซ่า)',
+            'visaEndorsementNo' => 'Visa Endorsement No. (เลขที่ตรวจลงตราวีซ่า)',
             'visaExpiryDate' => 'Visa Expiry Date',
             'visa_issue_place' => 'Visa Issue Place',
             'employeeWorkPermit' => 'Work Permit No.',
@@ -1726,6 +1738,37 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_attachment' => 'insurance_document_path_private',
         ];
 
+        // Fields where a blank submission must be treated as "no change" rather
+        // than "clear to null" — prevents accidental data loss when the user
+        // ticks a bulk-edit column but leaves the cell empty for some rows.
+        //
+        // Original scope: only date columns (visa/wp/passport). Expanded after
+        // field reports that RA numbers / request numbers were quietly getting
+        // wiped when operators bulk-edited an unrelated field but the outsource
+        // ID columns were also in the selected set with empty cells.
+        //
+        // Rule of thumb: any high-value identifier field that should NOT be
+        // "cleared to null" as a side effect of bulk editing goes here. Users
+        // wanting to actually clear a field can still do it via the per-employee
+        // Advanced Edit modal.
+        $dateFieldsSkipIfBlank = [
+            // Dates
+            'employeeDob', 'passport_issue_date', 'passportExpiryDate',
+            'visaEndorsementDate', 'visaExpiryDate', 'workPermitExpiryDate',
+            'startDate', 'ninetyDayReportDate',
+            'insurance_expiry_date', 'insurance_expiry_date_hospital',
+            'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date',
+            // Critical outsource / gov / bank identifiers
+            'name_list_number', 'request_number',
+            'registration_request_number', 'renewal_request_number',
+            'employee_reference_id', 'employee_id_number',
+            'employer_employee_id', 'tax_id_number',
+            'employeePassport', 'employeeWorkPermit', 'pinkCardNo',
+            'visaEndorsementNo', 'social_security_number',
+            'bank_account_number',
+        ];
+        $bulkEditSkippedBlank = [];
+
         foreach ($employeeIds as $id) {
             $employee = Employee::find($id);
             if (!$employee) continue;
@@ -1769,7 +1812,16 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 // 2. Handle Text/Date Inputs
                 // We check array_key_exists because the value might be null or empty string, which we want to save.
                 elseif (array_key_exists($field, $employeeInput)) {
-                    $updateData[$dbColumn] = $employeeInput[$field];
+                    $value = $employeeInput[$field];
+                    // Guard: skip blank date submissions on protected date fields
+                    // so a "select column but leave cell empty" mistake does
+                    // NOT null out an existing visa/wp/passport date.
+                    if (in_array($field, $dateFieldsSkipIfBlank, true)
+                        && ($value === null || $value === '')) {
+                        $bulkEditSkippedBlank[$id][] = $field;
+                        continue;
+                    }
+                    $updateData[$dbColumn] = $value;
                 }
 
                 // 3. Handle Other Document Descriptions (auto-mapping)
@@ -1791,15 +1843,28 @@ public function create(Request $request) // เพิ่ม Request $request เ
             }
         }
 
+        // Build a warning line when we protected some cells from being nulled
+        // — so the operator immediately sees "these 3 rows had a protected
+        // field left blank and were NOT cleared" instead of quietly losing data.
+        $blankNotice = '';
+        if (!empty($bulkEditSkippedBlank)) {
+            $rowCount = count($bulkEditSkippedBlank);
+            $blankNotice = " ข้าม {$rowCount} แถวที่มีช่องสำคัญปล่อยว่าง (วันที่ / เลข RA / เลขคำขอ / passport / work permit ฯลฯ) — ค่าเดิมยังอยู่ ไม่ถูกลบ";
+        }
+
         if ($request->ajax()) {
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'skipped_blank_date_fields' => $bulkEditSkippedBlank,
+                'notice' => $blankNotice,
+            ]);
         }
 
         if ($redirectTo) {
-            return redirect($redirectTo)->with('success', "Bulk updated {$updatedCount} employees successfully.");
+            return redirect($redirectTo)->with('success', "Bulk updated {$updatedCount} employees successfully.{$blankNotice}");
         }
 
-        return redirect()->route('employees.index')->with('success', "Bulk updated {$updatedCount} employees successfully.");
+        return redirect()->route('employees.index')->with('success', "Bulk updated {$updatedCount} employees successfully.{$blankNotice}");
     }
 
     /**
@@ -1866,6 +1931,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'passportExpiryDate' => 'Passport Expiry Date',
             'pinkCardNo' => 'Pink Card No',
             'visaType' => 'Visa Type',
+            'visaEndorsementDate' => 'Visa Endorsement Date',
+            'visaEndorsementNo' => 'Visa Endorsement No',
             'visaExpiryDate' => 'Visa Expiry',
             'job_title' => 'Job Title',
             'job_description' => 'Nature of Work',
@@ -2034,7 +2101,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $cell->setValue('No Photo');
                     }
 
-                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date'])) {
+                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaEndorsementDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date'])) {
                     // Format Dates
                     $val = $employee->$col ? \Carbon\Carbon::parse($employee->$col)->format('d/m/Y') : '-';
                     $cell->setValue($val);
@@ -2119,7 +2186,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         'employeePassport', 'employeeWorkPermit', 'pinkCardNo', 'tax_id_number',
                         'social_security_number', 'employer_employee_id', 'employee_id_number',
                         'name_list_number', 'bank_account_number', 'employeePhone',
-                        'outsource_code', 'employee_reference_id'
+                        'outsource_code', 'employee_reference_id', 'visaEndorsementNo'
                     ];
 
                     if (in_array($col, $textColumns) && $val !== '-') {

@@ -715,13 +715,17 @@
             @endphp
 
             {{-- 3 Extra Fields (Editable) --}}
+            {{-- Use @json() instead of '{{ … }}' to survive values containing
+                 single-quotes, backslashes, or unicode. The old form silently
+                 mangled such values into empty/broken strings on save, which
+                 was reported as "RA number auto-deletes randomly". --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
-                nameList: '{{ $employee->name_list_number }}',
-                reqNo: '{{ $currentRequestNumber }}',
-                refId: '{{ $employee->employee_reference_id }}',
-                updateMethod: '{{ $updateMethod }}',
-                updateUrl: '{{ $updateUrl }}',
+                nameList: @json($employee->name_list_number ?? ''),
+                reqNo: @json($currentRequestNumber ?? ''),
+                refId: @json($employee->employee_reference_id ?? ''),
+                updateMethod: @json($updateMethod),
+                updateUrl: @json($updateUrl),
                 copy(el, text) {
                     if (!text) return;
                     navigator.clipboard.writeText(text).then(() => {

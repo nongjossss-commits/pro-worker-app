@@ -237,31 +237,121 @@
             });
         },
 
-        // Helper to draw blob on colored canvas
-        compositeBackground(imageBlob, colorHex) {
+        // Helper to draw blob on colored canvas.
+        //
+        // The old version simply painted the color and drew the transparent
+        // image on top. But @imgly returns a soft alpha mask (0-255) so
+        // pixels at hair/collar edges have partial alpha — those get blended
+        // with the new background color, which visibly washes shirt/skin
+        // colors when the background is light blue.
+        //
+        // The improved version:
+        //   1. Alpha threshold: pixels with alpha ≥ opaqueCutoff become fully
+        //      opaque so foreground RGB is preserved 100%.
+        //   2. Erosion (1px): shrink the mask inward by one pixel so the
+        //      leaked background color from the ORIGINAL photo (present in
+        //      partial-alpha ring) is discarded instead of blended.
+        //   3. Soft feather in the transition band so the cut looks natural.
+        //
+        // opts: { opaqueCutoff:200, transparentCutoff:50, erode:1, feather:true }
+        compositeBackground(imageBlob, colorHex, opts = {}) {
+            const {
+                opaqueCutoff = 200,
+                transparentCutoff = 50,
+                erode = 1,
+                feather = true,
+            } = opts;
+
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
+                    const w = img.width, h = img.height;
 
-                    // Fill background
-                    ctx.fillStyle = colorHex;
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    // 1) Draw the transparent foreground onto a working canvas
+                    const fgCanvas = document.createElement('canvas');
+                    fgCanvas.width = w; fgCanvas.height = h;
+                    const fgCtx = fgCanvas.getContext('2d');
+                    fgCtx.drawImage(img, 0, 0);
+                    const fgData = fgCtx.getImageData(0, 0, w, h);
 
-                    // Draw image
-                    ctx.drawImage(img, 0, 0);
+                    // 2) Refine mask (threshold + erosion)
+                    const refined = this._refineMask(fgData, {
+                        opaqueCutoff, transparentCutoff, erode, feather,
+                    });
+                    fgCtx.putImageData(refined, 0, 0);
 
-                    // Export as JPEG (since no transparency needed)
-                    canvas.toBlob((blob) => {
-                        resolve(blob);
-                    }, 'image/jpeg', 0.95);
+                    // 3) Composite: paint bg color, then draw refined fg over it
+                    const outCanvas = document.createElement('canvas');
+                    outCanvas.width = w; outCanvas.height = h;
+                    const outCtx = outCanvas.getContext('2d');
+                    outCtx.fillStyle = colorHex;
+                    outCtx.fillRect(0, 0, w, h);
+                    outCtx.drawImage(fgCanvas, 0, 0);
+
+                    outCanvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
                 };
                 img.onerror = reject;
                 img.src = URL.createObjectURL(imageBlob);
             });
-        }
+        },
+
+        // Threshold + morphological erosion + optional edge feathering on the
+        // alpha channel only. RGB is left untouched so foreground colors stay
+        // vivid.
+        _refineMask(imageData, { opaqueCutoff, transparentCutoff, erode, feather }) {
+            const w = imageData.width, h = imageData.height;
+            const src = imageData.data;
+
+            // Build a binary opacity map first (0 = out, 1 = in)
+            const inside = new Uint8Array(w * h);
+            for (let i = 0, p = 0; i < src.length; i += 4, p++) {
+                inside[p] = src[i + 3] >= opaqueCutoff ? 1 : 0;
+            }
+
+            // Erosion: a pixel stays "inside" only if all its 4-neighbours
+            // are also inside. Iterate `erode` times.
+            let eroded = inside;
+            for (let iter = 0; iter < erode; iter++) {
+                const next = new Uint8Array(w * h);
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const p = y * w + x;
+                        if (!eroded[p]) { next[p] = 0; continue; }
+                        const up = y > 0 ? eroded[p - w] : 1;
+                        const dn = y < h - 1 ? eroded[p + w] : 1;
+                        const lt = x > 0 ? eroded[p - 1] : 1;
+                        const rt = x < w - 1 ? eroded[p + 1] : 1;
+                        next[p] = (up && dn && lt && rt) ? 1 : 0;
+                    }
+                }
+                eroded = next;
+            }
+
+            // Apply back to alpha channel with optional 1px feather:
+            //   inside pixel adjacent to outside → alpha 128 (soft edge)
+            //   inside surrounded by inside → alpha 255 (crisp)
+            //   outside → alpha 0
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const p = y * w + x;
+                    const i = p * 4;
+                    if (!eroded[p]) {
+                        src[i + 3] = 0;
+                        continue;
+                    }
+                    if (!feather) {
+                        src[i + 3] = 255;
+                        continue;
+                    }
+                    // Feather: check if any 4-neighbour is outside
+                    const up = y > 0 ? eroded[p - w] : 1;
+                    const dn = y < h - 1 ? eroded[p + w] : 1;
+                    const lt = x > 0 ? eroded[p - 1] : 1;
+                    const rt = x < w - 1 ? eroded[p + 1] : 1;
+                    src[i + 3] = (up && dn && lt && rt) ? 255 : 180;
+                }
+            }
+            return imageData;
+        },
     };
 </script>

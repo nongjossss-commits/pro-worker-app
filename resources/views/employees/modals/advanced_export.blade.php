@@ -151,6 +151,18 @@
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="visaEndorsementDate" id="col_visa_endorse_date">
+                                        <label class="form-check-label" for="col_visa_endorse_date">{{ __('Visa Endorsement Date') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="visaEndorsementNo" id="col_visa_endorse_no">
+                                        <label class="form-check-label" for="col_visa_endorse_no">{{ __('Visa Endorsement No') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="visaExpiryDate" id="col_visa_exp">
                                         <label class="form-check-label" for="col_visa_exp">{{ __('Visa Expiry') }}</label>
                                     </div>

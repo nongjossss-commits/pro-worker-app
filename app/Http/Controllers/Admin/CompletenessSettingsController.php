@@ -40,6 +40,8 @@ class CompletenessSettingsController extends Controller
                 'passportExpiryDate' => 'วันหมดอายุพาสปอร์ต / Passport Expiry',
                 'pinkCardNo' => 'เลขบัตรชมพู / Pink Card No',
                 'visaType' => 'ประเภทวีซ่า / Visa Type',
+                'visaEndorsementDate' => 'วันที่ตรวจลงตราวีซ่า / Visa Endorsement Date',
+                'visaEndorsementNo' => 'เลขที่ตรวจลงตราวีซ่า / Visa Endorsement No',
                 'visaExpiryDate' => 'วันหมดอายุวีซ่า / Visa Expiry',
             ],
             '4. Employment & Work IDs (ข้อมูลการจ้างงานและเอกสาร)' => [

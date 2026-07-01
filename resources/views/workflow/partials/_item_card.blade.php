@@ -538,13 +538,16 @@
                     </div>
 
                     {{-- 3 Extra Fields (Editable) --}}
+                    {{-- Use @json() so values with quotes/backslashes survive
+                         Blade → JS interpolation. Same bug pattern as in the
+                         registration/renewal card partial. --}}
                     <div class="d-flex flex-column gap-2" x-data="{
                         isEditing: false,
-                        nameList: '{{ $item->employee->name_list_number ?? '' }}',
-                        reqNo: '{{ $item->request_number ?? '' }}',
-                        refId: '{{ $item->employee->employee_reference_id ?? '' }}',
+                        nameList: @json($item->employee->name_list_number ?? ''),
+                        reqNo: @json($item->request_number ?? ''),
+                        refId: @json($item->employee->employee_reference_id ?? ''),
                         updateMethod: 'item_update',
-                        updateUrl: '{{ route('production.items.update_fields', $item->id) }}',
+                        updateUrl: @json(route('production.items.update_fields', $item->id)),
                         copy(el, text) {
                             if (!text) return;
                             navigator.clipboard.writeText(text).then(() => {

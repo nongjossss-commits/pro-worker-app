@@ -177,8 +177,16 @@
         <input type="text" class="form-control form-control-sm" id="visa_issue_place-sl{{ $sid }}" name="visa_issue_place" value="{{ old('visa_issue_place', $emp->visa_issue_place ?? '') }}">
     </div>
     <div class="col-md-3 mb-2">
-        <label class="form-label small">วันหมดอายุวีซ่า</label>
-        <input type="date" class="form-control form-control-sm" id="visaExpiryDate-sl{{ $sid }}" name="visaExpiryDate" value="{{ old('visaExpiryDate', ($emp && $emp->visaExpiryDate) ? $emp->visaExpiryDate->format('Y-m-d') : '') }}">
+        <label class="form-label small fw-bold text-danger">🔴 วันหมดอายุวีซ่า</label>
+        <input type="date" class="form-control form-control-sm border-danger" style="background-color:#fff5f5" id="visaExpiryDate-sl{{ $sid }}" name="visaExpiryDate" value="{{ old('visaExpiryDate', ($emp && $emp->visaExpiryDate) ? $emp->visaExpiryDate->format('Y-m-d') : '') }}">
+    </div>
+    <div class="col-md-3 mb-2">
+        <label class="form-label small text-info">🔵 วันที่ตรวจลงตราวีซ่า (ประทับ)</label>
+        <input type="date" class="form-control form-control-sm border-info" style="background-color:#f0f9ff" id="visaEndorsementDate-sl{{ $sid }}" name="visaEndorsementDate" value="{{ old('visaEndorsementDate', ($emp && $emp->visaEndorsementDate) ? $emp->visaEndorsementDate->format('Y-m-d') : '') }}">
+    </div>
+    <div class="col-md-3 mb-2">
+        <label class="form-label small text-info">🔵 เลขที่ตรวจลงตราวีซ่า</label>
+        <input type="text" class="form-control form-control-sm border-info" style="background-color:#f0f9ff" id="visaEndorsementNo-sl{{ $sid }}" name="visaEndorsementNo" maxlength="50" value="{{ old('visaEndorsementNo', $emp->visaEndorsementNo ?? '') }}">
     </div>
 </div>
 

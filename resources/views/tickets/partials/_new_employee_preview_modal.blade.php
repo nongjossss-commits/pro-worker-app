@@ -102,6 +102,14 @@
                         <div id="preview_visa_type" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
+                        <label class="fw-bold small">วันที่ตรวจลงตราวีซ่า:</label>
+                        <div id="preview_visa_endorsement_date" class="text-dark"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fw-bold small">เลขที่ตรวจลงตราวีซ่า:</label>
+                        <div id="preview_visa_endorsement_no" class="text-dark"></div>
+                    </div>
+                    <div class="col-md-6">
                         <label class="fw-bold small">วีซ่าหมดอายุ:</label>
                         <div id="preview_visa_expiry" class="text-dark"></div>
                     </div>
@@ -247,6 +255,8 @@
         setText('preview_passport_expiry', formatDate(data.passportExpiryDate));
         setText('preview_pink_card', data.pinkCardNo);
         setText('preview_visa_type', data.visaType);
+        setText('preview_visa_endorsement_date', formatDate(data.visaEndorsementDate));
+        setText('preview_visa_endorsement_no', data.visaEndorsementNo);
         setText('preview_visa_expiry', formatDate(data.visaExpiryDate));
 
         // 3. Work Permit
