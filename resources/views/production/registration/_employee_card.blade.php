@@ -715,17 +715,21 @@
             @endphp
 
             {{-- 3 Extra Fields (Editable) --}}
-            {{-- Use @json() instead of '{{ … }}' to survive values containing
-                 single-quotes, backslashes, or unicode. The old form silently
-                 mangled such values into empty/broken strings on save, which
-                 was reported as "RA number auto-deletes randomly". --}}
+            {{-- Use @js() (not @json) because we're inside an HTML attribute
+                 that is itself double-quoted (x-data="..."). @json outputs
+                 "value" which breaks the HTML attribute at the first inner
+                 double-quote, leaking the entire x-data body onto the page.
+                 @js emits 'value' (single-quoted, unicode-escaped) so the
+                 outer HTML attribute stays intact. Same reason we still
+                 avoid raw '{{ … }}' — this preserves quotes/backslashes/unicode
+                 in the RA number and request number values. --}}
             <div class="d-flex flex-column gap-2" x-data="{
                 isEditing: false,
-                nameList: @json($employee->name_list_number ?? ''),
-                reqNo: @json($currentRequestNumber ?? ''),
-                refId: @json($employee->employee_reference_id ?? ''),
-                updateMethod: @json($updateMethod),
-                updateUrl: @json($updateUrl),
+                nameList: @js($employee->name_list_number ?? ''),
+                reqNo: @js($currentRequestNumber ?? ''),
+                refId: @js($employee->employee_reference_id ?? ''),
+                updateMethod: @js($updateMethod),
+                updateUrl: @js($updateUrl),
                 copy(el, text) {
                     if (!text) return;
                     navigator.clipboard.writeText(text).then(() => {

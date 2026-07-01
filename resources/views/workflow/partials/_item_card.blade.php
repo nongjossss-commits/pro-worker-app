@@ -538,16 +538,18 @@
                     </div>
 
                     {{-- 3 Extra Fields (Editable) --}}
-                    {{-- Use @json() so values with quotes/backslashes survive
-                         Blade → JS interpolation. Same bug pattern as in the
-                         registration/renewal card partial. --}}
+                    {{-- Use @js() (single-quoted output) — @json() outputs
+                         "value" which breaks the outer x-data="..." HTML
+                         attribute at the first inner double-quote, leaking
+                         the entire JS block onto the page as visible text.
+                         See _employee_card.blade.php for full explanation. --}}
                     <div class="d-flex flex-column gap-2" x-data="{
                         isEditing: false,
-                        nameList: @json($item->employee->name_list_number ?? ''),
-                        reqNo: @json($item->request_number ?? ''),
-                        refId: @json($item->employee->employee_reference_id ?? ''),
+                        nameList: @js($item->employee->name_list_number ?? ''),
+                        reqNo: @js($item->request_number ?? ''),
+                        refId: @js($item->employee->employee_reference_id ?? ''),
                         updateMethod: 'item_update',
-                        updateUrl: @json(route('production.items.update_fields', $item->id)),
+                        updateUrl: @js(route('production.items.update_fields', $item->id)),
                         copy(el, text) {
                             if (!text) return;
                             navigator.clipboard.writeText(text).then(() => {
