@@ -765,6 +765,11 @@
                         <i class="bi bi-file-earmark-check-fill me-1"></i> {{ __('Service Contract') }}
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sub-contract-status-tab" data-bs-toggle="pill" data-bs-target="#sub-contract-status" type="button" role="tab">
+                        <i class="bi bi-shield-lock-fill me-1"></i> {{ __('Contract Status') }} <span class="badge bg-danger ms-1">NEW</span>
+                    </button>
+                </li>
             </ul>
 
             <div class="tab-content" id="programSalesSubContent">
@@ -1118,6 +1123,11 @@
                             </form>
                         </div>
                     </div>
+                </div>
+
+                {{-- Sub 5: Contract Status — lifecycle + read-only enforcement --}}
+                <div class="tab-pane fade" id="sub-contract-status" role="tabpanel">
+                    @include('super-admin.partials._contract_status')
                 </div>
 
             </div>

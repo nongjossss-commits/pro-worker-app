@@ -794,6 +794,9 @@
         </aside>
 
         <main id="main-content" style="position: relative; z-index: 1;">
+            {{-- Contract status banner: shown when read-only, in grace period, or approaching expiry --}}
+            <x-contract-status-banner />
+
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">

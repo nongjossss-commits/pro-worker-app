@@ -58,6 +58,25 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::get('/manuals/training-finance-bundle', [SuperAdminSettingsController::class, 'trainingFinanceBundle'])->name('manuals.training_finance_bundle');
 
     Route::resource('download-profiles', DownloadProfileController::class)->except(['show']);
+
+    // Contract lifecycle — Super Admin manages system license/contract end date,
+    // temporary access extensions, and attachments. Handled by
+    // App\Http\Controllers\SuperAdmin\ContractController.
+    Route::post('/contract/save', [\App\Http\Controllers\SuperAdmin\ContractController::class, 'saveContract'])
+         ->name('contract.save');
+    Route::post('/contract/grace/enable', [\App\Http\Controllers\SuperAdmin\ContractController::class, 'enableGrace'])
+         ->name('contract.grace.enable');
+    Route::post('/contract/grace/stop', [\App\Http\Controllers\SuperAdmin\ContractController::class, 'stopGrace'])
+         ->name('contract.grace.stop');
+    Route::post('/contract/attachment/{slot}', [\App\Http\Controllers\SuperAdmin\ContractController::class, 'uploadAttachment'])
+         ->where('slot', '[1-3]')
+         ->name('contract.attachment.upload');
+    Route::delete('/contract/attachment/{slot}', [\App\Http\Controllers\SuperAdmin\ContractController::class, 'deleteAttachment'])
+         ->where('slot', '[1-3]')
+         ->name('contract.attachment.delete');
+    Route::get('/contract/attachment/{slot}/download', [\App\Http\Controllers\SuperAdmin\ContractController::class, 'downloadAttachment'])
+         ->where('slot', '[1-3]')
+         ->name('contract.attachment.download');
 });
 
 // Menu Unlock Routes (Publicly accessible for auth users)
