@@ -363,6 +363,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_reference_id' => 'nullable|string|max:255',
             'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
+            'workPermitIssueDate' => 'nullable|date',
             'workPermitExpiryDate' => 'nullable|date',
             'workPermitType' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
@@ -680,6 +681,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employee_reference_id' => 'nullable|string|max:255',
             'startDate' => 'nullable|date',
             'employeeWorkPermit' => 'nullable|string|max:255',
+            'workPermitIssueDate' => 'nullable|date',
             'workPermitExpiryDate' => 'nullable|date',
             'workPermitType' => 'nullable|string|max:255',
             'workPermitMOUGroup' => 'nullable|string|max:255',
@@ -1051,7 +1053,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $columns = [
             'Employer Name', 'Employee Name (TH)', 'Employee Name (EN)',
             'Nationality', 'Passport No', 'Passport Expiry',
-            'Work Permit No', 'Work Permit Expiry',
+            'Work Permit No', 'Work Permit Issue Date', 'Work Permit Expiry',
             'Visa Endorsement Date', 'Visa Endorsement No', 'Visa Expiry',
             '90 Day Report', 'Pink Card No'
         ];
@@ -1100,6 +1102,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'Passport No'        => $employee->employeePassport,
                 'Passport Expiry'    => $employee->passportExpiryDate ? \Carbon\Carbon::parse($employee->passportExpiryDate)->format('d/m/Y') : '-',
                 'Work Permit No'     => $employee->employeeWorkPermit,
+                'Work Permit Issue Date' => $employee->workPermitIssueDate ? \Carbon\Carbon::parse($employee->workPermitIssueDate)->format('d/m/Y') : '-',
                 'Work Permit Expiry' => $employee->workPermitExpiryDate ? \Carbon\Carbon::parse($employee->workPermitExpiryDate)->format('d/m/Y') : '-',
                 'Visa Endorsement Date' => $employee->visaEndorsementDate ? \Carbon\Carbon::parse($employee->visaEndorsementDate)->format('d/m/Y') : '-',
                 'Visa Endorsement No' => $employee->visaEndorsementNo ?? '-',
@@ -1529,6 +1532,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             ],
             'Work Permit & Pink Card' => [
                 'employeeWorkPermit' => 'Work Permit Number',
+                'workPermitIssueDate' => 'Work Permit Issue Date (วันที่ออกใบอนุญาตทำงาน)',
                 'workPermitExpiryDate' => 'Work Permit Expiry',
                 'workPermitMOUGroup' => 'MOU Group',
                 'workPermitMOUGroupOther' => 'Other MOU Group',
@@ -1610,7 +1614,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $dateFields = [
             'employeeDob', 'passport_issue_date', 'passportExpiryDate',
             'visaEndorsementDate',
-            'visaExpiryDate', 'workPermitExpiryDate', 'startDate',
+            'visaExpiryDate', 'workPermitIssueDate', 'workPermitExpiryDate', 'startDate',
             'insurance_expiry_date_hospital', 'insurance_expiry_date_private',
             'sso_issue_date', 'sso_expiry_date',
             'ninetyDayReportDate'
@@ -1663,6 +1667,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'visaExpiryDate' => 'Visa Expiry Date',
             'visa_issue_place' => 'Visa Issue Place',
             'employeeWorkPermit' => 'Work Permit No.',
+            'workPermitIssueDate' => 'Work Permit Issue Date (วันที่ออกใบอนุญาตทำงาน)',
             'workPermitExpiryDate' => 'Work Permit Expiry',
             'workPermitMOUGroup' => 'MOU Group',
             'workPermitMOUGroupOther' => 'Other MOU Group',
@@ -1754,7 +1759,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $dateFieldsSkipIfBlank = [
             // Dates
             'employeeDob', 'passport_issue_date', 'passportExpiryDate',
-            'visaEndorsementDate', 'visaExpiryDate', 'workPermitExpiryDate',
+            'visaEndorsementDate', 'visaExpiryDate',
+            'workPermitIssueDate', 'workPermitExpiryDate',
             'startDate', 'ninetyDayReportDate',
             'insurance_expiry_date', 'insurance_expiry_date_hospital',
             'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date',
@@ -1938,6 +1944,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'job_description' => 'Nature of Work',
             'startDate' => 'Start Date',
             'employeeWorkPermit' => 'Work Permit No',
+            'workPermitIssueDate' => 'Work Permit Issue Date',
             'workPermitExpiryDate' => 'Work Permit Expiry',
             'ninetyDayReportDate' => '90 Day Report',
             'workPermitMOUGroup' => 'WP Type',
@@ -2101,7 +2108,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
                         $cell->setValue('No Photo');
                     }
 
-                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaEndorsementDate', 'visaExpiryDate', 'startDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date'])) {
+                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaEndorsementDate', 'visaExpiryDate', 'startDate', 'workPermitIssueDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date'])) {
                     // Format Dates
                     $val = $employee->$col ? \Carbon\Carbon::parse($employee->$col)->format('d/m/Y') : '-';
                     $cell->setValue($val);

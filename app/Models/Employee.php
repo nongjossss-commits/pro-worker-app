@@ -110,6 +110,7 @@ class Employee extends Model
         'visaEndorsementDate',
         'visaEndorsementNo',
         'employeeWorkPermit',
+        'workPermitIssueDate',
         'workPermitExpiryDate',
         'visaExpiryDate',
         'ninetyDayReportDate',
@@ -221,6 +222,7 @@ class Employee extends Model
     protected $casts = [
         'passportExpiryDate' => 'date:Y-m-d',
         'visaEndorsementDate' => 'date:Y-m-d',
+        'workPermitIssueDate' => 'date:Y-m-d',
         'workPermitExpiryDate' => 'date:Y-m-d',
         'biometrics_collected_at' => 'datetime',
         'appointment_date' => 'datetime',

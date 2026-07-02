@@ -192,16 +192,16 @@
             <input type="text" class="form-control" id="edit_passport_issue_place" name="passport_issue_place" value="{{ old('passport_issue_place', $employee->passport_issue_place) }}">
         </div>
         <div class="col-md-3 mb-3">
-            <label for="edit_passport_issue_date" class="form-label">วันออกพาสปอร์ต
+            <label for="edit_passport_issue_date" class="form-label text-info">🔵 วันออกพาสปอร์ต
                 @if(isset($missingFields) && in_array('passport_issue_date', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            <input type="date" class="form-control" id="edit_passport_issue_date" name="passport_issue_date" value="{{ old('passport_issue_date', optional($employee->passport_issue_date)->format('Y-m-d')) }}">
+            <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="edit_passport_issue_date" name="passport_issue_date" value="{{ old('passport_issue_date', optional($employee->passport_issue_date)->format('Y-m-d')) }}">
         </div>
         <div class="col-md-3 mb-3">
-            <label for="edit_passportExpiryDate" class="form-label">วันหมดอายุพาสปอร์ต
+            <label for="edit_passportExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุพาสปอร์ต
                 @if(isset($missingFields) && in_array('passportExpiryDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            <input type="date" class="form-control" id="edit_passportExpiryDate" name="passportExpiryDate" value="{{ old('passportExpiryDate', optional($employee->passportExpiryDate)->format('Y-m-d')) }}">
+            <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="edit_passportExpiryDate" name="passportExpiryDate" value="{{ old('passportExpiryDate', optional($employee->passportExpiryDate)->format('Y-m-d')) }}">
         </div>
     </div>
     <div class="row">
@@ -271,23 +271,29 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-3 mb-3">
             <label for="edit_employeeWorkPermit" class="form-label">เลข Work Permit
                 @if(isset($missingFields) && in_array('employeeWorkPermit', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
             <input type="text" class="form-control" id="edit_employeeWorkPermit" name="employeeWorkPermit" value="{{ old('employeeWorkPermit', $employee->employeeWorkPermit) }}">
         </div>
-        <div class="col-md-4 mb-3">
-            <label for="edit_workPermitExpiryDate" class="form-label">วันหมดอายุ Work Permit
+        <div class="col-md-3 mb-3">
+            <label for="edit_workPermitIssueDate" class="form-label text-info">🔵 วันที่ออกใบอนุญาตทำงาน
+                @if(isset($missingFields) && in_array('workPermitIssueDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
+            </label>
+            <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="edit_workPermitIssueDate" name="workPermitIssueDate" value="{{ old('workPermitIssueDate', optional($employee->workPermitIssueDate)->format('Y-m-d')) }}">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="edit_workPermitExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุ Work Permit
                 @if(isset($missingFields) && in_array('workPermitExpiryDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            <input type="date" class="form-control" id="edit_workPermitExpiryDate" name="workPermitExpiryDate" value="{{ old('workPermitExpiryDate', optional($employee->workPermitExpiryDate)->format('Y-m-d')) }}">
+            <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="edit_workPermitExpiryDate" name="workPermitExpiryDate" value="{{ old('workPermitExpiryDate', optional($employee->workPermitExpiryDate)->format('Y-m-d')) }}">
         </div>
-            <div class="col-md-4 mb-3">
-            <label for="edit_ninetyDayReportDate" class="form-label">วันรายงานตัว 90 วัน
+        <div class="col-md-3 mb-3">
+            <label for="edit_ninetyDayReportDate" class="form-label fw-bold text-danger">🔴 วันรายงานตัว 90 วัน
                 @if(isset($missingFields) && in_array('ninetyDayReportDate', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            <input type="date" class="form-control" id="edit_ninetyDayReportDate" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate', optional($employee->ninetyDayReportDate)->format('Y-m-d')) }}">
+            <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="edit_ninetyDayReportDate" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate', optional($employee->ninetyDayReportDate)->format('Y-m-d')) }}">
         </div>
     </div>
     <div class="row">

@@ -49,6 +49,7 @@ class CompletenessSettingsController extends Controller
                 'job_description' => 'ลักษณะงาน / Job Description',
                 'startDate' => 'วันที่เริ่มงาน / Start Date',
                 'employeeWorkPermit' => 'เลข Work Permit / Work Permit No',
+                'workPermitIssueDate' => 'วันที่ออกใบอนุญาตทำงาน / Work Permit Issue Date',
                 'workPermitExpiryDate' => 'วันหมดอายุ Work Permit / Work Permit Expiry',
                 'ninetyDayReportDate' => 'วันรายงานตัว 90 วัน / 90 Day Report',
                 'workPermitMOUGroup' => 'ประเภทใบอนุญาตทำงาน / MOU Group',

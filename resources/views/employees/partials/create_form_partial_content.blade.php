@@ -265,12 +265,12 @@
         <input type="text" class="form-control" id="passport_issue_place" name="passport_issue_place" value="{{ old('passport_issue_place') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="passport_issue_date" class="form-label">วันออกพาสปอร์ต</label>
-        <input type="date" class="form-control" id="passport_issue_date" name="passport_issue_date" value="{{ old('passport_issue_date') }}">
+        <label for="passport_issue_date" class="form-label text-info">🔵 วันออกพาสปอร์ต</label>
+        <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="passport_issue_date" name="passport_issue_date" value="{{ old('passport_issue_date') }}">
     </div>
     <div class="col-md-3 mb-3">
-        <label for="passportExpiryDate" class="form-label">วันหมดอายุพาสปอร์ต</label>
-        <input type="date" class="form-control" id="passportExpiryDate" name="passportExpiryDate" value="{{ old('passportExpiryDate') }}">
+        <label for="passportExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุพาสปอร์ต</label>
+        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="passportExpiryDate" name="passportExpiryDate" value="{{ old('passportExpiryDate') }}">
     </div>
 </div>
 <div class="row">
@@ -322,17 +322,21 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-md-4 mb-3">
+    <div class="col-md-3 mb-3">
         <label for="employeeWorkPermit" class="form-label">เลข Work Permit</label>
         <input type="text" class="form-control" id="employeeWorkPermit" name="employeeWorkPermit" value="{{ old('employeeWorkPermit') }}">
     </div>
-    <div class="col-md-4 mb-3">
-        <label for="workPermitExpiryDate" class="form-label">วันหมดอายุ Work Permit</label>
-        <input type="date" class="form-control" id="workPermitExpiryDate" name="workPermitExpiryDate" value="{{ old('workPermitExpiryDate') }}">
+    <div class="col-md-3 mb-3">
+        <label for="workPermitIssueDate" class="form-label text-info">🔵 วันที่ออกใบอนุญาตทำงาน</label>
+        <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="workPermitIssueDate" name="workPermitIssueDate" value="{{ old('workPermitIssueDate') }}">
     </div>
-        <div class="col-md-4 mb-3">
-        <label for="ninetyDayReportDate" class="form-label">วันรายงานตัว 90 วัน</label>
-        <input type="date" class="form-control" id="ninetyDayReportDate" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate') }}">
+    <div class="col-md-3 mb-3">
+        <label for="workPermitExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุ Work Permit</label>
+        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="workPermitExpiryDate" name="workPermitExpiryDate" value="{{ old('workPermitExpiryDate') }}">
+    </div>
+    <div class="col-md-3 mb-3">
+        <label for="ninetyDayReportDate" class="form-label fw-bold text-danger">🔴 วันรายงานตัว 90 วัน</label>
+        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="ninetyDayReportDate" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate') }}">
     </div>
 </div>
 <div class="row">

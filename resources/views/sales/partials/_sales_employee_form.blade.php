@@ -155,12 +155,12 @@
         <input type="text" class="form-control form-control-sm" id="passport_issue_place-sl{{ $sid }}" name="passport_issue_place" value="{{ old('passport_issue_place', $emp->passport_issue_place ?? '') }}">
     </div>
     <div class="col-md-3 mb-2">
-        <label class="form-label small">วันออกพาสปอร์ต</label>
-        <input type="date" class="form-control form-control-sm" id="passport_issue_date-sl{{ $sid }}" name="passport_issue_date" value="{{ old('passport_issue_date', ($emp && $emp->passport_issue_date) ? $emp->passport_issue_date->format('Y-m-d') : '') }}">
+        <label class="form-label small text-info">🔵 วันออกพาสปอร์ต</label>
+        <input type="date" class="form-control form-control-sm border-info" style="background-color:#f0f9ff" id="passport_issue_date-sl{{ $sid }}" name="passport_issue_date" value="{{ old('passport_issue_date', ($emp && $emp->passport_issue_date) ? $emp->passport_issue_date->format('Y-m-d') : '') }}">
     </div>
     <div class="col-md-3 mb-2">
-        <label class="form-label small">วันหมดอายุพาสปอร์ต</label>
-        <input type="date" class="form-control form-control-sm" id="passportExpiryDate-sl{{ $sid }}" name="passportExpiryDate" value="{{ old('passportExpiryDate', ($emp && $emp->passportExpiryDate) ? $emp->passportExpiryDate->format('Y-m-d') : '') }}">
+        <label class="form-label small fw-bold text-danger">🔴 วันหมดอายุพาสปอร์ต</label>
+        <input type="date" class="form-control form-control-sm border-danger" style="background-color:#fff5f5" id="passportExpiryDate-sl{{ $sid }}" name="passportExpiryDate" value="{{ old('passportExpiryDate', ($emp && $emp->passportExpiryDate) ? $emp->passportExpiryDate->format('Y-m-d') : '') }}">
     </div>
 </div>
 <div class="row g-2">
@@ -208,17 +208,21 @@
     </div>
 </div>
 <div class="row g-2">
-    <div class="col-md-4 mb-2">
+    <div class="col-md-3 mb-2">
         <label class="form-label small">เลข Work Permit</label>
         <input type="text" class="form-control form-control-sm" id="employeeWorkPermit-sl{{ $sid }}" name="employeeWorkPermit" value="{{ old('employeeWorkPermit', $emp->employeeWorkPermit ?? '') }}">
     </div>
-    <div class="col-md-4 mb-2">
-        <label class="form-label small">วันหมดอายุ Work Permit</label>
-        <input type="date" class="form-control form-control-sm" id="workPermitExpiryDate-sl{{ $sid }}" name="workPermitExpiryDate" value="{{ old('workPermitExpiryDate', ($emp && $emp->workPermitExpiryDate) ? $emp->workPermitExpiryDate->format('Y-m-d') : '') }}">
+    <div class="col-md-3 mb-2">
+        <label class="form-label small text-info">🔵 วันที่ออกใบอนุญาตทำงาน</label>
+        <input type="date" class="form-control form-control-sm border-info" style="background-color:#f0f9ff" id="workPermitIssueDate-sl{{ $sid }}" name="workPermitIssueDate" value="{{ old('workPermitIssueDate', ($emp && $emp->workPermitIssueDate) ? $emp->workPermitIssueDate->format('Y-m-d') : '') }}">
     </div>
-    <div class="col-md-4 mb-2">
-        <label class="form-label small">วันรายงานตัว 90 วัน</label>
-        <input type="date" class="form-control form-control-sm" id="ninetyDayReportDate-sl{{ $sid }}" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate', ($emp && $emp->ninetyDayReportDate) ? $emp->ninetyDayReportDate->format('Y-m-d') : '') }}">
+    <div class="col-md-3 mb-2">
+        <label class="form-label small fw-bold text-danger">🔴 วันหมดอายุ Work Permit</label>
+        <input type="date" class="form-control form-control-sm border-danger" style="background-color:#fff5f5" id="workPermitExpiryDate-sl{{ $sid }}" name="workPermitExpiryDate" value="{{ old('workPermitExpiryDate', ($emp && $emp->workPermitExpiryDate) ? $emp->workPermitExpiryDate->format('Y-m-d') : '') }}">
+    </div>
+    <div class="col-md-3 mb-2">
+        <label class="form-label small fw-bold text-danger">🔴 วันรายงานตัว 90 วัน</label>
+        <input type="date" class="form-control form-control-sm border-danger" style="background-color:#fff5f5" id="ninetyDayReportDate-sl{{ $sid }}" name="ninetyDayReportDate" value="{{ old('ninetyDayReportDate', ($emp && $emp->ninetyDayReportDate) ? $emp->ninetyDayReportDate->format('Y-m-d') : '') }}">
     </div>
 </div>
 <div class="row g-2">

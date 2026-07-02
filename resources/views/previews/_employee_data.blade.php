@@ -283,6 +283,10 @@
             {!! $val($employee->employeeWorkPermit ?? null) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
+            <span class="preview-label">วันที่ออกใบอนุญาตทำงาน</span>
+            {!! $val($employee->workPermitIssueDate ? $employee->workPermitIssueDate->format('d/m/Y') : null) !!}
+        </div>
+        <div class="col-6 col-sm-4 col-md-3 preview-field">
             <span class="preview-label">วันหมดอายุ Work Permit</span>
             {!! $val($employee->workPermitExpiryDate ? $employee->workPermitExpiryDate->format('d/m/Y') : null) !!}
         </div>

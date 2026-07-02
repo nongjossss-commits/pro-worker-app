@@ -121,12 +121,12 @@
                         <input type="text" class="form-control" id="modal_employeePassport" x-model="newEmployeeForm.employeePassport">
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="modal_passport_issue_date" class="form-label">วันออกพาสปอร์ต</label>
-                        <input type="date" class="form-control" id="modal_passport_issue_date" x-model="newEmployeeForm.passport_issue_date">
+                        <label for="modal_passport_issue_date" class="form-label text-info">🔵 วันออกพาสปอร์ต</label>
+                        <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="modal_passport_issue_date" x-model="newEmployeeForm.passport_issue_date">
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="modal_passportExpiryDate" class="form-label">วันหมดอายุพาสปอร์ต</label>
-                        <input type="date" class="form-control" id="modal_passportExpiryDate" x-model="newEmployeeForm.passportExpiryDate">
+                        <label for="modal_passportExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุพาสปอร์ต</label>
+                        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="modal_passportExpiryDate" x-model="newEmployeeForm.passportExpiryDate">
                     </div>
                 </div>
                 <div class="row">
@@ -169,17 +169,21 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label for="modal_employeeWorkPermit" class="form-label">เลข Work Permit</label>
                         <input type="text" class="form-control" id="modal_employeeWorkPermit" x-model="newEmployeeForm.employeeWorkPermit">
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="modal_workPermitExpiryDate" class="form-label">วันหมดอายุ Work Permit</label>
-                        <input type="date" class="form-control" id="modal_workPermitExpiryDate" x-model="newEmployeeForm.workPermitExpiryDate">
+                    <div class="col-md-3 mb-3">
+                        <label for="modal_workPermitIssueDate" class="form-label text-info">🔵 วันที่ออกใบอนุญาตทำงาน</label>
+                        <input type="date" class="form-control border-info" style="background-color:#f0f9ff" id="modal_workPermitIssueDate" x-model="newEmployeeForm.workPermitIssueDate">
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label for="modal_ninetyDayReportDate" class="form-label">วันรายงานตัว 90 วัน</label>
-                        <input type="date" class="form-control" id="modal_ninetyDayReportDate" x-model="newEmployeeForm.ninetyDayReportDate">
+                    <div class="col-md-3 mb-3">
+                        <label for="modal_workPermitExpiryDate" class="form-label fw-bold text-danger">🔴 วันหมดอายุ Work Permit</label>
+                        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="modal_workPermitExpiryDate" x-model="newEmployeeForm.workPermitExpiryDate">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="modal_ninetyDayReportDate" class="form-label fw-bold text-danger">🔴 วันรายงานตัว 90 วัน</label>
+                        <input type="date" class="form-control border-danger" style="background-color:#fff5f5" id="modal_ninetyDayReportDate" x-model="newEmployeeForm.ninetyDayReportDate">
                     </div>
                 </div>
                 <div class="row">

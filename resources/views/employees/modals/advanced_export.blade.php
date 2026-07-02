@@ -200,6 +200,12 @@
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="workPermitIssueDate" id="col_wp_issue">
+                                        <label class="form-check-label" for="col_wp_issue">{{ __('WP Issue Date') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="workPermitExpiryDate" id="col_wp_exp">
                                         <label class="form-check-label" for="col_wp_exp">{{ __('WP Expiry') }}</label>
                                     </div>

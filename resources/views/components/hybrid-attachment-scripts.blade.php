@@ -27,7 +27,7 @@ function hybridAttachmentManager(config = {}) {
             passport_type_cambodia: '', employeePassport: '', passport_issue_date: '',
             passportExpiryDate: '', pinkCardNo: '', visaType: '', visaEndorsementDate: '', visaEndorsementNo: '', visaExpiryDate: '',
             job_title: '', job_description: '', startDate: '', employeeWorkPermit: '',
-            workPermitExpiryDate: '', ninetyDayReportDate: '', workPermitMOUGroup: '',
+            workPermitIssueDate: '', workPermitExpiryDate: '', ninetyDayReportDate: '', workPermitMOUGroup: '',
             workPermitMOUGroupOther: '', name_list_number: '', request_number: '',
             employee_id_number: '', tax_id_number: '', employer_employee_id: '',
             employee_reference_id: '', insurance_type: '', social_security_number: '',

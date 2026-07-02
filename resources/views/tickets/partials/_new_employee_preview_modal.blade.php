@@ -135,6 +135,10 @@
                         <div id="preview_work_permit" class="text-dark"></div>
                     </div>
                     <div class="col-md-6">
+                        <label class="fw-bold small">วันที่ออกใบอนุญาต:</label>
+                        <div id="preview_work_permit_issue" class="text-dark"></div>
+                    </div>
+                    <div class="col-md-6">
                         <label class="fw-bold small">วันหมดอายุใบอนุญาต:</label>
                         <div id="preview_work_permit_expiry" class="text-dark"></div>
                     </div>
@@ -264,6 +268,7 @@
         setText('preview_job_description', data.job_description);
         setText('preview_start_date', formatDate(data.startDate));
         setText('preview_work_permit', data.employeeWorkPermit);
+        setText('preview_work_permit_issue', formatDate(data.workPermitIssueDate));
         setText('preview_work_permit_expiry', formatDate(data.workPermitExpiryDate));
         setText('preview_90_day', formatDate(data.ninetyDayReportDate));
 

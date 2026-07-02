@@ -185,6 +185,7 @@ class ImportEmployeeController extends Controller
             'Passport Issue Date',            // T (New)
             'Visa Endorsement Date',          // U (New)
             'Visa Endorsement No',            // V (New)
+            'Work Permit Issue Date',         // W (New)
         ];
 
         foreach ($columns as $index => $header) {
@@ -447,6 +448,7 @@ class ImportEmployeeController extends Controller
                 $passportIssueDateRaw = $row[18];
                 $visaEndorsementDateRaw = $row[19] ?? null;
                 $visaEndorsementNo = $row[20] ?? null;
+                $workPermitIssueDateRaw = $row[21] ?? null;
 
                 // Validate and Parse Dates
                 $dob = $this->parseDateStrict($dobRaw, $sheet->getCell('F' . $rowIdx));
@@ -494,6 +496,12 @@ class ImportEmployeeController extends Controller
                 $visaEndorsementDate = $this->parseDateStrict($visaEndorsementDateRaw, $sheet->getCell('U' . $rowIdx));
                 if ($visaEndorsementDateRaw && !$visaEndorsementDate) {
                      $errors[] = "Row $rowIdx: Invalid Visa Endorsement Date format ($visaEndorsementDateRaw). Expected D/M/Y.";
+                     continue;
+                }
+
+                $workPermitIssueDate = $this->parseDateStrict($workPermitIssueDateRaw, $sheet->getCell('W' . $rowIdx));
+                if ($workPermitIssueDateRaw && !$workPermitIssueDate) {
+                     $errors[] = "Row $rowIdx: Invalid Work Permit Issue Date format ($workPermitIssueDateRaw). Expected D/M/Y.";
                      continue;
                 }
 
@@ -647,6 +655,7 @@ class ImportEmployeeController extends Controller
                     'passport_issue_date' => $passportIssueDate,
                     'visaEndorsementDate' => $visaEndorsementDate,
                     'visaEndorsementNo' => $visaEndorsementNo,
+                    'workPermitIssueDate' => $workPermitIssueDate,
                 ];
 
                 if ($nationality === 'กัมพูชา') {

@@ -14,8 +14,8 @@ class ProductionDocumentController extends Controller
         // Eager load advanceItems for the active group
         $production = ProductionOrder::with(['employer', 'items.employee', 'items'])->findOrFail($id);
 
-        // Basic Validation of type (Added 'tax_invoice' and 'advance_receipt')
-        if (!in_array($type, ['quotation', 'invoice', 'receipt', 'credit_note', 'tax_invoice', 'advance_receipt'])) {
+        // Basic Validation of type (Added 'tax_invoice', 'advance_receipt', and 'reminder')
+        if (!in_array($type, ['quotation', 'invoice', 'receipt', 'credit_note', 'tax_invoice', 'advance_receipt', 'reminder'])) {
             abort(404);
         }
 
@@ -89,7 +89,13 @@ class ProductionDocumentController extends Controller
         }
 
         // --- Transactions Logic ---
-        $transactionsQuery = FinancialTransaction::with('items')->where('production_order_id', $production->id);
+        // Reminder documents show past payments alongside the outstanding
+        // balance, so eager-load the payments relation when we know that's
+        // the type being requested — cheaper than N+1 in the view.
+        $transactionsWith = $type === 'reminder'
+            ? ['items', 'payments' => fn($q) => $q->orderBy('paid_at')]
+            : ['items'];
+        $transactionsQuery = FinancialTransaction::with($transactionsWith)->where('production_order_id', $production->id);
         if ($groupId) {
              $transactionsQuery->where('production_financial_group_id', $groupId);
         }

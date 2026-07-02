@@ -68,7 +68,14 @@ class FinancialHubController extends Controller
 
             // Filters
             if ($request->filled('status')) {
-                $query->where('status', $request->status);
+                // "outstanding" is a virtual status — the operator wants to see
+                // every bill the customer still owes money on (unpaid + partial +
+                // overdue) so they can total up the receivable in one view.
+                if ($request->status === 'outstanding') {
+                    $query->whereIn('status', ['pending', 'partial', 'overdue']);
+                } else {
+                    $query->where('status', $request->status);
+                }
             }
 
             if ($request->filled('date_from')) {
