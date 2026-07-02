@@ -171,6 +171,7 @@
 </div>
 
 <div id="employeeListContainer">
+    <x-card-scroll-frame :topOffset="300">
     @if($currentView === 'card')
         <div class="list-group">
             @forelse($employees as $employee)
@@ -284,6 +285,7 @@
             </table>
         </div>
     @endif
+    </x-card-scroll-frame>
     </div>
 
     <div class="mt-4">

@@ -56,6 +56,7 @@
         </div>
     </div>
 
+    <x-card-scroll-frame :topOffset="280">
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-light">
@@ -141,9 +142,11 @@
                 @endforelse
             </tbody>
         </table>
-        <div class="mt-4">
-            {{ $employers->links() }}
-        </div>
+    </div>
+    </x-card-scroll-frame>
+
+    <div class="mt-4">
+        {{ $employers->links() }}
     </div>
 </div>
 @endsection

@@ -850,12 +850,17 @@
 
                 <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $employer->id }}">
                     <div class="card-body bg-light p-4">
+                         {{-- Employee list is scrollable INSIDE the employer card
+                              so the employer header stays visible while browsing
+                              through many workers. Outer page scroll is normal. --}}
+                         <x-card-scroll-frame maxHeight="60vh" variant="inner">
                          <div class="employee-list" id="employee-list-{{ $employer->id }}">
                             <div class="d-flex justify-content-center align-items-center py-5">
                                 <div class="spinner-border text-primary" role="status"></div>
                                 <span class="ms-2 small text-muted">Loading employees...</span>
                             </div>
                          </div>
+                         </x-card-scroll-frame>
                     </div>
                 </div>
             </div> {{-- End card --}}

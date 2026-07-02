@@ -578,12 +578,16 @@
 
                     <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" data-employer-id="{{ $order->employer_id }}" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#productionAccordion">
                         <div class="card-body bg-light p-4">
-                             {{-- Lazy Load Content Container --}}
+                             {{-- Lazy Load Content Container — inside a scroll
+                                  frame so the order header stays visible while
+                                  the employee/item list scrolls independently. --}}
+                            <x-card-scroll-frame maxHeight="60vh" variant="inner">
                             <div id="order-content-{{ $order->id }}" class="order-content-wrapper hide-cancelled">
                                  <div class="d-flex justify-content-center py-5">
                                     <div class="spinner-border text-primary" role="status"></div>
                                 </div>
                             </div>
+                            </x-card-scroll-frame>
                         </div>
                     </div>
                 </div>
