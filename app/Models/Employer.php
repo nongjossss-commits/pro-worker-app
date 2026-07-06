@@ -80,6 +80,8 @@ class Employer extends Model
         'signature_1_path',
         'signature_2_path',
         'employer_stamp_path',
+        'employer_stamp_width_mm',
+        'employer_stamp_height_mm',
         'businessTypeEn',
         'regCapital',
         'regDate',

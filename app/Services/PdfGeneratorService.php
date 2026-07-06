@@ -29,6 +29,81 @@ class PdfGeneratorService
         $this->signatureService = $signatureService;
     }
 
+    /**
+     * Render a stamp image inside a template area WITHOUT stretching it.
+     *
+     * The template area ($areaX, $areaY, $areaW, $areaH — all in millimetres
+     * for FPDI's default unit) is treated as a bounding box, NOT a fill target:
+     *
+     *   1. If the caller passed the real physical dimensions of the stamp
+     *      (e.g., a 30mm × 30mm round company seal), draw at that exact size.
+     *      Scale down uniformly if it exceeds the box.
+     *   2. Otherwise fall back to the image file's own aspect ratio and fit
+     *      inside the box without stretching.
+     *
+     * In both cases the stamp is centered inside the area. That matches the
+     * paper-world behaviour a finance operator expects: a round seal stays
+     * round no matter what template box it lands in.
+     *
+     * @param  \setasign\Fpdi\Fpdi $pdf
+     * @param  string $targetPath   Absolute path to the stamp image file.
+     * @param  float  $areaX        Top-left X of the template area (mm).
+     * @param  float  $areaY        Top-left Y of the template area (mm).
+     * @param  float  $areaW        Template area width (mm).
+     * @param  float  $areaH        Template area height (mm).
+     * @param  float|null $realWmm  Real stamp width in mm (nullable).
+     * @param  float|null $realHmm  Real stamp height in mm (nullable).
+     * @return void
+     */
+    protected function renderStampWithAspect($pdf, string $targetPath, float $areaX, float $areaY, float $areaW, float $areaH, ?float $realWmm = null, ?float $realHmm = null): void
+    {
+        if (!file_exists($targetPath)) return;
+
+        $stampW = $areaW;
+        $stampH = $areaH;
+
+        if ($realWmm && $realHmm && $realWmm > 0 && $realHmm > 0) {
+            // Path 1 — real physical dimensions known.
+            $stampW = (float) $realWmm;
+            $stampH = (float) $realHmm;
+
+            // Scale down uniformly if the stamp would overflow the area.
+            if ($stampW > $areaW || $stampH > $areaH) {
+                $scale = min($areaW / $stampW, $areaH / $stampH);
+                $stampW *= $scale;
+                $stampH *= $scale;
+            }
+        } else {
+            // Path 2 — no real dimensions. Preserve aspect ratio of the file.
+            $dims = @getimagesize($targetPath);
+            if ($dims && !empty($dims[0]) && !empty($dims[1])) {
+                $imgPxW = (float) $dims[0];
+                $imgPxH = (float) $dims[1];
+                $imgRatio = $imgPxW / $imgPxH;
+                $boxRatio = $areaW / max($areaH, 0.001);
+                if ($imgRatio > $boxRatio) {
+                    // Image is wider than the box → fit to width.
+                    $stampW = $areaW;
+                    $stampH = $areaW / $imgRatio;
+                } else {
+                    // Image is taller than the box → fit to height.
+                    $stampH = $areaH;
+                    $stampW = $areaH * $imgRatio;
+                }
+            }
+        }
+
+        // Center inside the area.
+        $stampX = $areaX + max(0, ($areaW - $stampW) / 2);
+        $stampY = $areaY + max(0, ($areaH - $stampH) / 2);
+
+        $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+        $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+        if ($imgType === 'JPG') $imgType = 'JPEG';
+
+        $pdf->Image($targetPath, $stampX, $stampY, $stampW, $stampH, $imgType);
+    }
+
     public function generateForEmployees(PdfTemplate $template, Collection $employees, $options = [])
     {
         // Options: 'output_type' => 'download' | 'save_to_slot' | 'raw_content'
@@ -412,6 +487,9 @@ class PdfGeneratorService
                         $h = ($item['h'] / 100) * $size['height'];
 
                         $targetPath = null;
+                        $isStamp = false;
+                        $stampRealWmm = null;
+                        $stampRealHmm = null;
 
                         if ($item['type'] === 'image') {
                             if (!empty($item['path']) && Storage::disk('public')->exists($item['path'])) {
@@ -427,16 +505,31 @@ class PdfGeneratorService
                             elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
                             // 'employee' group → skipped intentionally
                         } elseif ($item['type'] === 'stamp') {
+                            $isStamp = true;
                             $group = $item['signatureGroup'] ?? 'employer_stamp';
-                            if ($group === 'importer_stamp') $targetPath = $importerStampPath;
-                            else $targetPath = $emprStampPath;
+                            if ($group === 'importer_stamp') {
+                                $targetPath = $importerStampPath;
+                                $stampRealWmm = $targetImporter->importer_stamp_width_mm ?? null;
+                                $stampRealHmm = $targetImporter->importer_stamp_height_mm ?? null;
+                            } else {
+                                $targetPath = $emprStampPath;
+                                $stampRealWmm = $targetEmployer->employer_stamp_width_mm ?? null;
+                                $stampRealHmm = $targetEmployer->employer_stamp_height_mm ?? null;
+                            }
                         }
 
                         if ($targetPath && file_exists($targetPath)) {
-                            $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
-                            $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
-                            if ($imgType === 'JPG') $imgType = 'JPEG';
-                            $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                            if ($isStamp) {
+                                // Stamps: preserve real aspect + physical size,
+                                // center inside the template area. Fixes the
+                                // "3cm round seal becomes 8cm oval" bug.
+                                $this->renderStampWithAspect($pdf, $targetPath, $x, $y, $w, $h, $stampRealWmm, $stampRealHmm);
+                            } else {
+                                $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+                                $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+                                if ($imgType === 'JPG') $imgType = 'JPEG';
+                                $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                            }
                         }
                         continue;
                     }
@@ -781,6 +874,9 @@ class PdfGeneratorService
                         $h = ($item['h'] / 100) * $size['height'];
 
                         $targetPath = null;
+                        $isStamp = false;
+                        $stampRealWmm = null;
+                        $stampRealHmm = null;
 
                         if ($item['type'] === 'image') {
                             if (!empty($item['path']) && Storage::disk('public')->exists($item['path'])) {
@@ -797,20 +893,29 @@ class PdfGeneratorService
                             elseif ($group === 'delegate') $targetPath = $delegateSigPath;
                             elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
                         } elseif ($item['type'] === 'stamp') {
+                            $isStamp = true;
                             $group = $item['signatureGroup'] ?? 'employer_stamp';
                             if ($group === 'importer_stamp') {
                                 $targetPath = $importerStampPath;
+                                $stampRealWmm = $targetImporter->importer_stamp_width_mm ?? null;
+                                $stampRealHmm = $targetImporter->importer_stamp_height_mm ?? null;
                             } else {
                                 $targetPath = $emprStampPath;
+                                $stampRealWmm = $effectiveEmployer->employer_stamp_width_mm ?? null;
+                                $stampRealHmm = $effectiveEmployer->employer_stamp_height_mm ?? null;
                             }
                         }
 
                         if ($targetPath && file_exists($targetPath)) {
-                            $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
-                            $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
-                            if ($imgType === 'JPG') $imgType = 'JPEG';
+                            if ($isStamp) {
+                                $this->renderStampWithAspect($pdf, $targetPath, $x, $y, $w, $h, $stampRealWmm, $stampRealHmm);
+                            } else {
+                                $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+                                $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+                                if ($imgType === 'JPG') $imgType = 'JPEG';
 
-                            $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                                $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                            }
                         }
                         continue;
                     }
@@ -1068,6 +1173,9 @@ class PdfGeneratorService
                         $h = ($item['h'] / 100) * $size['height'];
 
                         $targetPath = null;
+                        $isStamp = false;
+                        $stampRealWmm = null;
+                        $stampRealHmm = null;
 
                         if ($item['type'] === 'image') {
                             if (!empty($item['path']) && Storage::disk('public')->exists($item['path'])) {
@@ -1084,20 +1192,29 @@ class PdfGeneratorService
                             elseif ($group === 'delegate') $targetPath = $delegateSigPath;
                             elseif (str_starts_with($group, 'witness_')) $targetPath = $witnessSigPaths[$group] ?? null;
                         } elseif ($item['type'] === 'stamp') {
+                            $isStamp = true;
                             $group = $item['signatureGroup'] ?? 'employer_stamp';
                             if ($group === 'importer_stamp') {
                                 $targetPath = $importerStampPath;
+                                $stampRealWmm = $targetImporter->importer_stamp_width_mm ?? null;
+                                $stampRealHmm = $targetImporter->importer_stamp_height_mm ?? null;
                             } else {
                                 $targetPath = $emprStampPath;
+                                $stampRealWmm = $effectiveEmployer->employer_stamp_width_mm ?? null;
+                                $stampRealHmm = $effectiveEmployer->employer_stamp_height_mm ?? null;
                             }
                         }
 
                         if ($targetPath && file_exists($targetPath)) {
-                            $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
-                            $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
-                            if ($imgType === 'JPG') $imgType = 'JPEG';
+                            if ($isStamp) {
+                                $this->renderStampWithAspect($pdf, $targetPath, $x, $y, $w, $h, $stampRealWmm, $stampRealHmm);
+                            } else {
+                                $ext = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+                                $imgType = in_array($ext, ['png', 'jpg', 'jpeg']) ? strtoupper($ext) : 'PNG';
+                                if ($imgType === 'JPG') $imgType = 'JPEG';
 
-                            $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                                $pdf->Image($targetPath, $x, $y, $w, $h, $imgType);
+                            }
                         }
                         continue;
                     }

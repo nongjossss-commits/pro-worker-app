@@ -849,6 +849,11 @@ class EmployerController extends Controller
             'employer_stamp_action'       => 'nullable|in:keep,upload,draw',
             'employer_stamp_file'         => 'nullable|required_if:employer_stamp_action,upload|image|max:2048',
             'employer_stamp_base64'       => 'nullable|string',
+            // Physical dimensions in millimetres. 1..200 mm covers every
+            // real seal we've seen (biggest ~ 10cm rectangle). Leaving both
+            // null tells the PDF renderer to fall back to image aspect ratio.
+            'employer_stamp_width_mm'     => 'nullable|numeric|min:1|max:200',
+            'employer_stamp_height_mm'    => 'nullable|numeric|min:1|max:200',
         ];
     }
 

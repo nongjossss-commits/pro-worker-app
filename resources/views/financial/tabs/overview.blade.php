@@ -280,24 +280,31 @@
                                 </a>
 
                                 {{-- Issue-bill quick actions.
-                                     Any bill with remaining balance can reissue the FULL invoice
-                                     (same as freshly billed). Bills with a partial payment ALSO
-                                     get the "outstanding-only" reminder document — the operator
-                                     picks whichever one the customer needs. --}}
+                                     Each button now opens a shared Bill Options
+                                     modal so the operator picks Variant (document
+                                     only / with list / list only) and Payment
+                                     Methods (bank accounts) without having to
+                                     jump into the Manage Finance page. --}}
                                 @if($hasBalance)
-                                    <a href="{{ $invoiceUrl }}"
-                                       target="_blank"
-                                       class="btn btn-outline-warning"
-                                       title="{{ __('Reissue Bill (Quick)') }}">
+                                    <button type="button"
+                                            class="btn btn-outline-warning js-issue-bill-btn"
+                                            data-doc-type="invoice"
+                                            data-base-url="{{ $invoiceUrl }}"
+                                            data-txn-label="#{{ $txn->production_order_id }}-{{ $txn->id }}"
+                                            data-employer="{{ $txn->productionOrder?->employer?->employerNameTh ?? '' }}"
+                                            title="{{ __('Reissue Bill (Quick)') }}">
                                         <i class="bi bi-file-earmark-text"></i>
-                                    </a>
+                                    </button>
                                     @if($hasAnyPayment)
-                                        <a href="{{ $reminderUrl }}"
-                                           target="_blank"
-                                           class="btn btn-outline-danger"
-                                           title="{{ __('Reminder Bill (Outstanding Only)') }}">
+                                        <button type="button"
+                                                class="btn btn-outline-danger js-issue-bill-btn"
+                                                data-doc-type="reminder"
+                                                data-base-url="{{ $reminderUrl }}"
+                                                data-txn-label="#{{ $txn->production_order_id }}-{{ $txn->id }}"
+                                                data-employer="{{ $txn->productionOrder?->employer?->employerNameTh ?? '' }}"
+                                                title="{{ __('Reminder Bill (Outstanding Only)') }}">
                                             <i class="bi bi-exclamation-square"></i>
-                                        </a>
+                                        </button>
                                     @endif
                                 @endif
 
@@ -557,6 +564,203 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalHtml;
         });
+    });
+});
+</script>
+
+{{-- =============================================================
+     Issue Bill Options Modal
+     Opens when any .js-issue-bill-btn in the Recent Transactions
+     table is clicked. Same UX as the finance-tab createInvoiceModal
+     but scoped to a single transaction row so the operator can
+     "quick print" without navigating into the Manage Finance page.
+     Adds ?include_employee_list / ?list_only / ?payment_methods
+     to the base URL then opens the resulting PDF in a new tab.
+     ============================================================= --}}
+<div class="modal fade" id="issueBillOptionsModal" tabindex="-1" aria-labelledby="issueBillOptionsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning-subtle">
+                <h5 class="modal-title" id="issueBillOptionsLabel">
+                    <i class="bi bi-file-earmark-text me-1"></i>
+                    <span id="ibDocTitle">{{ __('Reissue Bill (Quick)') }}</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {{-- Context --}}
+                <div class="card bg-light border-0 mb-3">
+                    <div class="card-body py-2">
+                        <div class="small">
+                            <div class="text-muted">{{ __('Bill No.') }}</div>
+                            <div class="fw-bold" id="ibTxnLabel">—</div>
+                            <div class="text-muted mt-2">{{ __('Employer / Project') }}</div>
+                            <div class="fw-bold" id="ibEmployer">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Variant --}}
+                <div class="mb-3">
+                    <label class="form-label small fw-bold mb-2">{{ __('Document Variant') }}</label>
+                    <div class="form-check small">
+                        <input class="form-check-input" type="radio" name="ibVariant" id="ibVarInvoice" value="invoice" checked>
+                        <label class="form-check-label" for="ibVarInvoice">
+                            {{ __('Document only (no list)') }}
+                        </label>
+                    </div>
+                    <div class="form-check small">
+                        <input class="form-check-input" type="radio" name="ibVariant" id="ibVarWithList" value="with_list">
+                        <label class="form-check-label" for="ibVarWithList">
+                            {{ __('Document + Employee List') }}
+                        </label>
+                    </div>
+                    <div class="form-check small">
+                        <input class="form-check-input" type="radio" name="ibVariant" id="ibVarListOnly" value="list_only">
+                        <label class="form-check-label" for="ibVarListOnly">
+                            {{ __('Employee List only (no document)') }}
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Payment methods / bank accounts --}}
+                <div class="border rounded p-2 mb-2 bg-light">
+                    <div class="small fw-bold mb-2">
+                        <i class="bi bi-credit-card-2-front me-1"></i> {{ __('Payment Methods') }}
+                        <span class="text-muted fw-normal">— {{ __('Tick channels shown on the printed bill') }}</span>
+                    </div>
+
+                    <div class="form-check form-check-inline small mb-1">
+                        <input type="checkbox" class="form-check-input" id="ibPmCash">
+                        <label class="form-check-label" for="ibPmCash"><i class="bi bi-cash-stack me-1"></i>{{ __('Cash') }}</label>
+                    </div>
+
+                    <div class="form-check form-check-inline small mb-1">
+                        <input type="checkbox" class="form-check-input" id="ibPmPP">
+                        <label class="form-check-label" for="ibPmPP"><i class="bi bi-qr-code me-1"></i>{{ __('PromptPay') }}</label>
+                    </div>
+                    <div id="ibPPWrap" class="mb-2" style="display:none;">
+                        <input type="text" id="ibPPId" class="form-control form-control-sm" placeholder="{{ __('Phone (10 digits) or Tax ID (13 digits)') }}">
+                    </div>
+
+                    <div class="mt-2">
+                        <label class="form-label small fw-bold mb-1"><i class="bi bi-bank2 me-1"></i>{{ __('Bank Account') }}</label>
+                        <div class="small text-muted mb-1">{{ __('Select one or more company bank accounts to display on the invoice.') }}</div>
+                        <div id="ibBankList" style="max-height:180px; overflow-y:auto;">
+                            @foreach($qpBanks as $bank)
+                                <div class="form-check small">
+                                    <input class="form-check-input js-ib-bank" type="checkbox"
+                                           id="ibBank{{ $bank->id }}"
+                                           data-bank-id="{{ $bank->id }}"
+                                           data-bank-name="{{ $bank->bank_name }}"
+                                           data-account-name="{{ $bank->account_name }}"
+                                           data-account-number="{{ $bank->account_number }}">
+                                    <label class="form-check-label" for="ibBank{{ $bank->id }}">
+                                        {{ $bank->account_type === 'personal' ? '👤' : '🏢' }}
+                                        <strong>{{ $bank->bank_name }}</strong>
+                                        <span class="text-muted"> — {{ $bank->account_name ?? $bank->account_number }}</span>
+                                        @if($bank->account_name && $bank->account_number)
+                                            <br><span class="small text-muted ms-4">{{ $bank->account_number }}</span>
+                                        @endif
+                                    </label>
+                                </div>
+                            @endforeach
+                            @if(!$qpBanks->count())
+                                <div class="text-muted small">{{ __('No bank accounts configured. Add one in Finance › Bank Accounts.') }}</div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                <button type="button" class="btn btn-success" id="ibGenerateBtn">
+                    <i class="bi bi-printer me-1"></i> {{ __('Generate & Open') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalEl = document.getElementById('issueBillOptionsModal');
+    if (!modalEl) return;
+    let modalInstance = null;
+    function getModal() {
+        if (!modalInstance) {
+            if (typeof bootstrap === 'undefined' || !bootstrap.Modal) return null;
+            modalInstance = new bootstrap.Modal(modalEl);
+        }
+        return modalInstance;
+    }
+
+    let currentBaseUrl = null;
+
+    // Open the modal — populate context + title + reset options
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.js-issue-bill-btn');
+        if (!btn) return;
+        currentBaseUrl = btn.dataset.baseUrl || '';
+        const docType = btn.dataset.docType || 'invoice';
+        document.getElementById('ibDocTitle').textContent =
+            docType === 'reminder' ? '{{ __("Reminder Bill (Outstanding Only)") }}' : '{{ __("Reissue Bill (Quick)") }}';
+        document.getElementById('ibTxnLabel').textContent = btn.dataset.txnLabel || '—';
+        document.getElementById('ibEmployer').textContent = btn.dataset.employer || '—';
+        // Reset options
+        document.getElementById('ibVarInvoice').checked = true;
+        document.getElementById('ibPmCash').checked = false;
+        document.getElementById('ibPmPP').checked = false;
+        document.getElementById('ibPPId').value = '';
+        document.getElementById('ibPPWrap').style.display = 'none';
+        document.querySelectorAll('.js-ib-bank').forEach(cb => cb.checked = false);
+        const modal = getModal();
+        if (modal) modal.show();
+    });
+
+    // Toggle PromptPay input
+    document.getElementById('ibPmPP').addEventListener('change', function () {
+        document.getElementById('ibPPWrap').style.display = this.checked ? '' : 'none';
+    });
+
+    // Generate — build URL and open new tab
+    document.getElementById('ibGenerateBtn').addEventListener('click', function () {
+        if (!currentBaseUrl) return;
+        const variant = document.querySelector('input[name="ibVariant"]:checked')?.value || 'invoice';
+        // Base URL already has ?group_id=…&transaction_ids=… so append with '&'
+        const sep = currentBaseUrl.includes('?') ? '&' : '?';
+        const params = [];
+        if (variant === 'with_list') params.push('include_employee_list=1');
+        if (variant === 'list_only') params.push('list_only=1');
+
+        // Payment methods payload matches the backend ProductionDocumentController
+        // format: array of {method, ...details} base64-encoded JSON.
+        const methods = [];
+        if (document.getElementById('ibPmCash').checked) {
+            methods.push({ method: 'cash', label: '{{ __("Cash") }}' });
+        }
+        if (document.getElementById('ibPmPP').checked) {
+            const ppid = document.getElementById('ibPPId').value.trim();
+            methods.push({ method: 'promptpay', label: 'PromptPay', promptpay_id: ppid });
+        }
+        document.querySelectorAll('.js-ib-bank:checked').forEach(cb => {
+            methods.push({
+                method: 'bank_transfer',
+                bank_name: cb.dataset.bankName || '',
+                account_name: cb.dataset.accountName || '',
+                account_number: cb.dataset.accountNumber || '',
+            });
+        });
+        if (methods.length > 0) {
+            const json = JSON.stringify(methods);
+            const b64 = btoa(unescape(encodeURIComponent(json)));
+            params.push('payment_methods=' + encodeURIComponent(b64));
+        }
+
+        const url = currentBaseUrl + (params.length ? sep + params.join('&') : '');
+        window.open(url, '_blank');
+        const modal = getModal();
+        if (modal) modal.hide();
     });
 });
 </script>

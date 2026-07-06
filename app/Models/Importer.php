@@ -29,6 +29,8 @@ class Importer extends Model
         'signature_1_path',
         'signature_2_path',
         'importer_stamp_path',
+        'importer_stamp_width_mm',
+        'importer_stamp_height_mm',
         'importer_doc_other_1',
         'importer_doc_other_1_desc',
         'importer_doc_other_2',

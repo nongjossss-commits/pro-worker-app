@@ -78,16 +78,36 @@ class PdfTemplateController extends Controller
              $employers = $empQuery->orderBy('employerNameTh')->get();
         }
 
-        // Quick Print: lightweight payload (id, name, type, field_mapping) for client-side field analysis
-        $quickPrintTemplates = collect($templates->items())->map(function ($t) {
-            return [
-                'id' => $t->id,
-                'name' => $t->name,
-                'type' => $t->type,
-                'employer_name' => optional($t->employer)->employerNameTh,
-                'field_mapping' => is_array($t->field_mapping) ? $t->field_mapping : [],
-            ];
-        })->values();
+        // Quick Print: lightweight payload for client-side field analysis.
+        //
+        // Historically this used $templates->items() which limited the
+        // dropdown to the current PAGE only — operators had to paginate to
+        // find templates, which defeats the "quick print" workflow. We now
+        // build a fresh unpaginated query that respects the same role rules
+        // as the main list (super-admin/admin/staff see everything;
+        // employer sees global + own; caretaker sees global + assigned).
+        $qpQuery = PdfTemplate::query()->with('employer:id,employerNameTh');
+        if ($user->hasRole('employer')) {
+            $qpQuery->where(function ($q) use ($user) {
+                $q->where('type', 'global')
+                  ->orWhere('employer_id', optional($user->employer)->id);
+            });
+        } elseif ($user->hasRole('caretaker')) {
+            $qpQuery->where(function ($q) use ($user) {
+                $q->where('type', 'global')
+                  ->orWhereIn('employer_id', Employer::where('assigned_staff_id', $user->id)->pluck('id'));
+            });
+        }
+        $quickPrintTemplates = $qpQuery->orderBy('type')->orderBy('name')->get()
+            ->map(function ($t) {
+                return [
+                    'id' => $t->id,
+                    'name' => $t->name,
+                    'type' => $t->type,
+                    'employer_name' => optional($t->employer)->employerNameTh,
+                    'field_mapping' => is_array($t->field_mapping) ? $t->field_mapping : [],
+                ];
+            })->values();
 
         $quickPrintEmployers = Employer::select('id', 'employerNameTh', 'employerNameEn')->orderBy('employerNameTh')->get();
         $quickPrintImporters = \App\Models\Importer::select('id', 'importerNameTh', 'importerNameEn')->orderBy('importerNameTh')->get();

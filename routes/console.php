@@ -19,3 +19,9 @@ Schedule::command('app:check-expiries')->dailyAt('01:00'); // Run check before r
 // MOU group (and optional expiry) onto the linked employee. The 24h delay
 // is the safety window so users can `restoreItem` to undo a finalize.
 Schedule::command('app:apply-workflow-settings')->hourly();
+
+// Registration/Renewal Resolution auto-apply: 24h after "เสร็จสิ้น" pushes
+// the admin-configured Auto Settings (visa/WP expiry + MOU group) onto the
+// employee. Same 24h safety window as the workflow command above so users
+// can `restore` to undo a finalize. Supports per-tab and legacy global keys.
+Schedule::command('app:update-resolution-data')->hourly();

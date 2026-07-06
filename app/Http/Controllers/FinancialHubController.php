@@ -138,6 +138,17 @@ class FinancialHubController extends Controller
                       });
                 });
             }
+
+            // Billing-status filter: "not_billed" = no transactions on any group yet;
+            // "billed" = at least one transaction exists. Uses whereHas /
+            // whereDoesntHave so pagination totals stay accurate at the DB layer.
+            $billingStatus = $request->input('billing_status');
+            if ($billingStatus === 'not_billed') {
+                $query->whereDoesntHave('financialGroups.transactions');
+            } elseif ($billingStatus === 'billed') {
+                $query->whereHas('financialGroups.transactions');
+            }
+
             $orders = $query->paginate(20)->withQueryString();
         }
         elseif ($tab === 'registration') {
@@ -179,16 +190,44 @@ class FinancialHubController extends Controller
             }
             $stats['total_unpriced'] = $totalUnpriced;
 
-            // Apply unpriced filter if requested
-            if ($request->input('unpriced') == 1) {
-                $allMatching = $query->with(['financialGroups' => function($q) {
-                        $q->select('id', 'production_order_id', 'financial_data');
-                    }])->get();
+            // Apply unpriced + billing-status filters. Both need the full
+            // matching set with computed financials because "partial vs full
+            // billed" depends on billed_amount / total_amount ratio that only
+            // exists after calculateOrderFinancials() runs. Filtering before
+            // pagination keeps the page totals honest.
+            $billingStatus = $request->input('billing_status');
+            $needsCollectionFilter = ($request->input('unpriced') == 1) || $billingStatus;
+
+            if ($needsCollectionFilter) {
+                $allMatching = $query->with([
+                        'financialGroups' => function($q) {
+                            $q->select('id', 'production_order_id', 'financial_data');
+                        },
+                        'financialGroups.transactions',
+                        'financialGroups.transactions.payments',
+                    ])->get();
 
                 foreach($allMatching as $order) {
                     $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
                 }
-                $filtered = $allMatching->filter(fn($o) => $o->unpriced_employees_count > 0);
+
+                $filtered = $allMatching;
+                if ($request->input('unpriced') == 1) {
+                    $filtered = $filtered->filter(fn($o) => $o->unpriced_employees_count > 0);
+                }
+                if ($billingStatus === 'not_billed') {
+                    $filtered = $filtered->filter(fn($o) => (float)($o->billed_amount ?? 0) <= 0.005);
+                } elseif ($billingStatus === 'partial_billed') {
+                    $filtered = $filtered->filter(fn($o) =>
+                        (float)($o->billed_amount ?? 0) > 0.005
+                        && (float)($o->billed_amount ?? 0) < (float)($o->total_amount ?? 0) - 0.005
+                    );
+                } elseif ($billingStatus === 'fully_billed') {
+                    $filtered = $filtered->filter(fn($o) =>
+                        (float)($o->total_amount ?? 0) > 0.005
+                        && (float)($o->billed_amount ?? 0) >= (float)($o->total_amount ?? 0) - 0.005
+                    );
+                }
 
                 $page = $request->input('page', 1);
                 $perPage = 20;
@@ -246,16 +285,41 @@ class FinancialHubController extends Controller
             }
             $stats['total_unpriced'] = $totalUnpriced;
 
-            // Apply unpriced filter
-            if ($request->input('unpriced') == 1) {
-                $allMatching = $query->with(['financialGroups' => function($q) {
-                        $q->select('id', 'production_order_id', 'financial_data');
-                    }])->get();
+            // Apply unpriced + billing-status filters — same collection-level
+            // pattern as the registration tab.
+            $billingStatus = $request->input('billing_status');
+            $needsCollectionFilter = ($request->input('unpriced') == 1) || $billingStatus;
+
+            if ($needsCollectionFilter) {
+                $allMatching = $query->with([
+                        'financialGroups' => function($q) {
+                            $q->select('id', 'production_order_id', 'financial_data');
+                        },
+                        'financialGroups.transactions',
+                        'financialGroups.transactions.payments',
+                    ])->get();
 
                 foreach($allMatching as $order) {
                     $this->calculateOrderFinancials($order, $employeeCounts[$order->employer_id] ?? 0);
                 }
-                $filtered = $allMatching->filter(fn($o) => $o->unpriced_employees_count > 0);
+
+                $filtered = $allMatching;
+                if ($request->input('unpriced') == 1) {
+                    $filtered = $filtered->filter(fn($o) => $o->unpriced_employees_count > 0);
+                }
+                if ($billingStatus === 'not_billed') {
+                    $filtered = $filtered->filter(fn($o) => (float)($o->billed_amount ?? 0) <= 0.005);
+                } elseif ($billingStatus === 'partial_billed') {
+                    $filtered = $filtered->filter(fn($o) =>
+                        (float)($o->billed_amount ?? 0) > 0.005
+                        && (float)($o->billed_amount ?? 0) < (float)($o->total_amount ?? 0) - 0.005
+                    );
+                } elseif ($billingStatus === 'fully_billed') {
+                    $filtered = $filtered->filter(fn($o) =>
+                        (float)($o->total_amount ?? 0) > 0.005
+                        && (float)($o->billed_amount ?? 0) >= (float)($o->total_amount ?? 0) - 0.005
+                    );
+                }
 
                 $page = $request->input('page', 1);
                 $perPage = 20;

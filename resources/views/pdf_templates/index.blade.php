@@ -237,12 +237,52 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label fw-bold">1. เลือก Template <span class="text-danger">*</span></label>
-                        <select class="form-select" x-model="selectedId" @change="onTemplateChange()">
-                            <option value="">-- เลือก Template --</option>
-                            <template x-for="t in templates" :key="t.id">
-                                <option :value="t.id" x-text="t.name + ' (' + (t.type === 'global' ? 'Global' : (t.employer_name || 'Employer')) + ')'"></option>
-                            </template>
-                        </select>
+                        {{-- Searchable template picker — shows ALL templates (not the
+                             page-limited slice) so operators don't have to paginate
+                             the underlying list first. --}}
+                        <div class="position-relative" @click.outside="tplOpen = false">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text"
+                                       class="form-control border-start-0 ps-0"
+                                       :placeholder="selectedId ? selectedLabel('template') : 'พิมพ์ค้นหา template หรือคลิกเพื่อดูรายการ...'"
+                                       x-model="tplSearch"
+                                       @focus="tplOpen = true"
+                                       @keydown.escape="tplOpen = false"
+                                       autocomplete="off">
+                                <button class="btn btn-outline-secondary" type="button"
+                                        @click="tplOpen = !tplOpen; tplSearch = ''"
+                                        title="ล้าง/เปิดรายการ">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="form-text text-primary fw-bold mt-1" x-show="selectedId" style="display: none;">
+                                <i class="bi bi-check-circle-fill me-1"></i> เลือกแล้ว: <span x-text="selectedLabel('template')"></span>
+                            </div>
+                            <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                 style="z-index: 1050; max-height: 300px; overflow-y: auto; display: none;"
+                                 x-show="tplOpen" x-transition>
+                                <ul class="list-group list-group-flush">
+                                    <template x-for="t in filteredTemplates" :key="t.id">
+                                        <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                            style="cursor: pointer;"
+                                            @click="selectedId = t.id; tplOpen = false; tplSearch = ''; onTemplateChange()">
+                                            <div>
+                                                <div class="fw-bold" x-text="t.name"></div>
+                                                <div class="small">
+                                                    <span class="badge" :class="t.type === 'global' ? 'bg-success' : 'bg-info'"
+                                                          x-text="t.type === 'global' ? 'Global' : (t.employer_name || 'Employer')"></span>
+                                                </div>
+                                            </div>
+                                            <i class="bi bi-check2 text-primary" x-show="selectedId == t.id"></i>
+                                        </li>
+                                    </template>
+                                    <li class="list-group-item text-muted text-center" x-show="filteredTemplates.length === 0">
+                                        ไม่พบ template ที่ค้นหา
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Field analysis --}}
@@ -300,35 +340,145 @@
                             </div>
                         </div>
 
-                        {{-- Target selectors (only when no employee data needed) --}}
+                        {{-- Target selectors (only when no employee data needed).
+                             All 3 selects are searchable list-group dropdowns so the
+                             operator doesn't have to scroll a long native select. --}}
                         <div x-show="!analysis.employee.count" style="display: none;">
+                            {{-- Employer --}}
                             <div class="mb-3" x-show="analysis.employer.count > 0" style="display: none;">
                                 <label class="form-label">2. เลือกนายจ้าง (Target Employer)</label>
-                                <select class="form-select" x-model="targetEmployerId">
-                                    <option value="">-- เว้นว่าง --</option>
-                                    @foreach($quickPrintEmployers ?? [] as $e)
-                                        <option value="{{ $e->id }}">{{ $e->employerNameTh }} ({{ $e->employerNameEn }})</option>
-                                    @endforeach
-                                </select>
+                                <div class="position-relative" @click.outside="empOpen = false">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text"
+                                               class="form-control border-start-0 ps-0"
+                                               :placeholder="targetEmployerId ? selectedLabel('employer') : 'พิมพ์ค้นหานายจ้าง...'"
+                                               x-model="empSearch"
+                                               @focus="empOpen = true"
+                                               @keydown.escape="empOpen = false"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                @click="empOpen = !empOpen; empSearch = ''">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                         style="z-index: 1050; max-height: 260px; overflow-y: auto; display: none;"
+                                         x-show="empOpen" x-transition>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item list-group-item-action" style="cursor:pointer;"
+                                                @click="targetEmployerId = ''; empOpen = false; empSearch = ''">
+                                                <em class="text-muted">— เว้นว่าง —</em>
+                                            </li>
+                                            <template x-for="opt in filteredEmployers" :key="opt.id">
+                                                <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                    style="cursor:pointer;"
+                                                    @click="targetEmployerId = opt.id; empOpen = false; empSearch = ''">
+                                                    <div>
+                                                        <div class="fw-bold" x-text="opt.name_th"></div>
+                                                        <div class="small text-muted" x-text="opt.name_en"></div>
+                                                    </div>
+                                                    <i class="bi bi-check2 text-primary" x-show="targetEmployerId == opt.id"></i>
+                                                </li>
+                                            </template>
+                                            <li class="list-group-item text-muted text-center" x-show="filteredEmployers.length === 0">
+                                                ไม่พบนายจ้าง
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
+
+                            {{-- Delegate --}}
                             <div class="mb-3" x-show="analysis.delegate.count > 0" style="display: none;">
                                 <label class="form-label">เลือกผู้รับมอบอำนาจ (Delegate)</label>
-                                <select class="form-select" x-model="targetDelegateId">
-                                    <option value="">-- เว้นว่าง --</option>
-                                    @foreach($quickPrintDelegates ?? [] as $d)
-                                        <option value="{{ $d->id }}">{{ $d->delegateNameTh }} ({{ $d->delegateNameEn }})</option>
-                                    @endforeach
-                                </select>
+                                <div class="position-relative" @click.outside="delOpen = false">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text"
+                                               class="form-control border-start-0 ps-0"
+                                               :placeholder="targetDelegateId ? selectedLabel('delegate') : 'พิมพ์ค้นหาผู้รับมอบอำนาจ...'"
+                                               x-model="delSearch"
+                                               @focus="delOpen = true"
+                                               @keydown.escape="delOpen = false"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                @click="delOpen = !delOpen; delSearch = ''">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                         style="z-index: 1050; max-height: 260px; overflow-y: auto; display: none;"
+                                         x-show="delOpen" x-transition>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item list-group-item-action" style="cursor:pointer;"
+                                                @click="targetDelegateId = ''; delOpen = false; delSearch = ''">
+                                                <em class="text-muted">— เว้นว่าง —</em>
+                                            </li>
+                                            <template x-for="opt in filteredDelegates" :key="opt.id">
+                                                <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                    style="cursor:pointer;"
+                                                    @click="targetDelegateId = opt.id; delOpen = false; delSearch = ''">
+                                                    <div>
+                                                        <div class="fw-bold" x-text="opt.name_th"></div>
+                                                        <div class="small text-muted" x-text="opt.name_en"></div>
+                                                    </div>
+                                                    <i class="bi bi-check2 text-primary" x-show="targetDelegateId == opt.id"></i>
+                                                </li>
+                                            </template>
+                                            <li class="list-group-item text-muted text-center" x-show="filteredDelegates.length === 0">
+                                                ไม่พบผู้รับมอบอำนาจ
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
+
+                            {{-- Importer --}}
                             <div class="mb-3" x-show="analysis.importer.count > 0" style="display: none;">
                                 <label class="form-label">เลือกบริษัทนำเข้า (Importer)</label>
-                                <select class="form-select" x-model="targetImporterId">
-                                    <option value="">-- เว้นว่าง --</option>
-                                    @foreach($quickPrintImporters ?? [] as $i)
-                                        <option value="{{ $i->id }}">{{ $i->importerNameTh }} ({{ $i->importerNameEn }})</option>
-                                    @endforeach
-                                </select>
+                                <div class="position-relative" @click.outside="impOpen = false">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text"
+                                               class="form-control border-start-0 ps-0"
+                                               :placeholder="targetImporterId ? selectedLabel('importer') : 'พิมพ์ค้นหาบริษัทนำเข้า...'"
+                                               x-model="impSearch"
+                                               @focus="impOpen = true"
+                                               @keydown.escape="impOpen = false"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                @click="impOpen = !impOpen; impSearch = ''">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                         style="z-index: 1050; max-height: 260px; overflow-y: auto; display: none;"
+                                         x-show="impOpen" x-transition>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item list-group-item-action" style="cursor:pointer;"
+                                                @click="targetImporterId = ''; impOpen = false; impSearch = ''">
+                                                <em class="text-muted">— เว้นว่าง —</em>
+                                            </li>
+                                            <template x-for="opt in filteredImporters" :key="opt.id">
+                                                <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                    style="cursor:pointer;"
+                                                    @click="targetImporterId = opt.id; impOpen = false; impSearch = ''">
+                                                    <div>
+                                                        <div class="fw-bold" x-text="opt.name_th"></div>
+                                                        <div class="small text-muted" x-text="opt.name_en"></div>
+                                                    </div>
+                                                    <i class="bi bi-check2 text-primary" x-show="targetImporterId == opt.id"></i>
+                                                </li>
+                                            </template>
+                                            <li class="list-group-item text-muted text-center" x-show="filteredImporters.length === 0">
+                                                ไม่พบบริษัทนำเข้า
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
+
                             <div class="alert alert-info py-2 small mb-0">
                                 <i class="bi bi-info-circle me-1"></i> Template นี้ไม่ต้องใช้ข้อมูลลูกจ้าง สามารถเลือกข้อมูลที่จะเติม (ถ้ามี) แล้วกดพิมพ์ได้เลย
                             </div>
@@ -605,10 +755,33 @@
     document.addEventListener('alpine:init', () => {
         Alpine.data('quickPrintManager', () => ({
             templates: @json($quickPrintTemplates ?? collect()),
+            employers: (@json($quickPrintEmployers ?? collect())).map(e => ({
+                id: e.id,
+                name_th: e.employerNameTh || '',
+                name_en: e.employerNameEn || '',
+                _search: ((e.employerNameTh || '') + ' ' + (e.employerNameEn || '')).toLowerCase(),
+            })),
+            delegates: (@json($quickPrintDelegates ?? collect())).map(d => ({
+                id: d.id,
+                name_th: d.delegateNameTh || '',
+                name_en: d.delegateNameEn || '',
+                _search: ((d.delegateNameTh || '') + ' ' + (d.delegateNameEn || '')).toLowerCase(),
+            })),
+            importers: (@json($quickPrintImporters ?? collect())).map(i => ({
+                id: i.id,
+                name_th: i.importerNameTh || '',
+                name_en: i.importerNameEn || '',
+                _search: ((i.importerNameTh || '') + ' ' + (i.importerNameEn || '')).toLowerCase(),
+            })),
             selectedId: '',
             targetEmployerId: '',
             targetDelegateId: '',
             targetImporterId: '',
+            // Searchable dropdown state — one search string + one open flag per selector.
+            tplSearch: '', tplOpen: false,
+            empSearch: '', empOpen: false,
+            delSearch: '', delOpen: false,
+            impSearch: '', impOpen: false,
             analysis: {
                 employee: { count: 0, keys: [] },
                 employer: { count: 0, keys: [] },
@@ -620,6 +793,55 @@
 
             get canPrint() {
                 return this.selectedId && !this.analysis.employee.count;
+            },
+
+            // Filtered lists — case-insensitive contains match against the
+            // pre-computed lowercase _search string, or full list when the
+            // search box is empty.
+            get filteredTemplates() {
+                const term = (this.tplSearch || '').toLowerCase().trim();
+                if (!term) return this.templates;
+                return this.templates.filter(t => {
+                    const label = (t.name || '') + ' ' + (t.employer_name || '') + ' ' + (t.type || '');
+                    return label.toLowerCase().includes(term);
+                });
+            },
+            get filteredEmployers() {
+                const term = (this.empSearch || '').toLowerCase().trim();
+                if (!term) return this.employers;
+                return this.employers.filter(o => o._search.includes(term));
+            },
+            get filteredDelegates() {
+                const term = (this.delSearch || '').toLowerCase().trim();
+                if (!term) return this.delegates;
+                return this.delegates.filter(o => o._search.includes(term));
+            },
+            get filteredImporters() {
+                const term = (this.impSearch || '').toLowerCase().trim();
+                if (!term) return this.importers;
+                return this.importers.filter(o => o._search.includes(term));
+            },
+
+            // Resolve the display label for the currently selected id in each dropdown.
+            selectedLabel(kind) {
+                if (kind === 'template') {
+                    const t = this.templates.find(x => x.id == this.selectedId);
+                    if (!t) return '';
+                    return t.name + ' (' + (t.type === 'global' ? 'Global' : (t.employer_name || 'Employer')) + ')';
+                }
+                if (kind === 'employer') {
+                    const o = this.employers.find(x => x.id == this.targetEmployerId);
+                    return o ? (o.name_th + (o.name_en ? ' (' + o.name_en + ')' : '')) : '';
+                }
+                if (kind === 'delegate') {
+                    const o = this.delegates.find(x => x.id == this.targetDelegateId);
+                    return o ? (o.name_th + (o.name_en ? ' (' + o.name_en + ')' : '')) : '';
+                }
+                if (kind === 'importer') {
+                    const o = this.importers.find(x => x.id == this.targetImporterId);
+                    return o ? (o.name_th + (o.name_en ? ' (' + o.name_en + ')' : '')) : '';
+                }
+                return '';
             },
 
             classifyKey(key) {

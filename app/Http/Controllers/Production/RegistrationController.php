@@ -1147,9 +1147,13 @@ class RegistrationController extends Controller
         }
 
         // Change status to 'registration_completed'
+        // Reset resolution_settings_applied so the 24h auto-apply (UpdateResolutionData)
+        // will run again on this fresh finalize cycle even if it was applied before
+        // (i.e. after a previous finalize → restore → finalize sequence).
         $employee->update([
             'status' => 'registration_completed',
-            'resolution_completed_at' => now()
+            'resolution_completed_at' => now(),
+            'resolution_settings_applied' => false,
         ]);
 
         if ($request->ajax()) {
@@ -1199,7 +1203,8 @@ class RegistrationController extends Controller
         $employee->update([
             'status' => 'registration_pending',
             'resolution_tab_id' => $this->currentTab->id,
-            'resolution_completed_at' => null
+            'resolution_completed_at' => null,
+            'resolution_settings_applied' => false,
         ]);
 
         if ($request->ajax()) {
@@ -1280,8 +1285,17 @@ class RegistrationController extends Controller
             'employee_ids.*' => 'exists:employees,id',
         ]);
 
+        // Match single-finalize behavior:
+        //   - Stamp resolution_completed_at so the 24h auto-apply timer starts
+        //   - Reset resolution_settings_applied so UpdateResolutionData will run
+        //     on this fresh finalize cycle (previously bulk-finalize never got
+        //     auto-applied because resolution_completed_at stayed null)
         Employee::whereIn('id', $request->input('employee_ids'))
-            ->update(['status' => 'registration_completed']);
+            ->update([
+                'status' => 'registration_completed',
+                'resolution_completed_at' => now(),
+                'resolution_settings_applied' => false,
+            ]);
 
         if ($request->ajax()) {
             // Recalculating stats might be heavy here if multiple employers.

@@ -3,7 +3,25 @@
 @if(request('unpriced') == 1)
     <div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
         <span><i class="bi bi-info-circle me-2"></i> {{ __('Showing only employers with unpriced employees.') }}</span>
-        <a href="{{ route('finance.index', ['tab' => 'renewal']) }}" class="btn btn-sm btn-outline-info">{{ __('Clear Filter') }}</a>
+        <a href="{{ route('finance.index', array_merge(request()->except('unpriced'), ['tab' => 'renewal'])) }}" class="btn btn-sm btn-outline-info">{{ __('Clear Filter') }}</a>
+    </div>
+@endif
+
+@if(request('billing_status'))
+    @php
+        $bsLabels = [
+            'not_billed'     => __('Not Billed Yet'),
+            'partial_billed' => __('Partially Billed'),
+            'fully_billed'   => __('Fully Billed'),
+        ];
+    @endphp
+    <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4">
+        <span>
+            <i class="bi bi-funnel-fill me-1"></i>
+            {{ __('Filtering by billing status:') }}
+            <strong>{{ $bsLabels[request('billing_status')] ?? request('billing_status') }}</strong>
+        </span>
+        <a href="{{ route('finance.index', array_merge(request()->except('billing_status'), ['tab' => 'renewal'])) }}" class="btn btn-sm btn-outline-warning">{{ __('Clear Filter') }}</a>
     </div>
 @endif
 
@@ -11,11 +29,19 @@
     <div class="card-body">
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">
             <input type="hidden" name="tab" value="renewal">
-            <div class="col-md-8">
+            <div class="col-md-5">
                 <input type="text" name="search" class="form-control" placeholder="{{ __('Search Employer...') }}" value="{{ request('search') }}">
             </div>
-            <div class="col-md-4 d-grid">
-                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> {{ __('Search') }}</button>
+            <div class="col-md-4">
+                <select name="billing_status" class="form-select">
+                    <option value="">{{ __('All Billing Statuses') }}</option>
+                    <option value="not_billed"     {{ request('billing_status') == 'not_billed'     ? 'selected' : '' }}>{{ __('Not Billed Yet') }}</option>
+                    <option value="partial_billed" {{ request('billing_status') == 'partial_billed' ? 'selected' : '' }}>{{ __('Partially Billed') }}</option>
+                    <option value="fully_billed"   {{ request('billing_status') == 'fully_billed'   ? 'selected' : '' }}>{{ __('Fully Billed') }}</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-grid">
+                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> {{ __('Filter') }}</button>
             </div>
         </form>
     </div>
@@ -37,11 +63,23 @@
                         <th class="text-end">{{ __('Total Amount') }}</th>
                         <th class="text-end">{{ __('Billed') }}</th>
                         <th class="text-end">{{ __('Pending') }}</th>
+                        <th class="text-center">{{ __('Billing Status') }}</th>
                         <th class="text-center">{{ __('Action') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($orders as $order)
+                    @php
+                        $bAmt = (float) ($order->billed_amount ?? 0);
+                        $tAmt = (float) ($order->total_amount ?? 0);
+                        if ($bAmt <= 0.005) {
+                            $bStatus = ['label' => __('Not Billed Yet'), 'class' => 'bg-warning text-dark', 'icon' => 'bi-exclamation-circle-fill'];
+                        } elseif ($tAmt > 0.005 && $bAmt >= $tAmt - 0.005) {
+                            $bStatus = ['label' => __('Fully Billed'), 'class' => 'bg-success', 'icon' => 'bi-check-circle-fill'];
+                        } else {
+                            $bStatus = ['label' => __('Partially Billed'), 'class' => 'bg-info', 'icon' => 'bi-hourglass-split'];
+                        }
+                    @endphp
                     <tr>
                         <td>{{ $order->employer ? $order->employer->employerNameTh : __('Unknown') }}</td>
                         <td class="text-center">{{ $order->total_employees }}</td>
@@ -50,6 +88,9 @@
                         <td class="text-end fw-bold">{{ number_format($order->total_amount, 2) }}</td>
                         <td class="text-end">{{ number_format($order->billed_amount, 2) }}</td>
                         <td class="text-end text-warning fw-bold">{{ number_format($order->pending_amount, 2) }}</td>
+                        <td class="text-center">
+                            <span class="badge {{ $bStatus['class'] }}"><i class="bi {{ $bStatus['icon'] }} me-1"></i>{{ $bStatus['label'] }}</span>
+                        </td>
                         <td class="text-center">
                             @if($order->employer)
                                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadFinancialTabModal('{{ route('production.renewal.finance.tab', ['resolutionTab' => $order->resolution_tab_id ?? \App\Models\ResolutionTab::where('type', 'renewal')->where('is_default', true)->value('id'), 'employer' => $order->employer->id]) }}', '{{ $order->employer->employerNameTh }}')">
@@ -60,7 +101,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">{{ __('No records found.') }}</td>
+                        <td colspan="9" class="text-center text-muted py-4">{{ __('No records found.') }}</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -156,9 +197,16 @@
         }
     }
 
-    // Refresh page when modal is closed to update stats
-    document.getElementById('financialTabModal').addEventListener('hidden.bs.modal', function () {
-        window.location.reload();
+    // Refresh page when the OUTER modal is closed so the row totals update.
+    // Crucial: check event.target — inner nested modals (Create Invoice,
+    // Add Transaction, Payment, etc.) also bubble hidden.bs.modal up to
+    // this container. Without the target check every inner modal close
+    // would trigger a full page reload, kicking the finance operator out
+    // of the Manage Finance popup mid-edit ("ระบบเด้งออก" bug report).
+    document.getElementById('financialTabModal').addEventListener('hidden.bs.modal', function (event) {
+        if (event.target && event.target.id === 'financialTabModal') {
+            window.location.reload();
+        }
     });
 </script>
 @endpush

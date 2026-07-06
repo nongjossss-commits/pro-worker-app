@@ -335,6 +335,54 @@
                          <div class="form-text mt-1">{{ __('Click to upload or draw stamp.') }}</div>
                       </div>
                  </div>
+
+                 {{-- Real stamp dimensions — used by the PDF renderer to place
+                      the stamp at its true physical size instead of stretching
+                      it to fill the template's stamp area. Blank on both fields
+                      means "auto-detect from image aspect ratio". --}}
+                 <div class="mt-3 border-top pt-3"
+                      x-data="{
+                          w: '{{ old('employer_stamp_width_mm', $employer->employer_stamp_width_mm ?? '') }}',
+                          h: '{{ old('employer_stamp_height_mm', $employer->employer_stamp_height_mm ?? '') }}',
+                          isSquare: false,
+                          syncHeight() { if (this.isSquare) this.h = this.w; }
+                      }">
+                     <div class="fw-bold small text-primary mb-2">
+                         <i class="bi bi-rulers me-1"></i> {{ __('Real Stamp Dimensions (Optional)') }}
+                     </div>
+                     <div class="small text-muted mb-2">
+                         {{ __('Enter the real physical size of the stamp in millimetres. This prevents the PDF from stretching the stamp to fill the template area.') }}
+                         <br>
+                         <span class="text-muted">{{ __('Leave blank to auto-detect from image aspect ratio.') }}</span>
+                     </div>
+
+                     <div class="row g-2 align-items-end">
+                         <div class="col-md-3">
+                             <label class="form-label small mb-1">{{ __('Width') }} (mm)</label>
+                             <input type="number" name="employer_stamp_width_mm" class="form-control form-control-sm"
+                                    min="1" max="200" step="0.1"
+                                    x-model="w" @input="syncHeight()"
+                                    placeholder="{{ __('e.g., 30 for a 3cm stamp') }}">
+                         </div>
+                         <div class="col-md-3">
+                             <label class="form-label small mb-1">{{ __('Height') }} (mm)</label>
+                             <input type="number" name="employer_stamp_height_mm" class="form-control form-control-sm"
+                                    min="1" max="200" step="0.1"
+                                    x-model="h"
+                                    :readonly="isSquare"
+                                    placeholder="{{ __('e.g., 30 for a 3cm stamp') }}">
+                         </div>
+                         <div class="col-md-6">
+                             <div class="form-check form-check-inline mt-md-3">
+                                 <input class="form-check-input" type="checkbox" id="stampSquareCheckbox"
+                                        x-model="isSquare" @change="syncHeight()">
+                                 <label class="form-check-label small" for="stampSquareCheckbox">
+                                     {{ __('Square/Round stamp (auto-sync height to width)') }}
+                                 </label>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
             </div>
         </div>
         @endunless
