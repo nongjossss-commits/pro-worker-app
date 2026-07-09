@@ -262,6 +262,10 @@
             {!! $val($employee->passport_issue_place ?? null) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
+            <span class="preview-label">วันที่ออก Passport</span>
+            {!! $val($employee->passport_issue_date ? $employee->passport_issue_date->format('d/m/Y') : null) !!}
+        </div>
+        <div class="col-6 col-sm-4 col-md-3 preview-field">
             <span class="preview-label">ประเภทหนังสือเดินทาง</span>
             {!! $val($passportTypeVal) !!}
         </div>

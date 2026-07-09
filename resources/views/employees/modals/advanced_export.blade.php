@@ -81,6 +81,18 @@
                                         <label class="form-check-label" for="col_age">{{ __('Age') }}</label>
                                     </div>
                                 </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="height" id="col_height">
+                                        <label class="form-check-label" for="col_height">{{ __('Height') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="weight" id="col_weight">
+                                        <label class="form-check-label" for="col_weight">{{ __('Weight') }}</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -133,6 +145,12 @@
                                 </div>
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="passport_issue_place" id="col_pp_issue_place">
+                                        <label class="form-check-label" for="col_pp_issue_place">{{ __('Passport Issue Place') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="passportExpiryDate" id="col_pp_exp">
                                         <label class="form-check-label" for="col_pp_exp">{{ __('Expiry Date') }}</label>
                                     </div>
@@ -167,6 +185,12 @@
                                         <label class="form-check-label" for="col_visa_exp">{{ __('Visa Expiry') }}</label>
                                     </div>
                                 </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="visa_issue_place" id="col_visa_issue_place">
+                                        <label class="form-check-label" for="col_visa_issue_place">{{ __('Visa Issue Place') }}</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -184,6 +208,12 @@
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="job_description" id="col_nature">
                                         <label class="form-check-label" for="col_nature">{{ __('Nature of Work') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="department" id="col_department">
+                                        <label class="form-check-label" for="col_department">{{ __('Department') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">
@@ -317,6 +347,12 @@
                                     <div class="form-check">
                                         <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="insurance_detail_hospital" id="col_hosp_name">
                                         <label class="form-check-label" for="col_hosp_name">{{ __('Hospital Name') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input export-checkbox" type="checkbox" name="columns[]" value="medical_hospital_name" id="col_med_hosp">
+                                        <label class="form-check-label" for="col_med_hosp">{{ __('Medical Check-up Hospital') }}</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3 col-sm-6">

@@ -22,6 +22,37 @@ class PdfGeneratorService
     protected $signatureService;
     protected $tempFiles = [];
 
+    /**
+     * Thai month abbreviations (ม.ค. / ก.พ. / …) — official RID short form.
+     * Used by *_month_th and *_th_be / *_th_ce date resolvers.
+     */
+    protected static $thaiMonthShort = [
+        1 => 'ม.ค.', 2 => 'ก.พ.', 3 => 'มี.ค.', 4 => 'เม.ย.',
+        5 => 'พ.ค.', 6 => 'มิ.ย.', 7 => 'ก.ค.', 8 => 'ส.ค.',
+        9 => 'ก.ย.', 10 => 'ต.ค.', 11 => 'พ.ย.', 12 => 'ธ.ค.',
+    ];
+
+    /**
+     * Compose a "day monthTh year" string, e.g. "15 ม.ค. 2536".
+     * $yearAdjust adds to the CE year (543 → BE, 0 → CE).
+     */
+    protected function formatThaiDate(?Carbon $d, int $yearAdjust = 543): string
+    {
+        if (!$d) return '';
+        $month = self::$thaiMonthShort[$d->month] ?? '';
+        return $d->format('d') . ' ' . $month . ' ' . ($d->year + $yearAdjust);
+    }
+
+    /**
+     * Compose a "day MONTH year" string with English month abbrev, e.g. "15 JAN 2026".
+     * $yearAdjust adds to the CE year (543 → BE, 0 → CE).
+     */
+    protected function formatEnglishDate(?Carbon $d, int $yearAdjust = 0): string
+    {
+        if (!$d) return '';
+        return $d->format('d') . ' ' . strtoupper($d->format('M')) . ' ' . ($d->year + $yearAdjust);
+    }
+
     public function __construct(SignatureGeneratorService $signatureService)
     {
         // Path to Thai font (Assumes font files exist in public/fonts)
@@ -1530,32 +1561,93 @@ class PdfGeneratorService
             $key = 'job_description';
         }
 
-        // Custom Date Formatting: Employee DOB
+        // Custom Date Formatting: Employee DOB (CE + BE + Thai month variants)
         if (str_starts_with($key, 'employeeDob_')) {
             if ($employee->employeeDob instanceof Carbon) {
-                if ($key === 'employeeDob_day') return $employee->employeeDob->format('d');
-                if ($key === 'employeeDob_month_en') return strtoupper($employee->employeeDob->format('M'));
-                if ($key === 'employeeDob_year_ce') return $employee->employeeDob->format('Y');
+                $d = $employee->employeeDob;
+                if ($key === 'employeeDob_day') return $d->format('d');
+                if ($key === 'employeeDob_month_en') return strtoupper($d->format('M'));
+                if ($key === 'employeeDob_month_th') return self::$thaiMonthShort[$d->month] ?? '';
+                if ($key === 'employeeDob_year_ce') return $d->format('Y');
+                // BE = CE + 543 (Buddhist calendar)
+                if ($key === 'employeeDob_year_be') return (string) ($d->year + 543);
+                if ($key === 'employeeDob_be') return $d->format('d/m/') . ($d->year + 543);
+                // Thai text formats (e.g. "15 ม.ค. 2536" or "15 ม.ค. 1993")
+                if ($key === 'employeeDob_th_be') return $this->formatThaiDate($d, 543);
+                if ($key === 'employeeDob_th_ce') return $this->formatThaiDate($d, 0);
+                // English text formats (day + EN month abbrev + year)
+                if ($key === 'employeeDob_en_be') return $this->formatEnglishDate($d, 543);
+                if ($key === 'employeeDob_en_ce') return $this->formatEnglishDate($d, 0);
             }
             return '';
         }
 
         // Custom Date Formatting: Passport Issue Date
+        // NOTE: DB column is passport_issue_date (snake_case) but the template
+        // key is passportIssueDate (camelCase). data_get() below can't bridge
+        // that so the raw key must be intercepted explicitly here.
+        if ($key === 'passportIssueDate') {
+            return $employee->passport_issue_date instanceof Carbon
+                ? $employee->passport_issue_date->format('d/m/Y')
+                : '';
+        }
         if (str_starts_with($key, 'passportIssueDate_')) {
             if ($employee->passport_issue_date instanceof Carbon) {
-                if ($key === 'passportIssueDate_day') return $employee->passport_issue_date->format('d');
-                if ($key === 'passportIssueDate_month_en') return strtoupper($employee->passport_issue_date->format('M'));
-                if ($key === 'passportIssueDate_year_ce') return $employee->passport_issue_date->format('Y');
+                $d = $employee->passport_issue_date;
+                if ($key === 'passportIssueDate_day') return $d->format('d');
+                if ($key === 'passportIssueDate_month_en') return strtoupper($d->format('M'));
+                if ($key === 'passportIssueDate_month_th') return self::$thaiMonthShort[$d->month] ?? '';
+                if ($key === 'passportIssueDate_year_ce') return $d->format('Y');
+                if ($key === 'passportIssueDate_year_be') return (string) ($d->year + 543);
+                if ($key === 'passportIssueDate_be') return $d->format('d/m/') . ($d->year + 543);
+                if ($key === 'passportIssueDate_th_be') return $this->formatThaiDate($d, 543);
+                if ($key === 'passportIssueDate_th_ce') return $this->formatThaiDate($d, 0);
+                if ($key === 'passportIssueDate_en_be') return $this->formatEnglishDate($d, 543);
+                if ($key === 'passportIssueDate_en_ce') return $this->formatEnglishDate($d, 0);
             }
             return '';
+        }
+
+        // Document Creation Date — dynamic, resolved at PDF generation time.
+        // Only emits a value when the template actually uses one of these keys;
+        // an unused key stays absent (no accidental "today's date" on unrelated docs).
+        if (str_starts_with($key, 'document_created_date')) {
+            $now = now();
+            if ($key === 'document_created_date') return $now->format('d/m/Y');
+            if ($key === 'document_created_date_be') return $now->format('d/m/') . ($now->year + 543);
+            if ($key === 'document_created_date_day') return $now->format('d');
+            if ($key === 'document_created_date_month_en') return strtoupper($now->format('M'));
+            if ($key === 'document_created_date_month_th') return self::$thaiMonthShort[$now->month] ?? '';
+            if ($key === 'document_created_date_year_ce') return $now->format('Y');
+            if ($key === 'document_created_date_year_be') return (string) ($now->year + 543);
+            if ($key === 'document_created_date_th_be') return $this->formatThaiDate($now, 543);
+            if ($key === 'document_created_date_th_ce') return $this->formatThaiDate($now, 0);
+            if ($key === 'document_created_date_en_be') return $this->formatEnglishDate($now, 543);
+            if ($key === 'document_created_date_en_ce') return $this->formatEnglishDate($now, 0);
+            return '';
+        }
+
+        // Gender — template historically uses key `employeeGender` but the
+        // model exposes an accessor called `gender` (not a column). Without
+        // this intercept, data_get() below returns null for that key.
+        if ($key === 'employeeGender') {
+            return $employee->gender ?? '';
         }
 
         // Custom Date Formatting: Passport Expiry Date
         if (str_starts_with($key, 'passportExpiryDate_')) {
             if ($employee->passportExpiryDate instanceof Carbon) {
-                if ($key === 'passportExpiryDate_day') return $employee->passportExpiryDate->format('d');
-                if ($key === 'passportExpiryDate_month_en') return strtoupper($employee->passportExpiryDate->format('M'));
-                if ($key === 'passportExpiryDate_year_ce') return $employee->passportExpiryDate->format('Y');
+                $d = $employee->passportExpiryDate;
+                if ($key === 'passportExpiryDate_day') return $d->format('d');
+                if ($key === 'passportExpiryDate_month_en') return strtoupper($d->format('M'));
+                if ($key === 'passportExpiryDate_month_th') return self::$thaiMonthShort[$d->month] ?? '';
+                if ($key === 'passportExpiryDate_year_ce') return $d->format('Y');
+                if ($key === 'passportExpiryDate_year_be') return (string) ($d->year + 543);
+                if ($key === 'passportExpiryDate_be') return $d->format('d/m/') . ($d->year + 543);
+                if ($key === 'passportExpiryDate_th_be') return $this->formatThaiDate($d, 543);
+                if ($key === 'passportExpiryDate_th_ce') return $this->formatThaiDate($d, 0);
+                if ($key === 'passportExpiryDate_en_be') return $this->formatEnglishDate($d, 543);
+                if ($key === 'passportExpiryDate_en_ce') return $this->formatEnglishDate($d, 0);
             }
             return '';
         }

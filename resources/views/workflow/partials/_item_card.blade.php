@@ -693,72 +693,79 @@
 
             </div>
 
-            {{-- notify_out specific fields: required date + reason before completion --}}
             @php
                 $isNotifyOut = isset($activeTab) && ($activeTab->slug ?? '') === 'notify_out';
             @endphp
-            @if($isNotifyOut && !$isCompleted && !$isCancelled)
-                @php
-                    $noDate = $item->notify_out_date ? \Carbon\Carbon::parse($item->notify_out_date)->format('Y-m-d') : '';
-                    $noReason = $item->notify_out_reason ?? '';
-                    $hasDate = !empty($noDate);
-                @endphp
-                <div class="border-top border-warning border-2 mt-2 pt-2"
-                     x-data="notifyOutFields({ itemId: {{ $item->id }}, initialDate: '{{ $noDate }}', initialReason: @js($noReason) })">
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="small fw-bold text-muted"><i class="bi bi-calendar-x-fill me-1"></i>{{ __('แจ้งออก') }}</span>
-                        <template x-if="hasDate">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle small">
-                                <i class="bi bi-check-circle me-1"></i>{{ __('พร้อมเสร็จสิ้น') }}
-                            </span>
-                        </template>
-                        <template x-if="!hasDate">
-                            <span class="badge bg-warning text-dark border small">
-                                <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ __('ต้องระบุวันแจ้งออกก่อนเสร็จสิ้น') }}
-                            </span>
-                        </template>
-                    </div>
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1" style="font-size: 0.72rem;">{{ __('วันแจ้งออก') }} <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control form-control-sm"
-                                   x-model="data.notify_out_date"
-                                   @change="save()"
-                                   :class="{'border-warning bg-warning bg-opacity-10': !hasDate}">
+
+            {{-- Actions row — notify_out panel is inserted as the first flex
+                 item so it sits adjacent to (rather than below) the button row.
+                 With justify-content-end + flex-wrap, on wide screens they
+                 share one horizontal band; on narrow screens they wrap
+                 together, keeping the card compact vertically. --}}
+            <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center mt-2">
+
+                {{-- notify_out compact panel — first flex item so it appears
+                     just to the left of the action buttons on the same row. --}}
+                @if($isNotifyOut && !$isCompleted && !$isCancelled)
+                    @php
+                        $noDate = $item->notify_out_date ? \Carbon\Carbon::parse($item->notify_out_date)->format('Y-m-d') : '';
+                        $noReason = $item->notify_out_reason ?? '';
+                        $hasDate = !empty($noDate);
+                    @endphp
+                    <div class="border border-warning border-2 rounded p-2 bg-warning bg-opacity-10 me-auto"
+                         style="max-width: 460px; width: 100%; min-width: 260px;"
+                         x-data="notifyOutFields({ itemId: {{ $item->id }}, initialDate: '{{ $noDate }}', initialReason: @js($noReason) })">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <span class="small fw-bold text-muted"><i class="bi bi-calendar-x-fill me-1"></i>{{ __('แจ้งออก') }}</span>
+                            <template x-if="hasDate">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem;">
+                                    <i class="bi bi-check-circle me-1"></i>{{ __('พร้อมเสร็จสิ้น') }}
+                                </span>
+                            </template>
+                            <template x-if="!hasDate">
+                                <span class="badge bg-warning text-dark border" style="font-size: 0.68rem;">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ __('ต้องระบุวันแจ้งออกก่อนเสร็จสิ้น') }}
+                                </span>
+                            </template>
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label text-muted small mb-1" style="font-size: 0.72rem;">{{ __('เหตุผล') }} <span class="text-muted">({{ __('ไม่บังคับ') }})</span></label>
-                            <div class="input-group input-group-sm">
-                                <select class="form-select form-select-sm" x-model="data.notify_out_reason" @change="save()" style="max-width: 180px;">
-                                    <option value="">-- {{ __('เลือกเหตุผล') }} --</option>
-                                    <option value="ลาออก">{{ __('ลาออก') }}</option>
-                                    <option value="เลิกจ้าง">{{ __('เลิกจ้าง') }}</option>
-                                    <option value="ครบสัญญา">{{ __('ครบสัญญา') }}</option>
-                                    <option value="เปลี่ยนนายจ้าง">{{ __('เปลี่ยนนายจ้าง') }}</option>
-                                    <option value="หนีกลับประเทศ">{{ __('หนีกลับประเทศ') }}</option>
-                                    <option value="เสียชีวิต">{{ __('เสียชีวิต') }}</option>
-                                </select>
-                                <input type="text" class="form-control form-control-sm" x-model="data.notify_out_reason" @blur="save()" placeholder="{{ __('หรือพิมพ์เหตุผลเอง') }}">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label text-muted small mb-1" style="font-size: 0.72rem;">{{ __('วันแจ้งออก') }} <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm"
+                                       x-model="data.notify_out_date"
+                                       @change="save()"
+                                       :class="{'border-warning bg-warning bg-opacity-10': !hasDate}">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label text-muted small mb-1" style="font-size: 0.72rem;">{{ __('เหตุผล') }} <span class="text-muted">({{ __('ไม่บังคับ') }})</span></label>
+                                <div class="input-group input-group-sm">
+                                    <select class="form-select form-select-sm" x-model="data.notify_out_reason" @change="save()" style="max-width: 180px;">
+                                        <option value="">-- {{ __('เลือกเหตุผล') }} --</option>
+                                        <option value="ลาออก">{{ __('ลาออก') }}</option>
+                                        <option value="เลิกจ้าง">{{ __('เลิกจ้าง') }}</option>
+                                        <option value="ครบสัญญา">{{ __('ครบสัญญา') }}</option>
+                                        <option value="เปลี่ยนนายจ้าง">{{ __('เปลี่ยนนายจ้าง') }}</option>
+                                        <option value="หนีกลับประเทศ">{{ __('หนีกลับประเทศ') }}</option>
+                                        <option value="เสียชีวิต">{{ __('เสียชีวิต') }}</option>
+                                    </select>
+                                    <input type="text" class="form-control form-control-sm" x-model="data.notify_out_reason" @blur="save()" placeholder="{{ __('หรือพิมพ์เหตุผลเอง') }}">
+                                </div>
                             </div>
                         </div>
+                        <div class="small text-muted mt-1" x-show="lastSaved" style="display: none;" x-text="lastSaved"></div>
                     </div>
-                    <div class="small text-muted mt-1" x-show="lastSaved" style="display: none;" x-text="lastSaved"></div>
-                </div>
-            @endif
+                @endif
 
-            {{-- notify_out completed: show recorded info --}}
-            @if($isNotifyOut && $isCompleted && $item->notify_out_date)
-                <div class="border-top mt-2 pt-2 small text-muted">
-                    <i class="bi bi-calendar-x-fill me-1"></i>
-                    <strong>{{ __('แจ้งออกเมื่อ') }}:</strong> {{ \Carbon\Carbon::parse($item->notify_out_date)->format('d/m/Y') }}
-                    @if($item->notify_out_reason)
-                        <span class="ms-2"><strong>{{ __('เหตุผล') }}:</strong> {{ $item->notify_out_reason }}</span>
-                    @endif
-                </div>
-            @endif
-
-            {{-- Actions --}}
-            <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center mt-2">
+                {{-- notify_out completed: single-line recorded info, first flex item --}}
+                @if($isNotifyOut && $isCompleted && $item->notify_out_date)
+                    <div class="small text-muted align-self-center" style="max-width: 460px; margin-right: auto;">
+                        <i class="bi bi-calendar-x-fill me-1"></i>
+                        <strong>{{ __('แจ้งออกเมื่อ') }}:</strong> {{ \Carbon\Carbon::parse($item->notify_out_date)->format('d/m/Y') }}
+                        @if($item->notify_out_reason)
+                            <span class="ms-2"><strong>{{ __('เหตุผล') }}:</strong> {{ $item->notify_out_reason }}</span>
+                        @endif
+                    </div>
+                @endif
 
                 @if(!$isReadOnly)
                     @if($isPreProduction)
