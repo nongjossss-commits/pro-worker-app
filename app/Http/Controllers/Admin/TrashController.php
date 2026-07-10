@@ -303,8 +303,12 @@ class TrashController extends Controller
                     ->orWhere('registration_request_number', 'like', $like)
                     ->orWhere('renewal_request_number', 'like', $like)
                     ->orWhere('pinkCardNo', 'like', $like)
-                    ->orWhere('socialSecurityNo', 'like', $like)
-                    ->orWhere('employeeWorkPermit', 'like', $like);
+                    ->orWhere('social_security_number', 'like', $like)
+                    ->orWhere('employeeWorkPermit', 'like', $like)
+                    ->orWhere('employeePhone', 'like', $like)
+                    ->orWhere('email', 'like', $like)
+                    ->orWhere('employee_id_number', 'like', $like)
+                    ->orWhere('tax_id_number', 'like', $like);
                 if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
                 break;
             case 'employers':
@@ -318,21 +322,30 @@ class TrashController extends Controller
                 if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
                 break;
             case 'agents':
-                $q->where('agentNameEn', 'like', $like);
+                $q->where('agentNameEn', 'like', $like)
+                    ->orWhere('agentLicense', 'like', $like)
+                    ->orWhere('agentPhone', 'like', $like)
+                    ->orWhere('agentEmail', 'like', $like);
                 if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
                 break;
             case 'importers':
                 $q->where('importerNameTh', 'like', $like)
-                    ->orWhere('importerNameEn', 'like', $like);
+                    ->orWhere('importerNameEn', 'like', $like)
+                    ->orWhere('importerId', 'like', $like)
+                    ->orWhere('importerLicenseNo', 'like', $like);
                 if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
                 break;
             case 'delegates':
                 $q->where('delegateNameTh', 'like', $like)
-                    ->orWhere('delegateNameEn', 'like', $like);
+                    ->orWhere('delegateNameEn', 'like', $like)
+                    ->orWhere('delegateId', 'like', $like)
+                    ->orWhere('delegatePhone', 'like', $like)
+                    ->orWhere('delegateEmail', 'like', $like);
                 if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
                 break;
             case 'tickets':
-                $q->where('subject', 'like', $like);
+                $q->where('subject', 'like', $like)
+                    ->orWhere('status', 'like', $like);
                 if ($isNumeric) $q->orWhere('id', (int) $searchTerm);
                 break;
             case 'addresses':
