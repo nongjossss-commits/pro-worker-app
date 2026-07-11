@@ -28,7 +28,10 @@ class EmployeeController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view-employees', ['only' => ['index', 'show']]);
-        $this->middleware('permission:edit-employees', ['only' => ['edit', 'update']]);
+        // Bulk edit methods must gate on edit-employees (not manage-tickets),
+        // otherwise caretakers get through to a form that silently discards
+        // their input when the runtime check inside bulkUpdate() bails.
+        $this->middleware('permission:edit-employees', ['only' => ['edit', 'update', 'bulkEditSelectFields', 'bulkEditForm', 'bulkUpdate']]);
         $this->middleware('permission:create-employees', ['only' => ['create', 'store']]);
         $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
         $this->middleware('permission:terminate-employees', ['only' => ['terminate']]);
@@ -1438,10 +1441,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         // Additional security: Explicitly check that the user owns ALL employees they are trying to transfer.
         // This prevents an employer from maliciously including another employer's employee ID in the request.
-        if (!auth()->user()->can('manage-tickets')) { // Skip this check for admins/staff
+        // Use `terminate-employees` to match EmployeePolicy::transfer — caretakers hold this permission,
+        // so the previous `manage-tickets` gate was falsely blocking them from bulk transfers.
+        if (!auth()->user()->can('terminate-employees')) { // Skip this check for admins/staff/caretakers
             $employeesToTransfer = Employee::whereIn('id', $validated['employee_ids'])->get();
             foreach ($employeesToTransfer as $employee) {
-                if ($employee->employer->user_id !== auth()->id()) {
+                if (optional($employee->employer)->user_id !== auth()->id()) {
                     return response()->json(['success' => false, 'message' => 'You are not authorized to transfer one or more of the selected employees.'], 403);
                 }
             }
@@ -1779,8 +1784,11 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $employee = Employee::find($id);
             if (!$employee) continue;
 
-            // Authorize
-            if (!auth()->user()->can('manage-tickets') && $employee->employer->user_id !== auth()->id()) {
+            // Authorize — admins/staff/caretakers have `edit-employees`; employers
+            // fall back to ownership. Was previously `manage-tickets`, which
+            // silently skipped caretakers (who intentionally lack that ticket
+            // permission) and caused their bulk edits to appear to no-op.
+            if (!auth()->user()->can('edit-employees') && optional($employee->employer)->user_id !== auth()->id()) {
                 continue;
             }
 
