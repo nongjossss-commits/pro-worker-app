@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\ApplyWorkflowSettings::class,
         \App\Console\Commands\PruneOrphanFiles::class,
         \App\Console\Commands\PruneActivityLogs::class,
+        \App\Console\Commands\GenerateLaborBills::class,
     ];
 
     /**
@@ -41,6 +42,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:prune-orphan-files')->daily()->timezone('Asia/Bangkok');
         // ลบ activity logs เก่ากว่า 365 วัน รายเดือน — กัน table โตไม่หยุด
         $schedule->command('app:prune-activity-logs')->monthly()->timezone('Asia/Bangkok');
+        // Pro Walker Labor: auto-bill teams whose per-team schedule matches today.
+        $schedule->command('app:generate-labor-bills')->daily()->timezone('Asia/Bangkok');
     }
 
     /**

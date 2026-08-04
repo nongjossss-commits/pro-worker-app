@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employer;
+use App\Models\LaborTeam;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,9 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    /** Pro Walker Labor roles — creation/editing restricted to Super Admin only. */
+    protected const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team'];
+
     /**
      * Display a listing of the resource.
      */
@@ -72,7 +76,8 @@ class UserController extends Controller
         }
 
         $employers = Employer::whereNull('user_id')->get();
-        return view('admin.users.create', compact('roles', 'employers'));
+        $laborTeams = LaborTeam::orderBy('name')->get();
+        return view('admin.users.create', compact('roles', 'employers', 'laborTeams'));
     }
 
     /**
@@ -86,11 +91,19 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'], // <-- Password required on create
             'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
             'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')],
+            'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
+            'labor_access_granted' => ['nullable', 'boolean'],
         ]);
 
         // Security Check: Prevent non-SuperAdmin from creating SuperAdmin
         if ($request->role_name === 'super-admin' && !Auth::user()->hasRole('super-admin')) {
             abort(403, 'Unauthorized action. Only Super Admin can create another Super Admin.');
+        }
+
+        // Security Check: Pro Walker Labor roles are Super Admin's responsibility only
+        // (they're the sole overseer of Accounting Staff via the module's audit log).
+        if (in_array($request->role_name, self::LABOR_ROLES, true) && !Auth::user()->hasRole('super-admin')) {
+            abort(403, 'Unauthorized action. Only Super Admin can create Pro Walker Labor accounts.');
         }
 
         // Create User
@@ -99,6 +112,11 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'status' => 'active',
+            'labor_team_id' => $request->role_name === 'labor-team' ? $request->labor_team_id : null,
+            // Only Super Admin may grant Labor access, and only to the admin role.
+            'labor_access_granted' => ($request->role_name === 'admin' && Auth::user()->hasRole('super-admin'))
+                ? $request->boolean('labor_access_granted')
+                : false,
         ]);
 
         // Assign Role
@@ -149,7 +167,9 @@ class UserController extends Controller
             ->orWhere('id', $currentEmployerId)
             ->get();
 
-        return view('admin.users.edit', compact('user', 'roles', 'allPermissions', 'userPermissions', 'employers'));
+        $laborTeams = LaborTeam::orderBy('name')->get();
+
+        return view('admin.users.edit', compact('user', 'roles', 'allPermissions', 'userPermissions', 'employers', 'laborTeams'));
     }
 
     /**
@@ -170,12 +190,19 @@ class UserController extends Controller
                 abort(403, 'Unauthorized action. Only Super Admin can assign the Super Admin role.');
             }
 
+            // Security Check 3: Pro Walker Labor roles are Super Admin's responsibility only
+            if (in_array($request->role_name, self::LABOR_ROLES, true) && !Auth::user()->hasRole('super-admin')) {
+                abort(403, 'Unauthorized action. Only Super Admin can assign Pro Walker Labor roles.');
+            }
+
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
                 'password' => ['nullable', 'string', 'min:8', 'confirmed'], // <-- MUST BE NULLABLE on edit
                 'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
                 'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')], // <-- ADDED (Bug Fix)
+                'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
+                'labor_access_granted' => ['nullable', 'boolean'],
                 'permissions' => ['nullable', 'array']
             ]);
 
@@ -183,7 +210,15 @@ class UserController extends Controller
             $updateData = [
                 'name' => $request->name,
                 'email' => $request->email,
+                'labor_team_id' => $request->role_name === 'labor-team' ? $request->labor_team_id : null,
             ];
+
+            // Only Super Admin may change the Labor access grant, and only for the admin role.
+            if (Auth::user()->hasRole('super-admin')) {
+                $updateData['labor_access_granted'] = $request->role_name === 'admin'
+                    ? $request->boolean('labor_access_granted')
+                    : false;
+            }
 
             // V1.1 PATCH: Conditionally update password
             if ($request->filled('password')) {

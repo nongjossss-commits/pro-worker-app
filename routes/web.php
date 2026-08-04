@@ -748,3 +748,4 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin/resolution-tabs')
 });
 
 require __DIR__.'/auth.php';
+require __DIR__.'/labor.php';

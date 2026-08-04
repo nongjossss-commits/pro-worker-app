@@ -79,6 +79,23 @@
                         </select>
                     </div>
 
+                    <div class="mt-4" x-show="selectedRole === 'labor-team'" style="display: none;" x-transition>
+                        <label for="labor_team_id" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labor — Team (Required)') }}</label>
+                        <select id="labor_team_id" name="labor_team_id" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">-- {{ __('Select Team') }} --</option>
+                            @foreach ($laborTeams as $team)
+                                <option value="{{ $team->id }}" {{ old('labor_team_id') == $team->id ? 'selected' : '' }}>{{ $team->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @if(auth()->user()->hasRole('super-admin'))
+                    <div class="mt-4 flex items-center" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
+                        <input id="labor_access_granted" type="checkbox" name="labor_access_granted" value="1" {{ old('labor_access_granted') ? 'checked' : '' }}
+                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        <label for="labor_access_granted" class="ml-2 block text-sm text-gray-700">{{ __('Allow access to Pro Walker Labor menu') }}</label>
+                    </div>
+                    @endif
 
                     <div class="flex items-center justify-end mt-4">
                         <a href="{{ route('admin.users.index') }}" class="underline text-sm text-gray-600 hover:text-gray-900">{{ __('Cancel') }}</a>

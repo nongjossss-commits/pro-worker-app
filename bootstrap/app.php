@@ -19,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // Contract lifecycle: block writes system-wide when the license
             // has expired without grace, except for super-admin.
             \App\Http\Middleware\EnforceContractStatus::class,
+            // Pro Walker Labor: keep dedicated labor-* roles confined to that module.
+            \App\Http\Middleware\ConfineToLaborModule::class,
         ]);
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
@@ -26,5 +28,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'menu' => \App\Http\Middleware\CheckMenuAccess::class,
+            'labor.access' => \App\Http\Middleware\EnsureLaborAccess::class,
         ]);
     })->create();

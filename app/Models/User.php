@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Traits\LogActivity;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
@@ -30,6 +31,8 @@ class User extends Authenticatable
         'bio',
         'last_active_at',
         'is_ticket_hidden', // V2.5.1: For hiding employer job box
+        'labor_team_id',
+        'labor_access_granted',
     ];
 
     /**
@@ -53,7 +56,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_active_at' => 'datetime',
+            'labor_access_granted' => 'boolean',
         ];
+    }
+
+    /**
+     * The Pro Walker Labor team this user belongs to (role `labor-team` only).
+     */
+    public function laborTeam(): BelongsTo
+    {
+        return $this->belongsTo(LaborTeam::class, 'labor_team_id');
     }
 
     /**

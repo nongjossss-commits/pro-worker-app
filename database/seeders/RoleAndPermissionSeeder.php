@@ -54,6 +54,12 @@ class RoleAndPermissionSeeder extends Seeder
             // PDF Templates
             'view-pdf-templates', 'create-pdf-templates', 'edit-pdf-templates', 'delete-pdf-templates',
             // END: Add new permissions
+
+            // Pro Walker Labor module — used ONLY for in-module capability (view vs manage),
+            // never for gating entry to the module itself. See EnsureLaborAccess middleware:
+            // the `admin` role bypasses every permission check via Gate::before, so entry is
+            // controlled by an explicit users.labor_access_granted flag instead.
+            'view-labor-ledger', 'manage-labor-ledger',
         ];
 
         foreach ($permissions as $permission) {
@@ -131,6 +137,22 @@ class RoleAndPermissionSeeder extends Seeder
         $employerRole->syncPermissions($employerPermissions);
         $this->command->info('Employer role created/verified and permissions synced.');
         // --- END: Create Employer Role (NEW) ---
+
+        // --- START: Pro Walker Labor roles (NEW) ---
+        // Isolated module — these 3 roles have NO access to any other part of the
+        // app (enforced by ConfineToLaborModule middleware) and log straight into
+        // the Labor dashboard on login.
+        $laborAccountingRole = Role::firstOrCreate(['name' => 'labor-accounting']);
+        $laborAccountingRole->syncPermissions(['manage-labor-ledger']); // view + edit every team
+
+        $laborShareholderRole = Role::firstOrCreate(['name' => 'labor-shareholder']);
+        $laborShareholderRole->syncPermissions(['view-labor-ledger']); // view every team, read-only
+
+        $laborTeamRole = Role::firstOrCreate(['name' => 'labor-team']);
+        $laborTeamRole->syncPermissions(['view-labor-ledger']); // view own team only, read-only
+
+        $this->command->info('Pro Walker Labor roles (labor-accounting, labor-shareholder, labor-team) created/verified.');
+        // --- END: Pro Walker Labor roles (NEW) ---
 
         // Create a demo staff user *only if* they don't exist
         $staffUser = User::firstOrCreate(

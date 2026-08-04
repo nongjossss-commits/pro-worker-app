@@ -7,8 +7,12 @@ use Illuminate\Pagination\Paginator;
 use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\JobTicket;
+use App\Models\LaborBill;
+use App\Models\LaborLedgerEntry;
 use App\Observers\EmployerObserver;
 use App\Observers\EmployeeObserver;
+use App\Observers\LaborBillObserver;
+use App\Observers\LaborLedgerEntryObserver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -41,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
         Employer::observe(EmployerObserver::class);
         Employee::observe(EmployeeObserver::class);
+        LaborLedgerEntry::observe(LaborLedgerEntryObserver::class);
+        LaborBill::observe(LaborBillObserver::class);
 
         Event::listen(Login::class, LogSuccessfulLogin::class);
         Event::listen(Logout::class, LogSuccessfulLogout::class);

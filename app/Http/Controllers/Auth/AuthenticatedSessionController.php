@@ -35,6 +35,12 @@ class AuthenticatedSessionController extends Controller
             session(['locale' => 'th']);
             \Illuminate\Support\Facades\App::setLocale('th');
 
+            // Pro Walker Labor: dedicated roles never see the main operations app —
+            // send them straight into their module instead of '/index'.
+            if (Auth::user()->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team'])) {
+                return redirect()->route('labor.dashboard');
+            }
+
             // เปลี่ยนจาก RouteServiceProvider::HOME เป็น '/dashboard' โดยตรง
             return redirect()->intended('/index');
         }

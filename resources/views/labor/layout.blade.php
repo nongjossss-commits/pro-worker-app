@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Pro Walker Labor')</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Select2 (searchable dropdown for Central Billing's "who filed this" field) -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
+    <style>
+        body {
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            background-color: #f8fafc;
+        }
+        .labor-topbar {
+            background: #111827;
+        }
+        .labor-topbar .nav-link {
+            color: rgba(255,255,255,.75);
+        }
+        .labor-topbar .nav-link.active,
+        .labor-topbar .nav-link:hover {
+            color: #fff;
+        }
+        .stat-card {
+            border-radius: .75rem;
+        }
+    </style>
+    @stack('styles')
+
+    <!-- Alpine.js (same as the main app — used for conditional form fields) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg labor-topbar navbar-dark mb-4">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold" href="{{ route('labor.dashboard') }}">
+                <i class="bi bi-briefcase-fill me-2"></i>Pro Walker Labor
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#laborNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="laborNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.dashboard') ? 'active' : '' }}" href="{{ route('labor.dashboard') }}">
+                            <i class="bi bi-speedometer2 me-1"></i>{{ __('Dashboard') }}
+                        </a>
+                    </li>
+                    @can('manage-labor-ledger')
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.teams.index') ? 'active' : '' }}" href="{{ route('labor.teams.index') }}">
+                            <i class="bi bi-people-fill me-1"></i>{{ __('Manage Teams') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.team-members.index') ? 'active' : '' }}" href="{{ route('labor.team-members.index') }}">
+                            <i class="bi bi-person-vcard me-1"></i>{{ __('Manage Members') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.charges.index') ? 'active' : '' }}" href="{{ route('labor.charges.index') }}">
+                            <i class="bi bi-receipt me-1"></i>{{ __('Central Billing') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.bills.index') ? 'active' : '' }}" href="{{ route('labor.bills.index') }}">
+                            <i class="bi bi-file-earmark-text me-1"></i>{{ __('Bills') }}
+                        </a>
+                    </li>
+                    @endcan
+                    @unless(auth()->user()->hasRole('labor-team'))
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.reports.index') ? 'active' : '' }}" href="{{ route('labor.reports.index') }}">
+                            <i class="bi bi-bar-chart-line me-1"></i>{{ __('Reports') }}
+                        </a>
+                    </li>
+                    @endunless
+                    @role('super-admin')
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.users.*') ? 'active' : '' }}" href="{{ route('labor.users.index') }}">
+                            <i class="bi bi-person-fill-gear me-1"></i>{{ __('Manage Users') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.audit-log.index') ? 'active' : '' }}" href="{{ route('labor.audit-log.index') }}">
+                            <i class="bi bi-clock-history me-1"></i>{{ __('Audit Log') }}
+                        </a>
+                    </li>
+                    @endrole
+                </ul>
+                <ul class="navbar-nav">
+                    @unless(auth()->user()->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team']))
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('home') }}"><i class="bi bi-box-arrow-left me-1"></i>{{ __('Back to Main System') }}</a>
+                    </li>
+                    @endunless
+                    <li class="nav-item">
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="nav-link btn btn-link">
+                                <i class="bi bi-box-arrow-right me-1"></i>{{ __('Logout') }}
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 pb-5">
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show">
+                <ul class="mb-0 ps-3">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        @yield('content')
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    @stack('scripts')
+</body>
+</html>

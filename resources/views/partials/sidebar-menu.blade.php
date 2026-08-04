@@ -224,6 +224,14 @@
 @endcan
 @endif
 
+@if(auth()->user()->hasRole('super-admin') || (auth()->user()->hasRole('admin') && auth()->user()->labor_access_granted))
+<hr>
+<a class="list-group-item list-group-item-action {{ request()->routeIs('labor.*') ? 'active' : '' }}" href="{{ route('labor.dashboard') }}">
+    <i class="bi bi-briefcase-fill me-2"></i>
+    {{ __('Pro Walker Labor') }}
+</a>
+@endif
+
 @role('super-admin')
 <hr>
 <a class="list-group-item list-group-item-action {{ request()->routeIs('super-admin.settings.index') ? 'active' : '' }}" href="{{ route('super-admin.settings.index') }}">
