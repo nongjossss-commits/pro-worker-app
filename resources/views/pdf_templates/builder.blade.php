@@ -80,6 +80,22 @@
                 <div>
                     <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 border-b pb-1">Tools</h4>
                     <div class="grid grid-cols-2 gap-2">
+                        <!-- Date (draggable icon + format dropdown) -->
+                        <div class="col-span-2 bg-white p-2 border rounded shadow-sm hover:bg-orange-50 transition-colors flex items-center gap-2">
+                            <div class="cursor-grab flex items-center gap-1 pr-2 border-r shrink-0"
+                                 draggable="true"
+                                 title="Drag to place on template"
+                                 @dragstart="dragStart($event, {type: 'db', key: selectedDateFieldKey, label: selectedDateFieldLabel})">
+                                <i class="bi bi-calendar-event text-xl text-gray-600"></i>
+                                <i class="bi bi-grip-vertical text-gray-400"></i>
+                            </div>
+                            <select x-model="selectedDateFieldKey" class="form-select form-select-sm border-0 flex-1">
+                                <template x-for="opt in dateFieldOptions" :key="opt.key">
+                                    <option :value="opt.key" x-text="opt.label"></option>
+                                </template>
+                            </select>
+                        </div>
+
                         <!-- Static Text -->
                         <div class="bg-white p-2 border rounded shadow-sm cursor-grab hover:bg-orange-50 transition-colors flex flex-col items-center justify-center gap-1 text-center"
                              draggable="true"
@@ -112,18 +128,32 @@
                     </div>
                 </div>
 
-                <!-- Data Fields Groups -->
-                <template x-for="(group, groupName) in filteredGroups" :key="groupName">
-                    <div class="mb-2">
-                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-2 border-b pb-1" x-text="groupName"></h4>
-                        <div class="space-y-1">
-                            <template x-for="field in group" :key="field.key">
-                                <div class="bg-white p-2 border rounded shadow-sm cursor-grab hover:bg-orange-50 transition-colors flex items-center justify-between"
-                                     draggable="true"
-                                     @dragstart="dragStart($event, {type: 'db', key: field.key, label: field.label})">
-                                    <span class="text-sm" x-text="field.label"></span>
-                                    <i class="bi bi-grip-vertical text-gray-400"></i>
-                                </div>
+                <!-- Data Fields — accordion grouped by owner (employee / employer / importer / delegate / witness) -->
+                <template x-for="cat in categories" :key="cat.key">
+                    <div class="mb-2 border rounded bg-white overflow-hidden" x-show="!searchQuery || categoryHasMatch(cat)">
+                        <button type="button"
+                                @click="openCategory = (openCategory === cat.key ? null : cat.key)"
+                                class="w-full flex items-center justify-between px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors text-left">
+                            <span class="text-xs font-bold text-gray-700 uppercase" x-text="cat.label"></span>
+                            <i class="bi" :class="(openCategory === cat.key || searchQuery) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+                        <div class="p-2 space-y-3" x-show="openCategory === cat.key || searchQuery">
+                            <template x-for="groupName in cat.groups" :key="groupName">
+                                <template x-if="filteredGroups[groupName] && filteredGroups[groupName].length">
+                                    <div class="mb-2">
+                                        <h5 class="text-xs font-bold text-gray-500 uppercase mb-2 border-b pb-1" x-show="cat.groups.length > 1" x-text="groupName"></h5>
+                                        <div class="space-y-1">
+                                            <template x-for="field in filteredGroups[groupName]" :key="field.key">
+                                                <div class="bg-white p-2 border rounded shadow-sm cursor-grab hover:bg-orange-50 transition-colors flex items-center justify-between"
+                                                     draggable="true"
+                                                     @dragstart="dragStart($event, {type: 'db', key: field.key, label: field.label})">
+                                                    <span class="text-sm" x-text="field.label"></span>
+                                                    <i class="bi bi-grip-vertical text-gray-400"></i>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
                             </template>
                         </div>
                     </div>
@@ -776,19 +806,6 @@
                 { group: '{{ __('Job Details') }}', key: 'employer_employee_id', label: '{{ __('Internal Emp ID') }}' },
                 { group: '{{ __('Job Details') }}', key: 'employee_reference_id', label: '{{ __('Reference ID') }}' },
 
-                // Document Meta (resolved at PDF generation time)
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date', label: '{{ __('Document Creation Date') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_be', label: '{{ __('Document Creation Date (BE)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_day', label: '{{ __('Document Creation Date (Day)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_month_en', label: '{{ __('Document Creation Date (Month EN)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_year_ce', label: '{{ __('Document Creation Date (Year CE)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_year_be', label: '{{ __('Document Creation Date (Year BE)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_month_th', label: '{{ __('Document Creation Date (Month TH)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_th_be', label: '{{ __('Document Creation Date (Thai text BE)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_th_ce', label: '{{ __('Document Creation Date (Thai text CE)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_en_be', label: '{{ __('Document Creation Date (English text BE)') }}' },
-                { group: '{{ __('Document Meta') }}', key: 'document_created_date_en_ce', label: '{{ __('Document Creation Date (English text CE)') }}' },
-
                 // Employer
                 { group: '{{ __('Employer Data') }}', key: 'employer.employerNameTh', label: '{{ __('Company Name (TH)') }}' },
                 { group: '{{ __('Employer Data') }}', key: 'employer.employerNameEn', label: '{{ __('Company Name (EN)') }}' },
@@ -873,6 +890,52 @@
                 { group: '{{ __('Global Witnesses') }}', key: 'witness_4.name_th', label: '{{ __('Witness 4 Name (TH)') }}' },
                 { group: '{{ __('Global Witnesses') }}', key: 'witness_4.name_en', label: '{{ __('Witness 4 Name (EN)') }}' },
             ],
+
+            // Date field variants — a central tool, not tied to any one entity (resolved at PDF generation time).
+            dateFieldOptions: [
+                { key: 'document_created_date', label: '{{ __('Document Creation Date') }}' },
+                { key: 'document_created_date_be', label: '{{ __('Document Creation Date (BE)') }}' },
+                { key: 'document_created_date_day', label: '{{ __('Document Creation Date (Day)') }}' },
+                { key: 'document_created_date_month_en', label: '{{ __('Document Creation Date (Month EN)') }}' },
+                { key: 'document_created_date_month_th', label: '{{ __('Document Creation Date (Month TH)') }}' },
+                { key: 'document_created_date_year_ce', label: '{{ __('Document Creation Date (Year CE)') }}' },
+                { key: 'document_created_date_year_be', label: '{{ __('Document Creation Date (Year BE)') }}' },
+                { key: 'document_created_date_th_ce', label: '{{ __('Document Creation Date (Thai text CE)') }}' },
+                { key: 'document_created_date_th_be', label: '{{ __('Document Creation Date (Thai text BE)') }}' },
+                { key: 'document_created_date_en_ce', label: '{{ __('Document Creation Date (English text CE)') }}' },
+                { key: 'document_created_date_en_be', label: '{{ __('Document Creation Date (English text BE)') }}' },
+                // Employment duration — remaining work permit validity counted from the
+                // document creation date, in whole years + months (see PdfGeneratorService).
+                { key: 'employment_duration', label: '{{ __('Employment Duration (e.g. 1 Year 6 Months)') }}' },
+                { key: 'employment_duration_years', label: '{{ __('Employment Duration (Years)') }}' },
+                { key: 'employment_duration_months', label: '{{ __('Employment Duration (Months)') }}' },
+            ],
+            selectedDateFieldKey: 'document_created_date',
+
+            // Top-level accordion — groups the long field list "of whose data it is": employee vs employer
+            // vs importer vs delegate vs witness. Only one category open at a time.
+            categories: [
+                { key: 'employee', label: '{{ __('Employee Data') }}', groups: [
+                    '{{ __('Personal Information') }}',
+                    '{{ __('Passport & Visa') }}',
+                    '{{ __('Work Permit & Pink Card') }}',
+                    '{{ __('Job Details') }}',
+                    '{{ __('Insurance') }}',
+                ] },
+                { key: 'employer', label: '{{ __('Employer Data') }}', groups: ['{{ __('Employer Data') }}'] },
+                { key: 'importer', label: '{{ __('Importer Data') }}', groups: ['{{ __('Importer Data') }}'] },
+                { key: 'delegate', label: '{{ __('Delegate Data') }}', groups: ['{{ __('Delegate Data') }}'] },
+                { key: 'witness', label: '{{ __('Global Witnesses') }}', groups: ['{{ __('Global Witnesses') }}'] },
+            ],
+            openCategory: 'employee',
+
+            get selectedDateFieldLabel() {
+                return this.dateFieldOptions.find(o => o.key === this.selectedDateFieldKey)?.label || '';
+            },
+
+            categoryHasMatch(cat) {
+                return cat.groups.some(g => this.filteredGroups[g] && this.filteredGroups[g].length);
+            },
 
             get filteredGroups() {
                 const q = this.searchQuery.toLowerCase();

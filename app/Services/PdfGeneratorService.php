@@ -1627,6 +1627,37 @@ class PdfGeneratorService
             return '';
         }
 
+        // Employment Duration — remaining validity of the employee's work permit,
+        // counted from the document creation moment (not "today" if the PDF is
+        // reopened later). Years + months only, no days. The year part is
+        // omitted entirely when it's zero (e.g. "6 เดือน", not "0 ปี 6 เดือน").
+        // No expiry date, or an expiry already in the past, resolves to blank —
+        // same "stay absent rather than show a wrong number" rule as the other
+        // document-creation-date fields above.
+        if (str_starts_with($key, 'employment_duration')) {
+            $now = now();
+            $expiry = $employee->workPermitExpiryDate;
+            if (!($expiry instanceof Carbon) || $expiry->lte($now)) {
+                return '';
+            }
+
+            // diffInMonths() can return a float a hair under the whole number
+            // (e.g. 17.999999949 instead of 18) — round before splitting into
+            // years/months or intdiv()/% truncate it down to the wrong month.
+            $totalMonths = (int) round($now->diffInMonths($expiry));
+            $years = intdiv($totalMonths, 12);
+            $months = $totalMonths % 12;
+
+            if ($key === 'employment_duration_years') return $years > 0 ? (string) $years : '';
+            if ($key === 'employment_duration_months') return (string) $months;
+            if ($key === 'employment_duration') {
+                if ($years > 0 && $months > 0) return "{$years} ปี {$months} เดือน";
+                if ($years > 0) return "{$years} ปี";
+                return "{$months} เดือน";
+            }
+            return '';
+        }
+
         // Gender — template historically uses key `employeeGender` but the
         // model exposes an accessor called `gender` (not a column). Without
         // this intercept, data_get() below returns null for that key.
