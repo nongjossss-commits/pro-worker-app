@@ -456,8 +456,13 @@ class Employee extends Model
             return self::$resolutionTabCache[$cacheKey];
         }
 
+        // withTrashed(): a tab stays soft-deleted for 7 days before the purge
+        // command removes it for good (see resolution-tabs:purge in Kernel.php).
+        // During that grace period it must still resolve here — otherwise every
+        // employee still parked in that tab breaks getActiveWorkflowsAttribute()
+        // the moment someone deletes it, well before the 7 days are up.
         $tab = $tabId
-            ? \App\Models\ResolutionTab::find($tabId)
+            ? \App\Models\ResolutionTab::withTrashed()->find($tabId)
             : \App\Models\ResolutionTab::where('type', $type)->where('is_default', true)->first();
 
         self::$resolutionTabCache[$cacheKey] = $tab;
@@ -528,18 +533,27 @@ class Employee extends Model
                 $regTabId = $regTab?->id;
                 $regTabName = $regTab?->name ?? __('Registration Resolution');
 
-                $workflows->push((object)[
-                    'name' => $regTabName, // tab's own name — e.g. "มติลงทะเบียน31/03/2027"
-                    'status_label' => null, // no prefix — badge shows tab name directly
-                    'is_pre_production' => false,
-                    'is_registration' => true,
-                    'is_renewal' => false,
-                    'url' => route('production.registration.operations', [
-                        'resolutionTab' => $regTabId,
-                        'highlight_employer_id' => $this->employer_id,
-                        'highlight_employee_id' => $this->id
-                    ]),
-                ]);
+                // $regTabId can still be null here — the referenced tab was
+                // permanently purged (past its 7-day grace period) rather than
+                // just soft-deleted. `route()` requires this param, so building
+                // the URL would crash the whole page; skip this entry instead
+                // (the employee's status is stale data at that point anyway).
+                if ($regTabId === null) {
+                    \Illuminate\Support\Facades\Log::warning("Employee {$this->id}: registration resolution_tab_id ({$this->resolution_tab_id}) no longer exists — skipping workflow entry.");
+                } else {
+                    $workflows->push((object)[
+                        'name' => $regTabName, // tab's own name — e.g. "มติลงทะเบียน31/03/2027"
+                        'status_label' => null, // no prefix — badge shows tab name directly
+                        'is_pre_production' => false,
+                        'is_registration' => true,
+                        'is_renewal' => false,
+                        'url' => route('production.registration.operations', [
+                            'resolutionTab' => $regTabId,
+                            'highlight_employer_id' => $this->employer_id,
+                            'highlight_employee_id' => $this->id
+                        ]),
+                    ]);
+                }
             }
         }
 
@@ -552,18 +566,24 @@ class Employee extends Model
                 $renTabId = $renTab?->id;
                 $renTabName = $renTab?->name ?? __('Renewal Resolution');
 
-                $workflows->push((object)[
-                    'name' => $renTabName, // tab's own name — e.g. "มติต่ออายุ11/12/2026"
-                    'status_label' => null, // no prefix — badge shows tab name directly
-                    'is_pre_production' => false,
-                    'is_registration' => false,
-                    'is_renewal' => true,
-                    'url' => route('production.renewal.operations', [
-                        'resolutionTab' => $renTabId,
-                        'highlight_employer_id' => $this->employer_id,
-                        'highlight_employee_id' => $this->id
-                    ]),
-                ]);
+                // Same guard as Registration above — a permanently purged tab
+                // must not reach route(), which requires this parameter.
+                if ($renTabId === null) {
+                    \Illuminate\Support\Facades\Log::warning("Employee {$this->id}: renewal resolution_tab_id ({$this->resolution_tab_id}) no longer exists — skipping workflow entry.");
+                } else {
+                    $workflows->push((object)[
+                        'name' => $renTabName, // tab's own name — e.g. "มติต่ออายุ11/12/2026"
+                        'status_label' => null, // no prefix — badge shows tab name directly
+                        'is_pre_production' => false,
+                        'is_registration' => false,
+                        'is_renewal' => true,
+                        'url' => route('production.renewal.operations', [
+                            'resolutionTab' => $renTabId,
+                            'highlight_employer_id' => $this->employer_id,
+                            'highlight_employee_id' => $this->id
+                        ]),
+                    ]);
+                }
             }
         }
 
