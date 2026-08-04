@@ -1024,30 +1024,55 @@ if (typeof window.financialManager === 'undefined') {
 
             deleteGroup(groupId) {
                 this._safeFire({
-                    title: 'Delete Tab?',
-                    text: "All transactions in this group will be deleted.",
+                    title: 'ลบแท็บนี้?',
+                    text: 'จะลบได้เฉพาะแท็บที่ไม่มีรายการเรียกเก็บเงินค้างอยู่',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
-                    confirmButtonText: 'Yes, delete it!'
+                    confirmButtonText: 'ยืนยันลบแท็บ',
+                    cancelButtonText: 'ยกเลิก'
                 }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
-                            method: 'DELETE',
-                            headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
-                        })
-                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-                        .then(data => {
-                            if (data.success) {
-                                this.financialGroups = this.financialGroups.filter(g => g.id !== groupId);
-                                if (this.activeGroupId === groupId) {
-                                    this.activeGroupId = this.financialGroups.length > 0 ? this.financialGroups[0].id : null;
-                                    if(this.activeGroupId) this.switchGroup(this.activeGroupId);
-                                }
-                                Swal.fire('Deleted!', 'Tab has been deleted.', 'success');
+                    if (!result.isConfirmed) return;
+
+                    fetch(`/production/${this.productionId}/financial-groups/${groupId}`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
+                    })
+                    .then(async res => {
+                        const data = await res.json().catch(() => ({}));
+                        // 422 = tab still holds transactions — backend guards
+                        // against orphaning installment rows. Surface the
+                        // count breakdown so the operator knows what to clear.
+                        if (res.status === 422 && data && data.transaction_count) {
+                            const paid = data.paid_count || 0;
+                            const pending = data.pending_count || 0;
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'ลบแท็บนี้ไม่ได้',
+                                html: `
+                                    <div class="text-start">
+                                        <p class="mb-2">แท็บนี้ยังมีรายการเรียกเก็บเงินค้างอยู่ <strong>${data.transaction_count}</strong> รายการ</p>
+                                        <ul class="mb-3">
+                                            <li>ชำระ/รับเงินแล้วบางส่วน: <strong>${paid}</strong></li>
+                                            <li>ยังไม่ชำระ: <strong>${pending}</strong></li>
+                                        </ul>
+                                        <p class="mb-0 text-muted small">กรุณาลบรายการเรียกเก็บทั้งหมดในแท็บนี้ก่อน แล้วจึงจะลบแท็บได้</p>
+                                    </div>`,
+                                confirmButtonText: 'เข้าใจแล้ว'
+                            });
+                            return;
+                        }
+                        if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status));
+                        if (data.success) {
+                            this.financialGroups = this.financialGroups.filter(g => g.id !== groupId);
+                            if (this.activeGroupId === groupId) {
+                                this.activeGroupId = this.financialGroups.length > 0 ? this.financialGroups[0].id : null;
+                                if(this.activeGroupId) this.switchGroup(this.activeGroupId);
                             }
-                        });
-                    }
+                            Swal.fire('ลบเรียบร้อย', 'แท็บถูกลบแล้ว', 'success');
+                        }
+                    })
+                    .catch(err => Swal.fire('Error', err.message, 'error'));
                 });
             },
 

@@ -21,6 +21,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\PruneOrphanFiles::class,
         \App\Console\Commands\PruneActivityLogs::class,
         \App\Console\Commands\GenerateLaborBills::class,
+        \App\Console\Commands\FixOrphanFinancialTransactions::class,
     ];
 
     /**

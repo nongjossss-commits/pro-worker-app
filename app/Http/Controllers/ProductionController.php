@@ -969,6 +969,27 @@ class ProductionController extends Controller
             abort(403);
         }
 
+        // Block deletion while the tab still holds transactions (installments,
+        // down payments, full payments). Previously we soft-deleted the tab
+        // outright, which left every transaction and payment orphaned: the
+        // rows remained in `financial_transactions` but the tab that owned
+        // them was gone, so operators had no UI path to edit or clear them.
+        $txCount = $group->transactions()->count();
+        if ($txCount > 0) {
+            $paidCount = $group->transactions()
+                ->whereIn('status', ['paid', 'partial'])
+                ->count();
+            $pendingCount = $txCount - $paidCount;
+
+            return response()->json([
+                'success' => false,
+                'message' => "ลบแท็บนี้ไม่ได้ — ยังมีรายการเรียกเก็บเงินค้างอยู่ {$txCount} รายการ กรุณาลบรายการทั้งหมดในแท็บนี้ก่อน แล้วจึงลบแท็บได้",
+                'transaction_count' => $txCount,
+                'paid_count' => $paidCount,
+                'pending_count' => $pendingCount,
+            ], 422);
+        }
+
         $group->delete();
         return response()->json(['success' => true]);
     }
