@@ -652,6 +652,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                     <input class="form-check-input js-ib-bank" type="checkbox"
                                            id="ibBank{{ $bank->id }}"
                                            data-bank-id="{{ $bank->id }}"
+                                           data-bank-code="{{ $bank->bank_code ?? '' }}"
                                            data-bank-name="{{ $bank->bank_name }}"
                                            data-account-name="{{ $bank->account_name }}"
                                            data-account-number="{{ $bank->account_number }}">
@@ -733,19 +734,22 @@ document.addEventListener('DOMContentLoaded', function () {
         if (variant === 'with_list') params.push('include_employee_list=1');
         if (variant === 'list_only') params.push('list_only=1');
 
-        // Payment methods payload matches the backend ProductionDocumentController
-        // format: array of {method, ...details} base64-encoded JSON.
+        // Payment methods payload — MUST match the shape that documents/layout.blade.php
+        // (invoice) and documents/reminder.blade.php read: each entry keyed by `type`
+        // with values 'cash' | 'promptpay' | 'transfer'. Sending 'method' or
+        // 'bank_transfer' here silently drops the entry from the printed bill.
         const methods = [];
         if (document.getElementById('ibPmCash').checked) {
-            methods.push({ method: 'cash', label: '{{ __("Cash") }}' });
+            methods.push({ type: 'cash' });
         }
         if (document.getElementById('ibPmPP').checked) {
             const ppid = document.getElementById('ibPPId').value.trim();
-            methods.push({ method: 'promptpay', label: 'PromptPay', promptpay_id: ppid });
+            methods.push({ type: 'promptpay', promptpay_id: ppid });
         }
         document.querySelectorAll('.js-ib-bank:checked').forEach(cb => {
             methods.push({
-                method: 'bank_transfer',
+                type: 'transfer',
+                bank_code: cb.dataset.bankCode || '',
                 bank_name: cb.dataset.bankName || '',
                 account_name: cb.dataset.accountName || '',
                 account_number: cb.dataset.accountNumber || '',

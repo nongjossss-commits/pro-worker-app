@@ -32,16 +32,26 @@
     </div>
 
     <div class="page">
-        {{-- Header --}}
+        {{-- Header — biller profile (หัวบิลจาก finance tab) wins over the default
+             CompanyProfile. Same pattern as documents/layout.blade.php so both
+             invoice and reminder show the correct issuer header. --}}
+        @php
+            $issuer = isset($billerProfile) ? $billerProfile : $profile;
+            $issuerLogo = $issuer->logo_path ?? null;
+            $issuerName = $issuer->name ?? 'Company Name';
+            $issuerAddress = $issuer->address ?? '';
+            $issuerTaxId = $issuer->tax_id ?? '-';
+            $issuerPhone = $issuer->phone ?? '-';
+        @endphp
         <div style="display: flex; justify-content: space-between; align-items: flex-start;" class="border-b mb-8">
             <div style="display: flex; gap: 14px;">
-                @if(!empty($profile) && !empty($profile->logo_path))
-                    <img src="{{ asset('storage/' . $profile->logo_path) }}" alt="Logo" style="width: 70px; height: auto; max-height: 70px; object-fit: contain;">
+                @if($issuerLogo)
+                    <img src="{{ asset('storage/' . $issuerLogo) }}" alt="Logo" style="width: 70px; height: auto; max-height: 70px; object-fit: contain;">
                 @endif
                 <div>
-                    <h3 class="text-primary">{{ $profile->name ?? 'Company Name' }}</h3>
-                    <div class="text-sm text-muted" style="white-space: pre-line;">{{ $profile->address ?? '' }}</div>
-                    <div class="text-sm text-muted">Tax ID: {{ $profile->tax_id ?? '-' }} | Tel: {{ $profile->phone ?? '-' }}</div>
+                    <h3 class="text-primary">{{ $issuerName }}</h3>
+                    <div class="text-sm text-muted" style="white-space: pre-line;">{{ $issuerAddress }}</div>
+                    <div class="text-sm text-muted">Tax ID: {{ $issuerTaxId }} | Tel: {{ $issuerPhone }}</div>
                 </div>
             </div>
             <div class="text-right">
@@ -54,17 +64,27 @@
             </div>
         </div>
 
-        {{-- Customer + Project --}}
+        {{-- Customer + Project — prefer explicit customer FinancialProfile,
+             else fall back to $billTo (customer_override or production->employer). --}}
         <div class="grid-2 mb-8">
             <div>
                 <h4 class="text-muted text-sm">BILL TO / เรียกเก็บจาก</h4>
-                <div class="fw-bold" style="margin-top: 6px;">{{ $billTo->employerNameTh ?? 'Customer' }}</div>
-                <div class="text-sm text-muted" style="margin-top: 4px;">
-                    @if(!empty($billTo->employerAddress)){{ $billTo->employerAddress }}<br>@endif
-                    @if(isset($billTo->tax_id) && $billTo->tax_id !== '-')Tax ID: {{ $billTo->tax_id }}<br>@endif
-                    @if(isset($billTo->employerTaxId) && $billTo->employerTaxId !== '-')Tax ID: {{ $billTo->employerTaxId }}<br>@endif
-                    @if(!empty($billTo->employerPhone))Tel: {{ $billTo->employerPhone }}@endif
-                </div>
+                @if(isset($customerProfile))
+                    <div class="fw-bold" style="margin-top: 6px;">{{ $customerProfile->name }}</div>
+                    <div class="text-sm text-muted" style="margin-top: 4px;">
+                        @if(!empty($customerProfile->address)){!! nl2br(e($customerProfile->address)) !!}<br>@endif
+                        @if(!empty($customerProfile->tax_id))Tax ID: {{ $customerProfile->tax_id }}<br>@endif
+                        @if(!empty($customerProfile->phone))Tel: {{ $customerProfile->phone }}@endif
+                    </div>
+                @else
+                    <div class="fw-bold" style="margin-top: 6px;">{{ $billTo->employerNameTh ?? 'Customer' }}</div>
+                    <div class="text-sm text-muted" style="margin-top: 4px;">
+                        @if(!empty($billTo->employerAddress)){{ $billTo->employerAddress }}<br>@endif
+                        @if(isset($billTo->tax_id) && $billTo->tax_id !== '-')Tax ID: {{ $billTo->tax_id }}<br>@endif
+                        @if(isset($billTo->employerTaxId) && $billTo->employerTaxId !== '-')Tax ID: {{ $billTo->employerTaxId }}<br>@endif
+                        @if(!empty($billTo->employerPhone))Tel: {{ $billTo->employerPhone }}@endif
+                    </div>
+                @endif
             </div>
             <div class="text-right">
                 <h4 class="text-muted text-sm">PROJECT / โครงการ</h4>
@@ -202,28 +222,52 @@
             </div>
         </div>
 
-        {{-- Bank account for payment --}}
-        @php
-            $activeBanks = \App\Models\BankAccount::where('account_type','company')->take(3)->get();
-        @endphp
-        @if($activeBanks->count())
+        {{-- Payment methods — only shows what the operator ticked in the
+             "Issue Bill" modal (payment_methods=... in the URL). No more
+             hardcoded "take the first 3 company bank accounts" query, which
+             was leaking every stored bank onto every reminder regardless of
+             what the operator picked. Same source & structure as the invoice
+             template (documents/layout.blade.php). --}}
+        @if(!empty($paymentMethods))
+            @php $bankPresets = collect(config('thai_banks', []))->keyBy('code'); @endphp
             <div class="mt-8">
-                <h4 class="text-muted text-sm mb-4">ช่องทางการชำระเงิน</h4>
+                <h4 class="text-muted text-sm mb-4">ช่องทางการชำระเงิน / Payment Information</h4>
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 25%;">Bank</th>
-                            <th style="width: 40%;">Account Name</th>
+                            <th style="width: 25%;">Method</th>
+                            <th style="width: 40%;">Account Name / Details</th>
                             <th>Account Number</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($activeBanks as $b)
-                            <tr>
-                                <td>{{ $b->bank_name }}</td>
-                                <td>{{ $b->account_name }}</td>
-                                <td class="fw-bold">{{ $b->account_number }}</td>
-                            </tr>
+                        @foreach($paymentMethods as $pm)
+                            @php $ptype = $pm['type'] ?? ''; @endphp
+                            @if($ptype === 'cash')
+                                <tr>
+                                    <td>เงินสด / Cash</td>
+                                    <td class="text-muted">—</td>
+                                    <td class="text-muted">—</td>
+                                </tr>
+                            @elseif($ptype === 'promptpay')
+                                <tr>
+                                    <td>PromptPay</td>
+                                    <td>{{ $pm['promptpay_id'] ?? '-' }}</td>
+                                    <td class="text-muted">—</td>
+                                </tr>
+                            @elseif($ptype === 'transfer')
+                                <tr>
+                                    <td>{{ $pm['bank_name'] ?? '-' }}</td>
+                                    <td>{{ $pm['account_name'] ?? '-' }}</td>
+                                    <td class="fw-bold">{{ $pm['account_number'] ?? '-' }}</td>
+                                </tr>
+                            @elseif($ptype === 'other')
+                                <tr>
+                                    <td>อื่นๆ / Other</td>
+                                    <td>{{ $pm['note'] ?? '-' }}</td>
+                                    <td class="text-muted">—</td>
+                                </tr>
+                            @endif
                         @endforeach
                     </tbody>
                 </table>
@@ -239,7 +283,7 @@
             <div class="text-center">
                 <div style="border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 6px;"></div>
                 <div class="text-sm text-muted">ผู้ออกเอกสาร / Authorized</div>
-                <div class="text-sm text-muted">{{ $profile->name ?? '' }}</div>
+                <div class="text-sm text-muted">{{ $issuerName }}</div>
             </div>
         </div>
     </div>
