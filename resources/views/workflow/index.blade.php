@@ -1368,7 +1368,8 @@ window.loadBatchStats = function() {
                 // Only select visible cards
                 const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled'));
                 const status = cardWrapper ? cardWrapper.dataset.status : '';
-                const isSelectable = true; // Let the backend filter handle 'cancelled' by default, or user toggles it visible
+                const isTerminated = cardWrapper && cardWrapper.dataset.terminated === 'true';
+                const isSelectable = !['completed', 'cancelled', 'registration_cancelled', 'renewal_cancelled'].includes(status) && !isTerminated;
 
                 // Workflow primarily uses status pending or complete. Select active items.
                 if (!isHidden && isSelectable) {
@@ -1394,7 +1395,8 @@ window.loadBatchStats = function() {
                 const cw = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
                 const isHidden = cw && (cw.classList.contains('d-none') || cw.classList.contains('hide-cancelled'));
                 const status = cw ? cw.dataset.status : '';
-                const isSelectable = true;
+                const isTerminated = cw && cw.dataset.terminated === 'true';
+                const isSelectable = !['completed', 'cancelled', 'registration_cancelled', 'renewal_cancelled'].includes(status) && !isTerminated;
                 return !isHidden && isSelectable;
             });
 

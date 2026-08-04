@@ -2188,9 +2188,9 @@
                 const isVisible = cardWrapper && !cardWrapper.classList.contains('d-none');
 
                 // Explicitly check status data attribute to prevent selecting non-pending (Saved)
-                // We allow selecting cancelled if they are currently visible
+                // Cancelled items must never be auto-selected, even if currently visible.
                 const status = cardWrapper.dataset.status;
-                const isPending = (status === 'registration_pending' || status === 'registration_cancelled');
+                const isPending = (status === 'registration_pending');
 
                 if (isVisible && isPending) {
                     if(cb.checked !== isChecked) {

@@ -2077,9 +2077,9 @@
 
                 // Explicitly check status data attribute.
                 // Renewal uses 'renewal_pending' status primarily.
-                // Also allow 'cancelled' items if they are currently visible
+                // Cancelled items must never be auto-selected, even if currently visible.
                 const status = cardWrapper ? cardWrapper.dataset.status : '';
-                const isPending = (status === 'renewal_pending' || status === 'registration_pending' || status === 'renewal_cancelled' || status === 'registration_cancelled');
+                const isPending = (status === 'renewal_pending' || status === 'registration_pending');
 
                 if (!isFilteredOut && isPending) {
                     if(cb.checked !== isChecked) {

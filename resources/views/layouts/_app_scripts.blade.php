@@ -629,6 +629,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectedCountSpan = document.getElementById('selected-count');
     const bulkActionButton = bulkActionBar ? bulkActionBar.querySelector('button') : null;
 
+    // Statuses that should never be swept up by "Select All" — the card may still be
+    // visible on screen (e.g. "show cancelled" toggled on) but must not be auto-selected.
+    const NON_SELECTABLE_STATUSES = ['completed', 'cancelled', 'registration_cancelled', 'renewal_cancelled'];
+    function isCardNonSelectable(cardWrapper) {
+        if (!cardWrapper) return false;
+        const status = cardWrapper.dataset.status || '';
+        const isTerminated = cardWrapper.dataset.terminated === 'true';
+        return NON_SELECTABLE_STATUSES.includes(status) || isTerminated;
+    }
+
     // Counter for tracking selection order
     window._selectionOrderCounter = (function() {
         const existing = window.getGlobalSelectedData();
@@ -725,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const isHiddenByAccordion = accordionCollapse && !accordionCollapse.classList.contains('show');
             const isHidden = (cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none')) || isHiddenByAccordion;
 
-            if (!isHidden) {
+            if (!isHidden && !isCardNonSelectable(cardWrapper)) {
                 visibleCount++;
                 if (cb.checked) {
                     visibleCheckedCount++;
@@ -946,7 +956,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const accordionCollapse = cb.closest('.accordion-collapse');
                 const isHiddenByAccordion = accordionCollapse && !accordionCollapse.classList.contains('show');
                 const isHidden = (cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none')) || isHiddenByAccordion;
-                return !isHidden;
+                return !isHidden && !isCardNonSelectable(cardWrapper);
             });
 
             const visibleItems = visibleCheckboxes.map((cb, index) => {
