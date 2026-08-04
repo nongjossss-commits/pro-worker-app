@@ -25,10 +25,10 @@ class EmployeeObserver
      */
     public function created(Employee $employee)
     {
-        // New employee: try renewal first (existing behavior), then registration.
-        // If renewal matches, syncRegistrationStatus sees the new status and skips.
+        // Registration Resolution is manual-add only (via the menu's "เพิ่มลูกจ้าง" form) —
+        // new employees must never be auto-pulled in just because their expiry dates
+        // happen to match the Auto Setting. Renewal keeps its existing auto-pull behavior.
         $this->syncRenewalStatus($employee);
-        $this->syncRegistrationStatus($employee);
     }
 
     /**
@@ -62,13 +62,13 @@ class EmployeeObserver
             }
         }
 
-        // 2. Auto-pull into renewal / registration menu when expiry dates change.
+        // 2. Auto-pull into renewal menu when expiry dates change.
         // RULE: add-only — never auto-eject, never auto-move between tabs.
         // Once an employee is in a resolution menu, only manual completion/cancellation removes them.
         // Progress within the menu is tracked by getRenewalProgressAttribute (color coding).
+        // Registration Resolution is intentionally excluded — it is manual-add only.
         if ($employee->isDirty(['workPermitExpiryDate', 'visaExpiryDate', 'workPermitMOUGroup'])) {
             $this->syncRenewalStatus($employee);
-            $this->syncRegistrationStatus($employee);
         }
 
         // 3. Auto-cancel pending notify_out items when the employee moves to a different employer.
@@ -260,50 +260,6 @@ class EmployeeObserver
     }
 
     /**
-     * Find the registration tab matching this employee.
-     * Priority:
-     *  1. Per-tab Auto Settings (SystemSetting registration_auto_*__tab_{id})
-     *  2. Legacy global SystemSetting (no per-tab) → default tab
-     */
-    protected function findMatchingRegistrationTab(Employee $employee): ?int
-    {
-        // Skip MOU types
-        if ($employee->workPermitMOUGroup && stripos($employee->workPermitMOUGroup, 'MOU') !== false) {
-            return null;
-        }
-
-        // 1. New source of truth — per-tab SystemSetting
-        $matchedTabId = $this->findMatchingTabByAutoSettings($employee, 'registration');
-        if ($matchedTabId) return $matchedTabId;
-
-        // 2. Legacy global SystemSetting (single target for whole group)
-        $settings = \App\Models\SystemSetting::where('group', 'registration')
-            ->whereIn('key', ['registration_auto_visa_expiry', 'registration_auto_work_permit_expiry'])
-            ->pluck('value', 'key');
-
-        $visaTarget = $settings['registration_auto_visa_expiry'] ?? null;
-        $wpTarget   = $settings['registration_auto_work_permit_expiry'] ?? null;
-
-        if (!$visaTarget && !$wpTarget) return null;
-
-        $wpMatch = $wpTarget && $employee->workPermitExpiryDate
-            && $employee->workPermitExpiryDate->format('Y-m-d') === $wpTarget;
-        $visaMatch = $visaTarget && $employee->visaExpiryDate
-            && $employee->visaExpiryDate->format('Y-m-d') === $visaTarget;
-
-        if (!$wpMatch && !$visaMatch) return null;
-
-        $defaultTab = \App\Models\ResolutionTab::where('type', 'registration')
-            ->where('is_default', true)
-            ->value('id');
-        if ($defaultTab) return $defaultTab;
-
-        return \App\Models\ResolutionTab::where('type', 'registration')
-            ->orderBy('id')
-            ->value('id');
-    }
-
-    /**
      * Sync employee into the renewal menu when their dates newly match a renewal target.
      *
      * RULE (add-only):
@@ -329,29 +285,6 @@ class EmployeeObserver
             }
         } catch (\Throwable $e) {
             Log::error("Failed renewal sync for employee {$employee->id}: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Mirror of syncRenewalStatus for the registration menu.
-     * Same add-only rule — only pulls employees who aren't yet in any resolution menu.
-     */
-    protected function syncRegistrationStatus(Employee $employee)
-    {
-        try {
-            if (in_array($employee->status, self::RESOLUTION_STATUSES, true)) {
-                return; // already in some resolution menu — leave alone
-            }
-
-            $matchedTabId = $this->findMatchingRegistrationTab($employee);
-            if ($matchedTabId) {
-                $employee->updateQuietly([
-                    'status' => 'registration_pending',
-                    'resolution_tab_id' => $matchedTabId,
-                ]);
-            }
-        } catch (\Throwable $e) {
-            Log::error("Failed registration sync for employee {$employee->id}: " . $e->getMessage());
         }
     }
 }
