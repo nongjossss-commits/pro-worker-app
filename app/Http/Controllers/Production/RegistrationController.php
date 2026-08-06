@@ -193,9 +193,19 @@ class RegistrationController extends Controller
                 })->count();
         }
 
-        // Step Stats (Optimized via SQL)
-        // We filter statsQuery to active employees for step stats usually
-        $stepStatsQuery = (clone $statsQuery)->where('status', '!=', 'registration_cancelled');
+        // Step Stats (Optimized via SQL) — 24h grace rule:
+        // - Always drop `registration_cancelled`.
+        // - Drop `registration_completed` rows whose finalize is older than
+        //   24h so the top-of-page step badges decrement once the countdown
+        //   ends. Cards themselves remain in the list (green cards stay put
+        //   by design) — this only trims the aggregate counters.
+        $stepStatsQuery = (clone $statsQuery)
+            ->where('status', '!=', 'registration_cancelled')
+            ->where(function ($q) {
+                $q->where('status', '!=', 'registration_completed')
+                  ->orWhereNull('resolution_completed_at')
+                  ->orWhere('resolution_completed_at', '>=', now()->subHours(24));
+            });
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments (use same base query with search/operator filters)
@@ -801,7 +811,7 @@ class RegistrationController extends Controller
             // Fetch necessary columns efficiently
             // We include biometrics and daily check fields
             // Loading full registrationSteps relation to ensure pivot data and keys are correctly loaded without risk
-            $employees = $query->with('registrationSteps')->select('id', 'status', 'biometrics_collected_at', 'daily_check_enabled', 'last_daily_checked_at')->get();
+            $employees = $query->with('registrationSteps')->select('id', 'status', 'biometrics_collected_at', 'daily_check_enabled', 'last_daily_checked_at', 'resolution_completed_at')->get();
 
             // Calculate in PHP
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
@@ -811,6 +821,7 @@ class RegistrationController extends Controller
             $empSavedCount = 0;
             $empBiometricsCollected = 0;
             $empDailyCheckPending = 0;
+            $graceCutoff = now()->subHours(24);
 
             foreach ($employees as $emp) {
                 if ($emp->status === 'registration_cancelled') {
@@ -839,9 +850,18 @@ class RegistrationController extends Controller
                     }
                 }
 
-                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
-                if ($highestStep && isset($empStats[$highestStep->id])) {
-                    $empStats[$highestStep->id]++;
+                // Step badge — same 24h grace as the global stats: completed
+                // employees whose 24h countdown finished no longer count
+                // toward the per-employer step badges either.
+                $countTowardsSteps = !($emp->status === 'registration_completed'
+                    && $emp->resolution_completed_at
+                    && $emp->resolution_completed_at->lt($graceCutoff));
+
+                if ($countTowardsSteps) {
+                    $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                    if ($highestStep && isset($empStats[$highestStep->id])) {
+                        $empStats[$highestStep->id]++;
+                    }
                 }
             }
 

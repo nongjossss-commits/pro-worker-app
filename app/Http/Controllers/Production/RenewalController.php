@@ -187,8 +187,18 @@ class RenewalController extends Controller
                 })->count();
         }
 
-        // Step Stats (Optimized via SQL)
-        $stepStatsQuery = (clone $statsQuery)->where('status', '!=', 'renewal_cancelled');
+        // Step Stats (Optimized via SQL) — 24h grace rule: drop cancelled
+        // outright, drop renewal_completed rows whose finalize is older
+        // than 24h so the top-of-page step badges decrement once the
+        // countdown ends. Green cards stay in the list by design; only
+        // the aggregate counters trim.
+        $stepStatsQuery = (clone $statsQuery)
+            ->where('status', '!=', 'renewal_cancelled')
+            ->where(function ($q) {
+                $q->where('status', '!=', 'renewal_completed')
+                  ->orWhereNull('resolution_completed_at')
+                  ->orWhere('resolution_completed_at', '>=', now()->subHours(24));
+            });
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
         // Total Appointments (use same base query with search/operator filters)
@@ -772,7 +782,7 @@ class RenewalController extends Controller
                  });
             }
 
-            $employees = $query->with('registrationSteps')->select('id', 'status', 'daily_check_enabled', 'last_daily_checked_at')->get();
+            $employees = $query->with('registrationSteps')->select('id', 'status', 'daily_check_enabled', 'last_daily_checked_at', 'resolution_completed_at')->get();
 
             // Calculate in PHP
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
@@ -781,6 +791,7 @@ class RenewalController extends Controller
             $empCancelledCount = 0;
             $empSavedCount = 0;
             $empDailyCheckPending = 0;
+            $graceCutoff = now()->subHours(24);
 
             foreach ($employees as $emp) {
                 if ($emp->status === 'renewal_cancelled') {
@@ -805,9 +816,18 @@ class RenewalController extends Controller
                     }
                 }
 
-                $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
-                if ($highestStep && isset($empStats[$highestStep->id])) {
-                    $empStats[$highestStep->id]++;
+                // Step badge — same 24h grace as the global stats: completed
+                // employees whose 24h countdown finished no longer count
+                // toward the per-employer step badges either.
+                $countTowardsSteps = !($emp->status === 'renewal_completed'
+                    && $emp->resolution_completed_at
+                    && $emp->resolution_completed_at->lt($graceCutoff));
+
+                if ($countTowardsSteps) {
+                    $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                    if ($highestStep && isset($empStats[$highestStep->id])) {
+                        $empStats[$highestStep->id]++;
+                    }
                 }
             }
 

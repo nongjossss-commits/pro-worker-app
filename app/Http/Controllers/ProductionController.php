@@ -402,8 +402,17 @@ class ProductionController extends Controller
                           ->orWhereDate('last_checked_at', '<', now()->today());
                     })->count();
 
-                // Step Stats (Highest Step) - Global
-                $itemsWithSteps = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
+                // Step Stats (Highest Step) — Global. 24h grace rule:
+                // cancelled always drops, completed items keep counting for
+                // 24h after Finish so the top-of-page badges match the
+                // visible list (item cards stay for 24h before archival).
+                $itemsWithSteps = (clone $baseItemQuery)
+                    ->where('status', '!=', 'cancelled')
+                    ->where(function ($q) {
+                        $q->where('status', '!=', 'completed')
+                          ->orWhereNull('completed_at')
+                          ->orWhere('completed_at', '>=', now()->subHours(24));
+                    })
                     ->with(['completedWorkTypeSteps' => function($q) {
                         $q->orderByDesc('order');
                     }])
@@ -1089,6 +1098,7 @@ class ProductionController extends Controller
         $completed = 0;
         $stepStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
         $stepOneId = $steps->sortBy('order')->first()?->id;
+        $graceCutoff = now()->subHours(24);
 
         foreach ($items as $item) {
             if ($item->status === 'cancelled') {
@@ -1103,9 +1113,19 @@ class ProductionController extends Controller
             if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !in_array($stepOneId, $completedSteps)) {
                 $notStarted++;
             }
-            $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
-            if ($highestStep && isset($stepStats[$highestStep->id])) {
-                $stepStats[$highestStep->id]++;
+
+            // 24h grace on step badge — completed items keep counting until
+            // 24h after Finish so the badge matches the visible card list.
+            $completedAt = $item->completed_at;
+            $countTowardsSteps = !($item->status === 'completed'
+                && $completedAt
+                && $completedAt->lt($graceCutoff));
+
+            if ($countTowardsSteps) {
+                $highestStep = $item->completedWorkTypeSteps->sortByDesc('order')->first();
+                if ($highestStep && isset($stepStats[$highestStep->id])) {
+                    $stepStats[$highestStep->id]++;
+                }
             }
         }
 
@@ -1336,6 +1356,7 @@ class ProductionController extends Controller
             foreach ($steps as $step) {
                 $stepStats[$step->id] = 0;
             }
+            $graceCutoff = now()->subHours(24);
 
             foreach ($items as $item) {
                 if ($item->status === 'cancelled') {
@@ -1354,9 +1375,18 @@ class ProductionController extends Controller
                     $notStarted++;
                 }
 
-                $highestStep = $completedSteps->first(); // Since we ordered by desc above
-                if ($highestStep && isset($stepStats[$highestStep->id])) {
-                    $stepStats[$highestStep->id]++;
+                // 24h grace on step badge — completed items keep counting
+                // until 24h after Finish (matches the visible card list).
+                $completedAt = $item->completed_at;
+                $countTowardsSteps = !($item->status === 'completed'
+                    && $completedAt
+                    && $completedAt->lt($graceCutoff));
+
+                if ($countTowardsSteps) {
+                    $highestStep = $completedSteps->first(); // Since we ordered by desc above
+                    if ($highestStep && isset($stepStats[$highestStep->id])) {
+                        $stepStats[$highestStep->id]++;
+                    }
                 }
             }
 
