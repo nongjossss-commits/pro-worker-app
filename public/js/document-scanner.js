@@ -150,6 +150,11 @@
                 console.log('Opening Scanner. Files:', detail.files ? detail.files.length : 0, 'URL:', detail.initialUrl);
                 this.targetInputId = detail.inputId;
                 this.targetPreviewId = detail.previewId || null;
+                // Remember where the caller was scrolled to (page or modal/offcanvas
+                // body) so closeScanner() can put it back — otherwise finishing one
+                // attachment (e.g. a passport page) jumps the form to the top,
+                // breaking the flow of attaching several documents in a row.
+                this._scrollRestore = this.captureScrollPosition(detail.inputId);
                 this.isOpen = true;
                 this.capturedImages = [];
                 this.view = 'camera';
@@ -225,6 +230,43 @@
             closeScanner() {
                 this.stopCamera();
                 this.isOpen = false;
+                // Restore the scroll position captured in openScanner(). Runs after
+                // the overlay is removed from layout (requestAnimationFrame), since
+                // restoring immediately can race with the browser's own reflow.
+                const restore = this._scrollRestore;
+                this._scrollRestore = null;
+                if (restore) {
+                    requestAnimationFrame(() => {
+                        if (restore.container) {
+                            restore.container.scrollTop = restore.top;
+                        } else {
+                            window.scrollTo(0, restore.top);
+                        }
+                    });
+                }
+            },
+
+            // Finds the nearest scrollable ancestor of the target input (e.g. a
+            // .modal-body or .offcanvas-body when the form is embedded in one),
+            // falling back to the page itself for plain, non-modal forms.
+            captureScrollPosition(inputId) {
+                const input = inputId ? document.getElementById(inputId) : null;
+                const container = input ? this.findScrollContainer(input) : null;
+                return {
+                    container,
+                    top: container ? container.scrollTop : (window.scrollY || document.documentElement.scrollTop),
+                };
+            },
+
+            findScrollContainer(el) {
+                let node = el.parentElement;
+                while (node && node !== document.body) {
+                    const style = window.getComputedStyle(node);
+                    const canScroll = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight;
+                    if (canScroll) return node;
+                    node = node.parentElement;
+                }
+                return null;
             },
 
             async handleImport(event, directLoad = false) {

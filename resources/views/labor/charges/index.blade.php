@@ -316,20 +316,31 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Select2 "search a team member" field — resolves the team automatically server-side.
+    // Initialized lazily on each modal's `show.bs.modal` rather than eagerly at page
+    // load: Select2 measures the field's width at init time, and every one of these
+    // selects starts out inside a Bootstrap modal that's still display:none — sizing
+    // itself against a hidden (zero-width) container is what left the dropdown
+    // rendering as an empty sliver with no visible search box.
     document.querySelectorAll('.labor-member-select').forEach(function (el) {
-        $(el).select2({
-            theme: 'bootstrap-5',
-            dropdownParent: $(el).closest('.modal'),
-            ajax: {
-                url: '{{ route("labor.team-members.search") }}',
-                dataType: 'json',
-                delay: 250,
-                data: function (params) { return { q: params.term }; },
-                processResults: function (data) { return { results: data.results }; },
-            },
-            minimumInputLength: 1,
-            placeholder: '{{ __('Type a name...') }}',
-            width: '100%',
+        const modalEl = el.closest('.modal');
+        if (!modalEl) return;
+
+        modalEl.addEventListener('show.bs.modal', function () {
+            if ($(el).hasClass('select2-hidden-accessible')) return; // already initialized
+            $(el).select2({
+                theme: 'bootstrap-5',
+                dropdownParent: $(modalEl),
+                ajax: {
+                    url: '{{ route("labor.team-members.search") }}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { q: params.term }; },
+                    processResults: function (data) { return { results: data.results }; },
+                },
+                minimumInputLength: 1,
+                placeholder: '{{ __('Type a name...') }}',
+                width: '100%',
+            });
         });
     });
 });
