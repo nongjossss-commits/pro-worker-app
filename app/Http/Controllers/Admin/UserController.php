@@ -160,6 +160,21 @@ class UserController extends Controller
 
         $allPermissions = Permission::all();
         $userPermissions = $user->permissions->pluck('name')->toArray();
+        $revokedPermissions = $user->revoked_permissions ?? [];
+
+        // Base permission set granted by each role, keyed by role name — used by the
+        // Edit form to show/recompute "current permissions" per role (see hasRevoked()).
+        $rolePermissionsMap = Role::with('permissions')->get()
+            ->mapWithKeys(fn ($role) => [$role->name => $role->permissions->pluck('name')->values()]);
+
+        // Server-rendered fallback for the checkboxes' initial state (role ∪ direct,
+        // minus revoked) for the user's CURRENT role — so the form still shows accurate
+        // ticks even if JS fails to load; Alpine takes over from there for live updates.
+        $currentRoleBase = $rolePermissionsMap[$user->roles->first()->name ?? ''] ?? collect();
+        $initialCheckedPermissions = $currentRoleBase->merge($userPermissions)
+            ->diff($revokedPermissions)
+            ->values()
+            ->toArray();
 
         // V1.1 PATCH: Get available employers (unlinked OR this user's current linked one)
         $currentEmployerId = $user->employer->id ?? null;
@@ -169,7 +184,10 @@ class UserController extends Controller
 
         $laborTeams = LaborTeam::orderBy('name')->get();
 
-        return view('admin.users.edit', compact('user', 'roles', 'allPermissions', 'userPermissions', 'employers', 'laborTeams'));
+        return view('admin.users.edit', compact(
+            'user', 'roles', 'allPermissions', 'userPermissions', 'revokedPermissions',
+            'rolePermissionsMap', 'initialCheckedPermissions', 'employers', 'laborTeams'
+        ));
     }
 
     /**
@@ -247,8 +265,37 @@ class UserController extends Controller
             }
 
 
-            // Sync Permissions
-            $user->syncPermissions($request->input('permissions', []));
+            // Sync Permissions — admin/super-admin bypass every permission check via
+            // Gate::before (see AppServiceProvider), so per-user overrides would have
+            // no effect for them; skip and clear any stale override data instead.
+            // Revocations are enforced in User::hasPermissionTo().
+            if (in_array($request->role_name, ['admin', 'super-admin'], true)) {
+                $user->update(['revoked_permissions' => null]);
+            } else {
+                // Compare submitted checkboxes against the new role's base permission
+                // set: extra checks beyond the role's base become direct grants (as
+                // before); unchecked boxes that the role WOULD grant become explicit
+                // revocations, overriding the role via Gate::before.
+                $roleBasePermissions = Role::where('name', $request->role_name)->first()
+                    ?->permissions->pluck('name')->toArray() ?? [];
+                $checkedPermissions = $request->input('permissions', []);
+
+                $directGrants = [];
+                $revoked = [];
+                foreach (Permission::pluck('name') as $permissionName) {
+                    $isChecked = in_array($permissionName, $checkedPermissions, true);
+                    $roleGrantsIt = in_array($permissionName, $roleBasePermissions, true);
+
+                    if ($isChecked && !$roleGrantsIt) {
+                        $directGrants[] = $permissionName;
+                    } elseif (!$isChecked && $roleGrantsIt) {
+                        $revoked[] = $permissionName;
+                    }
+                }
+
+                $user->syncPermissions($directGrants);
+                $user->update(['revoked_permissions' => $revoked]);
+            }
 
             return redirect()->route('admin.users.index')->with('success', 'User permissions and details updated.');
         } else {

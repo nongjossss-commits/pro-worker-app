@@ -58,6 +58,31 @@ class LaborBill extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function taxInvoices()
+    {
+        return $this->hasMany(LaborTaxInvoice::class);
+    }
+
+    public function whtCertificates()
+    {
+        return $this->hasMany(LaborWhtCertificate::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(LaborBillPayment::class);
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->payments()->sum('amount');
+    }
+
+    public function getBalanceDueAttribute(): float
+    {
+        return (float) $this->total_due - $this->total_paid;
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', '!=', 'void');

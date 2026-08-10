@@ -30,18 +30,38 @@ class LaborChargeEntryController extends Controller
             ->orderByDesc('id')
             ->paginate(30);
 
-        return view('labor.charges.index', compact('chargeTypes', 'entries'));
+        // Every active member, grouped by their (fixed-at-registration) team —
+        // rendered as a plain <select> with <optgroup> per team. Small roster,
+        // so no need for an AJAX search: everyone's just listed, and the
+        // browser's own type-ahead (press a letter, jumps to it) covers search.
+        // Also include anyone deactivated since who's still the filer on one of
+        // this page's entries, so their edit form doesn't lose that selection.
+        $referencedMemberIds = $entries->pluck('labor_team_member_id')->filter()->unique();
+
+        $membersByTeam = LaborTeamMember::where(function ($q) use ($referencedMemberIds) {
+                $q->where('is_active', true)->orWhereIn('id', $referencedMemberIds);
+            })
+            ->with('team')
+            ->orderBy('name')
+            ->get()
+            ->groupBy(fn ($m) => $m->team->name ?? __('No Team'));
+
+        return view('labor.charges.index', compact('chargeTypes', 'entries', 'membersByTeam'));
     }
 
     public function store(Request $request)
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
+        if ($duplicate = $this->findDuplicateRequestNumber($request->input('request_number'))) {
+            return $this->duplicateResponse($request, $duplicate);
+        }
+
         $validated = $request->validate([
             'labor_charge_type_id' => ['required', Rule::exists('labor_charge_types', 'id')->where('is_active', true)],
             'labor_team_member_id' => ['required', 'exists:labor_team_members,id'],
             'entry_date' => ['required', 'date'],
-            'request_number' => ['required', 'string', 'max:255', 'unique:labor_ledger_entries,request_number'],
+            'request_number' => ['required', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
         ]);
 
@@ -61,7 +81,7 @@ class LaborChargeEntryController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
-        return back()->with('success', 'บันทึกรายการเรียกเก็บเรียบร้อยแล้ว');
+        return $this->successResponse($request, 'บันทึกรายการเรียกเก็บเรียบร้อยแล้ว');
     }
 
     public function update(Request $request, LaborLedgerEntry $entry)
@@ -69,11 +89,15 @@ class LaborChargeEntryController extends Controller
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
         abort_unless($entry->labor_charge_type_id !== null, 404);
 
+        if ($duplicate = $this->findDuplicateRequestNumber($request->input('request_number'), $entry->id)) {
+            return $this->duplicateResponse($request, $duplicate);
+        }
+
         $validated = $request->validate([
             'labor_charge_type_id' => ['required', Rule::exists('labor_charge_types', 'id')->where('is_active', true)],
             'labor_team_member_id' => ['required', 'exists:labor_team_members,id'],
             'entry_date' => ['required', 'date'],
-            'request_number' => ['required', 'string', 'max:255', Rule::unique('labor_ledger_entries', 'request_number')->ignore($entry->id)],
+            'request_number' => ['required', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
         ]);
 
@@ -93,7 +117,55 @@ class LaborChargeEntryController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
-        return back()->with('success', 'แก้ไขรายการเรียกเก็บเรียบร้อยแล้ว');
+        return $this->successResponse($request, 'แก้ไขรายการเรียกเก็บเรียบร้อยแล้ว');
+    }
+
+    /**
+     * A plain `unique` validation rule can only say "taken" — it can't tell the
+     * caller WHICH record it collides with, and the frontend needs that (team,
+     * filed by, charge type, quantity, amount, date) to let the user optionally
+     * see who/what it was recorded as before going back to fix the number,
+     * without ever closing the form they were filling in.
+     */
+    protected function findDuplicateRequestNumber(?string $requestNumber, ?int $excludeEntryId = null): ?LaborLedgerEntry
+    {
+        if (!$requestNumber) {
+            return null;
+        }
+
+        return LaborLedgerEntry::where('request_number', $requestNumber)
+            ->whereNotNull('labor_charge_type_id')
+            ->when($excludeEntryId, fn ($q) => $q->where('id', '!=', $excludeEntryId))
+            ->with(['team', 'member', 'chargeType'])
+            ->first();
+    }
+
+    protected function duplicateResponse(Request $request, LaborLedgerEntry $duplicate)
+    {
+        $existing = [
+            'id' => $duplicate->id,
+            'team' => $duplicate->team->name ?? '-',
+            'filed_by' => $duplicate->member->name ?? '-',
+            'charge_type' => $duplicate->chargeType->name ?? '-',
+            'quantity' => $duplicate->quantity,
+            'amount' => number_format((float) $duplicate->amount, 2),
+            'date' => $duplicate->entry_date->format('d/m/Y'),
+        ];
+
+        if ($request->wantsJson()) {
+            return response()->json(['duplicate' => true, 'existing' => $existing], 422);
+        }
+
+        return back()->withErrors(['request_number' => 'เลขคำขอนี้ถูกใช้ไปแล้ว'])->withInput();
+    }
+
+    protected function successResponse(Request $request, string $message)
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function destroy(Request $request, LaborLedgerEntry $entry)

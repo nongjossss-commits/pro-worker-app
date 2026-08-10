@@ -60,6 +60,27 @@ class LaborBillController extends Controller
         return back()->with('success', 'วางบิลเรียบร้อยแล้ว');
     }
 
+    public function show(Request $request, LaborBill $bill)
+    {
+        abort_unless($request->user()->can('manage-labor-ledger'), 403);
+
+        $bill->load(['team', 'financialProfile', 'creator', 'payments' => function ($q) {
+            $q->orderByDesc('paid_at')->orderByDesc('id');
+        }, 'payments.bankAccount', 'payments.whtCertificate', 'taxInvoices', 'whtCertificates']);
+
+        $bankAccounts = $bill->financial_profile_id
+            ? \App\Models\BankAccount::where('financial_profile_id', $bill->financial_profile_id)->where('is_active', true)->get()
+            : collect();
+
+        return view('labor.bills.show', compact('bill', 'bankAccounts'));
+    }
+
+    /**
+     * Stream the bill PDF inline (preview in a new tab) — same pattern as
+     * Finance\TaxInvoiceController::pdf(), so the browser's own PDF viewer
+     * lets the user save it if they want, rather than forcing an immediate
+     * download before they've seen it.
+     */
     public function download(Request $request, LaborBill $bill)
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
@@ -68,7 +89,12 @@ class LaborBillController extends Controller
             abort(404, 'ไม่พบไฟล์ PDF ของบิลนี้');
         }
 
-        return Storage::disk('public')->download($bill->pdf_path, $bill->bill_no . '.pdf');
+        $binary = Storage::disk('public')->get($bill->pdf_path);
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $bill->bill_no . '.pdf"',
+        ]);
     }
 
     public function void(Request $request, LaborBill $bill, LaborBillService $service)

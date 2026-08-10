@@ -12,6 +12,9 @@ class LaborTeam extends Model
 
     protected $fillable = [
         'name',
+        'customer_tax_id',
+        'customer_branch',
+        'customer_address',
         'is_active',
         'auto_billing_enabled',
         'billing_cadence',

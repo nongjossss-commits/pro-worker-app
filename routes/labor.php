@@ -2,14 +2,17 @@
 
 use App\Http\Controllers\Labor\LaborAuditLogController;
 use App\Http\Controllers\Labor\LaborBillController;
+use App\Http\Controllers\Labor\LaborBillPaymentController;
 use App\Http\Controllers\Labor\LaborChargeEntryController;
 use App\Http\Controllers\Labor\LaborChargeTypeController;
 use App\Http\Controllers\Labor\LaborDashboardController;
 use App\Http\Controllers\Labor\LaborLedgerController;
 use App\Http\Controllers\Labor\LaborReportController;
+use App\Http\Controllers\Labor\LaborTaxInvoiceController;
 use App\Http\Controllers\Labor\LaborTeamController;
 use App\Http\Controllers\Labor\LaborTeamMemberController;
 use App\Http\Controllers\Labor\LaborUserController;
+use App\Http\Controllers\Labor\LaborWhtCertificateController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -63,9 +66,33 @@ Route::middleware(['auth', 'labor.access'])
         // set on the team's own page). See LaborBillService for what "billed" means.
         Route::get('/bills', [LaborBillController::class, 'index'])->name('bills.index');
         Route::post('/bills', [LaborBillController::class, 'store'])->name('bills.store');
+        Route::get('/bills/{bill}', [LaborBillController::class, 'show'])->name('bills.show');
         Route::get('/bills/{bill}/download', [LaborBillController::class, 'download'])->name('bills.download');
         Route::post('/bills/{bill}/void', [LaborBillController::class, 'void'])->name('bills.void');
         Route::put('/billing-settings', [LaborBillController::class, 'updateSettings'])->name('billing-settings.update');
+
+        // Payments against a bill (partial payments supported) + receipt per payment.
+        Route::post('/bills/{bill}/payments', [LaborBillPaymentController::class, 'store'])->name('bills.payments.store');
+        Route::post('/bills/{bill}/payments/{payment}/receipt', [LaborBillPaymentController::class, 'issueReceipt'])->name('bills.payments.receipt.issue');
+        Route::get('/bills/{bill}/payments/{payment}/receipt/download', [LaborBillPaymentController::class, 'downloadReceipt'])->name('bills.payments.receipt.download');
+
+        // ใบกำกับภาษี (VAT tax invoices), usually issued from a bill.
+        Route::get('/tax-invoices', [LaborTaxInvoiceController::class, 'index'])->name('tax-invoices.index');
+        Route::get('/tax-invoices/create', [LaborTaxInvoiceController::class, 'create'])->name('tax-invoices.create');
+        Route::post('/tax-invoices', [LaborTaxInvoiceController::class, 'store'])->name('tax-invoices.store');
+        Route::get('/tax-invoices/{taxInvoice}', [LaborTaxInvoiceController::class, 'show'])->name('tax-invoices.show');
+        Route::put('/tax-invoices/{taxInvoice}', [LaborTaxInvoiceController::class, 'update'])->name('tax-invoices.update');
+        Route::delete('/tax-invoices/{taxInvoice}', [LaborTaxInvoiceController::class, 'destroy'])->name('tax-invoices.destroy');
+        Route::get('/tax-invoices/{taxInvoice}/pdf', [LaborTaxInvoiceController::class, 'pdf'])->name('tax-invoices.pdf');
+
+        // ใบหัก ณ ที่จ่าย (WHT certificates) — usually received from the team/customer paying a bill.
+        Route::get('/wht-certificates', [LaborWhtCertificateController::class, 'index'])->name('wht-certificates.index');
+        Route::get('/wht-certificates/create', [LaborWhtCertificateController::class, 'create'])->name('wht-certificates.create');
+        Route::post('/wht-certificates', [LaborWhtCertificateController::class, 'store'])->name('wht-certificates.store');
+        Route::get('/wht-certificates/{whtCertificate}', [LaborWhtCertificateController::class, 'show'])->name('wht-certificates.show');
+        Route::put('/wht-certificates/{whtCertificate}', [LaborWhtCertificateController::class, 'update'])->name('wht-certificates.update');
+        Route::delete('/wht-certificates/{whtCertificate}', [LaborWhtCertificateController::class, 'destroy'])->name('wht-certificates.destroy');
+        Route::get('/wht-certificates/{whtCertificate}/pdf', [LaborWhtCertificateController::class, 'pdf'])->name('wht-certificates.pdf');
 
         // Cross-team summary — open to labor-shareholder too (read-only oversight
         // role); labor-team is excluded inside the controller (own team only).

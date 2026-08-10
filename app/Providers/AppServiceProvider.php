@@ -36,10 +36,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Implicitly grant "super-admin" role all permissions
-        // "admin" is also granted here for consistency, ensuring both roles bypass standard checks
+        // Implicitly grant "admin"/"super-admin" all permissions (including any added
+        // in the future without an explicit role grant). Per-user revocation below a
+        // role's base permission set (users.revoked_permissions) is enforced in
+        // User::hasPermissionTo() instead of here — Spatie registers its own
+        // Gate::before that resolves role/direct permissions and can short-circuit
+        // ahead of this one, so a revoke check placed here isn't reliably reached.
+        //
+        // NOTE: app\Providers\AuthServiceProvider.php has an identical-looking
+        // Gate::before, but that provider is NOT registered in
+        // bootstrap/providers.php, so it never actually runs — this is the only
+        // one that takes effect. Left as-is/unregistered rather than touched,
+        // since fixing that is outside what was asked here.
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('super-admin') || $user->hasRole('admin') ? true : null;
+            return $user->hasRole('admin') || $user->hasRole('super-admin') ? true : null;
         });
 
         Paginator::useBootstrapFive();

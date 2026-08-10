@@ -12,7 +12,30 @@
 <div class="ccontainer-fluid content-section">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6 bg-white border-b border-gray-200" x-data="{ selectedRole: '{{ old('role_name', $user->roles->first()->name ?? 'staff') }}', showPassword: false, showConfirmPassword: false }">
+            <div class="p-6 bg-white border-b border-gray-200" x-data="{
+                    selectedRole: '{{ old('role_name', $user->roles->first()->name ?? 'staff') }}',
+                    showPassword: false,
+                    showConfirmPassword: false,
+                    rolePermissions: @js($rolePermissionsMap),
+                    directPermissions: @js($userPermissions),
+                    revokedPermissions: @js($revokedPermissions),
+                    checkedState: {},
+                    computeChecked(role) {
+                        const roleBase = this.rolePermissions[role] || [];
+                        const result = {};
+                        @foreach ($allPermissions as $permission)
+                        result['{{ $permission->name }}'] = (roleBase.includes('{{ $permission->name }}') || this.directPermissions.includes('{{ $permission->name }}')) && !this.revokedPermissions.includes('{{ $permission->name }}');
+                        @endforeach
+                        return result;
+                    },
+                    isRevokedFromRole(name) {
+                        return (this.rolePermissions[this.selectedRole] || []).includes(name) && !this.checkedState[name];
+                    },
+                    isExtraGrant(name) {
+                        return !(this.rolePermissions[this.selectedRole] || []).includes(name) && this.checkedState[name];
+                    }
+                }"
+                x-init="checkedState = computeChecked(selectedRole); $watch('selectedRole', role => checkedState = computeChecked(role))">
 
                 @if ($errors->any())
                     <div class="mb-4">
@@ -101,23 +124,30 @@
                     </div>
                     @endif
 
-                    <div class="mt-6">
+                    <div class="mt-6" x-show="!['admin', 'super-admin'].includes(selectedRole)" x-transition>
                         <h3 class="text-lg font-medium">{{ __('Delegate Permissions') }}</h3>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('Ticked = this ID currently has access. Untick to revoke below the role\'s default, or tick extra ones to grant beyond it.') }}</p>
                         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                             @foreach ($allPermissions as $permission)
                                 <div>
                                     <label for="perm-{{ $permission->id }}" class="inline-flex items-center">
                                         <input id="perm-{{ $permission->id }}" type="checkbox" name="permissions[]" value="{{ $permission->name }}"
-                                            {{ in_array($permission->name, $userPermissions) ? 'checked' : '' }}
+                                            {{ in_array($permission->name, $initialCheckedPermissions, true) ? 'checked' : '' }}
+                                            x-model="checkedState['{{ $permission->name }}']"
                                             class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                             >
                                         <span class="ml-2 text-sm text-gray-600">
                                             {{ \App\Helpers\PermissionHelper::getLabel($permission->name) }}
+                                            <span class="text-red-600" x-show="isRevokedFromRole('{{ $permission->name }}')">({{ __('revoked') }})</span>
+                                            <span class="text-blue-600" x-show="isExtraGrant('{{ $permission->name }}')">({{ __('extra') }})</span>
                                         </span>
                                     </label>
                                 </div>
                             @endforeach
                         </div>
+                    </div>
+                    <div class="mt-6 text-sm text-gray-500" x-show="['admin', 'super-admin'].includes(selectedRole)" x-transition style="display: none;">
+                        {{ __('Admin and Super Admin always have full access — individual permissions cannot be restricted for these roles.') }}
                     </div>
 
 

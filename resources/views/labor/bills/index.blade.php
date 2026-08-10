@@ -3,6 +3,7 @@
 @section('title', 'Bills - Pro Walker Labor')
 
 @section('content')
+@include('labor.partials.finance-tabs')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('Bills') }}</h4>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateBillModal">
@@ -58,7 +59,7 @@
             <tbody>
                 @forelse($bills as $bill)
                 <tr>
-                    <td>{{ $bill->bill_no }}</td>
+                    <td><a href="{{ route('labor.bills.show', $bill) }}">{{ $bill->bill_no }}</a></td>
                     <td>{{ $bill->team->name ?? '-' }}</td>
                     <td class="text-nowrap">{{ $bill->period_start->format('d/m/Y') }} - {{ $bill->period_end->format('d/m/Y') }}</td>
                     <td class="text-end">{{ number_format($bill->previous_balance, 2) }}</td>
@@ -79,8 +80,8 @@
                         <br>{{ $bill->creator->name ?? __('System') }}
                     </td>
                     <td class="text-end">
-                        <a href="{{ route('labor.bills.download', $bill) }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-download"></i>
+                        <a href="{{ route('labor.bills.download', $bill) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{{ __('Preview / Download') }}">
+                            <i class="bi bi-file-pdf"></i>
                         </a>
                         @if($bill->status !== 'void')
                         <button type="button" class="btn btn-sm btn-outline-danger"

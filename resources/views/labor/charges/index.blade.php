@@ -3,6 +3,7 @@
 @section('title', 'Central Billing - Pro Walker Labor')
 
 @section('content')
+@include('labor.partials.finance-tabs')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('Central Billing') }}</h4>
     <div>
@@ -90,10 +91,17 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">{{ __('Filed By (Team Member)') }}</label>
-                                        <select name="labor_team_member_id" class="form-select labor-member-select" style="width: 100%;" required>
-                                            <option value="{{ $entry->labor_team_member_id }}" selected>
-                                                {{ $entry->member->name ?? '' }} ({{ $entry->team->name ?? '' }})
-                                            </option>
+                                        <select name="labor_team_member_id" class="form-select" required>
+                                            <option value="">-- {{ __('Select') }} --</option>
+                                            @foreach($membersByTeam as $teamName => $teamMembers)
+                                                <optgroup label="{{ $teamName }}">
+                                                    @foreach($teamMembers as $member)
+                                                        <option value="{{ $member->id }}" {{ $entry->labor_team_member_id == $member->id ? 'selected' : '' }}>
+                                                            {{ $member->name }}{{ $member->is_active ? '' : ' (' . __('inactive') . ')' }}
+                                                        </option>
+                                                    @endforeach
+                                                </optgroup>
+                                            @endforeach
                                         </select>
                                     </div>
                                     <div class="mb-3">
@@ -161,9 +169,20 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Filed By (Team Member)') }}</label>
-                        <select name="labor_team_member_id" class="form-select labor-member-select" style="width: 100%;" required>
+                        <select name="labor_team_member_id" class="form-select" required>
+                            <option value="">-- {{ __('Select') }} --</option>
+                            @foreach($membersByTeam as $teamName => $teamMembers)
+                                @php($activeInTeam = $teamMembers->where('is_active', true))
+                                @if($activeInTeam->isNotEmpty())
+                                    <optgroup label="{{ $teamName }}">
+                                        @foreach($activeInTeam as $member)
+                                            <option value="{{ $member->id }}">{{ $member->name }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            @endforeach
                         </select>
-                        <div class="form-text">{{ __('Search by name — their team is detected automatically.') }}</div>
+                        <div class="form-text">{{ __('Their team is detected automatically.') }}</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Request No.') }}</label>
@@ -315,34 +334,99 @@ document.addEventListener('DOMContentLoaded', function () {
         qtyInput.addEventListener('input', recalc);
     });
 
-    // Select2 "search a team member" field — resolves the team automatically server-side.
-    // Initialized lazily on each modal's `show.bs.modal` rather than eagerly at page
-    // load: Select2 measures the field's width at init time, and every one of these
-    // selects starts out inside a Bootstrap modal that's still display:none — sizing
-    // itself against a hidden (zero-width) container is what left the dropdown
-    // rendering as an empty sliver with no visible search box.
-    document.querySelectorAll('.labor-member-select').forEach(function (el) {
-        const modalEl = el.closest('.modal');
-        if (!modalEl) return;
+    // Submit both the "Record Charge" and every "Edit Charge" form over AJAX
+    // instead of a normal POST. The reason is specifically the duplicate
+    // request-number case: a plain form submit reloads the whole page, which
+    // wipes out everything else the user already filled in (team member,
+    // quantity, date...) just because one field was wrong. Over AJAX we can
+    // keep the modal open with all of that intact and just point out the
+    // conflicting record.
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        modalEl.addEventListener('show.bs.modal', function () {
-            if ($(el).hasClass('select2-hidden-accessible')) return; // already initialized
-            $(el).select2({
-                theme: 'bootstrap-5',
-                dropdownParent: $(modalEl),
-                ajax: {
-                    url: '{{ route("labor.team-members.search") }}',
-                    dataType: 'json',
-                    delay: 250,
-                    data: function (params) { return { q: params.term }; },
-                    processResults: function (data) { return { results: data.results }; },
-                },
-                minimumInputLength: 1,
-                placeholder: '{{ __('Type a name...') }}',
-                width: '100%',
-            });
+    document.querySelectorAll('.charge-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: new FormData(form),
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+                })
+                .then(function (result) {
+                    if (result.ok) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    if (submitBtn) submitBtn.disabled = false;
+
+                    if (result.status === 422 && result.data.duplicate) {
+                        showDuplicateAlert(result.data.existing);
+                        return;
+                    }
+
+                    const messages = result.data.errors
+                        ? Object.values(result.data.errors).flat()
+                        : [result.data.message || '{{ __('Something went wrong. Please try again.') }}'];
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Could not save') }}',
+                        html: messages.map(function (m) { return '<div>' + m + '</div>'; }).join(''),
+                    });
+                })
+                .catch(function () {
+                    if (submitBtn) submitBtn.disabled = false;
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Network error') }}',
+                        text: '{{ __('Please check your connection and try again.') }}',
+                    });
+                });
         });
     });
+
+    // Duplicate request number. The "Record/Edit Charge" modal underneath is
+    // never touched by any choice here — nothing in it is ever closed,
+    // reloaded, or cleared. First ask what the user wants: see who/what it
+    // was already recorded as, or skip straight back to fixing the number.
+    // "See details" opens a second, stacked alert on top of this one; closing
+    // that just drops back to the still-open, still-intact entry form —
+    // exactly where they'd land from "fix the number" directly.
+    function showDuplicateAlert(existing) {
+        Swal.fire({
+            icon: 'warning',
+            title: '{{ __('Duplicate Request No.') }}',
+            text: '{{ __('This request number has already been recorded in the system.') }}',
+            showDenyButton: true,
+            confirmButtonText: '{{ __('View details') }}',
+            denyButtonText: '{{ __('Fix the request number') }}',
+            reverseButtons: true,
+        }).then(function (result) {
+            if (!result.isConfirmed) return; // "fix the number" or dismissed — form is untouched, just type the fix
+
+            Swal.fire({
+                icon: 'info',
+                title: '{{ __('Recorded As') }}',
+                html: '<div class="text-start">' +
+                      '<div><b>{{ __('Team') }}:</b> ' + existing.team + '</div>' +
+                      '<div><b>{{ __('Filed By') }}:</b> ' + existing.filed_by + '</div>' +
+                      '<div><b>{{ __('Charge Type') }}:</b> ' + existing.charge_type + '</div>' +
+                      '<div><b>{{ __('Quantity') }}:</b> ' + existing.quantity + '</div>' +
+                      '<div><b>{{ __('Amount') }}:</b> ' + existing.amount + '</div>' +
+                      '<div><b>{{ __('Date') }}:</b> ' + existing.date + '</div>' +
+                      '</div>',
+                confirmButtonText: '{{ __('Back to editing') }}',
+            });
+            // Confirming just closes this second alert — the entry form
+            // underneath was never hidden, navigated away from, or reset.
+        });
+    }
 });
 </script>
 @endpush
