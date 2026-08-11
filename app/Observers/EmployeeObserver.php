@@ -152,69 +152,32 @@ class EmployeeObserver
     }
 
     /**
-     * Iterate per-tab Auto Settings of a resolution group and return the first tab
-     * whose visa OR work-permit target date matches the employee.
-     *
-     * Per-tab keys: {group}_auto_visa_expiry__tab_{id} / {group}_auto_work_permit_expiry__tab_{id}
-     * Each tab matched independently — the first tab with a matching field wins.
-     */
-    protected function findMatchingTabByAutoSettings(Employee $employee, string $group): ?int
-    {
-        $rows = \App\Models\SystemSetting::where('group', $group)
-            ->where(function ($q) use ($group) {
-                $q->where('key', 'like', "{$group}_auto_visa_expiry__tab_%")
-                  ->orWhere('key', 'like', "{$group}_auto_work_permit_expiry__tab_%");
-            })
-            ->get();
-
-        // Group settings by tab ID: ['2' => ['visa' => '...', 'wp' => '...'], ...]
-        $byTab = [];
-        $visaPrefix = "{$group}_auto_visa_expiry__tab_";
-        $wpPrefix   = "{$group}_auto_work_permit_expiry__tab_";
-
-        foreach ($rows as $row) {
-            $key = $row->key;
-            if (str_starts_with($key, $visaPrefix)) {
-                $tabId = (int) substr($key, strlen($visaPrefix));
-                $byTab[$tabId]['visa'] = $row->value;
-            } elseif (str_starts_with($key, $wpPrefix)) {
-                $tabId = (int) substr($key, strlen($wpPrefix));
-                $byTab[$tabId]['wp'] = $row->value;
-            }
-        }
-
-        if (empty($byTab)) return null;
-
-        // Validate which tabs still exist (not soft-deleted) — single query
-        $existingTabIds = \App\Models\ResolutionTab::where('type', $group)
-            ->whereIn('id', array_keys($byTab))
-            ->pluck('id')
-            ->all();
-
-        $empWp = $employee->workPermitExpiryDate ? $employee->workPermitExpiryDate->format('Y-m-d') : null;
-        $empVisa = $employee->visaExpiryDate ? $employee->visaExpiryDate->format('Y-m-d') : null;
-
-        // Iterate in stable order so behavior is deterministic when multiple tabs match
-        ksort($byTab);
-        foreach ($byTab as $tabId => $targets) {
-            if (!in_array($tabId, $existingTabIds, true)) continue;
-
-            $wpMatch = !empty($targets['wp']) && $empWp === $targets['wp'];
-            $visaMatch = !empty($targets['visa']) && $empVisa === $targets['visa'];
-            if ($wpMatch || $visaMatch) {
-                return $tabId;
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Find the renewal tab matching this employee.
-     * Priority:
-     *  1. Per-tab Auto Settings (SystemSetting renewal_auto_*__tab_{id}) — single source of truth
-     *  2. Legacy SystemConfig per-tab (renewal_target_expiry_date_{id}) — old code-path
-     *  3. Legacy global SystemConfig (renewal_target_expiry_date) → default tab
+     *
+     * Single source of truth for INBOUND auto-pull: per-tab SystemConfig
+     * `renewal_target_expiry_date_{tabId}`, written by the "Configuration /
+     * Import by Expiry" button (RenewalController::configureExpiry()).
+     * That button both (a) immediately pulls in every currently-matching
+     * employee, and (b) leaves this value in place so any employee whose
+     * dates later change to match gets pulled in automatically too.
+     *
+     * IMPORTANT — this is deliberately NOT the same setting as "Auto
+     * Setting" (SystemSetting `renewal_auto_visa_expiry__tab_{id}` /
+     * `renewal_auto_work_permit_expiry__tab_{id}`). That one is OUTBOUND
+     * only: `App\Console\Commands\UpdateResolutionData` reads it to push a
+     * target date onto an employee 24h after they're marked finished in
+     * this tab. It must never drive inbound matching — confirmed with the
+     * user 2026-08-11 after finding the code had conflated the two (a
+     * previous fix mistakenly made Auto Setting the inbound source, since
+     * its own code comment called it "the new source of truth" — it never
+     * was; the two settings serve opposite directions and must stay separate).
+     *
+     * Tab-existence check (below) prevents the original bug from recurring:
+     * a `renewal_target_expiry_date_{tabId}` row surviving after its tab is
+     * deleted must never match anyone. On top of that, tab deletion now
+     * also deletes this row directly (see ResolutionTabController::forceDelete()
+     * and PurgeDeletedResolutionTabs) so it doesn't linger as orphaned data
+     * at all once the 7-day cooldown passes.
      */
     protected function findMatchingRenewalTab(Employee $employee): ?int
     {
@@ -223,12 +186,8 @@ class EmployeeObserver
             return null;
         }
 
-        // 1. New source of truth — per-tab SystemSetting
-        $matchedTabId = $this->findMatchingTabByAutoSettings($employee, 'renewal');
-        if ($matchedTabId) return $matchedTabId;
-
-        // 2. Legacy per-tab SystemConfig (single date used for both visa & wp)
         $tabConfigs = SystemConfig::where('key', 'like', 'renewal_target_expiry_date_%')->get();
+
         foreach ($tabConfigs as $config) {
             $tabId = (int) str_replace('renewal_target_expiry_date_', '', $config->key);
             $targetDate = $config->value;
@@ -241,18 +200,6 @@ class EmployeeObserver
             $visaMatch = $employee->visaExpiryDate && $employee->visaExpiryDate->format('Y-m-d') === $targetDate;
             if ($wpMatch || $visaMatch) {
                 return $tabId;
-            }
-        }
-
-        // 3. Legacy global SystemConfig
-        $legacyDate = SystemConfig::where('key', 'renewal_target_expiry_date')->value('value');
-        if ($legacyDate) {
-            $wpMatch = $employee->workPermitExpiryDate && $employee->workPermitExpiryDate->format('Y-m-d') === $legacyDate;
-            $visaMatch = $employee->visaExpiryDate && $employee->visaExpiryDate->format('Y-m-d') === $legacyDate;
-            if ($wpMatch || $visaMatch) {
-                return \App\Models\ResolutionTab::where('type', 'renewal')
-                    ->where('is_default', true)
-                    ->value('id');
             }
         }
 

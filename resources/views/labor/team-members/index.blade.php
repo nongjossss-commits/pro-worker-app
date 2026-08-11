@@ -3,6 +3,7 @@
 @section('title', 'Team Members - Pro Walker Labor')
 
 @section('content')
+@include('labor.partials.settings-tabs')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('Team Members') }}</h4>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerMemberModal">

@@ -3,6 +3,7 @@
 @section('title', 'Manage Teams - Pro Walker Labor')
 
 @section('content')
+@include('labor.partials.settings-tabs')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('Manage Teams') }}</h4>
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTeamModal">

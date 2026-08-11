@@ -3,6 +3,7 @@
 use App\Http\Controllers\Labor\LaborAuditLogController;
 use App\Http\Controllers\Labor\LaborBillController;
 use App\Http\Controllers\Labor\LaborBillPaymentController;
+use App\Http\Controllers\Labor\LaborBookController;
 use App\Http\Controllers\Labor\LaborChargeEntryController;
 use App\Http\Controllers\Labor\LaborChargeTypeController;
 use App\Http\Controllers\Labor\LaborDashboardController;
@@ -98,6 +99,21 @@ Route::middleware(['auth', 'labor.access'])
         // role); labor-team is excluded inside the controller (own team only).
         Route::get('/reports', [LaborReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export', [LaborReportController::class, 'export'])->name('reports.export');
+
+        // สมุดบัญชี — company books, separate from the main app's Finance and
+        // from the per-team billing ledger. Same visibility rule as Reports:
+        // open to labor-shareholder (read-only), excluded for labor-team,
+        // gated per-action inside LaborBookController (not here) since view
+        // vs manage differs by method.
+        Route::get('/books', [LaborBookController::class, 'index'])->name('books.index');
+        Route::post('/books', [LaborBookController::class, 'store'])->name('books.store');
+        Route::get('/books/{account}', [LaborBookController::class, 'show'])->name('books.show');
+        Route::get('/books/{account}/export', [LaborBookController::class, 'exportTransactions'])->name('books.export');
+        Route::put('/books/{account}', [LaborBookController::class, 'update'])->name('books.update');
+        Route::delete('/books/{account}', [LaborBookController::class, 'destroy'])->name('books.destroy');
+        Route::post('/books/{account}/transactions', [LaborBookController::class, 'storeTransaction'])->name('books.transactions.store');
+        Route::put('/books/{account}/transactions/{transaction}', [LaborBookController::class, 'updateTransaction'])->name('books.transactions.update');
+        Route::delete('/books/{account}/transactions/{transaction}', [LaborBookController::class, 'destroyTransaction'])->name('books.transactions.destroy');
 
         Route::middleware('role:super-admin')->prefix('charge-types')->name('charge-types.')->group(function () {
             Route::post('/', [LaborChargeTypeController::class, 'store'])->name('store');

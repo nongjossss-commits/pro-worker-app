@@ -53,13 +53,8 @@
                     </li>
                     @can('manage-labor-ledger')
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('labor.teams.index') ? 'active' : '' }}" href="{{ route('labor.teams.index') }}">
-                            <i class="bi bi-people-fill me-1"></i>{{ __('Manage Teams') }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('labor.team-members.index') ? 'active' : '' }}" href="{{ route('labor.team-members.index') }}">
-                            <i class="bi bi-person-vcard me-1"></i>{{ __('Manage Members') }}
+                        <a class="nav-link {{ request()->routeIs(['labor.teams.*', 'labor.team-members.*', 'labor.users.*']) ? 'active' : '' }}" href="{{ route('labor.teams.index') }}">
+                            <i class="bi bi-gear-fill me-1"></i>{{ __('Settings') }}
                         </a>
                     </li>
                     <li class="nav-item">
@@ -74,13 +69,13 @@
                             <i class="bi bi-bar-chart-line me-1"></i>{{ __('Reports') }}
                         </a>
                     </li>
-                    @endunless
-                    @role('super-admin')
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('labor.users.*') ? 'active' : '' }}" href="{{ route('labor.users.index') }}">
-                            <i class="bi bi-person-fill-gear me-1"></i>{{ __('Manage Users') }}
+                        <a class="nav-link {{ request()->routeIs('labor.books.*') ? 'active' : '' }}" href="{{ route('labor.books.index') }}">
+                            <i class="bi bi-journal-text me-1"></i>{{ __('Company Books') }}
                         </a>
                     </li>
+                    @endunless
+                    @role('super-admin')
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('labor.audit-log.index') ? 'active' : '' }}" href="{{ route('labor.audit-log.index') }}">
                             <i class="bi bi-clock-history me-1"></i>{{ __('Audit Log') }}

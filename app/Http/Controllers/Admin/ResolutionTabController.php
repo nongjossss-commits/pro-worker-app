@@ -158,6 +158,12 @@ class ResolutionTabController extends Controller
         $tab->systemSettings()->delete();
         $tab->notificationSettings()->delete();
 
+        // Delete the legacy "Import by Expiry" SystemConfig row (no FK relation,
+        // key is `{type}_target_expiry_date_{tabId}` — see EmployeeObserver::findMatchingRenewalTab()).
+        // Without this it survives as orphaned data that a tab-existence check
+        // must guard against forever instead of it simply being gone.
+        \App\Models\SystemConfig::where('key', $tab->type . '_target_expiry_date_' . $tab->id)->delete();
+
         // Delete production orders
         $tab->productionOrders()->forceDelete();
 

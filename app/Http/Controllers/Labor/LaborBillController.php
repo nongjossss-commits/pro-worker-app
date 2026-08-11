@@ -72,7 +72,9 @@ class LaborBillController extends Controller
             ? \App\Models\BankAccount::where('financial_profile_id', $bill->financial_profile_id)->where('is_active', true)->get()
             : collect();
 
-        return view('labor.bills.show', compact('bill', 'bankAccounts'));
+        $bookAccounts = \App\Models\LaborBookAccount::where('is_active', true)->orderBy('name')->get();
+
+        return view('labor.bills.show', compact('bill', 'bankAccounts', 'bookAccounts'));
     }
 
     /**

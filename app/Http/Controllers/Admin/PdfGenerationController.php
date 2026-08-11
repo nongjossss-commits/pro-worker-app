@@ -85,12 +85,18 @@ class PdfGenerationController extends Controller
         $request->validate([
             'target_employer_id' => 'nullable|exists:employers,id',
             'target_importer_id' => 'nullable|exists:importers,id',
+            'target_importer_source' => 'nullable|in:importer,employer',
+            'target_importer_employer_id' => 'nullable|exists:employers,id|different:target_employer_id',
             'target_delegate_id' => 'nullable|exists:delegates,id',
             'mode' => 'nullable|in:preview,download',
         ]);
 
         $targetEmployer = $request->target_employer_id ? Employer::find($request->target_employer_id) : null;
-        $targetImporter = $request->target_importer_id ? \App\Models\Importer::find($request->target_importer_id) : null;
+        $targetImporter = \App\Models\EmployerBackedImporter::resolveTarget(
+            $request->input('target_importer_source'),
+            $request->input('target_importer_id'),
+            $request->input('target_importer_employer_id'),
+        );
         $targetDelegate = $request->target_delegate_id ? \App\Models\Delegate::find($request->target_delegate_id) : null;
 
         try {
@@ -125,6 +131,8 @@ class PdfGenerationController extends Controller
             'slot_name' => 'required_if:output_type,save_to_slot',
             'target_employer_id' => 'nullable|exists:employers,id',
             'target_importer_id' => 'nullable|exists:importers,id',
+            'target_importer_source' => 'nullable|in:importer,employer',
+            'target_importer_employer_id' => 'nullable|exists:employers,id|different:target_employer_id',
             'target_delegate_id' => 'nullable|exists:delegates,id',
         ]);
 
@@ -139,14 +147,16 @@ class PdfGenerationController extends Controller
         $slotName = $request->slot_name;
         $targetEmployerId = $request->input('target_employer_id');
         $targetImporterId = $request->input('target_importer_id');
+        $targetImporterSource = $request->input('target_importer_source');
+        $targetImporterEmployerId = $request->input('target_importer_employer_id');
         $targetDelegateId = $request->input('target_delegate_id');
         $redirectUrl = $request->input('redirect_url', route('employees.index'));
 
         // Force Synchronous Processing for ALL counts
-        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId, $targetImporterId, $targetDelegateId, $redirectUrl);
+        return $this->processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId, $targetImporterId, $targetDelegateId, $redirectUrl, $targetImporterSource, $targetImporterEmployerId);
     }
 
-    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId = null, $targetImporterId = null, $targetDelegateId = null, $redirectUrl = null)
+    protected function processSynchronously($employeeIds, $templateId, $outputType, $slotName, $targetEmployerId = null, $targetImporterId = null, $targetDelegateId = null, $redirectUrl = null, $targetImporterSource = null, $targetImporterEmployerId = null)
     {
         if (!$redirectUrl) {
             $redirectUrl = route('employees.index');
@@ -182,6 +192,8 @@ class PdfGenerationController extends Controller
                     'slot_name' => $slotName,
                     'target_employer_id' => $targetEmployerId,
                     'target_importer_id' => $targetImporterId,
+                    'target_importer_source' => $targetImporterSource,
+                    'target_importer_employer_id' => $targetImporterEmployerId,
                     'target_delegate_id' => $targetDelegateId,
                     'use_empty_employer' => $useEmptyEmployer
                 ]);
@@ -214,10 +226,11 @@ class PdfGenerationController extends Controller
                     $targetEmployerModel = Employer::find($targetEmployerId);
                 }
 
-                $targetImporterModel = null;
-                if ($targetImporterId) {
-                    $targetImporterModel = \App\Models\Importer::find($targetImporterId);
-                }
+                $targetImporterModel = \App\Models\EmployerBackedImporter::resolveTarget(
+                    $targetImporterSource,
+                    $targetImporterId,
+                    $targetImporterEmployerId,
+                );
 
                 $targetDelegateModel = null;
                 if ($targetDelegateId) {

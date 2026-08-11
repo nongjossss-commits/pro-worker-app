@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\LaborBill;
 use App\Models\LaborBillPayment;
+use App\Models\LaborBookTransaction;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -18,12 +19,43 @@ use RuntimeException;
  */
 class LaborBillPaymentService
 {
+    /**
+     * `labor_book_account_id` (optional) is not a LaborBillPayment column —
+     * it's pulled out here to decide whether/where to post a matching
+     * income entry into the company's books (see LaborBookTransaction).
+     * Skipped silently if not provided, so recording a payment never
+     * requires picking a book account.
+     */
     public function recordPayment(LaborBill $bill, array $data): LaborBillPayment
     {
-        return LaborBillPayment::create(array_merge($data, [
-            'labor_bill_id' => $bill->id,
-            'created_by' => Auth::id(),
-        ]));
+        $bookAccountId = $data['labor_book_account_id'] ?? null;
+        unset($data['labor_book_account_id']);
+
+        return DB::transaction(function () use ($bill, $data, $bookAccountId) {
+            $payment = LaborBillPayment::create(array_merge($data, [
+                'labor_bill_id' => $bill->id,
+                'created_by' => Auth::id(),
+            ]));
+
+            if ($bookAccountId) {
+                LaborBookTransaction::create([
+                    'labor_book_account_id' => $bookAccountId,
+                    'type' => 'income',
+                    'category' => 'team_payment',
+                    'amount' => $payment->amount,
+                    'transaction_date' => $payment->paid_at,
+                    'description' => __('Payment from :team (Bill :no)', [
+                        'team' => $bill->team->name ?? '-',
+                        'no' => $bill->bill_no,
+                    ]),
+                    'source_type' => LaborBillPayment::class,
+                    'source_id' => $payment->id,
+                    'created_by' => Auth::id(),
+                ]);
+            }
+
+            return $payment;
+        });
     }
 
     public function issueReceipt(LaborBillPayment $payment): LaborBillPayment

@@ -52,12 +52,15 @@
                         <select name="role_name" x-model="selectedRole" class="form-select">
                             <option value="labor-team">{{ __('Team Lead') }} ({{ __('sees only their own team') }})</option>
                             <option value="labor-accounting">{{ __('Accounting Staff') }} ({{ __('view + edit every team') }})</option>
-                            <option value="labor-shareholder">{{ __('Shareholder') }} ({{ __('view every team, read-only') }})</option>
+                            <option value="labor-shareholder">{{ __('Shareholder') }} ({{ __('view every team, read-only; can optionally also lead their own team') }})</option>
                         </select>
                     </div>
 
-                    <div class="mb-3" x-show="selectedRole === 'labor-team'" style="display: none;" x-transition>
-                        <label class="form-label">{{ __('Team (Required)') }}</label>
+                    <div class="mb-3" x-show="selectedRole === 'labor-team' || selectedRole === 'labor-shareholder'" style="display: none;" x-transition>
+                        <label class="form-label">
+                            <span x-show="selectedRole === 'labor-team'">{{ __('Team (Required)') }}</span>
+                            <span x-show="selectedRole === 'labor-shareholder'">{{ __('Own Team (Optional)') }}</span>
+                        </label>
                         <select name="labor_team_id" class="form-select">
                             <option value="">-- {{ __('Select Team') }} --</option>
                             @foreach ($teams as $team)

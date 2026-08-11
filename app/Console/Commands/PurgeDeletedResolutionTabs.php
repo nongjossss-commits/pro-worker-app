@@ -35,6 +35,12 @@ class PurgeDeletedResolutionTabs extends Command
                 $tab->steps()->delete();
                 $tab->systemSettings()->delete();
                 $tab->notificationSettings()->delete();
+
+                // Legacy "Import by Expiry" SystemConfig row (no FK relation) —
+                // see EmployeeObserver::findMatchingRenewalTab() and
+                // ResolutionTabController::forceDelete() for the same cleanup.
+                \App\Models\SystemConfig::where('key', $tab->type . '_target_expiry_date_' . $tab->id)->delete();
+
                 $tab->productionOrders()->forceDelete();
                 DB::table('employer_resolution_tab')->where('resolution_tab_id', $tab->id)->delete();
 

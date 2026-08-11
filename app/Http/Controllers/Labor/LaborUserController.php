@@ -55,7 +55,12 @@ class LaborUserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'status' => 'active',
-            'labor_team_id' => $validated['role_name'] === 'labor-team' ? $validated['labor_team_id'] : null,
+            // labor-team: assignment required (enforced above). labor-shareholder:
+            // optional — a shareholder can now also lead their own team, seeing
+            // both the all-teams overview and their own team's dashboard section.
+            'labor_team_id' => in_array($validated['role_name'], ['labor-team', 'labor-shareholder'], true)
+                ? ($validated['labor_team_id'] ?? null)
+                : null,
         ]);
 
         $user->assignRole($validated['role_name']);
@@ -86,7 +91,12 @@ class LaborUserController extends Controller
         $updateData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'labor_team_id' => $validated['role_name'] === 'labor-team' ? $validated['labor_team_id'] : null,
+            // labor-team: assignment required (enforced above). labor-shareholder:
+            // optional — a shareholder can now also lead their own team, seeing
+            // both the all-teams overview and their own team's dashboard section.
+            'labor_team_id' => in_array($validated['role_name'], ['labor-team', 'labor-shareholder'], true)
+                ? ($validated['labor_team_id'] ?? null)
+                : null,
         ];
 
         if (!empty($validated['password'])) {

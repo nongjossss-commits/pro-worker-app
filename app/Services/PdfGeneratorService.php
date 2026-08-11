@@ -141,6 +141,8 @@ class PdfGeneratorService
         //          'slot_name' => string (required if save_to_slot)
         //          'target_employer_id' => int|null
         //          'target_importer_id' => int|null
+        //          'target_importer_source' => 'importer'|'employer'|null
+        //          'target_importer_employer_id' => int|null (when target_importer_source === 'employer')
         //          'target_delegate_id' => int|null
         //          'use_empty_employer' => bool
 
@@ -153,10 +155,11 @@ class PdfGeneratorService
             $targetEmployer = Employer::find($options['target_employer_id']);
         }
 
-        $targetImporter = null;
-        if (!empty($options['target_importer_id'])) {
-            $targetImporter = \App\Models\Importer::find($options['target_importer_id']);
-        }
+        $targetImporter = \App\Models\EmployerBackedImporter::resolveTarget(
+            $options['target_importer_source'] ?? null,
+            $options['target_importer_id'] ?? null,
+            $options['target_importer_employer_id'] ?? null,
+        );
 
         $targetDelegate = null;
         if (!empty($options['target_delegate_id'])) {

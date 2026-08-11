@@ -177,16 +177,78 @@
                             <label class="form-label fw-bold text-success">Target Importer (บริษัทนำเข้า)</label>
                             <p class="text-sm text-muted mb-2">
                                 <i class="bi bi-info-circle"></i>
-                                This template contains Importer fields. Please select an Importer.
+                                This template contains Importer fields. Select a real Importer, or use another
+                                Employer's data in the importer slot instead (fields with no equivalent, like
+                                license no./dates, are left blank).
                             </p>
 
-                            <input type="hidden" name="target_importer_id" x-model="targetImporterId">
-                            <select class="form-select" x-model="targetImporterId">
-                                <option value="">-- Leave Blank --</option>
-                                @foreach($importers as $importer)
-                                    <option value="{{ $importer->id }}">{{ $importer->importerNameTh }}</option>
-                                @endforeach
-                            </select>
+                            <input type="hidden" name="target_importer_source" x-model="targetImporterSource">
+                            <div class="d-flex gap-3 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="target_importer_source_ui" id="importerSourceImporter" value="importer" x-model="targetImporterSource">
+                                    <label class="form-check-label" for="importerSourceImporter">ใช้บริษัทนำเข้า (Importer)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="target_importer_source_ui" id="importerSourceEmployer" value="employer" x-model="targetImporterSource">
+                                    <label class="form-check-label" for="importerSourceEmployer">ใช้ข้อมูลนายจ้างรายอื่นแทน</label>
+                                </div>
+                            </div>
+
+                            <div x-show="targetImporterSource === 'importer'">
+                                <input type="hidden" name="target_importer_id" x-model="targetImporterId">
+                                <select class="form-select" x-model="targetImporterId">
+                                    <option value="">-- Leave Blank --</option>
+                                    @foreach($importers as $importer)
+                                        <option value="{{ $importer->id }}">{{ $importer->importerNameTh }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div x-show="targetImporterSource === 'employer'">
+                                <p class="text-sm text-muted mb-2">
+                                    Must be a different employer from the one already selected for this document.
+                                </p>
+                                <input type="hidden" name="target_importer_employer_id" x-model="targetImporterEmployerId">
+                                <div x-data="targetImporterEmployerSelector()" @click.outside="open = false; search = selectedName">
+                                    <div class="position-relative">
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                            <input type="text"
+                                                   class="form-control"
+                                                   placeholder="Type to search Employer..."
+                                                   x-model="search"
+                                                   @focus="open = true; search = ''"
+                                                   @keydown.escape="open = false"
+                                                   autocomplete="off">
+                                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="open = !open"></button>
+                                            <button class="btn btn-outline-danger" type="button" @click="clearSelection()" title="Clear Selection" x-show="selectedEmployerId">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+
+                                        <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                             style="z-index: 1050; max-height: 250px; overflow-y: auto; display: none;"
+                                             x-show="open"
+                                             x-transition>
+                                            <ul class="list-group list-group-flush">
+                                                <template x-for="opt in filteredOptions" :key="opt.id">
+                                                    <li class="list-group-item list-group-item-action cursor-pointer d-flex justify-content-between align-items-center"
+                                                        @click="selectOption(opt)">
+                                                        <div>
+                                                            <div class="fw-bold" x-text="opt.name_th"></div>
+                                                            <div class="small text-muted" x-text="opt.name_en"></div>
+                                                        </div>
+                                                        <i class="bi bi-check2 text-primary" x-show="selectedEmployerId == opt.id"></i>
+                                                    </li>
+                                                </template>
+                                                <li class="list-group-item text-muted text-center" x-show="filteredOptions.length === 0">
+                                                    No results found
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Section 2.7: Target Delegate Selection (Auto-detected) -->
@@ -311,8 +373,19 @@
             selectedEmployerId: 'global', // Filter
             targetEmployerId: '', // Target (for Data)
             targetImporterId: '',
+            targetImporterSource: 'importer', // 'importer' | 'employer' — importer-slot data source
+            targetImporterEmployerId: '', // used when targetImporterSource === 'employer'
             targetDelegateId: '',
             redirectUrl: @json($redirect_url),
+
+            // The employer already driving this document's employer.* fields —
+            // used to exclude it from the "use another employer as importer" picker.
+            // Global templates: whichever Target Employer was picked (2.5).
+            // Non-global templates: the template-owner Employer picked in step 1.
+            get effectiveEmployerId() {
+                if (this.selectedTemplateType === 'global') return this.targetEmployerId;
+                return this.selectedEmployerId !== 'global' ? this.selectedEmployerId : '';
+            },
 
             init() {
                 // Filter Listener
@@ -324,6 +397,11 @@
                 // Target Listener
                 window.addEventListener('target-employer-selected', (e) => {
                     this.targetEmployerId = e.detail.id;
+                });
+
+                // Importer-slot "use another employer" listener
+                window.addEventListener('target-importer-employer-selected', (e) => {
+                    this.targetImporterEmployerId = e.detail.id;
                 });
 
                 // Watch for template changes
@@ -398,7 +476,10 @@
 
             checkImporterAndDelegate(form) {
                 let warnings = [];
-                if (this.needsImporter && !this.targetImporterId) {
+                const importerFilled = this.targetImporterSource === 'employer'
+                    ? !!this.targetImporterEmployerId
+                    : !!this.targetImporterId;
+                if (this.needsImporter && !importerFilled) {
                     warnings.push('Importer');
                 }
                 if (this.needsDelegate && !this.targetDelegateId) {
@@ -495,6 +576,8 @@
                                 slot_name: this.slotName,
                                 target_employer_id: this.targetEmployerId,
                                 target_importer_id: this.targetImporterId,
+                                target_importer_source: this.targetImporterSource,
+                                target_importer_employer_id: this.targetImporterEmployerId,
                                 target_delegate_id: this.targetDelegateId
                             })
                         });
@@ -600,6 +683,40 @@
                 this.selectedName = '';
                 this.search = '';
                 window.dispatchEvent(new CustomEvent('target-employer-selected', { detail: { id: '' } }));
+            }
+        }));
+
+        // Importer-slot "use another employer instead" picker — same shape as
+        // targetEmployerSelector, but excludes whichever employer is already
+        // driving this document's employer.* fields (this.$parent.effectiveEmployerId).
+        Alpine.data('targetImporterEmployerSelector', () => ({
+            search: '',
+            open: false,
+            selectedEmployerId: '',
+            selectedName: '',
+            options: @json($targetEmployerOptions ?? []),
+
+            get filteredOptions() {
+                const excludeId = this.$parent.effectiveEmployerId;
+                let opts = this.options.filter(o => String(o.id) !== String(excludeId) || !excludeId);
+                if (this.search === '') return opts;
+                const term = this.search.toLowerCase();
+                return opts.filter(o => o.search_str.includes(term));
+            },
+
+            selectOption(opt) {
+                this.selectedEmployerId = opt.id;
+                this.selectedName = opt.name_th + ' (' + opt.name_en + ')';
+                this.search = opt.name_th;
+                this.open = false;
+                window.dispatchEvent(new CustomEvent('target-importer-employer-selected', { detail: { id: opt.id } }));
+            },
+
+            clearSelection() {
+                this.selectedEmployerId = '';
+                this.selectedName = '';
+                this.search = '';
+                window.dispatchEvent(new CustomEvent('target-importer-employer-selected', { detail: { id: '' } }));
             }
         }));
     });

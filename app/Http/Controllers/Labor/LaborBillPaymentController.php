@@ -29,6 +29,7 @@ class LaborBillPaymentController extends Controller
             'paid_at' => ['required', 'date'],
             'payment_method' => ['required', 'in:cash,transfer,promptpay,other'],
             'bank_account_id' => ['nullable', 'exists:bank_accounts,id'],
+            'labor_book_account_id' => ['nullable', 'exists:labor_book_accounts,id'],
             'wht_certificate_id' => ['nullable', 'exists:labor_wht_certificates,id'],
             'slip' => ['nullable', 'file', 'max:20480'],
             'notes' => ['nullable', 'string'],

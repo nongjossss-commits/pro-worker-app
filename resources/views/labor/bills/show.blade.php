@@ -180,6 +180,16 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Post to Company Book (optional)') }}</label>
+                        <select name="labor_book_account_id" class="form-select">
+                            <option value="">-- {{ __('Do not record in company books') }} --</option>
+                            @foreach($bookAccounts as $book)
+                                <option value="{{ $book->id }}">{{ $book->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">{{ __('If selected, this payment is added as income to that book account automatically.') }}</div>
+                    </div>
                     @if($bill->whtCertificates->isNotEmpty())
                     <div class="mb-3">
                         <label class="form-label">{{ __('WHT Certificate (optional)') }}</label>
