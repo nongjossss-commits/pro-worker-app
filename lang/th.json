@@ -1113,5 +1113,10 @@
     "Finance module is documented in a SEPARATE bundle below.": "ฟีเจอร์การเงินอยู่ใน Bundle แยกด้านล่าง",
     "Download Finance Manual (Add-on Module)": "ดาวน์โหลดคู่มือการเงิน (โมดูลเสริม)",
     "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.": "คู่มือเฉพาะการเงิน: เมนูการเงิน + โปรไฟล์การเงิน แจกจ่ายแยกให้ลูกค้าที่สมัครโมดูลเสริม Finance เท่านั้น",
-    "Open Finance Manual": "เปิดคู่มือการเงิน"
+    "Open Finance Manual": "เปิดคู่มือการเงิน",
+    "Appointment status": "สถานะการนัดหมาย",
+    "All": "ทั้งหมด",
+    "Not Scheduled": "ยังไม่ได้นัด",
+    "Appointment Pending": "นัดแล้ว รอดำเนินการ",
+    "Appointment Completed": "นัดเสร็จสิ้นแล้ว"
 }

@@ -100,19 +100,47 @@
                         </div>
                         @endif
 
-                        <!-- Section 2: Template Selection -->
+                        <!-- Section 2: Template Selection (searchable — same list-group
+                             pattern as Select Employer above, but reads live from this.templates
+                             since that list is refetched when the employer filter changes). -->
                         <div class="mb-4">
                             <label class="form-label fw-bold">2. Select Template</label>
-                            <div class="input-group">
-                                <select name="template_id" class="form-select" required x-model="selectedTemplateId" :disabled="isLoadingTemplates">
-                                    <option value="">-- Choose Template --</option>
-                                    <template x-for="t in templates" :key="t.id">
-                                        <option :value="t.id" x-text="t.name + (t.type === 'global' ? ' (Global)' : '')"></option>
-                                    </template>
-                                </select>
-                                <button type="button" class="btn btn-outline-secondary" @click="fetchTemplates()" title="Refresh">
-                                    <i class="bi" :class="isLoadingTemplates ? 'bi-hourglass-split' : 'bi-arrow-clockwise'"></i>
-                                </button>
+                            <input type="hidden" name="template_id" x-model="selectedTemplateId" required>
+                            <div @click.outside="templateDropdownOpen = false">
+                                <div class="position-relative">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        <input type="text"
+                                               class="form-control"
+                                               :placeholder="selectedTemplateId ? selectedTemplateLabel : '-- Choose Template --'"
+                                               x-model="templateSearch"
+                                               @focus="templateDropdownOpen = true"
+                                               @keydown.escape="templateDropdownOpen = false"
+                                               :disabled="isLoadingTemplates"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="templateDropdownOpen = !templateDropdownOpen"></button>
+                                        <button type="button" class="btn btn-outline-secondary" @click="fetchTemplates()" title="Refresh">
+                                            <i class="bi" :class="isLoadingTemplates ? 'bi-hourglass-split' : 'bi-arrow-clockwise'"></i>
+                                        </button>
+                                    </div>
+                                    <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                         style="z-index: 1050; max-height: 250px; overflow-y: auto; display: none;"
+                                         x-show="templateDropdownOpen"
+                                         x-transition>
+                                        <ul class="list-group list-group-flush">
+                                            <template x-for="t in filteredTemplates" :key="t.id">
+                                                <li class="list-group-item list-group-item-action cursor-pointer d-flex justify-content-between align-items-center"
+                                                    @click="selectedTemplateId = t.id; templateSearch = ''; templateDropdownOpen = false">
+                                                    <div x-text="t.name + (t.type === 'global' ? ' (Global)' : '')"></div>
+                                                    <i class="bi bi-check2 text-primary" x-show="selectedTemplateId == t.id"></i>
+                                                </li>
+                                            </template>
+                                            <li class="list-group-item text-muted text-center" x-show="filteredTemplates.length === 0">
+                                                No results found
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                             <div class="form-text text-muted" x-show="isLoadingTemplates">Loading templates...</div>
                         </div>
@@ -367,6 +395,8 @@
             templates: @json($templates),
             selectedTemplateId: '',
             selectedTemplateType: '',
+            templateSearch: '',
+            templateDropdownOpen: false,
             needsImporter: false,
             needsDelegate: false,
             isLoadingTemplates: false,
@@ -385,6 +415,18 @@
             get effectiveEmployerId() {
                 if (this.selectedTemplateType === 'global') return this.targetEmployerId;
                 return this.selectedEmployerId !== 'global' ? this.selectedEmployerId : '';
+            },
+
+            get filteredTemplates() {
+                const term = this.templateSearch.toLowerCase().trim();
+                if (!term) return this.templates;
+                return this.templates.filter(t => t.name.toLowerCase().includes(term));
+            },
+
+            get selectedTemplateLabel() {
+                const t = this.templates.find(x => x.id == this.selectedTemplateId);
+                if (!t) return '';
+                return t.name + (t.type === 'global' ? ' (Global)' : '');
             },
 
             init() {
@@ -437,6 +479,8 @@
             fetchTemplates() {
                 this.isLoadingTemplates = true;
                 this.selectedTemplateId = '';
+                this.templateSearch = '';
+                this.templateDropdownOpen = false;
                 const url = `{{ route('admin.pdf-templates.list') }}?employer_id=${this.selectedEmployerId}`;
                 fetch(url)
                     .then(res => res.json())
@@ -453,6 +497,14 @@
             handleSubmit(e) {
                 if (this.isProcessing) return;
                 const form = e.target;
+
+                // template_id moved from a native <select required> to a hidden
+                // input (for the searchable dropdown), so browser validation no
+                // longer catches an empty selection — check explicitly instead.
+                if (!this.selectedTemplateId) {
+                    Swal.fire({ icon: 'warning', title: 'Select a Template', text: 'Please choose a template before generating documents.' });
+                    return;
+                }
 
                 // Logic: Global Template + Empty Target
                 if (this.selectedTemplateType === 'global' && !this.targetEmployerId) {

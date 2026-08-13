@@ -1024,5 +1024,10 @@
     "Finance module is documented in a SEPARATE bundle below.": "Finance module is documented in a SEPARATE bundle below.",
     "Download Finance Manual (Add-on Module)": "Download Finance Manual (Add-on Module)",
     "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.": "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.",
-    "Open Finance Manual": "Open Finance Manual"
+    "Open Finance Manual": "Open Finance Manual",
+    "Appointment status": "Appointment status",
+    "All": "All",
+    "Not Scheduled": "Not Scheduled",
+    "Appointment Pending": "Appointment Pending",
+    "Appointment Completed": "Appointment Completed"
 }

@@ -35,13 +35,14 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        'locale',
         'avatar_path',
         'position_title',
         'bio',
         'last_active_at',
         'is_ticket_hidden', // V2.5.1: For hiding employer job box
         'labor_team_id',
-        'labor_access_granted',
+        'labor_access_level',
         'revoked_permissions',
     ];
 
@@ -66,7 +67,6 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_active_at' => 'datetime',
-            'labor_access_granted' => 'boolean',
             'revoked_permissions' => 'array',
         ];
     }

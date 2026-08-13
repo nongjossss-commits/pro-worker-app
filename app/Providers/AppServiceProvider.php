@@ -48,7 +48,24 @@ class AppServiceProvider extends ServiceProvider
         // bootstrap/providers.php, so it never actually runs — this is the only
         // one that takes effect. Left as-is/unregistered rather than touched,
         // since fixing that is outside what was asked here.
+        //
+        // Carve-out: Pro Walker Labor's manage-labor-ledger/view-labor-ledger
+        // abilities are the one place `admin`'s blanket bypass needed to become
+        // conditional — Super Admin grants each admin user a tier via
+        // users.labor_access_level ('none'/'view'/'edit') instead of an
+        // all-or-nothing flag. Returning null (not false) here for a tier that
+        // doesn't grant the ability just defers to the normal permission check,
+        // which denies on its own since `admin` was never seeded with either
+        // permission. super-admin is untouched — still bypasses everything.
         Gate::before(function ($user, $ability) {
+            if ($user->hasRole('admin') && in_array($ability, ['manage-labor-ledger', 'view-labor-ledger'], true)) {
+                if ($ability === 'manage-labor-ledger') {
+                    return $user->labor_access_level === 'edit' ? true : null;
+                }
+
+                return in_array($user->labor_access_level, ['view', 'edit'], true) ? true : null;
+            }
+
             return $user->hasRole('admin') || $user->hasRole('super-admin') ? true : null;
         });
 

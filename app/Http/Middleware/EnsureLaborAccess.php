@@ -11,12 +11,14 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Allowed in:
  *  - super-admin (always)
- *  - admin, but ONLY if Super Admin has ticked users.labor_access_granted for them
+ *  - admin, but ONLY if Super Admin has set users.labor_access_level to
+ *    'view' or 'edit' for them (not 'none') — this middleware only decides
+ *    whether the module is reachable at all; which of those two tiers they
+ *    got is enforced separately by the Gate::before carve-out in
+ *    AppServiceProvider for the manage-labor-ledger/view-labor-ledger
+ *    abilities, since permission-based gating here would let every admin
+ *    in (they bypass Spatie permission checks otherwise).
  *  - labor-accounting / labor-shareholder / labor-team (dedicated roles, always)
- *
- * Deliberately NOT permission-based: `admin` bypasses every Spatie permission
- * check via Gate::before, so a `@can()`-style gate would let every admin in
- * regardless of the opt-in checkbox. This middleware checks role + flag directly.
  */
 class EnsureLaborAccess
 {
@@ -30,7 +32,7 @@ class EnsureLaborAccess
 
         $allowed = $user->hasRole('super-admin')
             || $user->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team'])
-            || ($user->hasRole('admin') && $user->labor_access_granted);
+            || ($user->hasRole('admin') && $user->labor_access_level !== 'none');
 
         if (!$allowed) {
             abort(403, 'You do not have access to Pro Walker Labor.');

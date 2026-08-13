@@ -116,11 +116,14 @@
                     </div>
 
                     @if(auth()->user()->hasRole('super-admin'))
-                    <div class="mt-4 flex items-center" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
-                        <input id="labor_access_granted" type="checkbox" name="labor_access_granted" value="1"
-                               {{ old('labor_access_granted', $user->labor_access_granted) ? 'checked' : '' }}
-                               class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                        <label for="labor_access_granted" class="ml-2 block text-sm text-gray-700">{{ __('Allow access to Pro Walker Labor menu') }}</label>
+                    <div class="mt-4" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
+                        <label for="labor_access_level" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labor access') }}</label>
+                        <select id="labor_access_level" name="labor_access_level" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            @php($currentLevel = old('labor_access_level', $user->labor_access_level))
+                            <option value="none" {{ $currentLevel === 'none' ? 'selected' : '' }}>{{ __('No access') }} (ไม่ให้เข้า)</option>
+                            <option value="view" {{ $currentLevel === 'view' ? 'selected' : '' }}>{{ __('View only') }} (ดูอย่างเดียว)</option>
+                            <option value="edit" {{ $currentLevel === 'edit' ? 'selected' : '' }}>{{ __('View + Edit') }} (ดูและแก้ไขได้)</option>
+                        </select>
                     </div>
                     @endif
 

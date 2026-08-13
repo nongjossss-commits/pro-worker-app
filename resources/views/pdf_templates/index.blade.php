@@ -27,7 +27,11 @@
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body bg-light rounded">
             <form action="{{ route('admin.pdf-templates.index') }}" method="GET" class="row g-3 align-items-end">
-                <div class="col-md-5">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">ค้นหาชื่อ Template</label>
+                    <input type="text" name="name" class="form-control" placeholder="พิมพ์ชื่อ template..." value="{{ request('name') }}">
+                </div>
+                <div class="col-md-4">
                     <label class="form-label fw-bold">Filter by Employer / Type</label>
                     {{-- Reusing the searchable dropdown pattern --}}
                     @php
@@ -318,13 +322,13 @@
                             </div>
                         </div>
 
-                        {{-- Warning: needs employee data --}}
+                        {{-- Info: has employee fields — pick one below, or leave blank --}}
                         <div class="alert alert-warning py-2" x-show="analysis.employee.count > 0" style="display: none;">
                             <div class="d-flex">
-                                <div class="me-2"><i class="bi bi-exclamation-triangle-fill fs-5"></i></div>
+                                <div class="me-2"><i class="bi bi-person-fill fs-5"></i></div>
                                 <div class="flex-grow-1 small">
                                     <div class="fw-bold mb-1">Template นี้มีช่องข้อมูลลูกจ้าง</div>
-                                    <div class="mb-2">ไม่สามารถพิมพ์เปล่าได้ — ต้องเลือกลูกจ้างก่อน เพื่อให้ระบบเติมข้อมูลจริง</div>
+                                    <div class="mb-2">เลือกลูกจ้างด้านล่างเพื่อเติมข้อมูลจริง หรือเว้นว่างไว้แล้วพิมพ์ได้เลย (ช่องลูกจ้างจะว่างเปล่าในเอกสาร)</div>
                                     <div class="small text-muted mb-1">ช่องลูกจ้างที่จะเติม:</div>
                                     <ul class="small mb-0 ps-3" style="max-height: 120px; overflow-y: auto;">
                                         <template x-for="key in analysis.employee.keys" :key="key">
@@ -333,17 +337,63 @@
                                     </ul>
                                 </div>
                             </div>
-                            <div class="text-end mt-2">
-                                <a href="{{ route('employees.index') }}" class="btn btn-sm btn-warning">
-                                    <i class="bi bi-people me-1"></i> ไปเลือกลูกจ้าง
-                                </a>
-                            </div>
                         </div>
 
-                        {{-- Target selectors (only when no employee data needed).
-                             All 3 selects are searchable list-group dropdowns so the
-                             operator doesn't have to scroll a long native select. --}}
-                        <div x-show="!analysis.employee.count" style="display: none;">
+                        {{-- Target selectors — all searchable so the operator
+                             doesn't have to scroll a long native select. --}}
+                        <div>
+                            {{-- Employee (AJAX search — too many to preload) --}}
+                            <div class="mb-3" x-show="analysis.employee.count > 0" style="display: none;">
+                                <label class="form-label">เลือกลูกจ้าง (Target Employee)</label>
+                                <div class="position-relative" @click.outside="eeOpen = false">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text"
+                                               class="form-control border-start-0 ps-0"
+                                               :placeholder="targetEmployeeId ? eeSelectedLabel : 'พิมพ์ค้นหาลูกจ้าง (ชื่อ/พาสปอร์ต)...'"
+                                               x-model="eeSearch"
+                                               @input="searchEmployees()"
+                                               @focus="eeOpen = true"
+                                               @keydown.escape="eeOpen = false"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" @click="eeOpen = !eeOpen; eeSearch = ''">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="card position-absolute w-100 shadow mt-1 border-0"
+                                         style="z-index: 1050; max-height: 260px; overflow-y: auto; display: none;"
+                                         x-show="eeOpen" x-transition>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item list-group-item-action" style="cursor:pointer;" @click="clearEmployee()">
+                                                <em class="text-muted">— เว้นว่าง —</em>
+                                            </li>
+                                            <li class="list-group-item text-muted text-center" x-show="eeLoading">
+                                                <span class="spinner-border spinner-border-sm me-1"></span> กำลังค้นหา...
+                                            </li>
+                                            <template x-for="opt in eeResults" :key="opt.id">
+                                                <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                    style="cursor:pointer;" @click="selectEmployee(opt)">
+                                                    <div>
+                                                        <div class="fw-bold" x-text="opt.employeeNameTh"></div>
+                                                        <div class="small text-muted" x-text="opt.text"></div>
+                                                    </div>
+                                                    <i class="bi bi-check2 text-primary" x-show="targetEmployeeId == opt.id"></i>
+                                                </li>
+                                            </template>
+                                            <li class="list-group-item text-muted text-center" x-show="!eeLoading && eeSearch.trim().length >= 2 && eeResults.length === 0">
+                                                ไม่พบลูกจ้าง
+                                            </li>
+                                            <li class="list-group-item text-muted text-center" x-show="eeSearch.trim().length < 2 && !eeLoading">
+                                                พิมพ์อย่างน้อย 2 ตัวอักษรเพื่อค้นหา
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="form-text text-primary fw-bold mt-1" x-show="targetEmployeeId">
+                                    <i class="bi bi-check-circle-fill me-1"></i> เลือกแล้ว: <span x-text="eeSelectedLabel"></span>
+                                </div>
+                            </div>
+
                             {{-- Employer --}}
                             <div class="mb-3" x-show="analysis.employer.count > 0" style="display: none;">
                                 <label class="form-label">2. เลือกนายจ้าง (Target Employer)</label>
@@ -480,7 +530,7 @@
                             </div>
 
                             <div class="alert alert-info py-2 small mb-0">
-                                <i class="bi bi-info-circle me-1"></i> Template นี้ไม่ต้องใช้ข้อมูลลูกจ้าง สามารถเลือกข้อมูลที่จะเติม (ถ้ามี) แล้วกดพิมพ์ได้เลย
+                                <i class="bi bi-info-circle me-1"></i> เลือกข้อมูลที่จะเติม (ถ้ามี) แล้วกดพิมพ์ได้เลย — ช่องที่เว้นว่างไว้จะว่างเปล่าในเอกสาร
                             </div>
                         </div>
                     </div>
@@ -496,14 +546,14 @@
                             class="btn btn-outline-primary"
                             :disabled="!canPrint"
                             @click="doPrint('download')"
-                            x-show="selectedId && !analysis.employee.count" style="display: none;">
+                            x-show="selectedId" style="display: none;">
                         <i class="bi bi-download me-1"></i> ดาวน์โหลด PDF
                     </button>
                     <button type="button"
                             class="btn btn-success"
                             :disabled="!canPrint"
                             @click="doPrint('preview')"
-                            x-show="selectedId && !analysis.employee.count" style="display: none;">
+                            x-show="selectedId" style="display: none;">
                         <i class="bi bi-printer me-1"></i> พิมพ์ / Preview
                     </button>
                 </div>
@@ -777,11 +827,17 @@
             targetEmployerId: '',
             targetDelegateId: '',
             targetImporterId: '',
+            targetEmployeeId: '',
             // Searchable dropdown state — one search string + one open flag per selector.
             tplSearch: '', tplOpen: false,
             empSearch: '', empOpen: false,
             delSearch: '', delOpen: false,
             impSearch: '', impOpen: false,
+            // Employee picker is AJAX-backed (too many employees to preload
+            // like employer/delegate/importer above), so it needs its own
+            // result list + loading flag + a remembered label instead of
+            // looking the selection up in a preloaded array.
+            eeSearch: '', eeOpen: false, eeResults: [], eeLoading: false, eeSelectedLabel: '', eeSearchTimer: null,
             analysis: {
                 employee: { count: 0, keys: [] },
                 employer: { count: 0, keys: [] },
@@ -792,7 +848,7 @@
             },
 
             get canPrint() {
-                return this.selectedId && !this.analysis.employee.count;
+                return !!this.selectedId;
             },
 
             // Filtered lists — case-insensitive contains match against the
@@ -866,7 +922,45 @@
                 this.targetEmployerId = '';
                 this.targetDelegateId = '';
                 this.targetImporterId = '';
+                this.targetEmployeeId = '';
+                this.eeSelectedLabel = '';
+                this.eeResults = [];
                 this.analyzeFields();
+            },
+
+            // Debounced AJAX search against the existing employees.search
+            // endpoint (used elsewhere via Select2 — here it's plain fetch
+            // to match this modal's hand-rolled Alpine dropdown styling).
+            searchEmployees() {
+                clearTimeout(this.eeSearchTimer);
+                const term = this.eeSearch.trim();
+                if (term.length < 2) {
+                    this.eeResults = [];
+                    return;
+                }
+                this.eeSearchTimer = setTimeout(() => {
+                    this.eeLoading = true;
+                    fetch('{{ route('employees.search') }}?q=' + encodeURIComponent(term))
+                        .then(res => res.json())
+                        .then(data => { this.eeResults = data; })
+                        .catch(() => { this.eeResults = []; })
+                        .finally(() => { this.eeLoading = false; });
+                }, 300);
+            },
+
+            selectEmployee(emp) {
+                this.targetEmployeeId = emp.id;
+                this.eeSelectedLabel = emp.text || emp.employeeNameEn || emp.employeeNameTh || ('ID:' + emp.id);
+                this.eeOpen = false;
+                this.eeSearch = '';
+                this.eeResults = [];
+            },
+
+            clearEmployee() {
+                this.targetEmployeeId = '';
+                this.eeSelectedLabel = '';
+                this.eeOpen = false;
+                this.eeSearch = '';
             },
 
             analyzeFields() {
@@ -924,6 +1018,7 @@
                 if (this.targetEmployerId) params.append('target_employer_id', this.targetEmployerId);
                 if (this.targetDelegateId) params.append('target_delegate_id', this.targetDelegateId);
                 if (this.targetImporterId) params.append('target_importer_id', this.targetImporterId);
+                if (this.targetEmployeeId) params.append('target_employee_id', this.targetEmployeeId);
                 params.append('mode', mode);
                 const url = '/admin/pdf-templates/' + this.selectedId + '/quick-print?' + params.toString();
                 window.open(url, '_blank');

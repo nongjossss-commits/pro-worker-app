@@ -414,7 +414,7 @@ class PdfGeneratorService
      * Renders real values for employer/importer/delegate/witness/static fields,
      * leaves employee-specific fields blank, draws signatures for groups that have data.
      */
-    public function generateForOfficeUse(PdfTemplate $template, ?Employer $targetEmployer = null, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
+    public function generateForOfficeUse(PdfTemplate $template, ?Employer $targetEmployer = null, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null, ?Employee $targetEmployee = null)
     {
         $pdf = new Fpdi();
 
@@ -573,7 +573,7 @@ class PdfGeneratorService
                     if ($item['type'] === 'static') {
                         $text = $item['text'] ?? '';
                     } elseif ($item['type'] === 'db') {
-                        $text = $this->resolveOfficeValue($item['key'] ?? '', $template, $targetEmployer, $targetImporter, $targetDelegate);
+                        $text = $this->resolveOfficeValue($item['key'] ?? '', $template, $targetEmployer, $targetImporter, $targetDelegate, $targetEmployee);
                     }
 
                     if ($text !== '' && $text !== null) {
@@ -628,10 +628,15 @@ class PdfGeneratorService
     }
 
     /**
-     * Resolve field value WITHOUT an employee context.
-     * Employee-specific keys return empty string; office entities resolve normally.
+     * Resolve field value for Quick Print (office use) — employee is
+     * optional here (unlike resolveValue()'s required Employee param for
+     * the main Generate flow), so employee.* keys use the same simple
+     * data_get()-fallback pattern as employer/importer/delegate in this
+     * method, not resolveValue()'s richer per-field formatting. Keeps
+     * quality consistent across all four target types in Quick Print
+     * rather than only polishing employee fields.
      */
-    protected function resolveOfficeValue($key, PdfTemplate $template = null, ?Employer $targetEmployer = null, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)
+    protected function resolveOfficeValue($key, PdfTemplate $template = null, ?Employer $targetEmployer = null, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null, ?Employee $targetEmployee = null)
     {
         if (!$key) return '';
 
@@ -720,8 +725,13 @@ class PdfGeneratorService
             return (string) (data_get($targetDelegate, $subKey) ?? '');
         }
 
-        // Anything else → employee-related → empty
-        return '';
+        // Anything else → employee-shaped key (bare, unprefixed — Employee
+        // fields don't use a "employee." prefix like the other 3 targets;
+        // see resolveValue()'s equivalent bare-key handling). No employee
+        // selected → empty, matching the other targets' behavior.
+        if (!$targetEmployee) return '';
+
+        return (string) (data_get($targetEmployee, $key) ?? '');
     }
 
     public function generateSinglePdf(PdfTemplate $template, Employee $employee, ?Employer $targetEmployer = null, bool $useEmptyEmployer = false, ?\App\Models\Importer $targetImporter = null, ?\App\Models\Delegate $targetDelegate = null)

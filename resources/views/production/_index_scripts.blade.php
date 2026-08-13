@@ -156,13 +156,21 @@
                 if (pill) pill.classList.add('filter-active');
             }
         }
+
+        // Appointment-status dropdown (replaces the old 3 clickable stat
+        // cards) — reflect whatever `filter` is already in the URL so a
+        // reload/shared link shows the right option selected.
+        const apptSelect = document.getElementById('appointment-status-filter');
+        if (apptSelect && ['appointment_not_scheduled', 'appointment_pending', 'appointment_completed'].includes(currentStepFilter)) {
+            apptSelect.value = currentStepFilter;
+        }
     });
 
     window.toggleFilter = function(filterKey) {
         const url = new URL(window.location.href);
         const currentFilter = url.searchParams.get('filter');
 
-        if (currentFilter == filterKey) {
+        if (!filterKey || currentFilter === filterKey) {
             url.searchParams.delete('filter');
         } else {
             url.searchParams.set('filter', filterKey);

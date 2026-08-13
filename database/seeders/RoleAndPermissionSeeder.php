@@ -58,7 +58,7 @@ class RoleAndPermissionSeeder extends Seeder
             // Pro Walker Labor module — used ONLY for in-module capability (view vs manage),
             // never for gating entry to the module itself. See EnsureLaborAccess middleware:
             // the `admin` role bypasses every permission check via Gate::before, so entry is
-            // controlled by an explicit users.labor_access_granted flag instead.
+            // controlled by an explicit users.labor_access_level flag instead.
             'view-labor-ledger', 'manage-labor-ledger',
         ];
 
@@ -118,9 +118,16 @@ class RoleAndPermissionSeeder extends Seeder
         $this->command->info('Caretaker role created/verified and permissions synced.');
         // --- END: Create Caretaker Role (NEW) ---
 
-        // Create Admin Role and assign all permissions
+        // Create Admin Role and assign all permissions — EXCEPT the two Labor
+        // ledger abilities. Those are granted per-user via users.labor_access_level
+        // instead (see AppServiceProvider's Gate::before carve-out), so admin
+        // must NOT hold them at the role level or that carve-out never runs
+        // (Gate::before stops at the first non-null result, and Spatie's own
+        // check would grant them directly from the role before ours is reached).
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        $adminRole->givePermissionTo(Permission::all());
+        $adminRole->syncPermissions(
+            Permission::whereNotIn('name', ['view-labor-ledger', 'manage-labor-ledger'])->get()
+        );
 
         // FIX: Corrected all $this.command typos to $this->command
         $this->command->info('Admin role created/verified and assigned all permissions.');

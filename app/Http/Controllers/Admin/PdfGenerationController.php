@@ -88,6 +88,7 @@ class PdfGenerationController extends Controller
             'target_importer_source' => 'nullable|in:importer,employer',
             'target_importer_employer_id' => 'nullable|exists:employers,id|different:target_employer_id',
             'target_delegate_id' => 'nullable|exists:delegates,id',
+            'target_employee_id' => 'nullable|exists:employees,id',
             'mode' => 'nullable|in:preview,download',
         ]);
 
@@ -98,9 +99,10 @@ class PdfGenerationController extends Controller
             $request->input('target_importer_employer_id'),
         );
         $targetDelegate = $request->target_delegate_id ? \App\Models\Delegate::find($request->target_delegate_id) : null;
+        $targetEmployee = $request->target_employee_id ? \App\Models\Employee::find($request->target_employee_id) : null;
 
         try {
-            $content = $this->pdfService->generateForOfficeUse($pdf_template, $targetEmployer, $targetImporter, $targetDelegate);
+            $content = $this->pdfService->generateForOfficeUse($pdf_template, $targetEmployer, $targetImporter, $targetDelegate, $targetEmployee);
         } catch (\Throwable $e) {
             \Log::error('QuickPrint PDF Error: ' . $e->getMessage());
             return redirect()->back()->with('danger', 'Quick print failed: ' . $e->getMessage());

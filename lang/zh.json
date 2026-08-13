@@ -1024,5 +1024,10 @@
     "Finance module is documented in a SEPARATE bundle below.": "财务模块的文档在下方单独的手册中。",
     "Download Finance Manual (Add-on Module)": "下载财务手册(附加模块)",
     "Finance-only manual: Finance menu + Financial Profiles. Distribute this separately to customers who subscribed to the Finance add-on module.": "仅财务手册:财务菜单 + 财务配置。单独分发给订阅财务附加模块的客户。",
-    "Open Finance Manual": "打开财务手册"
+    "Open Finance Manual": "打开财务手册",
+    "Appointment status": "预约状态",
+    "All": "全部",
+    "Not Scheduled": "未预约",
+    "Appointment Pending": "预约待处理",
+    "Appointment Completed": "预约已完成"
 }

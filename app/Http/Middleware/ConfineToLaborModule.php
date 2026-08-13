@@ -21,7 +21,7 @@ class ConfineToLaborModule
     protected const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team'];
 
     // Routes a confined user must still be able to reach even outside the labor.* group.
-    protected const ALLOWED_ROUTE_NAMES = ['logout', 'password.confirm'];
+    protected const ALLOWED_ROUTE_NAMES = ['logout', 'password.confirm', 'lang.switch'];
 
     public function handle(Request $request, Closure $next): Response
     {

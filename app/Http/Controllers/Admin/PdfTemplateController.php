@@ -65,6 +65,10 @@ class PdfTemplateController extends Controller
             }
         }
 
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->input('name') . '%');
+        }
+
         $templates = $query->latest()->paginate(10)->withQueryString();
 
         // Prepare employers list for filter dropdown (if admin/staff)

@@ -10,6 +10,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Flatpickr — opt-in only (input.js-flatpickr), same as the main app's layouts/app.blade.php -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     <style>
         body {
@@ -84,6 +86,28 @@
                     @endrole
                 </ul>
                 <ul class="navbar-nav">
+                    @can('manage-labor-ledger')
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('labor.expenses.*') ? 'active' : '' }}" href="{{ route('labor.expenses.create') }}">
+                            <i class="bi bi-receipt me-1"></i>{{ __('Record Expense') }}
+                        </a>
+                    </li>
+                    @endcan
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-translate me-1"></i>
+                            @switch(app()->getLocale())
+                                @case('th') 🇹🇭 ไทย @break
+                                @case('zh') 🇨🇳 中文 @break
+                                @default 🇺🇸 English
+                            @endswitch
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">🇹🇭 ไทย (Thai)</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'en') }}">🇺🇸 English</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
+                        </ul>
+                    </li>
                     @unless(auth()->user()->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team']))
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('home') }}"><i class="bi bi-box-arrow-left me-1"></i>{{ __('Back to Main System') }}</a>
@@ -126,6 +150,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Flatpickr — only initialized on inputs opted in via .js-flatpickr, so
+         every other plain <input type="date"> in the Labor module keeps its
+         native browser behavior unchanged. -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.js-flatpickr').forEach(function (el) {
+                flatpickr(el, { locale: 'th', dateFormat: 'Y-m-d' });
+            });
+        });
+    </script>
     @stack('scripts')
 </body>
 </html>

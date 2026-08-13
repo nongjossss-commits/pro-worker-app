@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Labor;
 
 use App\Http\Controllers\Controller;
+use App\Services\LaborDailySummaryPdfService;
 use App\Services\LaborReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -25,11 +26,42 @@ class LaborReportController extends Controller
 
         [$from, $to] = $this->resolveRange($request);
         $report = $service->summarize($from, $to);
+        $teamSummary = $service->teamPaymentSummary($from, $to);
+        $categorySummary = $service->categorySummary($from, $to);
+        $accounts = $service->accountBalances();
 
         return view('labor.reports.index', [
             'report' => $report,
+            'teamSummary' => $teamSummary,
+            'categorySummary' => $categorySummary,
+            'accounts' => $accounts,
             'from' => $from,
             'to' => $to,
+            'activePeriod' => $request->input('period', 'month'),
+            'activeDate' => $request->filled('date') ? Carbon::parse($request->input('date')) : Carbon::now(),
+        ]);
+    }
+
+    public function pdf(Request $request, LaborReportService $service, LaborDailySummaryPdfService $pdfService)
+    {
+        abort_if($request->user()->hasRole('labor-team'), 403);
+
+        [$from, $to] = $this->resolveRange($request);
+
+        $binary = $pdfService->generate(
+            $from,
+            $to,
+            $service->summarize($from, $to),
+            $service->teamPaymentSummary($from, $to),
+            $service->categorySummary($from, $to),
+            $service->accountBalances()
+        );
+
+        $filename = sprintf('labor-summary_%s_%s.pdf', $from->format('Ymd'), $to->format('Ymd'));
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
         ]);
     }
 
@@ -90,8 +122,18 @@ class LaborReportController extends Controller
         ]);
     }
 
+    /**
+     * `period` + `date` (e.g. from the "go back to a specific day" picker
+     * and its prev/next buttons) takes priority when both are present —
+     * the plain `from`/`to` pair (still what the JS preset buttons submit)
+     * is the fallback, kept so old bookmarked/shared URLs keep working.
+     */
     protected function resolveRange(Request $request): array
     {
+        if ($request->filled('period') && $request->filled('date')) {
+            return $this->resolvePeriodRange($request->input('period'), Carbon::parse($request->input('date')));
+        }
+
         $from = $request->filled('from')
             ? Carbon::parse($request->input('from'))
             : Carbon::now()->startOfMonth();
@@ -105,5 +147,17 @@ class LaborReportController extends Controller
         }
 
         return [$from->startOfDay(), $to->startOfDay()];
+    }
+
+    protected function resolvePeriodRange(string $period, Carbon $date): array
+    {
+        return match ($period) {
+            'day' => [$date->copy()->startOfDay(), $date->copy()->startOfDay()],
+            'week' => [$date->copy()->startOfWeek(Carbon::SUNDAY)->startOfDay(), $date->copy()->endOfWeek(Carbon::SATURDAY)->startOfDay()],
+            'month' => [$date->copy()->startOfMonth()->startOfDay(), $date->copy()->endOfMonth()->startOfDay()],
+            'quarter' => [$date->copy()->firstOfQuarter()->startOfDay(), $date->copy()->lastOfQuarter()->startOfDay()],
+            'year' => [$date->copy()->startOfYear()->startOfDay(), $date->copy()->endOfYear()->startOfDay()],
+            default => [$date->copy()->startOfDay(), $date->copy()->startOfDay()],
+        };
     }
 }

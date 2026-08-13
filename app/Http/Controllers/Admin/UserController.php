@@ -92,7 +92,7 @@ class UserController extends Controller
             'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
             'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')],
             'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
-            'labor_access_granted' => ['nullable', 'boolean'],
+            'labor_access_level' => ['nullable', 'in:none,view,edit'],
         ]);
 
         // Security Check: Prevent non-SuperAdmin from creating SuperAdmin
@@ -114,9 +114,9 @@ class UserController extends Controller
             'status' => 'active',
             'labor_team_id' => $request->role_name === 'labor-team' ? $request->labor_team_id : null,
             // Only Super Admin may grant Labor access, and only to the admin role.
-            'labor_access_granted' => ($request->role_name === 'admin' && Auth::user()->hasRole('super-admin'))
-                ? $request->boolean('labor_access_granted')
-                : false,
+            'labor_access_level' => ($request->role_name === 'admin' && Auth::user()->hasRole('super-admin'))
+                ? ($request->input('labor_access_level') ?: 'none')
+                : 'none',
         ]);
 
         // Assign Role
@@ -220,7 +220,7 @@ class UserController extends Controller
                 'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
                 'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')], // <-- ADDED (Bug Fix)
                 'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
-                'labor_access_granted' => ['nullable', 'boolean'],
+                'labor_access_level' => ['nullable', 'in:none,view,edit'],
                 'permissions' => ['nullable', 'array']
             ]);
 
@@ -233,9 +233,9 @@ class UserController extends Controller
 
             // Only Super Admin may change the Labor access grant, and only for the admin role.
             if (Auth::user()->hasRole('super-admin')) {
-                $updateData['labor_access_granted'] = $request->role_name === 'admin'
-                    ? $request->boolean('labor_access_granted')
-                    : false;
+                $updateData['labor_access_level'] = $request->role_name === 'admin'
+                    ? ($request->input('labor_access_level') ?: 'none')
+                    : 'none';
             }
 
             // V1.1 PATCH: Conditionally update password

@@ -13,7 +13,7 @@
         <span class="text-muted">{{ $account->bank_name }} @if($account->account_number) — {{ $account->account_number }} @endif</span>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('labor.books.export', array_merge(['account' => $account], request()->only(['type', 'category', 'from', 'to']))) }}" class="btn btn-outline-secondary">
+        <a href="{{ route('labor.books.export', array_merge(['account' => $account], request()->only(['type', 'labor_charge_type_id', 'labor_expense_category_id', 'from', 'to']))) }}" class="btn btn-outline-secondary">
             <i class="bi bi-file-earmark-excel me-1"></i>{{ __('Export Excel') }}
         </a>
         @can('manage-labor-ledger')
@@ -104,7 +104,7 @@
 
 <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-end" x-data="{ filterType: '{{ request('type', '') }}' }">
             <div class="col-md-2">
                 <label class="form-label small">{{ __('From') }}</label>
                 <input type="date" name="from" class="form-control" value="{{ request('from') }}">
@@ -115,29 +115,34 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label small">{{ __('Type') }}</label>
-                <select name="type" class="form-select">
+                <select name="type" class="form-select" x-model="filterType">
                     <option value="">{{ __('All') }}</option>
-                    <option value="income" {{ request('type') === 'income' ? 'selected' : '' }}>{{ __('Income') }}</option>
-                    <option value="expense" {{ request('type') === 'expense' ? 'selected' : '' }}>{{ __('Expense') }}</option>
+                    <option value="income">{{ __('Income') }}</option>
+                    <option value="expense">{{ __('Expense') }}</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label small">{{ __('Category') }}</label>
-                <select name="category" class="form-select">
+            <div class="col-md-3" x-show="filterType === '' || filterType === 'income'">
+                <label class="form-label small">{{ __('Category (Income)') }}</label>
+                <select name="labor_charge_type_id" class="form-select">
                     <option value="">{{ __('All') }}</option>
-                    @foreach(\App\Http\Controllers\Labor\LaborBookController::CATEGORIES as $group => $opts)
-                        <optgroup label="{{ ucfirst($group) }}">
-                            @foreach($opts as $key => $label)
-                                <option value="{{ $key }}" {{ request('category') === $key ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </optgroup>
+                    @foreach($chargeTypes as $type)
+                        <option value="{{ $type->id }}" {{ (string) request('labor_charge_type_id') === (string) $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3" x-show="filterType === 'expense'" x-cloak>
+                <label class="form-label small">{{ __('Category (Expense)') }}</label>
+                <select name="labor_expense_category_id" class="form-select">
+                    <option value="">{{ __('All') }}</option>
+                    @foreach($expenseCategories as $expCategory)
+                        <option value="{{ $expCategory->id }}" {{ (string) request('labor_expense_category_id') === (string) $expCategory->id ? 'selected' : '' }}>{{ $expCategory->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="col-md-1">
                 <button type="submit" class="btn btn-outline-primary w-100">{{ __('Apply') }}</button>
             </div>
-            @if(request('type') || request('category') || request('from') || request('to'))
+            @if(request('type') || request('labor_charge_type_id') || request('labor_expense_category_id') || request('from') || request('to'))
             <div class="col-md-2">
                 <a href="{{ route('labor.books.show', $account) }}" class="btn btn-outline-secondary w-100">{{ __('Clear') }}</a>
             </div>
@@ -174,9 +179,19 @@
                         @endif
                     </td>
                     <td class="small text-muted">
-                        {{ \App\Http\Controllers\Labor\LaborBookController::CATEGORIES[$t->type][$t->category] ?? $t->category ?? '-' }}
+                        {{ $t->category_label }}
                     </td>
-                    <td>{{ $t->description }}</td>
+                    <td>
+                        {{ $t->description }}
+                        @if($t->quantity)
+                            <span class="text-muted small">(x{{ $t->quantity }})</span>
+                        @endif
+                        @if($t->attachment_path)
+                            <a href="{{ Storage::disk('public')->url($t->attachment_path) }}" target="_blank" class="ms-1" title="{{ __('View attachment') }}">
+                                <i class="bi bi-paperclip"></i>
+                            </a>
+                        @endif
+                    </td>
                     <td class="text-end fw-bold {{ $t->type === 'income' ? 'text-success' : 'text-danger' }}">
                         {{ $t->type === 'income' ? '+' : '-' }}{{ number_format($t->amount, 2) }}
                     </td>
@@ -198,7 +213,7 @@
                 @if(!$t->isAutoGenerated())
                 <div class="modal fade" id="editTxnModal{{ $t->id }}" tabindex="-1">
                     <div class="modal-dialog">
-                        <form method="POST" action="{{ route('labor.books.transactions.update', [$account, $t]) }}">
+                        <form method="POST" action="{{ route('labor.books.transactions.update', [$account, $t]) }}" x-data="{ txnType: '{{ $t->type }}' }" enctype="multipart/form-data">
                             @csrf @method('PUT')
                             <div class="modal-content">
                                 <div class="modal-header">
@@ -208,35 +223,58 @@
                                 <div class="modal-body">
                                     <div class="mb-3">
                                         <label class="form-label">{{ __('Type') }} *</label>
-                                        <select name="type" class="form-select" required>
-                                            <option value="income" {{ $t->type === 'income' ? 'selected' : '' }}>{{ __('Income') }}</option>
-                                            <option value="expense" {{ $t->type === 'expense' ? 'selected' : '' }}>{{ __('Expense') }}</option>
+                                        <select name="type" class="form-select" x-model="txnType" required>
+                                            <option value="income">{{ __('Income') }}</option>
+                                            <option value="expense">{{ __('Expense') }}</option>
                                         </select>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">{{ __('Category') }}</label>
-                                        <select name="category" class="form-select">
-                                            <option value="">-- {{ __('None') }} --</option>
-                                            @foreach(\App\Http\Controllers\Labor\LaborBookController::CATEGORIES as $group => $opts)
-                                                <optgroup label="{{ ucfirst($group) }}">
-                                                    @foreach($opts as $key => $label)
-                                                        <option value="{{ $key }}" {{ $t->category === $key ? 'selected' : '' }}>{{ $label }}</option>
-                                                    @endforeach
-                                                </optgroup>
+                                    <div class="mb-3" x-show="txnType === 'income'">
+                                        <label class="form-label">{{ __('Category (Charge Type)') }} *</label>
+                                        <select name="labor_charge_type_id" class="form-select" :required="txnType === 'income'">
+                                            <option value="">-- {{ __('Select') }} --</option>
+                                            @foreach($chargeTypes as $type)
+                                                @continue(!$type->is_active && $t->labor_charge_type_id !== $type->id)
+                                                <option value="{{ $type->id }}" {{ $t->labor_charge_type_id === $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">{{ __('Amount') }} *</label>
-                                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" value="{{ $t->amount }}" required>
+                                    <div class="mb-3" x-show="txnType === 'expense'" x-cloak>
+                                        <label class="form-label">{{ __('Category (Expense)') }} *</label>
+                                        <select name="labor_expense_category_id" class="form-select" :required="txnType === 'expense'">
+                                            <option value="">-- {{ __('Select') }} --</option>
+                                            @foreach($expenseCategories as $expCategory)
+                                                @continue(!$expCategory->is_active && $t->labor_expense_category_id !== $expCategory->id)
+                                                <option value="{{ $expCategory->id }}" {{ $t->labor_expense_category_id === $expCategory->id ? 'selected' : '' }}>{{ $expCategory->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-6 mb-3">
+                                            <label class="form-label">{{ __('Amount') }} *</label>
+                                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control" value="{{ $t->amount }}" required>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <label class="form-label">{{ __('Quantity (optional)') }}</label>
+                                            <input type="number" min="1" step="1" name="quantity" class="form-control" value="{{ $t->quantity }}">
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">{{ __('Date') }} *</label>
                                         <input type="date" name="transaction_date" class="form-control" value="{{ $t->transaction_date->format('Y-m-d') }}" required>
                                     </div>
-                                    <div class="mb-0">
+                                    <div class="mb-3">
                                         <label class="form-label">{{ __('Description') }} *</label>
                                         <input type="text" name="description" class="form-control" value="{{ $t->description }}" required>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label">{{ __('Attachment (optional)') }}</label>
+                                        @if($t->attachment_path)
+                                        <div class="small mb-1">
+                                            <a href="{{ Storage::disk('public')->url($t->attachment_path) }}" target="_blank"><i class="bi bi-paperclip"></i> {{ __('Current file') }}</a>
+                                        </div>
+                                        @endif
+                                        <input type="file" name="attachment" class="form-control">
+                                        <div class="form-text">{{ __('Uploading a new file replaces the current one.') }}</div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -265,7 +303,7 @@
 @can('manage-labor-ledger')
 <div class="modal fade" id="addTransactionModal" tabindex="-1">
     <div class="modal-dialog">
-        <form method="POST" action="{{ route('labor.books.transactions.store', $account) }}">
+        <form method="POST" action="{{ route('labor.books.transactions.store', $account) }}" x-data="{ txnType: 'income' }" enctype="multipart/form-data">
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
@@ -275,35 +313,56 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">{{ __('Type') }} *</label>
-                        <select name="type" class="form-select" required>
+                        <select name="type" class="form-select" x-model="txnType" required>
                             <option value="income">{{ __('Income') }}</option>
                             <option value="expense">{{ __('Expense') }}</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Category') }}</label>
-                        <select name="category" class="form-select">
-                            <option value="">-- {{ __('None') }} --</option>
-                            @foreach(\App\Http\Controllers\Labor\LaborBookController::CATEGORIES as $group => $opts)
-                                <optgroup label="{{ ucfirst($group) }}">
-                                    @foreach($opts as $key => $label)
-                                        <option value="{{ $key }}">{{ $label }}</option>
-                                    @endforeach
-                                </optgroup>
+                    <div class="mb-3" x-show="txnType === 'income'">
+                        <label class="form-label">{{ __('Category (Charge Type)') }} *</label>
+                        <select name="labor_charge_type_id" class="form-select" :required="txnType === 'income'">
+                            <option value="">-- {{ __('Select') }} --</option>
+                            @foreach($chargeTypes->where('is_active', true) as $type)
+                                <option value="{{ $type->id }}">{{ $type->name }}</option>
                             @endforeach
                         </select>
+                        @if($chargeTypes->where('is_active', true)->isEmpty())
+                        <div class="form-text text-danger">{{ __('No active charge types yet — ask a Super Admin to add one in Central Billing.') }}</div>
+                        @endif
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ __('Amount') }} *</label>
-                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
+                    <div class="mb-3" x-show="txnType === 'expense'" x-cloak>
+                        <label class="form-label">{{ __('Category (Expense)') }} *</label>
+                        <select name="labor_expense_category_id" class="form-select" :required="txnType === 'expense'">
+                            <option value="">-- {{ __('Select') }} --</option>
+                            @foreach($expenseCategories->where('is_active', true) as $expCategory)
+                                <option value="{{ $expCategory->id }}">{{ $expCategory->name }}</option>
+                            @endforeach
+                        </select>
+                        @if($expenseCategories->where('is_active', true)->isEmpty())
+                        <div class="form-text text-danger">{{ __('No active expense categories yet — ask a Super Admin to add one above.') }}</div>
+                        @endif
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">{{ __('Amount') }} *</label>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">{{ __('Quantity (optional)') }}</label>
+                            <input type="number" min="1" step="1" name="quantity" class="form-control">
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('Date') }} *</label>
                         <input type="date" name="transaction_date" class="form-control" value="{{ now()->format('Y-m-d') }}" required>
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-3">
                         <label class="form-label">{{ __('Description') }} *</label>
                         <input type="text" name="description" class="form-control" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">{{ __('Attach Bill / Receipt (optional)') }}</label>
+                        <input type="file" name="attachment" class="form-control">
                     </div>
                 </div>
                 <div class="modal-footer">

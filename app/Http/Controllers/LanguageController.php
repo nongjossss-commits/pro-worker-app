@@ -17,6 +17,11 @@ class LanguageController extends Controller
         Session::put('locale', $locale);
         App::setLocale($locale);
 
+        // Persist per-user so the choice survives logging back in — see
+        // AuthenticatedSessionController, which used to hardcode 'th' on
+        // every login regardless of what was picked here last time.
+        auth()->user()?->update(['locale' => $locale]);
+
         return redirect()->back();
     }
 }

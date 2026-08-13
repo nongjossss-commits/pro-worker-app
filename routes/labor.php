@@ -6,6 +6,7 @@ use App\Http\Controllers\Labor\LaborBillPaymentController;
 use App\Http\Controllers\Labor\LaborBookController;
 use App\Http\Controllers\Labor\LaborChargeEntryController;
 use App\Http\Controllers\Labor\LaborChargeTypeController;
+use App\Http\Controllers\Labor\LaborExpenseCategoryController;
 use App\Http\Controllers\Labor\LaborDashboardController;
 use App\Http\Controllers\Labor\LaborLedgerController;
 use App\Http\Controllers\Labor\LaborReportController;
@@ -99,6 +100,7 @@ Route::middleware(['auth', 'labor.access'])
         // role); labor-team is excluded inside the controller (own team only).
         Route::get('/reports', [LaborReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/export', [LaborReportController::class, 'export'])->name('reports.export');
+        Route::get('/reports/pdf', [LaborReportController::class, 'pdf'])->name('reports.pdf');
 
         // สมุดบัญชี — company books, separate from the main app's Finance and
         // from the per-team billing ledger. Same visibility rule as Reports:
@@ -115,9 +117,21 @@ Route::middleware(['auth', 'labor.access'])
         Route::put('/books/{account}/transactions/{transaction}', [LaborBookController::class, 'updateTransaction'])->name('books.transactions.update');
         Route::delete('/books/{account}/transactions/{transaction}', [LaborBookController::class, 'destroyTransaction'])->name('books.transactions.destroy');
 
+        // Quick-entry expense form — reachable from the nav on every Labor
+        // page, not scoped to a specific account page like the modal above.
+        Route::get('/expenses/create', [LaborBookController::class, 'createExpense'])->name('expenses.create');
+        Route::post('/expenses', [LaborBookController::class, 'storeExpense'])->name('expenses.store');
+
         Route::middleware('role:super-admin')->prefix('charge-types')->name('charge-types.')->group(function () {
             Route::post('/', [LaborChargeTypeController::class, 'store'])->name('store');
             Route::put('/{chargeType}', [LaborChargeTypeController::class, 'update'])->name('update');
+        });
+
+        // Company Books expense-category catalog — Super Admin only, same
+        // tier as charge-types above (see LaborExpenseCategoryController).
+        Route::middleware('role:super-admin')->prefix('expense-categories')->name('expense-categories.')->group(function () {
+            Route::post('/', [LaborExpenseCategoryController::class, 'store'])->name('store');
+            Route::put('/{expenseCategory}', [LaborExpenseCategoryController::class, 'update'])->name('update');
         });
 
         // Login credentials for labor-accounting / labor-shareholder / labor-team —

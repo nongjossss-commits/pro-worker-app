@@ -88,6 +88,13 @@ Route::middleware(['auth'])->group(function () {
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
 
+// Combined appointment reminder calendar (Registration + Renewal + Workflow)
+// — popped up after login, see AuthenticatedSessionController + layouts/app.blade.php.
+Route::middleware(['auth'])->group(function () {
+    Route::get('/appointments/calendar', [\App\Http\Controllers\AppointmentReminderController::class, 'calendarData'])->name('appointments.calendar');
+    Route::get('/appointments/by-date', [\App\Http\Controllers\AppointmentReminderController::class, 'appointmentsByDate'])->name('appointments.by-date');
+});
+
 // Language Switch Route
 Route::get('lang/{locale}', [App\Http\Controllers\LanguageController::class, 'switch'])->name('lang.switch');
 

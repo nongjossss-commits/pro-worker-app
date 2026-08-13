@@ -155,45 +155,6 @@
             </div>
         </div>
 
-        {{-- Appointment: Not Scheduled --}}
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
-                 id="filter-appointment_not_scheduled"
-                 onclick="toggleFilter('appointment_not_scheduled')"
-                 style="background-color: #F97316; border: none; transition: transform 0.2s;"> {{-- Orange --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-not-scheduled-count">{{ $totalNotScheduled ?? 0 }}</h1>
-                    <p class="fs-6 fw-light mb-0">{{ __('Not Scheduled') }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Appointment: Pending --}}
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
-                 id="filter-appointment_pending"
-                 onclick="toggleFilter('appointment_pending')"
-                 style="background-color: #8B5CF6; border: none; transition: transform 0.2s;"> {{-- Purple --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-appointments-pending-count">{{ $totalAppointmentsPending ?? 0 }}</h1>
-                    <p class="fs-6 fw-light mb-0">{{ __('Appointment Pending') }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Appointment: Completed --}}
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
-                 id="filter-appointment_completed"
-                 onclick="toggleFilter('appointment_completed')"
-                 style="background-color: #059669; border: none; transition: transform 0.2s;"> {{-- Emerald --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-appointments-completed-count">{{ $totalAppointmentsCompleted ?? 0 }}</h1>
-                    <p class="fs-6 fw-light mb-0">{{ __('Appointment Completed') }}</p>
-                </div>
-            </div>
-        </div>
-
         {{-- Daily Check Pending (NEW) --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
@@ -255,6 +216,20 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    {{-- Appointment status filter — replaces the old 3 clickable stat
+         cards (Not Scheduled / Pending / Completed) with a single dropdown.
+         Reuses the same toggleFilter()/`filter` query param the rest of
+         this page's stat cards already use, so no backend change needed. --}}
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <span class="text-secondary small fw-bold"><i class="bi bi-calendar-check-fill"></i> {{ __('Appointment status') }}:</span>
+        <select id="appointment-status-filter" class="form-select form-select-sm" style="width: auto;" onchange="toggleFilter(this.value)">
+            <option value="">{{ __('All') }}</option>
+            <option value="appointment_not_scheduled">{{ __('Not Scheduled') }} ({{ $totalNotScheduled ?? 0 }})</option>
+            <option value="appointment_pending">{{ __('Appointment Pending') }} ({{ $totalAppointmentsPending ?? 0 }})</option>
+            <option value="appointment_completed">{{ __('Appointment Completed') }} ({{ $totalAppointmentsCompleted ?? 0 }})</option>
+        </select>
     </div>
 
     {{-- Renewal-Progress Filter Pills — multi-select toggle (see registration/index.blade.php for the same widget). --}}
@@ -1679,9 +1654,10 @@
              else if (currentStepFilter === 'saved') document.getElementById('filter-saved')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
              else if (currentStepFilter === 'cancelled_employer') document.getElementById('filter-cancelled-employer')?.classList.add('filter-active');
-             else if (currentStepFilter === 'appointment_not_scheduled') document.getElementById('filter-appointment_not_scheduled')?.classList.add('filter-active');
-             else if (currentStepFilter === 'appointment_pending') document.getElementById('filter-appointment_pending')?.classList.add('filter-active');
-             else if (currentStepFilter === 'appointment_completed') document.getElementById('filter-appointment_completed')?.classList.add('filter-active');
+             else if (['appointment_not_scheduled', 'appointment_pending', 'appointment_completed'].includes(currentStepFilter)) {
+                 const apptSelect = document.getElementById('appointment-status-filter');
+                 if (apptSelect) apptSelect.value = currentStepFilter;
+             }
              else if (currentStepFilter === 'pending_daily_check') document.getElementById('filter-pending_daily_check')?.classList.add('filter-active');
              else {
                  const pill = document.getElementById(`filter-step-${currentStepFilter}`);
@@ -2208,12 +2184,6 @@
             updateText('global-employers-count', stats.global.employers_count);
             if(typeof stats.global.daily_check_pending !== 'undefined') {
                 updateText('global-daily-check-pending-count', stats.global.daily_check_pending);
-            }
-            if(typeof stats.global.appointments_pending !== 'undefined') {
-                updateText('global-appointments-pending-count', stats.global.appointments_pending);
-            }
-            if(typeof stats.global.appointments_completed !== 'undefined') {
-                updateText('global-appointments-completed-count', stats.global.appointments_completed);
             }
         }
         if (stats.employer && typeof stats.employer.total !== 'undefined') {

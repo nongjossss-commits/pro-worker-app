@@ -1027,6 +1027,210 @@
 </div>
 {{-- END: Delete Address Confirmation Modal --}}
 
+    @can('edit-employees')
+    {{-- Combined Appointment Reminder Calendar — pops up once right after
+         login (see AuthenticatedSessionController + the trigger script
+         below). Same hand-rolled Alpine calendar-grid pattern as the
+         per-module ones in production/registration|renewal/index.blade.php
+         and workflow/index.blade.php, just pointed at the combined
+         appointments.calendar/appointments.by-date endpoints instead of a
+         single module's. --}}
+    <div class="modal fade" id="appointmentReminderModal" tabindex="-1" aria-labelledby="appointmentReminderModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable" style="max-width: 68%;">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white border-0">
+                    <h5 class="modal-title fw-bold" id="appointmentReminderModalLabel">
+                        <i class="bi bi-calendar-event me-2"></i>{{ __('Appointment Calendar (All Menus)') }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" x-data="combinedCalendarApp()">
+                    <div class="row g-4 h-100">
+                        {{-- Left: Monthly Calendar --}}
+                        <div class="col-lg-5 col-xl-4 h-100 d-flex flex-column">
+                            <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
+                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
+                                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-month me-2"></i>{{ __('Monthly Overview') }}</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-light border" @click="prevMonth()"><i class="bi bi-chevron-left"></i></button>
+                                        <span class="fw-bold text-uppercase" style="min-width: 120px; text-align: center;" x-text="monthNames[month] + ' ' + year"></span>
+                                        <button class="btn btn-sm btn-light border" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body p-3 flex-grow-1 d-flex flex-column">
+                                    <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
+                                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                                    </div>
+                                    <div class="d-grid flex-grow-1" style="grid-template-columns: repeat(7, 1fr); gap: 5px; min-height: 0;">
+                                        <template x-for="day in days" :key="day.dateStr">
+                                            <div
+                                                class="border rounded p-2 d-flex flex-column align-items-center justify-content-between position-relative cursor-pointer h-100"
+                                                :class="{
+                                                    'bg-light text-muted': !day.isCurrentMonth,
+                                                    'bg-white': day.isCurrentMonth,
+                                                    'border-primary bg-primary bg-opacity-10 shadow-sm': day.dateStr === selectedDate,
+                                                    'border-info bg-info bg-opacity-10': day.isToday && day.dateStr !== selectedDate
+                                                }"
+                                                @click="openDay(day.dateStr)"
+                                            >
+                                                <span class="fw-bold" style="font-size: 1.1rem;" x-text="day.dayNum"></span>
+                                                <template x-if="counts[day.dateStr]">
+                                                    <span class="badge bg-danger rounded-pill mt-1" style="font-size: 0.75rem;" x-text="counts[day.dateStr]"></span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Right: Appointments List --}}
+                        <div class="col-lg-7 col-xl-8 h-100 d-flex flex-column">
+                            <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
+                                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold text-primary mb-0">
+                                        <i class="bi bi-list-check me-2"></i>{{ __('Appointments for') }}: <span class="text-dark" x-text="selectedDateFormatted"></span>
+                                    </h6>
+                                    <div class="input-group" style="max-width: 260px;">
+                                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text" class="form-control border-start-0 bg-light" placeholder="{{ __('Search names, employer...') }}" x-model="searchQuery">
+                                    </div>
+                                </div>
+                                <div class="card-body p-0 overflow-auto bg-light position-relative" style="min-height: 300px;">
+                                    <div x-show="isLoading" class="position-absolute w-100 h-100 bg-white bg-opacity-75" style="z-index: 10;">
+                                        <div class="w-100 h-100 d-flex justify-content-center align-items-center">
+                                            <div class="spinner-border text-primary" role="status"></div>
+                                        </div>
+                                    </div>
+                                    <div id="reminderDayAppointmentsContent" class="p-3">
+                                        <div x-show="!isLoading && !appointmentsLoaded" class="text-center py-5 text-muted">
+                                            <i class="bi bi-calendar-x fs-1 opacity-25"></i>
+                                            <p class="mt-2">{{ __('Select a date to view appointments.') }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if(session()->pull('show_appointment_reminder'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalEl = document.getElementById('appointmentReminderModal');
+            if (modalEl) new bootstrap.Modal(modalEl).show();
+        });
+    </script>
+    @endif
+
+    @push('scripts')
+    <script>
+        function combinedCalendarApp() {
+            return {
+                month: new Date().getMonth(),
+                year: new Date().getFullYear(),
+                monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                days: [],
+                counts: {},
+                selectedDate: null,
+                selectedDateFormatted: '',
+                isLoading: false,
+                appointmentsLoaded: false,
+                searchQuery: '',
+
+                init() {
+                    this.generateCalendar();
+                    this.fetchCounts();
+
+                    this.$watch('searchQuery', (value) => {
+                        const cards = document.querySelectorAll('#reminderDayAppointmentsContent .appointment-card');
+                        const query = value.toLowerCase();
+                        cards.forEach(card => {
+                            const nameTh = card.dataset.employeeNameTh || '';
+                            const employer = card.dataset.employerName || '';
+                            card.style.display = (nameTh.includes(query) || employer.includes(query)) ? 'block' : 'none';
+                        });
+                    });
+                },
+
+                prevMonth() {
+                    if (this.month === 0) { this.month = 11; this.year--; } else { this.month--; }
+                    this.generateCalendar();
+                    this.fetchCounts();
+                },
+
+                nextMonth() {
+                    if (this.month === 11) { this.month = 0; this.year++; } else { this.month++; }
+                    this.generateCalendar();
+                    this.fetchCounts();
+                },
+
+                generateCalendar() {
+                    const firstDay = new Date(this.year, this.month, 1);
+                    const lastDay = new Date(this.year, this.month + 1, 0);
+                    const daysInMonth = lastDay.getDate();
+                    const startingDay = firstDay.getDay();
+
+                    let calendarDays = [];
+
+                    const prevMonthLastDay = new Date(this.year, this.month, 0).getDate();
+                    for (let i = startingDay - 1; i >= 0; i--) {
+                        let d = prevMonthLastDay - i;
+                        let pm = this.month - 1, py = this.year;
+                        if (pm < 0) { pm = 11; py--; }
+                        calendarDays.push({ dayNum: d, isCurrentMonth: false, isToday: false, dateStr: `${py}-${String(pm+1).padStart(2,'0')}-${String(d).padStart(2,'0')}` });
+                    }
+
+                    const today = new Date();
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const isToday = (i === today.getDate() && this.month === today.getMonth() && this.year === today.getFullYear());
+                        calendarDays.push({ dayNum: i, isCurrentMonth: true, isToday, dateStr: `${this.year}-${String(this.month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}` });
+                    }
+
+                    const remaining = 42 - calendarDays.length;
+                    for (let i = 1; i <= remaining; i++) {
+                        let nm = this.month + 1, ny = this.year;
+                        if (nm > 11) { nm = 0; ny++; }
+                        calendarDays.push({ dayNum: i, isCurrentMonth: false, isToday: false, dateStr: `${ny}-${String(nm+1).padStart(2,'0')}-${String(i).padStart(2,'0')}` });
+                    }
+
+                    this.days = calendarDays;
+                },
+
+                fetchCounts() {
+                    fetch(`{{ route('appointments.calendar') }}?month=${this.month + 1}&year=${this.year}`)
+                        .then(res => res.json())
+                        .then(data => { this.counts = data; });
+                },
+
+                openDay(dateStr) {
+                    this.selectedDate = dateStr;
+                    const d = new Date(dateStr);
+                    this.selectedDateFormatted = d.toLocaleDateString('{{ app()->getLocale() }}', { day: 'numeric', month: 'short', year: 'numeric' });
+                    this.isLoading = true;
+                    this.appointmentsLoaded = true;
+
+                    fetch(`{{ route('appointments.by-date') }}?date=${dateStr}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            document.getElementById('reminderDayAppointmentsContent').innerHTML = data.html;
+                            this.isLoading = false;
+                            this.searchQuery = '';
+                        })
+                        .catch(() => { this.isLoading = false; });
+                }
+            };
+        }
+    </script>
+    @endpush
+    @endcan
+
     {{-- Toast Notification Container --}}
     <div class="toast-container position-fixed top-0 end-0 p-3">
         <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">

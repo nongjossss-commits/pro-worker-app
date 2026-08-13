@@ -5,11 +5,18 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('Company Books') }} (สมุดบัญชี)</h4>
-    @can('manage-labor-ledger')
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
-        <i class="bi bi-plus-lg me-1"></i>{{ __('Add Account') }}
-    </button>
-    @endcan
+    <div>
+        @role('super-admin')
+        <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#manageExpenseCategoriesModal">
+            <i class="bi bi-tags me-1"></i>{{ __('Manage Expense Categories') }}
+        </button>
+        @endrole
+        @can('manage-labor-ledger')
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+            <i class="bi bi-plus-lg me-1"></i>{{ __('Add Account') }}
+        </button>
+        @endcan
+    </div>
 </div>
 
 <div class="row mb-3 g-3">
@@ -168,12 +175,46 @@
                             <span class="badge bg-danger">{{ __('Expense') }}</span>
                         @endif
                     </td>
-                    <td>{{ \App\Http\Controllers\Labor\LaborBookController::CATEGORIES[$row->type][$row->category] ?? $row->category ?? __('Uncategorized') }}</td>
+                    <td>{{ $row->label }}</td>
                     <td class="text-end">{{ number_format($row->total, 2) }}</td>
                 </tr>
                 @empty
                 <tr>
                     <td colspan="3" class="text-center text-muted py-4">{{ __('No transactions in this period.') }}</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white">
+        <h6 class="mb-0 fw-bold">{{ __('Team Summary') }} — {{ $from->format('d/m/Y') }} - {{ $to->format('d/m/Y') }}</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ __('Team') }}</th>
+                    <th class="text-end">{{ __('Received (this period)') }}</th>
+                    <th class="text-end">{{ __('Total Billed') }}</th>
+                    <th class="text-end">{{ __('Total Paid') }}</th>
+                    <th class="text-end">{{ __('Outstanding') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($teamSummary as $row)
+                <tr>
+                    <td>{{ $row->team->name }}</td>
+                    <td class="text-end">{{ number_format($row->received_in_range, 2) }}</td>
+                    <td class="text-end">{{ number_format($row->total_due, 2) }}</td>
+                    <td class="text-end">{{ number_format($row->total_paid, 2) }}</td>
+                    <td class="text-end fw-bold {{ $row->balance_due > 0 ? 'text-danger' : '' }}">{{ number_format($row->balance_due, 2) }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">{{ __('No team activity in this period.') }}</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -226,4 +267,114 @@
     </div>
 </div>
 @endcan
+
+@role('super-admin')
+{{-- Manage Expense Categories modal --}}
+<div class="modal fade" id="manageExpenseCategoriesModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('Manage Expense Categories') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>{{ __('Name') }}</th>
+                            <th class="text-center">{{ __('Tax Deductible') }}</th>
+                            <th class="text-center">{{ __('Status') }}</th>
+                            <th class="text-end">{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($expenseCategories ?? [] as $expCategory)
+                        <tr>
+                            <td>{{ $expCategory->name }}</td>
+                            <td class="text-center">
+                                @if($expCategory->is_tax_deductible)
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if($expCategory->is_active)
+                                    <span class="badge bg-success">{{ __('Active') }}</span>
+                                @else
+                                    <span class="badge bg-secondary">{{ __('Inactive') }}</span>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        data-bs-toggle="modal" data-bs-target="#editExpenseCategoryModal{{ $expCategory->id }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="4" class="text-center text-muted py-3">{{ __('No expense categories yet.') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+
+                <hr>
+
+                <form method="POST" action="{{ route('labor.expense-categories.store') }}" class="row g-2 align-items-end">
+                    @csrf
+                    <div class="col-6">
+                        <label class="form-label small">{{ __('New Expense Category Name') }}</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="col-3">
+                        <div class="form-check mt-4">
+                            <input type="checkbox" class="form-check-input" name="is_tax_deductible" value="1" id="newExpCatDeductible">
+                            <label class="form-check-label small" for="newExpCatDeductible">{{ __('Tax Deductible') }}</label>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <button type="submit" class="btn btn-primary w-100">{{ __('Add') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@foreach($expenseCategories ?? [] as $expCategory)
+<div class="modal fade" id="editExpenseCategoryModal{{ $expCategory->id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ route('labor.expense-categories.update', $expCategory) }}">
+            @csrf @method('PUT')
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Edit Expense Category') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Name') }}</label>
+                        <input type="text" name="name" class="form-control" value="{{ $expCategory->name }}" required>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="is_tax_deductible" value="1"
+                               id="expCatDeductible{{ $expCategory->id }}" {{ $expCategory->is_tax_deductible ? 'checked' : '' }}>
+                        <label class="form-check-label" for="expCatDeductible{{ $expCategory->id }}">{{ __('Tax Deductible') }}</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="is_active" value="1"
+                               id="expCatActive{{ $expCategory->id }}" {{ $expCategory->is_active ? 'checked' : '' }}>
+                        <label class="form-check-label" for="expCatActive{{ $expCategory->id }}">{{ __('Active') }}</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+@endforeach
+@endrole
 @endsection
