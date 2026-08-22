@@ -15,5 +15,11 @@ class Agent extends Model
         'agentPhone',
         'agentEmail',
         'agentAddress',
+        'agent_doc_other_1',
+        'agent_doc_other_1_desc',
+        'agent_doc_other_2',
+        'agent_doc_other_2_desc',
+        'agent_doc_other_3',
+        'agent_doc_other_3_desc',
     ];
 }

@@ -3,7 +3,6 @@
 @section('title', 'WHT Certificates - Pro Walker Labor')
 
 @section('content')
-@include('labor.partials.finance-tabs')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('WHT Certificates') }} (ใบหัก ณ ที่จ่าย)</h4>
     <a href="{{ route('labor.wht-certificates.create') }}" class="btn btn-primary">

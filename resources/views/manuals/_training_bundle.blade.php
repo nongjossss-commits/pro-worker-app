@@ -9,7 +9,7 @@
 --}}
 @php $brand = \App\Services\BrandService::current(); @endphp
 <!DOCTYPE html>
-<html lang="th">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <title>{{ __('Training Manual') }} — {{ $brand['app_name'] }}</title>
@@ -124,27 +124,37 @@
     // quotations/invoices which belong to the Finance flow (Finance add-on package).
     // Order: top-of-app (Dashboard) → core production work → master data → admin/support tools.
     $sections = [
-        ['key' => 'dashboard',                'title' => '📊 แดชบอร์ด — Dashboard'],
-        ['key' => 'notifications',            'title' => '🔔 การแจ้งเตือน — Notifications'],
-        ['key' => 'production',               'title' => '📋 Pre-Production — งานเตรียมการ'],
-        ['key' => 'workflow',                 'title' => '🔧 Workflow — ขั้นตอนงาน'],
-        ['key' => 'registration_resolution',  'title' => '📑 มติลงทะเบียน — Registration Resolution'],
-        ['key' => 'renewal_resolution',       'title' => '🔄 มติต่ออายุ — Renewal Resolution'],
-        ['key' => 'employees',                'title' => '👥 ข้อมูลลูกจ้าง — Employees'],
-        ['key' => 'employment_history',       'title' => '📜 ประวัติการจ้างงาน — Employment History'],
-        ['key' => 'group_team',               'title' => '👨‍👩‍👧 กลุ่มและทีม — Group & Team'],
-        ['key' => 'employers',                'title' => '🏢 ข้อมูลนายจ้าง — Employers'],
-        ['key' => 'delegates',                'title' => '👤 ผู้แทน — Delegates'],
-        ['key' => 'agents',                   'title' => '🤝 ตัวแทน — Agents'],
-        ['key' => 'importers',                'title' => '📦 บริษัทนำเข้า — Importers'],
-        ['key' => 'incomplete_data',          'title' => '⚠️ ข้อมูลไม่ครบ — Incomplete Data'],
-        ['key' => 'ticket_inbox',             'title' => '📥 กล่องรับเรื่อง — Ticket Inbox'],
-        ['key' => 'employer_ticket',          'title' => '✉️ ส่งคำขอ — Employer Ticket'],
-        ['key' => 'pdf_templates',            'title' => '📄 แม่แบบ PDF — PDF Templates'],
-        ['key' => 'user_management',          'title' => '👨‍💻 จัดการผู้ใช้งาน — User Management'],
-        ['key' => 'activity_logs',            'title' => '🕐 ประวัติการกระทำ — Activity Logs'],
-        ['key' => 'central_trash',            'title' => '🗑️ ถังขยะกลาง — Central Trash'],
+        ['key' => 'dashboard',                'title' => '📊 แดชบอร์ด — Dashboard',                       'title_en' => '📊 Dashboard',                       'title_zh' => '📊 仪表板',           'title_my' => '📊 ဒက်ရှ်ဘုတ်'],
+        ['key' => 'notifications',            'title' => '🔔 การแจ้งเตือน — Notifications',               'title_en' => '🔔 Notifications',                   'title_zh' => '🔔 通知',             'title_my' => '🔔 အသိပေးချက်များ'],
+        ['key' => 'production',               'title' => '📋 Pre-Production — งานเตรียมการ',              'title_en' => '📋 Pre-Production',                  'title_zh' => '📋 Pre-Production',   'title_my' => '📋 Pre-Production'],
+        ['key' => 'workflow',                 'title' => '🔧 Workflow — ขั้นตอนงาน',                      'title_en' => '🔧 Workflow',                        'title_zh' => '🔧 Workflow',         'title_my' => '🔧 Workflow'],
+        ['key' => 'registration_resolution',  'title' => '📑 มติลงทะเบียน — Registration Resolution',     'title_en' => '📑 Registration Resolution',         'title_zh' => '📑 登记决议',         'title_my' => '📑 မှတ်ပုံတင် ဆုံးဖြတ်ချက်'],
+        ['key' => 'renewal_resolution',       'title' => '🔄 มติต่ออายุ — Renewal Resolution',            'title_en' => '🔄 Renewal Resolution',              'title_zh' => '🔄 续签决议',         'title_my' => '🔄 သက်တမ်းတိုး ဆုံးဖြတ်ချက်'],
+        ['key' => 'employees',                'title' => '👥 ข้อมูลลูกจ้าง — Employees',                  'title_en' => '👥 Employees',                       'title_zh' => '👥 雇员',             'title_my' => '👥 ဝန်ထမ်းများ'],
+        ['key' => 'employment_history',       'title' => '📜 ประวัติการจ้างงาน — Employment History',     'title_en' => '📜 Employment History',              'title_zh' => '📜 雇用历史',         'title_my' => '📜 အလုပ်ခန့်ထားမှု မှတ်တမ်း'],
+        ['key' => 'group_team',               'title' => '👨‍👩‍👧 กลุ่มและทีม — Group & Team',                 'title_en' => '👨‍👩‍👧 Group & Team',                     'title_zh' => '👨‍👩‍👧 分组与团队',       'title_my' => '👨‍👩‍👧 အုပ်စုနှင့် အသင်း'],
+        ['key' => 'employers',                'title' => '🏢 ข้อมูลนายจ้าง — Employers',                  'title_en' => '🏢 Employers',                       'title_zh' => '🏢 雇主',             'title_my' => '🏢 အလုပ်ရှင်များ'],
+        ['key' => 'delegates',                'title' => '👤 ผู้แทน — Delegates',                         'title_en' => '👤 Delegates',                       'title_zh' => '👤 授权代表',         'title_my' => '👤 ကိုယ်စားလှယ်များ'],
+        ['key' => 'agents',                   'title' => '🤝 ตัวแทน — Agents',                            'title_en' => '🤝 Agents',                          'title_zh' => '🤝 劳务中介',         'title_my' => '🤝 အေးဂျင့်များ'],
+        ['key' => 'importers',                'title' => '📦 บริษัทนำเข้า — Importers',                   'title_en' => '📦 Importers',                       'title_zh' => '📦 劳务进口代理公司', 'title_my' => '📦 တင်သွင်းသူများ'],
+        ['key' => 'incomplete_data',          'title' => '⚠️ ข้อมูลไม่ครบ — Incomplete Data',             'title_en' => '⚠️ Incomplete Data',                 'title_zh' => '⚠️ 数据不完整',       'title_my' => '⚠️ ဒေတာမပြည့်စုံ'],
+        ['key' => 'ticket_inbox',             'title' => '📥 กล่องรับเรื่อง — Ticket Inbox',              'title_en' => '📥 Ticket Inbox',                    'title_zh' => '📥 工单收件箱',       'title_my' => '📥 တောင်းဆိုချက် စာပုံး'],
+        ['key' => 'employer_ticket',          'title' => '✉️ ส่งคำขอ — Employer Ticket',                  'title_en' => '✉️ Employer Ticket',                 'title_zh' => '✉️ 提交请求',         'title_my' => '✉️ အလုပ်ရှင် တောင်းဆိုချက်'],
+        ['key' => 'pdf_templates',            'title' => '📄 แม่แบบ PDF — PDF Templates',                 'title_en' => '📄 PDF Templates',                   'title_zh' => '📄 PDF 模板',         'title_my' => '📄 PDF Template များ'],
+        ['key' => 'user_management',          'title' => '👨‍💻 จัดการผู้ใช้งาน — User Management',            'title_en' => '👨‍💻 User Management',                   'title_zh' => '👨‍💻 用户管理',         'title_my' => '👨‍💻 အသုံးပြုသူ စီမံခန့်ခွဲမှု'],
+        ['key' => 'activity_logs',            'title' => '🕐 ประวัติการกระทำ — Activity Logs',            'title_en' => '🕐 Activity Logs',                   'title_zh' => '🕐 操作日志',         'title_my' => '🕐 လုပ်ဆောင်ချက် မှတ်တမ်း'],
+        ['key' => 'central_trash',            'title' => '🗑️ ถังขยะกลาง — Central Trash',                 'title_en' => '🗑️ Central Trash',                   'title_zh' => '🗑️ 回收站',           'title_my' => '🗑️ ဗဟိုအမှိုက်ပုံး'],
     ];
+
+    $locale = app()->getLocale();
+    $sectionTitle = fn($s) => match($locale) {
+        'en' => $s['title_en'], 'zh' => $s['title_zh'], 'my' => $s['title_my'], default => $s['title'],
+    };
+    $resolveManual = function($key) use ($locale) {
+        return ($locale !== 'th' && view()->exists("manuals.training.{$locale}.{$key}"))
+            ? "manuals.training.{$locale}.{$key}"
+            : "manuals.training.{$key}";
+    };
 @endphp
 
 <div class="toc">
@@ -152,7 +162,7 @@
     <ol>
         @foreach($sections as $s)
             @if(view()->exists('manuals.training.' . $s['key']))
-                <li><a href="#sec-{{ $s['key'] }}">{{ $s['title'] }}</a></li>
+                <li><a href="#sec-{{ $s['key'] }}">{{ $sectionTitle($s) }}</a></li>
             @endif
         @endforeach
     </ol>
@@ -162,8 +172,8 @@
 @foreach($sections as $s)
     @if(view()->exists('manuals.training.' . $s['key']))
         <section class="manual-section" id="sec-{{ $s['key'] }}">
-            <h2><i class="bi bi-book-fill"></i> {{ $s['title'] }}</h2>
-            @include('manuals.training.' . $s['key'])
+            <h2><i class="bi bi-book-fill"></i> {{ $sectionTitle($s) }}</h2>
+            @include($resolveManual($s['key']))
         </section>
     @endif
 @endforeach

@@ -115,7 +115,7 @@
         <h5>{{ __('Other Documents') }}</h5>
         <div class="row mb-3">
             <div class="col-md-4">
-                <label for="importer_doc_other_1" class="form-label">1. {{ __('Other Document') }} 1 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="importer_doc_other_1" class="form-label">1. {{ __('Other Document') }} 1 <span class="text-muted small">(รองรับไฟล์สูงสุด 30 MB)</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('importer_doc_other_1') is-invalid @enderror" id="importer_doc_other_1" name="importer_doc_other_1" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'importer_doc_other_1' } }))">
@@ -128,7 +128,7 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="importer_doc_other_2" class="form-label">2. {{ __('Other Document') }} 2 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="importer_doc_other_2" class="form-label">2. {{ __('Other Document') }} 2 <span class="text-muted small">(รองรับไฟล์สูงสุด 30 MB)</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('importer_doc_other_2') is-invalid @enderror" id="importer_doc_other_2" name="importer_doc_other_2" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'importer_doc_other_2' } }))">
@@ -141,7 +141,7 @@
                 @enderror
             </div>
             <div class="col-md-4">
-                <label for="importer_doc_other_3" class="form-label">3. {{ __('Other Document') }} 3 <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                <label for="importer_doc_other_3" class="form-label">3. {{ __('Other Document') }} 3 <span class="text-muted small">(รองรับไฟล์สูงสุด 30 MB)</span></label>
                 <div class="input-group input-group-sm">
                     <input type="file" class="form-control form-control-sm @error('importer_doc_other_3') is-invalid @enderror" id="importer_doc_other_3" name="importer_doc_other_3" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                     <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'importer_doc_other_3' } }))">

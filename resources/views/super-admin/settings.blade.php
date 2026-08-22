@@ -1027,6 +1027,28 @@
                                         <label class="form-label small fw-bold">{{ __('พยาน 2 (ตำแหน่ง)') }}</label>
                                         <input type="text" name="witness_2_title" class="form-control">
                                     </div>
+                                    <hr class="my-2">
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('ภาษาของสัญญา (เลือกได้สูงสุด 2 ภาษา)') }}</label>
+                                        <div class="d-flex flex-wrap gap-3 contract-lang-group" data-group="trial">
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="th" id="trial_lang_th" checked>
+                                                <label class="form-check-label" for="trial_lang_th">🇹🇭 ไทย</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="en" id="trial_lang_en">
+                                                <label class="form-check-label" for="trial_lang_en">🇬🇧 English</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="zh" id="trial_lang_zh">
+                                                <label class="form-check-label" for="trial_lang_zh">🇨🇳 中文</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="my" id="trial_lang_my">
+                                                <label class="form-check-label" for="trial_lang_my">🇲🇲 မြန်မာ</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-end gap-2 mt-3">
                                     <button type="submit" class="btn btn-info fw-bold px-4">
@@ -1114,6 +1136,28 @@
                                         <label class="form-label small fw-bold">{{ __('พยาน 2 (ตำแหน่ง)') }}</label>
                                         <input type="text" name="witness_2_title" class="form-control">
                                     </div>
+                                    <hr class="my-2">
+                                    <div class="col-md-12">
+                                        <label class="form-label small fw-bold">{{ __('ภาษาของสัญญา (เลือกได้สูงสุด 2 ภาษา)') }}</label>
+                                        <div class="d-flex flex-wrap gap-3 contract-lang-group" data-group="service">
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="th" id="service_lang_th" checked>
+                                                <label class="form-check-label" for="service_lang_th">🇹🇭 ไทย</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="en" id="service_lang_en">
+                                                <label class="form-check-label" for="service_lang_en">🇬🇧 English</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="zh" id="service_lang_zh">
+                                                <label class="form-check-label" for="service_lang_zh">🇨🇳 中文</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input contract-lang-checkbox" type="checkbox" name="langs[]" value="my" id="service_lang_my">
+                                                <label class="form-check-label" for="service_lang_my">🇲🇲 မြန်မာ</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="d-flex justify-content-end gap-2 mt-3">
                                     <button type="submit" class="btn btn-success fw-bold px-4">
@@ -1192,6 +1236,20 @@
                 bootstrapTab.show();
             }
         }
+    });
+
+    // Contract language pickers (Trial / Service tabs) — cap each group at 2
+    // selected languages by disabling the rest once 2 are checked.
+    document.querySelectorAll('.contract-lang-group').forEach(function (group) {
+        const boxes = group.querySelectorAll('.contract-lang-checkbox');
+        function enforceLimit() {
+            const checked = Array.from(boxes).filter(b => b.checked);
+            boxes.forEach(function (b) {
+                b.disabled = !b.checked && checked.length >= 2;
+            });
+        }
+        boxes.forEach(b => b.addEventListener('change', enforceLimit));
+        enforceLimit();
     });
 
     function toggleVisibility(key, isVisible) {

@@ -86,6 +86,9 @@ class AppServiceProvider extends ServiceProvider
                     $incompleteCount = \App\Helpers\CompletenessHelper::getIncompleteCount();
                     $view->with('incompleteCount', $incompleteCount);
 
+                    $duplicateRecordCount = \App\Helpers\DuplicateDataHelper::getGroupCount();
+                    $view->with('duplicateRecordCount', $duplicateRecordCount);
+
                     // Logic update: "adminTicketUnreadCount" should respect visibility scope.
                     $currentUser = auth()->user();
                     $canViewAllTickets = $currentUser->hasRole(['super-admin', 'admin', 'staff']);

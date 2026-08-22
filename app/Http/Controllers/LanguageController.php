@@ -10,7 +10,7 @@ class LanguageController extends Controller
 {
     public function switch($locale)
     {
-        if (! in_array($locale, ['en', 'th', 'zh'])) {
+        if (! in_array($locale, ['en', 'th', 'zh', 'my'])) {
             abort(400);
         }
 

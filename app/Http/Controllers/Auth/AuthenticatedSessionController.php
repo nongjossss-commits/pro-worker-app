@@ -44,12 +44,6 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('labor.dashboard');
             }
 
-            // Combined appointment reminder calendar — popped up once by
-            // layouts/app.blade.php on the next page it renders, then
-            // cleared via session()->pull() so it doesn't reappear on
-            // every subsequent page load within the same session.
-            session(['show_appointment_reminder' => true]);
-
             // เปลี่ยนจาก RouteServiceProvider::HOME เป็น '/dashboard' โดยตรง
             return redirect()->intended('/index');
         }

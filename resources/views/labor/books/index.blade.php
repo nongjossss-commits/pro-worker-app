@@ -282,6 +282,7 @@
                     <thead>
                         <tr>
                             <th>{{ __('Name') }}</th>
+                            <th>{{ __('Note') }}</th>
                             <th class="text-center">{{ __('Tax Deductible') }}</th>
                             <th class="text-center">{{ __('Status') }}</th>
                             <th class="text-end">{{ __('Actions') }}</th>
@@ -291,6 +292,7 @@
                         @forelse($expenseCategories ?? [] as $expCategory)
                         <tr>
                             <td>{{ $expCategory->name }}</td>
+                            <td class="small text-muted">{{ $expCategory->note ?: '-' }}</td>
                             <td class="text-center">
                                 @if($expCategory->is_tax_deductible)
                                     <i class="bi bi-check-circle-fill text-success"></i>
@@ -313,7 +315,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="text-center text-muted py-3">{{ __('No expense categories yet.') }}</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted py-3">{{ __('No expense categories yet.') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -335,6 +337,10 @@
                     <div class="col-3">
                         <button type="submit" class="btn btn-primary w-100">{{ __('Add') }}</button>
                     </div>
+                    <div class="col-12">
+                        <label class="form-label small">{{ __('Note (what this category covers)') }}</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="{{ __('e.g. General office running costs — utilities, stationery, cleaning') }}"></textarea>
+                    </div>
                 </form>
             </div>
         </div>
@@ -355,6 +361,10 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('Name') }}</label>
                         <input type="text" name="name" class="form-control" value="{{ $expCategory->name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Note (what this category covers)') }}</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="{{ __('e.g. General office running costs — utilities, stationery, cleaning') }}">{{ $expCategory->note }}</textarea>
                     </div>
                     <div class="form-check form-switch mb-2">
                         <input class="form-check-input" type="checkbox" name="is_tax_deductible" value="1"

@@ -30,10 +30,10 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">{{ __('Expense Category') }} *</label>
-                    <select name="labor_expense_category_id" class="form-select" required>
+                    <select name="labor_expense_category_id" id="expenseCategorySelect" class="form-select" required>
                         <option value="">-- {{ __('Select') }} --</option>
                         @foreach($expenseCategories as $expCategory)
-                            <option value="{{ $expCategory->id }}" {{ (string) old('labor_expense_category_id') === (string) $expCategory->id ? 'selected' : '' }}>
+                            <option value="{{ $expCategory->id }}" data-note="{{ e($expCategory->note) }}" {{ (string) old('labor_expense_category_id') === (string) $expCategory->id ? 'selected' : '' }}>
                                 {{ $expCategory->name }}{{ $expCategory->is_tax_deductible ? ' (' . __('tax deductible') . ')' : '' }}
                             </option>
                         @endforeach
@@ -41,6 +41,9 @@
                     @if($expenseCategories->isEmpty())
                     <div class="form-text text-danger">{{ __('No active expense categories yet — ask a Super Admin to add one in Company Books.') }}</div>
                     @endif
+                    <div id="expenseCategoryNote" class="form-text d-none">
+                        <i class="bi bi-info-circle me-1"></i><span id="expenseCategoryNoteText"></span>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">{{ __('Quantity (optional)') }}</label>
@@ -71,4 +74,29 @@
         <button type="submit" class="btn btn-danger">{{ __('Save Expense') }}</button>
     </div>
 </form>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const select = document.getElementById('expenseCategorySelect');
+        const noteBox = document.getElementById('expenseCategoryNote');
+        const noteText = document.getElementById('expenseCategoryNoteText');
+        if (!select || !noteBox || !noteText) return;
+
+        function updateNote() {
+            const option = select.options[select.selectedIndex];
+            const note = option ? option.dataset.note : '';
+            if (note) {
+                noteText.textContent = note;
+                noteBox.classList.remove('d-none');
+            } else {
+                noteBox.classList.add('d-none');
+            }
+        }
+
+        select.addEventListener('change', updateNote);
+        updateNote();
+    });
+</script>
+@endpush
 @endsection

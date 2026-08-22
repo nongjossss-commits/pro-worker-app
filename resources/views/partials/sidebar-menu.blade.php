@@ -36,6 +36,20 @@
     @endcan
     @endif
 @endcan
+
+@if(\App\Facades\SuperAdmin::isVisible('duplicate_records'))
+@can('manage-tickets')
+<a href="{{ route('admin.duplicate-records.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.duplicate-records.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+    <div class="d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ __('Duplicate Records') }}</span>
+        @if(isset($duplicateRecordCount) && $duplicateRecordCount > 0)
+            <span class="badge bg-danger rounded-pill">{{ $duplicateRecordCount }}</span>
+        @endif
+    </div>
+</a>
+@endcan
+@endif
+
 {{-- START V2.4: Smart Ticket Links --}}
 {{-- V2.4: Admin/Staff Ticket Inbox --}}
 {{-- Visible if the user has 'manage-tickets' permission. This takes precedence. --}}
@@ -95,7 +109,7 @@
 @hasanyrole('admin|super-admin')
 @php
     $isFinanceActive = request()->routeIs('finance.index') || request()->routeIs('finance.create');
-    $isFinanceSubMenuActive = request()->routeIs('finance.bank-accounts.*') || request()->routeIs('finance.expense-categories.*') || request()->routeIs('finance.expenses.*') || request()->routeIs('finance.profiles.*');
+    $isFinanceSubMenuActive = request()->routeIs('finance.bank-accounts.*') || request()->routeIs('finance.expense-categories.*') || request()->routeIs('finance.expenses.*') || request()->routeIs('finance.profiles.*') || request()->routeIs('finance.books.*') || request()->routeIs('finance.books-reports.*');
 @endphp
 
 <div class="list-group-item list-group-item-action p-0 {{ $isFinanceActive || $isFinanceSubMenuActive ? 'active-parent' : '' }}" style="border: none;">
@@ -120,7 +134,10 @@
             ->where('wht_status', 'pending')
             ->count();
     @endphp
-    <a href="{{ route('finance.wht_inbox') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.wht_inbox') || request()->routeIs('finance.wht_received') ? 'active' : '' }}" style="padding-left: 3rem; border-top: none;">
+    <a href="{{ route('finance.books.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.books.*') ? 'active' : '' }}" style="padding-left: 3rem; border-top: none;">
+        <i class="bi bi-journal-text me-2"></i>{{ __('Income & Expense Books') }}
+    </a>
+    <a href="{{ route('finance.wht_inbox') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.wht_inbox') || request()->routeIs('finance.wht_received') ? 'active' : '' }}" style="padding-left: 3rem;">
         <i class="bi bi-inbox-fill me-2"></i>{{ __('WHT Inbox') }}
         @if($whtPendingCount > 0)
             <span class="badge bg-warning text-dark ms-1">{{ $whtPendingCount }}</span>
@@ -131,9 +148,6 @@
     </a>
     <a href="{{ route('finance.expense-categories.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expense-categories.*') ? 'active' : '' }}" style="padding-left: 3rem;">
         <i class="bi bi-tags me-2"></i>{{ __('Expense Categories') }}
-    </a>
-    <a href="{{ route('finance.expenses.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" style="padding-left: 3rem;">
-        <i class="bi bi-receipt-cutoff me-2"></i>{{ __('Expenses (รายจ่าย)') }}
     </a>
     @if(\App\Facades\SuperAdmin::isVisible('financial_profiles'))
     <a href="{{ route('finance.profiles.builder') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.profiles.*') ? 'active' : '' }}" style="padding-left: 3rem;">

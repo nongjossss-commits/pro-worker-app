@@ -5,7 +5,7 @@
 --}}
 @php $brand = \App\Services\BrandService::current(); @endphp
 <!DOCTYPE html>
-<html lang="th">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <title>{{ __('Finance Training Manual') }} — {{ $brand['app_name'] }}</title>
@@ -104,10 +104,20 @@
 {{-- TOC --}}
 @php
     $sections = [
-        ['key' => 'sales',               'title' => '🛒 การขาย — Sales (ใบเสนอราคา)'],
-        ['key' => 'finance',             'title' => '💰 การเงิน — Finance (Ledger / Tax / WHT)'],
-        ['key' => 'financial_profiles',  'title' => '🏷️ โปรไฟล์การเงิน — Financial Profiles'],
+        ['key' => 'sales',               'title' => '🛒 การขาย — Sales (ใบเสนอราคา)',              'title_en' => '🛒 Sales (Quotations)',        'title_zh' => '🛒 销售(报价单)',              'title_my' => '🛒 ရောင်းချမှု'],
+        ['key' => 'finance',             'title' => '💰 การเงิน — Finance (Ledger / Tax / WHT)',    'title_en' => '💰 Finance (Ledger / Tax / WHT)', 'title_zh' => '💰 财务(账簿 / 税务 / 预扣税)', 'title_my' => '💰 ငွေကြေး'],
+        ['key' => 'financial_profiles',  'title' => '🏷️ โปรไฟล์การเงิน — Financial Profiles',       'title_en' => '🏷️ Financial Profiles',         'title_zh' => '🏷️ 财务档案',                 'title_my' => '🏷️ ငွေကြေး Profile များ'],
     ];
+
+    $locale = app()->getLocale();
+    $sectionTitle = fn($s) => match($locale) {
+        'en' => $s['title_en'], 'zh' => $s['title_zh'], 'my' => $s['title_my'], default => $s['title'],
+    };
+    $resolveManual = function($key) use ($locale) {
+        return ($locale !== 'th' && view()->exists("manuals.training.{$locale}.{$key}"))
+            ? "manuals.training.{$locale}.{$key}"
+            : "manuals.training.{$key}";
+    };
 @endphp
 
 <div class="toc">
@@ -115,7 +125,7 @@
     <ol>
         @foreach($sections as $s)
             @if(view()->exists('manuals.training.' . $s['key']))
-                <li><a href="#sec-{{ $s['key'] }}">{{ $s['title'] }}</a></li>
+                <li><a href="#sec-{{ $s['key'] }}">{{ $sectionTitle($s) }}</a></li>
             @endif
         @endforeach
     </ol>
@@ -125,8 +135,8 @@
 @foreach($sections as $s)
     @if(view()->exists('manuals.training.' . $s['key']))
         <section class="manual-section" id="sec-{{ $s['key'] }}">
-            <h2><i class="bi bi-book-fill"></i> {{ $s['title'] }}</h2>
-            @include('manuals.training.' . $s['key'])
+            <h2><i class="bi bi-book-fill"></i> {{ $sectionTitle($s) }}</h2>
+            @include($resolveManual($s['key']))
         </section>
     @endif
 @endforeach

@@ -86,7 +86,14 @@ class AppointmentReminderController extends Controller
                     $items->push((object) [
                         'source' => $type,
                         'source_label' => $label,
-                        'name' => $employee->employeeNameTh ?: $employee->employeeNameEn,
+                        'employee_id' => $employee->id,
+                        'employer_id' => $employee->employer_id,
+                        'name_th' => $employee->employeeNameTh,
+                        'name_en' => $employee->employeeNameEn,
+                        'title_th' => $employee->employeeTitleTh,
+                        'title_en' => $employee->employeeTitleEn,
+                        'passport' => $employee->employeePassport,
+                        'photo_url' => $employee->photo_url,
                         'company' => $employee->employer->employerNameTh ?? '-',
                         'appointment_date' => $employee->appointment_date,
                         'appointment_location' => $employee->appointment_location,
@@ -101,10 +108,18 @@ class AppointmentReminderController extends Controller
             ->with(['employee', 'order.employer'])
             ->get()
             ->each(function ($item) use (&$items) {
+                $employee = $item->employee;
                 $items->push((object) [
                     'source' => 'workflow',
                     'source_label' => 'Workflow',
-                    'name' => $item->employee->employeeNameTh ?? ($item->employee->employeeNameEn ?? '-'),
+                    'employee_id' => $employee->id ?? null,
+                    'employer_id' => $item->order->employer_id ?? null,
+                    'name_th' => $employee->employeeNameTh ?? null,
+                    'name_en' => $employee->employeeNameEn ?? null,
+                    'title_th' => $employee->employeeTitleTh ?? null,
+                    'title_en' => $employee->employeeTitleEn ?? null,
+                    'passport' => $employee->employeePassport ?? null,
+                    'photo_url' => $employee->photo_url ?? null,
                     'company' => $item->order->employer->employerNameTh ?? '-',
                     'appointment_date' => $item->appointment_date,
                     'appointment_location' => $item->appointment_location,

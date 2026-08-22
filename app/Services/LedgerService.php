@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Exceptions\LedgerEntryLockedException;
 use App\Helpers\ActivityLogHelper;
 use App\Models\BankAccount;
 use App\Models\LedgerEntry;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -102,6 +104,17 @@ class LedgerService
     {
         $this->validatePayload($data);
 
+        // Refuse a brand-new entry backdated into an already-closed day —
+        // otherwise the 05:00 lock would be trivially bypassed by just
+        // creating a new row instead of editing an old one. The one
+        // legitimate exception (Super Admin correcting a closed day) never
+        // reaches this check: createCorrection() below always dates its
+        // reversal + replacement today, which is always open.
+        $entryDate = Carbon::parse($data['entry_date']);
+        if (!AccountingPeriodService::isOpen($entryDate)) {
+            throw new LedgerEntryLockedException($entryDate);
+        }
+
         return DB::transaction(function () use ($data) {
             $account = BankAccount::lockForUpdate()->findOrFail($data['bank_account_id']);
             $data['account_type'] = $account->account_type;
@@ -136,6 +149,10 @@ class LedgerService
     public function updateEntry(LedgerEntry $entry, array $data): LedgerEntry
     {
         $this->validatePayload($data);
+
+        if (!AccountingPeriodService::isOpen($entry->entry_date)) {
+            throw new LedgerEntryLockedException($entry->entry_date);
+        }
 
         return DB::transaction(function () use ($entry, $data) {
             // Reverse balance เก่า
@@ -173,6 +190,10 @@ class LedgerService
      */
     public function deleteEntry(LedgerEntry $entry): bool
     {
+        if (!AccountingPeriodService::isOpen($entry->entry_date)) {
+            throw new LedgerEntryLockedException($entry->entry_date);
+        }
+
         return DB::transaction(function () use ($entry) {
             $account = BankAccount::lockForUpdate()->findOrFail($entry->bank_account_id);
             $this->applyBalanceImpact($account, $entry->type, $entry->net_amount, -1);
@@ -191,6 +212,96 @@ class LedgerService
             );
 
             return $result;
+        });
+    }
+
+    /**
+     * The only sanctioned way to change a closed-day entry's figures
+     * (Super Admin only — enforced by the caller, see
+     * Finance\FinanceBookController::correctEntry()). Standard
+     * correcting-entry bookkeeping, not a silent historical edit:
+     *
+     *   1. A reversal — an exact mirror of $original's stored breakdown
+     *      but the OPPOSITE type, dated TODAY — nets its effect out of
+     *      today's balance without ever touching $original itself.
+     *   2. A replacement — a fresh entry built from $newData (today's
+     *      date, normal calculateBreakdown()), representing the corrected
+     *      figures.
+     *
+     * Both carry `adjustment_of_id = $original->id` so the full chain is
+     * traceable. $original's own row — and every historical report/PDF/
+     * Excel already generated for its day — never changes.
+     */
+    public function createCorrection(LedgerEntry $original, array $newData, string $reason): array
+    {
+        return DB::transaction(function () use ($original, $newData, $reason) {
+            $today = Carbon::today()->toDateString();
+
+            $reversalAccount = BankAccount::lockForUpdate()->findOrFail($original->bank_account_id);
+            $reversalType = $original->type === 'income' ? 'expense' : 'income';
+
+            $reversal = LedgerEntry::create([
+                'entry_no' => $this->generateEntryNo($today),
+                'entry_date' => $today,
+                'type' => $reversalType,
+                'bank_account_id' => $original->bank_account_id,
+                'category_id' => $original->category_id,
+                'category_type' => $original->category_type,
+                'counterparty_name' => $original->counterparty_name,
+                'counterparty_tax_id' => $original->counterparty_tax_id,
+                'gross_amount' => $original->gross_amount,
+                'vat_treatment' => $original->vat_treatment,
+                'vat_rate' => $original->vat_rate,
+                'vat_amount' => $original->vat_amount,
+                'subtotal' => $original->subtotal,
+                'wht_type' => $original->wht_type,
+                'wht_rate' => $original->wht_rate,
+                'wht_amount' => $original->wht_amount,
+                'net_amount' => $original->net_amount,
+                'description' => __('Reversal of :no (correction)', ['no' => $original->entry_no]),
+                'adjustment_of_id' => $original->id,
+                'adjustment_reason' => __('Reversal: :reason', ['reason' => $reason]),
+                'ai_source' => 'manual',
+                'ai_status' => 'confirmed',
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+            $this->applyBalanceImpact($reversalAccount, $reversal->type, $reversal->net_amount, +1);
+
+            $newData['entry_date'] = $today;
+            $this->validatePayload($newData);
+
+            $replacementAccount = ((int) $newData['bank_account_id'] === (int) $original->bank_account_id)
+                ? $reversalAccount
+                : BankAccount::lockForUpdate()->findOrFail($newData['bank_account_id']);
+            $newData['account_type'] = $replacementAccount->account_type;
+            $breakdown = $this->calculateBreakdown($newData);
+
+            $replacement = LedgerEntry::create(array_merge($newData, $breakdown, [
+                'entry_no' => $this->generateEntryNo($today),
+                'adjustment_of_id' => $original->id,
+                'adjustment_reason' => $reason,
+                'ai_source' => 'manual',
+                'ai_status' => 'confirmed',
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]));
+            $this->applyBalanceImpact($replacementAccount, $replacement->type, $replacement->net_amount, +1);
+
+            ActivityLogHelper::logAction(
+                'correct',
+                "แก้ไขย้อนหลัง Ledger Entry {$original->entry_no} (ปิดรอบแล้ว) — กลับรายการ {$reversal->entry_no} + รายการใหม่ {$replacement->entry_no} เหตุผล: {$reason}",
+                LedgerEntry::class,
+                $original->id,
+                [
+                    'original' => $original->entry_no,
+                    'reversal' => $reversal->entry_no,
+                    'replacement' => $replacement->entry_no,
+                    'reason' => $reason,
+                ],
+            );
+
+            return ['reversal' => $reversal->fresh(), 'replacement' => $replacement->fresh()];
         });
     }
 

@@ -25,16 +25,88 @@ class LaborBillController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
-        $bills = LaborBill::with(['team', 'financialProfile', 'creator'])
+        $teamId = $request->input('team_id');
+        $paymentStatus = $request->input('payment_status'); // '', 'outstanding', 'paid'
+        $period = $request->input('period', 'all'); // today|month|quarter|year|all
+
+        [$periodStart, $periodEnd] = $this->resolvePeriodRange($period);
+
+        $applyFilters = function ($query) use ($teamId, $periodStart, $periodEnd) {
+            if ($teamId) {
+                $query->where('labor_team_id', $teamId);
+            }
+            if ($periodStart) {
+                $query->whereBetween('issued_at', [$periodStart, $periodEnd]);
+            }
+            return $query;
+        };
+
+        $listQuery = $applyFilters(LaborBill::query()->withSum('payments as paid_sum', 'amount'));
+
+        // whereRaw with an embedded correlated subquery (rather than
+        // havingRaw against the withSum alias) — MySQL's strict mode
+        // rejects HAVING that mixes a plain column (total_due) with an
+        // aggregate alias when the query has no GROUP BY.
+        $paidSubquery = 'COALESCE((select sum(amount) from labor_bill_payments
+            where labor_bill_payments.labor_bill_id = labor_bills.id
+            and labor_bill_payments.deleted_at is null), 0)';
+
+        if ($paymentStatus === 'outstanding') {
+            $listQuery->where('status', '!=', 'void')->whereRaw("total_due - {$paidSubquery} > 0");
+        } elseif ($paymentStatus === 'paid') {
+            $listQuery->where('status', '!=', 'void')->whereRaw("total_due - {$paidSubquery} <= 0");
+        }
+
+        $bills = $listQuery->with(['team', 'financialProfile', 'creator'])
             ->orderByDesc('issued_at')
             ->orderByDesc('id')
-            ->paginate(30);
+            ->paginate(30)
+            ->withQueryString();
+
+        // Summary cards always reflect the full team+period scope (regardless
+        // of the payment_status slice being listed), so switching between
+        // "Outstanding"/"Fully Paid" doesn't make the totals jump around.
+        $summaryBase = $applyFilters(LaborBill::query()->where('status', '!=', 'void'));
+        $totalBilled = (float) (clone $summaryBase)->sum('total_due');
+        $billCount = (clone $summaryBase)->count();
+
+        $totalPaid = (float) \App\Models\LaborBillPayment::whereHas('bill', function ($q) use ($teamId, $periodStart, $periodEnd) {
+            $q->where('status', '!=', 'void');
+            if ($teamId) {
+                $q->where('labor_team_id', $teamId);
+            }
+            if ($periodStart) {
+                $q->whereBetween('issued_at', [$periodStart, $periodEnd]);
+            }
+        })->sum('amount');
+
+        $totalOutstanding = $totalBilled - $totalPaid;
 
         $teams = LaborTeam::where('is_active', true)->orderBy('name')->get();
         $profiles = FinancialProfile::where('type', 'biller')->orderBy('name')->get();
         $currentProfileId = LaborBillingSetting::current()->financial_profile_id;
 
-        return view('labor.bills.index', compact('bills', 'teams', 'profiles', 'currentProfileId'));
+        return view('labor.bills.index', compact(
+            'bills', 'teams', 'profiles', 'currentProfileId',
+            'totalBilled', 'totalPaid', 'totalOutstanding', 'billCount',
+            'teamId', 'paymentStatus', 'period',
+        ));
+    }
+
+    /**
+     * Quick-filter presets for the Bills index (Today/This Month/This
+     * Quarter/This Year/All Time) — returns [start, end] Carbon instances,
+     * or [null, null] for 'all' (no date filtering).
+     */
+    private function resolvePeriodRange(string $period): array
+    {
+        return match ($period) {
+            'today' => [Carbon::now()->startOfDay(), Carbon::now()->endOfDay()],
+            'month' => [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()],
+            'quarter' => [Carbon::now()->startOfQuarter(), Carbon::now()->endOfQuarter()],
+            'year' => [Carbon::now()->startOfYear(), Carbon::now()->endOfYear()],
+            default => [null, null],
+        };
     }
 
     public function store(Request $request, LaborBillService $service)
@@ -66,7 +138,7 @@ class LaborBillController extends Controller
 
         $bill->load(['team', 'financialProfile', 'creator', 'payments' => function ($q) {
             $q->orderByDesc('paid_at')->orderByDesc('id');
-        }, 'payments.bankAccount', 'payments.whtCertificate', 'taxInvoices', 'whtCertificates']);
+        }, 'payments.bankAccount', 'payments.whtCertificate', 'payments.bookTransaction.account', 'taxInvoices', 'whtCertificates']);
 
         $bankAccounts = $bill->financial_profile_id
             ? \App\Models\BankAccount::where('financial_profile_id', $bill->financial_profile_id)->where('is_active', true)->get()

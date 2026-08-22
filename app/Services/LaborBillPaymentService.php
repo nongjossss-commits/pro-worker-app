@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LaborBill;
 use App\Models\LaborBillPayment;
 use App\Models\LaborBookTransaction;
+use App\Models\LaborLedgerEntry;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -36,6 +37,19 @@ class LaborBillPaymentService
                 'labor_bill_id' => $bill->id,
                 'created_by' => Auth::id(),
             ]));
+
+            // Offsets the team's Central Billing Ledger balance — a bill is
+            // only a snapshot of what was owed (see LaborBillService), so
+            // without this negative entry the ledger would never reflect
+            // that the debt was actually paid off.
+            LaborLedgerEntry::create([
+                'labor_team_id' => $bill->labor_team_id,
+                'entry_date' => $payment->paid_at,
+                'description' => 'ชำระเงินตามบิล ' . $bill->bill_no,
+                'amount' => -$payment->amount,
+                'labor_bill_payment_id' => $payment->id,
+                'created_by' => Auth::id(),
+            ]);
 
             if ($bookAccountId) {
                 LaborBookTransaction::create([

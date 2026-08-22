@@ -75,12 +75,32 @@ class LaborBill extends Model
 
     public function getTotalPaidAttribute(): float
     {
+        // When the query eager-computed the sum via withSum('payments as
+        // paid_sum', 'amount') (used for list-page filtering/summaries),
+        // reuse it instead of firing a per-row query.
+        if (array_key_exists('paid_sum', $this->attributes)) {
+            return (float) $this->attributes['paid_sum'];
+        }
+
         return (float) $this->payments()->sum('amount');
     }
 
     public function getBalanceDueAttribute(): float
     {
         return (float) $this->total_due - $this->total_paid;
+    }
+
+    /**
+     * 'unpaid' | 'partial' | 'paid' — derived from total_paid vs total_due,
+     * used to badge each bill row and to drive the Bills index filter.
+     */
+    public function getPaymentStatusAttribute(): string
+    {
+        if ($this->total_paid <= 0) {
+            return 'unpaid';
+        }
+
+        return $this->balance_due <= 0 ? 'paid' : 'partial';
     }
 
     public function scopeActive($query)

@@ -655,8 +655,18 @@ class SettingsController extends Controller
             }
         }
 
+        // Language selection: up to 2 of th/en/zh/my, default to Thai only
+        // (matches the original single-language behaviour when untouched).
+        $requestedLangs = (array) $request->query('langs', ['th']);
+        $langs = array_values(array_intersect(['th', 'en', 'zh', 'my'], $requestedLangs));
+        $langs = array_slice($langs, 0, 2);
+        if (empty($langs)) $langs = ['th'];
+
+        $allLangData = config("contracts.{$type}", []);
+        $langData = array_intersect_key($allLangData, array_flip($langs));
+
         $view = $type === 'trial' ? 'super-admin.contract-trial' : 'super-admin.contract-service';
-        return view($view, compact('provider', 'customer', 'witnesses', 'contract'));
+        return view($view, compact('provider', 'customer', 'witnesses', 'contract', 'langs', 'langData'));
     }
 
     /**

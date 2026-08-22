@@ -79,7 +79,7 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
         <strong>{{ __('Payments') }}</strong>
         @if($bill->status !== 'void')
-        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
             <i class="bi bi-cash-coin me-1"></i>{{ __('Record Payment') }}
         </button>
         @endif
@@ -91,6 +91,7 @@
                     <th>{{ __('Date') }}</th>
                     <th>{{ __('Method') }}</th>
                     <th class="text-end">{{ __('Amount') }}</th>
+                    <th>{{ __('Posted To') }}</th>
                     <th>{{ __('WHT') }}</th>
                     <th>{{ __('Receipt') }}</th>
                     <th class="text-end">{{ __('Actions') }}</th>
@@ -99,7 +100,12 @@
             <tbody>
                 @forelse($bill->payments as $payment)
                 <tr>
-                    <td>{{ $payment->paid_at->format('d/m/Y') }}</td>
+                    <td>
+                        {{ $payment->paid_at->format('d/m/Y') }}
+                        @if($payment->reference_no)
+                            <div class="text-muted small">{{ __('Ref') }}: {{ $payment->reference_no }}</div>
+                        @endif
+                    </td>
                     <td>
                         @switch($payment->payment_method)
                             @case('cash') {{ __('Cash') }} @break
@@ -109,6 +115,17 @@
                         @endswitch
                     </td>
                     <td class="text-end fw-bold">{{ number_format($payment->amount, 2) }}</td>
+                    <td>
+                        @if($payment->bookTransaction)
+                            <a href="{{ route('labor.books.show', $payment->bookTransaction->labor_book_account_id) }}" class="badge bg-success text-decoration-none">
+                                <i class="bi bi-check-circle me-1"></i>{{ $payment->bookTransaction->account->name ?? '-' }}
+                            </a>
+                        @else
+                            <span class="badge bg-warning text-dark" title="{{ __('This payment was not posted to any company book account.') }}">
+                                <i class="bi bi-exclamation-triangle me-1"></i>{{ __('Not posted') }}
+                            </span>
+                        @endif
+                    </td>
                     <td>
                         @if($payment->whtCertificate)
                             <a href="{{ route('labor.wht-certificates.show', $payment->whtCertificate) }}" class="small">{{ $payment->whtCertificate->cert_no }}</a>
@@ -124,6 +141,11 @@
                         @endif
                     </td>
                     <td class="text-end">
+                        @if($payment->slip_path)
+                            <a href="{{ Storage::disk('public')->url($payment->slip_path) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill" title="{{ __('View payment slip') }}">
+                                <i class="bi bi-paperclip"></i>
+                            </a>
+                        @endif
                         @if($payment->hasReceipt())
                             <a href="{{ route('labor.bills.payments.receipt.download', [$bill, $payment]) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{{ __('Preview / Download') }}"><i class="bi bi-file-pdf"></i></a>
                         @else
@@ -135,7 +157,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" class="text-center text-muted py-4">{{ __('No payments recorded yet.') }}</td></tr>
+                <tr><td colspan="7" class="text-center text-muted py-4">{{ __('No payments recorded yet.') }}</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -181,14 +203,22 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">{{ __('Post to Company Book (optional)') }}</label>
-                        <select name="labor_book_account_id" class="form-select">
-                            <option value="">-- {{ __('Do not record in company books') }} --</option>
+                        <label class="form-label">{{ __('Reference Number (optional)') }}</label>
+                        <input type="text" name="reference_no" class="form-control" placeholder="{{ __('e.g. bank transfer reference, for matching against the statement') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('Post to Company Book') }} *</label>
+                        <select name="labor_book_account_id" id="paymentBookAccountSelect" class="form-select" required>
+                            <option value="">-- {{ __('Select account') }} --</option>
                             @foreach($bookAccounts as $book)
-                                <option value="{{ $book->id }}">{{ $book->name }}</option>
+                                <option value="{{ $book->id }}" data-balance="{{ number_format($book->current_balance, 2) }}">{{ $book->name }}</option>
                             @endforeach
                         </select>
-                        <div class="form-text">{{ __('If selected, this payment is added as income to that book account automatically.') }}</div>
+                        <div class="form-text">{{ __('This payment is added as income to the selected book account immediately.') }}</div>
+                        <div id="paymentBookAccountBalance" class="form-text text-success fw-bold d-none"></div>
+                        @if($bookAccounts->isEmpty())
+                        <div class="form-text text-danger">{{ __('No active book accounts yet — add one in Company Books first.') }}</div>
+                        @endif
                     </div>
                     @if($bill->whtCertificates->isNotEmpty())
                     <div class="mb-3">
@@ -212,11 +242,41 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Save Payment') }}</button>
+                    <button type="submit" class="btn btn-success">{{ __('Save Payment') }}</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
 @endif
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Live balance hint under the "Post to Company Book" select.
+        const select = document.getElementById('paymentBookAccountSelect');
+        const balanceBox = document.getElementById('paymentBookAccountBalance');
+        if (select && balanceBox) {
+            select.addEventListener('change', function () {
+                const option = select.options[select.selectedIndex];
+                const balance = option ? option.dataset.balance : '';
+                if (balance) {
+                    balanceBox.textContent = '{{ __('Current balance') }}: ' + balance;
+                    balanceBox.classList.remove('d-none');
+                } else {
+                    balanceBox.classList.add('d-none');
+                }
+            });
+        }
+
+        // Quick-pay from the Bills list: ?pay=1 opens the modal automatically.
+        if (new URLSearchParams(window.location.search).get('pay') === '1') {
+            const modalEl = document.getElementById('recordPaymentModal');
+            if (modalEl && window.bootstrap) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        }
+    });
+</script>
+@endpush
 @endsection

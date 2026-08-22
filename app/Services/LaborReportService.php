@@ -135,6 +135,96 @@ class LaborReportService
     }
 
     /**
+     * Itemized version of categorySummary() — every individual transaction
+     * grouped under its category (not just the SUM), so accounting staff
+     * can see exactly which line items made up a category's total in a
+     * daily/weekly/monthly report. Used by the Reports page + its Excel/PDF
+     * exports; categorySummary() itself is untouched since
+     * LaborBookController::index() still relies on the aggregated form.
+     */
+    public function categoryTransactions(Carbon $from, Carbon $to)
+    {
+        $transactions = LaborBookTransaction::whereBetween('transaction_date', [$from, $to])
+            ->with(['chargeType', 'expenseCategory', 'account'])
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        $groups = $transactions->groupBy(fn ($t) => $t->type . '|' . $t->category_label)
+            ->map(function ($items, $key) {
+                [$type, $label] = explode('|', $key, 2);
+
+                return (object) [
+                    'type' => $type,
+                    'label' => $label,
+                    'items' => $items->values(),
+                    'subtotal' => (float) $items->sum('amount'),
+                ];
+            });
+
+        $income = $groups->where('type', 'income')->sortByDesc('subtotal')->values();
+        $expense = $groups->where('type', 'expense')->sortByDesc('subtotal')->values();
+
+        $incomeTotal = (float) $income->sum('subtotal');
+        $expenseTotal = (float) $expense->sum('subtotal');
+
+        return (object) [
+            'groups' => $income->concat($expense)->values(),
+            'income_total' => $incomeTotal,
+            'expense_total' => $expenseTotal,
+            'net' => $incomeTotal - $expenseTotal,
+        ];
+    }
+
+    /**
+     * Period-scoped reconciliation per Company Books account — unlike
+     * accountBalances() (always "as of now", used by the Company Books
+     * dashboard), this answers "what was the balance at the start of the
+     * selected period, what moved during it, and what's the balance at the
+     * end of it" — the same opening/movement/closing shape as summarize()
+     * already gives for the Central Billing ledger, but for the office's
+     * own cash accounts. This is what the Reports page's "Account
+     * Balances" section and its PDF/Excel exports use, so the figures
+     * actually respond to the Day/Week/Month/Quarter/Year filter instead
+     * of always showing today's live balance regardless of period chosen.
+     */
+    public function accountBalancesForRange(Carbon $from, Carbon $to)
+    {
+        $accounts = LaborBookAccount::orderBy('name')->get();
+
+        $rows = $accounts->map(function ($account) use ($from, $to) {
+            $openingIncome = (float) $account->transactions()
+                ->where('type', 'income')->where('transaction_date', '<', $from->toDateString())->sum('amount');
+            $openingExpense = (float) $account->transactions()
+                ->where('type', 'expense')->where('transaction_date', '<', $from->toDateString())->sum('amount');
+            $opening = (float) $account->opening_balance + $openingIncome - $openingExpense;
+
+            $income = (float) $account->transactions()
+                ->where('type', 'income')->whereBetween('transaction_date', [$from, $to])->sum('amount');
+            $expense = (float) $account->transactions()
+                ->where('type', 'expense')->whereBetween('transaction_date', [$from, $to])->sum('amount');
+
+            return (object) [
+                'account' => $account,
+                'opening_balance' => $opening,
+                'income' => $income,
+                'expense' => $expense,
+                'closing_balance' => $opening + $income - $expense,
+            ];
+        });
+
+        return (object) [
+            'rows' => $rows,
+            'totals' => (object) [
+                'opening_balance' => (float) $rows->sum('opening_balance'),
+                'income' => (float) $rows->sum('income'),
+                'expense' => (float) $rows->sum('expense'),
+                'closing_balance' => (float) $rows->sum('closing_balance'),
+            ],
+        ];
+    }
+
+    /**
      * Live (not date-ranged) balance per Company Books account — a balance
      * is always "as of now", computed the same way as
      * LaborBookAccount::getCurrentBalanceAttribute() to avoid a stored

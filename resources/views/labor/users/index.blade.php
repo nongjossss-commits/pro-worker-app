@@ -16,7 +16,6 @@
 @endphp
 
 @section('content')
-@include('labor.partials.settings-tabs')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('Manage Users') }}</h4>
     <a href="{{ route('labor.users.create') }}" class="btn btn-primary">

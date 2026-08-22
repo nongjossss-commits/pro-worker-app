@@ -138,6 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employers/export', [EmployerController::class, 'export'])->name('employers.export');
     Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
     Route::get('/employers/{employer}/export-history', [EmployerController::class, 'exportHistory'])->name('employers.exportHistory');
+    Route::post('/employers/check-duplicate', [EmployerController::class, 'checkDuplicate'])->name('employers.check_duplicate');
     Route::resource('employers', EmployerController::class)->middleware('menu:employers');
     Route::get('/employers/{employer}/locate', [EmployerController::class, 'locate'])->name('employers.locate');
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
@@ -181,6 +182,7 @@ Route::middleware('auth')->group(function () {
     Route::get('employees/edit-modal-saved', function () {
         return response('<!doctype html><html><body><script>/* Edit Modal Save Signal */</script></body></html>');
     })->name('employees.edit-modal-saved');
+    Route::post('/employees/check-duplicate', [EmployeeController::class, 'checkDuplicate'])->name('employees.check_duplicate');
     Route::resource('employees', EmployeeController::class)->middleware('menu:employees');
     Route::get('/importers/{importer}/documents/{field}/pdf', [ImporterController::class, 'downloadDocumentAsPdf'])->name('importers.documents.pdf');
     Route::resource('importers', ImporterController::class)->middleware('menu:importers');
@@ -202,6 +204,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/addresses/{address}', [App\Http\Controllers\AddressController::class, 'destroy'])->name('addresses.destroy');
     Route::post('/addresses/{address}/set-document', [App\Http\Controllers\AddressController::class, 'setDocumentAddress'])->name('addresses.set_document');
 
+    Route::get('/notifications/popup-summary', [NotificationController::class, 'popupSummary'])->middleware('menu:notifications')->name('notifications.popup-summary');
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('menu:notifications')->name('notifications.index');
     Route::post('/notifications/check-expiries', [NotificationController::class, 'checkExpiries'])->name('notifications.check-expiries');
     Route::get('/notifications/{notification}/view-employee', [NotificationController::class, 'viewEmployee'])->name('notifications.view-employee');
@@ -550,6 +553,20 @@ Route::middleware(['auth'])->group(function () {
         Route::match(['put', 'post'], '/ledger/{ledger}/update', [App\Http\Controllers\Finance\LedgerEntryController::class, 'update'])->name('ledger.update');
         Route::delete('/ledger/{ledger}', [App\Http\Controllers\Finance\LedgerEntryController::class, 'destroy'])->name('ledger.destroy');
 
+        // "บันทึกรายรับรายจ่าย" — Labor Company Books-styled front end over
+        // the Ledger/BankAccount backend above (see Finance\FinanceBookController
+        // docblock). /books-expense/create must come before /books/{account}
+        // so 'books-expense' isn't captured as an account ID.
+        Route::get('/books-expense/create', [App\Http\Controllers\Finance\FinanceBookController::class, 'createExpense'])->name('books.expense.create');
+        Route::get('/books', [App\Http\Controllers\Finance\FinanceBookController::class, 'index'])->name('books.index');
+        Route::get('/books/{account}', [App\Http\Controllers\Finance\FinanceBookController::class, 'show'])->name('books.show');
+        Route::get('/books/{account}/export', [App\Http\Controllers\Finance\FinanceBookController::class, 'export'])->name('books.export');
+        Route::post('/books-entry/{ledger}/correct', [App\Http\Controllers\Finance\FinanceBookController::class, 'correctEntry'])->name('books.correct');
+
+        Route::get('/books-reports', [App\Http\Controllers\Finance\FinanceReportController::class, 'index'])->name('books-reports.index');
+        Route::get('/books-reports/pdf', [App\Http\Controllers\Finance\FinanceReportController::class, 'pdf'])->name('books-reports.pdf');
+        Route::get('/books-reports/export', [App\Http\Controllers\Finance\FinanceReportController::class, 'export'])->name('books-reports.export');
+
         // Tax Invoices (Phase 2.1 — ใบกำกับภาษีขาย)
         Route::get('tax-invoices/{taxInvoice}/pdf', [App\Http\Controllers\Finance\TaxInvoiceController::class, 'pdf'])->name('tax-invoices.pdf');
         Route::resource('tax-invoices', App\Http\Controllers\Finance\TaxInvoiceController::class)->except(['edit']);
@@ -683,6 +700,7 @@ Route::middleware(['auth'])->group(function () {
 
 use App\Http\Controllers\Admin\NotificationSettingController;
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\DuplicateRecordController;
 
 // === Existing Admin Routes (role:admin) ===
 Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -693,6 +711,8 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('ad
     Route::get('/activity-logs/{year}', [ActivityLogController::class, 'showYear'])->name('activity-logs.year');
     Route::get('/activity-logs/{year}/{month}', [ActivityLogController::class, 'showMonth'])->name('activity-logs.month');
     Route::get('/activity-logs/{year}/{month}/{day}', [ActivityLogController::class, 'showDay'])->name('activity-logs.day');
+
+    Route::get('/duplicate-records', [DuplicateRecordController::class, 'index'])->middleware('menu:duplicate_records')->name('duplicate-records.index');
 
     Route::get('/notification-settings', [NotificationSettingController::class, 'index'])->name('notification_settings.index');
     Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');

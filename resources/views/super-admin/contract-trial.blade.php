@@ -13,13 +13,74 @@
         if (!$d) return '___________';
         try { return \Carbon\Carbon::parse($d)->format('d/m/Y'); } catch (\Throwable $e) { return $d; }
     };
+
+    // $langs (1 or 2 locale codes) and $langData (subset of config('contracts.trial')
+    // keyed by those codes) are supplied by SettingsController::programContractView().
+    $langs = $langs ?? ['th'];
+    $L = $langData;
+
+    // Compact inline label, joined with " / " when 2 languages are selected —
+    // used for short key:value row labels where a full stacked heading would
+    // break the line (party box rows, doc-id/made-at/date meta line).
+    $pair = function (string $field) use ($L, $langs) {
+        $parts = [];
+        foreach ($langs as $lg) {
+            $v = data_get($L[$lg] ?? [], $field);
+            if ($v !== null && $v !== '') $parts[] = $v;
+        }
+        return implode(' / ', array_map('e', $parts));
+    };
+
+    // Stacked heading/paragraph: language 1 first, language 2 directly below
+    // (visually separated by a thin dashed rule) — this is the "หัวข้อภาษาแรก
+    // แล้วคำแปลภาษาที่สองต่อทันที" layout the SA asked for.
+    $stack = function (string $field, bool $raw = false) use ($L, $langs) {
+        $html = '';
+        foreach ($langs as $i => $lg) {
+            $v = data_get($L[$lg] ?? [], $field);
+            if ($v === null || $v === '') continue;
+            $out = $raw ? $v : e($v);
+            $html .= '<div class="' . ($i === 0 ? 'lang-primary' : 'lang-secondary') . '">' . $out . '</div>';
+        }
+        return $html;
+    };
+
+    // Clause body needs per-clause dynamic token substitution (dates, test URL)
+    // before it's safe to output raw.
+    $renderClauseBody = function (string $lg, array $clause) use ($L, $trialStart, $trialEnd, $testUrl, $fmtDate) {
+        $body = $clause['body'];
+        $body = str_replace('{{TRIAL_START}}', e($fmtDate($trialStart)), $body);
+        $body = str_replace('{{TRIAL_END}}', e($fmtDate($trialEnd)), $body);
+        if ($testUrl) {
+            $sentence = str_replace('{{TEST_URL}}', '<code>' . e($testUrl) . '</code>', $L[$lg]['test_url_sentence'] ?? '');
+        } else {
+            $sentence = '';
+        }
+        return str_replace('{{TEST_URL_SENTENCE}}', $sentence, $body);
+    };
+
+    $renderIntro = function (string $lg) use ($L, $provider, $customer) {
+        $body = $L[$lg]['intro'] ?? '';
+        $body = str_replace('{{PROVIDER_NAME}}', e($provider['name'] ?: '____________________________'), $body);
+        $body = str_replace('{{CUSTOMER_NAME}}', e($customer['name'] ?: '____________________________'), $body);
+        return $body;
+    };
+
+    $clauseCount = count($L[$langs[0]]['clauses'] ?? []);
+
+    // Legacy compatibility: the original single-language template always
+    // showed a fixed English subtitle + "(Provider)"/"(Customer)" suffix
+    // under the Thai title, even though the rest of the document was Thai
+    // only. Preserve that exact appearance when Thai is the sole selected
+    // language (the default), so existing users see zero change.
+    $legacyMode = ($langs === ['th']);
 @endphp
 <!doctype html>
-<html lang="th">
+<html lang="{{ $langs[0] }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>สัญญาทดลองใช้บริการ — {{ $customer['name'] ?: 'ลูกค้า' }}</title>
+    <title>{{ $legacyMode ? 'สัญญาทดลองใช้บริการ' : ($L[$langs[0]]['doc_title'] ?? 'Trial Contract') }} — {{ $customer['name'] ?: 'ลูกค้า' }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
@@ -65,6 +126,16 @@
         .print-controls { position: sticky; top: 0; background: white; padding: 12px 24px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); z-index: 100; }
         .btn-print { background: var(--pc-primary); color: white; border: none; padding: 8px 22px; font-weight: 600; border-radius: 6px; cursor: pointer; }
 
+        /* Bilingual pairing: 2nd selected language renders directly below the
+           1st, in the same block, separated by a thin dashed rule. */
+        .lang-secondary { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #d8d8d8; }
+        .clause-title .lang-secondary,
+        .warn-title .lang-secondary,
+        .ex-title .lang-secondary { margin-top: 2px; padding-top: 2px; font-size: 0.85em; opacity: 0.85; }
+        .doc-header .lang-secondary { border-top: none; margin-top: 2px; }
+        h6 .lang-secondary { font-size: 0.85em; opacity: 0.8; border-top: none; margin-top: 2px; }
+        .sig-role .lang-secondary { border-top: none; font-size: 0.9em; margin-top: 2px; }
+
         @media print {
             body { background: white; font-size: 12px; }
             .print-controls { display: none !important; }
@@ -93,165 +164,128 @@
     <div class="contract-page">
         <div class="doc-header">
             @if($logoUrl)<img src="{{ $logoUrl }}" alt="">@endif
-            <div class="doc-id">เลขที่สัญญา: TRIAL-{{ str_pad(crc32($customer['name'] . $issueDate) % 99999, 5, '0', STR_PAD_LEFT) }}</div>
-            <h1>สัญญาทดลองใช้บริการระบบ</h1>
-            <div class="subtitle">Trial Service Agreement</div>
+            <div class="doc-id">{{ $pair('doc_id_label') }} TRIAL-{{ str_pad(crc32($customer['name'] . $issueDate) % 99999, 5, '0', STR_PAD_LEFT) }}</div>
+            <h1>{!! $stack('doc_title') !!}</h1>
+            @if($legacyMode)<div class="subtitle">Trial Service Agreement</div>@endif
             <div class="doc-divider"></div>
-            <p class="text-muted small mb-0">ทำที่ {{ $provider['address'] ?: '____________________________' }}</p>
-            <p class="text-muted small">วันที่ {{ $fmtDate($issueDate) }}</p>
+            <p class="text-muted small mb-0">{{ $pair('made_at_label') }} {{ $provider['address'] ?: '____________________________' }}</p>
+            <p class="text-muted small">{{ $pair('date_label') }} {{ $fmtDate($issueDate) }}</p>
         </div>
 
-        <p>
-            สัญญาฉบับนี้จัดทำขึ้นระหว่าง <strong>{{ $provider['name'] ?: '____________________________' }}</strong>
-            ซึ่งต่อไปนี้จะเรียกว่า <em>"ผู้ให้บริการ"</em> ฝ่ายหนึ่ง
-            กับ <strong>{{ $customer['name'] ?: '____________________________' }}</strong>
-            ซึ่งต่อไปนี้จะเรียกว่า <em>"ผู้รับบริการ"</em> อีกฝ่ายหนึ่ง
-            โดยทั้งสองฝ่ายตกลงกันมีข้อความดังต่อไปนี้
-        </p>
+        @php
+            $introHtml = '';
+            foreach ($langs as $i => $lg) {
+                $introHtml .= '<div class="' . ($i === 0 ? 'lang-primary' : 'lang-secondary') . '">' . $renderIntro($lg) . '</div>';
+            }
+        @endphp
+        <div class="mb-3">{!! $introHtml !!}</div>
 
         {{-- Parties --}}
         <div class="parties-box">
-            <h6>ผู้ให้บริการ (Provider)</h6>
+            <h6>@if($legacyMode){{ $L['th']['provider_box_title'] }} (Provider)@else{!! $stack('provider_box_title') !!}@endif</h6>
             <div class="party-row">
-                <div class="lbl">ชื่อบริษัท:</div>      <div class="val">{{ $provider['name'] ?: '—' }}</div>
-                <div class="lbl">ที่อยู่:</div>          <div class="val">{{ $provider['address'] ?: '—' }}</div>
-                <div class="lbl">เลขผู้เสียภาษี:</div>   <div class="val">{{ $provider['tax_id'] ?: '—' }}</div>
-                <div class="lbl">โทรศัพท์ / อีเมล:</div> <div class="val">{{ $provider['phone'] ?: '—' }} / {{ $provider['email'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.company_name') }}</div>      <div class="val">{{ $provider['name'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.address') }}</div>          <div class="val">{{ $provider['address'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.tax_id') }}</div>   <div class="val">{{ $provider['tax_id'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.phone_email') }}</div> <div class="val">{{ $provider['phone'] ?: '—' }} / {{ $provider['email'] ?: '—' }}</div>
             </div>
         </div>
 
         <div class="parties-box">
-            <h6>ผู้รับบริการ (Customer)</h6>
+            <h6>@if($legacyMode){{ $L['th']['customer_box_title'] }} (Customer)@else{!! $stack('customer_box_title') !!}@endif</h6>
             <div class="party-row">
-                <div class="lbl">ชื่อบริษัท:</div>      <div class="val">{{ $customer['name'] ?: '—' }}</div>
-                <div class="lbl">ที่อยู่:</div>          <div class="val">{{ $customer['address'] ?: '—' }}</div>
-                <div class="lbl">เลขผู้เสียภาษี:</div>   <div class="val">{{ $customer['tax_id'] ?: '—' }}</div>
-                <div class="lbl">โทรศัพท์ / อีเมล:</div> <div class="val">{{ $customer['phone'] ?: '—' }} / {{ $customer['email'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.company_name') }}</div>      <div class="val">{{ $customer['name'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.address') }}</div>          <div class="val">{{ $customer['address'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.tax_id') }}</div>   <div class="val">{{ $customer['tax_id'] ?: '—' }}</div>
+                <div class="lbl">{{ $pair('party_labels.phone_email') }}</div> <div class="val">{{ $customer['phone'] ?: '—' }} / {{ $customer['email'] ?: '—' }}</div>
             </div>
         </div>
 
-        {{-- Clause 1 - Scope --}}
-        <div class="clause">
-            <div class="clause-title">ข้อ 1. ขอบเขตและวัตถุประสงค์</div>
-            <div class="clause-body">
-                ผู้ให้บริการตกลงเปิดให้ผู้รับบริการ <strong>ทดลองใช้งานระบบบริหารจัดการแรงงาน (Pro-Worker)</strong>
-                บนสภาพแวดล้อมทดสอบ (Test Server) เพื่อวัตถุประสงค์ในการประเมินฟีเจอร์ ทดสอบความเสถียร
-                และพิจารณาความเหมาะสมของระบบกับการใช้งานจริงในองค์กรของผู้รับบริการเท่านั้น
-                การทดลองใช้นี้<strong>ไม่ใช่</strong>การให้บริการเชิงพาณิชย์
+        {{-- Clauses --}}
+        @for ($i = 0; $i < $clauseCount; $i++)
+            @php
+                $type = $L[$langs[0]]['clauses'][$i]['type'] ?? 'clause';
+                $boxClass = match($type) {
+                    'warning' => 'warning-box',
+                    'exclusion' => 'exclusion-box',
+                    default => null,
+                };
+                $titleClass = match($type) {
+                    'warning' => 'warn-title',
+                    'exclusion' => 'ex-title',
+                    default => 'clause-title',
+                };
+                $bodyClass = match($type) {
+                    'warning' => 'warn-body',
+                    'exclusion' => 'ex-body',
+                    default => 'clause-body',
+                };
+                $icon = match($type) {
+                    'warning' => '<i class="bi bi-exclamation-triangle-fill me-1"></i> ',
+                    'exclusion' => '<i class="bi bi-shield-exclamation me-1"></i> ',
+                    default => '',
+                };
+            @endphp
+            <div class="{{ $boxClass ?? 'clause' }}">
+                <div class="{{ $titleClass }}">
+                    @foreach ($langs as $li => $lg)
+                        @php
+                            $clause = $L[$lg]['clauses'][$i] ?? null;
+                            if (!$clause) continue;
+                            $prefix = str_replace(':n', $i + 1, $L[$lg]['clause_prefix'] ?? '');
+                        @endphp
+                        <div class="{{ $li === 0 ? 'lang-primary' : 'lang-secondary' }}">
+                            {!! $icon !!}{{ $prefix }} {!! $clause['title'] !!}
+                        </div>
+                    @endforeach
+                </div>
+                <div class="{{ $bodyClass }}">
+                    @foreach ($langs as $li => $lg)
+                        @php
+                            $clause = $L[$lg]['clauses'][$i] ?? null;
+                            if (!$clause) continue;
+                        @endphp
+                        <div class="{{ $li === 0 ? 'lang-primary' : 'lang-secondary' }}">
+                            {!! $renderClauseBody($lg, $clause) !!}
+                        </div>
+                    @endforeach
+                </div>
             </div>
-        </div>
+        @endfor
 
-        {{-- Clause 2 - Trial Period --}}
-        <div class="clause">
-            <div class="clause-title">ข้อ 2. ระยะเวลาทดลองใช้</div>
-            <div class="clause-body">
-                สัญญานี้มีผลตั้งแต่วันที่ <strong>{{ $fmtDate($trialStart) }}</strong>
-                ถึงวันที่ <strong>{{ $fmtDate($trialEnd) }}</strong>
-                @if($testUrl)
-                    โดยผู้รับบริการสามารถเข้าถึงระบบทดสอบได้ที่ <code>{{ $testUrl }}</code>
-                @endif
-                เมื่อครบกำหนดระยะเวลาทดลอง ผู้ให้บริการขอสงวนสิทธิ์ในการระงับการเข้าถึงโดยมิต้องแจ้งให้ทราบล่วงหน้า
-            </div>
-        </div>
-
-        {{-- Clause 3 - Free --}}
-        <div class="clause">
-            <div class="clause-title">ข้อ 3. ค่าบริการ</div>
-            <div class="clause-body">
-                การทดลองใช้ตามสัญญานี้ <strong>ไม่มีค่าบริการ (Free of Charge)</strong>
-                ผู้รับบริการไม่ต้องชำระเงินใดๆ แก่ผู้ให้บริการในช่วงระยะเวลาทดลอง
-                หากภายหลังผู้รับบริการประสงค์จะใช้งานเชิงพาณิชย์ ทั้งสองฝ่ายจะจัดทำ "สัญญาเช่าใช้บริการระบบ" แยกต่างหาก
-            </div>
-        </div>
-
-        {{-- Clause 4 - DISCLAIMER (Most important!) --}}
-        <div class="warning-box">
-            <div class="warn-title"><i class="bi bi-exclamation-triangle-fill me-1"></i> ข้อ 4. การปฏิเสธความรับผิดและไม่รับประกัน (Disclaimer & No Warranty)</div>
-            <div class="warn-body">
-                ผู้ให้บริการขอแจ้งให้ผู้รับบริการรับทราบและตกลงโดยชัดแจ้งว่า:
-                <ol class="mb-0 mt-2">
-                    <li><strong>ไม่รับประกันข้อมูลใดๆ ทั้งสิ้น</strong> — ข้อมูลที่ผู้รับบริการบันทึกในระบบทดสอบ
-                        อาจสูญหาย เสียหาย หรือถูกลบโดยผู้ให้บริการได้ทุกเมื่อ โดยไม่ต้องแจ้งให้ทราบล่วงหน้า</li>
-                    <li><strong>ไม่รับประกันความพร้อมใช้งานของระบบ (No SLA)</strong> — Server ทดสอบอาจมีความล่าช้า
-                        (Latency) ความเร็วในการตอบสนองที่แตกต่างจาก Production Server หรือหยุดทำงานเพื่อบำรุงรักษาได้ทุกเมื่อ</li>
-                    <li><strong>ไม่รับผิดในความเสียหาย</strong> ไม่ว่าทางตรงหรือทางอ้อม ที่อาจเกิดจากการใช้งานระบบทดสอบ
-                        รวมถึงความสูญเสียทางธุรกิจ ข้อมูลสูญหาย หรือเหตุอื่นใด</li>
-                    <li>ผู้รับบริการตกลง <strong>ไม่ใช้ข้อมูลจริง (Real Data)</strong> ของบุคคลธรรมดาหรือลูกค้าจริงในระบบทดสอบ
-                        ควรใช้ข้อมูลตัวอย่างหรือข้อมูลทดสอบเท่านั้น</li>
-                </ol>
-            </div>
-        </div>
-
-        {{-- Clause 5 - FINANCE EXCLUSION (User requested!) --}}
-        <div class="exclusion-box">
-            <div class="ex-title"><i class="bi bi-shield-exclamation me-1"></i> ข้อ 5. ขอบเขตที่ไม่รวมในการให้บริการ — ฟีเจอร์การเงิน (Finance Feature Exclusion)</div>
-            <div class="ex-body">
-                ผู้รับบริการรับทราบและตกลงโดยชัดแจ้งว่า <strong>ฟีเจอร์การเงิน (Finance Module)</strong>
-                ซึ่งรวมถึงแต่ไม่จำกัดเพียง: ระบบใบเสนอราคา, ใบแจ้งหนี้, ใบกำกับภาษี, ใบเสร็จ, การคำนวณภาษีมูลค่าเพิ่ม (VAT),
-                ภาษีหัก ณ ที่จ่าย (WHT), ภ.พ.30, ภ.ง.ด.3/53, รายงานภาษี, การกระทบยอดบัญชีธนาคาร, สมุดบัญชี (Ledger),
-                และรายงานการเงินทั้งหมด <strong>ไม่รวมอยู่ในขอบเขตของสัญญาทดลองใช้ฉบับนี้</strong>
-                และจะ <strong>ไม่เปิดให้ใช้งาน</strong> ในระยะทดลอง เนื่องจากฟีเจอร์ดังกล่าวเป็นโมดูลที่มีความละเอียดอ่อน
-                ต้องทำงานควบคู่กับเรื่องภาษี ระบบบัญชี และข้อบังคับทางกฎหมาย จึงจัดเป็นบริการแยกต่างหาก
-                หากผู้รับบริการประสงค์จะใช้งานฟีเจอร์การเงิน จะต้องทำสัญญาเพิ่มเติม (Add-on Agreement) ในภายหลัง
-            </div>
-        </div>
-
-        {{-- Clause 6 - Confidentiality --}}
-        <div class="clause">
-            <div class="clause-title">ข้อ 6. การรักษาความลับ</div>
-            <div class="clause-body">
-                ทั้งสองฝ่ายตกลงที่จะรักษาความลับเกี่ยวกับข้อมูลทางธุรกิจ ระบบ ฟีเจอร์ และเทคโนโลยีที่ได้รับทราบจากการทดลองใช้
-                ผู้รับบริการจะไม่เปิดเผย ทำสำเนา หรือใช้ประโยชน์เชิงพาณิชย์จากข้อมูลของผู้ให้บริการ
-                และจะไม่กระทำการใดอันเป็นการละเมิดทรัพย์สินทางปัญญาของผู้ให้บริการ
-            </div>
-        </div>
-
-        {{-- Clause 7 - Termination --}}
-        <div class="clause">
-            <div class="clause-title">ข้อ 7. การสิ้นสุดสัญญา</div>
-            <div class="clause-body">
-                สัญญานี้สิ้นสุดลงโดยอัตโนมัติเมื่อครบกำหนดระยะเวลาตามข้อ 2.
-                หรือเมื่อฝ่ายใดฝ่ายหนึ่งบอกเลิกสัญญาโดยแจ้งเป็นลายลักษณ์อักษรล่วงหน้า 3 วันทำการ
-                เมื่อสัญญาสิ้นสุด ผู้ให้บริการมีสิทธิลบข้อมูลทั้งหมดในระบบทดสอบโดยไม่ต้องเก็บสำรอง
-            </div>
-        </div>
-
-        <p class="text-center mt-4">
-            สัญญานี้ทำขึ้นเป็นสองฉบับ มีข้อความถูกต้องตรงกัน คู่สัญญาทั้งสองฝ่ายได้อ่านและเข้าใจข้อความโดยตลอดแล้ว
-            จึงได้ลงลายมือชื่อไว้ต่อหน้าพยานเป็นสำคัญ
-        </p>
+        <p class="text-center mt-4">{!! $stack('closing_paragraph') !!}</p>
 
         {{-- Signatures --}}
         <div class="signatures">
             <div class="sig-grid">
                 <div class="sig-block">
-                    <div class="sig-role">ผู้ให้บริการ</div>
+                    <div class="sig-role">{!! $stack('signature_labels.provider_role') !!}</div>
                     <div class="sig-line"></div>
                     <div class="sig-name">({{ $provider['signer_name'] ?: '____________________________' }})</div>
-                    <div class="sig-title">{{ $provider['signer_title'] ?: 'ตำแหน่ง' }}</div>
-                    <div class="sig-date">วันที่ ____ / ____ / ________</div>
+                    <div class="sig-title">{{ $provider['signer_title'] ?: $pair('signature_labels.position_placeholder') }}</div>
+                    <div class="sig-date">{{ $pair('date_label') }} ____ / ____ / ________</div>
                 </div>
                 <div class="sig-block">
-                    <div class="sig-role">ผู้รับบริการ</div>
+                    <div class="sig-role">{!! $stack('signature_labels.customer_role') !!}</div>
                     <div class="sig-line"></div>
                     <div class="sig-name">({{ $customer['signer_name'] ?: '____________________________' }})</div>
-                    <div class="sig-title">{{ $customer['signer_title'] ?: 'ตำแหน่ง' }}</div>
-                    <div class="sig-date">วันที่ ____ / ____ / ________</div>
+                    <div class="sig-title">{{ $customer['signer_title'] ?: $pair('signature_labels.position_placeholder') }}</div>
+                    <div class="sig-date">{{ $pair('date_label') }} ____ / ____ / ________</div>
                 </div>
             </div>
 
             <div class="sig-grid">
                 <div class="sig-block">
-                    <div class="sig-role">พยาน 1</div>
+                    <div class="sig-role">{!! $stack('signature_labels.witness_1') !!}</div>
                     <div class="sig-line"></div>
                     <div class="sig-name">({{ $witnesses[0]['name'] ?? '' ?: '____________________________' }})</div>
-                    <div class="sig-title">{{ $witnesses[0]['title'] ?? '' ?: 'ตำแหน่ง' }}</div>
+                    <div class="sig-title">{{ $witnesses[0]['title'] ?? '' ?: $pair('signature_labels.position_placeholder') }}</div>
                 </div>
                 <div class="sig-block">
-                    <div class="sig-role">พยาน 2</div>
+                    <div class="sig-role">{!! $stack('signature_labels.witness_2') !!}</div>
                     <div class="sig-line"></div>
                     <div class="sig-name">({{ $witnesses[1]['name'] ?? '' ?: '____________________________' }})</div>
-                    <div class="sig-title">{{ $witnesses[1]['title'] ?? '' ?: 'ตำแหน่ง' }}</div>
+                    <div class="sig-title">{{ $witnesses[1]['title'] ?? '' ?: $pair('signature_labels.position_placeholder') }}</div>
                 </div>
             </div>
         </div>

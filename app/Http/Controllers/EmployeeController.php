@@ -900,6 +900,63 @@ public function create(Request $request) // เพิ่ม Request $request เ
             ->with('highlight_employee', $employee->id); // For legacy highlighting logic
     }
 
+    /**
+     * Soft duplicate check for identity fields that legitimately can repeat
+     * in rare real-world cases (reissued documents) but almost always
+     * shouldn't — used by resources/js/duplicate-check.js to warn (not
+     * block) before save. Bypasses the employerTenancy scope so a worker
+     * previously registered under a different employer is still caught —
+     * that's the exact scenario this feature exists for (a terminated
+     * worker re-hired and accidentally re-entered as a new record).
+     * `email` is flagged 'blocking' since it still has a real DB unique
+     * constraint (see store()/update()) — everything else is warn-only.
+     */
+    public function checkDuplicate(Request $request)
+    {
+        $fieldMap = [
+            'employeePassport' => ['column' => 'employeePassport', 'label' => 'เลขพาสปอร์ต', 'blocking' => false],
+            'employeeWorkPermit' => ['column' => 'employeeWorkPermit', 'label' => 'เลขที่ใบอนุญาตทำงาน', 'blocking' => false],
+            'pinkCardNo' => ['column' => 'pinkCardNo', 'label' => 'เลขบัตรชมพู', 'blocking' => false],
+            'employee_id_number' => ['column' => 'employee_id_number', 'label' => 'เลขประจำตัว', 'blocking' => false],
+            'employeeEmail' => ['column' => 'email', 'label' => 'อีเมล', 'blocking' => true],
+        ];
+
+        $excludeId = $request->input('exclude_id');
+        $duplicates = [];
+
+        foreach ($fieldMap as $inputKey => $meta) {
+            $value = trim((string) $request->input($inputKey, ''));
+            if ($value === '') {
+                continue;
+            }
+
+            $match = Employee::withoutGlobalScope('employerTenancy')
+                ->with('employer')
+                ->where($meta['column'], $value)
+                ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+                ->first();
+
+            if ($match) {
+                $duplicates[] = [
+                    'field' => $inputKey,
+                    'label' => $meta['label'],
+                    'value' => $value,
+                    'blocking' => $meta['blocking'],
+                    'record' => [
+                        'id' => $match->id,
+                        'name' => $match->employeeNameTh ?: $match->employeeNameEn,
+                        'employer_name' => $match->employer->employerNameTh ?? '-',
+                        'photo_url' => $match->photo_url,
+                        'edit_url' => route('employees.edit', $match->id),
+                        'terminated' => (bool) $match->terminated_at,
+                    ],
+                ];
+            }
+        }
+
+        return response()->json(['duplicates' => $duplicates]);
+    }
+
     public function locate(Employee $employee)
     {
         // GPS Logic: Always go to Employer Edit page and locate the employee card

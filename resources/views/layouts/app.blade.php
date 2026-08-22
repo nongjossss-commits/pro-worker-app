@@ -830,6 +830,7 @@
                             @switch(app()->getLocale())
                                 @case('th') 🇹🇭 ไทย @break
                                 @case('zh') 🇨🇳 中文 @break
+                                @case('my') 🇲🇲 မြန်မာ @break
                                 @default 🇺🇸 English
                             @endswitch
                         </button>
@@ -837,6 +838,7 @@
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'th') }}">🇹🇭 ไทย (Thai)</a></li>
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'en') }}">🇺🇸 English</a></li>
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'zh') }}">🇨🇳 中文 (Chinese)</a></li>
+                            <li><a class="dropdown-item" href="{{ route('lang.switch', 'my') }}">🇲🇲 မြန်မာ (Myanmar)</a></li>
                         </ul>
                     </div>
 
@@ -1096,6 +1098,37 @@
                                         <input type="text" class="form-control border-start-0 bg-light" placeholder="{{ __('Search names, employer...') }}" x-model="searchQuery">
                                     </div>
                                 </div>
+                                {{-- Selection toolbar — static markup (not part of the
+                                     AJAX-swapped day list), so its listeners are wired
+                                     once at page load and don't depend on the fetched
+                                     partial's own <script> executing (innerHTML-inserted
+                                     <script> tags don't auto-run). The checkboxes/preview
+                                     buttons inside the swapped content still work because
+                                     they're handled by the existing document.body-level
+                                     delegated listeners (see layouts/_app_scripts.blade.php). --}}
+                                <div class="px-3 py-2 bg-white border-bottom d-flex align-items-center gap-2 flex-wrap">
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" type="checkbox" id="reminderSelectAllCb">
+                                        <label class="form-check-label fw-bold small" for="reminderSelectAllCb">
+                                            {{ __('Select All') }} (<span id="reminderSelectedCount">0</span>)
+                                        </label>
+                                    </div>
+                                    <div class="vr"></div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-secondary dropdown-toggle" id="reminderBulkBtn" type="button" data-bs-toggle="dropdown" disabled>
+                                            <i class="bi bi-lightning-fill me-1"></i>{{ __('Actions') }}
+                                        </button>
+                                        <ul class="dropdown-menu shadow">
+                                            <li><a class="dropdown-item reminder-action" data-action="generate-pdf" href="#">
+                                                <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>{{ __('Automated PDF') }}</a></li>
+                                            <li><a class="dropdown-item reminder-action" data-action="advanced-export" href="#">
+                                                <i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>{{ __('Advanced Export') }}</a></li>
+                                        </ul>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="reminderClearBtn" disabled>
+                                        <i class="bi bi-x-circle me-1"></i>{{ __('Clear Selection') }}
+                                    </button>
+                                </div>
                                 <div class="card-body p-0 overflow-auto bg-light position-relative" style="min-height: 300px;">
                                     <div x-show="isLoading" class="position-absolute w-100 h-100 bg-white bg-opacity-75" style="z-index: 10;">
                                         <div class="w-100 h-100 d-flex justify-content-center align-items-center">
@@ -1120,17 +1153,96 @@
         </div>
     </div>
 
-    @if(session()->pull('show_appointment_reminder'))
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const modalEl = document.getElementById('appointmentReminderModal');
-            if (modalEl) new bootstrap.Modal(modalEl).show();
-        });
-    </script>
-    @endif
+    {{-- Self-contained modal + its own @push('scripts') for the column
+         picker/submit logic — reused as-is, no extra variables needed. --}}
+    @include('employees.modals.advanced_export')
 
     @push('scripts')
     <script>
+        // ── Reminder modal selection toolbar (static — see comment above
+        //    the toolbar markup for why this isn't embedded in the AJAX
+        //    day-list partial). Mirrors the Automated PDF / Advanced Export
+        //    bulk actions already used in production/registration's own
+        //    appointment day-list (day_appointments_list.blade.php). ──
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalEl = document.getElementById('appointmentReminderModal');
+            if (!modalEl) return;
+
+            const selectAllCb = document.getElementById('reminderSelectAllCb');
+            const countSpan = document.getElementById('reminderSelectedCount');
+            const bulkBtn = document.getElementById('reminderBulkBtn');
+            const clearBtn = document.getElementById('reminderClearBtn');
+            const listContainer = document.getElementById('reminderDayAppointmentsContent');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+            function syncToolbar() {
+                const ids = window.getGlobalSelectedIds ? window.getGlobalSelectedIds() : [];
+                countSpan.textContent = ids.length;
+                bulkBtn.disabled = ids.length === 0;
+                clearBtn.disabled = ids.length === 0;
+
+                const visibleBoxes = listContainer.querySelectorAll('.employee-checkbox');
+                const visibleChecked = listContainer.querySelectorAll('.employee-checkbox:checked');
+                selectAllCb.checked = visibleBoxes.length > 0 && visibleBoxes.length === visibleChecked.length;
+            }
+
+            // Re-sync whenever any checkbox changes anywhere (covers both
+            // this modal's own list and the global sessionStorage-backed
+            // selection state changing from elsewhere).
+            document.body.addEventListener('change', function (e) {
+                if (e.target.classList && e.target.classList.contains('employee-checkbox')) {
+                    syncToolbar();
+                }
+            });
+            modalEl.addEventListener('shown.bs.modal', syncToolbar);
+
+            selectAllCb.addEventListener('change', function () {
+                const boxes = listContainer.querySelectorAll('.employee-checkbox');
+                boxes.forEach(function (box) {
+                    if (box.checked !== selectAllCb.checked) {
+                        box.checked = selectAllCb.checked;
+                        box.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            });
+
+            clearBtn.addEventListener('click', function () {
+                if (window.clearGlobalSelection) window.clearGlobalSelection();
+                listContainer.querySelectorAll('.employee-checkbox').forEach(function (box) { box.checked = false; });
+                syncToolbar();
+            });
+
+            document.querySelectorAll('.reminder-action').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const action = this.dataset.action;
+                    const ids = window.getGlobalSelectedIds ? window.getGlobalSelectedIds() : [];
+                    if (!ids.length) return;
+
+                    if (action === 'generate-pdf') {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '{{ route('admin.pdf-templates.generate.modal', [], false) }}';
+                        [['_token', csrfToken], ['redirect_url', window.location.href]].forEach(function ([n, v]) {
+                            const i = document.createElement('input'); i.type = 'hidden'; i.name = n; i.value = v; form.appendChild(i);
+                        });
+                        ids.forEach(function (id) {
+                            const i = document.createElement('input'); i.type = 'hidden'; i.name = 'employees[]'; i.value = id; form.appendChild(i);
+                        });
+                        document.body.appendChild(form);
+                        form.submit();
+                    } else if (action === 'advanced-export') {
+                        const el = document.getElementById('export_employee_ids');
+                        const src = document.getElementById('export_source_menu');
+                        if (el) el.value = JSON.stringify(ids);
+                        if (src) src.value = 'appointment_reminder';
+                        const exportModal = document.getElementById('advancedExportModal');
+                        if (exportModal) bootstrap.Modal.getOrCreateInstance(exportModal).show();
+                    }
+                });
+            });
+        });
+
         function combinedCalendarApp() {
             return {
                 month: new Date().getMonth(),
@@ -1231,6 +1343,42 @@
     @endpush
     @endcan
 
+    {{-- Notification Summary Modal — pops up on the Welcome page right
+         after the appointment calendar modal above closes (see the
+         chaining script in resources/views/index.blade.php). Body is
+         filled by JS via notifications.popup-summary (NotificationHelper::
+         getPopupSummary()); gated the same double condition (SuperAdmin
+         toggle + permission) as the sidebar's own Notifications link. --}}
+    @if(\App\Facades\SuperAdmin::isVisible('notifications'))
+    @can('view-notifications')
+    <div class="modal fade" id="notificationSummaryModal" tabindex="-1" aria-labelledby="notificationSummaryModalLabel" aria-hidden="true"
+        data-summary-url="{{ route('notifications.popup-summary') }}"
+        data-label-overdue="{{ __('Overdue by :n days') }}"
+        data-label-remaining="{{ __(':n days left') }}"
+        data-label-empty="{{ __('No notifications right now.') }}">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold" id="notificationSummaryModalLabel">
+                        <i class="bi bi-bell-fill me-2"></i>{{ __('Notifications requiring action') }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3" id="notificationSummaryModalBody">
+                    <div class="d-flex justify-content-center align-items-center py-5">
+                        <div class="spinner-border text-danger" role="status"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ route('notifications.index') }}" class="btn btn-danger">{{ __('View All') }}</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+    @endif
+
     {{-- Toast Notification Container --}}
     <div class="toast-container position-fixed top-0 end-0 p-3">
         <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
@@ -1250,7 +1398,7 @@
     {{-- Document Scanner Component (Global) --}}
     @include('components.document-scanner')
 
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js', 'resources/js/duplicate-check.js'])
     <script src="{{ asset('js/financial-security.js') }}"></script>
 
     <script>

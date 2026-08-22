@@ -179,7 +179,14 @@
                         @endif
                     </td>
                     <td class="small text-muted">
-                        {{ $t->category_label }}
+                        @if($t->expenseCategory?->note)
+                            <span title="{{ $t->expenseCategory->note }}" style="border-bottom: 1px dashed #94a3b8; cursor: help;">{{ $t->category_label }}</span>
+                        @else
+                            {{ $t->category_label }}
+                        @endif
+                        @if($t->category === 'team_payment' && $t->source?->bill)
+                            <a href="{{ route('labor.bills.show', $t->source->bill) }}" class="small ms-1">({{ __('View bill') }} {{ $t->source->bill->bill_no }})</a>
+                        @endif
                     </td>
                     <td>
                         {{ $t->description }}
@@ -187,8 +194,8 @@
                             <span class="text-muted small">(x{{ $t->quantity }})</span>
                         @endif
                         @if($t->attachment_path)
-                            <a href="{{ Storage::disk('public')->url($t->attachment_path) }}" target="_blank" class="ms-1" title="{{ __('View attachment') }}">
-                                <i class="bi bi-paperclip"></i>
+                            <a href="{{ Storage::disk('public')->url($t->attachment_path) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill ms-1">
+                                <i class="bi bi-paperclip me-1"></i>{{ __('View attachment') }}
                             </a>
                         @endif
                     </td>
@@ -269,8 +276,10 @@
                                     <div class="mb-0">
                                         <label class="form-label">{{ __('Attachment (optional)') }}</label>
                                         @if($t->attachment_path)
-                                        <div class="small mb-1">
-                                            <a href="{{ Storage::disk('public')->url($t->attachment_path) }}" target="_blank"><i class="bi bi-paperclip"></i> {{ __('Current file') }}</a>
+                                        <div class="mb-2">
+                                            <a href="{{ Storage::disk('public')->url($t->attachment_path) }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill">
+                                                <i class="bi bi-paperclip me-1"></i>{{ __('Current file') }}
+                                            </a>
                                         </div>
                                         @endif
                                         <input type="file" name="attachment" class="form-control">

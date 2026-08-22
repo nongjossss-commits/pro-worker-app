@@ -135,6 +135,67 @@ class PdfGeneratorService
         $pdf->Image($targetPath, $stampX, $stampY, $stampW, $stampH, $imgType);
     }
 
+    /**
+     * Draw a basic mark (check / cross / circle) inside the given box, in the item's color.
+     */
+    protected function drawMark($pdf, array $item, float $x, float $y, float $w, float $h): void
+    {
+        [$r, $g, $b] = $this->hexToRgb($item['color'] ?? '#000000');
+        $pdf->SetDrawColor($r, $g, $b);
+        $pdf->SetLineWidth(max($w, $h) * 0.08);
+
+        $shape = $item['markShape'] ?? 'check';
+
+        if ($shape === 'cross') {
+            $pdf->Line($x, $y, $x + $w, $y + $h);
+            $pdf->Line($x + $w, $y, $x, $y + $h);
+        } elseif ($shape === 'circle') {
+            $this->drawEllipseOutline($pdf, $x + ($w / 2), $y + ($h / 2), $w / 2, $h / 2);
+        } else {
+            // check
+            $pdf->Line($x + ($w * 0.05), $y + ($h * 0.55), $x + ($w * 0.4), $y + ($h * 0.9));
+            $pdf->Line($x + ($w * 0.4), $y + ($h * 0.9), $x + ($w * 0.95), $y + ($h * 0.15));
+        }
+
+        $pdf->SetLineWidth(0.2);
+        $pdf->SetDrawColor(0, 0, 0);
+    }
+
+    /**
+     * FPDF has no Ellipse()/Circle() primitive — approximate one with short connected line segments.
+     */
+    protected function drawEllipseOutline($pdf, float $cx, float $cy, float $rx, float $ry, int $segments = 36): void
+    {
+        $prevX = $cx + $rx;
+        $prevY = $cy;
+
+        for ($i = 1; $i <= $segments; $i++) {
+            $angle = (2 * M_PI * $i) / $segments;
+            $px = $cx + ($rx * cos($angle));
+            $py = $cy + ($ry * sin($angle));
+            $pdf->Line($prevX, $prevY, $px, $py);
+            $prevX = $px;
+            $prevY = $py;
+        }
+    }
+
+    /**
+     * Convert a "#RRGGBB" hex color (from an <input type="color">) to an [r, g, b] triple.
+     */
+    protected function hexToRgb(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) !== 6) {
+            return [0, 0, 0];
+        }
+
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        ];
+    }
+
     public function generateForEmployees(PdfTemplate $template, Collection $employees, $options = [])
     {
         // Options: 'output_type' => 'download' | 'save_to_slot' | 'raw_content'
@@ -309,6 +370,13 @@ class PdfGeneratorService
                 foreach ($items as $item) {
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
+
+                    if (isset($item['type']) && $item['type'] === 'mark') {
+                        $markW = ($item['w'] / 100) * $size['width'];
+                        $markH = ($item['h'] / 100) * $size['height'];
+                        $this->drawMark($pdf, $item, $x, $y, $markW, $markH);
+                        continue;
+                    }
 
                     if (isset($item['type']) && in_array($item['type'], ['image', 'signature', 'stamp'])) {
                         $w = ($item['w'] / 100) * $size['width'];
@@ -514,6 +582,13 @@ class PdfGeneratorService
                 foreach ($items as $item) {
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
+
+                    if (isset($item['type']) && $item['type'] === 'mark') {
+                        $markW = ($item['w'] / 100) * $size['width'];
+                        $markH = ($item['h'] / 100) * $size['height'];
+                        $this->drawMark($pdf, $item, $x, $y, $markW, $markH);
+                        continue;
+                    }
 
                     // Images / Signatures / Stamps
                     if (isset($item['type']) && in_array($item['type'], ['image', 'signature', 'stamp'])) {
@@ -912,6 +987,13 @@ class PdfGeneratorService
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
 
+                    if (isset($item['type']) && $item['type'] === 'mark') {
+                        $markW = ($item['w'] / 100) * $size['width'];
+                        $markH = ($item['h'] / 100) * $size['height'];
+                        $this->drawMark($pdf, $item, $x, $y, $markW, $markH);
+                        continue;
+                    }
+
                     // --- Handle Images, Signatures & Stamps ---
                     if (isset($item['type']) && in_array($item['type'], ['image', 'signature', 'stamp'])) {
                         $w = ($item['w'] / 100) * $size['width'];
@@ -1200,6 +1282,13 @@ class PdfGeneratorService
                 foreach ($items as $item) {
                     $x = ($item['x'] / 100) * $size['width'];
                     $y = ($item['y'] / 100) * $size['height'];
+
+                    if (isset($item['type']) && $item['type'] === 'mark') {
+                        $markW = ($item['w'] / 100) * $size['width'];
+                        $markH = ($item['h'] / 100) * $size['height'];
+                        $this->drawMark($pdf, $item, $x, $y, $markW, $markH);
+                        continue;
+                    }
 
                     // Determine which employee to use based on index
                     $employeeIndex = isset($item['employeeIndex']) ? (int)$item['employeeIndex'] : 1;

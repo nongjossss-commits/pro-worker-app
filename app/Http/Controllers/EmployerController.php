@@ -350,6 +350,46 @@ class EmployerController extends Controller
         return redirect()->route('employers.index')->with('success', 'Employer updated successfully.');
     }
 
+    /**
+     * Soft duplicate check for employerTaxId — names may legitimately
+     * repeat (branches of the same company), so this only checks the tax
+     * ID / juristic-person number. Used by resources/js/duplicate-check.js
+     * to warn (not block) before save; the warning points the user at the
+     * existing `name_suffix` field if the duplication is intentional
+     * (e.g. "สาขา 2"). Bypasses employerTenancy so the check sees across
+     * every employer, not just ones the current user can normally list.
+     */
+    public function checkDuplicate(Request $request)
+    {
+        $value = trim((string) $request->input('employerTaxId', ''));
+        $excludeId = $request->input('exclude_id');
+        $duplicates = [];
+
+        if ($value !== '') {
+            $match = Employer::withoutGlobalScope('employerTenancy')
+                ->where('employerTaxId', $value)
+                ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+                ->first();
+
+            if ($match) {
+                $duplicates[] = [
+                    'field' => 'employerTaxId',
+                    'label' => 'เลขประจำตัวนายจ้าง',
+                    'value' => $value,
+                    'blocking' => false,
+                    'record' => [
+                        'id' => $match->id,
+                        'name' => $match->employerNameTh,
+                        'business_type' => $match->businessType ?: '-',
+                        'edit_url' => route('employers.edit', $match->id),
+                    ],
+                ];
+            }
+        }
+
+        return response()->json(['duplicates' => $duplicates]);
+    }
+
     public function destroy(Employer $employer)
     {
         if ($employer->document_company_registration) {

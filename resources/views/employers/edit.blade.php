@@ -30,7 +30,16 @@
 {{-- Employer Info Form --}}
 <div class="content-section">
     <h2 class="mb-4">{{ __('Edit Employer') }}</h2>
-    <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data">
+    <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data"
+        data-duplicate-check-url="{{ route('employers.check_duplicate') }}"
+        data-duplicate-model-type="employer"
+        data-duplicate-fields='["employerTaxId"]'
+        data-duplicate-exclude-id="{{ $employer->id }}"
+        data-duplicate-label-title="{{ __('Duplicate data found') }}"
+        data-duplicate-label-proceed="{{ __('Save anyway') }}"
+        data-duplicate-label-fix="{{ __('Cancel, fix data first') }}"
+        data-duplicate-label-ok="{{ __('OK') }}"
+        data-duplicate-label-suffix-hint="{{ __('If this is intentional (e.g. a branch), add a Name Suffix above to tell the two records apart.') }}">
         @csrf
         @method('PUT')
         <input type="hidden" id="return_url" name="return_url" value="{{ request('return_url', route('employers.index')) }}">

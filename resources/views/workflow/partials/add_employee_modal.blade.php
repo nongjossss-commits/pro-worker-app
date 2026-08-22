@@ -196,12 +196,20 @@
     }
 
     window.openAddEmployeeModal = function(orderId, employerId, workTypeId, workTypeSlug, context = 'workflow') {
+        const isPreProduction = (context === 'production');
+
+        // Reset UI FIRST — form.reset() reverts every descendant input back
+        // to its blank markup default, so anything we want to actually stick
+        // must be set AFTER this, not before (previously the values below
+        // were set here first and then immediately wiped by reset()).
+        document.querySelectorAll('.section-mode').forEach(el => el.classList.add('d-none'));
+        document.getElementById('formExisting').reset();
+        document.getElementById('formNew').reset();
+
         // Set values for Existing Form
         document.getElementById('modal_employer_id').value = employerId || '';
         document.getElementById('modal_work_type_id').value = workTypeId || '';
         document.getElementById('modal_production_order_id').value = orderId || '';
-
-        const isPreProduction = (context === 'production');
         document.getElementById('add_employee_is_pre_production').value = isPreProduction ? '1' : '0';
 
         // Set values for New Form
@@ -217,11 +225,6 @@
         // Setup Import Link
         const importUrl = `{{ route('employees.import_view') }}?production_id=${orderId || ''}&employer_id=${employerId || ''}&work_type_id=${workTypeId || ''}&return_to=${context}`;
         document.getElementById('btn-go-import').href = importUrl;
-
-        // Reset UI
-        document.querySelectorAll('.section-mode').forEach(el => el.classList.add('d-none'));
-        document.getElementById('formExisting').reset();
-        document.getElementById('formNew').reset();
 
         document.getElementById('resigned-results').innerHTML = '<div class="text-center text-muted py-3">{{ __("Type to search...") }}</div>';
         const globalRes = document.getElementById('global-results');

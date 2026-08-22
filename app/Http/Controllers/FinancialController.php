@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ActivityLogHelper;
+use App\Models\IncomeCategory;
 use App\Models\ProductionOrder;
 use App\Models\FinancialTransaction;
 use App\Models\FinancialPayment;
 use App\Models\CompanyProfile;
 use App\Models\ProductionItem;
+use App\Services\LedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -233,7 +235,12 @@ class FinancialController extends Controller
             'paid_at' => 'required|date',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'notes' => 'nullable|string'
+            // If no bank account is picked, the payment won't post into
+            // "บันทึกรายรับรายจ่าย" at all (see below) — require a note
+            // explaining where the money actually went instead, so there's
+            // always a written record even when it's not attributed to a
+            // specific account yet.
+            'notes' => 'required_without:bank_account_id|nullable|string'
         ]);
 
         // เก็บไฟล์ก่อน DB transaction — ถ้า DB fail จะลบไฟล์ใน catch
@@ -265,11 +272,25 @@ class FinancialController extends Controller
                 }
                 $transaction->save();
 
-                // Update Bank Balance ใน transaction เดียวกัน
+                // Post into "บันทึกรายรับรายจ่าย" (LedgerEntry) instead of
+                // mutating current_balance directly — see LedgerService and
+                // its 05:00-cutoff lock (AccountingPeriodService). A
+                // payment with no bank_account_id has nothing to post
+                // against, so it's skipped here (its `notes`, required
+                // above, is the record of where it went).
                 if ($payment->bank_account_id) {
-                    \App\Models\BankAccount::where('id', $payment->bank_account_id)
-                        ->lockForUpdate()
-                        ->increment('current_balance', $payment->amount);
+                    app(LedgerService::class)->createEntry([
+                        'entry_date' => $payment->paid_at->toDateString(),
+                        'type' => 'income',
+                        'bank_account_id' => $payment->bank_account_id,
+                        'category_id' => $this->defaultIncomeCategory()->id,
+                        'category_type' => 'income',
+                        'counterparty_name' => optional(optional($transaction->productionOrder)->employer)->employerNameTh,
+                        'gross_amount' => $payment->amount,
+                        'description' => $this->paymentLedgerDescription($transaction),
+                        'source_type' => FinancialPayment::class,
+                        'source_id' => $payment->id,
+                    ]);
                 }
             });
         } catch (\Exception $e) {
@@ -282,6 +303,36 @@ class FinancialController extends Controller
 
         $transaction->load(['items.employee', 'payments', 'bankAccount']);
         return response()->json(['success' => true, 'transaction' => $transaction]);
+    }
+
+    /**
+     * Human-readable description for the LedgerEntry a bill payment posts
+     * — references the production order so the books entry can be traced
+     * back to its source bill, same intent as Labor's "(View bill LB-...)"
+     * link on team_payment book transactions.
+     */
+    protected function paymentLedgerDescription(FinancialTransaction $transaction): string
+    {
+        $employerName = optional(optional($transaction->productionOrder)->employer)->employerNameTh;
+        $orderId = $transaction->production_order_id;
+
+        return __('Payment received — Production Order #:order:employer', [
+            'order' => $orderId,
+            'employer' => $employerName ? " ({$employerName})" : '',
+        ]);
+    }
+
+    /**
+     * The single default IncomeCategory every auto-posted bill-payment
+     * entry uses (income_categories was empty before this integration) —
+     * created once, on first use, rather than requiring a seeder.
+     */
+    protected function defaultIncomeCategory(): IncomeCategory
+    {
+        return IncomeCategory::firstOrCreate(
+            ['code' => 'CUSTOMER_PAYMENT'],
+            ['name' => __('Customer Bill Payment'), 'is_active' => true]
+        );
     }
 
     /**
@@ -301,11 +352,9 @@ class FinancialController extends Controller
             'paid_at' => 'required|date',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'notes' => 'nullable|string'
+            'notes' => 'required_without:bank_account_id|nullable|string'
         ]);
 
-        $oldAmount = $payment->amount;
-        $oldBankAccountId = $payment->bank_account_id;
         $oldSlipPath = $payment->slip_path;
 
         // อัพโหลดไฟล์ใหม่ก่อน (ยังไม่ลบของเก่า) — กัน data loss ถ้า upload fail
@@ -315,14 +364,7 @@ class FinancialController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($request, $payment, $transaction, $oldAmount, $oldBankAccountId, $newSlipPath) {
-                // Revert old bank balance
-                if ($oldBankAccountId) {
-                    \App\Models\BankAccount::where('id', $oldBankAccountId)
-                        ->lockForUpdate()
-                        ->decrement('current_balance', $oldAmount);
-                }
-
+            DB::transaction(function () use ($request, $payment, $transaction, $newSlipPath) {
                 if ($newSlipPath) {
                     $payment->slip_path = $newSlipPath;
                 }
@@ -333,11 +375,40 @@ class FinancialController extends Controller
                 $payment->notes = $request->notes;
                 $payment->save();
 
-                // Apply new bank balance
-                if ($payment->bank_account_id) {
-                    \App\Models\BankAccount::where('id', $payment->bank_account_id)
-                        ->lockForUpdate()
-                        ->increment('current_balance', $payment->amount);
+                // Keep the linked LedgerEntry (if any) in sync — this is
+                // where the 05:00 lock applies: if the payment's existing
+                // ledger entry is from an already-closed day,
+                // LedgerService::updateEntry()/deleteEntry() throws
+                // LedgerEntryLockedException, which aborts this whole
+                // transaction (self-renders a clear error — see that
+                // exception class) instead of silently drifting.
+                $ledgerService = app(LedgerService::class);
+                $linked = $payment->ledgerEntry()->first();
+
+                if ($linked && !$payment->bank_account_id) {
+                    $ledgerService->deleteEntry($linked);
+                } elseif ($linked && $payment->bank_account_id) {
+                    $ledgerService->updateEntry($linked, [
+                        'entry_date' => $payment->paid_at->toDateString(),
+                        'type' => 'income',
+                        'bank_account_id' => $payment->bank_account_id,
+                        'category_id' => $linked->category_id ?? $this->defaultIncomeCategory()->id,
+                        'category_type' => 'income',
+                        'gross_amount' => $payment->amount,
+                        'description' => $this->paymentLedgerDescription($transaction),
+                    ]);
+                } elseif (!$linked && $payment->bank_account_id) {
+                    $ledgerService->createEntry([
+                        'entry_date' => $payment->paid_at->toDateString(),
+                        'type' => 'income',
+                        'bank_account_id' => $payment->bank_account_id,
+                        'category_id' => $this->defaultIncomeCategory()->id,
+                        'category_type' => 'income',
+                        'gross_amount' => $payment->amount,
+                        'description' => $this->paymentLedgerDescription($transaction),
+                        'source_type' => FinancialPayment::class,
+                        'source_id' => $payment->id,
+                    ]);
                 }
 
                 // Recalculate transaction totals
@@ -385,11 +456,13 @@ class FinancialController extends Controller
         $slipPath = $payment->slip_path; // เก็บ path ไว้ลบหลัง DB commit สำเร็จ
 
         DB::transaction(function () use ($payment, $transaction) {
-            // Revert bank balance
-            if ($payment->bank_account_id) {
-                \App\Models\BankAccount::where('id', $payment->bank_account_id)
-                    ->lockForUpdate()
-                    ->decrement('current_balance', $payment->amount);
+            // Reverse the linked LedgerEntry (if any) — throws
+            // LedgerEntryLockedException (aborting this whole delete) if
+            // its accounting day is already closed, same reasoning as
+            // updatePayment() above.
+            $linked = $payment->ledgerEntry()->first();
+            if ($linked) {
+                app(LedgerService::class)->deleteEntry($linked);
             }
 
             $payment->delete();
@@ -472,16 +545,20 @@ class FinancialController extends Controller
              return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $transaction = FinancialTransaction::with('payments')->findOrFail($id);
+        $transaction = FinancialTransaction::with('payments.ledgerEntry')->findOrFail($id);
 
-        // Revert bank balances for all associated payments
-        foreach ($transaction->payments as $payment) {
-            if ($payment->bank_account_id) {
-                \App\Models\BankAccount::where('id', $payment->bank_account_id)->decrement('current_balance', $payment->amount);
+        // Wrapped in one transaction so a locked (closed-day) payment
+        // aborts the WHOLE delete rather than leaving it half-done.
+        DB::transaction(function () use ($transaction) {
+            $ledgerService = app(LedgerService::class);
+            foreach ($transaction->payments as $payment) {
+                if ($payment->ledgerEntry) {
+                    $ledgerService->deleteEntry($payment->ledgerEntry);
+                }
             }
-        }
 
-        $transaction->delete(); // payments will cascade via DB if configured, but let's be safe.
+            $transaction->delete(); // payments will cascade via DB if configured, but let's be safe.
+        });
 
         return response()->json(['success' => true]);
     }

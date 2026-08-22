@@ -17,6 +17,18 @@ class NotificationController extends Controller
 {
     use AddressFilterTrait;
 
+    /**
+     * Compact JSON digest for the modal that pops up on the Welcome page
+     * (see resources/views/index.blade.php) — grouped counts + top 5
+     * soonest-due items per enabled type. See NotificationHelper::
+     * getPopupSummary() for the query itself; index() above stays
+     * untouched.
+     */
+    public function popupSummary()
+    {
+        return response()->json(\App\Helpers\NotificationHelper::getPopupSummary());
+    }
+
     public function index(Request $request)
     {
         $currentView = $request->input('view', 'card');

@@ -40,4 +40,15 @@ class FinancialPayment extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /**
+     * The LedgerEntry this payment posted into "บันทึกรายรับรายจ่าย" (see
+     * FinancialController::storePayment() and LedgerService) — null if the
+     * payment has no bank_account_id (unattributed, notes-only) or predates
+     * this integration.
+     */
+    public function ledgerEntry()
+    {
+        return $this->morphOne(LedgerEntry::class, 'source');
+    }
 }

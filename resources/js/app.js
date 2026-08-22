@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // 1. Reset modal and show spinner
-        modalTitle.textContent = 'พรีวิวข้อมูล';
+        modalTitle.textContent = universalPreviewModalEl.dataset.i18nTitle || modalTitle.textContent;
         modalBody.innerHTML = loadingSpinnerHtml;
         modal.show();
 
@@ -60,9 +60,10 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => {
                 // 4. On Failure: Inject an error message
                 console.error('Error fetching preview data:', error);
+                const errorPrefix = universalPreviewModalEl.dataset.i18nError || 'Error loading data:';
                 modalBody.innerHTML = `
                     <div class="alert alert-danger" role="alert">
-                        เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}
+                        ${errorPrefix} ${error.message}
                     </div>`;
             });
     });

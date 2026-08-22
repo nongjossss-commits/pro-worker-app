@@ -15,12 +15,20 @@
           work regardless of DOM location because they portal to <body>.
         - If the manual partial doesn't exist, nothing renders (graceful) so a
           new menu without a written manual doesn't crash the page.
+        - Locale-aware: if app()->getLocale() is 'en'/'zh' and a translated
+          partial exists at resources/views/manuals/{locale}/{$manual}.blade.php,
+          that one is included instead. Falls back to the Thai partial silently
+          if no translation exists yet for that manual/locale.
 --}}
 @props(['manual', 'title' => 'คู่มือการใช้งาน'])
 
 @php
-    $manualView = 'manuals.' . $manual;
-    $manualExists = view()->exists($manualView);
+    $locale = app()->getLocale();
+    $manualViewThai = 'manuals.' . $manual;
+    $manualView = ($locale !== 'th' && view()->exists("manuals.{$locale}.{$manual}"))
+        ? "manuals.{$locale}.{$manual}"
+        : $manualViewThai;
+    $manualExists = view()->exists($manualView) || view()->exists($manualViewThai);
     $modalId = 'helpModal-' . $manual;
 @endphp
 

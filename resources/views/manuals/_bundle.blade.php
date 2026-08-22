@@ -5,7 +5,7 @@
 --}}
 @php $brand = \App\Services\BrandService::current(); @endphp
 <!DOCTYPE html>
-<html lang="th">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <title>{{ __('User Manual') }} — {{ $brand['app_name'] }}</title>
@@ -80,32 +80,42 @@
     // Defined order — matches the sidebar grouping so reading top-to-bottom
     // feels like walking down the left menu from top.
     $sections = [
-        ['key' => 'dashboard',                'title' => 'แดชบอร์ด / Dashboard'],
-        ['key' => 'notifications',            'title' => 'การแจ้งเตือน / Notifications'],
-        ['key' => 'activity_logs',            'title' => 'ประวัติการกระทำ / Activity Logs'],
-        ['key' => 'incomplete_data',          'title' => 'ข้อมูลไม่ครบ / Incomplete Data'],
-        ['key' => 'ticket_inbox',             'title' => 'กล่องรับเรื่อง / Ticket Inbox'],
-        ['key' => 'employer_ticket',          'title' => 'ส่งคำขอ / Employer Ticket'],
-        ['key' => 'employers',                'title' => 'ข้อมูลนายจ้าง / Employers'],
-        ['key' => 'employees',                'title' => 'ข้อมูลลูกจ้าง / Employees'],
-        ['key' => 'employment_history',       'title' => 'ประวัติการจ้างงาน / Employment History'],
-        ['key' => 'group_team',               'title' => 'กลุ่มและทีม / Group & Team'],
+        ['key' => 'dashboard',                'title' => 'แดชบอร์ด / Dashboard',                        'title_en' => 'Dashboard',                'title_zh' => '仪表板',           'title_my' => 'ဒက်ရှ်ဘုတ်'],
+        ['key' => 'notifications',            'title' => 'การแจ้งเตือน / Notifications',                 'title_en' => 'Notifications',            'title_zh' => '通知',             'title_my' => 'အသိပေးချက်များ'],
+        ['key' => 'activity_logs',            'title' => 'ประวัติการกระทำ / Activity Logs',              'title_en' => 'Activity Logs',            'title_zh' => '操作日志',         'title_my' => 'လုပ်ဆောင်ချက် မှတ်တမ်း'],
+        ['key' => 'incomplete_data',          'title' => 'ข้อมูลไม่ครบ / Incomplete Data',               'title_en' => 'Incomplete Data',          'title_zh' => '数据不完整',       'title_my' => 'ဒေတာမပြည့်စုံ'],
+        ['key' => 'ticket_inbox',             'title' => 'กล่องรับเรื่อง / Ticket Inbox',                'title_en' => 'Ticket Inbox',             'title_zh' => '工单收件箱',       'title_my' => 'တောင်းဆိုချက် စာပုံး'],
+        ['key' => 'employer_ticket',          'title' => 'ส่งคำขอ / Employer Ticket',                    'title_en' => 'Employer Ticket',          'title_zh' => '提交请求',         'title_my' => 'အလုပ်ရှင် တောင်းဆိုချက်'],
+        ['key' => 'employers',                'title' => 'ข้อมูลนายจ้าง / Employers',                    'title_en' => 'Employers',                'title_zh' => '雇主',             'title_my' => 'အလုပ်ရှင်များ'],
+        ['key' => 'employees',                'title' => 'ข้อมูลลูกจ้าง / Employees',                    'title_en' => 'Employees',                'title_zh' => '雇员',             'title_my' => 'ဝန်ထမ်းများ'],
+        ['key' => 'employment_history',       'title' => 'ประวัติการจ้างงาน / Employment History',       'title_en' => 'Employment History',       'title_zh' => '雇用历史',         'title_my' => 'အလုပ်ခန့်ထားမှု မှတ်တမ်း'],
+        ['key' => 'group_team',               'title' => 'กลุ่มและทีม / Group & Team',                   'title_en' => 'Group & Team',             'title_zh' => '分组与团队',       'title_my' => 'အုပ်စုနှင့် အသင်း'],
         // Sales intentionally moved to the Finance bundle — Sales generates
         // quotations/invoices which are part of the Finance flow, sold as part
         // of the same add-on package.
-        ['key' => 'production',               'title' => 'งานเตรียมการ / P Production'],
-        ['key' => 'workflow',                 'title' => 'ขั้นตอนงาน / Workflow'],
-        ['key' => 'registration_resolution',  'title' => 'มติลงทะเบียน / Registration Resolution'],
-        ['key' => 'renewal_resolution',       'title' => 'มติต่ออายุ / Renewal Resolution'],
-        ['key' => 'importers',                'title' => 'บริษัทนำเข้า / Importers'],
-        ['key' => 'agents',                   'title' => 'ตัวแทน / Agents'],
-        ['key' => 'delegates',                'title' => 'ผู้แทน / Delegates'],
+        ['key' => 'production',               'title' => 'งานเตรียมการ / P Production',                  'title_en' => 'P Production',             'title_zh' => 'P Production',     'title_my' => 'P Production'],
+        ['key' => 'workflow',                 'title' => 'ขั้นตอนงาน / Workflow',                        'title_en' => 'Workflow',                 'title_zh' => 'Workflow',         'title_my' => 'Workflow'],
+        ['key' => 'registration_resolution',  'title' => 'มติลงทะเบียน / Registration Resolution',       'title_en' => 'Registration Resolution',  'title_zh' => '登记决议',         'title_my' => 'မှတ်ပုံတင် ဆုံးဖြတ်ချက်'],
+        ['key' => 'renewal_resolution',       'title' => 'มติต่ออายุ / Renewal Resolution',              'title_en' => 'Renewal Resolution',       'title_zh' => '续签决议',         'title_my' => 'သက်တမ်းတိုး ဆုံးဖြတ်ချက်'],
+        ['key' => 'importers',                'title' => 'บริษัทนำเข้า / Importers',                     'title_en' => 'Importers',                'title_zh' => '劳务进口代理公司', 'title_my' => 'တင်သွင်းသူများ'],
+        ['key' => 'agents',                   'title' => 'ตัวแทน / Agents',                              'title_en' => 'Agents',                   'title_zh' => '劳务中介',         'title_my' => 'အေးဂျင့်များ'],
+        ['key' => 'delegates',                'title' => 'ผู้แทน / Delegates',                           'title_en' => 'Delegates',                'title_zh' => '授权代表',         'title_my' => 'ကိုယ်စားလှယ်များ'],
         // Finance + Financial Profiles intentionally excluded — distributed in
         // the separate Finance Manual Bundle (sold as an add-on module).
-        ['key' => 'user_management',          'title' => 'จัดการผู้ใช้งาน / User Management'],
-        ['key' => 'pdf_templates',            'title' => 'แม่แบบ PDF / PDF Templates'],
-        ['key' => 'central_trash',            'title' => 'ถังขยะกลาง / Central Trash'],
+        ['key' => 'user_management',          'title' => 'จัดการผู้ใช้งาน / User Management',            'title_en' => 'User Management',          'title_zh' => '用户管理',         'title_my' => 'အသုံးပြုသူ စီမံခန့်ခွဲမှု'],
+        ['key' => 'pdf_templates',            'title' => 'แม่แบบ PDF / PDF Templates',                   'title_en' => 'PDF Templates',            'title_zh' => 'PDF 模板',         'title_my' => 'PDF Template များ'],
+        ['key' => 'central_trash',            'title' => 'ถังขยะกลาง / Central Trash',                   'title_en' => 'Central Trash',            'title_zh' => '回收站',           'title_my' => 'ဗဟိုအမှိုက်ပုံး'],
     ];
+
+    $locale = app()->getLocale();
+    $sectionTitle = fn($s) => match($locale) {
+        'en' => $s['title_en'], 'zh' => $s['title_zh'], 'my' => $s['title_my'], default => $s['title'],
+    };
+    $resolveManual = function($key) use ($locale) {
+        return ($locale !== 'th' && view()->exists("manuals.{$locale}.{$key}"))
+            ? "manuals.{$locale}.{$key}"
+            : "manuals.{$key}";
+    };
 @endphp
 
 <div class="toc">
@@ -113,7 +123,7 @@
     <ol>
         @foreach($sections as $i => $s)
             @if(view()->exists('manuals.' . $s['key']))
-                <li><a href="#sec-{{ $s['key'] }}">{{ $s['title'] }}</a></li>
+                <li><a href="#sec-{{ $s['key'] }}">{{ $sectionTitle($s) }}</a></li>
             @endif
         @endforeach
     </ol>
@@ -123,8 +133,8 @@
 @foreach($sections as $s)
     @if(view()->exists('manuals.' . $s['key']))
         <section class="manual-section" id="sec-{{ $s['key'] }}">
-            <h2>{{ $s['title'] }}</h2>
-            @include('manuals.' . $s['key'])
+            <h2>{{ $sectionTitle($s) }}</h2>
+            @include($resolveManual($s['key']))
         </section>
     @endif
 @endforeach

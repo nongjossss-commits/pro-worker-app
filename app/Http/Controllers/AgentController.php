@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AgentController extends Controller
 {
@@ -16,7 +17,16 @@ class AgentController extends Controller
         'agentPhone'    => 'nullable|string|max:255',
         'agentEmail'    => 'nullable|email|max:255',
         'agentAddress'  => 'nullable|string',
+        'agent_doc_other_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:30720',
+        'agent_doc_other_1_desc' => 'nullable|string|max:255',
+        'agent_doc_other_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:30720',
+        'agent_doc_other_2_desc' => 'nullable|string|max:255',
+        'agent_doc_other_3' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:30720',
+        'agent_doc_other_3_desc' => 'nullable|string|max:255',
     ];
+
+    /** Fields handled via Storage — kept out of mass-assignment until uploaded. */
+    private const AGENT_DOC_FIELDS = ['agent_doc_other_1', 'agent_doc_other_2', 'agent_doc_other_3'];
 
     /**
      * Authorization: ต้องเป็น admin/super-admin หรือมี permission view-agents/manage-agents
@@ -45,6 +55,12 @@ class AgentController extends Controller
     {
         $validated = $request->validate(self::AGENT_RULES);
 
+        foreach (self::AGENT_DOC_FIELDS as $field) {
+            if ($request->hasFile($field)) {
+                $validated[$field] = $request->file($field)->store('agent_documents', 'public');
+            }
+        }
+
         Agent::create($validated);
 
         return redirect()->route('agents.index')
@@ -64,6 +80,15 @@ class AgentController extends Controller
     public function update(Request $request, Agent $agent)
     {
         $validated = $request->validate(self::AGENT_RULES);
+
+        foreach (self::AGENT_DOC_FIELDS as $field) {
+            if ($request->hasFile($field)) {
+                if ($agent->{$field}) {
+                    Storage::disk('public')->delete($agent->{$field});
+                }
+                $validated[$field] = $request->file($field)->store('agent_documents', 'public');
+            }
+        }
 
         $agent->update($validated);
 

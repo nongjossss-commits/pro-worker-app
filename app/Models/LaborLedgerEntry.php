@@ -15,6 +15,7 @@ class LaborLedgerEntry extends Model
         'labor_team_id',
         'labor_team_member_id',
         'labor_charge_type_id',
+        'labor_bill_payment_id',
         'entry_date',
         'description',
         'amount',
@@ -48,6 +49,11 @@ class LaborLedgerEntry extends Model
     public function chargeType(): BelongsTo
     {
         return $this->belongsTo(LaborChargeType::class, 'labor_charge_type_id');
+    }
+
+    public function billPayment(): BelongsTo
+    {
+        return $this->belongsTo(LaborBillPayment::class, 'labor_bill_payment_id');
     }
 
     public function creator(): BelongsTo

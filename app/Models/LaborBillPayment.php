@@ -15,6 +15,7 @@ class LaborBillPayment extends Model
         'amount',
         'paid_at',
         'payment_method',
+        'reference_no',
         'bank_account_id',
         'slip_path',
         'wht_certificate_id',
@@ -54,5 +55,24 @@ class LaborBillPayment extends Model
     public function hasReceipt(): bool
     {
         return (bool) $this->receipt_no;
+    }
+
+    /**
+     * The LaborBookTransaction (if any) this payment was posted into —
+     * matches LaborBookTransaction's source_type/source_id polymorphic
+     * columns, set by LaborBillPaymentService::recordPayment().
+     */
+    public function bookTransaction()
+    {
+        return $this->morphOne(LaborBookTransaction::class, 'source');
+    }
+
+    /**
+     * The offsetting negative LaborLedgerEntry this payment posted into the
+     * Central Billing Ledger — set by LaborBillPaymentService::recordPayment().
+     */
+    public function ledgerEntry()
+    {
+        return $this->hasOne(LaborLedgerEntry::class, 'labor_bill_payment_id');
     }
 }

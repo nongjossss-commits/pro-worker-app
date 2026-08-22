@@ -9,6 +9,7 @@ class LaborExpenseCategory extends Model
 {
     protected $fillable = [
         'name',
+        'note',
         'is_tax_deductible',
         'is_active',
     ];

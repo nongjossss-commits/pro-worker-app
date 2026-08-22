@@ -138,57 +138,57 @@
 
     {{-- ================== SECTION 1: Identity ================== --}}
     <div class="preview-section-header">
-        <h6 class="preview-section-title">ข้อมูลนายจ้าง</h6>
+        <h6 class="preview-section-title">{{ __('Employer Information') }}</h6>
     </div>
     <div class="row g-2 mb-1">
         <div class="col-12 col-md-6 preview-field">
-            <span class="preview-label">ชื่อนายจ้าง (ไทย)</span>
+            <span class="preview-label">{{ __('Employer Name (Thai)') }}</span>
             {!! $val($employer->employerNameTh) !!}
         </div>
         <div class="col-12 col-md-6 preview-field">
-            <span class="preview-label">ชื่อนายจ้าง (อังกฤษ)</span>
+            <span class="preview-label">{{ __('Employer Name (English)') }}</span>
             {!! $val($employer->employerNameEn) !!}
         </div>
         @if($employer->name_suffix)
         <div class="col-12 col-md-6 preview-field">
-            <span class="preview-label">ต่อท้ายชื่อ</span>
+            <span class="preview-label">{{ __('Name Suffix') }}</span>
             {!! $val($employer->name_suffix) !!}
         </div>
         @endif
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">รหัสนายจ้าง</span>
+            <span class="preview-label">{{ __('Employer ID') }}</span>
             {!! $val($employer->employerId) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">เจ้าของงาน</span>
+            <span class="preview-label">{{ __('Job Owner') }}</span>
             {!! $val($employer->jobOwner?->name) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">ผู้ดูแล (Admin)</span>
+            <span class="preview-label">{{ __('Caretaker (Admin)') }}</span>
             {!! $val($employer->assignedStaff?->name) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">เลขประจำตัวนายจ้าง</span>
+            <span class="preview-label">{{ __('Employer Tax ID') }}</span>
             {!! $val($employer->employerTaxId) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">ประเภทกิจการ (ไทย)</span>
+            <span class="preview-label">{{ __('Business Type (Thai)') }}</span>
             {!! $val($employer->businessType) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">ประเภทกิจการ (อังกฤษ)</span>
+            <span class="preview-label">{{ __('Business Type (English)') }}</span>
             {!! $val($employer->businessTypeEn) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">ทุนจดทะเบียน</span>
+            <span class="preview-label">{{ __('Registered Capital') }}</span>
             {!! $val($employer->regCapital ? number_format($employer->regCapital, 2) : null) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">จดทะเบียนวันที่</span>
+            <span class="preview-label">{{ __('Registration Date') }}</span>
             {!! $val($employer->regDate ? $employer->regDate->format('d/m/Y') : null) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">ค่าแรงขั้นต่ำ</span>
+            <span class="preview-label">{{ __('Minimum Wage') }}</span>
             {!! $val($employer->minimum_wage ? number_format($employer->minimum_wage, 2) : null) !!}
         </div>
     </div>
@@ -197,23 +197,23 @@
 
     {{-- ================== SECTION 2: Contact + Credentials ================== --}}
     <div class="preview-section-header">
-        <h6 class="preview-section-title">ติดต่อและระบบภายนอก</h6>
+        <h6 class="preview-section-title">{{ __('Contact & External Systems') }}</h6>
     </div>
     <div class="row g-2 mb-1">
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">เบอร์โทร</span>
+            <span class="preview-label">{{ __('Phone (Short)') }}</span>
             {!! $val($employer->employerPhone) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">อีเมล</span>
+            <span class="preview-label">{{ __('Email') }}</span>
             {!! $val($employer->employerEmail) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">รหัสอีเมล</span>
+            <span class="preview-label">{{ __('Email Code') }}</span>
             {!! $val($employer->employerPassword) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">รพ. ประกันสังคม</span>
+            <span class="preview-label">{{ __('SSO Hospital') }}</span>
             {!! $val($employer->socialSecurityHospital) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
@@ -221,7 +221,7 @@
             {!! $val($employer->outsource_re_code) !!}
         </div>
         <div class="col-6 col-sm-4 col-md-3 preview-field">
-            <span class="preview-label">รหัส Outsource</span>
+            <span class="preview-label">{{ __('Outsource Pass') }}</span>
             {!! $val($employer->outsource_password) !!}
         </div>
     </div>
@@ -230,23 +230,23 @@
 
     {{-- ================== SECTION 3: Signers ================== --}}
     <div class="preview-section-header">
-        <h6 class="preview-section-title">ผู้มีอำนาจลงนาม</h6>
+        <h6 class="preview-section-title">{{ __('Authorized Signatories') }}</h6>
     </div>
     <div class="row g-2 mb-1">
         <div class="col-6 col-md-3 preview-field">
-            <span class="preview-label">ผู้ลงนาม 1 (ไทย)</span>
+            <span class="preview-label">{{ __('Signer 1 (Thai)') }}</span>
             {!! $val($employer->signerNameTh) !!}
         </div>
         <div class="col-6 col-md-3 preview-field">
-            <span class="preview-label">ผู้ลงนาม 1 (อังกฤษ)</span>
+            <span class="preview-label">{{ __('Signer 1 (English)') }}</span>
             {!! $val($employer->signerNameEn) !!}
         </div>
         <div class="col-6 col-md-3 preview-field">
-            <span class="preview-label">ผู้ลงนาม 2 (ไทย)</span>
+            <span class="preview-label">{{ __('Signer 2 (Thai)') }}</span>
             {!! $val($employer->signerNameTh2) !!}
         </div>
         <div class="col-6 col-md-3 preview-field">
-            <span class="preview-label">ผู้ลงนาม 2 (อังกฤษ)</span>
+            <span class="preview-label">{{ __('Signer 2 (English)') }}</span>
             {!! $val($employer->signerNameEn2) !!}
         </div>
     </div>
@@ -255,67 +255,71 @@
 
     {{-- ================== SECTION 4: Documents ================== --}}
     <div class="preview-section-header">
-        <h6 class="preview-section-title">เอกสารแนบของนายจ้าง</h6>
+        <h6 class="preview-section-title">{{ __('Employer Attached Documents') }}</h6>
     </div>
     <div class="row g-2 mb-1">
         {{-- 1. Company doc + expiry --}}
         <div class="col-12 col-sm-6 col-md-4 preview-field">
-            <span class="preview-label">1. หนังสือรับรอง / บัตรประชาชน</span>
+            <span class="preview-label">1. {{ __('Company Cert. / ID Card') }}</span>
             @if($employer->employer_doc_company)
                 <div>
-                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_company) }}', 'ดูหนังสือรับรองบริษัท')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> ดู</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_company) }}', '{{ __('View Company Certificate') }}')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> {{ __('View') }}</a>
                     <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company']) }}" download class="btn btn-danger preview-attach-btn text-white ms-1"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                 </div>
             @else
-                <span class="preview-value text-muted-empty">ไม่มีเอกสาร</span>
+                <span class="preview-value text-muted-empty">{{ __('No Document') }}</span>
             @endif
         </div>
         <div class="col-6 col-sm-6 col-md-4 preview-field">
-            <span class="preview-label">วันหมดอายุ (หนังสือรับรอง)</span>
+            <span class="preview-label">{{ __('Expiry Date (Certificate)') }}</span>
             {!! $val($employer->employer_doc_company_expiry ? \Carbon\Carbon::parse($employer->employer_doc_company_expiry)->format('d/m/Y') : null) !!}
         </div>
         {{-- 2. Lease --}}
         <div class="col-12 col-sm-6 col-md-4 preview-field">
-            <span class="preview-label">2. สัญญาเช่า / ทะเบียนบ้าน</span>
+            <span class="preview-label">2. {{ __('Lease / House Registration') }}</span>
             @if($employer->employer_doc_lease)
                 <div>
-                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_lease) }}', 'ดูสัญญาเช่า')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> ดู</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_lease) }}', '{{ __('View Lease') }}')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> {{ __('View') }}</a>
                     <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease']) }}" download class="btn btn-danger preview-attach-btn text-white ms-1"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                 </div>
             @else
-                <span class="preview-value text-muted-empty">ไม่มีเอกสาร</span>
+                <span class="preview-value text-muted-empty">{{ __('No Document') }}</span>
             @endif
         </div>
         {{-- 3. Construction --}}
         <div class="col-12 col-sm-6 col-md-4 preview-field">
-            <span class="preview-label">3. สัญญาก่อสร้าง / แผนที่</span>
+            <span class="preview-label">3. {{ __('Construction Contract / Map') }}</span>
             @if($employer->employer_doc_construction)
                 <div>
-                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_construction) }}', 'ดูใบอนุญาตก่อสร้าง')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> ดู</a>
+                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->employer_doc_construction) }}', '{{ __('View Construction Permit') }}')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> {{ __('View') }}</a>
                     <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction']) }}" download class="btn btn-danger preview-attach-btn text-white ms-1"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                 </div>
             @else
-                <span class="preview-value text-muted-empty">ไม่มีเอกสาร</span>
+                <span class="preview-value text-muted-empty">{{ __('No Document') }}</span>
             @endif
         </div>
         {{-- 4-6. Other docs --}}
+        @php
+            $otherDocLabels = [1 => __('Other Document 1'), 2 => __('Other Document 2'), 3 => __('Other Document 3')];
+        @endphp
         @foreach ([1, 2, 3] as $i)
             @php
                 $docField = "employer_doc_other_{$i}";
                 $descField = "employer_doc_other_{$i}_desc";
                 $labelSuffix = $employer->{$descField} ? ' - ' . $employer->{$descField} : '';
+                $otherLabel = (3 + $i) . '. ' . $otherDocLabels[$i] . $labelSuffix;
             @endphp
             <div class="col-12 col-sm-6 col-md-4 preview-field">
-                <span class="preview-label" title="{{ (3 + $i) }}. เอกสารอื่นๆ {{ $i }}{{ $labelSuffix }}">
-                    {{ (3 + $i) }}. เอกสารอื่นๆ {{ $i }}{{ $labelSuffix }}
+                <span class="preview-label" title="{{ $otherLabel }}">
+                    {{ $otherLabel }}
                 </span>
                 @if($employer->{$docField})
                     <div>
-                        <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->{$docField}) }}', '{{ $employer->{$descField} ?? 'ดูเอกสารอื่นๆ '.$i }}')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> ดู</a>
+                        <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $employer->{$docField}) }}', '{{ $employer->{$descField} ?? __('View Document') }}')" class="btn btn-success preview-attach-btn text-white"><i class="bi bi-eye-fill"></i> {{ __('View') }}</a>
                         <a href="{{ route('employers.documents.pdf', ['employer' => $employer->id, 'field' => $docField]) }}" download class="btn btn-danger preview-attach-btn text-white ms-1"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</a>
                     </div>
                 @else
-                    <span class="preview-value text-muted-empty">ไม่มีเอกสาร</span>
+                    <span class="preview-value text-muted-empty">{{ __('No Document') }}</span>
                 @endif
             </div>
         @endforeach
@@ -325,12 +329,12 @@
 
     {{-- ================== SECTION 5: Addresses ================== --}}
     <div class="preview-section-header">
-        <h6 class="preview-section-title">ที่อยู่</h6>
+        <h6 class="preview-section-title">{{ __('Addresses') }}</h6>
     </div>
     <div class="row g-2 mb-1">
         <div class="col-12 col-md-6">
             <div class="preview-field">
-                <span class="preview-label">ตามทะเบียน</span>
+                <span class="preview-label">{{ __('By Registration') }}</span>
                 <div class="vstack gap-2 mt-1">
                     @forelse($employer->addresses->where('type', 'registered') as $address)
                         <div class="empr-address-card">
@@ -338,14 +342,14 @@
                             <div class="text-muted"><strong>EN:</strong> {{ $address->full_address_en }}</div>
                         </div>
                     @empty
-                        <span class="preview-value text-muted-empty">ยังไม่มีที่อยู่</span>
+                        <span class="preview-value text-muted-empty">{{ __('No Address Yet') }}</span>
                     @endforelse
                 </div>
             </div>
         </div>
         <div class="col-12 col-md-6">
             <div class="preview-field">
-                <span class="preview-label">สถานที่ทำงาน</span>
+                <span class="preview-label">{{ __('Workplace') }}</span>
                 <div class="vstack gap-2 mt-1">
                     @forelse($employer->addresses->where('type', 'workplace') as $address)
                         <div class="empr-address-card">
@@ -353,7 +357,7 @@
                             <div class="text-muted"><strong>EN:</strong> {{ $address->full_address_en }}</div>
                         </div>
                     @empty
-                        <span class="preview-value text-muted-empty">ยังไม่มีที่อยู่</span>
+                        <span class="preview-value text-muted-empty">{{ __('No Address Yet') }}</span>
                     @endforelse
                 </div>
             </div>
@@ -364,49 +368,49 @@
 
     {{-- ================== SECTION 6: Employee Stats ================== --}}
     <div class="preview-section-header">
-        <h6 class="preview-section-title">สรุปข้อมูลลูกจ้าง</h6>
+        <h6 class="preview-section-title">{{ __('Employee Summary') }}</h6>
     </div>
     <div class="row g-2 mb-2">
         <div class="col-6 col-md-3">
             <div class="empr-stat-card">
-                <h6>ลูกจ้างทั้งหมด</h6>
+                <h6>{{ __('Total Workers') }}</h6>
                 <p>{{ $stats->total ?? 0 }}</p>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="empr-stat-card">
-                <h6>เพศชาย</h6>
+                <h6>{{ __('Male (Gender Stat)') }}</h6>
                 <p>{{ $stats->male ?? 0 }}</p>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="empr-stat-card">
-                <h6>เพศหญิง</h6>
+                <h6>{{ __('Female (Gender Stat)') }}</h6>
                 <p>{{ $stats->female ?? 0 }}</p>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="empr-stat-card">
-                <h6>แจ้งออกแล้ว</h6>
+                <h6>{{ __('Terminated (Notice Filed)') }}</h6>
                 <p>{{ $stats->terminated_total ?? 0 }}</p>
             </div>
         </div>
     </div>
     <div class="row g-2">
         <div class="col-12 preview-field">
-            <span class="preview-label">สรุปตามสัญชาติ (เฉพาะลูกจ้างที่ยังไม่แจ้งออก)</span>
+            <span class="preview-label">{{ __('Summary by Nationality (Active Employees Only)') }}</span>
             @if(isset($stats->breakdown) && count($stats->breakdown))
                 <ul class="list-unstyled mb-0 mt-1" style="font-size: 0.9rem;">
                     @foreach($stats->breakdown as $nationality => $data)
                         <li>
-                            <strong>{{ $nationality ?: 'ไม่ระบุสัญชาติ' }}:</strong>
-                            {{ $data->total_count }} คน
-                            <span class="text-muted">(ชาย: {{ $data->male_count }} / หญิง: {{ $data->female_count }})</span>
+                            <strong>{{ $nationality ?: __('Nationality Not Specified') }}:</strong>
+                            {{ $data->total_count }} {{ __('people') }}
+                            <span class="text-muted">({{ __('Male (Short)') }}: {{ $data->male_count }} / {{ __('Female (Short)') }}: {{ $data->female_count }})</span>
                         </li>
                     @endforeach
                 </ul>
             @else
-                <span class="preview-value text-muted-empty">ไม่พบข้อมูลการแบ่งสัญชาติ</span>
+                <span class="preview-value text-muted-empty">{{ __('No Nationality Breakdown Data') }}</span>
             @endif
         </div>
     </div>

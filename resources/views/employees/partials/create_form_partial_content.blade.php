@@ -100,14 +100,23 @@
                 },
 
                 setFromEvent(detail) {
+                    // Force through a cleared state first — Alpine's :value/
+                    // x-model bindings only re-render when the reactive value
+                    // actually changes. Without this, opening "Add Employee"
+                    // twice in a row for the SAME employer (e.g. adding a 2nd
+                    // or 3rd employee to one job card) sets selectedId to the
+                    // same value it already held, so no re-render happens and
+                    // the dropdown is left showing blank (from the modal's
+                    // form.reset()) even though selectedId is still correct
+                    // internally.
+                    this.selectedId = '';
+                    this.search = '';
+
                     if (detail && detail.id) {
                         this.selectedId = detail.id;
                         // Find name to set search
                         const found = this.employers.find(e => e.id == detail.id);
                         if(found) this.search = found.name_th;
-                    } else {
-                        this.selectedId = '';
-                        this.search = '';
                     }
                 }
             }

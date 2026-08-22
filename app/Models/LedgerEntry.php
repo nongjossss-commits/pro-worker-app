@@ -38,6 +38,8 @@ class LedgerEntry extends Model
         'ai_status',
         'source_type',
         'source_id',
+        'adjustment_of_id',
+        'adjustment_reason',
         'description',
         'notes',
         'created_by',
@@ -85,6 +87,25 @@ class LedgerEntry extends Model
     public function source()
     {
         return $this->morphTo();
+    }
+
+    /**
+     * The entry this one corrects (set on both the reversal and the
+     * replacement created by LedgerService::createCorrection()) — null for
+     * an ordinary entry.
+     */
+    public function adjustmentOf()
+    {
+        return $this->belongsTo(self::class, 'adjustment_of_id');
+    }
+
+    /**
+     * The reversal + replacement entries created against this one, if it
+     * was ever corrected. See LedgerService::createCorrection().
+     */
+    public function adjustments()
+    {
+        return $this->hasMany(self::class, 'adjustment_of_id');
     }
 
     public function getSignedNetAmountAttribute(): float

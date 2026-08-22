@@ -19,6 +19,7 @@ class LaborExpenseCategoryController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'note' => ['nullable', 'string', 'max:1000'],
             'is_tax_deductible' => ['nullable', 'boolean'],
         ]);
         $validated['is_tax_deductible'] = $request->boolean('is_tax_deductible');
@@ -34,6 +35,7 @@ class LaborExpenseCategoryController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'note' => ['nullable', 'string', 'max:1000'],
             'is_tax_deductible' => ['nullable', 'boolean'],
         ]);
         $validated['is_tax_deductible'] = $request->boolean('is_tax_deductible');

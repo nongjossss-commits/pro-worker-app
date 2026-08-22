@@ -3,7 +3,6 @@
 @section('title', 'Tax Invoices - Pro Walker Labor')
 
 @section('content')
-@include('labor.partials.finance-tabs')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="fw-bold mb-0">{{ __('Tax Invoices') }} (ใบกำกับภาษี)</h4>
     <a href="{{ route('labor.tax-invoices.create') }}" class="btn btn-primary">

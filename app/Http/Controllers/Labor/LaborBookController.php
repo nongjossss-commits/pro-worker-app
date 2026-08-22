@@ -111,7 +111,7 @@ class LaborBookController extends Controller
     {
         $this->ensureCanView($request);
 
-        $query = $this->applyTransactionFilters($account->transactions()->with(['creator', 'source', 'chargeType', 'expenseCategory']), $request);
+        $query = $this->applyTransactionFilters($account->transactions()->with(['creator', 'source.bill', 'chargeType', 'expenseCategory']), $request);
 
         $transactions = (clone $query)->latest('transaction_date')->latest('id')->paginate(30)->withQueryString();
 

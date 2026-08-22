@@ -120,7 +120,7 @@
                     @for($i=1; $i<=3; $i++)
                     @php $field = "delegate_doc_other_$i"; $descField = "delegate_doc_other_{$i}_desc"; @endphp
                     <div class="col-md-4">
-                        <label for="{{ $field }}" class="form-label">{{ $i }}. {{ __('Other Document') }} {{ $i }} <span class="text-muted small">(รองรับไฟล์สูงสุด 5 MB)</span></label>
+                        <label for="{{ $field }}" class="form-label">{{ $i }}. {{ __('Other Document') }} {{ $i }} <span class="text-muted small">(รองรับไฟล์สูงสุด 30 MB)</span></label>
                         <div class="input-group input-group-sm mb-2">
                             <input type="file" class="form-control form-control-sm" id="{{ $field }}" name="{{ $field }}" multiple onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)">
                             <button type="button" class="btn btn-outline-secondary" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $field }}' } }))">

@@ -125,6 +125,14 @@
                             <i class="bi bi-image text-xl text-blue-600"></i>
                             <span class="text-xs font-medium">Add Image</span>
                         </div>
+
+                        <!-- Mark (check / cross / circle) -->
+                        <div class="bg-white p-2 border rounded shadow-sm cursor-grab hover:bg-green-50 transition-colors flex flex-col items-center justify-center gap-1 text-center"
+                             draggable="true"
+                             @dragstart="dragStart($event, {type: 'mark', markShape: 'check', color: '#16a34a', label: 'Mark'})">
+                            <i class="bi bi-check2-square text-xl text-green-600"></i>
+                            <span class="text-xs font-medium">Mark</span>
+                        </div>
                     </div>
                 </div>
 
@@ -190,7 +198,8 @@
                                         'border-blue-500 bg-blue-50/30 hover:bg-blue-100/50': item.type === 'db',
                                         'border-gray-500 bg-gray-50/30 hover:bg-gray-100/50': item.type === 'static',
                                         'border-purple-500 bg-purple-50/30 hover:bg-purple-100/50': item.type === 'signature',
-                                        'border-red-500 bg-red-50/30 hover:bg-red-100/50': item.type === 'stamp'
+                                        'border-red-500 bg-red-50/30 hover:bg-red-100/50': item.type === 'stamp',
+                                        'border-green-500 bg-green-50/30 hover:bg-green-100/50': item.type === 'mark'
                                      }"
                                      :style="`display: ${parseInt(item.page) === pageNum ? 'flex' : 'none'}; left: ${item.x}%; top: ${item.y}%; width: ${item.w}%; height: ${item.h}%;`"
                                      @mousedown.self="startMove($event, index, pageNum)">
@@ -232,8 +241,28 @@
                                         </div>
                                     </template>
 
+                                    <!-- Mark Content (check / cross / circle) -->
+                                    <template x-if="item.type === 'mark'">
+                                        <div class="w-full h-full flex items-center justify-center pointer-events-none select-none relative">
+                                            <svg viewBox="0 0 100 100" class="w-full h-full" preserveAspectRatio="xMidYMid meet">
+                                                <template x-if="item.markShape === 'check'">
+                                                    <path d="M20,55 L40,75 L80,25" fill="none" :stroke="item.color" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+                                                </template>
+                                                <template x-if="item.markShape === 'cross'">
+                                                    <g :stroke="item.color" stroke-width="10" stroke-linecap="round">
+                                                        <line x1="20" y1="20" x2="80" y2="80" />
+                                                        <line x1="80" y1="20" x2="20" y2="80" />
+                                                    </g>
+                                                </template>
+                                                <template x-if="item.markShape === 'circle'">
+                                                    <circle cx="50" cy="50" r="38" fill="none" :stroke="item.color" stroke-width="8" />
+                                                </template>
+                                            </svg>
+                                        </div>
+                                    </template>
+
                                     <!-- Text Content (DB & Static) -->
-                                    <template x-if="item.type !== 'signature' && item.type !== 'stamp' && item.type !== 'image'">
+                                    <template x-if="item.type !== 'signature' && item.type !== 'stamp' && item.type !== 'image' && item.type !== 'mark'">
                                         <div class="w-full h-full flex flex-col justify-end overflow-hidden pointer-events-none select-none relative"
                                              :style="`font-family: 'THSarabunNew', sans-serif; font-size: ${getFontSize(item, pageNum)}; text-align: ${item.align || 'left'}; color: #000;`">
 
@@ -342,6 +371,24 @@
                                     <option value="employer_stamp">Employer Stamp</option>
                                     <option value="importer_stamp">Importer Stamp</option>
                                 </select>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Mark Settings -->
+                    <template x-if="items[editingIndex]?.type === 'mark'">
+                        <div>
+                            <div class="mb-3">
+                                <label class="form-label">Mark Shape</label>
+                                <select x-model="items[editingIndex].markShape" class="form-select">
+                                    <option value="check">Check (✓)</option>
+                                    <option value="cross">Cross (✗)</option>
+                                    <option value="circle">Circle (○)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Color</label>
+                                <input type="color" x-model="items[editingIndex].color" class="form-control form-control-color">
                             </div>
                         </div>
                     </template>
@@ -1058,6 +1105,9 @@
                     } else if (data.type === 'stamp') {
                         wPct = 8;
                         hPct = 8; // Stamps are usually square
+                    } else if (data.type === 'mark') {
+                        wPct = 5;
+                        hPct = 5; // Marks are small squares
                     }
 
                     this.items.push({
@@ -1074,7 +1124,9 @@
                         autoFit: true, // Default to true
                         align: 'left', // Default align
                         signatureGroup: data.type === 'signature' ? 'employee' : (data.type === 'stamp' ? 'employer_stamp' : null),
-                        employeeIndex: (data.type !== 'static' && data.type !== 'stamp') ? this.currentEmployeeSlot : null
+                        markShape: data.type === 'mark' ? (data.markShape || 'check') : null,
+                        color: data.type === 'mark' ? (data.color || '#16a34a') : null,
+                        employeeIndex: (data.type !== 'static' && data.type !== 'stamp' && data.type !== 'mark') ? this.currentEmployeeSlot : null
                     });
 
                     // Auto-open settings for new static text

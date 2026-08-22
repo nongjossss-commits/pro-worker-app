@@ -21,14 +21,14 @@ class DelegateController extends Controller
         'delegatePhone'               => 'nullable|string|max:255',
         'delegateEmail'               => 'nullable|email|max:255',
         'outsource_password'          => 'nullable|string|max:255',
-        'delegatePhoto'               => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
-        'delegate_doc_other_1'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'delegatePhoto'               => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:30720',
+        'delegate_doc_other_1'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:30720',
         'delegate_doc_other_1_desc'   => 'nullable|string|max:255',
-        'delegate_doc_other_2'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'delegate_doc_other_2'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:30720',
         'delegate_doc_other_2_desc'   => 'nullable|string|max:255',
-        'delegate_doc_other_3'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        'delegate_doc_other_3'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:30720',
         'delegate_doc_other_3_desc'   => 'nullable|string|max:255',
-        'delegate_signature'          => 'nullable|image|max:5120',
+        'delegate_signature'          => 'nullable|image|max:30720',
     ];
 
     /** Authorization: ต้องมี permission ตามแต่ละ action */
