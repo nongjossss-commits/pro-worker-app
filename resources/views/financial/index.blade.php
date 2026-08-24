@@ -108,7 +108,7 @@
             <form action="{{ route('finance.export_monthly') }}" method="GET">
                 <div class="modal-header">
                     <h5 class="modal-title" id="monthlyReportModalLabel">{{ __('Export Monthly Report') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">

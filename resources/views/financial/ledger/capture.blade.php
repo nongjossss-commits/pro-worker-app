@@ -142,10 +142,10 @@
                     <div class="col-md-3">
                         <label class="form-label small">{{ __('VAT Treatment') }}</label>
                         <select name="vat_treatment" class="form-select form-select-sm" x-model="form.vat_treatment" :disabled="isPersonal()">
-                            <option value="none">None</option>
-                            <option value="taxable">Taxable</option>
-                            <option value="exempt">Exempt</option>
-                            <option value="zero_rate">Zero-rate</option>
+                            <option value="none">{{ __('None') }}</option>
+                            <option value="taxable">{{ __('Taxable') }}</option>
+                            <option value="exempt">{{ __('Exempt') }}</option>
+                            <option value="zero_rate">{{ __('Zero-rate') }}</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -156,9 +156,9 @@
                     <div class="col-md-3">
                         <label class="form-label small">{{ __('WHT Type') }}</label>
                         <select name="wht_type" class="form-select form-select-sm" x-model="form.wht_type" :disabled="isPersonal()">
-                            <option value="none">None</option>
-                            <option value="pnd3">ภ.ง.ด.3</option>
-                            <option value="pnd53">ภ.ง.ด.53</option>
+                            <option value="none">{{ __('None') }}</option>
+                            <option value="pnd3">{{ __('ภ.ง.ด.3') }}</option>
+                            <option value="pnd53">{{ __('ภ.ง.ด.53') }}</option>
                         </select>
                     </div>
                     <div class="col-md-3">

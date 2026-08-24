@@ -4,10 +4,10 @@
 <x-help-button manual="financial_profiles" title="{{ __('Financial Profiles') }}" />
 <div class="container-fluid" x-data="profileBuilder({{ Js::from($thaiBanks) }})">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-person-badge"></i> Financial Profiles Builder</h2>
+        <h2><i class="bi bi-person-badge"></i> {{ __('Financial Profiles Builder') }}</h2>
         <div>
-            <button class="btn btn-outline-secondary me-2" @click="loadProfiles('biller')">Manage Biller Profiles</button>
-            <button class="btn btn-outline-secondary" @click="loadProfiles('customer')">Manage Customer Profiles</button>
+            <button class="btn btn-outline-secondary me-2" @click="loadProfiles('biller')">{{ __('Manage Biller Profiles') }}</button>
+            <button class="btn btn-outline-secondary" @click="loadProfiles('customer')">{{ __('Manage Customer Profiles') }}</button>
         </div>
     </div>
 
@@ -16,9 +16,9 @@
         <div class="col-md-4">
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between">
-                    <h5 class="mb-0" x-text="currentMode === 'list' ? (currentType === 'biller' ? 'Biller Profiles' : 'Customer Profiles') : (editingProfileId ? 'Edit Profile' : 'New Profile')"></h5>
-                    <button x-show="currentMode === 'list'" class="btn btn-sm btn-light" @click="createNewProfile()"><i class="bi bi-plus-circle"></i> Create</button>
-                    <button x-show="currentMode === 'form'" class="btn btn-sm btn-light" @click="currentMode = 'list'">Cancel</button>
+                    <h5 class="mb-0" x-text="currentMode === 'list' ? (currentType === 'biller' ? '{{ __('Biller Profiles') }}' : '{{ __('Customer Profiles') }}') : (editingProfileId ? '{{ __('Edit Profile') }}' : '{{ __('New Profile') }}')"></h5>
+                    <button x-show="currentMode === 'list'" class="btn btn-sm btn-light" @click="createNewProfile()"><i class="bi bi-plus-circle"></i> {{ __('Create') }}</button>
+                    <button x-show="currentMode === 'form'" class="btn btn-sm btn-light" @click="currentMode = 'list'">{{ __('Cancel') }}</button>
                 </div>
 
                 <!-- List Mode -->
@@ -36,7 +36,7 @@
                                 </div>
                             </div>
                         </template>
-                        <div x-show="profiles.length === 0" class="text-muted p-3 text-center">No profiles found.</div>
+                        <div x-show="profiles.length === 0" class="text-muted p-3 text-center">{{ __('No profiles found.') }}</div>
                     </div>
                 </div>
 
@@ -44,51 +44,51 @@
                 <div class="card-body" x-show="currentMode === 'form'">
                     <form @submit.prevent="saveProfile" id="profileForm">
                         <div class="mb-3">
-                            <label class="form-label">Profile Type</label>
+                            <label class="form-label">{{ __('Profile Type') }}</label>
                             <select class="form-select" x-model="formData.type" :disabled="editingProfileId">
-                                <option value="biller">Biller (Issuer)</option>
-                                <option value="customer">Customer (Client)</option>
+                                <option value="biller">{{ __('Biller (Issuer)') }}</option>
+                                <option value="customer">{{ __('Customer (Client)') }}</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Name / Company Name *</label>
+                            <label class="form-label">{{ __('Name / Company Name') }} *</label>
                             <input type="text" class="form-control" x-model="formData.name" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label">Tax ID</label>
+                                <label class="form-label">{{ __('Tax ID') }}</label>
                                 <input type="text" class="form-control" x-model="formData.tax_id">
                             </div>
                             <div class="col-6">
-                                <label class="form-label">Branch</label>
+                                <label class="form-label">{{ __('Branch') }}</label>
                                 <input type="text" class="form-control" x-model="formData.branch">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Address</label>
+                            <label class="form-label">{{ __('Address') }}</label>
                             <textarea class="form-control" x-model="formData.address" rows="2"></textarea>
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label">Phone</label>
+                                <label class="form-label">{{ __('Phone') }}</label>
                                 <input type="text" class="form-control" x-model="formData.phone">
                             </div>
                             <div class="col-6">
-                                <label class="form-label">Email</label>
+                                <label class="form-label">{{ __('Email') }}</label>
                                 <input type="email" class="form-control" x-model="formData.email">
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Authorized Signatory Name</label>
-                            <input type="text" class="form-control" x-model="formData.authorized_signatory_name" placeholder="Name of person signing (replaces company name)">
+                            <label class="form-label">{{ __('Authorized Signatory Name') }}</label>
+                            <input type="text" class="form-control" x-model="formData.authorized_signatory_name" placeholder="{{ __('Name of person signing (replaces company name)') }}">
                         </div>
 
                         <hr>
-                        <h6>Assets (1:1 Drag & Drop placement)</h6>
+                        <h6>{{ __('Assets (1:1 Drag & Drop placement)') }}</h6>
 
                         <!-- Logo -->
                         <div class="mb-3">
-                            <label class="form-label">Logo (Top Corner)</label>
+                            <label class="form-label">{{ __('Logo (Top Corner)') }}</label>
                             <div class="d-flex gap-2 align-items-center">
                                 <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="logoInput" @change="previewAsset($event, 'logo')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.logo_url" @click="removeAsset('logo')"><i class="bi bi-x"></i></button>
@@ -97,17 +97,17 @@
 
                         <!-- Signature -->
                         <div class="mb-3">
-                            <label class="form-label">Signature Image</label>
+                            <label class="form-label">{{ __('Signature Image') }}</label>
                             <div class="d-flex gap-2 align-items-center">
                                 <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="signatureInput" @change="previewAsset($event, 'signature')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.signature_url" @click="removeAsset('signature')"><i class="bi bi-x"></i></button>
                             </div>
-                            <div class="small text-muted mt-1">Upload and drag on the document to the right.</div>
+                            <div class="small text-muted mt-1">{{ __('Upload and drag on the document to the right.') }}</div>
                         </div>
 
                         <!-- Stamp -->
                         <div class="mb-3">
-                            <label class="form-label">Company Stamp Image</label>
+                            <label class="form-label">{{ __('Company Stamp Image') }}</label>
                             <div class="d-flex gap-2 align-items-center">
                                 <input type="file" accept="image/png, image/jpeg, image/jpg" class="form-control form-control-sm" x-ref="stampInput" @change="previewAsset($event, 'stamp')">
                                 <button type="button" class="btn btn-sm btn-outline-danger" x-show="formData.stamp_url" @click="removeAsset('stamp')"><i class="bi bi-x"></i></button>
@@ -116,8 +116,8 @@
 
                         <div class="d-grid mt-4">
                             <button type="submit" class="btn btn-success" :disabled="isSaving">
-                                <span x-show="!isSaving"><i class="bi bi-save"></i> Save Profile</span>
-                                <span x-show="isSaving">Saving...</span>
+                                <span x-show="!isSaving"><i class="bi bi-save"></i> {{ __('Save Profile') }}</span>
+                                <span x-show="isSaving">{{ __('Saving...') }}</span>
                             </button>
                         </div>
                     </form>
@@ -508,8 +508,8 @@ document.addEventListener('alpine:init', () => {
                     }
 
                     Swal.fire({
-                        title: 'Success',
-                        text: `${type} image loaded. You can now drag, resize, and rotate it on the document.`,
+                        title: '{{ __('Success') }}',
+                        text: `${type} ` + '{{ __('image loaded. You can now drag, resize, and rotate it on the document.') }}',
                         icon: 'success',
                         toast: true,
                         position: 'top-end',
@@ -582,7 +582,7 @@ document.addEventListener('alpine:init', () => {
 
                 if (res.ok) {
                     const saved = await res.json();
-                    Swal.fire('Success', 'Profile saved successfully.', 'success');
+                    Swal.fire('{{ __('Success') }}', '{{ __('Profile saved successfully.') }}', 'success');
                     // Capture the new id so the Bank Accounts panel becomes
                     // available immediately, without having to re-edit.
                     if (saved && saved.profile && saved.profile.id) {
@@ -592,23 +592,23 @@ document.addEventListener('alpine:init', () => {
                     this.loadProfiles(this.currentType);
                 } else {
                     const err = await res.json();
-                    let errMsg = err.message || 'Validation failed';
+                    let errMsg = err.message || '{{ __('Validation failed') }}';
                     // Extract detailed validation errors if present
                     if (err.errors) {
                         errMsg = Object.values(err.errors).map(val => val.join(' ')).join('\n');
                     }
-                    Swal.fire('Error', errMsg, 'error');
+                    Swal.fire('{{ __('Error') }}', errMsg, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                Swal.fire('Error', 'Server error occurred.', 'error');
+                Swal.fire('{{ __('Error') }}', '{{ __('Server error occurred.') }}', 'error');
             } finally {
                 this.isSaving = false;
             }
         },
 
         async deleteProfile(id) {
-            if (await Swal.fire({ title: 'Are you sure?', icon: 'warning', showCancelButton: true }).then(r => !r.isConfirmed)) return;
+            if (await Swal.fire({ title: '{{ __('Are you sure?') }}', icon: 'warning', showCancelButton: true }).then(r => !r.isConfirmed)) return;
 
             try {
                 await fetch(`/finance/api/profiles/${id}`, {
@@ -617,7 +617,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 this.loadProfiles(this.currentType);
             } catch (e) {
-                Swal.fire('Error', 'Failed to delete', 'error');
+                Swal.fire('{{ __('Error') }}', '{{ __('Failed to delete') }}', 'error');
             }
         },
 
@@ -861,20 +861,20 @@ document.addEventListener('alpine:init', () => {
                     this.closeBankForm();
                 } else {
                     const err = await res.json();
-                    let msg = err.message || 'Validation failed';
+                    let msg = err.message || '{{ __('Validation failed') }}';
                     if (err.errors) msg = Object.values(err.errors).flat().join('\n');
-                    Swal.fire('Error', msg, 'error');
+                    Swal.fire('{{ __('Error') }}', msg, 'error');
                 }
             } catch (e) {
                 console.error(e);
-                Swal.fire('Error', 'Server error.', 'error');
+                Swal.fire('{{ __('Error') }}', '{{ __('Server error.') }}', 'error');
             } finally {
                 this.bankSaving = false;
             }
         },
 
         async deleteBankAccount(acc) {
-            const confirmed = await Swal.fire({ title: 'Delete this bank account?', icon: 'warning', showCancelButton: true });
+            const confirmed = await Swal.fire({ title: '{{ __('Delete this bank account?') }}', icon: 'warning', showCancelButton: true });
             if (!confirmed.isConfirmed) return;
             try {
                 await fetch(`/finance/api/profiles/${this.editingProfileId}/bank-accounts/${acc.id}`, {

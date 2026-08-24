@@ -20,7 +20,7 @@
     </div>
     <div class="col-md-6">
         <label class="form-label">{{ __('Bank Name') }} *</label>
-        <input type="text" name="bank_name" class="form-control" value="{{ old('bank_name', $a->bank_name ?? '') }}" required placeholder="e.g., KBank, SCB, Cash">
+        <input type="text" name="bank_name" class="form-control" value="{{ old('bank_name', $a->bank_name ?? '') }}" required placeholder="{{ __('e.g., KBank, SCB, Cash') }}">
     </div>
     <div class="col-md-6">
         <label class="form-label">{{ __('Account Name') }}</label>

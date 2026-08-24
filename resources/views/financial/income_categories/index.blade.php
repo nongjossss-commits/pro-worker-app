@@ -68,7 +68,7 @@
                                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $category->id }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <form action="{{ route('finance.income-categories.destroy', $category) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this category?')">
+                                    <form action="{{ route('finance.income-categories.destroy', $category) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete this category?') }}')">
                                         @csrf @method('DELETE')
                                         <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                                     </form>

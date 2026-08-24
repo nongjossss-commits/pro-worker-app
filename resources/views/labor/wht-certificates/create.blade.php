@@ -25,8 +25,8 @@
                 <div class="col-md-4">
                     <label class="form-label">{{ __('Form') }} *</label>
                     <select name="wht_type" class="form-select" required>
-                        <option value="pnd3">ภ.ง.ด.3 (individual)</option>
-                        <option value="pnd53">ภ.ง.ด.53 (juristic)</option>
+                        <option value="pnd3">{{ __('ภ.ง.ด.3 (individual)') }}</option>
+                        <option value="pnd53">{{ __('ภ.ง.ด.53 (juristic)') }}</option>
                     </select>
                 </div>
                 <div class="col-md-4">

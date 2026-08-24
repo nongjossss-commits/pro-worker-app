@@ -56,7 +56,7 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">{{ __('Branch') }}</label>
-                        <input type="text" name="customer_branch" class="form-control" maxlength="50" placeholder="e.g., 00000 (สำนักงานใหญ่)">
+                        <input type="text" name="customer_branch" class="form-control" maxlength="50" placeholder="{{ __('e.g., 00000 (สำนักงานใหญ่)') }}">
                     </div>
                     <div class="col-md-8">
                         <label class="form-label">{{ __('Address') }}</label>
@@ -381,7 +381,7 @@ function taxInvoiceForm(opts = {}) {
 
         promptPayPlaceholder() {
             const p = this.profilePromptPayAccounts[0];
-            return p?.promptpay_id || 'เบอร์โทร / เลขบัตรประชาชน';
+            return p?.promptpay_id || '{{ __('เบอร์โทร / เลขบัตรประชาชน') }}';
         },
 
         // --- Badge resolver (mirrors BankAccount::getBadgeAttribute) ---

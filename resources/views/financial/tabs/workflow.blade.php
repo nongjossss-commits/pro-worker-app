@@ -82,7 +82,7 @@
                             @endif
                         </td>
                         <td class="text-center">
-                            <a href="{{ route('production.edit', ['production' => $order->id, 'tab' => 'financial']) }}" class="btn btn-sm btn-outline-primary" title="Manage Finance">
+                            <a href="{{ route('production.edit', ['production' => $order->id, 'tab' => 'financial']) }}" class="btn btn-sm btn-outline-primary" title="{{ __('Manage Finance') }}">
                                 <i class="bi bi-wallet2"></i> {{ __('Manage Finance') }}
                             </a>
                         </td>

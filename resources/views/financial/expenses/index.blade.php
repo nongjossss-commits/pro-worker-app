@@ -70,12 +70,12 @@
                                 <td class="text-center">
                                     <div class="btn-group">
                                         @if($expense->receipt_path)
-                                            <a href="{{ asset('storage/' . $expense->receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View Receipt">
+                                            <a href="{{ asset('storage/' . $expense->receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{{ __('View Receipt') }}">
                                                 <i class="bi bi-receipt"></i>
                                             </a>
                                         @endif
                                         @if($expense->wht_document_path)
-                                            <a href="{{ asset('storage/' . $expense->wht_document_path) }}" target="_blank" class="btn btn-sm btn-outline-info" title="View WHT">
+                                            <a href="{{ asset('storage/' . $expense->wht_document_path) }}" target="_blank" class="btn btn-sm btn-outline-info" title="{{ __('View WHT') }}">
                                                 <i class="bi bi-file-earmark-text"></i>
                                             </a>
                                         @endif
@@ -85,7 +85,7 @@
                                     <form action="{{ route('finance.expenses.destroy', $expense) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this expense? The bank balance will be restored.') }}');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

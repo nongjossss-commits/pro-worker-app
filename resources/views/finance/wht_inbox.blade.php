@@ -9,7 +9,7 @@
             <i class="bi bi-inbox-fill text-warning me-2"></i>{{ __('WHT Inbox') }}
         </h2>
         <a href="{{ route('finance.index') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>{{ __('Back to Employer') === 'Back to Employer' ? 'Back' : 'กลับ' }}
+            <i class="bi bi-arrow-left me-1"></i>{{ __('Back') }}
         </a>
     </div>
 

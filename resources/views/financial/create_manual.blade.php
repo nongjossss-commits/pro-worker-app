@@ -27,7 +27,7 @@
 
                         <div class="mb-3">
                             <label for="description" class="form-label">{{ __('Bill Description') }}</label>
-                            <input type="text" class="form-control" id="description" name="description" value="{{ old('description') }}" placeholder="e.g. Service Fee for X">
+                            <input type="text" class="form-control" id="description" name="description" value="{{ old('description') }}" placeholder="{{ __('e.g. Service Fee for X') }}">
                             <div class="form-text">{{ __('Leave blank to use default (Manual Bill - Date).') }}</div>
                         </div>
 

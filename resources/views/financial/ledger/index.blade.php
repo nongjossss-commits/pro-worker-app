@@ -43,15 +43,15 @@
                 <div class="col-md-2">
                     <select name="type" class="form-select">
                         <option value="">{{ __('Type: All') }}</option>
-                        <option value="income" {{ request('type') === 'income' ? 'selected' : '' }}>Income</option>
-                        <option value="expense" {{ request('type') === 'expense' ? 'selected' : '' }}>Expense</option>
+                        <option value="income" {{ request('type') === 'income' ? 'selected' : '' }}>{{ __('Income') }}</option>
+                        <option value="expense" {{ request('type') === 'expense' ? 'selected' : '' }}>{{ __('Expense') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <select name="account_type" class="form-select">
                         <option value="">{{ __('Account: All') }}</option>
-                        <option value="company" {{ request('account_type') === 'company' ? 'selected' : '' }}>Company</option>
-                        <option value="personal" {{ request('account_type') === 'personal' ? 'selected' : '' }}>Personal</option>
+                        <option value="company" {{ request('account_type') === 'company' ? 'selected' : '' }}>{{ __('Company') }}</option>
+                        <option value="personal" {{ request('account_type') === 'personal' ? 'selected' : '' }}>{{ __('Personal') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">

@@ -15,7 +15,7 @@
             </h1>
         </div>
         @if($hasDiff)
-            <form action="{{ route('finance.reconciliation.repair', $account) }}" method="POST" onsubmit="return confirm('Reset current_balance to the expected value re-computed from the ledger? This is logged in the audit trail.')">
+            <form action="{{ route('finance.reconciliation.repair', $account) }}" method="POST" onsubmit="return confirm('{{ __('Reset current_balance to the expected value re-computed from the ledger? This is logged in the audit trail.') }}')">
                 @csrf
                 <button type="submit" class="btn btn-warning">
                     <i class="bi bi-wrench-adjustable"></i> {{ __('Repair Balance') }}

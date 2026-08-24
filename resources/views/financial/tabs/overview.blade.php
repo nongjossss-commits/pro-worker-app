@@ -85,10 +85,10 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <input type="date" name="date_from" class="form-control" placeholder="From Date" value="{{ request('date_from') }}">
+                <input type="date" name="date_from" class="form-control" placeholder="{{ __('From Date') }}" value="{{ request('date_from') }}">
             </div>
             <div class="col-md-2">
-                <input type="date" name="date_to" class="form-control" placeholder="To Date" value="{{ request('date_to') }}">
+                <input type="date" name="date_to" class="form-control" placeholder="{{ __('To Date') }}" value="{{ request('date_to') }}">
             </div>
             <div class="col-md-2 d-grid">
                 <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> {{ __('Filter') }}</button>
@@ -372,7 +372,7 @@
                     <h5 class="modal-title" id="quickPaymentLabel">
                         <i class="bi bi-cash-coin me-1"></i> {{ __('Record Payment (Quick)') }}
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                 </div>
                 <div class="modal-body">
                     {{-- Context card --}}
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // parsing) — poll on first click.
         if (!modalInstance) {
             if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
-                alert('Bootstrap not loaded yet — please try again in a moment.');
+                alert('{{ __('Bootstrap not loaded yet — please try again in a moment.') }}');
                 return null;
             }
             modalInstance = new bootstrap.Modal(modalEl);
@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <i class="bi bi-file-earmark-text me-1"></i>
                     <span id="ibDocTitle">{{ __('Reissue Bill (Quick)') }}</span>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
             </div>
             <div class="modal-body">
                 {{-- Context --}}

@@ -28,7 +28,7 @@
                         <td>{{ Str::limit($exp->description, 50) }}</td>
                         <td class="text-center">
                             @if($exp->receipt_path)
-                                <a href="{{ asset('storage/' . $exp->receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View Receipt">
+                                <a href="{{ asset('storage/' . $exp->receipt_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{{ __('View Receipt') }}">
                                     <i class="bi bi-receipt"></i>
                                 </a>
                             @endif
@@ -58,7 +58,7 @@
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="createExpenseModalLabel">{{ __('Add General Expense') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">

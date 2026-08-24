@@ -33,13 +33,13 @@
                         <i class="bi bi-check-circle"></i> {{ __('Issue') }}
                     </button>
                 </form>
-                <form action="{{ route('finance.wht-certificates.destroy', $cert) }}" method="POST" onsubmit="return confirm('Delete?')">
+                <form action="{{ route('finance.wht-certificates.destroy', $cert) }}" method="POST" onsubmit="return confirm('{{ __('Delete?') }}')">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>
             @endif
             @if($cert->status === 'issued')
-                <form action="{{ route('finance.wht-certificates.update', $cert) }}" method="POST" onsubmit="return confirm('Mark as submitted to กรมสรรพากร?')">
+                <form action="{{ route('finance.wht-certificates.update', $cert) }}" method="POST" onsubmit="return confirm('{{ __('Mark as submitted to กรมสรรพากร?') }}')">
                     @csrf @method('PUT')
                     <button type="submit" name="action_submitted" value="1" class="btn btn-primary">
                         <i class="bi bi-send-check"></i> {{ __('Mark Submitted') }}

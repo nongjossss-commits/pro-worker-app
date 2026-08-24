@@ -34,7 +34,7 @@
 
     <div class="col-md-6">
         <label class="form-label">{{ __('Counterparty Tax ID') }}</label>
-        <input type="text" name="counterparty_tax_id" class="form-control" maxlength="15" placeholder="13-digit">
+        <input type="text" name="counterparty_tax_id" class="form-control" maxlength="15" placeholder="{{ __('13-digit') }}">
     </div>
     <div class="col-md-6">
         <label class="form-label">{{ __('Gross Amount') }} *</label>
@@ -52,10 +52,10 @@
                 <div class="col-md-3">
                     <label class="form-label small">{{ __('VAT Treatment') }}</label>
                     <select name="vat_treatment" class="form-select form-select-sm" x-model="vatTreatment" @change="recalculate" :disabled="isPersonal()">
-                        <option value="none">None</option>
-                        <option value="taxable">Taxable</option>
-                        <option value="exempt">Exempt</option>
-                        <option value="zero_rate">Zero-rate</option>
+                        <option value="none">{{ __('None') }}</option>
+                        <option value="taxable">{{ __('Taxable') }}</option>
+                        <option value="exempt">{{ __('Exempt') }}</option>
+                        <option value="zero_rate">{{ __('Zero-rate') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -71,9 +71,9 @@
                 <div class="col-md-2">
                     <label class="form-label small">{{ __('WHT Type') }}</label>
                     <select name="wht_type" class="form-select form-select-sm" x-model="whtType" @change="recalculate" :disabled="isPersonal()">
-                        <option value="none">None</option>
-                        <option value="pnd3">ภ.ง.ด.3</option>
-                        <option value="pnd53">ภ.ง.ด.53</option>
+                        <option value="none">{{ __('None') }}</option>
+                        <option value="pnd3">{{ __('ภ.ง.ด.3') }}</option>
+                        <option value="pnd53">{{ __('ภ.ง.ด.53') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">

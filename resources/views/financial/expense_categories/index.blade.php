@@ -94,9 +94,9 @@
                                                     <div class="col-md-6 mb-3">
                                                         <label>{{ __('WHT Type') }}</label>
                                                         <select name="default_wht_type" class="form-select">
-                                                            <option value="none" {{ ($category->default_wht_type ?? 'none') === 'none' ? 'selected' : '' }}>None</option>
-                                                            <option value="pnd3" {{ ($category->default_wht_type ?? '') === 'pnd3' ? 'selected' : '' }}>ภ.ง.ด.3 (บุคคล)</option>
-                                                            <option value="pnd53" {{ ($category->default_wht_type ?? '') === 'pnd53' ? 'selected' : '' }}>ภ.ง.ด.53 (นิติบุคคล)</option>
+                                                            <option value="none" {{ ($category->default_wht_type ?? 'none') === 'none' ? 'selected' : '' }}>{{ __('None') }}</option>
+                                                            <option value="pnd3" {{ ($category->default_wht_type ?? '') === 'pnd3' ? 'selected' : '' }}>{{ __('ภ.ง.ด.3 (บุคคล)') }}</option>
+                                                            <option value="pnd53" {{ ($category->default_wht_type ?? '') === 'pnd53' ? 'selected' : '' }}>{{ __('ภ.ง.ด.53 (นิติบุคคล)') }}</option>
                                                         </select>
                                                     </div>
                                                     <div class="col-md-6 mb-3">
@@ -144,11 +144,11 @@
                     <div class="row g-2">
                         <div class="col-md-4 mb-3">
                             <label>{{ __('Code') }}</label>
-                            <input type="text" name="code" class="form-control" maxlength="20" placeholder="e.g., EXP-001">
+                            <input type="text" name="code" class="form-control" maxlength="20" placeholder="{{ __('e.g., EXP-001') }}">
                         </div>
                         <div class="col-md-8 mb-3">
                             <label>{{ __('Name') }} *</label>
-                            <input type="text" name="name" class="form-control" required placeholder="e.g., Visa Fee, Office Supplies">
+                            <input type="text" name="name" class="form-control" required placeholder="{{ __('e.g., Visa Fee, Office Supplies') }}">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -159,9 +159,9 @@
                         <div class="col-md-6 mb-3">
                             <label>{{ __('WHT Type') }}</label>
                             <select name="default_wht_type" class="form-select">
-                                <option value="none">None</option>
-                                <option value="pnd3">ภ.ง.ด.3 (บุคคล)</option>
-                                <option value="pnd53">ภ.ง.ด.53 (นิติบุคคล)</option>
+                                <option value="none">{{ __('None') }}</option>
+                                <option value="pnd3">{{ __('ภ.ง.ด.3 (บุคคล)') }}</option>
+                                <option value="pnd53">{{ __('ภ.ง.ด.53 (นิติบุคคล)') }}</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">

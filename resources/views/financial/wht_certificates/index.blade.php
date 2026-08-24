@@ -38,8 +38,8 @@
                 <div class="col-md-2">
                     <select name="wht_type" class="form-select">
                         <option value="">{{ __('Form: All') }}</option>
-                        <option value="pnd3" {{ request('wht_type') === 'pnd3' ? 'selected' : '' }}>ภ.ง.ด.3</option>
-                        <option value="pnd53" {{ request('wht_type') === 'pnd53' ? 'selected' : '' }}>ภ.ง.ด.53</option>
+                        <option value="pnd3" {{ request('wht_type') === 'pnd3' ? 'selected' : '' }}>{{ __('ภ.ง.ด.3') }}</option>
+                        <option value="pnd53" {{ request('wht_type') === 'pnd53' ? 'selected' : '' }}>{{ __('ภ.ง.ด.53') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">

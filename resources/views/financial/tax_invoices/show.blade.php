@@ -29,11 +29,11 @@
             @if($invoice->status === 'draft')
                 <form action="{{ route('finance.tax-invoices.update', $invoice) }}" method="POST" class="d-inline">
                     @csrf @method('PUT')
-                    <button type="submit" name="action_issue" value="1" class="btn btn-success" onclick="return confirm('Issue this invoice? The number will be locked.')">
+                    <button type="submit" name="action_issue" value="1" class="btn btn-success" onclick="return confirm('{{ __('Issue this invoice? The number will be locked.') }}')">
                         <i class="bi bi-check-circle"></i> {{ __('Issue') }}
                     </button>
                 </form>
-                <form action="{{ route('finance.tax-invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this draft invoice?')">
+                <form action="{{ route('finance.tax-invoices.destroy', $invoice) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete this draft invoice?') }}')">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>

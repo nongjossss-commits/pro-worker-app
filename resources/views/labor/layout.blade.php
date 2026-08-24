@@ -138,7 +138,7 @@
                         <i class="bi bi-briefcase-fill" style="color: var(--bs-primary); font-size: 1.3rem;"></i> Pro Walker Labor
                     </a>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="{{ __('Close') }}"></button>
             </div>
             <div class="offcanvas-body d-flex flex-column p-0">
                 <div class="list-group" id="labor-main-nav">

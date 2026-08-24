@@ -39,9 +39,9 @@
                 <div class="col-md-2">
                     <select name="status" class="form-select">
                         <option value="">{{ __('Status: All') }}</option>
-                        <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Draft</option>
-                        <option value="issued" {{ request('status') === 'issued' ? 'selected' : '' }}>Issued</option>
-                        <option value="void" {{ request('status') === 'void' ? 'selected' : '' }}>Void</option>
+                        <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>{{ __('Draft') }}</option>
+                        <option value="issued" {{ request('status') === 'issued' ? 'selected' : '' }}>{{ __('Issued') }}</option>
+                        <option value="void" {{ request('status') === 'void' ? 'selected' : '' }}>{{ __('Void') }}</option>
                     </select>
                 </div>
                 <div class="col-md-3">

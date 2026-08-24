@@ -8,13 +8,13 @@
             <h1 class="h3 text-gray-800 mb-0 mt-1">
                 {{ __('Ledger Entry') }} <span class="text-muted">{{ $entry->entry_no }}</span>
                 @if($entry->type === 'income')
-                    <span class="badge bg-success">Income</span>
+                    <span class="badge bg-success">{{ __('Income') }}</span>
                 @else
-                    <span class="badge bg-danger">Expense</span>
+                    <span class="badge bg-danger">{{ __('Expense') }}</span>
                 @endif
             </h1>
         </div>
-        <form action="{{ route('finance.ledger.destroy', $entry) }}" method="POST" onsubmit="return confirm('Delete this entry? Balance will be restored.')">
+        <form action="{{ route('finance.ledger.destroy', $entry) }}" method="POST" onsubmit="return confirm('{{ __('Delete this entry? Balance will be restored.') }}')">
             @csrf @method('DELETE')
             <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> {{ __('Delete') }}</button>
         </form>
@@ -81,7 +81,7 @@
                         @foreach($entry->attached_files as $file)
                             <div class="mb-1">
                                 <a href="{{ asset('storage/' . ($file['path'] ?? '')) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-paperclip"></i> {{ $file['name'] ?? 'Attachment' }}
+                                    <i class="bi bi-paperclip"></i> {{ $file['name'] ?? __('Attachment') }}
                                 </a>
                             </div>
                         @endforeach
@@ -126,10 +126,10 @@
                 <div class="card-header"><strong>{{ __('Audit') }}</strong></div>
                 <div class="card-body small text-muted">
                     <div>{{ __('Created') }}: {{ $entry->created_at?->format('d/m/Y H:i') }}
-                        @if($entry->creator) by {{ $entry->creator->name }} @endif
+                        @if($entry->creator) {{ __('by') }} {{ $entry->creator->name }} @endif
                     </div>
                     <div>{{ __('Updated') }}: {{ $entry->updated_at?->format('d/m/Y H:i') }}
-                        @if($entry->updater) by {{ $entry->updater->name }} @endif
+                        @if($entry->updater) {{ __('by') }} {{ $entry->updater->name }} @endif
                     </div>
                     <div>{{ __('Source') }}: {{ $entry->ai_source }}</div>
                 </div>

@@ -21,9 +21,9 @@
                 <div class="col-md-2">
                     <select name="entity" class="form-select">
                         <option value="">{{ __('Entity: All') }}</option>
-                        <option value="ledger" {{ request('entity') === 'ledger' ? 'selected' : '' }}>Ledger Entry</option>
-                        <option value="invoice" {{ request('entity') === 'invoice' ? 'selected' : '' }}>Tax Invoice</option>
-                        <option value="wht" {{ request('entity') === 'wht' ? 'selected' : '' }}>WHT Certificate</option>
+                        <option value="ledger" {{ request('entity') === 'ledger' ? 'selected' : '' }}>{{ __('Ledger Entry') }}</option>
+                        <option value="invoice" {{ request('entity') === 'invoice' ? 'selected' : '' }}>{{ __('Tax Invoice') }}</option>
+                        <option value="wht" {{ request('entity') === 'wht' ? 'selected' : '' }}>{{ __('WHT Certificate') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">

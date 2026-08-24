@@ -3,7 +3,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">{{ __('Include Contractor Signature & Stamp?') }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
             </div>
             <div class="modal-body">
                 <p class="mb-0 text-muted">{{ __("Choose whether the downloaded PDF should include the Contractor's signature and stamp, or leave that area blank.") }}</p>
