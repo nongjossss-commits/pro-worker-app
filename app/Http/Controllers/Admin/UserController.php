@@ -93,6 +93,7 @@ class UserController extends Controller
             'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')],
             'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
             'labor_access_level' => ['nullable', 'in:none,view,edit'],
+            'staff_code' => ['nullable', 'string', 'max:50'],
         ]);
 
         // Security Check: Prevent non-SuperAdmin from creating SuperAdmin
@@ -106,17 +107,31 @@ class UserController extends Controller
             abort(403, 'Unauthorized action. Only Super Admin can create Pro Walker Labor accounts.');
         }
 
+        // Only Super Admin may grant Labor access, and only to the admin role.
+        $laborAccessLevel = ($request->role_name === 'admin' && Auth::user()->hasRole('super-admin'))
+            ? ($request->input('labor_access_level') ?: 'none')
+            : 'none';
+
+        // labor_team_id is required for role=labor-team (unchanged) and now also
+        // optionally assignable to an admin granted Labor access, so their Pro
+        // Worker contract issuances/company document downloads can be
+        // attributed to a team (see routes/labor.php — Company Documents +
+        // Contracts live inside the Labor module).
+        $laborTeamId = match (true) {
+            $request->role_name === 'labor-team' => $request->labor_team_id,
+            $request->role_name === 'admin' && $laborAccessLevel !== 'none' => $request->labor_team_id,
+            default => null,
+        };
+
         // Create User
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'status' => 'active',
-            'labor_team_id' => $request->role_name === 'labor-team' ? $request->labor_team_id : null,
-            // Only Super Admin may grant Labor access, and only to the admin role.
-            'labor_access_level' => ($request->role_name === 'admin' && Auth::user()->hasRole('super-admin'))
-                ? ($request->input('labor_access_level') ?: 'none')
-                : 'none',
+            'labor_team_id' => $laborTeamId,
+            'labor_access_level' => $laborAccessLevel,
+            'staff_code' => Auth::user()->hasRole('super-admin') ? $request->staff_code : null,
         ]);
 
         // Assign Role
@@ -221,6 +236,7 @@ class UserController extends Controller
                 'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')], // <-- ADDED (Bug Fix)
                 'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
                 'labor_access_level' => ['nullable', 'in:none,view,edit'],
+                'staff_code' => ['nullable', 'string', 'max:50'],
                 'permissions' => ['nullable', 'array']
             ]);
 
@@ -228,14 +244,28 @@ class UserController extends Controller
             $updateData = [
                 'name' => $request->name,
                 'email' => $request->email,
-                'labor_team_id' => $request->role_name === 'labor-team' ? $request->labor_team_id : null,
             ];
 
             // Only Super Admin may change the Labor access grant, and only for the admin role.
             if (Auth::user()->hasRole('super-admin')) {
-                $updateData['labor_access_level'] = $request->role_name === 'admin'
+                $laborAccessLevel = $request->role_name === 'admin'
                     ? ($request->input('labor_access_level') ?: 'none')
                     : 'none';
+                $updateData['labor_access_level'] = $laborAccessLevel;
+
+                // labor_team_id: required for role=labor-team (unchanged), also
+                // optionally assignable to an admin granted Labor access (see store()).
+                $updateData['labor_team_id'] = match (true) {
+                    $request->role_name === 'labor-team' => $request->labor_team_id,
+                    $request->role_name === 'admin' && $laborAccessLevel !== 'none' => $request->labor_team_id,
+                    default => null,
+                };
+
+                $updateData['staff_code'] = $request->staff_code;
+            } else {
+                // Non-Super-Admin editors still need labor_team_id kept in sync for
+                // the labor-team role (their own existing behavior, unchanged).
+                $updateData['labor_team_id'] = $request->role_name === 'labor-team' ? $request->labor_team_id : $user->labor_team_id;
             }
 
             // V1.1 PATCH: Conditionally update password

@@ -6,6 +6,10 @@ use App\Http\Controllers\Labor\LaborBillPaymentController;
 use App\Http\Controllers\Labor\LaborBookController;
 use App\Http\Controllers\Labor\LaborChargeEntryController;
 use App\Http\Controllers\Labor\LaborChargeTypeController;
+use App\Http\Controllers\Labor\LaborCompanyDocumentController;
+use App\Http\Controllers\Labor\LaborContractController;
+use App\Http\Controllers\Labor\LaborContractReportController;
+use App\Http\Controllers\Labor\LaborContractTemplateController;
 use App\Http\Controllers\Labor\LaborExpenseCategoryController;
 use App\Http\Controllers\Labor\LaborDashboardController;
 use App\Http\Controllers\Labor\LaborLedgerController;
@@ -144,4 +148,73 @@ Route::middleware(['auth', 'labor.access'])
             Route::put('/{user}', [LaborUserController::class, 'update'])->name('update');
             Route::patch('/{user}/toggle-status', [LaborUserController::class, 'toggleStatus'])->name('toggle-status');
         });
+
+        // "เอกสารบริษัท" — any Labor-access user can browse/download (see
+        // LaborCompanyDocumentController for the labor_team_id requirement);
+        // upload/remove restricted to Super Admin, same tier as charge-types/
+        // expense-categories/users above.
+        Route::get('/company-documents', [LaborCompanyDocumentController::class, 'index'])->name('company-documents.index');
+        Route::get('/company-documents/{document}/download', [LaborCompanyDocumentController::class, 'download'])->name('company-documents.download');
+        Route::middleware('role:super-admin')->group(function () {
+            Route::post('/company-documents', [LaborCompanyDocumentController::class, 'store'])->name('company-documents.store');
+            Route::delete('/company-documents/{document}', [LaborCompanyDocumentController::class, 'destroy'])->name('company-documents.destroy');
+        });
+
+        // "เบิกสัญญา Pro Worker" — anti-forgery running-numbered contracts,
+        // open to any Labor-access user with a team assigned (see
+        // LaborContractController). Template builder + stats report are
+        // Super Admin only, same tier as users/charge-types above.
+        Route::get('/contracts/create', [LaborContractController::class, 'create'])->name('contracts.create');
+        Route::post('/contracts', [LaborContractController::class, 'store'])->name('contracts.store');
+        Route::post('/contracts/preview', [LaborContractController::class, 'preview'])->name('contracts.preview');
+        Route::get('/contracts', [LaborContractController::class, 'index'])->name('contracts.index');
+        Route::get('/contracts/{contract}/edit', [LaborContractController::class, 'edit'])->name('contracts.edit');
+        Route::put('/contracts/{contract}', [LaborContractController::class, 'update'])->name('contracts.update');
+        Route::get('/contracts/{contract}', [LaborContractController::class, 'show'])->name('contracts.show');
+        Route::get('/contracts/{contract}/download', [LaborContractController::class, 'download'])->name('contracts.download');
+        Route::get('/contracts/{contract}/view', [LaborContractController::class, 'view'])->name('contracts.view');
+        Route::get('/contracts-verify', [LaborContractController::class, 'verifyForm'])->name('contracts.verify.form');
+        Route::post('/contracts-verify', [LaborContractController::class, 'verify'])->name('contracts.verify');
+
+        // Admin OR Super Admin (not nested inside the role:super-admin-only
+        // group below — a route inside that group would AND both checks
+        // together and still lock admin out) — downloads the blank,
+        // bilingual master contract PDF so it can be re-uploaded as a
+        // Contract Template via the builder above.
+        Route::middleware('role:admin|super-admin')->prefix('contract-templates')->name('contract-templates.')->group(function () {
+            Route::get('/master-template', [LaborContractTemplateController::class, 'masterTemplate'])->name('master-template');
+        });
+
+        Route::middleware('role:super-admin')->prefix('contract-templates')->name('contract-templates.')->group(function () {
+            Route::get('/', [LaborContractTemplateController::class, 'index'])->name('index');
+            Route::get('/create', [LaborContractTemplateController::class, 'create'])->name('create');
+            Route::post('/', [LaborContractTemplateController::class, 'store'])->name('store');
+            Route::post('/upload-image', [LaborContractTemplateController::class, 'uploadImage'])->name('upload-image');
+            Route::get('/{proworkerContractTemplate}/file', [LaborContractTemplateController::class, 'file'])->name('file');
+            Route::get('/{proworkerContractTemplate}/builder', [LaborContractTemplateController::class, 'builder'])->name('builder');
+            Route::put('/{proworkerContractTemplate}', [LaborContractTemplateController::class, 'update'])->name('update');
+            Route::delete('/{proworkerContractTemplate}', [LaborContractTemplateController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::middleware('role:super-admin')->prefix('contract-reports')->name('contract-reports.')->group(function () {
+            Route::get('/', [LaborContractReportController::class, 'index'])->name('index');
+            Route::get('/export', [LaborContractReportController::class, 'export'])->name('export');
+        });
     });
+
+/*
+|--------------------------------------------------------------------------
+| Public contract verification (QR code target) — deliberately OUTSIDE the
+| auth+labor.access group above: whoever scans the QR code printed on a
+| contract is very often an external party (the employer, a labor
+| inspector) with no account in this system at all. Shows only enough to
+| confirm the contract number is genuine — never field_values, issuer name,
+| or the internal team — see LaborContractController::publicVerify().
+| Route name still starts with `labor.` purely so
+| App\Http\Middleware\ConfineToLaborModule's prefix check passes harmlessly
+| if a logged-in confined user also opens this link themselves.
+|--------------------------------------------------------------------------
+*/
+Route::prefix('pro-walker-labor')->name('labor.')->group(function () {
+    Route::get('/verify/{contractNo}', [LaborContractController::class, 'publicVerify'])->name('contracts.public-verify');
+});

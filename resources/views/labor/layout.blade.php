@@ -146,6 +146,49 @@
                         <i class="bi bi-speedometer2 me-2"></i>{{ __('Dashboard') }}
                     </a>
 
+                    <a href="{{ route('labor.company-documents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.company-documents.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i>{{ __('Company Documents') }}
+                    </a>
+
+                    @php
+                        $isContractsActive = request()->routeIs('labor.contracts.create');
+                        $isContractsSubActive = request()->routeIs(['labor.contracts.*', 'labor.contract-templates.*', 'labor.contract-reports.*']);
+                    @endphp
+                    <div class="list-group-item list-group-item-action p-0" style="border:none;">
+                        <div class="d-flex align-items-stretch w-100">
+                            <a href="{{ route('labor.contracts.create') }}" class="flex-grow-1 d-flex align-items-center {{ $isContractsActive ? 'active text-white' : 'text-dark' }}" style="padding:.75rem 1rem; text-decoration:none; border-radius:.5rem 0 0 .5rem; {{ $isContractsActive ? 'background-image: linear-gradient(to right, var(--bs-primary-light), var(--bs-primary));' : '' }}">
+                                <i class="bi bi-file-earmark-text me-2"></i>{{ __('Contracts') }}
+                            </a>
+                            <button class="btn btn-link shadow-none {{ $isContractsActive ? 'text-white' : 'text-dark' }} d-flex align-items-center justify-content-center" type="button" data-bs-toggle="collapse" data-bs-target="#laborContractsSubMenu" aria-expanded="{{ $isContractsSubActive ? 'true' : 'false' }}" style="width:40px; padding:0; border-radius:0 .5rem .5rem 0; {{ $isContractsActive ? 'background-image: linear-gradient(to right, var(--bs-primary-light), var(--bs-primary));' : '' }}" onclick="this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
+                                <i class="bi bi-chevron-{{ $isContractsSubActive ? 'up' : 'down' }}"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="collapse {{ $isContractsSubActive ? 'show' : '' }}" id="laborContractsSubMenu">
+                        <a href="{{ route('labor.contracts.create') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.contracts.create') ? 'active' : '' }}" style="padding-left:2.5rem;">
+                            <i class="bi bi-file-earmark-plus me-2"></i>{{ __('Issue Contract') }}
+                        </a>
+                        <a href="{{ route('labor.contracts.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.contracts.index') || request()->routeIs('labor.contracts.show') ? 'active' : '' }}" style="padding-left:2.5rem;">
+                            <i class="bi bi-clock-history me-2"></i>{{ __('Contract History') }}
+                        </a>
+                        <a href="{{ route('labor.contracts.verify.form') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.contracts.verify*') ? 'active' : '' }}" style="padding-left:2.5rem;">
+                            <i class="bi bi-patch-check me-2"></i>{{ __('Verify Contract') }}
+                        </a>
+                        @role('super-admin')
+                        <a href="{{ route('labor.contract-templates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.contract-templates.*') ? 'active' : '' }}" style="padding-left:2.5rem;">
+                            <i class="bi bi-tools me-2"></i>{{ __('Manage Contract Templates') }}
+                        </a>
+                        <a href="{{ route('labor.contract-reports.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.contract-reports.*') ? 'active' : '' }}" style="padding-left:2.5rem;">
+                            <i class="bi bi-bar-chart-fill me-2"></i>{{ __('Contract Statistics') }}
+                        </a>
+                        @endrole
+                        @hasanyrole('admin|super-admin')
+                        <a href="{{ route('labor.contract-templates.master-template') }}" class="list-group-item list-group-item-action" style="padding-left:2.5rem;" target="_blank">
+                            <i class="bi bi-file-earmark-text me-2"></i>{{ __('View Master Contract') }}
+                        </a>
+                        @endhasanyrole
+                    </div>
+
                     @unless(auth()->user()->hasRole('labor-team'))
                     <a href="{{ route('labor.reports.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.reports.index') ? 'active' : '' }}">
                         <i class="bi bi-bar-chart-line me-2"></i>{{ __('Reports') }}

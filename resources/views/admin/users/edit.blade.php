@@ -105,7 +105,7 @@
 
                     <div class="mt-4" x-show="selectedRole === 'labor-team'" style="display: none;" x-transition>
                         <label for="labor_team_id" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labor — Team (Required)') }}</label>
-                        <select id="labor_team_id" name="labor_team_id" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <select id="labor_team_id" name="labor_team_id" :disabled="selectedRole !== 'labor-team'" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">-- {{ __('Select Team') }} --</option>
                             @foreach ($laborTeams as $team)
                                 <option value="{{ $team->id }}" {{ old('labor_team_id', $user->labor_team_id) == $team->id ? 'selected' : '' }}>
@@ -124,6 +124,21 @@
                             <option value="view" {{ $currentLevel === 'view' ? 'selected' : '' }}>{{ __('View only') }} (ดูอย่างเดียว)</option>
                             <option value="edit" {{ $currentLevel === 'edit' ? 'selected' : '' }}>{{ __('View + Edit') }} (ดูและแก้ไขได้)</option>
                         </select>
+                    </div>
+
+                    <div class="mt-4" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
+                        <label for="labor_team_id_admin" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labor — Team') }} ({{ __('optional') }})</label>
+                        <select id="labor_team_id_admin" name="labor_team_id" :disabled="selectedRole !== 'admin'" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="">-- {{ __('Select Team') }} --</option>
+                            @foreach ($laborTeams as $team)
+                                <option value="{{ $team->id }}" {{ old('labor_team_id', $user->labor_team_id) == $team->id ? 'selected' : '' }}>{{ $team->name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('Required before this user can download Pro Worker company documents or issue a contract, even with Labor access granted above.') }}</p>
+                    </div>
+                    <div class="mt-4">
+                        <label for="staff_code" class="block font-medium text-sm text-gray-700">{{ __('Staff Code') }} ({{ __('optional') }})</label>
+                        <input type="text" id="staff_code" name="staff_code" value="{{ old('staff_code', $user->staff_code) }}" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                     </div>
                     @endif
 

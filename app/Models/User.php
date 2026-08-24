@@ -44,6 +44,7 @@ class User extends Authenticatable
         'labor_team_id',
         'labor_access_level',
         'revoked_permissions',
+        'staff_code',
     ];
 
     /**
@@ -115,7 +116,11 @@ class User extends Authenticatable
     }
 
     /**
-     * The Pro Walker Labor team this user belongs to (role `labor-team` only).
+     * The Pro Walker Labor team this user belongs to — required for
+     * `labor-team` role logins, and optionally assignable to an `admin`
+     * with labor_access_level set too (see Admin\UserController), so their
+     * Pro Worker contract issuances/company document downloads can be
+     * attributed to a team.
      */
     public function laborTeam(): BelongsTo
     {

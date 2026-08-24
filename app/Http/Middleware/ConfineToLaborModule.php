@@ -18,10 +18,18 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ConfineToLaborModule
 {
-    protected const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team'];
+    /**
+     * Public (not just protected) so other code can use this exact list as
+     * the single source of truth for "confined external team" — e.g.
+     * LaborContractController uses it to decide whether a user gets the
+     * main-app Employer picker or a plain free-text name field when
+     * issuing a Pro Worker contract, since these are precisely the roles
+     * with no access to the main app's Employer records.
+     */
+    public const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team'];
 
     // Routes a confined user must still be able to reach even outside the labor.* group.
-    protected const ALLOWED_ROUTE_NAMES = ['logout', 'password.confirm', 'lang.switch'];
+    protected const ALLOWED_ROUTE_NAMES = ['logout', 'password.confirm', 'lang.switch', 'addresses.thai_data'];
 
     public function handle(Request $request, Closure $next): Response
     {
