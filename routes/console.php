@@ -25,3 +25,7 @@ Schedule::command('app:apply-workflow-settings')->hourly();
 // employee. Same 24h safety window as the workflow command above so users
 // can `restore` to undo a finalize. Supports per-tab and legacy global keys.
 Schedule::command('app:update-resolution-data')->hourly();
+
+// โหมดเช็คงาน: keep only the last 7 business days (05:00 cutoff) of
+// completed check-session reports; runs shortly after the cutoff moment.
+Schedule::command('app:cleanup-job-check-sessions')->dailyAt('05:15');

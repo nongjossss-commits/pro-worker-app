@@ -38,4 +38,19 @@ class AccountingPeriodService
     {
         return $date->copy()->startOfDay()->addDay()->setTime(self::CUTOFF_HOUR, 0, 0);
     }
+
+    /**
+     * The inverse of closesAt(): which "business day" a raw timestamp falls
+     * into. A timestamp before 05:00 belongs to the previous calendar day.
+     */
+    public static function businessDate(Carbon $timestamp): Carbon
+    {
+        $date = $timestamp->copy()->startOfDay();
+
+        if ($timestamp->hour < self::CUTOFF_HOUR) {
+            $date->subDay();
+        }
+
+        return $date;
+    }
 }

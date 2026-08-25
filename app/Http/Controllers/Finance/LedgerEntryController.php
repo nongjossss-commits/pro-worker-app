@@ -84,7 +84,11 @@ class LedgerEntryController extends Controller
             $message .= ' ' . implode(' ', $extras);
         }
 
-        return redirect()->route('finance.ledger.show', $entry)
+        // Stay on whichever page the user created this from (quick-entry
+        // modal on Books index/show, the Ledger page's own modals, or the
+        // dedicated Record Expense page) instead of always jumping to the
+        // entry's detail page — avoids disorienting the user mid-workflow.
+        return redirect()->back()
             ->with('success', $message);
     }
 

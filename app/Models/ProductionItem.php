@@ -18,7 +18,6 @@ class ProductionItem extends Model
         'group_name', // NEW: Group/Batch name
         'appointment_date',
         'appointment_location', // NEW
-        'last_checked_at', // NEW
         'appointment_completed_at', // NEW: Appointment finished
         'appointment_updated_by',
         'appointment_updated_at',
@@ -47,7 +46,6 @@ class ProductionItem extends Model
     protected $casts = [
         'new_employee_data' => 'array',
         'appointment_date' => 'datetime',
-        'last_checked_at' => 'datetime',
         'appointment_completed_at' => 'datetime',
         'appointment_updated_at' => 'datetime',
         'completed_at' => 'datetime',
@@ -111,21 +109,4 @@ class ProductionItem extends Model
         return $this->employee ? !empty($this->employee->visaExpiryDate) : false;
     }
 
-    public function getIsCheckedTodayAttribute()
-    {
-        if (!$this->last_checked_at) {
-            return false;
-        }
-        return $this->last_checked_at->isToday();
-    }
-
-    public function getDaysSinceLastCheckAttribute()
-    {
-        if (!$this->last_checked_at) {
-            // If never checked, return null or a high number?
-            // If created_at is used as fallback:
-            return $this->created_at->startOfDay()->diffInDays(Carbon::today());
-        }
-        return $this->last_checked_at->startOfDay()->diffInDays(Carbon::today());
-    }
 }

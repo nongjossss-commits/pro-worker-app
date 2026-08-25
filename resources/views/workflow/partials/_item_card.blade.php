@@ -8,10 +8,6 @@
     $isPreProduction = $order->status === 'pre_production';
     $activeTab = $activeTab ?? $order->workType ?? null;
 
-    // Daily Check Logic
-    $isCheckedToday = $item->is_checked_today;
-    $daysMissed = $item->days_since_last_check ?? 0;
-
     // Style: if completed/cancelled, flat/grey out.
     $cardClass = 'bg-white border shadow-sm';
     $overlayClass = '';
@@ -25,9 +21,6 @@
     } elseif ($isPreProduction) {
         // Pre-Production: Blue Border/Glow + "Preparing" visual cue (User Request: Blue/Cyan for Pre-Production)
         $cardClass = 'bg-white border border-info border-3 shadow';
-    } elseif (!$isCheckedToday) {
-        // Highlight Pending Check (Orange Border/Glow) ONLY in Workflow
-        $cardClass = 'bg-white border border-warning border-3 shadow';
     }
 
     // Employee Data Proxy
@@ -789,16 +782,6 @@
                                  <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-lg-inline">{{ __('Back to Prep') }}</span>
                             </button>
                             @endif
-                        @endif
-
-                        {{-- Daily Check Button (Only in Workflow) --}}
-                        @if(!$isCheckedToday && !$isCompleted && !$isCancelled)
-                            <button class="btn btn-warning btn-sm fw-bold shadow-sm" onclick="checkDaily({{ $item->id }})" title="Daily Check">
-                                <i class="bi bi-clipboard-check-fill"></i> {{ __('Check') }}
-                                @if($daysMissed > 0)
-                                    <span class="badge bg-danger ms-1 border border-white">{{ $daysMissed }}d</span>
-                                @endif
-                            </button>
                         @endif
                     @endif
 

@@ -4,13 +4,11 @@
     can never drift out of sync on which field types render as what.
 
     Expects: $template, $addressGroups (from LaborContractController's
-    addressGroups() helper), $canLinkEmployer. Optional: $values (assoc
-    array of previously submitted values, e.g. $contract->field_values on
-    the edit form — defaults to old()-only prefill for a fresh issuance),
-    $contract (edit form only, for the employer-link prefill).
+    addressGroups() helper). Optional: $values (assoc array of previously
+    submitted values, e.g. $contract->field_values on the edit form —
+    defaults to old()-only prefill for a fresh issuance).
 --}}
 @php($values = $values ?? [])
-@include('labor.contracts._employer_link', ['canLinkEmployer' => $canLinkEmployer, 'contract' => $contract ?? null])
 
 {{--
     $seenKeys dedupes by field key — the Template Builder lets an admin

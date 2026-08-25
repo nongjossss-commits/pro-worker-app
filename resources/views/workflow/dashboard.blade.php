@@ -31,16 +31,6 @@
             </div>
         </div>
 
-        {{-- Pending Daily Check (NEW) --}}
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm border-0 bg-warning">
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0">{{ $stats['pending_daily_check'] ?? 0 }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Pending Daily Check') }}</p>
-                </div>
-            </div>
-        </div>
-
         {{-- Not Started --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0" style="background-color: #EF4444;">

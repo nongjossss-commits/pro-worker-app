@@ -7,6 +7,12 @@
     still changeable). Posts to the existing finance.ledger.store route —
     no new backend here.
 
+    Centered (not right-aligned) since the top-right corner is already
+    crowded by the page's own header buttons (Income/Expense Categories,
+    Bank Accounts) — centering avoids overlapping them, and the empty
+    middle of the header is otherwise unused. Sized up (btn-lg) so it
+    reads as the page's primary call-to-action rather than blending in.
+
     Expects: $activeAccounts, $incomeCategories, $expenseCategories.
 --}}
 @php
@@ -14,10 +20,10 @@
 @endphp
 
 <button type="button"
-    class="btn btn-primary rounded-pill shadow"
-    style="position: fixed; top: 90px; right: 24px; z-index: 1050;"
+    class="btn btn-primary btn-lg rounded-pill shadow"
+    style="position: fixed; top: 90px; left: 50%; transform: translateX(-50%); z-index: 1050;"
     data-bs-toggle="modal" data-bs-target="#quickEntryModal">
-    <i class="bi bi-plus-lg me-md-1"></i><span class="d-none d-md-inline">{{ __('Record Income/Expense') }}</span>
+    <i class="bi bi-plus-lg me-md-2"></i><span class="d-none d-md-inline">{{ __('Record Income/Expense') }}</span>
 </button>
 
 <div class="modal fade" id="quickEntryModal" tabindex="-1">

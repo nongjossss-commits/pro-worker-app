@@ -816,6 +816,8 @@
                        title="ลากเพื่อแยกหน้าจอ (Drag to Split)">
                         <i class="bi bi-grid-3x2-gap-fill me-1"></i> ลากเพื่อแยก
                     </a>
+
+                    <x-job-check-widget />
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">

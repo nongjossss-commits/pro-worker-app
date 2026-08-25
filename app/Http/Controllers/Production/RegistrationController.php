@@ -20,12 +20,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\AddressFilterTrait;
-use App\Traits\DailyCheckTrait;
 use App\Traits\HasResolutionTab;
 
 class RegistrationController extends Controller
 {
-    use AddressFilterTrait, DailyCheckTrait, HasResolutionTab;
+    use AddressFilterTrait, HasResolutionTab;
 
     public function __construct()
     {
@@ -162,12 +161,6 @@ class RegistrationController extends Controller
             } elseif ($filter === 'appointment_completed') {
                  $totalEmployeesQuery->whereNotNull('appointment_date')
                        ->whereNotNull('appointment_completed_at');
-            } elseif ($filter === 'pending_daily_check') {
-                 $totalEmployeesQuery->where('daily_check_enabled', true)
-                       ->where(function ($sub) {
-                           $sub->whereNull('last_daily_checked_at')
-                             ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                       });
             } elseif (is_numeric($filter)) {
                 // Approximate filtering for count: must have this step
                  $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
@@ -225,15 +218,6 @@ class RegistrationController extends Controller
             ->whereNotNull('appointment_date')
             ->whereNotNull('appointment_completed_at')
             ->count();
-
-        // Total Daily Check Pending (Global)
-        $totalDailyCheckPending = (clone $statsQuery)
-
-            ->where('daily_check_enabled', true)
-            ->where(function ($q) {
-                $q->whereNull('last_daily_checked_at')
-                  ->orWhereDate('last_daily_checked_at', '<', now()->today());
-            })->count();
 
         // Total Employers (Global, relevant to search)
         $totalEmployers = (clone $statsQuery)
@@ -418,7 +402,6 @@ class RegistrationController extends Controller
             $employer->cancelledCount = 0;
             $employer->savedCount = 0;
             $employer->biometricsCollectedCount = 0;
-            $employer->dailyCheckPendingCount = 0;
             // activeEmployeesList is removed as it's now loaded in the financial tab AJAX call
         }
 
@@ -443,7 +426,6 @@ class RegistrationController extends Controller
             'totalNotScheduled',
             'totalAppointmentsPending',
             'totalAppointmentsCompleted',
-            'totalDailyCheckPending',
             'steps',
             'stepStats',
             'employers',
@@ -686,13 +668,6 @@ class RegistrationController extends Controller
             } elseif ($filter === 'appointment_completed') {
                  $q->whereNotNull('appointment_date')
                    ->whereNotNull('appointment_completed_at');
-            } elseif ($filter === 'pending_daily_check') {
-                 $q
-                   ->where('daily_check_enabled', true)
-                   ->where(function ($sub) {
-                       $sub->whereNull('last_daily_checked_at')
-                         ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                   });
             } elseif (is_numeric($filter)) { // Step ID (Highest Step Logic approximation for filter)
                  // Strict Highest Step Filtering to match Employee List Logic
                  $q->where('status', '!=', 'registration_cancelled')
@@ -809,9 +784,9 @@ class RegistrationController extends Controller
             }
 
             // Fetch necessary columns efficiently
-            // We include biometrics and daily check fields
+            // We include biometrics fields
             // Loading full registrationSteps relation to ensure pivot data and keys are correctly loaded without risk
-            $employees = $query->with('registrationSteps')->select('id', 'status', 'biometrics_collected_at', 'daily_check_enabled', 'last_daily_checked_at', 'resolution_completed_at')->get();
+            $employees = $query->with('registrationSteps')->select('id', 'status', 'biometrics_collected_at', 'resolution_completed_at')->get();
 
             // Calculate in PHP
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
@@ -820,7 +795,6 @@ class RegistrationController extends Controller
             $empCancelledCount = 0;
             $empSavedCount = 0;
             $empBiometricsCollected = 0;
-            $empDailyCheckPending = 0;
             $graceCutoff = now()->subHours(24);
 
             foreach ($employees as $emp) {
@@ -841,13 +815,6 @@ class RegistrationController extends Controller
 
                 if ($emp->biometrics_collected_at) {
                     $empBiometricsCollected++;
-                }
-
-                if ($emp->daily_check_enabled) {
-                    $last = $emp->last_daily_checked_at ? Carbon::parse($emp->last_daily_checked_at) : null;
-                    if (!$last || $last->lt(now()->startOfDay())) {
-                        $empDailyCheckPending++;
-                    }
                 }
 
                 // Step badge — same 24h grace as the global stats: completed
@@ -872,7 +839,6 @@ class RegistrationController extends Controller
                 'cancelledCount' => $empCancelledCount,
                 'savedCount' => $empSavedCount,
                 'biometricsCollectedCount' => $empBiometricsCollected,
-                'dailyCheckPendingCount' => $empDailyCheckPending
             ];
         }
 
@@ -1010,13 +976,6 @@ class RegistrationController extends Controller
             } elseif ($filter === 'total_appointments') {
                  $query
                        ->whereNotNull('appointment_date');
-            } elseif ($filter === 'pending_daily_check') {
-                 $query
-                       ->where('daily_check_enabled', true)
-                       ->where(function ($sub) {
-                           $sub->whereNull('last_daily_checked_at')
-                             ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                       });
             } elseif (is_numeric($filter)) { // Step ID
                  $query->where('status', '!=', 'registration_cancelled');
                  // We filter by highest step in PHP below
@@ -1773,14 +1732,6 @@ class RegistrationController extends Controller
             }
             $activeStatuses = ['registration_pending', 'registration_completed'];
 
-            $globalDailyCheckPending = (clone $globalQuery)
-                ->whereIn('status', $activeStatuses)
-                ->where('daily_check_enabled', true)
-                ->where(function ($q) {
-                    $q->whereNull('last_daily_checked_at')
-                      ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                })->count();
-
             $globalAppointmentsPending = (clone $globalQuery)
                 ->whereIn('status', $activeStatuses)
                 ->whereNotNull('appointment_date')
@@ -1847,7 +1798,6 @@ class RegistrationController extends Controller
                 'html' => $this->getEmployeeCardHtml($employee),
                 'globalStats' => $globalStats,
                 'globalNotStarted' => $globalNotStarted,
-                'globalDailyCheckPending' => $globalDailyCheckPending,
                 'globalAppointmentsPending' => $globalAppointmentsPending,
                 'globalAppointmentsCompleted' => $globalAppointmentsCompleted,
                 'employerStats' => $employerStats,
@@ -2158,15 +2108,6 @@ class RegistrationController extends Controller
         // 6. Total Biometrics Collected
         $globalBiometrics = (clone $globalQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
 
-        // 7. Total Daily Check Pending
-        $globalDailyCheckPending = (clone $globalQuery)
-            ->whereIn('status', $activeStatuses)
-            ->where('daily_check_enabled', true)
-            ->where(function ($q) {
-                $q->whereNull('last_daily_checked_at')
-                  ->orWhereDate('last_daily_checked_at', '<', now()->today());
-            })->count();
-
         // 8. Appointments Pending
         $globalAppointmentsPending = (clone $globalQuery)
             ->whereIn('status', $activeStatuses)
@@ -2189,7 +2130,6 @@ class RegistrationController extends Controller
                 'saved' => $globalSaved,
                 'employers_count' => $globalEmployers,
                 'biometrics_collected' => $globalBiometrics,
-                'daily_check_pending' => $globalDailyCheckPending,
                 'appointments_pending' => $globalAppointmentsPending,
                 'appointments_completed' => $globalAppointmentsCompleted
             ]
@@ -2229,14 +2169,6 @@ class RegistrationController extends Controller
             $empSaved = (clone $empQuery)->where('status', 'registration_completed')->count();
             $empBiometrics = (clone $empQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
 
-            $empDailyCheckPending = (clone $empQuery)
-                ->whereIn('status', $activeStatuses)
-                ->where('daily_check_enabled', true)
-                ->where(function ($q) {
-                    $q->whereNull('last_daily_checked_at')
-                      ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                })->count();
-
             $stats['employer'] = [
                 'id' => $employerId,
                 'total' => $empTotal,
@@ -2244,7 +2176,6 @@ class RegistrationController extends Controller
                 'cancelled' => $empCancelled,
                 'saved' => $empSaved,
                 'biometrics_collected' => $empBiometrics,
-                'daily_check_pending' => $empDailyCheckPending
             ];
         }
 
@@ -2803,50 +2734,4 @@ class RegistrationController extends Controller
         ]);
     }
 
-    /**
-     * Override DailyCheckTrait to accept $resolutionTab parameter.
-     */
-    public function toggleDailyCheck(Request $request, $resolutionTab, Employee $employee)
-    {
-        $this->resolveTab($resolutionTab, 'registration');
-
-        if (!auth()->user()->can('edit-employees')) {
-            abort(403);
-        }
-
-        $employee->daily_check_enabled = !$employee->daily_check_enabled;
-        $employee->save();
-
-        return response()->json([
-            'success' => true,
-            'enabled' => $employee->daily_check_enabled,
-            'message' => $employee->daily_check_enabled ? 'Daily check enabled' : 'Daily check disabled',
-            'pending' => $employee->is_daily_check_pending
-        ]);
-    }
-
-    /**
-     * Override DailyCheckTrait to accept $resolutionTab parameter.
-     */
-    public function checkDaily(Request $request, $resolutionTab, Employee $employee)
-    {
-        $this->resolveTab($resolutionTab, 'registration');
-
-        if (!auth()->user()->can('edit-employees')) {
-            abort(403);
-        }
-
-        if (!$employee->daily_check_enabled) {
-            return response()->json(['success' => false, 'message' => 'Daily check is disabled for this employee.'], 400);
-        }
-
-        $employee->last_daily_checked_at = now();
-        $employee->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Checked successfully',
-            'last_checked_at' => $employee->last_daily_checked_at->format('d/m/Y H:i')
-        ]);
-    }
 }

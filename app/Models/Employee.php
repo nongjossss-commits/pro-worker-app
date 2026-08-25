@@ -210,10 +210,8 @@ class Employee extends Model
         'appointment_updated_at',
         'resolution_completed_at',
         'resolution_settings_applied',
-        'daily_check_enabled',
         'registration_remarks',
         'renewal_remarks',
-        'last_daily_checked_at',
         'operator_id',
         'custom_operator_name',
     ];
@@ -231,8 +229,6 @@ class Employee extends Model
         'appointment_updated_at' => 'datetime',
         'resolution_completed_at' => 'datetime',
         'resolution_settings_applied' => 'boolean',
-        'last_daily_checked_at' => 'datetime',
-        'daily_check_enabled' => 'boolean',
         'visaExpiryDate' => 'date:Y-m-d',
         'ninetyDayReportDate' => 'date:Y-m-d',
         'employeeDob' => 'date:Y-m-d',
@@ -612,30 +608,4 @@ class Employee extends Model
         );
     }
 
-    protected function isDailyCheckPending(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                if (!$this->daily_check_enabled) {
-                    return false;
-                }
-                if (is_null($this->last_daily_checked_at)) {
-                    return true;
-                }
-                return !$this->last_daily_checked_at->isToday();
-            }
-        );
-    }
-
-    protected function daysSinceLastDailyCheck(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                if (is_null($this->last_daily_checked_at)) {
-                    return null; // Never checked
-                }
-                return floor(now()->diffInDays($this->last_daily_checked_at));
-            }
-        );
-    }
 }

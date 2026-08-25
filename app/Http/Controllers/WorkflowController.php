@@ -137,11 +137,6 @@ class WorkflowController extends Controller
                     $q->where('status', 'cancelled');
                 } elseif ($filter === 'completed') {
                     $q->where('status', 'completed');
-                } elseif ($filter === 'pending_daily_check') {
-                    $q->where(function($sub) {
-                        $sub->whereNull('last_checked_at')
-                            ->orWhereDate('last_checked_at', '<', Carbon::today());
-                    })->whereNotIn('status', ['cancelled', 'completed']);
                 } elseif (is_numeric($filter)) {
                     // Match the same semantics as the step pill: the item's
                     // HIGHEST completed step must equal $filter. A plain
@@ -230,7 +225,6 @@ class WorkflowController extends Controller
             'cancelled' => 0,
             'completed' => 0,
             'step_stats' => $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray(),
-            'pending_daily_check' => 0,
         ];
 
         if ($activeTab) {
@@ -336,11 +330,6 @@ class WorkflowController extends Controller
                         });
                     } elseif ($filter === 'completed') {
                         $totalItemQuery->where('status', 'completed');
-                    } elseif ($filter === 'pending_daily_check') {
-                        $totalItemQuery->where(function($sub) {
-                            $sub->whereNull('last_checked_at')
-                                ->orWhereDate('last_checked_at', '<', now()->today());
-                        })->whereNotIn('status', ['cancelled', 'completed']);
                     } elseif (is_numeric($filter)) {
                         // Highest-step semantics, matching the employer-level
                         // filter and the step-pill counters.
@@ -371,11 +360,6 @@ class WorkflowController extends Controller
                     ->whereHas('order', fn($o) => $o->where('status', '!=', 'cancelled'))
                     ->whereDoesntHave('completedWorkTypeSteps', function($q) {
                         $q->where('order', 1);
-                    })->count();
-                $stats['pending_daily_check'] = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
-                    ->where(function($q) {
-                        $q->whereNull('last_checked_at')
-                          ->orWhereDate('last_checked_at', '<', now()->today());
                     })->count();
 
                 // Step Stats — 24h grace rule: cancelled items always drop,
@@ -493,13 +477,6 @@ class WorkflowController extends Controller
                                       ->orWhereHas('order', fn($o) => $o->where('status', 'cancelled'));
                                 })->count(),
             'completed' => (clone $itemsQuery)->where('status', 'completed')->count(),
-            'pending_daily_check' => (clone $itemsQuery)
-                ->where('status', 'pending')
-                ->whereHas('order', fn($q) => $q->where('status', '!=', 'cancelled'))
-                ->where(function($q) {
-                     $q->whereNull('last_checked_at')
-                       ->orWhereDate('last_checked_at', '<', Carbon::today());
-                })->count(),
         ];
 
         // 2. Upcoming Appointments
@@ -607,17 +584,6 @@ class WorkflowController extends Controller
                 ], 500);
             }
         }
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * API: Perform Daily Check on Item
-     */
-    public function checkDaily(Request $request, $itemId)
-    {
-        $item = ProductionItem::findOrFail($itemId);
-        $item->update(['last_checked_at' => now()]);
 
         return response()->json(['success' => true]);
     }
@@ -891,11 +857,6 @@ class WorkflowController extends Controller
                  $query->where('status', 'cancelled');
             } elseif ($filter === 'completed') {
                  $query->where('status', 'completed');
-            } elseif ($filter === 'pending_daily_check') {
-                 $query->where(function($q) {
-                     $q->whereNull('last_checked_at')
-                       ->orWhereDate('last_checked_at', '<', Carbon::today());
-                 })->whereNotIn('status', ['cancelled', 'completed']);
             } elseif (is_numeric($filter)) {
                  // We will filter by exact highest step in PHP collection
                  // But apply rough SQL filter first
@@ -1136,7 +1097,6 @@ class WorkflowController extends Controller
             'cancelled' => 0,
             'completed' => 0,
             'step_stats' => $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray(),
-            'pending_daily_check' => 0,
         ];
 
         $stepOneId = $steps->sortBy('order')->first()?->id;
@@ -1166,11 +1126,6 @@ class WorkflowController extends Controller
                 // Not Started: Pending + No Step 1
                 if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
                     $stats['not_started']++;
-                }
-
-                // Daily Check
-                if (!$item->is_checked_today && $item->status !== 'completed' && $item->status !== 'cancelled') {
-                    $stats['pending_daily_check']++;
                 }
 
                 // Step Stats — 24h grace: completed items keep counting until
@@ -1944,7 +1899,6 @@ class WorkflowController extends Controller
             $item->update([
                 'production_order_id' => $preProdOrder->id,
                 'status' => 'pending',
-                'last_checked_at' => null,
                 'appointment_date' => null,
                 'appointment_location' => null,
                 'appointment_completed_at' => null,
@@ -2293,11 +2247,6 @@ class WorkflowController extends Controller
                 $query->where('status', 'cancelled');
             } elseif ($filter === 'completed') {
                 $query->where('status', 'completed');
-            } elseif ($filter === 'pending_daily_check') {
-                $query->where(function($sub) {
-                    $sub->whereNull('last_checked_at')
-                        ->orWhereDate('last_checked_at', '<', Carbon::today());
-                })->whereNotIn('status', ['cancelled', 'completed']);
             } elseif (is_numeric($filter)) {
                 $query->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
                     $s->where('work_type_steps.id', $filter);

@@ -155,19 +155,6 @@
             </div>
         </div>
 
-        {{-- Daily Check Pending (NEW) --}}
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
-                 id="filter-pending_daily_check"
-                 onclick="toggleFilter('pending_daily_check')"
-                 style="background-color: #6366f1; border: none; transition: transform 0.2s;"> {{-- Indigo-500 --}}
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="global-daily-check-pending-count">{{ $totalDailyCheckPending ?? 0 }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Daily Check Pending') }}</p>
-                </div>
-            </div>
-        </div>
-
         {{-- Total Cancelled Employees --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm cursor-pointer filter-card"
@@ -1721,7 +1708,6 @@
                  const apptSelect = document.getElementById('appointment-status-filter');
                  if (apptSelect) apptSelect.value = currentStepFilter;
              }
-             else if (currentStepFilter === 'pending_daily_check') document.getElementById('filter-pending_daily_check')?.classList.add('filter-active');
              else if (currentStepFilter === 'biometrics_collected') {
                  document.getElementById('filter-biometrics-collected')?.classList.add('filter-active');
                  // Highlight global button too
@@ -2200,21 +2186,6 @@
             }
         }
 
-    // Helper: Update UI Stats
-    window.updateDailyCheckScoreboard = function(enabled, isPending) {
-        const globalEl = document.getElementById('global-daily-check-pending-count');
-        if (!globalEl) return;
-        let current = parseInt(globalEl.innerText) || 0;
-
-        // Optimistic update for "Check" action
-        if (enabled === true && isPending === false) {
-             // Checked -> Decrement
-             globalEl.innerText = Math.max(0, current - 1);
-        }
-        // For toggle ON/OFF, we rely on page refresh or subsequent loads for accuracy
-        // to avoid desync without full server stats.
-    }
-
     function updateStatsUI(stats) {
         if (!stats) return;
 
@@ -2260,9 +2231,6 @@
             updateText('global-employers-count', stats.global.employers_count);
             if(typeof stats.global.biometrics_collected !== 'undefined') {
                 updateText('global-biometrics-collected-count', stats.global.biometrics_collected);
-            }
-            if(typeof stats.global.daily_check_pending !== 'undefined') {
-                updateText('global-daily-check-pending-count', stats.global.daily_check_pending);
             }
         }
         if (stats.employer && typeof stats.employer.total !== 'undefined') {

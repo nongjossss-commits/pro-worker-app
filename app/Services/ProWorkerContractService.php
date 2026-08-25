@@ -16,12 +16,15 @@ use Illuminate\Support\Facades\DB;
 class ProWorkerContractService
 {
     /**
-     * @param  int|null  $employerId  set only when the issuer has main-app
-     *         Employer access (see LaborContractController::create()) —
-     *         external teams leave this null and rely on $employerNameSnapshot
-     *         alone. Deliberately independent of $fieldValues/field_mapping.
+     * @param  int|null  $employerId  no longer collected on the issuance
+     *         form (the picker was removed — selecting an employer never
+     *         populated any template field, so it added a required step
+     *         with no benefit); left as an optional param rather than
+     *         dropped outright so employer_id/employer_name_snapshot stay
+     *         correctable later without a signature change, same as any
+     *         other field on this contract.
      */
-    public function issue(ProWorkerContractTemplate $template, User $issuer, array $fieldValues, ?int $employerId, string $employerNameSnapshot): ProWorkerContract
+    public function issue(ProWorkerContractTemplate $template, User $issuer, array $fieldValues, ?int $employerId = null, ?string $employerNameSnapshot = null): ProWorkerContract
     {
         return DB::transaction(function () use ($template, $issuer, $fieldValues, $employerId, $employerNameSnapshot) {
             $contractNo = $this->generateContractNo();
@@ -49,23 +52,31 @@ class ProWorkerContractService
      * issued_at/issued_by/labor_team_id untouched, since this contract has
      * no financial consequence and only feeds issuance statistics (see
      * ProWorkerContract's docblock — no delete/cancel route exists, only
-     * this correction path). employer_id/employer_name_snapshot CAN be
-     * corrected here, same as field_values.
+     * this correction path). employer_id/employer_name_snapshot CAN still
+     * be corrected here, same as field_values — but the form no longer
+     * collects them (see issue()'s docblock), so when both args are left
+     * null this deliberately leaves whatever was already on the contract
+     * untouched rather than wiping it, so editing an older contract that
+     * DOES have an employer link (issued before the picker was removed)
+     * doesn't silently erase it.
      */
-    public function update(ProWorkerContract $contract, array $fieldValues, ?int $employerId, string $employerNameSnapshot): ProWorkerContract
+    public function update(ProWorkerContract $contract, array $fieldValues, ?int $employerId = null, ?string $employerNameSnapshot = null): ProWorkerContract
     {
         return DB::transaction(function () use ($contract, $fieldValues, $employerId, $employerNameSnapshot) {
             $template = $contract->template;
 
             $filePath = app(ProWorkerContractPdfService::class)->generate($template, $fieldValues, $contract->contract_no);
 
-            $contract->update([
+            $updateData = [
                 'field_values' => $fieldValues,
                 'file_path' => $filePath,
                 'worker_count' => $this->resolveWorkerCount($template, $fieldValues),
-                'employer_id' => $employerId,
-                'employer_name_snapshot' => $employerNameSnapshot,
-            ]);
+            ];
+            if ($employerId !== null || $employerNameSnapshot !== null) {
+                $updateData['employer_id'] = $employerId;
+                $updateData['employer_name_snapshot'] = $employerNameSnapshot;
+            }
+            $contract->update($updateData);
 
             return $contract;
         });

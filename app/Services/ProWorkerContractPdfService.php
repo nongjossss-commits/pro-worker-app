@@ -179,6 +179,12 @@ class ProWorkerContractPdfService
 
                 if ($type === 'issue_date') {
                     $text = $this->formatIssueDate($item['dateFormat'] ?? 'full');
+                } elseif ($type === 'static_text') {
+                    // Admin-configured fixed text baked into the template
+                    // itself — never collected on the issuance form (see
+                    // _fields.blade.php's type filter), so it's read from
+                    // the field_mapping item directly, not $fieldValues.
+                    $text = $item['text'] ?? '';
                 } else {
                     $key = $item['key'] ?? null;
                     $text = $key ? ($fieldValues[$key] ?? '') : '';

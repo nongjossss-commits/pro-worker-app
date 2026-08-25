@@ -43,6 +43,11 @@
                     <span class="small fw-semibold">{{ __('Text Field') }} (ช่องข้อความ)</span>
                 </div>
                 <div class="pwct-tool bg-white border rounded mb-2 d-flex align-items-center gap-2 p-2" draggable="true"
+                     @dragstart="dragStart($event, {type: 'static_text'})">
+                    <i class="bi bi-fonts text-secondary"></i>
+                    <span class="small fw-semibold">{{ __('Fixed Text') }} (ข้อความคงที่)</span>
+                </div>
+                <div class="pwct-tool bg-white border rounded mb-2 d-flex align-items-center gap-2 p-2" draggable="true"
                      @dragstart="dragStart($event, {type: 'address'})">
                     <i class="bi bi-geo-alt text-success"></i>
                     <span class="small fw-semibold">{{ __('Address') }} (ที่อยู่ ไทย+อังกฤษ)</span>
@@ -109,7 +114,7 @@
                             <template x-for="[item, index] in itemsForPage(pageNum)" :key="pageNum + '-' + index">
                                 <div class="pwct-item position-absolute border d-flex px-1"
                                      :class="{
-                                        'pwct-item-text': item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date',
+                                        'pwct-item-text': item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'static_text',
                                         'pwct-item-address': item.type === 'address_th' || item.type === 'address_en',
                                         'pwct-item-mark': item.type === 'mark',
                                         'pwct-item-media': item.type === 'image' || item.type === 'stamp' || item.type === 'signature'
@@ -143,10 +148,10 @@
                                         </div>
                                     </template>
 
-                                    <template x-if="item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'address_th' || item.type === 'address_en'">
+                                    <template x-if="item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'address_th' || item.type === 'address_en' || item.type === 'static_text'">
                                         <div class="w-100 h-100 d-flex flex-column justify-content-end overflow-hidden position-relative"
                                              :style="`pointer-events:none; font-family: 'THSarabunNew', sans-serif; font-size: ${item.fontSize || 16}pt; text-align: ${item.align || 'left'}; color:#000;`">
-                                            <span class="d-block text-nowrap" x-text="item.label" style="line-height:1;"></span>
+                                            <span class="d-block text-nowrap" x-text="item.type === 'static_text' ? (item.text || '{{ __('(empty fixed text)') }}') : item.label" style="line-height:1;"></span>
                                         </div>
                                     </template>
 
@@ -180,10 +185,25 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="mb-3">
-                                <label class="form-label">{{ __('Label shown to whoever fills this in') }} *</label>
-                                <input type="text" class="form-control" x-model="items[editingIndex].label" placeholder="{{ __('e.g. Employer Name (Thai)') }}">
-                            </div>
+                            <template x-if="items[editingIndex].type !== 'static_text'">
+                                <div class="mb-3">
+                                    <label class="form-label">{{ __('Label shown to whoever fills this in') }} *</label>
+                                    <input type="text" class="form-control" x-model="items[editingIndex].label" placeholder="{{ __('e.g. Employer Name (Thai)') }}">
+                                </div>
+                            </template>
+
+                            <template x-if="items[editingIndex].type === 'static_text'">
+                                <div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('Internal name (for your reference only, not shown on the document)') }}</label>
+                                        <input type="text" class="form-control" x-model="items[editingIndex].label" placeholder="{{ __('e.g. Company Address Line') }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('Fixed text') }} *</label>
+                                        <textarea class="form-control" rows="3" x-model="items[editingIndex].text" placeholder="{{ __('This exact text is printed on every issued document — the issuer cannot edit it.') }}"></textarea>
+                                    </div>
+                                </div>
+                            </template>
 
                             <template x-if="items[editingIndex].type === 'issue_date'">
                                 <div class="mb-3">
@@ -200,7 +220,7 @@
                                 </div>
                             </template>
 
-                            <template x-if="items[editingIndex].type === 'text' || items[editingIndex].type === 'worker_count' || items[editingIndex].type === 'issue_date' || items[editingIndex].type === 'address_th' || items[editingIndex].type === 'address_en'">
+                            <template x-if="items[editingIndex].type === 'text' || items[editingIndex].type === 'worker_count' || items[editingIndex].type === 'issue_date' || items[editingIndex].type === 'address_th' || items[editingIndex].type === 'address_en' || items[editingIndex].type === 'static_text'">
                                 <div class="row g-2">
                                     <div class="col-6">
                                         <label class="form-label">{{ __('Font Size') }}</label>
@@ -389,6 +409,16 @@
                                 fontSize: 16, align: 'left', autoFit: false,
                             });
                             this.openSettings(this.items.length - 1);
+                        } else if (data.type === 'static_text') {
+                            this.items.push({
+                                type: 'static_text',
+                                key: this.genKey(),
+                                label: '{{ __('Fixed Text') }}',
+                                text: '',
+                                x: xPct, y: yPct, w: 20, h: 3, page: pageNum,
+                                fontSize: 16, align: 'left', autoFit: false,
+                            });
+                            this.openSettings(this.items.length - 1);
                         } else if (data.type === 'worker_count') {
                             this.items.push({
                                 type: 'worker_count',
@@ -509,17 +539,43 @@
                 startMove(event, index, pageNum) {
                     if (event.target.classList.contains('pwct-resize-handle')) return;
                     const item = this.items[index];
-                    const dims = this.pageDimensions[pageNum];
-                    const startX = event.clientX;
-                    const startY = event.clientY;
-                    const startLeft = (item.x / 100) * dims.width;
-                    const startTop = (item.y / 100) * dims.height;
+                    let dims = this.pageDimensions[pageNum];
+                    let refX = event.clientX;
+                    let refY = event.clientY;
+                    let refLeft = (item.x / 100) * dims.width;
+                    let refTop = (item.y / 100) * dims.height;
 
+                    // Any field — text, image, stamp, signature, mark, address —
+                    // can be dragged onto a different page mid-move, not just
+                    // repositioned within the page it started on. Detected by
+                    // checking which page-container the cursor is over on every
+                    // move; when it changes, the item switches pages and the
+                    // drag reference point resets so the motion stays smooth
+                    // instead of jumping.
                     const onMouseMove = (e) => {
-                        const dx = e.clientX - startX;
-                        const dy = e.clientY - startY;
-                        let newLeft = startLeft + dx;
-                        let newTop = startTop + dy;
+                        const hoverEl = document.elementFromPoint(e.clientX, e.clientY);
+                        const hoverContainer = hoverEl ? hoverEl.closest('[id^="page-container-"]') : null;
+
+                        if (hoverContainer) {
+                            const hoverPage = parseInt(hoverContainer.id.replace('page-container-', ''), 10);
+                            if (hoverPage !== item.page && this.pageDimensions[hoverPage]) {
+                                item.page = hoverPage;
+                                dims = this.pageDimensions[hoverPage];
+                                const rect = hoverContainer.getBoundingClientRect();
+                                refLeft = Math.max(0, Math.min(e.clientX - rect.left - ((item.w / 100) * dims.width) / 2, dims.width - ((item.w / 100) * dims.width)));
+                                refTop = Math.max(0, Math.min(e.clientY - rect.top - ((item.h / 100) * dims.height) / 2, dims.height - ((item.h / 100) * dims.height)));
+                                item.x = (refLeft / dims.width) * 100;
+                                item.y = (refTop / dims.height) * 100;
+                                refX = e.clientX;
+                                refY = e.clientY;
+                                return;
+                            }
+                        }
+
+                        const dx = e.clientX - refX;
+                        const dy = e.clientY - refY;
+                        let newLeft = refLeft + dx;
+                        let newTop = refTop + dy;
                         newLeft = Math.max(0, Math.min(newLeft, dims.width - ((item.w / 100) * dims.width)));
                         newTop = Math.max(0, Math.min(newTop, dims.height - ((item.h / 100) * dims.height)));
                         item.x = (newLeft / dims.width) * 100;

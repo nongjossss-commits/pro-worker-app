@@ -58,7 +58,6 @@ class ProductionController extends Controller
             'not_started' => 0,
             'cancelled' => 0,
             'completed' => 0,
-            'pending_daily_check' => 0,
             'step_stats' => [],
         ];
 
@@ -80,11 +79,6 @@ class ProductionController extends Controller
                 })->count();
              $stats['cancelled'] = (clone $baseItemsQuery)->where('status', 'cancelled')->count();
              $stats['completed'] = (clone $baseItemsQuery)->where('status', 'completed')->count();
-             $stats['pending_daily_check'] = (clone $baseItemsQuery)->whereNotIn('status', ['cancelled', 'completed'])
-                ->where(function($q) {
-                    $q->whereNull('last_checked_at')
-                      ->orWhereDate('last_checked_at', '<', now()->today());
-                })->count();
         } else {
             // 4. Active Tab Logic: Query Orders and Calculate Specific Stats
 
@@ -175,11 +169,6 @@ class ProductionController extends Controller
                         $q->where('status', 'cancelled');
                     } elseif ($filter === 'completed') {
                         $q->where('status', 'completed');
-                    } elseif ($filter === 'pending_daily_check') {
-                        $q->where(function($sub) {
-                            $sub->whereNull('last_checked_at')
-                                ->orWhereDate('last_checked_at', '<', now()->today());
-                        })->whereNotIn('status', ['cancelled', 'completed']);
                     } elseif (is_numeric($filter)) {
                         // Match the same semantics as the step pill: the
                         // item's HIGHEST completed step must equal $filter.
@@ -369,11 +358,6 @@ class ProductionController extends Controller
                         $totalItemQuery->where('status', 'cancelled');
                     } elseif ($filter === 'completed') {
                         $totalItemQuery->where('status', 'completed');
-                    } elseif ($filter === 'pending_daily_check') {
-                        $totalItemQuery->where(function($sub) {
-                            $sub->whereNull('last_checked_at')
-                                ->orWhereDate('last_checked_at', '<', now()->today());
-                        })->whereNotIn('status', ['cancelled', 'completed']);
                     } elseif (is_numeric($filter)) {
                         // Highest-step semantics, matching the employer-level
                         // filter and the step-pill counters.
@@ -395,11 +379,6 @@ class ProductionController extends Controller
                 $stats['not_started'] = (clone $baseItemQuery)->whereIn('status', ['pending', 'completed'])
                     ->whereDoesntHave('completedWorkTypeSteps', function($q) {
                         $q->where('order', 1);
-                    })->count();
-                $stats['pending_daily_check'] = (clone $baseItemQuery)->whereNotIn('status', ['cancelled', 'completed'])
-                    ->where(function($q) {
-                        $q->whereNull('last_checked_at')
-                          ->orWhereDate('last_checked_at', '<', now()->today());
                     })->count();
 
                 // Step Stats (Highest Step) — Global. 24h grace rule:
@@ -705,7 +684,6 @@ class ProductionController extends Controller
                 $item->update([
                     'production_order_id' => $activeOrder->id,
                     'status' => 'pending', // Reset status to pending in workflow
-                    'last_checked_at' => null, // Reset checks
                     'appointment_date' => null, // Reset appointment date as it is stage-specific
                     'appointment_location' => null,
                     'appointment_completed_at' => null,
@@ -796,7 +774,6 @@ class ProductionController extends Controller
             $item->update([
                 'production_order_id' => $activeOrder->id,
                 'status' => 'pending', // Reset status to pending in workflow
-                'last_checked_at' => null, // Reset checks
                 'appointment_date' => null, // Reset appointment date as it is stage-specific
                 'appointment_location' => null,
                 'appointment_completed_at' => null,
@@ -1164,11 +1141,6 @@ class ProductionController extends Controller
                 $query->where('status', 'cancelled');
             } elseif ($filter === 'completed') {
                 $query->where('status', 'completed');
-            } elseif ($filter === 'pending_daily_check') {
-                $query->where(function($sub) {
-                    $sub->whereNull('last_checked_at')
-                        ->orWhereDate('last_checked_at', '<', now()->today());
-                })->whereNotIn('status', ['cancelled', 'completed']);
             } elseif (is_numeric($filter)) {
                 $query->whereHas('completedWorkTypeSteps', function($s) use ($filter) {
                     $s->where('work_type_steps.id', $filter);

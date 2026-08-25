@@ -31,21 +31,24 @@
     <div class="row g-2">
         <div class="col-md-4">
             <label class="form-label small">{{ __('Province') }} *</label>
-            <select id="addrProvince_{{ $groupId }}" name="fields[{{ $groupId }}_province]" class="form-select form-select-sm pw-addr-province" required>
-                <option value="">-- {{ __('Select') }} --</option>
-            </select>
+            <input type="text" id="addrProvince_{{ $groupId }}" class="form-control form-control-sm pw-addr-province"
+                   list="addrProvinceList_{{ $groupId }}" autocomplete="off" placeholder="{{ __('Type to search...') }}" required>
+            <datalist id="addrProvinceList_{{ $groupId }}"></datalist>
+            <input type="hidden" name="fields[{{ $groupId }}_province]" id="addrProvinceValue_{{ $groupId }}">
         </div>
         <div class="col-md-4">
             <label class="form-label small">{{ __('District') }} *</label>
-            <select id="addrDistrict_{{ $groupId }}" name="fields[{{ $groupId }}_district]" class="form-select form-select-sm pw-addr-district" required disabled>
-                <option value="">-- {{ __('Select') }} --</option>
-            </select>
+            <input type="text" id="addrDistrict_{{ $groupId }}" class="form-control form-control-sm pw-addr-district"
+                   list="addrDistrictList_{{ $groupId }}" autocomplete="off" placeholder="{{ __('Type to search...') }}" required disabled>
+            <datalist id="addrDistrictList_{{ $groupId }}"></datalist>
+            <input type="hidden" name="fields[{{ $groupId }}_district]" id="addrDistrictValue_{{ $groupId }}">
         </div>
         <div class="col-md-4">
             <label class="form-label small">{{ __('Subdistrict') }} *</label>
-            <select id="addrSubDistrict_{{ $groupId }}" name="fields[{{ $groupId }}_subdistrict]" class="form-select form-select-sm pw-addr-subdistrict" required disabled>
-                <option value="">-- {{ __('Select') }} --</option>
-            </select>
+            <input type="text" id="addrSubDistrict_{{ $groupId }}" class="form-control form-control-sm pw-addr-subdistrict"
+                   list="addrSubDistrictList_{{ $groupId }}" autocomplete="off" placeholder="{{ __('Type to search...') }}" required disabled>
+            <datalist id="addrSubDistrictList_{{ $groupId }}"></datalist>
+            <input type="hidden" name="fields[{{ $groupId }}_subdistrict]" id="addrSubDistrictValue_{{ $groupId }}">
         </div>
         <div class="col-md-2">
             <label class="form-label small">{{ __('No.') }}</label>

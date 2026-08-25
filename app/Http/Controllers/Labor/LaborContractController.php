@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Labor;
 
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\ConfineToLaborModule;
 use App\Models\CompanyProfile;
-use App\Models\Employer;
 use App\Models\LaborTeam;
 use App\Models\ProWorkerContract;
 use App\Models\ProWorkerContractTemplate;
@@ -31,7 +29,6 @@ class LaborContractController extends Controller
         return view('labor.contracts.create', [
             'template' => $template,
             'addressGroups' => $template ? $this->addressGroups($template) : [],
-            'canLinkEmployer' => $this->canLinkEmployer(Auth::user()),
         ]);
     }
 
@@ -47,12 +44,7 @@ class LaborContractController extends Controller
             return back()->withErrors($error)->withInput();
         }
 
-        [$employerError, $employerId, $employerName] = $this->resolveEmployerLink($request, $user);
-        if ($employerError) {
-            return back()->withErrors($employerError)->withInput();
-        }
-
-        $contract = $service->issue($template, $user, $fields, $employerId, $employerName);
+        $contract = $service->issue($template, $user, $fields);
 
         return redirect()->route('labor.contracts.show', $contract)
             ->with('success', __('Contract issued successfully.'));
@@ -98,7 +90,6 @@ class LaborContractController extends Controller
             'contract' => $contract,
             'template' => $template,
             'addressGroups' => $this->addressGroups($template),
-            'canLinkEmployer' => $this->canLinkEmployer(Auth::user()),
         ]);
     }
 
@@ -111,68 +102,10 @@ class LaborContractController extends Controller
             return back()->withErrors($error)->withInput();
         }
 
-        [$employerError, $employerId, $employerName] = $this->resolveEmployerLink($request, Auth::user());
-        if ($employerError) {
-            return back()->withErrors($employerError)->withInput();
-        }
-
-        $service->update($contract, $fields, $employerId, $employerName);
+        $service->update($contract, $fields);
 
         return redirect()->route('labor.contracts.show', $contract)
             ->with('success', __('Contract updated successfully.'));
-    }
-
-    /**
-     * True for anyone who isn't one of ConfineToLaborModule's dedicated
-     * external-team roles — those roles ARE the definition of "has no
-     * access to the main app's Employer records" (see that middleware's
-     * docblock: "super-admin and admin are untouched here"), so reusing
-     * that exact list keeps the two rules from ever drifting apart.
-     */
-    protected function canLinkEmployer($user): bool
-    {
-        return !$user->hasAnyRole(ConfineToLaborModule::LABOR_ROLES);
-    }
-
-    /**
-     * Resolves the employer-link fields submitted alongside the template's
-     * own fields[] — deliberately a SEPARATE top-level request input
-     * (`employer_id`/`employer_name`), never mixed into fields[]/
-     * field_values, so it can never collide with or be mistaken for a
-     * template-defined field (see ProWorkerContract's docblock on why this
-     * is kept independent). Returns [errorArrayOrNull, employerId,
-     * employerNameSnapshot].
-     *
-     * A submitted employer_id is only ever trusted when the user actually
-     * has Employer-picker access (canLinkEmployer()) — even if a confined
-     * external-team user somehow POSTs one, it's ignored, and the name is
-     * always re-derived from the real Employer record rather than trusting
-     * client-submitted text, so the two can never mismatch.
-     */
-    protected function resolveEmployerLink(Request $request, $user): array
-    {
-        if ($this->canLinkEmployer($user)) {
-            $employerId = $request->input('employer_id');
-            if (!$employerId) {
-                return [['employer' => __('Please select an employer.')], null, null];
-            }
-
-            $employer = Employer::find($employerId);
-            if (!$employer) {
-                return [['employer' => __('Please select an employer.')], null, null];
-            }
-
-            $name = trim((string) ($employer->employerNameTh ?: $employer->employerNameEn));
-
-            return [null, (int) $employer->id, $name];
-        }
-
-        $name = trim((string) $request->input('employer_name'));
-        if ($name === '') {
-            return [['employer' => __('Please enter the employer name.')], null, null];
-        }
-
-        return [null, null, $name];
     }
 
     /**

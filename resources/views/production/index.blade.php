@@ -203,16 +203,6 @@
             </div>
         </div>
 
-        {{-- Daily Check (Reset at Midnight) --}}
-        <div class="col">
-            <div class="card text-white h-100 shadow-sm border-0 cursor-pointer filter-card" id="filter-daily-check" onclick="toggleFilter('pending_daily_check')" style="background-color: #F97316;">
-                <div class="card-body text-center d-flex flex-column justify-content-center py-4">
-                    <h1 class="display-4 fw-bold mb-0" id="stats-daily-check">{{ $stats['pending_daily_check'] ?? 0 }}</h1>
-                    <p class="fs-5 fw-light mb-0">{{ __('Daily Check') }}</p>
-                </div>
-            </div>
-        </div>
-
         {{-- Cancelled --}}
         <div class="col">
             <div class="card text-white h-100 shadow-sm border-0 cursor-pointer filter-card" id="filter-cancelled" onclick="toggleFilter('cancelled')" style="background-color: #6B7280;">

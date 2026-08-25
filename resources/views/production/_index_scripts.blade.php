@@ -150,7 +150,6 @@
             if (currentStepFilter === 'not_started') document.getElementById('filter-not-started')?.classList.add('filter-active');
             else if (currentStepFilter === 'cancelled') document.getElementById('filter-cancelled')?.classList.add('filter-active');
             else if (currentStepFilter === 'completed') document.getElementById('filter-completed')?.classList.add('filter-active');
-            else if (currentStepFilter === 'pending_daily_check') document.getElementById('filter-daily-check')?.classList.add('filter-active');
             else {
                 const pill = document.getElementById(`filter-step-${currentStepFilter}`);
                 if (pill) pill.classList.add('filter-active');
@@ -1081,7 +1080,6 @@
         // Counters
         setHtml('stats-total-employees', stats.total_employees);
         setHtml('stats-total-projects', stats.total_projects);
-        setHtml('stats-daily-check', stats.pending_daily_check);
         setText('#filter-not-started h1', stats.not_started);
         setText('#filter-cancelled h1', stats.cancelled);
         setText('#filter-completed h1', stats.completed);

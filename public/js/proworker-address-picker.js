@@ -7,6 +7,16 @@
  * from a single shared fetch of /thai-addresses (same endpoint, same
  * dataset — see routes/web.php AddressController@getThaiAddressData).
  *
+ * Province/District/Subdistrict are typeable+searchable (HTML5 <input
+ * list="..."> + <datalist>) instead of plain <select> — with 77 provinces
+ * and thousands of districts/subdistricts, scrolling a long dropdown was
+ * the exact complaint this replaces; typing filters natively in every
+ * modern browser with zero extra dependency. Each visible text input pairs
+ * with a HIDDEN input (fields[{groupId}_province] etc.) that only gets a
+ * value once the typed text exactly matches a real option — the composed
+ * address, and everything downstream, is only ever built from a confirmed
+ * match, never from free-typed text.
+ *
  * Composition format mirrors PdfGeneratorService::formatAddress() exactly
  * so contracts read the same as every other generated document. Soi/Road
  * have separate English inputs (proper nouns can't be auto-translated
@@ -34,9 +44,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function initAddressGroup(group, thaiAddressData) {
         const id = group.dataset.group;
-        const provinceSelect = document.getElementById('addrProvince_' + id);
-        const districtSelect = document.getElementById('addrDistrict_' + id);
-        const subDistrictSelect = document.getElementById('addrSubDistrict_' + id);
+        const provinceInput = document.getElementById('addrProvince_' + id);
+        const provinceList = document.getElementById('addrProvinceList_' + id);
+        const provinceValue = document.getElementById('addrProvinceValue_' + id);
+        const districtInput = document.getElementById('addrDistrict_' + id);
+        const districtList = document.getElementById('addrDistrictList_' + id);
+        const districtValue = document.getElementById('addrDistrictValue_' + id);
+        const subDistrictInput = document.getElementById('addrSubDistrict_' + id);
+        const subDistrictList = document.getElementById('addrSubDistrictList_' + id);
+        const subDistrictValue = document.getElementById('addrSubDistrictValue_' + id);
         const noInput = document.getElementById('addrNo_' + id);
         const mooInput = document.getElementById('addrMoo_' + id);
         const soiInput = document.getElementById('addrSoi_' + id);
@@ -52,61 +68,104 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const uniqueSorted = (values) => [...new Set(values)].sort((a, b) => a.localeCompare(b, 'th'));
 
-        uniqueSorted(thaiAddressData.map((d) => d.province_th.trim())).forEach((p) => {
-            provinceSelect.add(new Option(p, p));
-        });
+        const notMatchedMsg = document.documentElement.lang === 'en'
+            ? 'Please pick a suggestion from the list.'
+            : 'กรุณาเลือกจากรายการที่แนะนำ';
 
-        function resetSelect(select, placeholder) {
-            select.innerHTML = '';
-            select.add(new Option(placeholder, ''));
-            select.disabled = true;
+        function fillDatalist(datalistEl, values) {
+            datalistEl.innerHTML = '';
+            values.forEach((v) => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                datalistEl.appendChild(opt);
+            });
         }
 
-        provinceSelect.addEventListener('change', function () {
-            resetSelect(districtSelect, '-- ' + (document.documentElement.lang === 'en' ? 'Select' : 'เลือก') + ' --');
-            resetSelect(subDistrictSelect, '-- -- --');
+        function clearField(textInput, hiddenInput, datalistEl, disable) {
+            textInput.value = '';
+            hiddenInput.value = '';
+            textInput.setCustomValidity('');
+            if (datalistEl) datalistEl.innerHTML = '';
+            textInput.disabled = !!disable;
+        }
+
+        fillDatalist(provinceList, uniqueSorted(thaiAddressData.map((d) => d.province_th.trim())));
+
+        provinceInput.addEventListener('input', function () {
+            clearField(districtInput, districtValue, districtList, true);
+            clearField(subDistrictInput, subDistrictValue, subDistrictList, true);
             selectedRow = null;
+            zipInput.value = '';
             compose();
 
-            const province = this.value.trim();
-            if (!province) return;
+            const typed = this.value.trim();
+            const options = uniqueSorted(thaiAddressData.map((d) => d.province_th.trim()));
+            if (!options.includes(typed)) {
+                provinceValue.value = '';
+                this.setCustomValidity(typed ? notMatchedMsg : '');
+                return;
+            }
 
-            uniqueSorted(
+            this.setCustomValidity('');
+            provinceValue.value = typed;
+            fillDatalist(districtList, uniqueSorted(
+                thaiAddressData.filter((d) => d.province_th.trim() === typed).map((d) => d.district_th.trim())
+            ));
+            districtInput.disabled = false;
+        });
+
+        districtInput.addEventListener('input', function () {
+            clearField(subDistrictInput, subDistrictValue, subDistrictList, true);
+            selectedRow = null;
+            zipInput.value = '';
+            compose();
+
+            const province = provinceValue.value;
+            const typed = this.value.trim();
+            const options = uniqueSorted(
                 thaiAddressData.filter((d) => d.province_th.trim() === province).map((d) => d.district_th.trim())
-            ).forEach((d) => districtSelect.add(new Option(d, d)));
-            districtSelect.disabled = false;
-        });
+            );
+            if (!options.includes(typed)) {
+                districtValue.value = '';
+                this.setCustomValidity(typed ? notMatchedMsg : '');
+                return;
+            }
 
-        districtSelect.addEventListener('change', function () {
-            resetSelect(subDistrictSelect, '-- -- --');
-            selectedRow = null;
-            compose();
-
-            const province = provinceSelect.value.trim();
-            const district = this.value.trim();
-            if (!district) return;
-
-            uniqueSorted(
+            this.setCustomValidity('');
+            districtValue.value = typed;
+            fillDatalist(subDistrictList, uniqueSorted(
                 thaiAddressData
-                    .filter((d) => d.province_th.trim() === province && d.district_th.trim() === district)
+                    .filter((d) => d.province_th.trim() === province && d.district_th.trim() === typed)
                     .map((d) => d.subdistrict_th.trim())
-            ).forEach((sd) => subDistrictSelect.add(new Option(sd, sd)));
-            subDistrictSelect.disabled = false;
+            ));
+            subDistrictInput.disabled = false;
         });
 
-        subDistrictSelect.addEventListener('change', function () {
-            const province = provinceSelect.value.trim();
-            const district = districtSelect.value.trim();
-            const subdistrict = this.value.trim();
+        subDistrictInput.addEventListener('input', function () {
+            const province = provinceValue.value;
+            const district = districtValue.value;
+            const typed = this.value.trim();
 
-            selectedRow = thaiAddressData.find(
+            const match = thaiAddressData.find(
                 (d) =>
                     d.province_th.trim() === province &&
                     d.district_th.trim() === district &&
-                    d.subdistrict_th.trim() === subdistrict
+                    d.subdistrict_th.trim() === typed
             ) || null;
 
-            zipInput.value = selectedRow ? selectedRow.zip_code : '';
+            if (!match) {
+                subDistrictValue.value = '';
+                this.setCustomValidity(typed ? notMatchedMsg : '');
+                selectedRow = null;
+                zipInput.value = '';
+                compose();
+                return;
+            }
+
+            this.setCustomValidity('');
+            subDistrictValue.value = typed;
+            selectedRow = match;
+            zipInput.value = match.zip_code;
             compose();
         });
 
@@ -155,13 +214,13 @@ document.addEventListener('DOMContentLoaded', function () {
         prefillFromData();
 
         /**
-         * Restores this group's dropdowns/inputs from a previously-issued
-         * contract's stored address parts (see contracts/edit.blade.php +
-         * _address_group.blade.php's $prefill prop) — replays the same
-         * cascading change events a user triggers by hand, since province/
-         * district/subdistrict options only exist after their parent
-         * selection fires. Contracts issued before this field existed have
-         * no stored parts, so this is a no-op and the picker just starts empty.
+         * Restores this group's inputs from a previously-issued contract's
+         * stored address parts (see contracts/edit.blade.php +
+         * _address_group.blade.php's $prefill prop). Unlike a live typed
+         * match, prefill data is already known-good (it came from a
+         * confirmed selection when the contract was first issued), so this
+         * sets each level's visible+hidden values directly and rebuilds
+         * its datalist options itself rather than replaying `input` events.
          */
         function prefillFromData() {
             let data;
@@ -173,16 +232,33 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!data) return;
 
             if (data.province) {
-                provinceSelect.value = data.province;
-                provinceSelect.dispatchEvent(new Event('change'));
+                provinceInput.value = data.province;
+                provinceValue.value = data.province;
+                districtInput.disabled = false;
+                fillDatalist(districtList, uniqueSorted(
+                    thaiAddressData.filter((d) => d.province_th.trim() === data.province).map((d) => d.district_th.trim())
+                ));
             }
             if (data.district) {
-                districtSelect.value = data.district;
-                districtSelect.dispatchEvent(new Event('change'));
+                districtInput.value = data.district;
+                districtValue.value = data.district;
+                subDistrictInput.disabled = false;
+                fillDatalist(subDistrictList, uniqueSorted(
+                    thaiAddressData
+                        .filter((d) => d.province_th.trim() === data.province && d.district_th.trim() === data.district)
+                        .map((d) => d.subdistrict_th.trim())
+                ));
             }
             if (data.subdistrict) {
-                subDistrictSelect.value = data.subdistrict;
-                subDistrictSelect.dispatchEvent(new Event('change'));
+                subDistrictInput.value = data.subdistrict;
+                subDistrictValue.value = data.subdistrict;
+                selectedRow = thaiAddressData.find(
+                    (d) =>
+                        d.province_th.trim() === data.province &&
+                        d.district_th.trim() === data.district &&
+                        d.subdistrict_th.trim() === data.subdistrict
+                ) || null;
+                zipInput.value = selectedRow ? selectedRow.zip_code : '';
             }
             noInput.value = data.no || '';
             mooInput.value = data.moo || '';

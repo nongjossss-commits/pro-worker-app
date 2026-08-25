@@ -18,12 +18,11 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Traits\AddressFilterTrait;
-use App\Traits\DailyCheckTrait;
 use App\Traits\HasResolutionTab;
 
 class RenewalController extends Controller
 {
-    use AddressFilterTrait, DailyCheckTrait, HasResolutionTab;
+    use AddressFilterTrait, HasResolutionTab;
 
     public function __construct()
     {
@@ -159,12 +158,6 @@ class RenewalController extends Controller
             } elseif ($filter === 'appointment_completed') {
                  $totalEmployeesQuery->whereNotNull('appointment_date')
                        ->whereNotNull('appointment_completed_at');
-            } elseif ($filter === 'pending_daily_check') {
-                 $totalEmployeesQuery->where('daily_check_enabled', true)
-                   ->where(function ($sub) {
-                       $sub->whereNull('last_daily_checked_at')
-                         ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                   });
             } elseif (is_numeric($filter)) {
                  $totalEmployeesQuery->where('status', '!=', 'renewal_cancelled')
                     ->whereHas('registrationSteps', function($s) use ($filter) {
@@ -218,15 +211,6 @@ class RenewalController extends Controller
             ->whereNotNull('appointment_date')
             ->whereNotNull('appointment_completed_at')
             ->count();
-
-        // Total Daily Check Pending (Global)
-        $totalDailyCheckPending = (clone $statsQuery)
-
-            ->where('daily_check_enabled', true)
-            ->where(function ($q) {
-                $q->whereNull('last_daily_checked_at')
-                  ->orWhereDate('last_daily_checked_at', '<', now()->today());
-            })->count();
 
         // Total Employers (Global, relevant to search)
         $totalEmployers = (clone $statsQuery)
@@ -405,7 +389,6 @@ class RenewalController extends Controller
             $employer->activeEmployeesCount = 0;
             $employer->cancelledCount = 0;
             $employer->savedCount = 0;
-            $employer->dailyCheckPendingCount = 0;
         }
 
         // Per-tab target expiry config (fallback to legacy global key)
@@ -430,7 +413,6 @@ class RenewalController extends Controller
             'totalNotScheduled',
             'totalAppointmentsPending',
             'totalAppointmentsCompleted',
-            'totalDailyCheckPending',
             'steps',
             'stepStats',
             'employers',
@@ -653,13 +635,6 @@ class RenewalController extends Controller
             } elseif ($filter === 'appointment_completed') {
                  $q->whereNotNull('appointment_date')
                    ->whereNotNull('appointment_completed_at');
-            } elseif ($filter === 'pending_daily_check') {
-                 $q
-                   ->where('daily_check_enabled', true)
-                   ->where(function ($sub) {
-                       $sub->whereNull('last_daily_checked_at')
-                         ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                   });
             } elseif (is_numeric($filter)) { // Step ID (Highest Step Logic approximation for filter)
                  $q->where('status', '!=', 'renewal_cancelled')
                    ->whereRaw("
@@ -782,7 +757,7 @@ class RenewalController extends Controller
                  });
             }
 
-            $employees = $query->with('registrationSteps')->select('id', 'status', 'daily_check_enabled', 'last_daily_checked_at', 'resolution_completed_at')->get();
+            $employees = $query->with('registrationSteps')->select('id', 'status', 'resolution_completed_at')->get();
 
             // Calculate in PHP
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
@@ -790,7 +765,6 @@ class RenewalController extends Controller
             $empActiveCount = 0;
             $empCancelledCount = 0;
             $empSavedCount = 0;
-            $empDailyCheckPending = 0;
             $graceCutoff = now()->subHours(24);
 
             foreach ($employees as $emp) {
@@ -807,13 +781,6 @@ class RenewalController extends Controller
 
                 if ($stepOneId && in_array($emp->status, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
                     $empNotStarted++;
-                }
-
-                if ($emp->daily_check_enabled) {
-                    $last = $emp->last_daily_checked_at ? \Carbon\Carbon::parse($emp->last_daily_checked_at) : null;
-                    if (!$last || $last->lt(now()->startOfDay())) {
-                        $empDailyCheckPending++;
-                    }
                 }
 
                 // Step badge — same 24h grace as the global stats: completed
@@ -837,7 +804,6 @@ class RenewalController extends Controller
                 'activeEmployeesCount' => $empActiveCount,
                 'cancelledCount' => $empCancelledCount,
                 'savedCount' => $empSavedCount,
-                'dailyCheckPendingCount' => $empDailyCheckPending
             ];
         }
 
@@ -910,13 +876,6 @@ class RenewalController extends Controller
                  $query->whereIn('status', ['renewal_pending', 'renewal_completed'])
                        ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
                            $q->where('registration_steps.id', $stepOneId);
-                       });
-            } elseif ($filter === 'pending_daily_check') {
-                 $query->where('status', '!=', 'renewal_cancelled')
-                       ->where('daily_check_enabled', true)
-                       ->where(function ($sub) {
-                           $sub->whereNull('last_daily_checked_at')
-                             ->orWhereDate('last_daily_checked_at', '<', now()->today());
                        });
             } elseif (is_numeric($filter)) { // Step ID
                  $query->where('status', '!=', 'renewal_cancelled');
@@ -1781,14 +1740,6 @@ class RenewalController extends Controller
             }
             $activeStatuses = ['renewal_pending', 'renewal_completed'];
 
-            $globalDailyCheckPending = (clone $globalQuery)
-                ->whereIn('status', $activeStatuses)
-                ->where('daily_check_enabled', true)
-                ->where(function ($q) {
-                    $q->whereNull('last_daily_checked_at')
-                      ->orWhereDate('last_daily_checked_at', '<', now()->today());
-                })->count();
-
             $globalAppointmentsPending = (clone $globalQuery)
                 ->whereIn('status', $activeStatuses)
                 ->whereNotNull('appointment_date')
@@ -1848,7 +1799,6 @@ class RenewalController extends Controller
                 'html' => $this->getEmployeeCardHtml($employee),
                 'globalStats' => $globalStats,
                 'globalNotStarted' => $globalNotStarted,
-                'globalDailyCheckPending' => $globalDailyCheckPending,
                 'globalAppointmentsPending' => $globalAppointmentsPending,
                 'globalAppointmentsCompleted' => $globalAppointmentsCompleted,
                 'employerStats' => $employerStats,
@@ -2302,50 +2252,4 @@ class RenewalController extends Controller
         ]);
     }
 
-    /**
-     * Override DailyCheckTrait to accept $resolutionTab parameter.
-     */
-    public function toggleDailyCheck(Request $request, $resolutionTab, Employee $employee)
-    {
-        $this->resolveTab($resolutionTab, 'renewal');
-
-        if (!auth()->user()->can('edit-employees')) {
-            abort(403);
-        }
-
-        $employee->daily_check_enabled = !$employee->daily_check_enabled;
-        $employee->save();
-
-        return response()->json([
-            'success' => true,
-            'enabled' => $employee->daily_check_enabled,
-            'message' => $employee->daily_check_enabled ? 'Daily check enabled' : 'Daily check disabled',
-            'pending' => $employee->is_daily_check_pending
-        ]);
-    }
-
-    /**
-     * Override DailyCheckTrait to accept $resolutionTab parameter.
-     */
-    public function checkDaily(Request $request, $resolutionTab, Employee $employee)
-    {
-        $this->resolveTab($resolutionTab, 'renewal');
-
-        if (!auth()->user()->can('edit-employees')) {
-            abort(403);
-        }
-
-        if (!$employee->daily_check_enabled) {
-            return response()->json(['success' => false, 'message' => 'Daily check is disabled for this employee.'], 400);
-        }
-
-        $employee->last_daily_checked_at = now();
-        $employee->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Checked successfully',
-            'last_checked_at' => $employee->last_daily_checked_at->format('d/m/Y H:i')
-        ]);
-    }
 }

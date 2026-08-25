@@ -385,10 +385,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RegistrationController::class, 'updateAppointment'])->name('appointment');
         Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RegistrationController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
 
-        // Daily Check
-        Route::post('/{employee}/check-daily', [App\Http\Controllers\Production\RegistrationController::class, 'checkDaily'])->name('check_daily');
-        Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RegistrationController::class, 'toggleDailyCheck'])->name('toggle_daily_check');
-
         Route::post('/settings/notification', [App\Http\Controllers\Production\RegistrationController::class, 'updateNotificationSettings'])->name('settings.notification');
         Route::post('/settings/resolution', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionSettings'])->name('settings.resolution');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RegistrationController::class, 'getCalendarData'])->name('api.calendar');
@@ -437,10 +433,6 @@ Route::middleware(['auth'])->group(function () {
 
         // Insurance
         Route::post('/{employee}/update-insurance', [App\Http\Controllers\Production\RenewalController::class, 'updateInsurance'])->name('update_insurance');
-
-        // Daily Check
-        Route::post('/{employee}/check-daily', [App\Http\Controllers\Production\RenewalController::class, 'checkDaily'])->name('check_daily');
-        Route::post('/{employee}/toggle-daily-check', [App\Http\Controllers\Production\RenewalController::class, 'toggleDailyCheck'])->name('toggle_daily_check');
 
         // Appointments & Calendar
         Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RenewalController::class, 'updateAppointment'])->name('appointment');
@@ -653,7 +645,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/appointment', [\App\Http\Controllers\WorkflowController::class, 'updateAppointmentDate'])->name('workflow.item.appointment');
     Route::post('workflow/item/{item}/appointment-complete', [\App\Http\Controllers\WorkflowController::class, 'toggleAppointmentComplete'])->name('workflow.item.appointment_complete');
     Route::post('workflow/appointments/export', [\App\Http\Controllers\WorkflowController::class, 'exportAppointments'])->name('workflow.appointments.export');
-    Route::post('workflow/item/{item}/check-daily', [\App\Http\Controllers\WorkflowController::class, 'checkDaily'])->name('workflow.item.check_daily');
     Route::post('workflow/item/{item}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateRemarks'])->name('workflow.item.remarks');
     Route::post('workflow/order/{order}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateOrderRemarks'])->name('workflow.order.remarks');
     Route::post('workflow/order/{order}/mou-import-type', [\App\Http\Controllers\WorkflowController::class, 'updateMouImportType'])->name('workflow.order.mou_import_type');
@@ -696,6 +687,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/steps/reorder', [\App\Http\Controllers\WorkflowController::class, 'reorderSteps'])->name('workflow.steps.reorder');
     Route::post('workflow/settings/{workTypeId}/notification', [\App\Http\Controllers\WorkflowController::class, 'updateNotificationSettings'])->name('workflow.settings.notification');
     Route::post('workflow/settings/auto', [\App\Http\Controllers\WorkflowController::class, 'updateAutoSettings'])->name('workflow.settings.auto');
+
+    // โหมดเช็คงาน (Job Check Mode)
+    Route::get('job-check/status', [\App\Http\Controllers\JobCheckSessionController::class, 'status'])->name('job-check.status');
+    Route::get('job-check/history', [\App\Http\Controllers\JobCheckSessionController::class, 'history'])->name('job-check.history');
+    Route::post('job-check/summary', [\App\Http\Controllers\JobCheckSessionController::class, 'summarize'])->name('job-check.summary');
+    Route::post('job-check/start', [\App\Http\Controllers\JobCheckSessionController::class, 'start'])->name('job-check.start');
+    Route::post('job-check/cancel', [\App\Http\Controllers\JobCheckSessionController::class, 'cancel'])->name('job-check.cancel');
+    Route::post('job-check/finish', [\App\Http\Controllers\JobCheckSessionController::class, 'finish'])->name('job-check.finish');
+    Route::get('job-check/{session}/download/{type}', [\App\Http\Controllers\JobCheckSessionController::class, 'download'])->name('job-check.download');
 });
 
 use App\Http\Controllers\Admin\NotificationSettingController;

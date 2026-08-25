@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnforceContractStatus::class,
             // Pro Walker Labor: keep dedicated labor-* roles confined to that module.
             \App\Http\Middleware\ConfineToLaborModule::class,
+            // โหมดเช็คงาน: confine a user to Pre-Prod/Workflow/Registration/Renewal
+            // Resolution while they have an active Job Check session.
+            \App\Http\Middleware\EnforceJobCheckMode::class,
         ]);
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
