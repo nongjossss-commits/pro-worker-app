@@ -2,19 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
 use App\Models\JobCheckSession;
-use App\Models\JobCheckSessionSnapshot;
-use App\Models\ProductionItem;
 use App\Services\AccountingPeriodService;
-use Carbon\Carbon;
+use App\Services\JobCheckService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * "โหมดเช็คงาน" (Job Check Mode) — lets an operator snapshot the current
@@ -23,27 +16,26 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  * final state against that snapshot when done. Comparing only final vs
  * initial state (not an action log) means a tick-then-undo nets out to "no
  * movement" automatically — no special-case logic needed for that.
+ *
+ * Snapshot/diff/export logic lives in JobCheckService (shared with the
+ * scheduled app:auto-finish-stale-job-check-sessions command, which force-
+ * closes a session the user forgot to finish before the next 05:00
+ * cutover).
  */
 class JobCheckSessionController extends Controller
 {
-    protected const MENU_LABELS = [
-        'pre_production' => 'Pre-Production',
-        'workflow' => 'Workflow',
-        'registration_resolution' => 'มติลงทะเบียน',
-        'renewal_resolution' => 'มติต่ออายุ',
-    ];
-
-    public function __construct()
+    public function __construct(protected JobCheckService $jobCheckService)
     {
         $this->middleware('auth');
     }
 
     public function status(Request $request)
     {
-        $session = JobCheckSession::active()->where('user_id', $request->user()->id)->first();
+        $session = JobCheckSession::current()->where('user_id', $request->user()->id)->first();
 
         return response()->json([
             'active' => (bool) $session,
+            'status' => $session?->status,
             'session_id' => $session?->id,
             'started_at' => $session?->started_at?->toIso8601String(),
             'snapshot_count' => $session ? $session->snapshots()->count() : 0,
@@ -56,7 +48,7 @@ class JobCheckSessionController extends Controller
             abort(403);
         }
 
-        $session = JobCheckSession::active()->where('user_id', $request->user()->id)->first();
+        $session = JobCheckSession::current()->where('user_id', $request->user()->id)->first();
 
         if (!$session) {
             $session = JobCheckSession::create([
@@ -65,16 +57,38 @@ class JobCheckSessionController extends Controller
                 'started_at' => now(),
             ]);
 
-            $this->takeSnapshot($session);
+            $this->jobCheckService->takeSnapshot($session);
         }
 
+        // ?_jc=1 marks THIS tab as the one participating in Job Check Mode
+        // — see EnforceJobCheckMode + job-check-widget.blade.php's marker
+        // propagation script. Without it, opening a second browser tab
+        // would silently get dragged into the confinement too.
+        return redirect()->route('workflow.index', ['_jc' => 1])
+            ->with('success', __('Job Check Mode started. You are now confined to Pre-Production, Workflow, Registration Resolution, and Renewal Resolution in this tab until you finish.'));
+    }
+
+    public function pause(Request $request)
+    {
+        $session = JobCheckSession::active()->where('user_id', $request->user()->id)->firstOrFail();
+        $session->update(['status' => 'paused']);
+
         return redirect()->route('workflow.index')
-            ->with('success', __('Job Check Mode started. You are now confined to Pre-Production, Workflow, Registration Resolution, and Renewal Resolution until you finish.'));
+            ->with('success', __('Job Check Mode paused. You can work anywhere until you resume.'));
+    }
+
+    public function resume(Request $request)
+    {
+        $session = JobCheckSession::where('user_id', $request->user()->id)->where('status', 'paused')->firstOrFail();
+        $session->update(['status' => 'active']);
+
+        return redirect()->route('workflow.index', ['_jc' => 1])
+            ->with('success', __('Job Check Mode resumed in this tab.'));
     }
 
     public function cancel(Request $request)
     {
-        $session = JobCheckSession::active()->where('user_id', $request->user()->id)->firstOrFail();
+        $session = JobCheckSession::current()->where('user_id', $request->user()->id)->firstOrFail();
         $session->snapshots()->delete();
         $session->update(['status' => 'cancelled', 'ended_at' => now()]);
 
@@ -83,31 +97,14 @@ class JobCheckSessionController extends Controller
 
     public function finish(Request $request)
     {
-        $session = JobCheckSession::active()->where('user_id', $request->user()->id)->firstOrFail();
+        $session = JobCheckSession::current()->where('user_id', $request->user()->id)->firstOrFail();
 
-        $now = now();
-        [$moved, $notMoved] = $this->diff($session, $now);
-
-        Storage::disk('local')->makeDirectory("job-check/{$session->id}");
-        $this->writeWorkbook($moved, Storage::disk('local')->path("job-check/{$session->id}/moved.xlsx"));
-        $this->writeWorkbook($notMoved, Storage::disk('local')->path("job-check/{$session->id}/not_moved.xlsx"));
-
-        $businessDate = AccountingPeriodService::businessDate($now);
-        $sequence = (int) (JobCheckSession::where('business_date', $businessDate->toDateString())
-            ->where('status', 'completed')
-            ->max('sequence_in_day') ?? 0) + 1;
-
-        $session->update([
-            'status' => 'completed',
-            'ended_at' => $now,
-            'business_date' => $businessDate,
-            'sequence_in_day' => $sequence,
-        ]);
+        $result = $this->jobCheckService->completeSession($session, now());
 
         return response()->json([
             'success' => true,
-            'moved_count' => array_sum(array_map('count', $moved)),
-            'not_moved_count' => array_sum(array_map('count', $notMoved)),
+            'moved_count' => $result['moved_count'],
+            'not_moved_count' => $result['not_moved_count'],
             'download_moved' => route('job-check.download', ['session' => $session->id, 'type' => 'moved']),
             'download_not_moved' => route('job-check.download', ['session' => $session->id, 'type' => 'not_moved']),
         ]);
@@ -211,8 +208,9 @@ class JobCheckSessionController extends Controller
     /**
      * Reads one previously-exported workbook and tallies rows per employer
      * into $summary by reference. Relies on the fixed column layout written
-     * by writeWorkbook() (A=name, B=employer, D=step before, E=step after)
-     * — both are owned by this same feature, so the coupling is safe.
+     * by JobCheckService::writeWorkbook() (A=No., B=name, C=employer,
+     * D=sub-tab, E=request no., F=step before, G=step after, ...) — both
+     * are owned by this same feature, so the coupling is safe.
      */
     protected function ingestWorkbook(string $path, string $source, array &$summary): void
     {
@@ -225,15 +223,16 @@ class JobCheckSessionController extends Controller
 
             foreach ($rows as $row) {
                 // Column layout written by writeWorkbook(): 0=No., 1=name,
-                // 2=employer, 3=request no., 4=step before, 5=step after, ...
+                // 2=employer, 3=sub-tab, 4=request no., 5=step before,
+                // 6=step after, ...
                 $name = trim((string) ($row[1] ?? ''));
                 $employer = trim((string) ($row[2] ?? '')) ?: '-';
                 if ($name === '' && $employer === '-') {
                     continue; // fully blank row
                 }
 
-                $stepBefore = trim((string) ($row[4] ?? '')) ?: '-';
-                $stepAfter = trim((string) ($row[5] ?? '')) ?: '-';
+                $stepBefore = trim((string) ($row[5] ?? '')) ?: '-';
+                $stepAfter = trim((string) ($row[6] ?? '')) ?: '-';
 
                 if (!isset($summary[$employer])) {
                     $summary[$employer] = [
@@ -256,310 +255,5 @@ class JobCheckSessionController extends Controller
                 }
             }
         }
-    }
-
-    // ------------------------------------------------------------------
-    // Snapshot
-    // ------------------------------------------------------------------
-
-    protected function takeSnapshot(JobCheckSession $session): void
-    {
-        $this->snapshotEmployees($session, 'registration_resolution', 'registration_pending', 'registration');
-        $this->snapshotEmployees($session, 'renewal_resolution', 'renewal_pending', 'renewal');
-        $this->snapshotItems($session, 'pre_production', true);
-        $this->snapshotItems($session, 'workflow', false);
-    }
-
-    protected function snapshotEmployees(JobCheckSession $session, string $menu, string $status, string $tabType): void
-    {
-        $rows = [];
-        $now = now();
-
-        Employee::where('status', $status)
-            ->whereHas('resolutionTab', fn ($q) => $q->where('type', $tabType))
-            ->with('registrationSteps')
-            ->chunkById(200, function ($employees) use (&$rows, $session, $menu, $now, $tabType) {
-                foreach ($employees as $employee) {
-                    $rows[] = [
-                        'job_check_session_id' => $session->id,
-                        'menu' => $menu,
-                        'subject_type' => Employee::class,
-                        'subject_id' => $employee->id,
-                        'employer_id' => $employee->employer_id,
-                        'resolution_tab_id' => $employee->resolution_tab_id,
-                        'production_order_id' => null,
-                        'initial_state' => json_encode($this->employeeState($employee, $tabType)),
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ];
-                    if (count($rows) >= 500) {
-                        JobCheckSessionSnapshot::insert($rows);
-                        $rows = [];
-                    }
-                }
-            });
-
-        if (!empty($rows)) {
-            JobCheckSessionSnapshot::insert($rows);
-        }
-    }
-
-    protected function snapshotItems(JobCheckSession $session, string $menu, bool $preProduction): void
-    {
-        $rows = [];
-        $now = now();
-
-        ProductionItem::whereHas('order', function ($q) use ($preProduction) {
-                if ($preProduction) {
-                    $q->where('status', 'pre_production');
-                } else {
-                    $q->where('status', '!=', 'pre_production')->where('status', '!=', 'cancelled');
-                }
-            })
-            ->where('status', '!=', 'cancelled')
-            ->with(['completedWorkTypeSteps', 'order'])
-            ->chunkById(200, function ($items) use (&$rows, $session, $menu, $now) {
-                foreach ($items as $item) {
-                    $rows[] = [
-                        'job_check_session_id' => $session->id,
-                        'menu' => $menu,
-                        'subject_type' => ProductionItem::class,
-                        'subject_id' => $item->id,
-                        'employer_id' => $item->order->employer_id ?? null,
-                        'resolution_tab_id' => null,
-                        'production_order_id' => $item->production_order_id,
-                        'initial_state' => json_encode($this->itemState($item)),
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ];
-                    if (count($rows) >= 500) {
-                        JobCheckSessionSnapshot::insert($rows);
-                        $rows = [];
-                    }
-                }
-            });
-
-        if (!empty($rows)) {
-            JobCheckSessionSnapshot::insert($rows);
-        }
-    }
-
-    protected function employeeState(Employee $employee, string $tabType): array
-    {
-        $steps = $employee->registrationSteps;
-        $requestNumber = $tabType === 'renewal' ? $employee->renewal_request_number : $employee->registration_request_number;
-        $remarks = $tabType === 'renewal' ? $employee->renewal_remarks : $employee->registration_remarks;
-
-        return [
-            'status' => $employee->status,
-            'step_ids' => $steps->pluck('id')->sort()->values()->all(),
-            'highest_step_name' => $steps->sortByDesc('order')->first()?->name,
-            'request_number' => $requestNumber ?: ($employee->request_number ?: '-'),
-            'remarks' => $remarks ?: '-',
-        ];
-    }
-
-    protected function itemState(ProductionItem $item): array
-    {
-        $steps = $item->completedWorkTypeSteps;
-
-        return [
-            'status' => $item->status,
-            'step_ids' => $steps->pluck('id')->sort()->values()->all(),
-            'highest_step_name' => $steps->sortByDesc('order')->first()?->name,
-            'request_number' => $item->request_number ?: '-',
-            'remarks' => $item->remarks ?: '-',
-        ];
-    }
-
-    // ------------------------------------------------------------------
-    // Diff
-    // ------------------------------------------------------------------
-
-    /**
-     * @return array{0: array<string, array>, 1: array<string, array>} [moved rows by menu, not-moved rows by menu]
-     */
-    protected function diff(JobCheckSession $session, Carbon $checkedAt): array
-    {
-        $moved = array_fill_keys(array_keys(self::MENU_LABELS), []);
-        $notMoved = array_fill_keys(array_keys(self::MENU_LABELS), []);
-
-        $this->diffSubjectType($session, Employee::class, $checkedAt, $moved, $notMoved);
-        $this->diffSubjectType($session, ProductionItem::class, $checkedAt, $moved, $notMoved);
-
-        return [$moved, $notMoved];
-    }
-
-    /**
-     * Diff all snapshots of one subject type, bulk-loading the current
-     * state per chunk (whereIn) instead of querying per row — avoids N+1
-     * across what can be thousands of snapshot rows.
-     */
-    protected function diffSubjectType(JobCheckSession $session, string $subjectType, Carbon $checkedAt, array &$moved, array &$notMoved): void
-    {
-        $session->snapshots()
-            ->where('subject_type', $subjectType)
-            ->with('employer')
-            ->chunkById(200, function ($snapshots) use ($subjectType, $checkedAt, &$moved, &$notMoved) {
-                $ids = $snapshots->pluck('subject_id')->all();
-
-                if ($subjectType === Employee::class) {
-                    $subjects = Employee::withTrashed()->with('registrationSteps')->whereIn('id', $ids)->get()->keyBy('id');
-                } else {
-                    $subjects = ProductionItem::withTrashed()->with('completedWorkTypeSteps')->whereIn('id', $ids)->get()->keyBy('id');
-                }
-
-                foreach ($snapshots as $snapshot) {
-                    $this->diffOne($snapshot, $subjects->get($snapshot->subject_id), $checkedAt, $moved, $notMoved);
-                }
-            });
-    }
-
-    protected function diffOne(JobCheckSessionSnapshot $snapshot, $subject, Carbon $checkedAt, array &$moved, array &$notMoved): void
-    {
-        $initial = $snapshot->initial_state;
-        $menu = $snapshot->menu;
-        $employerName = $snapshot->employer?->employerNameTh ?: ($snapshot->employer?->employerNameEn ?: '-');
-
-        if (!$subject) {
-            $moved[$menu][] = $this->row('-', $employerName, $initial['request_number'] ?? '-', $initial['highest_step_name'] ?? '-', __('Deleted'), $this->statusLabel($initial['status']), __('Deleted'), $initial['remarks'] ?? '-', $checkedAt);
-            return;
-        }
-
-        if ($subject instanceof Employee) {
-            $tabType = $menu === 'renewal_resolution' ? 'renewal' : 'registration';
-            $current = $this->employeeState($subject, $tabType);
-            $nameEn = $this->titledName($subject->employeeTitleEn, $subject->employeeNameEn);
-        } else {
-            $current = $this->itemState($subject);
-            $nameEn = $subject->employee
-                ? $this->titledName($subject->employee->employeeTitleEn, $subject->employee->employeeNameEn)
-                : ($subject->new_employee_data['name_en'] ?? '-');
-        }
-
-        $stepsChanged = $initial['step_ids'] !== $current['step_ids'];
-        $statusChanged = $initial['status'] !== $current['status'];
-
-        $row = $this->row(
-            $nameEn,
-            $employerName,
-            $current['request_number'] ?? ($initial['request_number'] ?? '-'),
-            $initial['highest_step_name'] ?? '-',
-            $current['highest_step_name'] ?? '-',
-            $this->statusLabel($initial['status']),
-            $this->statusLabel($current['status']),
-            // Remarks is display-only context, never part of movement
-            // detection — always the CURRENT text (not the snapshot's),
-            // so notes added/edited during the session still show up here
-            // even for employees with no step/status movement.
-            $current['remarks'] ?? ($initial['remarks'] ?? '-'),
-            $checkedAt
-        );
-
-        if ($stepsChanged || $statusChanged) {
-            $moved[$menu][] = $row;
-        } else {
-            $notMoved[$menu][] = $row;
-        }
-    }
-
-    protected function row(string $nameEn, string $employer, string $requestNumber, string $stepBefore, string $stepAfter, string $statusBefore, string $statusAfter, string $remarks, Carbon $checkedAt): array
-    {
-        return [
-            'name_en' => $nameEn,
-            'employer' => $employer,
-            'request_number' => $requestNumber,
-            'step_before' => $stepBefore,
-            'step_after' => $stepAfter,
-            'status_before' => $statusBefore,
-            'status_after' => $statusAfter,
-            'remarks' => $remarks,
-            'checked_at' => $checkedAt->format('d/m/Y H:i'),
-        ];
-    }
-
-    protected function statusLabel(?string $status): string
-    {
-        return match ($status) {
-            'registration_pending', 'renewal_pending', 'pending' => __('Pending'),
-            'registration_completed', 'renewal_completed', 'completed' => __('Completed'),
-            'registration_cancelled', 'renewal_cancelled', 'cancelled' => __('Cancelled'),
-            default => $status ?? '-',
-        };
-    }
-
-    protected function titledName(?string $title, ?string $name): string
-    {
-        $name = trim((string) $name);
-        if ($name === '') {
-            return '-';
-        }
-
-        $title = trim((string) $title);
-
-        return $title !== '' ? "{$title} {$name}" : $name;
-    }
-
-    // ------------------------------------------------------------------
-    // Excel export
-    // ------------------------------------------------------------------
-
-    protected function writeWorkbook(array $rowsByMenu, string $absolutePath): void
-    {
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->removeSheetByIndex(0);
-
-        $first = true;
-        foreach (self::MENU_LABELS as $menuKey => $menuLabel) {
-            $sheet = $spreadsheet->createSheet();
-            $sheet->setTitle($menuLabel);
-            if ($first) {
-                $spreadsheet->setActiveSheetIndex(0);
-                $first = false;
-            }
-
-            $headers = [
-                __('No.'),
-                __('Employee Name (EN)'),
-                __('Employer'),
-                __('Request No.'),
-                __('Step Before'),
-                __('Step After'),
-                __('Status Before'),
-                __('Status After'),
-                __('Remarks'),
-                __('Checked At'),
-            ];
-            $sheet->fromArray($headers, null, 'A1');
-            $sheet->getStyle('A1:J1')->getFont()->setBold(true);
-            $sheet->getStyle('A1:J1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF2F2F2');
-            $sheet->getStyle('A1:J1')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-            $rowNum = 2;
-            $seq = 1;
-            foreach ($rowsByMenu[$menuKey] ?? [] as $row) {
-                $sheet->fromArray([
-                    $seq,
-                    $row['name_en'],
-                    $row['employer'],
-                    $row['request_number'],
-                    $row['step_before'],
-                    $row['step_after'],
-                    $row['status_before'],
-                    $row['status_after'],
-                    $row['remarks'],
-                    $row['checked_at'],
-                ], null, "A{$rowNum}");
-                $rowNum++;
-                $seq++;
-            }
-
-            foreach (range('A', 'J') as $col) {
-                $sheet->getColumnDimension($col)->setAutoSize(true);
-            }
-        }
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($absolutePath);
     }
 }

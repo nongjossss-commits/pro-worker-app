@@ -513,6 +513,34 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (!currentTxnId) return;
+
+        // No bank account selected — that payment won't post into the
+        // ledger at all, so confirm the user really means to record it
+        // that way rather than silently accepting it (or, previously,
+        // silently blocking it behind a required Notes field).
+        const bankAccountSelect = form.querySelector('[name="bank_account_id"]');
+        if (bankAccountSelect && !bankAccountSelect.value) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '{{ __('No bank account selected') }}',
+                    text: '{{ __('You have not selected a bank account. This payment will not be posted to any bank balance. Save it anyway?') }}',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '{{ __('Save anyway') }}',
+                    cancelButtonText: '{{ __('Cancel') }}',
+                }).then(function (result) {
+                    if (result.isConfirmed) submitQuickPayment();
+                });
+            } else if (confirm('{{ __('You have not selected a bank account. This payment will not be posted to any bank balance. Save it anyway?') }}')) {
+                submitQuickPayment();
+            }
+            return;
+        }
+
+        submitQuickPayment();
+    });
+
+    function submitQuickPayment() {
         const submitBtn = document.getElementById('qpSubmitBtn');
         submitBtn.disabled = true;
         const originalHtml = submitBtn.innerHTML;
@@ -564,7 +592,7 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalHtml;
         });
-    });
+    }
 });
 </script>
 

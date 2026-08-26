@@ -14,6 +14,18 @@ use Symfony\Component\HttpFoundation\Response;
  * 'workflow.*' and 'production.*' route names. This is checked against the
  * DB (not the PHP session) so the restriction survives logout/browser close
  * and resumes automatically on the next login, per the user's requirement.
+ *
+ * Confinement is additionally scoped to whichever browser TAB actually
+ * started/resumed the mode: the request must also carry the per-tab marker
+ * (query/input `_jc=1`, or header X-Job-Check-Tab) that
+ * job-check-widget.blade.php's script latches into that tab's
+ * sessionStorage and replays on every same-tab navigation/AJAX call
+ * afterwards. A request with no marker (e.g. a brand new second tab) is
+ * never blocked — the user can open another tab to do unrelated work
+ * without it being silently dragged into the confined menus, and can
+ * explicitly opt that tab in via the widget if they want it to
+ * participate too. A 'paused' session (status other than 'active') never
+ * confines anything, in any tab.
  */
 class EnforceJobCheckMode
 {
@@ -53,7 +65,10 @@ class EnforceJobCheckMode
                 ->where('status', 'active')
                 ->exists();
 
-            if ($hasActiveSession) {
+            $tabIsInCheckMode = $request->boolean('_jc')
+                || $request->header('X-Job-Check-Tab') === '1';
+
+            if ($hasActiveSession && $tabIsInCheckMode) {
                 $routeName = $request->route()?->getName();
 
                 $onAllowedPrefix = $routeName && collect(self::ALLOWED_ROUTE_PREFIXES)

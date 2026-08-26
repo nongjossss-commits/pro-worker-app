@@ -693,6 +693,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('job-check/history', [\App\Http\Controllers\JobCheckSessionController::class, 'history'])->name('job-check.history');
     Route::post('job-check/summary', [\App\Http\Controllers\JobCheckSessionController::class, 'summarize'])->name('job-check.summary');
     Route::post('job-check/start', [\App\Http\Controllers\JobCheckSessionController::class, 'start'])->name('job-check.start');
+    Route::post('job-check/pause', [\App\Http\Controllers\JobCheckSessionController::class, 'pause'])->name('job-check.pause');
+    Route::post('job-check/resume', [\App\Http\Controllers\JobCheckSessionController::class, 'resume'])->name('job-check.resume');
     Route::post('job-check/cancel', [\App\Http\Controllers\JobCheckSessionController::class, 'cancel'])->name('job-check.cancel');
     Route::post('job-check/finish', [\App\Http\Controllers\JobCheckSessionController::class, 'finish'])->name('job-check.finish');
     Route::get('job-check/{session}/download/{type}', [\App\Http\Controllers\JobCheckSessionController::class, 'download'])->name('job-check.download');

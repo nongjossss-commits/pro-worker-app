@@ -26,6 +26,9 @@ Schedule::command('app:apply-workflow-settings')->hourly();
 // can `restore` to undo a finalize. Supports per-tab and legacy global keys.
 Schedule::command('app:update-resolution-data')->hourly();
 
-// โหมดเช็คงาน: keep only the last 7 business days (05:00 cutoff) of
-// completed check-session reports; runs shortly after the cutoff moment.
+// โหมดเช็คงาน: force-close any session still active/paused right at the
+// 05:00 business-day cutover (user forgot to press "Finish"), then, a few
+// minutes later, purge completed check-session reports older than the
+// last 7 business days.
+Schedule::command('app:auto-finish-stale-job-check-sessions')->dailyAt('05:00');
 Schedule::command('app:cleanup-job-check-sessions')->dailyAt('05:15');

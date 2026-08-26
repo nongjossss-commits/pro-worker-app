@@ -38,4 +38,15 @@ class JobCheckSession extends Model
     {
         return $query->where('status', 'active');
     }
+
+    /**
+     * Active OR paused — a session that "exists" from the user's point of
+     * view (still shows in the widget, still confines its owning tab) even
+     * though pausing releases the menu confinement itself. Kept distinct
+     * from scopeActive(), which the middleware needs to stay strict about.
+     */
+    public function scopeCurrent($query)
+    {
+        return $query->whereIn('status', ['active', 'paused']);
+    }
 }

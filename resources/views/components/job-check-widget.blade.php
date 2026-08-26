@@ -1,6 +1,6 @@
 @php
     $jobCheckSession = auth()->check()
-        ? \App\Models\JobCheckSession::active()->where('user_id', auth()->id())->first()
+        ? \App\Models\JobCheckSession::current()->where('user_id', auth()->id())->first()
         : null;
 @endphp
 
@@ -10,7 +10,9 @@
         onclick="jobCheckOpen()">
     <i class="bi bi-clipboard-check-fill me-1"></i> {{ __('Job Check Mode') }}
     @if($jobCheckSession)
-        <span class="badge bg-danger ms-1">{{ __('Active') }}</span>
+        <span class="badge {{ $jobCheckSession->status === 'paused' ? 'bg-secondary' : 'bg-danger' }} ms-1">
+            {{ $jobCheckSession->status === 'paused' ? __('Paused') : __('Active') }}
+        </span>
     @endif
 </button>
 
@@ -26,6 +28,7 @@
                 <p>{{ __('When you enter Job Check Mode, the system immediately records the current step/status of every employee in Pre-Production, Workflow, Registration Resolution, and Renewal Resolution.') }}</p>
                 <p>{{ __('After this, you may only work inside these 4 menus until you finish. When you finish and confirm, the system compares the final state against what it recorded at the start, and exports two Excel files: employees with movement, and employees with no movement — organized by menu.') }}</p>
                 <p class="text-muted small mb-0">{{ __('A wrong tick that gets corrected back to its original state will not count as movement — only the final state matters.') }}</p>
+                <p class="text-muted small mb-0">{{ __('Need a break? Press Pause — you can work anywhere in the meantime and resume later without losing progress or restarting the check.') }}</p>
             </div>
             <div class="modal-footer justify-content-between">
                 <div>
@@ -49,17 +52,26 @@
 </div>
 
 @if($jobCheckSession)
-{{-- Active mode modal --}}
+{{-- Active/paused mode modal --}}
 <div class="modal fade" id="jobCheckActiveModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-warning-subtle">
-                <h5 class="modal-title"><i class="bi bi-clipboard-check-fill me-1"></i> {{ __('Job Check Mode is active') }}</h5>
+            <div class="modal-header {{ $jobCheckSession->status === 'paused' ? 'bg-secondary-subtle' : 'bg-warning-subtle' }}">
+                <h5 class="modal-title"><i class="bi bi-clipboard-check-fill me-1"></i>
+                    {{ $jobCheckSession->status === 'paused' ? __('Job Check Mode is paused') : __('Job Check Mode is active') }}
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
             </div>
             <div class="modal-body">
                 <p class="mb-1">{{ __('Started at') }}: {{ $jobCheckSession->started_at->format('d/m/Y H:i') }}</p>
-                <p class="text-muted small">{{ __('You are confined to Pre-Production, Workflow, Registration Resolution, and Renewal Resolution until you finish or cancel.') }}</p>
+                @if($jobCheckSession->status === 'paused')
+                    <p class="text-muted small mb-0">{{ __('Paused — you can work anywhere in every tab until you resume. Your progress so far is kept; resuming does not restart the check.') }}</p>
+                @else
+                    <p class="text-muted small mb-2">{{ __('You are confined to Pre-Production, Workflow, Registration Resolution, and Renewal Resolution in this tab until you finish, cancel, or pause.') }}</p>
+                    <p class="small text-muted mb-1" id="jobCheckTabStatusText"></p>
+                    <button type="button" id="jobCheckTabJoinBtn" class="btn btn-link btn-sm p-0 text-decoration-none d-none" onclick="jobCheckJoinTab()">{{ __('Join Job Check Mode in this tab') }}</button>
+                    <button type="button" id="jobCheckTabLeaveBtn" class="btn btn-link btn-sm p-0 text-decoration-none d-none" onclick="jobCheckLeaveTab()">{{ __('Work normally in this tab instead') }}</button>
+                @endif
             </div>
             <div class="modal-footer justify-content-between">
                 <div>
@@ -75,6 +87,17 @@
                         @csrf
                         <button type="submit" class="btn btn-outline-danger btn-sm">{{ __('Cancel Mode (No Export)') }}</button>
                     </form>
+                    @if($jobCheckSession->status === 'paused')
+                        <form method="POST" action="{{ route('job-check.resume') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-warning btn-sm">{{ __('Resume') }}</button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('job-check.pause') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">{{ __('Pause') }}</button>
+                        </form>
+                    @endif
                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#jobCheckFinishConfirmModal" data-bs-dismiss="modal">
                         {{ __('Finish') }}
                     </button>
@@ -188,6 +211,125 @@
 @once
 @push('scripts')
 <script>
+    // ------------------------------------------------------------------
+    // Per-tab Job Check Mode marker — sessionStorage is isolated per browser
+    // tab, so this is what lets a second tab stay unconfined by default
+    // instead of silently inheriting the mode from whichever tab actually
+    // started/resumed it. The tab that runs start()/resume() lands back
+    // here with ?_jc=1 in the URL (see JobCheckSessionController), which
+    // latches 'in' into this tab's sessionStorage; from then on this
+    // script re-attaches the marker (query param on links/forms, header on
+    // fetch/XHR) to every same-tab request so EnforceJobCheckMode keeps
+    // recognizing it as confined. A tab with no marker is never blocked —
+    // the user can open a new tab to work elsewhere freely, and opt it
+    // into Job Check Mode explicitly via the widget if they want it to
+    // participate too.
+    // ------------------------------------------------------------------
+    (function () {
+        var STORAGE_KEY = 'jobCheckTabMode'; // 'in' | 'out'
+
+        function getTabMode() {
+            try { return sessionStorage.getItem(STORAGE_KEY); } catch (e) { return null; }
+        }
+        function setTabMode(v) {
+            try { sessionStorage.setItem(STORAGE_KEY, v); } catch (e) {}
+        }
+
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('_jc') === '1') {
+            setTabMode('in');
+            params.delete('_jc');
+            var cleanUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '') + window.location.hash;
+            window.history.replaceState({}, '', cleanUrl);
+        }
+
+        function isSameOrigin(url) {
+            try { return new URL(url, window.location.origin).origin === window.location.origin; } catch (e) { return false; }
+        }
+
+        document.addEventListener('click', function (e) {
+            if (getTabMode() !== 'in') return;
+            var a = e.target.closest('a[href]');
+            if (!a) return;
+            var href = a.getAttribute('href');
+            if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+            if (!isSameOrigin(a.href)) return;
+            var url = new URL(a.href, window.location.origin);
+            if (!url.searchParams.has('_jc')) {
+                url.searchParams.set('_jc', '1');
+                a.href = url.toString();
+            }
+        }, true);
+
+        document.addEventListener('submit', function (e) {
+            if (getTabMode() !== 'in') return;
+            var form = e.target;
+            if (!(form instanceof HTMLFormElement)) return;
+            var action = form.getAttribute('action') || window.location.href;
+            if (!isSameOrigin(action)) return;
+            if (!form.querySelector('input[name="_jc"]')) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = '_jc';
+                input.value = '1';
+                form.appendChild(input);
+            }
+        }, true);
+
+        var origFetch = window.fetch;
+        if (origFetch) {
+            window.fetch = function (input, init) {
+                if (getTabMode() === 'in' && typeof input === 'string' && isSameOrigin(input)) {
+                    init = init ? Object.assign({}, init) : {};
+                    var headers = new Headers(init.headers || {});
+                    headers.set('X-Job-Check-Tab', '1');
+                    init.headers = headers;
+                }
+                return origFetch.call(this, input, init);
+            };
+        }
+
+        var origOpen = XMLHttpRequest.prototype.open;
+        var origSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function (method, url) {
+            this.__jcUrl = url;
+            return origOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function () {
+            if (getTabMode() === 'in' && this.__jcUrl && isSameOrigin(this.__jcUrl)) {
+                try { this.setRequestHeader('X-Job-Check-Tab', '1'); } catch (e) {}
+            }
+            return origSend.apply(this, arguments);
+        };
+
+        function renderTabStatus() {
+            var el = document.getElementById('jobCheckTabStatusText');
+            var joinBtn = document.getElementById('jobCheckTabJoinBtn');
+            var leaveBtn = document.getElementById('jobCheckTabLeaveBtn');
+            if (!el) return;
+            if (getTabMode() === 'in') {
+                el.textContent = '{{ __('This tab: participating in Job Check Mode.') }}';
+                if (joinBtn) joinBtn.classList.add('d-none');
+                if (leaveBtn) leaveBtn.classList.remove('d-none');
+            } else {
+                el.textContent = '{{ __('This tab: working normally, not confined.') }}';
+                if (joinBtn) joinBtn.classList.remove('d-none');
+                if (leaveBtn) leaveBtn.classList.add('d-none');
+            }
+        }
+
+        window.jobCheckJoinTab = function () {
+            setTabMode('in');
+            window.location.href = '{{ route('workflow.index') }}?_jc=1';
+        };
+        window.jobCheckLeaveTab = function () {
+            setTabMode('out');
+            renderTabStatus();
+        };
+
+        document.addEventListener('DOMContentLoaded', renderTabStatus);
+    })();
+
     function jobCheckOpen() {
         var activeModalEl = document.getElementById('jobCheckActiveModal');
         if (activeModalEl) {

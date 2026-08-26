@@ -236,11 +236,13 @@ class FinancialController extends Controller
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             // If no bank account is picked, the payment won't post into
-            // "บันทึกรายรับรายจ่าย" at all (see below) — require a note
-            // explaining where the money actually went instead, so there's
-            // always a written record even when it's not attributed to a
-            // specific account yet.
-            'notes' => 'required_without:bank_account_id|nullable|string'
+            // "บันทึกรายรับรายจ่าย" at all (see below). Notes are NOT
+            // required in that case — the frontend instead asks the user
+            // to confirm they really mean to save without a bank account,
+            // and any explanation is theirs to add voluntarily. (If a hard
+            // requirement to always pick a bank account is wanted later,
+            // that's a deliberate future change, not this one.)
+            'notes' => 'nullable|string'
         ]);
 
         // เก็บไฟล์ก่อน DB transaction — ถ้า DB fail จะลบไฟล์ใน catch
@@ -276,8 +278,9 @@ class FinancialController extends Controller
                 // mutating current_balance directly — see LedgerService and
                 // its 05:00-cutoff lock (AccountingPeriodService). A
                 // payment with no bank_account_id has nothing to post
-                // against, so it's skipped here (its `notes`, required
-                // above, is the record of where it went).
+                // against, so it's skipped here — the frontend confirms
+                // with the user before allowing that, and any `notes` are
+                // whatever explanation they chose to add.
                 if ($payment->bank_account_id) {
                     app(LedgerService::class)->createEntry([
                         'entry_date' => $payment->paid_at->toDateString(),
@@ -352,7 +355,10 @@ class FinancialController extends Controller
             'paid_at' => 'required|date',
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'slip_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-            'notes' => 'required_without:bank_account_id|nullable|string'
+            // Same as storePayment() — no bank account no longer forces
+            // notes to be filled in; the frontend confirms with the user
+            // instead. See the comment there for the full reasoning.
+            'notes' => 'nullable|string'
         ]);
 
         $oldSlipPath = $payment->slip_path;

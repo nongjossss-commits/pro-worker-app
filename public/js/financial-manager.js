@@ -28,6 +28,8 @@ if (typeof window.financialManager === 'undefined') {
             tierEmployeeFilter: 'active', // 'active' or 'cancelled'
             newTransactionEmployeeFilter: 'active',
             editTransactionEmployeeFilter: 'active',
+            newTransactionSearch: '',
+            editTransactionSearch: '',
 
             // Tax Settings
             vatEnabled: true,
@@ -244,20 +246,13 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             selectAllForModal() {
-                // Use allEmployeesForTier to respect filters (locked items) and include candidates
-                const sourceList = this.allEmployeesForTier;
-
-                if (this.modalSearch) {
-                    const term = this.modalSearch.toLowerCase();
-                    const visibleIds = sourceList
-                        .filter(i => i.name.toLowerCase().includes(term))
-                        .map(i => i.id);
-
-                    // Union with existing selection
-                    this.modalSelectedIds = [...new Set([...this.modalSelectedIds, ...visibleIds])];
-                } else {
-                    this.modalSelectedIds = sourceList.map(i => i.id);
-                }
+                // allEmployeesForTier already reflects the active/cancelled
+                // filter AND the search box (see its getter), so this just
+                // selects everything currently visible — union'd with the
+                // existing selection so items hidden by the current search
+                // aren't silently unselected.
+                const visibleIds = this.allEmployeesForTier.map(i => i.id);
+                this.modalSelectedIds = [...new Set([...this.modalSelectedIds, ...visibleIds])];
             },
 
             deselectAllForModal() {
@@ -283,6 +278,21 @@ if (typeof window.financialManager === 'undefined') {
             isCancelledStatus(status) {
                 if (!status) return false;
                 return status.endsWith('cancelled') || status === 'cancelled';
+            },
+
+            // Shared search-matching for every employee-picker list in this
+            // component (Price Tier modal, New Transaction, Edit Transaction)
+            // — matches name (Thai + English), passport, work permit,
+            // เลขประจำตัว, เลข RA, and รหัสพนักงาน (reference no.), not just
+            // the display name.
+            matchesEmployeeSearch(item, query) {
+                if (!query) return true;
+                const term = query.toLowerCase();
+                const fields = [
+                    item.name, item.name_en, item.title_en, item.passport,
+                    item.work_permit, item.id_number, item.ra_number, item.reference_id,
+                ];
+                return fields.some(f => f && String(f).toLowerCase().includes(term));
             },
 
             get allEmployeesForTier() {
@@ -381,11 +391,19 @@ if (typeof window.financialManager === 'undefined') {
                         employee_id: emp.id,
                         last_step_name: emp.last_step_name,
                         status: emp.status,
+                        work_permit: emp.work_permit,
+                        id_number: emp.id_number,
+                        ra_number: emp.ra_number,
+                        reference_id: emp.reference_id,
                         type: 'employee'
                     });
                 });
 
-                return list;
+                // Apply search the same way as the active/cancelled filter
+                // above (inside the getter, so x-for adds/removes matching
+                // DOM nodes) rather than hiding rows afterward with x-show,
+                // which Alpine wasn't reliably reacting to for this list.
+                return list.filter(i => this.matchesEmployeeSearch(i, this.modalSearch));
             },
 
             get availableItems() {
@@ -454,6 +472,10 @@ if (typeof window.financialManager === 'undefined') {
                         has_visa: item.has_visa,
                         last_step_name: item.last_step_name,
                         status: item.status,
+                        work_permit: item.work_permit,
+                        id_number: item.id_number,
+                        ra_number: item.ra_number,
+                        reference_id: item.reference_id,
                         type: 'item'
                     });
                 });
@@ -480,12 +502,16 @@ if (typeof window.financialManager === 'undefined') {
                             has_visa: emp.has_visa,
                             last_step_name: emp.last_step_name,
                             status: emp.status,
+                            work_permit: emp.work_permit,
+                            id_number: emp.id_number,
+                            ra_number: emp.ra_number,
+                            reference_id: emp.reference_id,
                             type: 'employee'
                         });
                     });
                 }
 
-                return list;
+                return list.filter(i => this.matchesEmployeeSearch(i, this.newTransactionSearch));
             },
 
             get editModalItems() {
@@ -558,6 +584,10 @@ if (typeof window.financialManager === 'undefined') {
                             has_visa: item.has_visa,
                             last_step_name: item.last_step_name,
                             status: item.status,
+                            work_permit: item.work_permit,
+                            id_number: item.id_number,
+                            ra_number: item.ra_number,
+                            reference_id: item.reference_id,
                             type: 'item',
                             attached: isAttached
                         });
@@ -587,13 +617,17 @@ if (typeof window.financialManager === 'undefined') {
                             has_visa: emp.has_visa,
                             last_step_name: emp.last_step_name,
                             status: emp.status,
+                            work_permit: emp.work_permit,
+                            id_number: emp.id_number,
+                            ra_number: emp.ra_number,
+                            reference_id: emp.reference_id,
                             type: 'employee',
                             attached: attachedEmployeeIds.has(emp.id)
                         });
                     });
                 }
 
-                return list;
+                return list.filter(i => this.matchesEmployeeSearch(i, this.editTransactionSearch));
             },
 
             isItemAttached(itemId) {
@@ -613,7 +647,11 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             selectAllAvailable() {
-                this.selectedTransactionItems = this.availableItems.map(i => i.id);
+                // availableItems already reflects the search box (see its
+                // getter) — union with existing selection so a search
+                // doesn't silently drop previously-selected employees.
+                const visibleIds = this.availableItems.map(i => i.id);
+                this.selectedTransactionItems = [...new Set([...this.selectedTransactionItems, ...visibleIds])];
                 this.recalcAmount();
             },
 
@@ -763,6 +801,23 @@ if (typeof window.financialManager === 'undefined') {
                     return;
                 }
 
+                if (!this.newPayment.bank_account_id) {
+                    this._safeFire({
+                        title: 'No bank account selected',
+                        text: 'This payment will not be posted to any bank balance. Save it anyway?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Save anyway',
+                    }).then((result) => {
+                        if (result.isConfirmed) this._submitAddPayment();
+                    });
+                    return;
+                }
+
+                this._submitAddPayment();
+            },
+
+            _submitAddPayment() {
                 this.isSavingPayment = true;
                 const formData = new FormData();
                 formData.append('amount', this.newPayment.amount);
@@ -841,6 +896,23 @@ if (typeof window.financialManager === 'undefined') {
                     return;
                 }
 
+                if (!this.newPayment.bank_account_id) {
+                    this._safeFire({
+                        title: 'No bank account selected',
+                        text: 'This payment will not be posted to any bank balance. Save it anyway?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Save anyway',
+                    }).then((result) => {
+                        if (result.isConfirmed) this._submitUpdatePayment();
+                    });
+                    return;
+                }
+
+                this._submitUpdatePayment();
+            },
+
+            _submitUpdatePayment() {
                 this.isSavingPayment = true;
                 const formData = new FormData();
                 formData.append('_method', 'PUT');

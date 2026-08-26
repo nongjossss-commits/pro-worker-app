@@ -39,7 +39,14 @@
             'has_visa' => $emp ? !empty($emp->visaExpiryDate) : false,
             'employee_id' => $item->employee_id,
             'last_step_name' => $lastStepName,
-            'status' => $item->status
+            'status' => $item->status,
+            // Extra searchable identifiers — see matchesEmployeeSearch() in
+            // financial-manager.js. Temp (not-yet-created) employees have
+            // none of these yet, so they simply won't match on them.
+            'work_permit' => $emp ? $emp->employeeWorkPermit : '',
+            'id_number' => $emp ? $emp->employee_id_number : '',
+            'ra_number' => $emp ? $emp->name_list_number : '',
+            'reference_id' => $emp ? $emp->employee_reference_id : ''
         ];
     })) }},
     employees: {{ json_encode(($employees ?? collect())->map(function($emp) {
@@ -59,7 +66,11 @@
             'passport' => $emp->employeePassport,
             'has_visa' => !empty($emp->visaExpiryDate),
             'last_step_name' => $lastStepName,
-            'status' => $emp->status
+            'status' => $emp->status,
+            'work_permit' => $emp->employeeWorkPermit,
+            'id_number' => $emp->employee_id_number,
+            'ra_number' => $emp->name_list_number,
+            'reference_id' => $emp->employee_reference_id
         ];
     })) }},
     productionId: {{ $production->id }},
@@ -731,7 +742,7 @@ class="row">
                             </li>
                         </ul>
                         <div class="d-flex gap-1 w-50">
-                            <input type="text" class="form-control form-control-sm" placeholder="Search..." x-model="modalSearch">
+                            <input type="text" class="form-control form-control-sm" placeholder="{{ __('Search by name, passport, work permit, ID no., RA no., reference no....') }}" x-model="modalSearch">
                             <button class="btn btn-sm btn-outline-secondary" @click="selectAllForModal()" title="Select All Visible">
                                 <i class="bi bi-check-all"></i>
                             </button>
@@ -743,7 +754,6 @@ class="row">
                     <div class="list-group list-group-flush border rounded small" style="max-height: 300px; overflow-y: auto;">
                         <template x-for="item in allEmployeesForTier" :key="item.id">
                             <label class="list-group-item list-group-item-action d-flex gap-2 align-items-center py-2"
-                                   x-show="!modalSearch || item.name.toLowerCase().includes(modalSearch.toLowerCase())"
                                    style="cursor: pointer;">
                                 <input class="form-check-input me-1 mt-0" type="checkbox" :value="item.id" x-model="modalSelectedIds">
 
@@ -967,6 +977,7 @@ class="row">
                                         <button class="nav-link w-100 py-0" :class="{ 'active': newTransactionEmployeeFilter === 'cancelled' }" @click="newTransactionEmployeeFilter = 'cancelled'" type="button">Cancelled</button>
                                     </li>
                                 </ul>
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="{{ __('Search by name, passport, work permit, ID no., RA no., reference no....') }}" x-model="newTransactionSearch">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div class="small text-muted" style="font-size: 0.75rem;">
                                         Selected: <span x-text="selectedTransactionItems.length"></span>
@@ -1309,13 +1320,14 @@ class="row">
                                         <button class="nav-link w-100 py-0" :class="{ 'active': editTransactionEmployeeFilter === 'cancelled' }" @click="editTransactionEmployeeFilter = 'cancelled'" type="button">Cancelled</button>
                                     </li>
                                 </ul>
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="{{ __('Search by name, passport, work permit, ID no., RA no., reference no....') }}" x-model="editTransactionSearch">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div class="small text-muted" style="font-size: 0.75rem;">
                                         Selected: <span x-text="selectedTransactionItems.length"></span>
                                         <span x-show="pricingMode === 'per_head'">(Auto-calc active)</span>
                                     </div>
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = editModalItems.map(i => i.id); recalcEditAmount()">All</button>
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = [...new Set([...selectedTransactionItems, ...editModalItems.map(i => i.id)])]; recalcEditAmount()">All</button>
                                         <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = []; recalcEditAmount()">None</button>
                                     </div>
                                 </div>
