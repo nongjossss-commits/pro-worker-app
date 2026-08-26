@@ -1800,7 +1800,7 @@ class WorkflowController extends Controller
      */
     public function restoreItem(Request $request, $itemId)
     {
-        $item = ProductionItem::findOrFail($itemId);
+        $item = ProductionItem::with(['order.workType', 'employee'])->findOrFail($itemId);
         // Reset completed_at so if finalized again, timer restarts.
         // Also clear the MOU-applied flag so the next finalize gets a fresh
         // 24h window and re-evaluates the admin settings.
@@ -1809,6 +1809,30 @@ class WorkflowController extends Controller
             'completed_at' => null,
             'workflow_settings_applied' => false,
         ]);
+
+        // Undo finalizeItem()'s notify_out side effect: it marks the
+        // employee terminated_at/status='resigned' when that item is
+        // finalized. Restoring the item back to pending must also lift
+        // that mark, or the employee is left permanently invisible in the
+        // main Employees list (its index hides anyone with terminated_at
+        // set) even though they're clearly still active in Workflow.
+        // Only revert if terminated_at still matches THIS item's
+        // notify_out_date — i.e. it really was this finalize that set it,
+        // not an unrelated, legitimate termination recorded some other way
+        // (e.g. the direct "Terminate Employee" form). Status is only
+        // reset if nothing since has moved it off 'resigned', so a later
+        // legitimate status change (e.g. a new renewal starting) isn't
+        // clobbered.
+        $slug = $item->order->workType->slug ?? null;
+        if ($slug === 'notify_out' && $item->employee && $item->notify_out_date
+            && $item->employee->terminated_at
+            && $item->employee->terminated_at->equalTo($item->notify_out_date)) {
+            $item->employee->update([
+                'terminated_at' => null,
+                'termination_reason' => null,
+                'status' => $item->employee->status === 'resigned' ? 'active' : $item->employee->status,
+            ]);
+        }
 
         // Recalculate Stats
         $orderStats = $this->calculateOrderStats($item->order);
