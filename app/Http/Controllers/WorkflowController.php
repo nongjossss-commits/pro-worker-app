@@ -1545,6 +1545,7 @@ class WorkflowController extends Controller
         if ($request->has('employee_ids')) {
             $ids = $request->employee_ids;
             $groupName = $request->group_name ?? null;
+            $orderWorkTypeSlug = $order->workType->slug ?? null;
 
             foreach ($ids as $empId) {
                 // Locking: Check if employee is already in an active workflow (Scoped to WorkType)
@@ -1573,6 +1574,40 @@ class WorkflowController extends Controller
                         'group_name' => $groupName,
                         'status' => 'pending'
                     ]);
+
+                    // "แจ้งเข้า / เปลี่ยนนายจ้าง" — if this employee was
+                    // previously notified out (terminated_at set) from
+                    // another employer, being picked up here means they're
+                    // actively rejoining under this new employer right
+                    // now, not still "notified out". Move them immediately
+                    // — same field update as the manual bulk-transfer
+                    // action on the Notified-Out Employees page — rather
+                    // than waiting for this item to be finalized, so they
+                    // don't stay stuck in that list while genuinely back
+                    // to work. Employees who are NOT currently notified
+                    // out are untouched here.
+                    if ($orderWorkTypeSlug === 'notify_in') {
+                        $emp = Employee::find($empId);
+                        if ($emp && $emp->terminated_at) {
+                            $oldEmployerId = $emp->employer_id;
+                            $oldEmployerName = optional($emp->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
+                            $newEmployerName = optional($order->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
+
+                            $emp->update([
+                                'employer_id' => $order->employer_id,
+                                'terminated_at' => null,
+                                'termination_reason' => null,
+                                'status' => 'active',
+                            ]);
+
+                            ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $emp->getRawOriginal('employeeNameEn') . ' จาก ' . $oldEmployerName . ' ไป ' . $newEmployerName . ' (แจ้งเข้า/เปลี่ยนนายจ้างใน Workflow)', Employee::class, $emp->id, [
+                                'old_employer_id' => $oldEmployerId,
+                                'old_employer_name' => $oldEmployerName,
+                                'new_employer_id' => $order->employer_id,
+                                'new_employer_name' => $newEmployerName,
+                            ]);
+                        }
+                    }
                 }
             }
         }

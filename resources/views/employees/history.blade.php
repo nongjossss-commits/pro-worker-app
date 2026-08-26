@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title', 'ประวัติการจ้างงาน')
+@section('title', 'ลูกจ้างที่ถูกแจ้งออก')
 
 @section('content')
 <x-help-button manual="employment_history" title="{{ __('Employment History') }}" />
 <div class="p-4 p-md-5 content-section">
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">
-        ประวัติการจ้างงานทั้งหมด (รวม: {{ $totalEmployees }} คน)
+        ลูกจ้างที่ถูกแจ้งออกทั้งหมด (รวม: {{ $totalEmployees }} คน)
     </h4>
 </div>
 
@@ -82,7 +82,7 @@
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])
                 </div>
             @empty
-                <p class="text-center text-muted">ไม่พบประวัติการจ้างงาน</p>
+                <p class="text-center text-muted">ไม่พบลูกจ้างที่ถูกแจ้งออก</p>
             @endforelse
         </div>
     @else
@@ -138,7 +138,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted">ไม่พบประวัติการจ้างงาน</td>
+                        <td colspan="6" class="text-center text-muted">ไม่พบลูกจ้างที่ถูกแจ้งออก</td>
                     </tr>
                     @endforelse
                 </tbody>
