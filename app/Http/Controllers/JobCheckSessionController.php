@@ -73,6 +73,10 @@ class JobCheckSessionController extends Controller
         $session = JobCheckSession::active()->where('user_id', $request->user()->id)->firstOrFail();
         $session->update(['status' => 'paused']);
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'status' => 'paused']);
+        }
+
         return redirect()->route('workflow.index')
             ->with('success', __('Job Check Mode paused. You can work anywhere until you resume.'));
     }
@@ -81,6 +85,10 @@ class JobCheckSessionController extends Controller
     {
         $session = JobCheckSession::where('user_id', $request->user()->id)->where('status', 'paused')->firstOrFail();
         $session->update(['status' => 'active']);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'status' => 'active']);
+        }
 
         return redirect()->route('workflow.index', ['_jc' => 1])
             ->with('success', __('Job Check Mode resumed in this tab.'));

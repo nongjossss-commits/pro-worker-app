@@ -10,7 +10,8 @@
         onclick="jobCheckOpen()">
     <i class="bi bi-clipboard-check-fill me-1"></i> {{ __('Job Check Mode') }}
     @if($jobCheckSession)
-        <span class="badge {{ $jobCheckSession->status === 'paused' ? 'bg-secondary' : 'bg-danger' }} ms-1">
+        <span id="jobCheckStatusBadge"
+              class="badge {{ $jobCheckSession->status === 'paused' ? 'bg-secondary' : 'bg-danger' }} ms-1">
             {{ $jobCheckSession->status === 'paused' ? __('Paused') : __('Active') }}
         </span>
     @endif
@@ -56,22 +57,24 @@
 <div class="modal fade" id="jobCheckActiveModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header {{ $jobCheckSession->status === 'paused' ? 'bg-secondary-subtle' : 'bg-warning-subtle' }}">
+            <div class="modal-header {{ $jobCheckSession->status === 'paused' ? 'bg-secondary-subtle' : 'bg-warning-subtle' }}" id="jobCheckActiveModalHeader">
                 <h5 class="modal-title"><i class="bi bi-clipboard-check-fill me-1"></i>
-                    {{ $jobCheckSession->status === 'paused' ? __('Job Check Mode is paused') : __('Job Check Mode is active') }}
+                    <span id="jobCheckModalTitleActive" {{ $jobCheckSession->status === 'paused' ? 'hidden' : '' }}>{{ __('Job Check Mode is active') }}</span>
+                    <span id="jobCheckModalTitlePaused" {{ $jobCheckSession->status === 'paused' ? '' : 'hidden' }}>{{ __('Job Check Mode is paused') }}</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
             </div>
             <div class="modal-body">
                 <p class="mb-1">{{ __('Started at') }}: {{ $jobCheckSession->started_at->format('d/m/Y H:i') }}</p>
-                @if($jobCheckSession->status === 'paused')
+                <div id="jobCheckBodyPaused" {{ $jobCheckSession->status === 'paused' ? '' : 'hidden' }}>
                     <p class="text-muted small mb-0">{{ __('Paused — you can work anywhere in every tab until you resume. Your progress so far is kept; resuming does not restart the check.') }}</p>
-                @else
+                </div>
+                <div id="jobCheckBodyActive" {{ $jobCheckSession->status === 'paused' ? 'hidden' : '' }}>
                     <p class="text-muted small mb-2">{{ __('You are confined to Pre-Production, Workflow, Registration Resolution, and Renewal Resolution in this tab until you finish, cancel, or pause.') }}</p>
                     <p class="small text-muted mb-1" id="jobCheckTabStatusText"></p>
                     <button type="button" id="jobCheckTabJoinBtn" class="btn btn-link btn-sm p-0 text-decoration-none d-none" onclick="jobCheckJoinTab()">{{ __('Join Job Check Mode in this tab') }}</button>
                     <button type="button" id="jobCheckTabLeaveBtn" class="btn btn-link btn-sm p-0 text-decoration-none d-none" onclick="jobCheckLeaveTab()">{{ __('Work normally in this tab instead') }}</button>
-                @endif
+                </div>
             </div>
             <div class="modal-footer justify-content-between">
                 <div>
@@ -87,17 +90,14 @@
                         @csrf
                         <button type="submit" class="btn btn-outline-danger btn-sm">{{ __('Cancel Mode (No Export)') }}</button>
                     </form>
-                    @if($jobCheckSession->status === 'paused')
-                        <form method="POST" action="{{ route('job-check.resume') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-warning btn-sm">{{ __('Resume') }}</button>
-                        </form>
-                    @else
-                        <form method="POST" action="{{ route('job-check.pause') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-secondary btn-sm">{{ __('Pause') }}</button>
-                        </form>
-                    @endif
+                    <form method="POST" action="{{ route('job-check.resume') }}" id="jobCheckResumeForm" class="{{ $jobCheckSession->status === 'paused' ? 'd-inline' : 'd-none' }}">
+                        @csrf
+                        <button type="submit" class="btn btn-warning btn-sm">{{ __('Resume') }}</button>
+                    </form>
+                    <form method="POST" action="{{ route('job-check.pause') }}" id="jobCheckPauseForm" class="{{ $jobCheckSession->status === 'paused' ? 'd-none' : 'd-inline' }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">{{ __('Pause') }}</button>
+                    </form>
                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#jobCheckFinishConfirmModal" data-bs-dismiss="modal">
                         {{ __('Finish') }}
                     </button>
@@ -253,6 +253,12 @@
             if (!a) return;
             var href = a.getAttribute('href');
             if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+            // File downloads and "open in new tab" links are not navigation
+            // away from the current page — tagging them with _jc=1 would
+            // either get the download blocked or latch a fresh tab into the
+            // confined mode against the user's intent.
+            if (a.hasAttribute('download')) return;
+            if ((a.getAttribute('target') || '').toLowerCase() === '_blank') return;
             if (!isSameOrigin(a.href)) return;
             var url = new URL(a.href, window.location.origin);
             if (!url.searchParams.has('_jc')) {
@@ -328,6 +334,107 @@
         };
 
         document.addEventListener('DOMContentLoaded', renderTabStatus);
+
+        // ------------------------------------------------------------------
+        // Pause / Resume without reloading the page. The user asked to keep
+        // working from wherever they are instead of being bounced back to
+        // Workflow and losing their place. We flip the session status via a
+        // background POST and repaint the widget + modal in place. The tab
+        // marker ('in') is never cleared, so once the session is 'active'
+        // again this tab is confined again automatically.
+        // ------------------------------------------------------------------
+        var ON_CONFINED_PAGE = {{ request()->routeIs('workflow.*', 'production.*') ? 'true' : 'false' }};
+
+        function applyStatus(status) {
+            var paused = status === 'paused';
+
+            var badge = document.getElementById('jobCheckStatusBadge');
+            if (badge) {
+                badge.classList.toggle('bg-secondary', paused);
+                badge.classList.toggle('bg-danger', !paused);
+                badge.textContent = paused ? '{{ __('Paused') }}' : '{{ __('Active') }}';
+            }
+
+            var header = document.getElementById('jobCheckActiveModalHeader');
+            if (header) {
+                header.classList.toggle('bg-secondary-subtle', paused);
+                header.classList.toggle('bg-warning-subtle', !paused);
+            }
+
+            var titleActive = document.getElementById('jobCheckModalTitleActive');
+            var titlePaused = document.getElementById('jobCheckModalTitlePaused');
+            if (titleActive) titleActive.hidden = paused;
+            if (titlePaused) titlePaused.hidden = !paused;
+
+            var bodyActive = document.getElementById('jobCheckBodyActive');
+            var bodyPaused = document.getElementById('jobCheckBodyPaused');
+            if (bodyActive) bodyActive.hidden = paused;
+            if (bodyPaused) bodyPaused.hidden = !paused;
+
+            var pauseForm = document.getElementById('jobCheckPauseForm');
+            var resumeForm = document.getElementById('jobCheckResumeForm');
+            if (pauseForm) { pauseForm.classList.toggle('d-none', paused); pauseForm.classList.toggle('d-inline', !paused); }
+            if (resumeForm) { resumeForm.classList.toggle('d-none', !paused); resumeForm.classList.toggle('d-inline', paused); }
+
+            renderTabStatus();
+        }
+
+        function submitStatusChange(form, targetStatus) {
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) btn.disabled = true;
+
+            fetch(form.getAttribute('action'), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(function (res) { return res.ok ? res.json() : Promise.reject(res); })
+            .then(function () {
+                if (btn) btn.disabled = false;
+                applyStatus(targetStatus);
+
+                if (targetStatus === 'paused') {
+                    if (window.showToast) showToast('{{ __('Job Check Mode paused. You can work anywhere until you resume.') }}', 'success');
+                } else {
+                    // Resuming from outside the 4 menus: there is nothing to
+                    // "continue" on this page, so send them back in. From
+                    // inside, stay exactly where they are.
+                    if (!ON_CONFINED_PAGE) {
+                        setTabMode('in');
+                        window.location.href = '{{ route('workflow.index') }}?_jc=1';
+                        return;
+                    }
+                    setTabMode('in');
+                    if (window.showToast) showToast('{{ __('Job Check Mode resumed in this tab.') }}', 'success');
+                }
+            })
+            .catch(function () {
+                if (btn) btn.disabled = false;
+                // Fall back to the plain form submit (full reload) so the
+                // action still goes through if the AJAX call failed.
+                form.submit();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var pauseForm = document.getElementById('jobCheckPauseForm');
+            var resumeForm = document.getElementById('jobCheckResumeForm');
+            if (pauseForm) {
+                pauseForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    submitStatusChange(pauseForm, 'paused');
+                });
+            }
+            if (resumeForm) {
+                resumeForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    submitStatusChange(resumeForm, 'active');
+                });
+            }
+        });
     })();
 
     function jobCheckOpen() {

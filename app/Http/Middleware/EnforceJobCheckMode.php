@@ -68,7 +68,20 @@ class EnforceJobCheckMode
             $tabIsInCheckMode = $request->boolean('_jc')
                 || $request->header('X-Job-Check-Tab') === '1';
 
-            if ($hasActiveSession && $tabIsInCheckMode) {
+            // Confinement only applies to full-page navigation — i.e. the
+            // user actually browsing to another menu's page. In-page tools
+            // fired from inside the 4 confined menus (bulk download, PDF
+            // generation, the operator-assign popup, and every AJAX save)
+            // are POST requests or XHR/fetch calls that operate on the
+            // employees being checked; blocking those breaks the tools
+            // without the user ever leaving the menus, so they pass through.
+            $isFullPageNavigation = ($request->isMethod('GET') || $request->isMethod('HEAD'))
+                && !$request->ajax()
+                && !$request->expectsJson()
+                && !$request->pjax()
+                && $request->header('Sec-Fetch-Dest') !== 'empty';
+
+            if ($hasActiveSession && $tabIsInCheckMode && $isFullPageNavigation) {
                 $routeName = $request->route()?->getName();
 
                 $onAllowedPrefix = $routeName && collect(self::ALLOWED_ROUTE_PREFIXES)
