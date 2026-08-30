@@ -218,66 +218,11 @@
         <div class="tab-pane fade {{ $activeTab === 'attachment-settings' ? 'show active' : '' }}" id="attachment-settings" role="tabpanel" aria-labelledby="attachment-settings-tab">
 
             <div class="row">
-                <!-- Swap Files Section -->
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100 border-warning">
-                        <div class="card-header bg-warning text-dark fw-bold">
-                            <i class="bi bi-arrow-left-right"></i> Swap Attachment Files (One-Time Operation)
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info py-2 small">
-                                This will physically swap the uploaded files for all existing users in the system. <br>
-                                <strong>Note:</strong> This is a one-time operation. It does not affect newly created users.
-                            </div>
-
-                            <form id="mass-swap-form" action="{{ route('super-admin.attachments.swap') }}" method="POST">
-                                @csrf
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Entity Type</label>
-                                    <select class="form-select" name="entity_type" id="swapEntityType" required onchange="updateSwapFields()">
-                                        <option value="employee">Employee</option>
-                                        <option value="employer">Employer</option>
-                                    </select>
-                                </div>
-
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">From Field</label>
-                                        <select class="form-select" name="from_field" id="swapFromField" required>
-                                            <!-- Populated by JS -->
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">To Field</label>
-                                        <select class="form-select" name="to_field" id="swapToField" required>
-                                            <!-- Populated by JS -->
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold">Swap Behavior</label>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="mode" id="modeSwap" value="swap" checked>
-                                        <label class="form-check-label" for="modeSwap">
-                                            <strong>Swap Both:</strong> File A goes to B, File B goes to A. (Keeps both files)
-                                        </label>
-                                    </div>
-                                    <div class="form-check mt-2">
-                                        <input class="form-check-input" type="radio" name="mode" id="modeMoveDelete" value="move_delete">
-                                        <label class="form-check-label text-danger" for="modeMoveDelete">
-                                            <strong>Move & Delete:</strong> File A moves to B. The old file in B is PERMANENTLY DELETED. Field A becomes empty.
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="d-grid">
-                                    <button type="button" class="btn btn-warning fw-bold" onclick="confirmMassSwap()">Execute Mass Swap</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+                {{-- The old "Swap Attachment Files" tool (system-wide, all employees at
+                     once) was removed from here — it's now the "Move Attachment Files"
+                     bulk action next to the employee checkboxes on the Employees,
+                     Notified-Out Employees, Registration Resolution, and Renewal
+                     Resolution pages, scoped to whichever employees are selected. --}}
 
                 <!-- Update Descriptions Section -->
                 <div class="col-md-6 mb-4">
@@ -1312,63 +1257,6 @@
         });
     }
 
-    // Attachment Swap logic
-    const employeeFields = [
-        { value: 'employee_doc_1', text: 'Document 1' },
-        { value: 'employee_doc_2', text: 'Document 2' },
-        { value: 'employee_doc_3', text: 'Document 3' },
-        { value: 'employee_doc_4', text: 'Document 4' },
-        { value: 'employee_doc_5', text: 'Document 5' },
-        { value: 'employee_doc_6', text: 'Document 6' },
-        { value: 'employee_doc_7', text: 'Document 7' },
-        { value: 'employee_doc_8', text: 'Document 8' },
-        { value: 'employee_doc_9', text: 'Document 9 (Other 1)' },
-        { value: 'employee_doc_10', text: 'Document 10 (Other 2)' },
-        { value: 'employee_doc_11', text: 'Document 11 (Other 3)' },
-        { value: 'employee_doc_12', text: 'Document 12 (Other 4)' },
-        { value: 'employee_doc_13', text: 'Document 13 (Other 5)' },
-        { value: 'employee_doc_14', text: 'Document 14 (Other 6)' },
-        { value: 'employee_doc_15', text: 'Document 15 (Other 7)' },
-        { value: 'employee_doc_16', text: 'Document 16 (Other 8)' },
-        { value: 'employee_doc_17', text: 'Document 17 (Other 9)' },
-        { value: 'employee_doc_18', text: 'Document 18 (Other 10)' },
-    ];
-
-    const employerFields = [
-        { value: 'employer_doc_company', text: 'Company Document (1)' },
-        { value: 'employer_doc_lease', text: 'Lease Agreement (2)' },
-        { value: 'employer_doc_construction', text: 'Construction Document (3)' },
-        { value: 'employer_doc_other_1', text: 'Other 1 (4)' },
-        { value: 'employer_doc_other_2', text: 'Other 2 (5)' },
-        { value: 'employer_doc_other_3', text: 'Other 3 (6)' },
-    ];
-
-    function updateSwapFields() {
-        const type = document.getElementById('swapEntityType').value;
-        const fromSelect = document.getElementById('swapFromField');
-        const toSelect = document.getElementById('swapToField');
-
-        fromSelect.innerHTML = '';
-        toSelect.innerHTML = '';
-
-        const fields = type === 'employee' ? employeeFields : employerFields;
-
-        fields.forEach(f => {
-            fromSelect.add(new Option(f.text, f.value));
-            toSelect.add(new Option(f.text, f.value));
-        });
-
-        // Set default selection to something different for convenience
-        if(toSelect.options.length > 1) {
-            toSelect.selectedIndex = 1;
-        }
-    }
-
-    // Initialize fields on load
-    document.addEventListener("DOMContentLoaded", function() {
-        updateSwapFields();
-    });
-
     function confirmDeleteProfile(profileId) {
         Swal.fire({
             title: 'Are you sure?',
@@ -1381,22 +1269,6 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 document.getElementById('delete-profile-form-' + profileId).submit();
-            }
-        });
-    }
-
-    function confirmMassSwap() {
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "Are you sure you want to perform this mass file operation? This cannot be easily undone.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#f39c12',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, execute swap!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('mass-swap-form').submit();
             }
         });
     }

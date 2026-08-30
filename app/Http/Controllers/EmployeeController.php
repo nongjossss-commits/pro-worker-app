@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use App\Traits\AddressFilterTrait;
+use Illuminate\Validation\Rule;
 use Symfony\Component\Process\Process;
 
 class EmployeeController extends Controller
@@ -1538,6 +1539,72 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         return response()->json(['success' => true, 'message' => 'Selected employees transferred successfully.']);
+    }
+
+    /**
+     * Super Admin only — move/swap/merge one attachment slot into another
+     * for a checkbox-selected batch of employees. Replaces the old
+     * settings-page "swap all employees system-wide" tool, which was too
+     * blunt: different resolution groups often have their attachments in
+     * different positions, so a blanket move would corrupt unrelated
+     * employees. This only ever touches the IDs explicitly selected.
+     */
+    public function bulkMoveAttachments(Request $request)
+    {
+        if (!auth()->user()->hasRole('super-admin')) {
+            abort(403);
+        }
+
+        $allowedFields = array_map(fn ($i) => "employee_doc_{$i}", range(1, 18));
+
+        $validated = $request->validate([
+            'employee_ids' => 'required|array|min:1',
+            'employee_ids.*' => 'integer|exists:employees,id',
+            'from_field' => ['required', 'string', Rule::in($allowedFields)],
+            'to_field' => ['required', 'string', Rule::in($allowedFields), 'different:from_field'],
+            'mode' => 'required|in:swap,move_delete,merge_append',
+        ]);
+
+        $employeeIds = array_values(array_unique(array_map('intval', $validated['employee_ids'])));
+
+        // Called directly (not via Bus::dispatchSync) — for a ShouldQueue
+        // job, dispatchSync() runs it through the sync queue connection and
+        // does NOT hand back handle()'s return value, only a push result.
+        // Still implements ShouldQueue so this could be switched to a real
+        // queued dispatch() later without any other code changes.
+        $result = (new \App\Jobs\ProcessBulkAttachmentMove(
+            $employeeIds,
+            $validated['from_field'],
+            $validated['to_field'],
+            $validated['mode'],
+        ))->handle();
+
+        ActivityLogHelper::logAction(
+            'bulk_move_attachments',
+            "ย้ายไฟล์แนบ ({$validated['mode']}) จาก {$validated['from_field']} ไป {$validated['to_field']} — เลือก " . count($employeeIds) . " คน, ย้ายสำเร็จ {$result['moved']} คน" . ($result['failed'] > 0 ? ", ล้มเหลว {$result['failed']} คน" : ''),
+            Employee::class,
+            null,
+            [
+                'mode' => $validated['mode'],
+                'from_field' => $validated['from_field'],
+                'to_field' => $validated['to_field'],
+                'employee_count' => count($employeeIds),
+                'employee_ids' => array_slice($employeeIds, 0, 50),
+                'moved' => $result['moved'],
+                'skipped' => $result['skipped'],
+                'failed' => $result['failed'],
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'moved' => $result['moved'],
+            'skipped' => $result['skipped'],
+            'failed' => $result['failed'],
+            'message' => "ย้ายไฟล์สำเร็จ {$result['moved']} คน"
+                . ($result['skipped'] > 0 ? ", ไม่มีไฟล์ให้ย้าย {$result['skipped']} คน" : '')
+                . ($result['failed'] > 0 ? ", ล้มเหลว {$result['failed']} คน (ดู log)" : ''),
+        ]);
     }
 
     /**

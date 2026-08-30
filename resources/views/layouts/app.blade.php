@@ -818,6 +818,9 @@
                     </a>
 
                     <x-job-check-widget />
+                    @if(auth()->check() && auth()->user()->hasRole('super-admin'))
+                        <x-bulk-move-attachments-modal />
+                    @endif
                 </div>
 
                 <div class="d-flex align-items-center ms-auto gap-2">

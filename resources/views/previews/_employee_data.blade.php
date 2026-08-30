@@ -436,7 +436,7 @@
                     <a href="#" onclick="event.preventDefault(); viewPDF('{{ Storage::disk('public')->url($employee->medical_certificate_path) }}', '{{ __('View Medical Certificate') }}')" class="btn btn-success preview-attach-btn text-white">
                         <i class="bi bi-eye-fill"></i> {{ __('View') }}
                     </a>
-                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path']) }}', '{{ __("Doctor's Certificate") }}')" class="btn btn-danger preview-attach-btn text-white ms-1">
+                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'medical_certificate_path']) }}" download class="btn btn-danger preview-attach-btn text-white ms-1">
                         <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                     </a>
                 </div>
@@ -489,7 +489,7 @@
                     <a href="#" onclick="event.preventDefault(); viewPDF('{{ Storage::disk('public')->url($employee->insurance_document_path_private) }}', '{{ __('View Insurance') }}')" class="btn btn-success preview-attach-btn text-white">
                         <i class="bi bi-eye-fill"></i> {{ __('View') }}
                     </a>
-                    <a href="#" onclick="event.preventDefault(); viewPDF('{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}', '{{ __('Insurance') }}')" class="btn btn-danger preview-attach-btn text-white ms-1">
+                    <a href="{{ route('employees.documents.pdf', ['employee' => $employee->id, 'field' => 'insurance_document_path_private']) }}" download class="btn btn-danger preview-attach-btn text-white ms-1">
                         <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                     </a>
                 </div>

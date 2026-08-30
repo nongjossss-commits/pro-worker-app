@@ -30,7 +30,6 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::post('/settings/visibility', [SuperAdminSettingsController::class, 'updateVisibility'])->name('settings.update-visibility');
     Route::get('/sidebar', [SuperAdminSettingsController::class, 'renderSidebar'])->name('sidebar');
 
-    Route::post('/attachments/swap', [SuperAdminSettingsController::class, 'swapAttachments'])->name('attachments.swap');
     Route::post('/attachments/descriptions', [SuperAdminSettingsController::class, 'updateAttachmentDescriptions'])->name('attachments.descriptions');
     Route::post('/attachments/descriptions/single', [SuperAdminSettingsController::class, 'updateSingleAttachmentDescription'])->name('attachments.descriptions.single');
     Route::post('/settings/max-employees', [SuperAdminSettingsController::class, 'updateMaxEmployees'])->name('settings.max-employees');
@@ -236,6 +235,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('employees/{employee}/transfer', [EmployeeController::class, 'transfer'])->name('employees.transfer');
     Route::post('employees/bulk-transfer', [EmployeeController::class, 'bulkTransfer'])->name('employees.bulkTransfer');
+    Route::post('employees/bulk-move-attachments', [EmployeeController::class, 'bulkMoveAttachments'])->name('employees.bulkMoveAttachments');
     Route::post('employees/bulk-to-ticket', [App\Http\Controllers\TicketRedirectController::class, 'bulkToTicket'])->name('employees.bulk_to_ticket');
 
     // === Group & Team Routes ===
@@ -770,6 +770,7 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin/resolution-tabs')
     Route::get('/', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'index'])->name('index');
     Route::post('/', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'store'])->name('store');
     Route::put('/{resolutionTab}', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'update'])->name('update');
+    Route::post('/{resolutionTab}/toggle-badge', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'toggleBadge'])->name('toggle-badge');
     Route::post('/reorder', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'reorder'])->name('reorder');
     Route::delete('/{resolutionTab}', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'destroy'])->name('destroy');
     Route::post('/{id}/restore', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'restore'])->name('restore');

@@ -150,6 +150,9 @@
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
             <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
+            @if(auth()->user()->hasRole('super-admin'))
+            <li><a class="dropdown-item text-warning-emphasis" href="#" id="bulk-move-attachments-btn"><i class="bi bi-folder-symlink-fill me-2"></i>{{ __('Move Attachment Files') }}</a></li>
+            @endif
             <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
             <li><a class="dropdown-item" href="#" id="bulk-send-production-btn"><i class="bi bi-clipboard-data me-2"></i>{{ __('Send to P Production') }}</a></li>
             @can('manage-tickets')
@@ -363,6 +366,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const modalEl = document.getElementById('advancedExportModal');
             const modal = new bootstrap.Modal(modalEl);
             modal.show();
+        });
+    }
+
+    const bulkMoveAttachmentsBtn = document.getElementById('bulk-move-attachments-btn');
+    if (bulkMoveAttachmentsBtn) {
+        bulkMoveAttachmentsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.openBulkMoveAttachmentsModal(window.getGlobalSelectedIds());
         });
     }
 
