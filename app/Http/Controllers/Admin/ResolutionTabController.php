@@ -31,6 +31,7 @@ class ResolutionTabController extends Controller
                     'type' => $tab->type,
                     'sort_order' => $tab->sort_order,
                     'is_default' => $tab->is_default,
+                    'badge_enabled' => $tab->badge_enabled,
                     'is_deleted' => $tab->trashed(),
                     'deleted_at' => $tab->deleted_at?->format('d/m/Y H:i'),
                     'cooldown_days_remaining' => $tab->cooldown_days_remaining,
@@ -80,6 +81,25 @@ class ResolutionTabController extends Controller
             'success' => true,
             'message' => 'อัพเดทชื่อแถบเรียบร้อยแล้ว',
             'tab' => $resolutionTab,
+        ]);
+    }
+
+    /**
+     * Toggle whether this tab's employees show the purple/pink "อยู่ในกลุ่ม
+     * มติ..." card badge and notification badge. Employee data itself is
+     * never affected — this only controls that one visual/notification
+     * cue, for a tab that's been prepared ahead of time but isn't "live" yet.
+     */
+    public function toggleBadge(ResolutionTab $resolutionTab)
+    {
+        $resolutionTab->update(['badge_enabled' => !$resolutionTab->badge_enabled]);
+
+        return response()->json([
+            'success' => true,
+            'badge_enabled' => $resolutionTab->badge_enabled,
+            'message' => $resolutionTab->badge_enabled
+                ? 'เปิดป้ายแจ้งเตือนของแถบนี้แล้ว'
+                : 'ปิดป้ายแจ้งเตือนของแถบนี้แล้ว',
         ]);
     }
 

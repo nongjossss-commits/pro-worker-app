@@ -17,11 +17,13 @@ class ResolutionTab extends Model
         'slug',
         'sort_order',
         'is_default',
+        'badge_enabled',
     ];
 
     protected $casts = [
         'is_default' => 'boolean',
         'sort_order' => 'integer',
+        'badge_enabled' => 'boolean',
     ];
 
     // --- Scopes ---

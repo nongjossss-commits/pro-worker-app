@@ -26,9 +26,22 @@
                             @endif
                             <span>{{ $tab->name }}</span>
 
-                            {{-- Edit/Delete buttons for Super Admin --}}
+                            {{-- Not-live hint (Super Admin only) — explains why this tab's
+                                 employees carry no purple/pink card badge --}}
+                            @if($isSuperAdmin && !$tab->badge_enabled)
+                                <span class="badge bg-secondary-subtle text-secondary fw-normal" style="font-size: 0.65rem;">{{ __('Badges off') }}</span>
+                            @endif
+
+                            {{-- Edit/Delete/Badge-toggle buttons for Super Admin --}}
                             @if($isSuperAdmin)
                                 <span class="d-inline-flex gap-1 ms-1">
+                                    <button type="button" class="btn btn-link p-0 border-0 resolution-tab-badge-toggle-btn {{ $tab->badge_enabled ? 'text-success' : 'text-muted' }}"
+                                            data-tab-id="{{ $tab->id }}"
+                                            onclick="event.preventDefault(); event.stopPropagation(); toggleResolutionTabBadge({{ $tab->id }}, this)"
+                                            title="{{ $tab->badge_enabled ? __('Badges on — click to turn off for this tab') : __('Badges off — click to turn on for this tab') }}"
+                                            style="font-size: 0.9rem;">
+                                        <i class="bi {{ $tab->badge_enabled ? 'bi-toggle2-on' : 'bi-toggle2-off' }}"></i>
+                                    </button>
                                     <button type="button" class="btn btn-link p-0 border-0 text-muted resolution-tab-edit-btn"
                                             data-tab-id="{{ $tab->id }}"
                                             data-tab-name="{{ $tab->name }}"
@@ -145,6 +158,26 @@
                 .catch(() => Swal.fire('Error', 'An unexpected error occurred.', 'error'));
             }
         });
+    }
+
+    function toggleResolutionTabBadge(tabId, btnEl) {
+        fetch('{{ url("admin/resolution-tabs") }}/' + tabId + '/toggle-badge', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ $csrfToken }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message, showConfirmButton: false, timer: 2000 });
+                window.location.reload();
+            } else {
+                Swal.fire('Error', data.message || 'Could not toggle this tab.', 'error');
+            }
+        })
+        .catch(() => Swal.fire('Error', 'An unexpected error occurred.', 'error'));
     }
 
     function deleteResolutionTab(tabId, tabName) {

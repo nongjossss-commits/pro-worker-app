@@ -536,6 +536,9 @@ class Employee extends Model
                 // (the employee's status is stale data at that point anyway).
                 if ($regTabId === null) {
                     \Illuminate\Support\Facades\Log::warning("Employee {$this->id}: registration resolution_tab_id ({$this->resolution_tab_id}) no longer exists — skipping workflow entry.");
+                } elseif ($regTab && !$regTab->badge_enabled) {
+                    // Tab not yet "live" (Super Admin toggle) — employee is
+                    // still fully tracked, just no purple card badge for it.
                 } else {
                     $workflows->push((object)[
                         'name' => $regTabName, // tab's own name — e.g. "มติลงทะเบียน31/03/2027"
@@ -566,6 +569,9 @@ class Employee extends Model
                 // must not reach route(), which requires this parameter.
                 if ($renTabId === null) {
                     \Illuminate\Support\Facades\Log::warning("Employee {$this->id}: renewal resolution_tab_id ({$this->resolution_tab_id}) no longer exists — skipping workflow entry.");
+                } elseif ($renTab && !$renTab->badge_enabled) {
+                    // Tab not yet "live" (Super Admin toggle) — employee is
+                    // still fully tracked, just no pink card badge for it.
                 } else {
                     $workflows->push((object)[
                         'name' => $renTabName, // tab's own name — e.g. "มติต่ออายุ11/12/2026"
