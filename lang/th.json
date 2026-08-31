@@ -2246,5 +2246,17 @@
     "Yes, execute": "ใช่ ดำเนินการ",
     "employees": "คน",
     "for": "สำหรับ",
-    "selected": "ที่เลือกไว้"
+    "selected": "ที่เลือกไว้",
+    "Work Permit Types": "ประเภทใบอนุญาตทำงาน",
+    "These are the options offered wherever \"ประเภทใบอนุญาตทำงาน\" (Work Permit Type) is selected — employee forms, filters, and Auto Settings. Renaming a type here updates every employee currently using it (and every export), so exports always show the corrected name. \"อื่นๆ\" (Other) is always available separately and cannot be edited here.": "นี่คือตัวเลือกที่แสดงทุกจุดที่มีการเลือก \"ประเภทใบอนุญาตทำงาน\" — ฟอร์มลูกจ้าง, ตัวกรอง, และ Auto Settings การเปลี่ยนชื่อประเภทที่นี่จะอัพเดตลูกจ้างทุกคนที่ใช้ประเภทนั้นอยู่ (รวมถึงข้อมูลที่ export ออกไป) เพื่อให้ export แสดงชื่อที่ถูกต้องเสมอ \"อื่นๆ\" จะมีอยู่แยกต่างหากเสมอและไม่สามารถแก้ไขได้ที่นี่",
+    "New type name": "ชื่อประเภทใหม่",
+    "In use by": "ใช้งานอยู่",
+    "No types yet.": "ยังไม่มีประเภท",
+    "Are you sure you want to delete": "คุณแน่ใจหรือไม่ว่าต้องการลบ",
+    "Delete Tab?": "ลบรายการนี้?",
+    "Edit Name": "แก้ไขชื่อ",
+    "Edit Tab Name": "แก้ไขชื่อ",
+    "Please enter a tab name": "กรุณากรอกชื่อ",
+    "Default": "ค่าเริ่มต้นของระบบ",
+    "Default Tab": "ค่าเริ่มต้นของระบบ"
 }

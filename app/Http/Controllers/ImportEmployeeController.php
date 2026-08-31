@@ -220,11 +220,12 @@ class ImportEmployeeController extends Controller
         }
 
         // --- DATA VALIDATION CONFIGURATION ---
+        $wpTypeList = \App\Models\WorkPermitType::ordered()->pluck('name')->push('อื่นๆ ระบุ')->implode(',');
         $validations = [
             'B' => '"Mr.,Miss.,Mrs."', // Title EN
             'D' => '"นาย,นางสาว,นาง"', // Title TH
             'G' => '"ลาว,เมียนมา,กัมพูชา,เวียดนาม"', // Nationality
-            'L' => '"MOU,มติต่ออายุในประเทศ,มติขึ้นทะเบียนใหม่,อื่นๆ ระบุ"', // WP Type
+            'L' => '"' . $wpTypeList . '"', // WP Type
             'N' => '"CI,PJ,TD,เล่มอินเตอร์"', // Passport Type
         ];
 

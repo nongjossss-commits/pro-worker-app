@@ -391,7 +391,7 @@ class WorkflowController extends Controller
         }
 
         $workflowAutoSettings = $this->loadWorkflowAutoSettings();
-        $mouGroupOptions = ['MOU', 'MOU 2 ปีหลัง', 'มติต่ออายุในประเทศ', 'มติขึ้นทะเบียน', 'อื่นๆ'];
+        $mouGroupOptions = \App\Models\WorkPermitType::ordered()->pluck('name')->push('อื่นๆ')->all();
 
         return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users', 'workflowAutoSettings', 'mouGroupOptions'));
     }

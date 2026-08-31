@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\Notification;
 use App\Models\NotificationSetting;
+use App\Models\WorkPermitType;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 
@@ -47,6 +48,13 @@ class CheckExpiries extends Command
         if ($employeeId) {
             $baseEmployeeQuery->where('id', $employeeId);
         }
+
+        // workPermitMOUGroup stores the type's editable display NAME, which
+        // a Super Admin can rename at any time (see WorkPermitTypeController).
+        // Classify by the type's stable `slug` instead of the name itself,
+        // so a rename never silently misroutes these into the generic
+        // 'work_permit_expiry' bucket instead of their specialized one.
+        $workPermitTypeSlugsByName = WorkPermitType::pluck('slug', 'name')->all();
 
         $documentChecks = [
             'passportExpiryDate'   => 'passport_expiry',
@@ -105,11 +113,13 @@ class CheckExpiries extends Command
                 $currentNotificationType = $notificationType;
 
                 if ($notificationType === 'work_permit_expiry') {
-                     if ($employee->workPermitMOUGroup === 'MOU' || $employee->workPermitMOUGroup === 'MOU 2 ปีหลัง') {
+                    $groupSlug = $workPermitTypeSlugsByName[$employee->workPermitMOUGroup] ?? null;
+
+                    if ($groupSlug === 'mou' || $groupSlug === 'mou-2-years-later') {
                         $currentNotificationType = 'work_permit_mou';
-                    } elseif ($employee->workPermitMOUGroup === 'มติต่ออายุในประเทศ') {
+                    } elseif ($groupSlug === 'resolution-renewal-domestic') {
                         $currentNotificationType = 'resolution_renewal';
-                    } elseif ($employee->workPermitMOUGroup === 'มติขึ้นทะเบียน') {
+                    } elseif ($groupSlug === 'resolution-registration') {
                         $currentNotificationType = 'new_registration_renewal';
                     }
                 }

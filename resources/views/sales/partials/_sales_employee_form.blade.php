@@ -230,10 +230,9 @@
         <label class="form-label small">ประเภทใบอนุญาตทำงาน</label>
         <select class="form-select form-select-sm" id="workPermitMOUGroup-sl{{ $sid }}" name="workPermitMOUGroup">
             <option value="">-- กรุณาเลือก --</option>
-            <option value="MOU" {{ old('workPermitMOUGroup', $emp->workPermitMOUGroup ?? '') == 'MOU' ? 'selected' : '' }}>MOU</option>
-            <option value="MOU 2 ปีหลัง" {{ old('workPermitMOUGroup', $emp->workPermitMOUGroup ?? '') == 'MOU 2 ปีหลัง' ? 'selected' : '' }}>MOU 2 ปีหลัง</option>
-            <option value="มติต่ออายุในประเทศ" {{ old('workPermitMOUGroup', $emp->workPermitMOUGroup ?? '') == 'มติต่ออายุในประเทศ' ? 'selected' : '' }}>มติต่ออายุในประเทศ</option>
-            <option value="มติขึ้นทะเบียน" {{ old('workPermitMOUGroup', $emp->workPermitMOUGroup ?? '') == 'มติขึ้นทะเบียน' ? 'selected' : '' }}>มติขึ้นทะเบียน</option>
+            @foreach(\App\Models\WorkPermitType::ordered()->get() as $wpType)
+                <option value="{{ $wpType->name }}" {{ old('workPermitMOUGroup', $emp->workPermitMOUGroup ?? '') == $wpType->name ? 'selected' : '' }}>{{ $wpType->name }}</option>
+            @endforeach
             <option value="อื่นๆ" {{ old('workPermitMOUGroup', $emp->workPermitMOUGroup ?? '') == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ ระบุ..</option>
         </select>
     </div>

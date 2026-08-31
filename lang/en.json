@@ -2214,5 +2214,17 @@
     "Yes, execute": "Yes, execute",
     "employees": "employees",
     "for": "for",
-    "selected": "selected"
+    "selected": "selected",
+    "Work Permit Types": "Work Permit Types",
+    "These are the options offered wherever \"ประเภทใบอนุญาตทำงาน\" (Work Permit Type) is selected — employee forms, filters, and Auto Settings. Renaming a type here updates every employee currently using it (and every export), so exports always show the corrected name. \"อื่นๆ\" (Other) is always available separately and cannot be edited here.": "These are the options offered wherever \"ประเภทใบอนุญาตทำงาน\" (Work Permit Type) is selected — employee forms, filters, and Auto Settings. Renaming a type here updates every employee currently using it (and every export), so exports always show the corrected name. \"อื่นๆ\" (Other) is always available separately and cannot be edited here.",
+    "New type name": "New type name",
+    "In use by": "In use by",
+    "No types yet.": "No types yet.",
+    "Are you sure you want to delete": "Are you sure you want to delete",
+    "Delete Tab?": "Delete Tab?",
+    "Edit Name": "Edit Name",
+    "Edit Tab Name": "Edit Tab Name",
+    "Please enter a tab name": "Please enter a tab name",
+    "Default": "Default",
+    "Default Tab": "Default Tab"
 }

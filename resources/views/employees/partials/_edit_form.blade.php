@@ -312,10 +312,9 @@
             </label>
             <select class="form-select" id="edit_workPermitMOUGroup" name="workPermitMOUGroup">
                 <option value="">{{ __('-- Please Select --') }}</option>
-                <option value="MOU" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'MOU')>MOU</option>
-                <option value="MOU 2 ปีหลัง" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'MOU 2 ปีหลัง')>{{ __('MOU (2nd Year onwards)') }}</option>
-                <option value="มติต่ออายุในประเทศ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติต่ออายุในประเทศ')>{{ __('Renewal Resolution (Domestic)') }}</option>
-                <option value="มติขึ้นทะเบียน" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'มติขึ้นทะเบียน')>{{ __('Registration Resolution (MOU Group)') }}</option>
+                @foreach(\App\Models\WorkPermitType::ordered()->get() as $wpType)
+                    <option value="{{ $wpType->name }}" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == $wpType->name)>{{ $wpType->name }}</option>
+                @endforeach
                 <option value="อื่นๆ" @selected(old('workPermitMOUGroup', $employee->workPermitMOUGroup) == 'อื่นๆ')>{{ __('Other, specify..') }}</option>
             </select>
         </div>

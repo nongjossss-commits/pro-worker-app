@@ -33,6 +33,11 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $activeTab === 'work-permit-types' ? 'active' : '' }}" id="work-permit-types-tab" data-bs-toggle="tab" data-bs-target="#work-permit-types" type="button" role="tab" aria-controls="work-permit-types" aria-selected="{{ $activeTab === 'work-permit-types' ? 'true' : 'false' }}">
+                <i class="bi bi-card-list"></i> {{ __('Work Permit Types') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link {{ $activeTab === 'employee-cap' ? 'active' : '' }}" id="employee-cap-tab" data-bs-toggle="tab" data-bs-target="#employee-cap" type="button" role="tab" aria-controls="employee-cap" aria-selected="{{ $activeTab === 'employee-cap' ? 'true' : 'false' }}">
                 <i class="bi bi-people-fill"></i> {{ __('Employee Cap') }}
             </button>
@@ -284,6 +289,45 @@
                 </div>
             </div>
 
+        </div>
+
+        <!-- Tab: Work Permit Types -->
+        <div class="tab-pane fade {{ $activeTab === 'work-permit-types' ? 'show active' : '' }}" id="work-permit-types" role="tabpanel" aria-labelledby="work-permit-types-tab">
+            <div class="card">
+                <div class="card-header bg-secondary text-white fw-bold">
+                    <i class="bi bi-card-list"></i> {{ __('Work Permit Types') }}
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info py-2 small">
+                        {{ __('These are the options offered wherever "ประเภทใบอนุญาตทำงาน" (Work Permit Type) is selected — employee forms, filters, and Auto Settings. Renaming a type here updates every employee currently using it (and every export), so exports always show the corrected name. "อื่นๆ" (Other) is always available separately and cannot be edited here.') }}
+                    </div>
+
+                    <div class="mb-3" style="max-width: 400px;">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="wptNewName" placeholder="{{ __('New type name') }}">
+                            <button class="btn btn-primary" type="button" id="wptAddBtn">
+                                <i class="bi bi-plus-lg me-1"></i>{{ __('Add') }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ __('Name') }}</th>
+                                    <th class="text-center">{{ __('In use by') }}</th>
+                                    <th class="text-center">{{ __('Default') }}</th>
+                                    <th class="text-end">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wptTableBody">
+                                <tr><td colspan="4" class="text-center text-muted py-3">{{ __('Loading...') }}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {{-- Tab 4: Employee Cap (system-wide max) --}}
@@ -1327,6 +1371,147 @@
             }
         }));
     });
+</script>
+
+<script>
+    // --- Work Permit Types tab ---
+    (function () {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+            || '{{ csrf_token() }}';
+        const tbody = document.getElementById('wptTableBody');
+        const addBtn = document.getElementById('wptAddBtn');
+        const newNameInput = document.getElementById('wptNewName');
+
+        if (!tbody) return; // tab not on this page render
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function loadTypes() {
+            fetch('{{ route('admin.work-permit-types.index') }}', { headers: { 'Accept': 'application/json' } })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.message || 'Load failed');
+                    if (data.types.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">{{ __('No types yet.') }}</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.types.map(t => `
+                        <tr data-id="${t.id}">
+                            <td><span class="wpt-name">${escapeHtml(t.name)}</span></td>
+                            <td class="text-center">${t.usage_count}</td>
+                            <td class="text-center">${t.is_default ? '<i class="bi bi-star-fill text-warning" title="{{ __('Default Tab') }}"></i>' : ''}</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-secondary wpt-edit-btn" title="{{ __('Edit Name') }}"><i class="bi bi-pencil-fill"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger wpt-delete-btn" title="{{ __('Delete') }}" ${t.is_default ? 'disabled' : ''}><i class="bi bi-trash-fill"></i></button>
+                            </td>
+                        </tr>
+                    `).join('');
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-3">' + escapeHtml(err.message) + '</td></tr>';
+                });
+        }
+
+        function addType() {
+            const name = (newNameInput.value || '').trim();
+            if (!name) {
+                Swal.fire('{{ __('Error') }}', '{{ __('Please enter a tab name') }}', 'warning');
+                return;
+            }
+            fetch('{{ route('admin.work-permit-types.store') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify({ name }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.message || 'Failed');
+                newNameInput.value = '';
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message, showConfirmButton: false, timer: 2000 });
+                loadTypes();
+            })
+            .catch(err => Swal.fire('{{ __('Error') }}', err.message, 'error'));
+        }
+
+        function editType(id, currentName) {
+            Swal.fire({
+                title: '{{ __('Edit Tab Name') }}',
+                input: 'text',
+                inputValue: currentName,
+                showCancelButton: true,
+                confirmButtonText: '{{ __('Save') }}',
+                cancelButtonText: '{{ __('Cancel') }}',
+                confirmButtonColor: '#3b82f6',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) return '{{ __('Please enter a tab name') }}';
+                }
+            }).then((result) => {
+                if (!result.isConfirmed || !result.value) return;
+                fetch('{{ url('admin/work-permit-types') }}/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    body: JSON.stringify({ name: result.value.trim() }),
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.message || 'Failed');
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message, showConfirmButton: false, timer: 3000 });
+                    loadTypes();
+                })
+                .catch(err => Swal.fire('{{ __('Error') }}', err.message, 'error'));
+            });
+        }
+
+        function deleteType(id, name) {
+            Swal.fire({
+                title: '{{ __('Delete Tab?') }}',
+                html: `{{ __('Are you sure you want to delete') }} <strong>${escapeHtml(name)}</strong>?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '{{ __('Delete') }}',
+                cancelButtonText: '{{ __('Cancel') }}',
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+                fetch('{{ url('admin/work-permit-types') }}/' + id, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.message || 'Failed');
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: data.message, showConfirmButton: false, timer: 2000 });
+                    loadTypes();
+                })
+                .catch(err => Swal.fire('{{ __('Error') }}', err.message, 'error'));
+            });
+        }
+
+        if (addBtn) addBtn.addEventListener('click', addType);
+        if (newNameInput) newNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addType(); } });
+
+        tbody.addEventListener('click', function (e) {
+            const row = e.target.closest('tr[data-id]');
+            if (!row) return;
+            const id = row.dataset.id;
+            const name = row.querySelector('.wpt-name')?.textContent || '';
+
+            if (e.target.closest('.wpt-edit-btn')) editType(id, name);
+            if (e.target.closest('.wpt-delete-btn')) deleteType(id, name);
+        });
+
+        // Load once the tab is actually shown (avoids fetching if this
+        // Super Admin never opens this tab this visit) — also load
+        // immediately if it's already the active tab on page load.
+        const tabBtn = document.getElementById('work-permit-types-tab');
+        if (tabBtn) tabBtn.addEventListener('shown.bs.tab', loadTypes, { once: true });
+        if (document.getElementById('work-permit-types')?.classList.contains('active')) loadTypes();
+    })();
 </script>
 @endpush
 @endsection

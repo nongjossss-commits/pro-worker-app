@@ -777,5 +777,14 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin/resolution-tabs')
     Route::delete('/{id}/force-delete', [\App\Http\Controllers\Admin\ResolutionTabController::class, 'forceDelete'])->name('force-delete');
 });
 
+// === Work Permit Type Management (Super Admin Only) ===
+Route::middleware(['auth', 'role:super-admin'])->prefix('admin/work-permit-types')->name('admin.work-permit-types.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'store'])->name('store');
+    Route::put('/{workPermitType}', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'update'])->name('update');
+    Route::post('/reorder', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'reorder'])->name('reorder');
+    Route::delete('/{workPermitType}', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'destroy'])->name('destroy');
+});
+
 require __DIR__.'/auth.php';
 require __DIR__.'/labor.php';
