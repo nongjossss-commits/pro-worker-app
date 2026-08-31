@@ -196,8 +196,16 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
         @foreach($tabs as $tab)
             <div class="col">
-                <a href="{{ route('workflow.index', ['tab' => $tab->slug]) }}" class="text-decoration-none">
-                    <div class="card h-100 shadow-sm border hover-shadow transition-all">
+                <div class="card h-100 shadow-sm border hover-shadow transition-all position-relative">
+                    @if(auth()->check() && auth()->user()->hasRole('super-admin'))
+                        <div class="position-absolute d-flex gap-1" style="top: 8px; right: 10px; z-index: 2; font-size: 0.75rem; opacity: 0.6;">
+                            <span onclick="event.preventDefault(); editWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}')" title="{{ __('Edit Name') }}"><i class="bi bi-pencil-fill"></i></span>
+                            @if(!$tab->is_system)
+                                <span onclick="event.preventDefault(); deleteWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}', {{ (int) $tab->orders()->count() }})" title="{{ __('Delete Tab') }}"><i class="bi bi-trash-fill"></i></span>
+                            @endif
+                        </div>
+                    @endif
+                    <a href="{{ route('workflow.index', ['tab' => $tab->slug]) }}" class="text-decoration-none stretched-link">
                         <div class="card-body d-flex align-items-center gap-3">
                             <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                                 <i class="bi bi-kanban fs-4"></i>
@@ -207,10 +215,22 @@
                                 <div class="text-muted small">{{ $tab->orders_count ?? 0 }} Active Jobs</div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
+                </div>
             </div>
         @endforeach
+
+        @if(auth()->check() && auth()->user()->hasRole('super-admin'))
+            <div class="col">
+                <div class="card h-100 border-dashed bg-light text-center">
+                    <div class="card-body d-flex flex-column align-items-center justify-content-center text-muted">
+                        <i class="bi bi-folder-plus fs-3 mb-2"></i>
+                        <span>{{ __('Add New Tab') }}</span>
+                        <button type="button" onclick="createWorkTypeTab()" class="btn btn-sm stretched-link"></button>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <div class="col">
              <div class="card h-100 border-dashed bg-light text-center">
@@ -222,6 +242,9 @@
             </div>
         </div>
     </div>
+    @if(auth()->check() && auth()->user()->hasRole('super-admin'))
+        @include('components.work-type-tab-scripts')
+    @endif
 
 
 </div>

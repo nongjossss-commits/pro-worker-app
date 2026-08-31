@@ -299,8 +299,11 @@ class ImportEmployeeController extends Controller
                      $targetStatus = $isPreProduction ? 'pre_production' : 'active';
                  }
 
-                 // Bucket Logic (Merge into existing if applicable)
-                 if (in_array($workType->slug, ['notify_in', 'notify_out'])) {
+                 // Bucket Logic (Merge into existing if applicable) — every tab
+                 // buckets by employer except MOU Import (separate demand card
+                 // per batch), matching WorkflowController::store(). Any custom
+                 // tab a Super Admin adds later buckets by default too.
+                 if (!in_array($workType->slug, ['mou', 'mou_import'])) {
                     $order = ProductionOrder::firstOrCreate(
                         [
                             'employer_id' => $employerId,
