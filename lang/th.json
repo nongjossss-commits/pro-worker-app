@@ -2258,5 +2258,19 @@
     "Edit Tab Name": "แก้ไขชื่อ",
     "Please enter a tab name": "กรุณากรอกชื่อ",
     "Default": "ค่าเริ่มต้นของระบบ",
-    "Default Tab": "ค่าเริ่มต้นของระบบ"
+    "Default Tab": "ค่าเริ่มต้นของระบบ",
+    "Add New Tab": "เพิ่มแท็บใหม่",
+    "Create New Tab": "สร้างแท็บใหม่",
+    "Tab Name": "ชื่อแท็บ",
+    "Delete this tab?": "ลบแท็บนี้?",
+    "This tab currently has": "แท็บนี้มีงานอยู่",
+    "job(s). They will be permanently deleted along with it.": "งาน ซึ่งจะถูกลบไปพร้อมกับแท็บนี้ทั้งหมด",
+    "This tab has no jobs in it right now.": "แท็บนี้ยังไม่มีงานอยู่เลย",
+    "This cannot be undone.": "การกระทำนี้ไม่สามารถย้อนกลับได้",
+    "Select which employees?": "เลือกลูกจ้างกลุ่มไหน?",
+    "This employer has both pending and already-completed employees. Which do you want to select?": "นายจ้างรายนี้มีทั้งลูกจ้างที่ยังไม่เสร็จสิ้นและที่เสร็จสิ้นแล้ว คุณต้องการเลือกกลุ่มไหน?",
+    "Completed only": "เฉพาะที่เสร็จสิ้นแล้ว",
+    "Not completed only": "เฉพาะที่ยังไม่เสร็จสิ้น",
+    "Failed to load employee list.": "โหลดรายชื่อลูกจ้างไม่สำเร็จ",
+    "Custom selection": "เลือกแบบกำหนดเอง"
 }

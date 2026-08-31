@@ -1043,6 +1043,129 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Lightweight JSON list of every employee under this employer that is
+     * eligible for the "Select All" bulk-selection checkbox — used so
+     * "Select All" can pick up every eligible employee (even ones on a page
+     * that was never opened, or a card that was never expanded) without
+     * paginating or rendering any HTML. Mirrors fetchEmployees()'s search /
+     * operator / filter / renewal-progress query building exactly (same
+     * helper methods) so the two never drift apart, but skips the heavy
+     * eager loads (steps, custom fields, financial status) that view
+     * rendering needs and this doesn't.
+     */
+    public function selectAllEmployerEmployeeIds(Request $request, $resolutionTab, $employerId)
+    {
+        $this->resolveTab($resolutionTab, 'registration');
+
+        $employerQuery = Employer::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
+        $employer = $employerQuery->withTrashed()->findOrFail($employerId);
+
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
+        $query = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id);
+
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        // Select-all never offers cancelled employees, and only offers
+        // completed ones once their 24h Undo window has locked (matches the
+        // checkbox visibility rule in _employee_card.blade.php).
+        $query->where(function ($q) {
+            $q->where('status', 'registration_pending')
+              ->orWhere(function ($q2) {
+                  $q2->where('status', 'registration_completed')
+                     ->whereNotNull('resolution_completed_at')
+                     ->where('resolution_completed_at', '<=', now()->subHours(24));
+              });
+        });
+
+        if ($request->has('search') && $request->search) {
+            $this->applyEmployerSearchToQuery($query, $employer, $request->search);
+        }
+
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            if ($request->operator_filter === 'external') {
+                $query->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $query->where('operator_id', $request->operator_filter);
+            }
+        }
+
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'not_started') {
+                $query->whereDoesntHave('registrationSteps', function ($q) use ($stepOneId) {
+                    $q->where('registration_steps.id', $stepOneId);
+                });
+            } elseif ($filter === 'saved') {
+                $query->where('status', 'registration_completed');
+            } elseif ($filter === 'biometrics_collected') {
+                $query->whereNotNull('biometrics_collected_at');
+            } elseif ($filter === 'biometrics_not_collected') {
+                $query->whereNull('biometrics_collected_at');
+            } elseif ($filter === 'total_appointments') {
+                $query->whereNotNull('appointment_date');
+            }
+            // 'cancelled' is intentionally not handled — cancelled employees
+            // are never select-all eligible regardless of the active filter.
+            // The numeric (step-id) case is handled after the query runs,
+            // below, same as fetchEmployees() does — "highest completed
+            // step" can't be expressed as a single whereHas.
+        }
+
+        $renewalFilters = $this->parseRenewalFilters($request);
+        if (!empty($renewalFilters)) {
+            $targets = $this->getRenewalTargets('registration');
+            $this->applyRenewalProgressMultiScope($query, $renewalFilters, $targets['visa'], $targets['wp'], [
+                'pending'   => 'registration_pending',
+                'completed' => 'registration_completed',
+                'cancelled' => 'registration_cancelled',
+            ]);
+        }
+
+        $isStepFilter = $request->has('filter') && is_numeric($request->filter);
+
+        $employees = $query->select([
+            'id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn',
+            'employeeNationality', 'employeePhoto', 'insurance_type', 'employeePassport', 'status', 'resolution_completed_at',
+        ])->when($isStepFilter, fn($q) => $q->with('registrationSteps:id,order'))->get();
+
+        if ($isStepFilter) {
+            $filterStepId = $request->filter;
+            $employees = $employees->filter(function ($emp) use ($filterStepId) {
+                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                return $highest && $highest->id == $filterStepId;
+            })->values();
+        }
+
+        $items = $employees->map(function ($emp) use ($employer) {
+            return [
+                'id' => $emp->id,
+                'employer_id' => $emp->employer_id,
+                'name_th' => $emp->employeeNameTh,
+                'name_en' => $emp->employeeNameEn,
+                'title_th' => $emp->employeeTitleTh,
+                'title_en' => $emp->employeeTitleEn,
+                'nationality' => $emp->employeeNationality,
+                'photo' => $emp->employeePhoto ? Storage::disk('public')->url($emp->employeePhoto) : '',
+                'employer_name' => $employer->employerNameTh ?? 'N/A',
+                'insurance_type' => $emp->insurance_type,
+                'passport' => $emp->employeePassport,
+                'production_item_id' => '',
+                'locked_completed' => $emp->status === 'registration_completed',
+            ];
+        })->values();
+
+        return response()->json(['success' => true, 'items' => $items]);
+    }
+
+    /**
      * Cancel an Employer.
      */
     public function cancelEmployer(Request $request, $resolutionTab, Employer $employer)

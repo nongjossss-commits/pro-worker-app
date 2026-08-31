@@ -683,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const combined = [...currentFiltered, ...newItems];
         window.setGlobalSelectedData(combined);
     }
+    window.addItems = addItems;
 
     // Helper: Remove items by ID
     function removeItemsByIds(idsToRemove) {
@@ -817,6 +818,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 addItems([data]);
             } else {
                 removeItemsByIds([data.id]);
+            }
+            // Keep the employer's "All / Completed only / ..." label (if any)
+            // accurate even when the user hand-picks a single card afterward.
+            if (checkbox.dataset.employerId && window.updateEmployerSelectionLabel) {
+                window.updateEmployerSelectionLabel(checkbox.dataset.employerId);
             }
         }
     });
@@ -1272,6 +1278,172 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 });
+</script>
+
+<script>
+// --- Smart "Select All for this Employer/Order" ---
+// Fetches the full eligible employee list straight from the server (respecting
+// the page's current search/filter/operator querystring) instead of relying on
+// what happens to be rendered in the DOM. That way "Select All" picks up every
+// eligible employee under an employer/order even if its card was never
+// expanded, or has more pages than the one currently loaded — without
+// rendering any HTML for them. Used on Pre-Production, Workflow, Registration
+// Resolution, and Renewal Resolution — see each page's employer-select-all
+// listener for how it's wired in.
+window._smartSelectAllCache = window._smartSelectAllCache || {};
+
+// Per-employer eligible-item lists, populated whenever smartEmployerSelectAll()
+// fetches — lets the little label badge next to the checkbox stay accurate
+// even after the user manually ticks/unticks an individual card afterward
+// (see updateEmployerSelectionLabel(), and the .employee-checkbox listener
+// below that calls it).
+window._employerEligibleItems = window._employerEligibleItems || {};
+
+/**
+ * Updates the small "All / Completed only / Not completed only / Partial"
+ * badge next to an employer-select-all checkbox to reflect what's actually
+ * selected right now — derived from current state rather than remembered
+ * from the prompt, so it stays correct even if the user hand-picks
+ * individual cards afterward instead of using the prompt outcome as-is.
+ */
+window.updateEmployerSelectionLabel = function (employerId) {
+    const labelEl = document.querySelector(`.employer-select-label[data-employer-id="${employerId}"]`);
+    if (!labelEl) return;
+    const eligible = window._employerEligibleItems[employerId];
+    if (!eligible) return;
+
+    const selectedIds = window.getGlobalSelectedIds();
+    const pendingIds = eligible.pending.map(i => i.id);
+    const lockedIds = eligible.locked.map(i => i.id);
+    const allIds = [...pendingIds, ...lockedIds];
+    if (allIds.length === 0) { labelEl.classList.add('d-none'); return; }
+
+    const selectedCount = allIds.filter(id => selectedIds.includes(id)).length;
+
+    let text = '';
+    if (selectedCount === 0) {
+        text = '';
+    } else if (selectedCount === allIds.length) {
+        text = '{{ __("All") }}';
+    } else if (lockedIds.length > 0 && lockedIds.every(id => selectedIds.includes(id)) && pendingIds.every(id => !selectedIds.includes(id))) {
+        text = '{{ __("Completed only") }}';
+    } else if (pendingIds.length > 0 && pendingIds.every(id => selectedIds.includes(id)) && lockedIds.every(id => !selectedIds.includes(id))) {
+        text = '{{ __("Not completed only") }}';
+    } else {
+        text = '{{ __("Custom selection") }}';
+    }
+
+    labelEl.textContent = text;
+    labelEl.classList.toggle('d-none', text === '');
+};
+
+/**
+ * @param {HTMLInputElement} masterCb  the employer-select-all checkbox that just changed
+ * @param {string} endpointUrl         lightweight JSON endpoint, no query string
+ * @param {object} opts
+ *   - supportsLockedCompleted: bool   true if the response can mix "pending"
+ *                                     and "locked completed" items
+ *                                     (Registration/Renewal only) and the
+ *                                     3-way prompt should be offered for that mix
+ */
+window.smartEmployerSelectAll = function (masterCb, endpointUrl, opts = {}) {
+    const isChecked = masterCb.checked;
+    const employerId = masterCb.dataset.employerId;
+    const cacheKey = endpointUrl + '|' + window.location.search;
+
+    const finish = (items) => {
+        const pendingItems = opts.supportsLockedCompleted ? items.filter(i => !i.locked_completed) : items;
+        const lockedItems = opts.supportsLockedCompleted ? items.filter(i => i.locked_completed) : [];
+        window._employerEligibleItems[employerId] = { pending: pendingItems, locked: lockedItems };
+
+        const applySelection = (chosenItems) => {
+            if (isChecked) {
+                window.addItems(chosenItems);
+            } else {
+                window.removeItemsByIds(items.map(i => String(i.id)));
+            }
+            window.refreshGlobalSelectionUI();
+
+            const selectedIds = window.getGlobalSelectedIds();
+            const allSelected = items.length > 0 && items.every(i => selectedIds.includes(String(i.id)));
+            const anySelected = items.some(i => selectedIds.includes(String(i.id)));
+            masterCb.checked = allSelected;
+            masterCb.indeterminate = !allSelected && anySelected;
+            masterCb.disabled = false;
+            window.updateEmployerSelectionLabel(employerId);
+        };
+
+        if (!isChecked) {
+            applySelection(items);
+            return;
+        }
+
+        if (opts.supportsLockedCompleted && pendingItems.length > 0 && lockedItems.length > 0) {
+            Swal.fire({
+                title: '{{ __("Select which employees?") }}',
+                text: '{{ __("This employer has both pending and already-completed employees. Which do you want to select?") }}',
+                icon: 'question',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '{{ __("All") }}',
+                denyButtonText: '{{ __("Completed only") }}',
+                cancelButtonText: '{{ __("Not completed only") }}',
+                confirmButtonColor: '#3b82f6',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    applySelection(items);
+                } else if (result.isDenied) {
+                    applySelection(lockedItems);
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    applySelection(pendingItems);
+                } else {
+                    // Closed via ESC/backdrop — abort, select nothing.
+                    masterCb.checked = false;
+                    masterCb.disabled = false;
+                }
+            });
+        } else {
+            applySelection(items);
+        }
+    };
+
+    masterCb.disabled = true;
+
+    if (window._smartSelectAllCache[cacheKey]) {
+        finish(window._smartSelectAllCache[cacheKey]);
+        return;
+    }
+
+    const url = new URL(endpointUrl, window.location.origin);
+    new URLSearchParams(window.location.search).forEach((value, key) => {
+        if (['search', 'filter', 'operator_filter', 'insurance_filter'].includes(key)) {
+            url.searchParams.set(key, value);
+        }
+    });
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) throw new Error(data.message || 'Failed to load employees');
+            // Normalize id to a string — everywhere else in the selection
+            // system (checkbox .value, sessionStorage comparisons) treats
+            // ids as strings, but these come back from JSON as numbers.
+            // Without this, allSelected/anySelected below (and later
+            // re-syncing a checkbox against getGlobalSelectedIds()) silently
+            // fail to match and the master checkbox never shows checked.
+            const items = data.items.map(i => ({ ...i, id: String(i.id) }));
+            window._smartSelectAllCache[cacheKey] = items;
+            finish(items);
+        })
+        .catch(err => {
+            console.error(err);
+            masterCb.checked = !isChecked; // revert
+            masterCb.disabled = false;
+            if (typeof showToast === 'function') {
+                showToast('{{ __("Failed to load employee list.") }}', 'danger');
+            }
+        });
+};
 </script>
 
 <script>

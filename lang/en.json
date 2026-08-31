@@ -2226,5 +2226,19 @@
     "Edit Tab Name": "Edit Tab Name",
     "Please enter a tab name": "Please enter a tab name",
     "Default": "Default",
-    "Default Tab": "Default Tab"
+    "Default Tab": "Default Tab",
+    "Add New Tab": "Add New Tab",
+    "Create New Tab": "Create New Tab",
+    "Tab Name": "Tab Name",
+    "Delete this tab?": "Delete this tab?",
+    "This tab currently has": "This tab currently has",
+    "job(s). They will be permanently deleted along with it.": "job(s). They will be permanently deleted along with it.",
+    "This tab has no jobs in it right now.": "This tab has no jobs in it right now.",
+    "This cannot be undone.": "This cannot be undone.",
+    "Select which employees?": "Select which employees?",
+    "This employer has both pending and already-completed employees. Which do you want to select?": "This employer has both pending and already-completed employees. Which do you want to select?",
+    "Completed only": "Completed only",
+    "Not completed only": "Not completed only",
+    "Failed to load employee list.": "Failed to load employee list.",
+    "Custom selection": "Custom selection"
 }

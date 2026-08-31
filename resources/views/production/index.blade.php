@@ -168,15 +168,7 @@
     <div class="card shadow-sm border-0 mb-4 bg-white">
         <div class="card-body p-3">
             <ul class="nav nav-pills gap-2 overflow-auto flex-nowrap w-100" style="scrollbar-width: thin;">
-                @foreach($tabs as $tab)
-                    <li class="nav-item">
-                        <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
-                           href="{{ route('production.index', ['tab' => $tab->slug]) }}"
-                           style="white-space: nowrap;">
-                            {{ $tab->name }}
-                        </a>
-                    </li>
-                @endforeach
+                <x-work-type-tab-bar :tabs="$tabs" :activeTab="$activeTab ?? null" routeName="production.index" />
             </ul>
         </div>
     </div>

@@ -614,8 +614,9 @@
                         <div class="col-12 col-xl-auto d-flex align-items-center flex-wrap gap-3">
                             @can('edit-employees')
                             {{-- Select All for Employer --}}
-                            <div class="form-check mb-0">
+                            <div class="form-check mb-0 d-flex align-items-center gap-1">
                                 <input class="form-check-input employer-select-all" type="checkbox" data-employer-id="{{ $employer->id }}" title="{{ __('Select All for this Employer') }}">
+                                <span class="employer-select-label badge bg-primary-subtle text-primary-emphasis border border-primary-subtle d-none" data-employer-id="{{ $employer->id }}" style="font-size: 0.7rem; font-weight: 600;"></span>
                             </div>
                             @endcan
 
@@ -2021,38 +2022,19 @@
         // Placeholder if we move to client-side calc later.
     }
 
-    // Employer-level Select All (Modified for Visible & Active only)
+    // Employer-level Select All — fetches the full eligible employee list
+    // straight from the server (see window.smartEmployerSelectAll) so every
+    // eligible employee is selected even if this employer's card was never
+    // expanded, or has more pages than the one currently loaded.
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('employer-select-all')) {
+            // Only for a real, direct click on this checkbox — not when it's
+            // being cascaded programmatically from the page-wide Select All
+            // below (that one keeps its existing DOM-based behaviour, unchanged).
+            if (!e.isTrusted) return;
             const employerId = e.target.dataset.employerId;
-            const isChecked = e.target.checked;
-
-            // Find all checkboxes for this employer
-            const checkboxes = document.querySelectorAll(`.employee-checkbox[data-employer-id="${employerId}"]`);
-
-            checkboxes.forEach(cb => {
-                // Determine if employee is eligible for selection
-                const cardWrapper = document.getElementById(`employee-card-${cb.value}`);
-                // Only filter by d-none if it was applied by the filter system (not just because accordion is closed)
-                // The filter system applies d-none to non-matching items.
-                // An accordion collapse applies display:none to the parent container, not the item itself usually,
-                // but if the item itself has d-none, it's filtered out.
-                const isFilteredOut = cardWrapper && cardWrapper.classList.contains('d-none');
-
-                // Explicitly check status data attribute.
-                // Renewal uses 'renewal_pending' status primarily.
-                // Cancelled items must never be auto-selected, even if currently visible.
-                const status = cardWrapper ? cardWrapper.dataset.status : '';
-                const isPending = (status === 'renewal_pending' || status === 'registration_pending');
-
-                if (!isFilteredOut && isPending) {
-                    if(cb.checked !== isChecked) {
-                        cb.checked = isChecked;
-                        // Dispatch change event to trigger global listener
-                        cb.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                }
-            });
+            const endpoint = `/production/renewal/{{ $currentTab->id }}/employer/${employerId}/select-all-ids`;
+            window.smartEmployerSelectAll(e.target, endpoint, { supportsLockedCompleted: true });
         }
     });
 

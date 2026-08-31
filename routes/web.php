@@ -328,6 +328,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [App\Http\Controllers\Production\RegistrationController::class, 'dashboard'])->name('index');
         Route::get('/operations', [App\Http\Controllers\Production\RegistrationController::class, 'index'])->name('operations');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RegistrationController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
+        Route::get('/employer/{employer}/select-all-ids', [App\Http\Controllers\Production\RegistrationController::class, 'selectAllEmployerEmployeeIds'])->name('employer.select_all_ids')->withTrashed();
         Route::get('/employer/{employer}/history', [App\Http\Controllers\Production\RegistrationController::class, 'fetchHistory'])->name('employer.history');
         Route::get('/import', [App\Http\Controllers\Production\RegistrationController::class, 'importView'])->name('import');
         Route::get('/create', [App\Http\Controllers\Production\RegistrationController::class, 'create'])->name('create');
@@ -408,6 +409,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/create', [App\Http\Controllers\Production\RenewalController::class, 'create'])->name('create');
         Route::post('/store', [App\Http\Controllers\Production\RenewalController::class, 'store'])->name('store');
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
+        Route::get('/employer/{employer}/select-all-ids', [App\Http\Controllers\Production\RenewalController::class, 'selectAllEmployerEmployeeIds'])->name('employer.select_all_ids')->withTrashed();
         Route::get('/employer/{employer}/history', [App\Http\Controllers\Production\RenewalController::class, 'fetchHistory'])->name('employer.history');
 
         // Stats & Lazy Loading Routes
@@ -463,6 +465,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('production', \App\Http\Controllers\ProductionController::class)->middleware('menu:production');
     Route::post('production/stats-batch', [\App\Http\Controllers\ProductionController::class, 'batchStats'])->name('production.stats.batch');
     Route::get('production/order/{order}/employees', [\App\Http\Controllers\ProductionController::class, 'fetchEmployees'])->name('production.order.employees');
+    Route::get('production/order/{order}/select-all-ids', [\App\Http\Controllers\ProductionController::class, 'selectAllOrderEmployeeIds'])->name('production.order.select_all_ids');
 
     // Additional Production Routes
     Route::post('production/{id}/add-employee', [\App\Http\Controllers\ProductionController::class, 'addEmployee'])->name('production.add_employee');
@@ -636,6 +639,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->middleware('menu:workflow')->name('workflow.index');
     Route::post('workflow/stats-batch', [\App\Http\Controllers\WorkflowController::class, 'batchStats'])->name('workflow.stats.batch');
     Route::get('workflow/order/{order}/employees', [\App\Http\Controllers\WorkflowController::class, 'fetchEmployees'])->name('workflow.order.employees');
+    Route::get('workflow/order/{order}/select-all-ids', [\App\Http\Controllers\WorkflowController::class, 'selectAllOrderEmployeeIds'])->name('workflow.order.select_all_ids');
     Route::post('workflow/store', [\App\Http\Controllers\WorkflowController::class, 'store'])->name('workflow.store');
     Route::get('workflow/{order}/items', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderItems'])->name('workflow.items');
     Route::get('workflow/{order}/history', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderHistory'])->name('workflow.history');
@@ -784,6 +788,15 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin/work-permit-types
     Route::put('/{workPermitType}', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'update'])->name('update');
     Route::post('/reorder', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'reorder'])->name('reorder');
     Route::delete('/{workPermitType}', [\App\Http\Controllers\Admin\WorkPermitTypeController::class, 'destroy'])->name('destroy');
+});
+
+// === Work Type Tab Management (Pre-Production/Workflow tabs, Super Admin Only) ===
+Route::middleware(['auth', 'role:super-admin'])->prefix('admin/work-types')->name('admin.work-types.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\WorkTypeController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Admin\WorkTypeController::class, 'store'])->name('store');
+    Route::put('/{workType}', [\App\Http\Controllers\Admin\WorkTypeController::class, 'update'])->name('update');
+    Route::post('/reorder', [\App\Http\Controllers\Admin\WorkTypeController::class, 'reorder'])->name('reorder');
+    Route::delete('/{workType}', [\App\Http\Controllers\Admin\WorkTypeController::class, 'destroy'])->name('destroy');
 });
 
 require __DIR__.'/auth.php';

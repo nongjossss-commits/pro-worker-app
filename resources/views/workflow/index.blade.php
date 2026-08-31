@@ -266,15 +266,7 @@
                         <i class="bi bi-speedometer2 me-1"></i> {{ __('Dashboard') }}
                     </a>
                 </li>
-                @foreach($tabs as $tab)
-                    <li class="nav-item">
-                        <a class="nav-link {{ isset($activeTab) && $activeTab->id === $tab->id ? 'active fw-bold shadow-sm' : 'bg-white border text-secondary' }}"
-                           href="{{ route('workflow.index', ['tab' => $tab->slug]) }}"
-                           style="white-space: nowrap;">
-                            {{ $tab->name }}
-                        </a>
-                    </li>
-                @endforeach
+                <x-work-type-tab-bar :tabs="$tabs" :activeTab="$activeTab ?? null" routeName="workflow.index" />
             </ul>
         </div>
     </div>
@@ -1339,35 +1331,15 @@ window.loadBatchStats = function() {
     }
 
     // --- Employer-level Select All ---
+    // Fetches the full eligible employee list straight from the server (see
+    // window.smartEmployerSelectAll) so every eligible employee under this
+    // order is selected even if its card was never expanded.
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('employer-select-all')) {
+            if (!e.isTrusted) return;
             const orderId = e.target.dataset.employerId;
-            const isChecked = e.target.checked;
-
-            // Find the container for this order to only select visible items within it
-            const container = document.getElementById(`order-content-${orderId}`);
-            if (!container) return;
-
-            const checkboxes = container.querySelectorAll('.employee-checkbox');
-
-            checkboxes.forEach(cb => {
-                // Determine if employee is eligible for selection
-                const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
-
-                // Only select visible cards
-                const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled'));
-                const status = cardWrapper ? cardWrapper.dataset.status : '';
-                const isTerminated = cardWrapper && cardWrapper.dataset.terminated === 'true';
-                const isSelectable = !['completed', 'cancelled', 'registration_cancelled', 'renewal_cancelled'].includes(status) && !isTerminated;
-
-                // Workflow primarily uses status pending or complete. Select active items.
-                if (!isHidden && isSelectable) {
-                    if(cb.checked !== isChecked) {
-                        cb.checked = isChecked;
-                        cb.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                }
-            });
+            const endpoint = `/workflow/order/${orderId}/select-all-ids`;
+            window.smartEmployerSelectAll(e.target, endpoint, { supportsLockedCompleted: false });
         }
     });
 
@@ -1377,6 +1349,10 @@ window.loadBatchStats = function() {
             const orderId = masterCb.dataset.employerId;
             const container = document.getElementById(`order-content-${orderId}`);
             if (!container) return;
+            // This order's card was never expanded — nothing rendered here to
+            // sync from, so don't touch a state that smartEmployerSelectAll()
+            // (see _app_scripts.blade.php) may have just set from the server.
+            if (!loadedOrders[orderId]) return;
 
             const allCheckboxes = container.querySelectorAll('.employee-checkbox');
             // Filter only relevant ones (pending & visible) to check against

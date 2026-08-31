@@ -942,6 +942,124 @@ class RenewalController extends Controller
     }
 
     /**
+     * Lightweight JSON list of every employee under this employer that is
+     * eligible for the "Select All" bulk-selection checkbox — see
+     * RegistrationController::selectAllEmployerEmployeeIds() for the full
+     * rationale (same pattern, mirrored here for Renewal).
+     */
+    public function selectAllEmployerEmployeeIds(Request $request, $resolutionTab, $employerId)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        $employerQuery = Employer::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
+        $employer = $employerQuery->withTrashed()->findOrFail($employerId);
+
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+
+        $query = $employer->employees()
+            ->where('resolution_tab_id', $this->currentTab->id);
+
+        if (auth()->user()->can('manage-tickets')) {
+            $query->withoutGlobalScope('employerTenancy');
+        }
+
+        // Select-all never offers cancelled employees, and only offers
+        // completed ones once their 24h Undo window has locked.
+        $query->where(function ($q) {
+            $q->where('status', 'renewal_pending')
+              ->orWhere(function ($q2) {
+                  $q2->where('status', 'renewal_completed')
+                     ->whereNotNull('resolution_completed_at')
+                     ->where('resolution_completed_at', '<=', now()->subHours(24));
+              });
+        });
+
+        if ($request->has('search') && $request->search) {
+            $this->applyEmployerSearchToQuery($query, $employer, $request->search);
+        }
+
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            if ($request->operator_filter === 'external') {
+                $query->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $query->where('operator_id', $request->operator_filter);
+            }
+        }
+
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            if ($request->insurance_filter === 'none') {
+                $query->where(function ($q) {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '');
+                });
+            } else {
+                $query->where('insurance_type', $request->insurance_filter);
+            }
+        }
+
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'saved') {
+                $query->where('status', 'renewal_completed');
+            } elseif ($filter === 'not_started') {
+                $query->whereDoesntHave('registrationSteps', function ($q) use ($stepOneId) {
+                    $q->where('registration_steps.id', $stepOneId);
+                });
+            }
+            // 'cancelled' is intentionally not handled — cancelled employees
+            // are never select-all eligible. Numeric (step-id) handled below.
+        }
+
+        $renewalFilters = $this->parseRenewalFilters($request);
+        if (!empty($renewalFilters)) {
+            $targets = $this->getRenewalTargets('renewal');
+            $this->applyRenewalProgressMultiScope($query, $renewalFilters, $targets['visa'], $targets['wp'], [
+                'pending'   => 'renewal_pending',
+                'completed' => 'renewal_completed',
+                'cancelled' => 'renewal_cancelled',
+            ]);
+        }
+
+        $isStepFilter = $request->has('filter') && is_numeric($request->filter);
+
+        $employees = $query->select([
+            'id', 'employer_id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn',
+            'employeeNationality', 'employeePhoto', 'insurance_type', 'employeePassport', 'status', 'resolution_completed_at',
+        ])->when($isStepFilter, fn($q) => $q->with('registrationSteps:id,order'))->get();
+
+        if ($isStepFilter) {
+            $filterStepId = $request->filter;
+            $employees = $employees->filter(function ($emp) use ($filterStepId) {
+                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                return $highest && $highest->id == $filterStepId;
+            })->values();
+        }
+
+        $items = $employees->map(function ($emp) use ($employer) {
+            return [
+                'id' => $emp->id,
+                'employer_id' => $emp->employer_id,
+                'name_th' => $emp->employeeNameTh,
+                'name_en' => $emp->employeeNameEn,
+                'title_th' => $emp->employeeTitleTh,
+                'title_en' => $emp->employeeTitleEn,
+                'nationality' => $emp->employeeNationality,
+                'photo' => $emp->employeePhoto ? Storage::disk('public')->url($emp->employeePhoto) : '',
+                'employer_name' => $employer->employerNameTh ?? 'N/A',
+                'insurance_type' => $emp->insurance_type,
+                'passport' => $emp->employeePassport,
+                'production_item_id' => '',
+                'locked_completed' => $emp->status === 'renewal_completed',
+            ];
+        })->values();
+
+        return response()->json(['success' => true, 'items' => $items]);
+    }
+
+    /**
      * Import View
      */
     public function importView(Request $request, $resolutionTab)

@@ -1245,6 +1245,91 @@ class ProductionController extends Controller
     }
 
     /**
+     * Lightweight JSON list of every employee under this order that is
+     * eligible for the "Select All" bulk-selection checkbox — same
+     * rationale as WorkflowController::selectAllOrderEmployeeIds(), mirrored
+     * here for Pre-Production.
+     */
+    public function selectAllOrderEmployeeIds(Request $request, $orderId)
+    {
+        $order = ProductionOrder::findOrFail($orderId);
+
+        $query = ProductionItem::where('production_order_id', $orderId)
+            ->where('status', 'pending')
+            ->whereHas('employee', function ($q) {
+                $q->whereNull('terminated_at');
+            });
+
+        if ($request->has('filter') && $request->filter) {
+            $filter = $request->filter;
+            if ($filter === 'not_started') {
+                $query->whereDoesntHave('completedWorkTypeSteps', function ($q) {
+                    $q->where('order', 1);
+                });
+            } elseif (is_numeric($filter)) {
+                $query->whereHas('completedWorkTypeSteps', function ($s) use ($filter) {
+                    $s->where('work_type_steps.id', $filter);
+                });
+            }
+            // 'cancelled' / 'completed' filters naturally yield nothing here
+            // since this query is always scoped to status = 'pending'.
+        }
+
+        if ($request->has('search') && $request->search) {
+            $search = trim($request->search);
+            $cleanedSearch = str_replace(' ', '', $search);
+
+            $query->where(function ($q) use ($search, $cleanedSearch) {
+                $q->where('request_number', 'like', "%{$search}%")
+                  ->orWhereHas('employee', function ($emp) use ($search, $cleanedSearch) {
+                      $emp->where('employeeNameTh', 'like', "%{$search}%")
+                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                          ->orWhere('name_suffix', 'like', "%{$search}%")
+                          ->orWhere('employeePassport', 'like', "%{$search}%")
+                          ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                          ->orWhere('employee_id_number', 'like', "%{$search}%")
+                          ->orWhere('name_list_number', 'like', "%{$search}%")
+                          ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                          ->orWhere('request_number', 'like', "%{$search}%")
+                          ->orWhere('employer_employee_id', 'like', "%{$search}%")
+                          ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                          ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                  });
+            });
+        }
+
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            $query->where('operator_id', $request->operator_filter);
+        }
+
+        $items = $query->with(['employee:id,employer_id,employeeNameTh,employeeNameEn,employeeTitleTh,employeeTitleEn,employeeNationality,employeePhoto,insurance_type,employeePassport'])
+            ->get(['id', 'employee_id']);
+
+        $employerName = $order->employer->employerNameTh ?? $order->employer->employerNameEn ?? 'N/A';
+
+        $result = $items->filter(fn($item) => $item->employee)->map(function ($item) use ($employerName) {
+            $emp = $item->employee;
+            return [
+                'id' => $emp->id,
+                'employer_id' => $emp->employer_id,
+                'name_th' => $emp->employeeNameTh,
+                'name_en' => $emp->employeeNameEn,
+                'title_th' => $emp->employeeTitleTh,
+                'title_en' => $emp->employeeTitleEn,
+                'nationality' => $emp->employeeNationality,
+                'photo' => $emp->employeePhoto ? \Illuminate\Support\Facades\Storage::disk('public')->url($emp->employeePhoto) : '',
+                'employer_name' => $employerName,
+                'insurance_type' => $emp->insurance_type,
+                'passport' => $emp->employeePassport,
+                'production_item_id' => $item->id,
+                'locked_completed' => false,
+            ];
+        })->values();
+
+        return response()->json(['success' => true, 'items' => $result]);
+    }
+
+    /**
      * Calculate Stats per Order via AJAX
      */
     public function updateRemarks(Request $request, ProductionOrder $order)

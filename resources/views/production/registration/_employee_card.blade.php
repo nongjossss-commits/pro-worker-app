@@ -16,6 +16,19 @@
         $isCancelled = $employee->production_item->status === 'cancelled';
     }
 
+    // Registration/Renewal only: once the 24h "Undo" grace window (see the
+    // countdown badge further down) has passed, the card is "Locked" and
+    // can no longer be undone — from that point on it's safe to let the
+    // checkbox be used again for bulk tools (export/edit/download/etc.).
+    // While still inside the 24h window it stays hidden as before, since
+    // the record could still be undone back to pending. Workflow/Pre-
+    // Production items (production_item branch) are untouched — this
+    // doesn't apply there.
+    $isLockedCompleted = false;
+    if ($isCompleted && !isset($employee->production_item) && $employee->resolution_completed_at) {
+        $isLockedCompleted = \Carbon\Carbon::parse($employee->resolution_completed_at)->addHours(24)->isPast();
+    }
+
     if ($isHistory) {
         // $isCompleted = true; // Force completed styling if not already
     }
@@ -151,8 +164,8 @@
             <div class="d-flex align-items-start gap-3 w-100 emp-info-section">
                 <div class="d-flex align-items-center gap-3">
                 @can('edit-employees')
-                {{-- Only show checkbox if Active (Pending) --}}
-                <div class="form-check {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
+                {{-- Show checkbox if Active (Pending), or Completed AND past the 24h lock --}}
+                <div class="form-check {{ (($isCompleted && !$isLockedCompleted) || $isCancelled) ? 'd-none' : '' }}" id="checkbox-container-{{ $employee->id }}">
                     <input class="form-check-input employee-checkbox"
                            type="checkbox"
                            value="{{ $employee->id }}"
@@ -160,6 +173,7 @@
                            data-employee-id="{{ $employee->id }}"
                            data-employer-id="{{ $employee->employer_id }}"
                            data-status="{{ $itemStatus }}"
+                           data-locked-completed="{{ $isLockedCompleted ? 'true' : 'false' }}"
                            data-name-th="{{ $employee->employeeNameTh }}"
                            data-name-en="{{ $employee->employeeNameEn }}"
                            data-title-th="{{ $employee->employeeTitleTh }}"

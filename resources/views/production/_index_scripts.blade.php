@@ -178,41 +178,15 @@
     }
 
     // --- Employer-level Select All ---
+    // Fetches the full eligible employee list straight from the server (see
+    // window.smartEmployerSelectAll) so every eligible employee under this
+    // order is selected even if its card was never expanded.
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('employer-select-all')) {
+            if (!e.isTrusted) return;
             const orderId = e.target.dataset.employerId;
-            const isChecked = e.target.checked;
-
-            // Find the container for this order to only select visible items within it
-            const container = document.getElementById(`order-content-${orderId}`);
-            if (!container) return;
-
-            const checkboxes = container.querySelectorAll('.employee-checkbox');
-
-            // Select-all should skip employees that are no longer actionable:
-            // completed work, cancelled at any of the four resolution statuses,
-            // or terminated (terminated_at is set). The data attributes are
-            // emitted by the employee card partials.
-            const NON_SELECTABLE_STATUSES = [
-                'completed',
-                'cancelled',
-                'registration_cancelled',
-                'renewal_cancelled',
-            ];
-            checkboxes.forEach(cb => {
-                const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper');
-                const isHidden = cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled'));
-                const status = cardWrapper ? (cardWrapper.dataset.status || '') : '';
-                const isTerminated = cardWrapper && cardWrapper.dataset.terminated === 'true';
-                const isSelectable = !NON_SELECTABLE_STATUSES.includes(status) && !isTerminated;
-
-                if (!isHidden && isSelectable) {
-                    if (cb.checked !== isChecked) {
-                        cb.checked = isChecked;
-                        cb.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                }
-            });
+            const endpoint = `/production/order/${orderId}/select-all-ids`;
+            window.smartEmployerSelectAll(e.target, endpoint, { supportsLockedCompleted: false });
         }
     });
 
@@ -227,6 +201,10 @@
                 const orderId = masterCb.dataset.employerId;
                 const container = document.getElementById(`order-content-${orderId}`);
                 if (!container) return;
+                // This order's card was never expanded — nothing rendered here to
+                // sync from, so don't touch a state that smartEmployerSelectAll()
+                // (see _app_scripts.blade.php) may have just set from the server.
+                if (!loadedOrders[orderId]) return;
 
                 const allCheckboxes = container.querySelectorAll('.employee-checkbox');
                 const relevantCheckboxes = Array.from(allCheckboxes).filter(cb => {
