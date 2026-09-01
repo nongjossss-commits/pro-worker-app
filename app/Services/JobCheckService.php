@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
@@ -240,7 +241,8 @@ class JobCheckService
         $employerName = $snapshot->employer?->employerNameTh ?: ($snapshot->employer?->employerNameEn ?: '-');
 
         if (!$subject) {
-            $moved[$menu][] = $this->row('-', $employerName, $initial['work_type_name'] ?? '-', $initial['request_number'] ?? '-', $initial['highest_step_name'] ?? '-', __('Deleted'), $this->statusLabel($initial['status']), __('Deleted'), $initial['remarks'] ?? '-', $checkedAt);
+            // Deleted subject — no employee record left to pull a photo from.
+            $moved[$menu][] = $this->row('-', $employerName, $initial['work_type_name'] ?? '-', $initial['request_number'] ?? '-', $initial['highest_step_name'] ?? '-', __('Deleted'), $this->statusLabel($initial['status']), __('Deleted'), $initial['remarks'] ?? '-', $checkedAt, null);
             return;
         }
 
@@ -248,11 +250,15 @@ class JobCheckService
             $tabType = $menu === 'renewal_resolution' ? 'renewal' : 'registration';
             $current = $this->employeeState($subject, $tabType);
             $nameEn = $this->titledName($subject->employeeTitleEn, $subject->employeeNameEn);
+            $photoPath = $subject->employeePhoto;
         } else {
             $current = $this->itemState($subject);
             $nameEn = $subject->employee
                 ? $this->titledName($subject->employee->employeeTitleEn, $subject->employee->employeeNameEn)
                 : ($subject->new_employee_data['name_en'] ?? '-');
+            // A "New from Origin" MOU-import row has no Employee record yet
+            // (new_employee_data is just a plain array) — no photo to show.
+            $photoPath = $subject->employee?->employeePhoto;
         }
 
         $stepsChanged = $initial['step_ids'] !== $current['step_ids'];
@@ -276,7 +282,8 @@ class JobCheckService
             // so notes added/edited during the session still show up here
             // even for employees with no step/status movement.
             $current['remarks'] ?? ($initial['remarks'] ?? '-'),
-            $checkedAt
+            $checkedAt,
+            $photoPath
         );
 
         if ($stepsChanged || $statusChanged) {
@@ -286,7 +293,7 @@ class JobCheckService
         }
     }
 
-    protected function row(string $nameEn, string $employer, string $workTypeName, string $requestNumber, string $stepBefore, string $stepAfter, string $statusBefore, string $statusAfter, string $remarks, Carbon $checkedAt): array
+    protected function row(string $nameEn, string $employer, string $workTypeName, string $requestNumber, string $stepBefore, string $stepAfter, string $statusBefore, string $statusAfter, string $remarks, Carbon $checkedAt, ?string $photoPath): array
     {
         return [
             'name_en' => $nameEn,
@@ -299,6 +306,10 @@ class JobCheckService
             'status_after' => $statusAfter,
             'remarks' => $remarks,
             'checked_at' => $checkedAt->format('d/m/Y H:i'),
+            // Storage disk 'public' relative path — resolved to an absolute
+            // path and embedded as an image in writeWorkbook(), same pattern
+            // as EmployeeController's Advanced Export photo column.
+            'photo_path' => $photoPath,
         ];
     }
 
@@ -344,6 +355,7 @@ class JobCheckService
 
             $headers = [
                 __('No.'),
+                __('Photo'),
                 __('Employee Name (EN)'),
                 __('Employer'),
                 __('Sub-tab'),
@@ -356,15 +368,16 @@ class JobCheckService
                 __('Checked At'),
             ];
             $sheet->fromArray($headers, null, 'A1');
-            $sheet->getStyle('A1:K1')->getFont()->setBold(true);
-            $sheet->getStyle('A1:K1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF2F2F2');
-            $sheet->getStyle('A1:K1')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $sheet->getStyle('A1:L1')->getFont()->setBold(true);
+            $sheet->getStyle('A1:L1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF2F2F2');
+            $sheet->getStyle('A1:L1')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
             $rowNum = 2;
             $seq = 1;
             foreach ($rowsByMenu[$menuKey] ?? [] as $row) {
                 $sheet->fromArray([
                     $seq,
+                    null, // Photo column — filled below with an embedded image, not text
                     $row['name_en'],
                     $row['employer'],
                     $row['work_type_name'],
@@ -376,11 +389,30 @@ class JobCheckService
                     $row['remarks'],
                     $row['checked_at'],
                 ], null, "A{$rowNum}");
+
+                $sheet->getRowDimension($rowNum)->setRowHeight(90); // ~120px, room for the photo
+
+                if (!empty($row['photo_path']) && Storage::disk('public')->exists($row['photo_path'])) {
+                    $drawing = new Drawing();
+                    $drawing->setName('Employee Photo');
+                    $drawing->setDescription('Employee Photo');
+                    $drawing->setPath(Storage::disk('public')->path($row['photo_path']));
+                    $drawing->setCoordinates("B{$rowNum}");
+                    $drawing->setHeight(100);
+                    $drawing->setOffsetX(28);
+                    $drawing->setOffsetY(10);
+                    $drawing->setWorksheet($sheet);
+                } else {
+                    $sheet->setCellValue("B{$rowNum}", __('No Photo'));
+                    $sheet->getStyle("B{$rowNum}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
+                }
+
                 $rowNum++;
                 $seq++;
             }
 
-            foreach (range('A', 'K') as $col) {
+            $sheet->getColumnDimension('B')->setWidth(18);
+            foreach (array_diff(range('A', 'L'), ['B']) as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
         }
