@@ -940,55 +940,15 @@ document.addEventListener('alpine:init', () => {
 </div>
 
 {{-- Manage Steps Modal --}}
-<div class="modal fade" id="manageStepsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>{{ __('Manage Workflow Steps') }} - {{ $activeTab->name ?? '' }}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                {{-- Add New Step --}}
-                <form id="addStepForm" class="mb-4 p-3 bg-light rounded border">
-                    <label class="form-label fw-bold">{{ __('Add New Step') }}</label>
-                    <div class="d-flex gap-2 align-items-center">
-                        <input type="text" class="form-control" id="newStepName" placeholder="{{ __('Step Name') }}" required>
-                        <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> {{ __('Add') }}</button>
-                    </div>
-                </form>
-
-                <h6 class="fw-bold mb-3 text-secondary">{{ __('Existing Steps') }}</h6>
-                <ul class="list-group list-group-flush" id="stepsList">
-                    @foreach($steps as $step)
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3" id="step-item-{{ $step->id }}">
-                            <div class="d-flex align-items-center gap-3 flex-grow-1">
-                                <span class="badge bg-secondary rounded-pill">{{ $step->order }}</span>
-                                <div class="d-flex align-items-center gap-2 step-display">
-                                    <span class="fw-bold step-name-text">{{ $step->name }}</span>
-                                </div>
-                                <div class="step-edit d-none flex-grow-1 d-flex gap-2 align-items-center">
-                                    <input type="text" class="form-control form-control-sm step-edit-input" value="{{ $step->name }}">
-                                </div>
-                            </div>
-
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'up')"><i class="bi bi-arrow-up"></i></button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'down')"><i class="bi bi-arrow-down"></i></button>
-                                </div>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-primary btn-edit-step" onclick="toggleEditStep({{ $step->id }})"><i class="bi bi-pencil"></i></button>
-                                    <button class="btn btn-sm btn-success d-none btn-save-step" onclick="saveStep({{ $step->id }})"><i class="bi bi-check-lg"></i></button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+<x-manage-steps-modal
+    :steps="$steps"
+    :title="__('Manage Workflow Steps') . ' - ' . ($activeTab->name ?? '')"
+    :store-url="route('workflow.steps.store')"
+    :update-url-base="url('workflow/steps')"
+    :destroy-url-base="url('workflow/steps')"
+    :reorder-url="route('workflow.steps.reorder')"
+    :extra-payload="['work_type_id' => $activeTab->id ?? null]"
+/>
 
 {{-- Manage Team Modal --}}
 <div class="modal fade" id="manageTeamModal" tabindex="-1">
@@ -1137,72 +1097,9 @@ document.addEventListener('alpine:init', () => {
         window.location.search = urlParams.toString();
     }
 
-    // --- Step Management JS ---
-    document.getElementById('addStepForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if(!activeTabId) return;
-
-        const name = document.getElementById('newStepName').value;
-        fetch('{{ route("workflow.steps.store") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ work_type_id: activeTabId, name: name })
-        }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-        });
-    });
-
-    window.toggleEditStep = function(id) {
-        const item = document.getElementById(`step-item-${id}`);
-        item.querySelector('.step-display').classList.toggle('d-none');
-        item.querySelector('.step-edit').classList.toggle('d-none');
-        item.querySelector('.btn-edit-step').classList.toggle('d-none');
-        item.querySelector('.btn-save-step').classList.toggle('d-none');
-    }
-
-    window.saveStep = function(id) {
-        const item = document.getElementById(`step-item-${id}`);
-        const newName = item.querySelector('.step-edit-input').value;
-        fetch(`/workflow/steps/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ name: newName })
-        }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-        });
-    }
-
-    window.deleteStep = function(id) {
-        if(!confirm('Delete this step?')) return;
-        fetch(`/workflow/steps/${id}`, {
-            method: 'DELETE',
-            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
-        }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-        });
-    }
-
-    window.moveStep = function(id, direction) {
-        const list = document.getElementById('stepsList');
-        const item = document.getElementById(`step-item-${id}`);
-        if(direction === 'up') {
-            const prev = item.previousElementSibling;
-            if(prev) list.insertBefore(item, prev);
-        } else {
-            const next = item.nextElementSibling;
-            if(next) list.insertBefore(next, item);
-        }
-
-        const order = [];
-        list.querySelectorAll('li').forEach(li => order.push(li.id.replace('step-item-', '')));
-
-        fetch('{{ route("workflow.steps.reorder") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ order: order })
-        });
-        setTimeout(() => location.reload(), 500);
-    }
+    // --- Step Management JS now lives in components/manage-steps-scripts.blade.php
+    //     (shared by Pre-Production/Workflow/Registration/Renewal), included via
+    //     the manage-steps-modal component above. ---
 
     // --- Dynamic Numbering ---
     // DEPRECATED: CSS Counters are now used for robust numbering.

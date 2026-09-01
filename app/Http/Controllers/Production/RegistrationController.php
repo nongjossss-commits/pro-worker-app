@@ -1673,14 +1673,14 @@ class RegistrationController extends Controller
 
         $maxOrder = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->max('order') ?? 0;
 
-        RegistrationStep::create([
+        $step = RegistrationStep::create([
             'name' => $validated['name'],
             'order' => $maxOrder + 1,
             'type' => 'registration',
             'resolution_tab_id' => $this->currentTab->id,
         ]);
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'step' => ['id' => $step->id, 'name' => $step->name, 'order' => $step->order]]);
     }
 
     /**

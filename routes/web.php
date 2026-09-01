@@ -518,6 +518,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'updateOrderCustomField'])->middleware('permission:manage-own-workflow')->name('production.order.custom_fields.update');
     Route::delete('production/order/custom-fields/{field}', [\App\Http\Controllers\ProductionController::class, 'destroyOrderCustomField'])->middleware('permission:manage-own-workflow')->name('production.order.custom_fields.destroy');
     Route::post('production/steps', [\App\Http\Controllers\ProductionController::class, 'storeStep'])->name('production.steps.store');
+    Route::put('production/steps/{id}', [\App\Http\Controllers\ProductionController::class, 'updateStep'])->name('production.steps.update');
+    Route::delete('production/steps/{id}', [\App\Http\Controllers\ProductionController::class, 'destroyStep'])->name('production.steps.destroy');
+    Route::post('production/steps/reorder', [\App\Http\Controllers\ProductionController::class, 'reorderSteps'])->name('production.steps.reorder');
 
     Route::post('production/{id}/toggle-status', [\App\Http\Controllers\ProductionController::class, 'toggleStatus'])->name('production.toggle_status');
     Route::post('production/{employee}/update-outsource-login', [\App\Http\Controllers\ProductionController::class, 'updateOutsourceLogin'])->name('production.update_outsource_login');

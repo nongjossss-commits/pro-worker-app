@@ -2075,13 +2075,13 @@ class WorkflowController extends Controller
 
         $maxOrder = WorkTypeStep::where('work_type_id', $request->work_type_id)->max('order') ?? 0;
 
-        WorkTypeStep::create([
+        $step = WorkTypeStep::create([
             'work_type_id' => $request->work_type_id,
             'name' => $request->name,
             'order' => $maxOrder + 1
         ]);
 
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'step' => ['id' => $step->id, 'name' => $step->name, 'order' => $step->order]]);
     }
 
     public function updateStep(Request $request, $id)

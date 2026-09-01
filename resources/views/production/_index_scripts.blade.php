@@ -334,30 +334,9 @@
         form.submit();
     });
 
-    // --- Step Management ---
-    document.getElementById('addStepForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if(!activeTabId) return;
-        const name = document.getElementById('newStepName').value;
-
-        fetch('{{ route("production.steps.store") }}', { // New Route
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ work_type_id: activeTabId, name: name })
-        }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-        });
-    });
-
-    window.deleteStep = function(id) {
-         if(!confirm('Delete this step?')) return;
-        fetch(`/workflow/steps/${id}`, { // Can reuse existing delete endpoint as ID is unique
-            method: 'DELETE',
-            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
-        }).then(res => res.json()).then(data => {
-            if(data.success) location.reload();
-        });
-    }
+    // --- Step Management JS now lives in components/manage-steps-scripts.blade.php
+    //     (shared by Pre-Production/Workflow/Registration/Renewal), included via
+    //     the manage-steps-modal component in production/index.blade.php. ---
 
     // --- Send to Workflow ---
     window.sendToWorkflow = function(itemId) {

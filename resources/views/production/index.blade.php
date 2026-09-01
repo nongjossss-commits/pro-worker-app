@@ -619,35 +619,17 @@
 @endif
 
 {{-- Manage Steps Modal (Preparation) --}}
-<div class="modal fade" id="manageStepsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-info text-dark">
-                <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>{{ __('Manage Preparation Steps') }} - {{ $activeTab->name ?? '' }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form id="addStepForm" class="mb-4 p-3 bg-light rounded border">
-                    <label class="form-label fw-bold">{{ __('Add New Step') }}</label>
-                    <div class="d-flex gap-2 align-items-center">
-                        <input type="text" class="form-control" id="newStepName" placeholder="{{ __('Step Name') }}" required>
-                        <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> {{ __('Add') }}</button>
-                    </div>
-                </form>
-
-                <h6 class="fw-bold mb-3 text-secondary">{{ __('Existing Steps') }}</h6>
-                <ul class="list-group list-group-flush" id="stepsList">
-                    @foreach($steps as $step)
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3" id="step-item-{{ $step->id }}">
-                             <span class="fw-bold">{{ $step->name }}</span>
-                             <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})"><i class="bi bi-trash"></i></button>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+<x-manage-steps-modal
+    :steps="$steps"
+    :title="__('Manage Preparation Steps') . ' - ' . ($activeTab->name ?? '')"
+    :store-url="route('production.steps.store')"
+    :update-url-base="url('production/steps')"
+    :destroy-url-base="url('production/steps')"
+    :reorder-url="route('production.steps.reorder')"
+    :extra-payload="['work_type_id' => $activeTab->id ?? null]"
+    header-class="bg-info text-dark"
+    :close-button-white="false"
+/>
 
 {{-- Edit Employee Modal (Full Form) --}}
 <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">

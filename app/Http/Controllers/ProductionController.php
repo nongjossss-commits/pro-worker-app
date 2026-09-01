@@ -810,12 +810,50 @@ class ProductionController extends Controller
                         ->where('stage', 'preparation') // Scoped to preparation
                         ->max('order') ?? 0;
 
-        WorkTypeStep::create([
+        $step = WorkTypeStep::create([
             'work_type_id' => $request->work_type_id,
             'name' => $request->name,
             'order' => $maxOrder + 1,
             'stage' => 'preparation' // Distinct from workflow steps
         ]);
+
+        return response()->json(['success' => true, 'step' => ['id' => $step->id, 'name' => $step->name, 'order' => $step->order]]);
+    }
+
+    /**
+     * Update a Preparation-stage step's name. Own endpoint (not shared with
+     * Workflow's) so a Pre-Production id can never touch a Workflow step.
+     */
+    public function updateStep(Request $request, $id)
+    {
+        $request->validate(['name' => 'required|string|max:255']);
+        WorkTypeStep::where('id', $id)->where('stage', 'preparation')->firstOrFail()->update(['name' => $request->name]);
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Delete a Preparation-stage step. Replaces the old approach of piggy-
+     * backing on Workflow's /workflow/steps/{id} route.
+     */
+    public function destroyStep($id)
+    {
+        WorkTypeStep::where('id', $id)->where('stage', 'preparation')->firstOrFail()->delete();
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Reorder Preparation-stage steps.
+     */
+    public function reorderSteps(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'exists:work_type_steps,id',
+        ]);
+
+        foreach ($request->order as $index => $id) {
+            WorkTypeStep::where('id', $id)->where('stage', 'preparation')->update(['order' => $index + 1]);
+        }
 
         return response()->json(['success' => true]);
     }

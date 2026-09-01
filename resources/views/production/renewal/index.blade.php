@@ -951,74 +951,16 @@
 </div>
 
 {{-- Manage Steps Modal --}}
-<div class="modal fade" id="manageStepsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>{{ __('Manage Workflow Steps') }}</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                {{-- Add New Step --}}
-                <form id="addStepForm" class="mb-4 p-3 bg-light rounded border">
-                    <label class="form-label fw-bold">{{ __('Add New Step') }}</label>
-                    <div class="d-flex gap-2 align-items-center">
-                        <input type="text" class="form-control" id="newStepName" placeholder="{{ __('Step Name (e.g., Medical Checkup)') }}" required>
-                        <button class="btn btn-primary px-4" type="submit"><i class="bi bi-plus-lg"></i> {{ __('Add') }}</button>
-                    </div>
-                </form>
-
-                <h6 class="fw-bold mb-3 text-secondary">{{ __('Existing Steps') }}</h6>
-                <ul class="list-group list-group-flush" id="stepsList">
-                    @foreach($steps as $step)
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3" id="step-item-{{ $step->id }}">
-                            <div class="d-flex align-items-center gap-3 flex-grow-1">
-                                <span class="badge bg-secondary rounded-pill">{{ $step->order }}</span>
-
-                                {{-- Display Mode --}}
-                                <div class="d-flex align-items-center gap-2 step-display">
-                                    @php
-                                        $bgClass = "bg-success";
-                                        $bgStyle = "";
-                                    @endphp
-                                    <span class="badge rounded-pill {{ $bgClass }}" style="{{ $bgStyle }}">&nbsp;</span>
-                                    <span class="fw-bold step-name-text">{{ $step->name }}</span>
-                                </div>
-
-                                {{-- Edit Mode --}}
-                                <div class="step-edit d-none flex-grow-1 d-flex gap-2 align-items-center">
-                                    <input type="text" class="form-control form-control-sm step-edit-input" value="{{ $step->name }}">
-                                </div>
-                            </div>
-
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'up')" title="{{ __('Move Up') }}">
-                                        <i class="bi bi-arrow-up"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="moveStep({{ $step->id }}, 'down')" title="{{ __('Move Down') }}">
-                                        <i class="bi bi-arrow-down"></i>
-                                    </button>
-                                </div>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-primary btn-edit-step" onclick="toggleEditStep({{ $step->id }})">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-success d-none btn-save-step" onclick="saveStep({{ $step->id }})">
-                                        <i class="bi bi-check-lg"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteStep({{ $step->id }})">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+<x-manage-steps-modal
+    :steps="$steps"
+    :title="__('Manage Workflow Steps')"
+    :name-placeholder="__('Step Name (e.g., Medical Checkup)')"
+    :store-url="route('production.renewal.steps.store', ['resolutionTab' => $currentTab->id])"
+    :update-url-base="url('production/renewal/' . $currentTab->id . '/steps')"
+    :destroy-url-base="url('production/renewal/' . $currentTab->id . '/steps')"
+    :reorder-url="route('production.renewal.steps.reorder', ['resolutionTab' => $currentTab->id])"
+    :supports-step-one-prompt="true"
+/>
 
 {{-- Job Order / Note Modal --}}
 <div class="modal fade" id="resolutionNoteModal" tabindex="-1">
@@ -2153,88 +2095,9 @@
         if (el) el.innerText = value;
     }
 
-    // --- Manage Steps ---
-    // (Renewal reuses Registration steps for now, or we can hide this if steps are different)
-    // Assuming steps are shared via 'registration_steps' table as per controller logic.
-    document.getElementById('addStepForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const name = document.getElementById('newStepName').value;
-
-        fetch('{{ route("production.renewal.steps.store", ["resolutionTab" => $currentTab->id]) }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ name: name })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '{{ __('Step Created') }}',
-                    text: '{{ __('New workflow step added successfully!') }}',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => location.reload());
-            }
-        });
-    });
-
-    window.deleteStep = function(id) {
-        // Use SweetAlert if available, else standard confirm
-        Swal.fire({
-            title: '{{ __('Delete Step?') }}',
-            text: "{{ __('This will remove this step from all employees.') }}",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: '{{ __('Yes, delete it!') }}'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`/production/renewal/{{ $currentTab->id }}/steps/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.success) {
-                        Swal.fire('{{ __('Deleted!') }}', '{{ __('Step has been deleted.') }}', 'success')
-                        .then(() => location.reload());
-                    }
-                });
-            }
-        });
-    }
-
-    window.toggleEditStep = function(id) {
-        const item = document.getElementById(`step-item-${id}`);
-        item.querySelector('.step-display').classList.toggle('d-none');
-        item.querySelector('.step-edit').classList.toggle('d-none');
-        item.querySelector('.btn-edit-step').classList.toggle('d-none');
-        item.querySelector('.btn-save-step').classList.toggle('d-none');
-    }
-
-    window.saveStep = function(id) {
-        const item = document.getElementById(`step-item-${id}`);
-        const newName = item.querySelector('.step-edit-input').value;
-
-        fetch(`/production/renewal/{{ $currentTab->id }}/steps/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ name: newName })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '{{ __('Saved!') }}',
-                    text: '{{ __('Step settings updated successfully.') }}',
-                    timer: 1500,
-                    showConfirmButton: false
-                }).then(() => location.reload());
-            }
-        });
-    }
+    // --- Manage Steps JS now lives in components/manage-steps-scripts.blade.php
+    //     (shared by Pre-Production/Workflow/Registration/Renewal), included via
+    //     the manage-steps-modal component. ---
 
     // --- Resolution Auto-Settings ---
     window.saveResolutionSettings = function() {
@@ -2258,94 +2121,6 @@
                 Swal.fire('{{ __('Saved') }}', '{{ __('Auto Settings updated.') }}', 'success');
             }
         });
-    }
-
-    // Helper for submitting step reorder
-    function submitReorder(order, behavior) {
-        fetch('{{ route("production.renewal.steps.reorder", ["resolutionTab" => $currentTab->id]) }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({
-                order: order,
-                handle_step_one_behavior: behavior
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-               if (behavior === 'auto_tick') {
-                   Swal.fire({
-                        icon: 'success',
-                        title: '{{ __('Updated!') }}',
-                        text: '{{ __('Order updated and employees processed.') }}',
-                        timer: 1500,
-                        showConfirmButton: false
-                   }).then(() => location.reload());
-               }
-               // For 'none', silent success or toast
-            }
-        });
-    }
-
-    window.moveStep = function(id, direction) {
-        const stepsList = document.getElementById('stepsList');
-        const currentItem = document.getElementById(`step-item-${id}`);
-
-        // Capture current first item ID before move
-        const firstLi = stepsList.querySelector('li');
-        const currentFirstId = firstLi ? firstLi.id.replace('step-item-', '') : null;
-
-        if (direction === 'up') {
-            const prevItem = currentItem.previousElementSibling;
-            if (prevItem) {
-                stepsList.insertBefore(currentItem, prevItem);
-            }
-        } else {
-            const nextItem = currentItem.nextElementSibling;
-            if (nextItem) {
-                stepsList.insertBefore(nextItem, currentItem);
-            }
-        }
-
-        // Collect new order
-        const newOrder = [];
-        stepsList.querySelectorAll('li').forEach(li => {
-            newOrder.push(li.id.replace('step-item-', ''));
-        });
-
-        // Capture new first item ID
-        const newFirstId = newOrder[0];
-
-        // Check if Step 1 has changed
-        if (currentFirstId && newFirstId && currentFirstId !== newFirstId) {
-            Swal.fire({
-                title: '{{ __('Change First Step?') }}',
-                text: '{{ __('You are changing the first step. Select how to handle existing active employees:') }}',
-                icon: 'warning',
-                showCancelButton: true,
-                showDenyButton: true,
-                confirmButtonText: '{{ __('Auto-tick New Step 1') }}', // Choice 1
-                denyButtonText: '{{ __('Just Move (No Data Change)') }}', // Choice 2
-                cancelButtonText: '{{ __('Cancel') }}',
-                confirmButtonColor: '#3085d6',
-                denyButtonColor: '#6c757d',
-                allowOutsideClick: false
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Choice 1: Auto-tick
-                    submitReorder(newOrder, 'auto_tick');
-                } else if (result.isDenied) {
-                    // Choice 2: Just Move
-                    submitReorder(newOrder, 'none');
-                } else {
-                    // Cancel: Revert DOM change by reloading
-                    location.reload();
-                }
-            });
-        } else {
-            // Standard move (Step 1 didn't change)
-            submitReorder(newOrder, 'none');
-        }
     }
 
     // --- Employee Actions (Updated for Immediate DOM Feedback & Stats) ---
@@ -2437,6 +2212,86 @@
                         if(data.html) updateCardHTML(id, data.html);
                         Swal.fire('{{ __('Cancelled') }}', '{{ __('Registration cancelled.') }}', 'success');
                         if(data.stats) updateStatsUI(data.stats);
+                        applyFilters();
+                    }
+                });
+             }
+        });
+    }
+
+    // Dual-listed card (Registration employee also usable in this Renewal
+    // tab via EmployeeRenewalLink) — same UX as finalize/cancel/restore
+    // above, but acts on the link only, at /link/{id}/..., so the real
+    // Employee/Registration side is never touched.
+    window.finalizeRenewalLink = function(linkId, employeeId) {
+        Swal.fire({
+            title: '{{ __('Save to Database?') }}',
+            text: "{{ __('The employee will be marked as completed.') }}",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '{{ __('Yes, Save') }}'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/renewal/{{ $currentTab->id }}/link/${linkId}/finalize` + window.location.search, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        if(data.html) updateCardHTML(employeeId, data.html);
+                        Swal.fire('{{ __('Saved!') }}', '{{ __('Employee marked as completed.') }}', 'success');
+                        applyFilters();
+                    }
+                });
+             }
+        });
+    }
+
+    window.restoreRenewalLinkState = function(linkId, employeeId) {
+        Swal.fire({
+            title: '{{ __('Restore to Pending?') }}',
+            text: "{{ __('This will move the employee back to the active list.') }}",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: '{{ __('Yes, Restore') }}'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/renewal/{{ $currentTab->id }}/link/${linkId}/restore` + window.location.search, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        if(data.html) updateCardHTML(employeeId, data.html);
+                        Swal.fire('{{ __('Restored!') }}', '{{ __('Employee is back to pending.') }}', 'success');
+                        applyFilters();
+                    }
+                });
+             }
+        });
+    }
+
+    window.cancelRenewalLink = function(linkId, employeeId) {
+        Swal.fire({
+            title: '{{ __('Cancel Renewal?') }}',
+            text: "{{ __('The employee card will be grayed out.') }}",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#6c757d',
+            confirmButtonText: '{{ __('Yes, Cancel') }}'
+        }).then((result) => {
+             if (result.isConfirmed) {
+                fetch(`/production/renewal/{{ $currentTab->id }}/link/${linkId}/cancel` + window.location.search, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        if(data.html) updateCardHTML(employeeId, data.html);
+                        Swal.fire('{{ __('Cancelled') }}', '{{ __('Registration cancelled.') }}', 'success');
                         applyFilters();
                     }
                 });
@@ -2544,7 +2399,7 @@
     }
 
     // --- Fixed AJAX Toggle Step with Real-time Updates ---
-    window.toggleStep = function(employeeId, stepId, completed) {
+    window.toggleStep = function(employeeId, stepId, completed, linkId) {
         // Optimistic UI could be kept for button only, but full replacement is safer for consistency.
         // We will optimistically update just the button style to give immediate feedback, then replace card.
         const card = document.getElementById(`employee-card-${employeeId}`);
@@ -2556,7 +2411,13 @@
             btn.style.opacity = '0.5';
         }
 
-        fetch(`/production/renewal/{{ $currentTab->id }}/progress/${employeeId}` + window.location.search, {
+        // Dual-listed card (linkId set) — act on the EmployeeRenewalLink
+        // instead, so the real Employee/Registration side is never touched.
+        const url = linkId
+            ? `/production/renewal/{{ $currentTab->id }}/link/${linkId}/progress` + window.location.search
+            : `/production/renewal/{{ $currentTab->id }}/progress/${employeeId}` + window.location.search;
+
+        fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: JSON.stringify({ step_id: stepId, completed: completed })
