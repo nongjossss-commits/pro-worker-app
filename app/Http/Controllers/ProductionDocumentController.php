@@ -167,9 +167,14 @@ class ProductionDocumentController extends Controller
 
             $index = 1;
             foreach ($items as $item) {
-                if ($item->employee) {
-                    $emp = $item->employee;
+                $emp = $item->employee;
+                // A "draft" person — identity typed in directly for a
+                // manual bill's quotation, no real Employee record. Same
+                // ProductionItem row, same tier-matching below (keyed off
+                // $item->id, not employee_id), just a different data source.
+                $draft = $emp ? null : $item->new_employee_data;
 
+                if ($emp || $draft) {
                     // Determine Price
                     $price = 0;
                     $isAssignedToTier = false;
@@ -212,16 +217,35 @@ class ProductionDocumentController extends Controller
                         continue; // Skip employees with 0 price in per-head full document lists
                     }
 
-                    $employeeList[] = [
-                        'index' => $index++,
-                        'image' => $emp->employeePhoto,
-                        'prefix' => $emp->employeeTitleEn ?: $emp->titleTh,
-                        'name' => trim($emp->employeeNameEn ?: $emp->employeeNameTh),
-                        'nationality' => $emp->employeeNationality,
-                        'price' => $price,
-                        'employee_id' => 'EMP' . str_pad($emp->id, 5, '0', STR_PAD_LEFT),
-                        'note' => $tierNote,
-                    ];
+                    if ($emp) {
+                        $employeeList[] = [
+                            'index' => $index++,
+                            'image' => $emp->employeePhoto,
+                            'prefix' => $emp->employeeTitleEn ?: $emp->titleTh,
+                            'name' => trim($emp->employeeNameEn ?: $emp->employeeNameTh),
+                            'nationality' => $emp->employeeNationality,
+                            'price' => $price,
+                            'employee_id' => 'EMP' . str_pad($emp->id, 5, '0', STR_PAD_LEFT),
+                            'note' => $tierNote,
+                            'passport' => $emp->employeePassport,
+                            'id_number' => $emp->employee_id_number,
+                            'work_permit' => $emp->employeeWorkPermit,
+                        ];
+                    } else {
+                        $employeeList[] = [
+                            'index' => $index++,
+                            'image' => $draft['photo'] ?? null,
+                            'prefix' => $draft['title_en'] ?? '',
+                            'name' => trim(($draft['name_en'] ?? '') ?: ($draft['name_th'] ?? '')),
+                            'nationality' => $draft['nationality'] ?? '',
+                            'price' => $price,
+                            'employee_id' => '-', // no real Employee record
+                            'note' => $tierNote,
+                            'passport' => $draft['passport'] ?? '',
+                            'id_number' => $draft['id_number'] ?? '',
+                            'work_permit' => $draft['work_permit'] ?? '',
+                        ];
+                    }
                 }
             }
         }
@@ -251,8 +275,15 @@ class ProductionDocumentController extends Controller
             }
         }
 
+        // A quotation can choose to hide the grand total (per-unit rate quote,
+        // no committed headcount) — defaults to showing it, same as before,
+        // for every other document type and whenever the caller doesn't pass
+        // the flag at all (e.g. the Sales-module quotation flow).
+        $showTotal = $type === 'quotation' ? $request->boolean('show_total', true) : true;
+
         $data = [
             'production' => $production,
+            'showTotal' => $showTotal,
             'includeEmployeeList' => $includeEmployeeList,
             'listOnly' => $listOnly,
             'employeeList' => $employeeList,
@@ -419,6 +450,9 @@ class ProductionDocumentController extends Controller
 
         $data = [
             'production' => $production,
+            // This path never generates a 'quotation' (payments only apply to
+            // invoices/receipts/tax invoices) — always show the total, same as before.
+            'showTotal' => true,
             'includeEmployeeList' => false,
             'employeeList' => [],
             'profile' => $companyProfile,

@@ -486,7 +486,11 @@ class SalesLeadController extends Controller
             default => 'documents.quotation',
         };
 
-        return view($viewName, compact('production', 'profile', 'financial', 'transactions', 'type', 'activeGroup'));
+        // Sales-module quotations don't have a "show total" toggle (no UI for
+        // it here) — always show the total, same as before this option existed.
+        $showTotal = true;
+
+        return view($viewName, compact('production', 'profile', 'financial', 'transactions', 'type', 'activeGroup', 'showTotal'));
     }
 
     // --- Payments (Pre-Production) ---

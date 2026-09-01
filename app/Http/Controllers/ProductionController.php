@@ -944,6 +944,79 @@ class ProductionController extends Controller
         return response()->json(['success' => false, 'message' => 'Invalid payload'], 400);
     }
 
+    /**
+     * Add a "draft" person to this order's employee pool — someone a client
+     * has sent identity details for but who isn't a registered Employee
+     * yet (e.g. quoting for workers before they're formally onboarded).
+     * Creates a real ProductionItem (employee_id = null) so it slots into
+     * the existing pricing-tier / document-generation machinery exactly
+     * like a real employee would, keyed on new_employee_data instead.
+     *
+     * Manual bills only — never lets a placeholder person slip into a real
+     * Workflow/Pre-Production/Registration order, where every worker must
+     * be a genuine Employee for the actual government paperwork.
+     */
+    public function storeDraftEmployee(Request $request, $id, $groupId)
+    {
+        $order = ProductionOrder::findOrFail($id);
+
+        if (!is_null($order->work_type_id)) {
+            abort(403, 'This is only available for manual bills (Quotations/Invoices from the Finance Hub).');
+        }
+
+        $group = ProductionFinancialGroup::findOrFail($groupId);
+        if ($group->production_order_id !== $order->id) {
+            abort(403, 'Unauthorized access to financial group.');
+        }
+
+        $validated = $request->validate([
+            'name_en' => 'required_without:name_th|nullable|string|max:255',
+            'name_th' => 'required_without:name_en|nullable|string|max:255',
+            'title_en' => 'nullable|string|max:50',
+            'nationality' => 'nullable|string|max:100',
+            'passport' => 'nullable|string|max:50',
+            'id_number' => 'nullable|string|max:50',
+            'work_permit' => 'nullable|string|max:50',
+            'photo' => 'nullable|image|max:2048',
+        ]);
+
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('production_items/draft_photos', 'public');
+        }
+
+        $item = ProductionItem::create([
+            'production_order_id' => $order->id,
+            'employee_id' => null,
+            'status' => 'pending',
+            'new_employee_data' => [
+                'name_en' => $validated['name_en'] ?? '',
+                'name_th' => $validated['name_th'] ?? '',
+                'title_en' => $validated['title_en'] ?? '',
+                'nationality' => $validated['nationality'] ?? '',
+                'passport' => $validated['passport'] ?? '',
+                'id_number' => $validated['id_number'] ?? '',
+                'work_permit' => $validated['work_permit'] ?? '',
+                'photo' => $photoPath,
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'item' => [
+                'id' => $item->id,
+                'name_en' => $validated['name_en'] ?? '',
+                'name_th' => $validated['name_th'] ?? '',
+                'title_en' => $validated['title_en'] ?? '',
+                'nationality' => $validated['nationality'] ?? '',
+                'passport' => $validated['passport'] ?? '',
+                'id_number' => $validated['id_number'] ?? '',
+                'work_permit' => $validated['work_permit'] ?? '',
+                'photo_url' => $photoPath ? Storage::disk('public')->url($photoPath) : null,
+            ],
+        ]);
+    }
+
     public function destroyFinancialGroup(Request $request, $id, $groupId)
     {
         // Use findOrFail directly on model, then check permission

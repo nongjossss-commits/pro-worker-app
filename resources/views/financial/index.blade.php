@@ -82,6 +82,11 @@
                 <i class="bi bi-journal-text me-1"></i> {{ __('Manual Bills') }}
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {{ $tab == 'quotations' ? 'active' : '' }}" href="{{ route('finance.index', ['tab' => 'quotations']) }}">
+                <i class="bi bi-file-earmark-text me-1"></i> {{ __('Quotations') }}
+            </a>
+        </li>
     </ul>
 
     @if($tab === 'overview')
@@ -94,6 +99,8 @@
     @include('financial.tabs.renewal')
     @elseif($tab === 'manual')
     @include('financial.tabs.manual')
+    @elseif($tab === 'quotations')
+    @include('financial.tabs.quotations')
     @elseif($tab === 'wht')
     @include('financial.tabs.wht')
     @elseif($tab === 'expenses')

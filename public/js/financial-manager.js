@@ -18,6 +18,12 @@ if (typeof window.financialManager === 'undefined') {
             modalSelectedIds: [],
             modalSearch: '',
 
+            // "Add Draft Person" mini-form inside the Manage Employees modal —
+            // manual bills only (server-side guarded too, see storeDraftEmployee()).
+            showDraftEmployeeForm: false,
+            draftEmployeeSaving: false,
+            draftEmployeeForm: { name_th: '', name_en: '', title_en: '', nationality: '', passport: '', id_number: '', work_permit: '', photo: null },
+
             // Advance Items
             advanceItems: [],
             productionItems: initialData.productionItems || [], // List of {id, name, employee_id} (Scoped to Current Stage)
@@ -78,6 +84,11 @@ if (typeof window.financialManager === 'undefined') {
             selectedTransactionIds: [],
             documentTypeToGenerate: '',
             includeEmployeeList: false,
+            // Quotation only — when off, the document shows a per-unit price
+            // with no grand total (for when the exact headcount isn't
+            // committed yet). Always true (= old behaviour) for every other
+            // document type.
+            quotationShowTotal: true,
             // รูปแบบเอกสาร: 'invoice' = ใบเท่านั้น, 'with_list' = ใบ+รายชื่อ, 'list_only' = รายชื่อเท่านั้น
             docVariant: 'invoice',
 
@@ -1358,6 +1369,8 @@ if (typeof window.financialManager === 'undefined') {
             openManageEmployeesModal(index) {
                 this.activeTierIndex = index;
                 this.modalSearch = '';
+                this.showDraftEmployeeForm = false;
+                this.resetDraftEmployeeForm();
 
                 // Initialize selection with CURRENT TIER items
                 // But filtered by visibility (only select items that are in the modal)
@@ -1386,6 +1399,75 @@ if (typeof window.financialManager === 'undefined') {
                     const inst = bootstrap.Modal.getInstance(el);
                     if (inst) inst.hide();
                 }
+            },
+
+            resetDraftEmployeeForm() {
+                this.draftEmployeeForm = { name_th: '', name_en: '', title_en: '', nationality: '', passport: '', id_number: '', work_permit: '', photo: null };
+            },
+
+            onDraftEmployeePhotoChange(event) {
+                this.draftEmployeeForm.photo = event.target.files[0] || null;
+            },
+
+            // Adds a "draft" person (no real Employee record yet) to this order's
+            // pool and pre-selects them in the modal — manual bills only. See
+            // ProductionController::storeDraftEmployee() for the matching guard.
+            submitDraftEmployee() {
+                const f = this.draftEmployeeForm;
+                if (!f.name_th.trim() && !f.name_en.trim()) {
+                    if (typeof showToast === 'function') showToast('Please enter at least one name (Thai or English).', 'danger');
+                    return;
+                }
+                if (!this.activeGroupId) return;
+
+                this.draftEmployeeSaving = true;
+                const formData = new FormData();
+                formData.append('name_th', f.name_th.trim());
+                formData.append('name_en', f.name_en.trim());
+                formData.append('title_en', f.title_en.trim());
+                formData.append('nationality', f.nationality.trim());
+                formData.append('passport', f.passport.trim());
+                formData.append('id_number', f.id_number.trim());
+                formData.append('work_permit', f.work_permit.trim());
+                if (f.photo) formData.append('photo', f.photo);
+
+                fetch(`/production/${this.productionId}/financial-groups/${this.activeGroupId}/draft-employee`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
+                    body: formData,
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.message || 'Failed');
+                    const item = data.item;
+                    this.productionItems.push({
+                        id: item.id,
+                        name: item.name_th || item.name_en || 'Temporary Worker',
+                        name_en: item.name_en,
+                        title_en: item.title_en,
+                        photo: item.photo_url || '',
+                        nationality: item.nationality,
+                        insurance_type: '',
+                        passport: item.passport,
+                        has_visa: false,
+                        employee_id: null,
+                        last_step_name: null,
+                        status: 'pending',
+                        work_permit: item.work_permit,
+                        id_number: item.id_number,
+                        ra_number: '',
+                        reference_id: '',
+                    });
+                    // Pre-select the new person for the tier currently being edited.
+                    this.modalSelectedIds.push(item.id);
+                    this.resetDraftEmployeeForm();
+                    this.showDraftEmployeeForm = false;
+                })
+                .catch(err => {
+                    console.error(err);
+                    if (typeof showToast === 'function') showToast('Failed to add the draft person.', 'danger');
+                })
+                .finally(() => { this.draftEmployeeSaving = false; });
             },
 
             // --- Advance Logic ---
@@ -1813,11 +1895,11 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 const includeList = this.docVariant !== 'invoice';
                 const listOnly = this.docVariant === 'list_only';
-                this.openDocument(this.documentTypeToGenerate, ids, mode, includeList, listOnly);
+                this.openDocument(this.documentTypeToGenerate, ids, mode, includeList, listOnly, null, this.quotationShowTotal);
                 const inst = bootstrap.Modal.getInstance(this.$refs.docSelectionModal);
                 if (inst) inst.hide();
             },
-            openDocument(type, transactionIds = null, mode = null, includeEmployeeList = false, listOnly = false, paymentMethods = null) {
+            openDocument(type, transactionIds = null, mode = null, includeEmployeeList = false, listOnly = false, paymentMethods = null, showTotal = true) {
                 let url = `/production/${this.productionId}/documents/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
@@ -1827,6 +1909,9 @@ if (typeof window.financialManager === 'undefined') {
                 }
                 if (mode) {
                     url += `&mode=${mode}`;
+                }
+                if (type === 'quotation' && !showTotal) {
+                    url += `&show_total=0`;
                 }
                 if (includeEmployeeList) {
                     url += `&include_employee_list=1`;

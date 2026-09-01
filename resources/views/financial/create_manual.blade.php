@@ -1,7 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-4">
+<div class="container py-4" x-data="{
+        documentType: '{{ old('document_type', 'quotation') }}',
+        get employerRequired() { return this.documentType === 'invoice'; }
+    }">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow">
@@ -13,8 +16,22 @@
                         @csrf
 
                         <div class="mb-3">
-                            <label for="employer_id" class="form-label">{{ __('Select Employer') }} <span class="text-danger">*</span></label>
-                            <select name="employer_id" id="employer_id" class="form-select" required>
+                            <label for="document_type" class="form-label">{{ __('Document Type') }} <span class="text-danger">*</span></label>
+                            <select name="document_type" id="document_type" class="form-select" x-model="documentType" required>
+                                @foreach($documentTypes as $key => $label)
+                                    <option value="{{ $key }}" {{ old('document_type', 'quotation') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">{{ __('Choose what kind of document this will be. More settings on the next screen match this choice.') }}</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="employer_id" class="form-label">
+                                {{ __('Select Employer') }}
+                                <span class="text-danger" x-show="employerRequired" x-cloak>*</span>
+                                <span class="text-muted small" x-show="!employerRequired" x-cloak>({{ __('Optional') }})</span>
+                            </label>
+                            <select name="employer_id" id="employer_id" class="form-select" :required="employerRequired">
                                 <option value="">-- {{ __('Select Employer') }} --</option>
                                 @foreach($employers as $emp)
                                     <option value="{{ $emp->id }}" {{ old('employer_id', request('employer_id')) == $emp->id ? 'selected' : '' }}>
@@ -22,7 +39,8 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="form-text">{{ __('The bill will be linked to this employer.') }}</div>
+                            <div class="form-text" x-show="employerRequired" x-cloak>{{ __('The bill will be linked to this employer.') }}</div>
+                            <div class="form-text" x-show="!employerRequired" x-cloak>{{ __('Leave blank for a per-unit quotation with no committed headcount yet — you can still pick an employer if you already know who it\'s for.') }}</div>
                         </div>
 
                         <div class="mb-3">

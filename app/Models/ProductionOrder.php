@@ -15,6 +15,7 @@ class ProductionOrder extends Model
         'resolution_tab_id',
         'sales_lead_id',
         'work_type_id',
+        'manual_bill_type', // 'quotation' | 'invoice' | null — only set for work_type_id=null manual bills
         'type', // 'employer' or 'independent'
         'project_name',
         'description',

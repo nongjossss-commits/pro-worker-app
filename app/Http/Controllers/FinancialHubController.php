@@ -14,6 +14,17 @@ use Carbon\Carbon;
 class FinancialHubController extends Controller
 {
     /**
+     * Document types the "Create Manual Bill" flow can start from. Kept as
+     * one array (not duplicated between the dropdown and the validation
+     * rule) so adding a type later — Tax Invoice, Receipt — is a one-line
+     * change here rather than a hunt across the controller and view.
+     */
+    protected const MANUAL_BILL_DOCUMENT_TYPES = [
+        'quotation' => 'ใบเสนอราคา (Quotation)',
+        'invoice' => 'ใบแจ้งหนี้ (Invoice)',
+    ];
+
+    /**
      * Display the financial dashboard and transaction list.
      */
     public function index(Request $request)
@@ -338,8 +349,13 @@ class FinancialHubController extends Controller
                 }
             }
         }
-        elseif ($tab === 'manual') {
-            $baseQuery = ProductionOrder::whereNull('work_type_id');
+        elseif ($tab === 'manual' || $tab === 'quotations') {
+            // Both tabs share the same "manual bill" pool (work_type_id =
+            // null); manual_bill_type is what separates a real invoice from
+            // a quotation so their history never mixes. Rows created before
+            // this distinction existed were backfilled to 'invoice'.
+            $manualBillType = $tab === 'quotations' ? 'quotation' : 'invoice';
+            $baseQuery = ProductionOrder::whereNull('work_type_id')->where('manual_bill_type', $manualBillType);
 
             $stats = $this->getStatsForOrders($baseQuery);
 
@@ -681,7 +697,11 @@ class FinancialHubController extends Controller
                 ->get();
         }
 
-        return view('financial.create_manual', compact('employers', 'selectedEmployees'));
+        // Data-driven so a new document type (e.g. Tax Invoice) is a
+        // one-line addition here — no other file needs to know the list.
+        $documentTypes = self::MANUAL_BILL_DOCUMENT_TYPES;
+
+        return view('financial.create_manual', compact('employers', 'selectedEmployees', 'documentTypes'));
     }
 
     /**
@@ -690,7 +710,11 @@ class FinancialHubController extends Controller
     public function storeManual(Request $request)
     {
         $request->validate([
-            'employer_id' => 'required|exists:employers,id',
+            'document_type' => 'required|in:' . implode(',', array_keys(self::MANUAL_BILL_DOCUMENT_TYPES)),
+            // Employer stays required for an Invoice (unchanged from before);
+            // a Quotation can be left blank — e.g. a per-unit rate quote with
+            // no committed headcount yet.
+            'employer_id' => 'required_if:document_type,invoice|nullable|exists:employers,id',
             'description' => 'nullable|string|max:255',
             'amount' => 'nullable|numeric|min:0',
             'bill_date' => 'nullable|date',
@@ -700,16 +724,21 @@ class FinancialHubController extends Controller
 
         DB::beginTransaction();
         try {
-            $employer = Employer::find($request->employer_id);
+            $employer = $request->employer_id ? Employer::find($request->employer_id) : null;
             $date = $request->bill_date ? Carbon::parse($request->bill_date) : now();
 
             // 1. Create Production Order (Type: Manual/General)
             // We use work_type_id = null to signify a generic/manual order.
             $order = ProductionOrder::create([
-                'employer_id' => $employer->id,
+                'employer_id' => $employer?->id,
                 'work_type_id' => null,
+                'manual_bill_type' => $request->document_type,
                 'type' => 'employer', // Standard type
-                'project_name' => $request->description ?: ('Manual Bill - ' . $date->format('d/m/Y')),
+                // Show exactly what the user typed, nothing else — an empty
+                // description stays blank instead of falling back to an
+                // auto-generated "Manual Bill - date" label (that used to
+                // leak onto the printed document's line-item description).
+                'project_name' => $request->description ?: '',
                 'description' => 'Generated via Finance Hub',
                 'status' => 'active', // Active so it appears in lists if needed, or 'completed'
                 'created_by' => auth()->id(),

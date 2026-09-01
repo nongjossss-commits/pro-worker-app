@@ -32,7 +32,7 @@
             'name' => $emp ? ($emp->employeeNameTh ?? $emp->employeeNameEn) : ($tempData['name_th'] ?? $tempData['name_en'] ?? 'ลูกจ้างชั่วคราว'),
             'name_en' => $emp ? $emp->employeeNameEn : ($tempData['name_en'] ?? ''),
             'title_en' => $emp ? $emp->employeeTitleEn : ($tempData['title_en'] ?? ''),
-            'photo' => $emp ? ($emp->employeePhoto ? asset('storage/' . $emp->employeePhoto) : '') : '',
+            'photo' => $emp ? ($emp->employeePhoto ? asset('storage/' . $emp->employeePhoto) : '') : (!empty($tempData['photo']) ? asset('storage/' . $tempData['photo']) : ''),
             'nationality' => $emp ? $emp->employeeNationality : ($tempData['nationality'] ?? ''),
             'insurance_type' => $emp ? $emp->insurance_type : '',
             'passport' => $emp ? $emp->employeePassport : ($tempData['passport'] ?? ''),
@@ -43,8 +43,8 @@
             // Extra searchable identifiers — see matchesEmployeeSearch() in
             // financial-manager.js. Temp (not-yet-created) employees have
             // none of these yet, so they simply won't match on them.
-            'work_permit' => $emp ? $emp->employeeWorkPermit : '',
-            'id_number' => $emp ? $emp->employee_id_number : '',
+            'work_permit' => $emp ? $emp->employeeWorkPermit : ($tempData['work_permit'] ?? ''),
+            'id_number' => $emp ? $emp->employee_id_number : ($tempData['id_number'] ?? ''),
             'ra_number' => $emp ? $emp->name_list_number : '',
             'reference_id' => $emp ? $emp->employee_reference_id : ''
         ];
@@ -435,13 +435,17 @@ class="row">
 
                 <div class="d-grid gap-2">
                      <!-- Quotation Dropdown (Updated) -->
+                     <div class="form-check form-switch mb-1" style="padding-left: 2.5em;" title="{{ __('When off, the quotation shows a per-unit price with no grand total — for when the exact headcount isn\'t committed yet.') }}">
+                        <input class="form-check-input" type="checkbox" role="switch" id="quotationShowTotalSwitch" x-model="quotationShowTotal">
+                        <label class="form-check-label small" for="quotationShowTotalSwitch">{{ __('Quotation: Show Grand Total') }}</label>
+                    </div>
                      <div class="btn-group">
                         <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-file-earmark-text me-2"></i>{{ __('Quotation (ใบเสนอราคา)') }}
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('quotation', null, 'combined'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Combined (Service + Advance)') }}</a></li>
-                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('quotation', null, 'service_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Service Fee Only') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('quotation', null, 'combined', false, false, null, quotationShowTotal); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Combined (Service + Advance)') }}</a></li>
+                            <li><a class="dropdown-item" href="#" @click.prevent="openDocument('quotation', null, 'service_only', false, false, null, quotationShowTotal); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Service Fee Only') }}</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openSelectionModal('quotation'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Select Installment(s)...') }}</a></li>
                         </ul>
@@ -751,6 +755,37 @@ class="row">
                             </button>
                         </div>
                     </div>
+
+                    @if(is_null($production->work_type_id))
+                    {{-- Manual bills only — someone whose identity the client sent
+                         but who isn't a registered Employee yet. Scoped to just
+                         this order (see ProductionController::storeDraftEmployee(),
+                         which re-checks work_type_id server-side). --}}
+                    <div class="mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100" @click="showDraftEmployeeForm = !showDraftEmployeeForm">
+                            <i class="bi bi-person-plus"></i> {{ __('Add Draft Person (Not Yet in the System)') }}
+                        </button>
+                        <div class="border rounded p-2 mt-1 bg-light" x-show="showDraftEmployeeForm" x-cloak>
+                            <div class="row g-1">
+                                <div class="col-6"><input type="text" class="form-control form-control-sm" placeholder="{{ __('Name (Thai)') }}" x-model="draftEmployeeForm.name_th"></div>
+                                <div class="col-6"><input type="text" class="form-control form-control-sm" placeholder="{{ __('Name (English)') }}" x-model="draftEmployeeForm.name_en"></div>
+                                <div class="col-6"><input type="text" class="form-control form-control-sm" placeholder="{{ __('Nationality') }}" x-model="draftEmployeeForm.nationality"></div>
+                                <div class="col-6"><input type="text" class="form-control form-control-sm" placeholder="{{ __('Passport No.') }}" x-model="draftEmployeeForm.passport"></div>
+                                <div class="col-6"><input type="text" class="form-control form-control-sm" placeholder="{{ __('ID No.') }}" x-model="draftEmployeeForm.id_number"></div>
+                                <div class="col-6"><input type="text" class="form-control form-control-sm" placeholder="{{ __('Work Permit No.') }}" x-model="draftEmployeeForm.work_permit"></div>
+                                <div class="col-12"><input type="file" class="form-control form-control-sm" accept="image/*" @change="onDraftEmployeePhotoChange($event)"></div>
+                            </div>
+                            <div class="text-end mt-2">
+                                <button type="button" class="btn btn-sm btn-secondary" @click="showDraftEmployeeForm = false; resetDraftEmployeeForm();">{{ __('Cancel') }}</button>
+                                <button type="button" class="btn btn-sm btn-primary" @click="submitDraftEmployee()" :disabled="draftEmployeeSaving">
+                                    <span x-show="!draftEmployeeSaving">{{ __('Add') }}</span>
+                                    <span x-show="draftEmployeeSaving" x-cloak>{{ __('Saving...') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="list-group list-group-flush border rounded small" style="max-height: 300px; overflow-y: auto;">
                         <template x-for="item in allEmployeesForTier" :key="item.id">
                             <label class="list-group-item list-group-item-action d-flex gap-2 align-items-center py-2"
@@ -1442,6 +1477,11 @@ class="row">
                                 {{ __('Employee List only (no document)') }}
                             </label>
                         </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-3" x-show="documentTypeToGenerate === 'quotation'" x-cloak>
+                        <input class="form-check-input" type="checkbox" role="switch" :id="'quotationShowTotalModal-' + productionId" x-model="quotationShowTotal">
+                        <label class="form-check-label small" :for="'quotationShowTotalModal-' + productionId">{{ __('Quotation: Show Grand Total') }}</label>
                     </div>
 
                     <button class="btn btn-primary btn-sm w-100" @click="generateSelectedDocument()" :disabled="selectedTransactionIds.length === 0">

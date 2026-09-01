@@ -235,7 +235,7 @@
                  <div>{!! nl2br(e($financial['customer_override']['address'] ?? '-')) !!}</div>
                  <div>Tax ID: {{ $financial['customer_override']['tax_id'] ?? '-' }}</div>
                  <div>Tel: {{ $financial['customer_override']['phone'] ?? '-' }}</div>
-            @else
+            @elseif($production->employer)
                  @php
                      $emp = $production->employer;
                      $empName = array_filter([$emp->getRawOriginal('employerNameTh'), $emp->employerNameEn]);
@@ -252,6 +252,10 @@
                  <div>{!! nl2br(e($empAddress)) !!}</div>
                  <div>Tax ID: {{ $emp->employerTaxId ?? '-' }}</div>
                  <div>Tel: {{ $emp->employerPhone ?? '-' }}</div>
+            @else
+                 {{-- No employer at all — e.g. a per-unit quotation with no
+                      committed customer yet. --}}
+                 <div class="client-name">{{ $production->project_name ?? '-' }}</div>
             @endif
         </div>
 
@@ -464,12 +468,12 @@
                                         <td class="text-center">{{ $lineIdx++ }}</td>
                                         <td>
                                             <strong>{{ $desc }}</strong>
-                                            <br><span class="text-muted" style="font-size: 11px;">{{ $count }} Employees @ {{ number_format($price, 2) }} ฿</span>
+                                            <br><span class="text-muted" style="font-size: 11px;">{{ $showTotal ? $count.' Employees @ ' : '' }}{{ number_format($price, 2) }} ฿{{ $showTotal ? '' : ' / head' }}</span>
                                             @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
                                         </td>
-                                        <td class="text-center">{{ $count }}</td>
+                                        <td class="text-center">{{ $showTotal ? $count : '1' }}</td>
                                         <td class="text-right">{{ number_format($price, 2) }}</td>
-                                        <td class="text-right">{{ number_format($subtotal, 2) }}</td>
+                                        <td class="text-right">{{ $showTotal ? number_format($subtotal, 2) : '—' }}</td>
                                     </tr>
                                 @endforeach
                             @else
@@ -482,7 +486,7 @@
                                     </td>
                                     <td class="text-center">1</td>
                                     <td class="text-right">{{ number_format($amount, 2) }}</td>
-                                    <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                    <td class="text-right">{{ $showTotal ? number_format($amount, 2) : '—' }}</td>
                                 </tr>
                             @endif
                         @endforeach
@@ -496,16 +500,19 @@
                         @if($pricingMode === 'per_head' && !empty($pricingTiers))
                             @foreach($pricingTiers as $idx => $tier)
                                 @php $count = count($tier['item_ids'] ?? []); @endphp
-                                @if($count > 0)
+                                {{-- Without a grand total, this is a per-unit rate quote — a tier
+                                     with nobody assigned yet still needs to show its price, since
+                                     the whole point is "we don't know the headcount yet". --}}
+                                @if($count > 0 || !$showTotal)
                                     <tr>
                                         <td class="text-center">{{ $idx + 1 }}</td>
                                         <td>
                                             <strong>{{ $production->project_name ?? 'Service Fee' }}</strong>
                                             @if(!empty($tier['note'])) <br><small class="text-muted">({{ $tier['note'] }})</small> @endif
                                         </td>
-                                        <td class="text-center">{{ $count }}</td>
+                                        <td class="text-center">{{ $showTotal ? $count : '1' }}</td>
                                         <td class="text-right">{{ number_format($tier['price'], 2) }}</td>
-                                        <td class="text-right">{{ number_format($tier['price'] * $count, 2) }}</td>
+                                        <td class="text-right">{{ $showTotal ? number_format($tier['price'] * $count, 2) : '—' }}</td>
                                     </tr>
                                 @endif
                             @endforeach
@@ -515,7 +522,7 @@
                                 <td>{{ $production->project_name ?? 'Service Fee' }}</td>
                                 <td class="text-center">1</td>
                                 <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
-                                <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
+                                <td class="text-right">{{ $showTotal ? number_format($serviceTotal, 2) : '—' }}</td>
                             </tr>
                         @endif
                     @endif
@@ -565,6 +572,7 @@
         </table>
 
         <!-- Calculations -->
+        @if($showTotal)
         <div class="totals-container">
             <table class="totals-table">
                 @if($showService)
@@ -634,6 +642,7 @@
         <div style="margin-top: 10px; font-style: italic; color: #666; font-size: 13px; text-align: right;">
             ( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )
         </div>
+        @endif
 
         {{-- Payment Methods (ช่องทางการชำระเงิน) — compact bottom-left block.
              Bank Transfer rows get a colored brand badge so the recipient
@@ -701,14 +710,41 @@
             </div>
         @endif
 
+        {{-- Tax status note — states plainly whether the price shown is VAT-
+             inclusive/exclusive and whether WHT applies, so the customer
+             can't misread the amount due. Tied to $showService because VAT/
+             WHT in this document only ever apply to the service fee. --}}
+        @if($showService)
+            <div style="margin-top: 10px; font-size: 12px; color: #EF4444; line-height: 1.5;">
+                @if(!$vatEnabled)
+                    <div>Note: This price does not yet include Value Added Tax (VAT). Please contact us if a VAT-inclusive quotation or tax invoice is required.
+                        <span class="en-label">/ หมายเหตุ: ราคานี้ยังไม่รวมภาษีมูลค่าเพิ่ม (VAT) หากต้องการใบเสนอราคาหรือใบกำกับภาษีที่รวม VAT กรุณาติดต่อเจ้าหน้าที่</span></div>
+                @else
+                    <div>Note: This price already includes Value Added Tax (VAT).
+                        <span class="en-label">/ หมายเหตุ: ราคานี้รวมภาษีมูลค่าเพิ่ม (VAT) แล้ว</span></div>
+                @endif
+                @if($whtEnabled)
+                    <div>Note: This amount is subject to a {{ rtrim(rtrim(number_format($whtRate, 2), '0'), '.') }}% Withholding Tax deduction as required by law.
+                        <span class="en-label">/ หมายเหตุ: ยอดนี้มีการหักภาษี ณ ที่จ่าย {{ rtrim(rtrim(number_format($whtRate, 2), '0'), '.') }}% ตามที่กฎหมายกำหนด</span></div>
+                @endif
+            </div>
+        @endif
+
         <div class="signatures-container">
             <!-- Signatures Section -->
             <div class="signatures">
+                @if($type !== 'quotation')
                 <div class="sig-block">
                     <div class="sig-title">Received By <span class="en-label">/ ผู้รับเงิน</span></div>
                     <div class="sig-line"></div>
                     <div class="sig-text">Date <span class="en-label">/ วันที่</span>: ____/____/______</div>
                 </div>
+                @else
+                {{-- A quotation isn't a request for payment — no "Received By" line.
+                     Empty spacer keeps the flex layout (justify-content: space-between)
+                     identical so the Authorized Signature block stays on the right. --}}
+                <div class="sig-block"></div>
+                @endif
 
                 <div class="sig-block">
                     <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
@@ -768,13 +804,16 @@
         <table class="items-table" style="font-size: 12px;">
             <thead>
                 <tr>
-                    <th style="width: 4%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
-                    <th style="width: 12%; text-align: center;">รูปถ่าย<br><span class="en-label">Photo</span></th>
-                    <th style="width: 12%;">รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
-                    <th style="width: 26%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
-                    <th style="width: 11%; text-align: center;">สัญชาติ<br><span class="en-label">Nationality</span></th>
-                    <th style="width: 23%;">หมายเหตุ<br><span class="en-label">Notes</span></th>
-                    <th style="width: 12%; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
+                    <th style="width: 3%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
+                    <th style="width: 9%; text-align: center;">รูปถ่าย<br><span class="en-label">Photo</span></th>
+                    <th style="width: 8%;">รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
+                    <th style="width: 17%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
+                    <th style="width: 9%; text-align: center;">สัญชาติ<br><span class="en-label">Nationality</span></th>
+                    <th style="width: 11%;">เลขพาสปอร์ต<br><span class="en-label">Passport No.</span></th>
+                    <th style="width: 11%;">เลขประจำตัว<br><span class="en-label">ID No.</span></th>
+                    <th style="width: 11%;">เลขใบอนุญาตทำงาน<br><span class="en-label">Work Permit No.</span></th>
+                    <th style="width: 11%;">หมายเหตุ<br><span class="en-label">Notes</span></th>
+                    <th style="width: 10%; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -791,6 +830,9 @@
                     <td style="vertical-align: middle;">{{ $emp['employee_id'] ?: '-' }}</td>
                     <td style="vertical-align: middle;">{{ $emp['prefix'] }} {{ $emp['name'] }}</td>
                     <td style="text-align: center; vertical-align: middle;">{{ $emp['nationality'] ?: '-' }}</td>
+                    <td style="vertical-align: middle;">{{ $emp['passport'] ?: '-' }}</td>
+                    <td style="vertical-align: middle;">{{ $emp['id_number'] ?: '-' }}</td>
+                    <td style="vertical-align: middle;">{{ $emp['work_permit'] ?: '-' }}</td>
                     <td style="vertical-align: middle;">{{ !empty($emp['note']) ? $emp['note'] : '-' }}</td>
                     <td style="text-align: right; vertical-align: middle;">{{ number_format($emp['price'], 2) }}</td>
                 </tr>
