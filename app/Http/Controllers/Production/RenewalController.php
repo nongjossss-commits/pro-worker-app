@@ -119,6 +119,78 @@ class RenewalController extends Controller
             }
         }
 
+        // Dual-listed employees (Registration-Resolution employees also
+        // usable in this tab via EmployeeRenewalLink) — folded into every
+        // top-of-page count below so the badges aren't undercounted. Same
+        // search/operator/insurance filters as $statsQuery; status-based
+        // logic uses the LINK's own status, never the employee's real
+        // (registration_*) status.
+        $dualTabId = $this->currentTab->id;
+        $dualLinkedQuery = Employee::whereHas('renewalLinks', function ($q) use ($dualTabId) {
+            $q->where('resolution_tab_id', $dualTabId);
+        })->with(['renewalLinks' => function ($q) use ($dualTabId) {
+            $q->where('resolution_tab_id', $dualTabId);
+        }, 'registrationSteps']);
+        if (auth()->user()->can('manage-tickets')) {
+            $dualLinkedQuery->withoutGlobalScope('employerTenancy');
+        }
+        if ($request->has('search') && $request->search) {
+            $this->applySearchToQuery($dualLinkedQuery, $request->search);
+        }
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            if ($request->operator_filter === 'external') {
+                $dualLinkedQuery->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $dualLinkedQuery->where('operator_id', $request->operator_filter);
+            }
+        }
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            if ($request->insurance_filter === 'none') {
+                $dualLinkedQuery->where(function ($q) {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '');
+                });
+            } else {
+                $dualLinkedQuery->where('insurance_type', $request->insurance_filter);
+            }
+        }
+        $dualLinked = $dualLinkedQuery->get()
+            ->filter(fn($e) => $e->renewalLinks->first() !== null)
+            ->each(fn($e) => $e->setRelation('activeRenewalLink', $e->renewalLinks->first()));
+
+        $dualActiveOnly = $dualLinked->filter(fn($e) => in_array($e->activeRenewalLink->status, ['renewal_pending', 'renewal_completed'], true));
+        $dualTotalCancelled = $dualLinked->filter(fn($e) => $e->activeRenewalLink->status === 'renewal_cancelled')->count();
+        $dualTotalSaved = $dualLinked->filter(fn($e) => $e->activeRenewalLink->status === 'renewal_completed')->count();
+        $dualNotStarted = $stepOneId ? $dualActiveOnly->filter(fn($e) => !$e->registrationSteps->contains('id', $stepOneId))->count() : 0;
+        $dualTotalNotScheduled = $dualActiveOnly->filter(fn($e) => is_null($e->appointment_date))->count();
+        $dualAppointmentsPending = $dualLinked->filter(fn($e) => !is_null($e->appointment_date) && is_null($e->appointment_completed_at))->count();
+        $dualAppointmentsCompleted = $dualLinked->filter(fn($e) => !is_null($e->appointment_date) && !is_null($e->appointment_completed_at))->count();
+        $dualEmployerIds = $dualLinked->pluck('employer_id')->unique();
+
+        $dualFilteredForTotal = $dualLinked;
+        if ($request->has('filter') && $request->filter) {
+            $filterVal = $request->filter;
+            $dualFilteredForTotal = $dualLinked->filter(function ($e) use ($filterVal, $stepOneId) {
+                $link = $e->activeRenewalLink;
+                if ($filterVal === 'not_started') {
+                    if (!in_array($link->status, ['renewal_pending', 'renewal_completed'], true)) return false;
+                    return !$e->registrationSteps->contains('id', $stepOneId);
+                }
+                if ($filterVal === 'saved') return $link->status === 'renewal_completed';
+                if ($filterVal === 'cancelled') return $link->status === 'renewal_cancelled';
+                if ($filterVal === 'total_appointments') return !is_null($e->appointment_date);
+                if ($filterVal === 'appointment_not_scheduled') {
+                    return in_array($link->status, ['renewal_pending', 'renewal_completed'], true) && is_null($e->appointment_date);
+                }
+                if ($filterVal === 'appointment_pending') return !is_null($e->appointment_date) && is_null($e->appointment_completed_at);
+                if ($filterVal === 'appointment_completed') return !is_null($e->appointment_date) && !is_null($e->appointment_completed_at);
+                if (is_numeric($filterVal)) {
+                    if ($link->status === 'renewal_cancelled') return false;
+                    return $e->registrationSteps->contains('id', (int) $filterVal);
+                }
+                return true;
+            });
+        }
+
         // Load resolution settings + targets up front so the filter cases
         // below (and the count subqueries / view) can reuse them.
         // Per-tab keys ({key}__tab_{id}) take precedence over legacy global keys.
@@ -166,10 +238,11 @@ class RenewalController extends Controller
             }
         }
 
-        // Clone for different counts
-        $totalEmployees = $totalEmployeesQuery->count();
-        $totalCancelled = (clone $statsQuery)->where('status', 'renewal_cancelled')->count();
-        $totalSaved = (clone $statsQuery)->where('status', 'renewal_completed')->count();
+        // Clone for different counts — each folds in the dual-listed
+        // contribution computed above (see $dualLinked and friends).
+        $totalEmployees = $totalEmployeesQuery->count() + $dualFilteredForTotal->count();
+        $totalCancelled = (clone $statsQuery)->where('status', 'renewal_cancelled')->count() + $dualTotalCancelled;
+        $totalSaved = (clone $statsQuery)->where('status', 'renewal_completed')->count() + $dualTotalSaved;
 
         $notStartedCount = 0;
         if ($stepOneId) {
@@ -177,14 +250,16 @@ class RenewalController extends Controller
                 ->whereIn('status', ['renewal_pending', 'renewal_completed'])
                 ->whereDoesntHave('registrationSteps', function ($q) use ($stepOneId) {
                     $q->where('registration_steps.id', $stepOneId);
-                })->count();
+                })->count() + $dualNotStarted;
         }
 
         // Step Stats (Optimized via SQL) — 24h grace rule: drop cancelled
         // outright, drop renewal_completed rows whose finalize is older
         // than 24h so the top-of-page step badges decrement once the
         // countdown ends. Green cards stay in the list by design; only
-        // the aggregate counters trim.
+        // the aggregate counters trim. Same grace rule applied to the
+        // dual-listed contribution below, using the LINK's own status/
+        // resolution_completed_at.
         $stepStatsQuery = (clone $statsQuery)
             ->where('status', '!=', 'renewal_cancelled')
             ->where(function ($q) {
@@ -194,29 +269,45 @@ class RenewalController extends Controller
             });
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
 
+        $dualStepStatsBase = $dualLinked->filter(function ($e) {
+            $link = $e->activeRenewalLink;
+            if ($link->status === 'renewal_cancelled') return false;
+            if ($link->status === 'renewal_completed' && $link->resolution_completed_at && $link->resolution_completed_at->lt(now()->subHours(24))) return false;
+            return true;
+        });
+        foreach ($dualStepStatsBase as $dualEmp) {
+            $highest = $dualEmp->registrationSteps->sortByDesc('order')->first();
+            if ($highest && isset($stepStats[$highest->id])) {
+                $stepStats[$highest->id]++;
+            }
+        }
+
         // Total Appointments (use same base query with search/operator filters)
         $appointmentsBaseQuery = clone $statsQuery;
 
         $totalNotScheduled = (clone $appointmentsBaseQuery)
             ->whereIn('status', ['renewal_pending', 'renewal_completed'])
             ->whereNull('appointment_date')
-            ->count();
+            ->count() + $dualTotalNotScheduled;
 
         $totalAppointmentsPending = (clone $appointmentsBaseQuery)
             ->whereNotNull('appointment_date')
             ->whereNull('appointment_completed_at')
-            ->count();
+            ->count() + $dualAppointmentsPending;
 
         $totalAppointmentsCompleted = (clone $appointmentsBaseQuery)
             ->whereNotNull('appointment_date')
             ->whereNotNull('appointment_completed_at')
-            ->count();
+            ->count() + $dualAppointmentsCompleted;
 
-        // Total Employers (Global, relevant to search)
-        $totalEmployers = (clone $statsQuery)
+        // Total Employers (Global, relevant to search) — union of employers
+        // with a primary-scope employee and employers whose only presence
+        // here is a dual-listed employee, deduped so an employer with both
+        // isn't counted twice.
+        $primaryEmployerIds = (clone $statsQuery)
             ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
-            ->distinct('employer_id')
-            ->count('employer_id');
+            ->pluck('employer_id');
+        $totalEmployers = $primaryEmployerIds->merge($dualEmployerIds)->unique()->count();
 
         // Resolution settings already loaded above — reused here (per-tab resolved).
         $resolutionSettingsRaw = $resolutionSettingsRaw ?? SystemSetting::where('group', 'renewal')->get();
@@ -229,9 +320,20 @@ class RenewalController extends Controller
         }
 
         // Always scope to employers who have relevant employees for this menu
-        $employerQuery->whereHas('employees', function($q) {
-             $q->where('resolution_tab_id', $this->currentTab->id)
-               ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
+        // — including employers whose ONLY presence here is a Registration
+        // employee dual-listed via EmployeeRenewalLink (see that model's
+        // docblock). The employer's "active employees" count/sort below is
+        // NOT extended to count dual-linked employees yet (documented,
+        // deferred scope) — such an employer's card may render slightly
+        // greyed-out even though it's fully clickable and functional.
+        $tabIdForScope = $this->currentTab->id;
+        $employerQuery->where(function ($q) use ($tabIdForScope) {
+            $q->whereHas('employees', function ($qq) use ($tabIdForScope) {
+                $qq->where('resolution_tab_id', $tabIdForScope)
+                   ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
+            })->orWhereHas('employees.renewalLinks', function ($qq) use ($tabIdForScope) {
+                $qq->where('resolution_tab_id', $tabIdForScope);
+            });
         });
 
         // Apply Search to Employer Query
@@ -296,13 +398,28 @@ class RenewalController extends Controller
         }]);
 
         // Counts the employees that are still actively under this tab —
-        // excludes terminated and only counts the renewal statuses.
-        // Used by the view to grey out the card when this drops to zero.
-        $employerQuery->withCount(['employees as active_employees_in_tab' => function($q) use ($tabId) {
-            $q->where('resolution_tab_id', $tabId)
-              ->whereIn('status', ['renewal_pending', 'renewal_completed'])
-              ->whereNull('terminated_at');
-        }]);
+        // excludes terminated and only counts the renewal statuses. Used by
+        // the view to grey out the card when this drops to zero. Combines
+        // real resolution_tab_id-scoped employees WITH dual-listed ones
+        // (EmployeeRenewalLink, pending/completed) — without the second half,
+        // an employer whose only presence here is dual-linked employees
+        // shows "0 active" and greys out even though it has real, actionable
+        // people inside (this was reported as "employees not pulled in
+        // correctly" — they WERE linked, this count just didn't see them).
+        $employerQuery->selectRaw('employers.*, (
+            (SELECT COUNT(*) FROM employees
+                WHERE employees.employer_id = employers.id
+                AND employees.resolution_tab_id = ?
+                AND employees.status IN (\'renewal_pending\', \'renewal_completed\')
+                AND employees.terminated_at IS NULL)
+            +
+            (SELECT COUNT(*) FROM employee_renewal_links
+                INNER JOIN employees ON employees.id = employee_renewal_links.employee_id
+                WHERE employees.employer_id = employers.id
+                AND employee_renewal_links.resolution_tab_id = ?
+                AND employee_renewal_links.status IN (\'renewal_pending\', \'renewal_completed\')
+                AND employees.terminated_at IS NULL)
+        ) as active_employees_in_tab', [$tabId, $tabId]);
 
         // Sort and Paginate — applied in priority order:
         //   1. Employer cards with zero active employees go to the bottom.
@@ -310,13 +427,21 @@ class RenewalController extends Controller
         //   3. Most recently touched orders come first. ProductionItem::$touches
         //      bumps the parent ProductionOrder's updated_at on every change.
         $employerQuery->orderByRaw("(
-            SELECT CASE WHEN COUNT(*) = 0 THEN 1 ELSE 0 END
-            FROM employees
-            WHERE employees.employer_id = employers.id
-            AND employees.resolution_tab_id = ?
-            AND employees.status IN ('renewal_pending', 'renewal_completed')
-            AND employees.terminated_at IS NULL
-        ) ASC", [$tabId]);
+            SELECT CASE WHEN (
+                (SELECT COUNT(*) FROM employees
+                    WHERE employees.employer_id = employers.id
+                    AND employees.resolution_tab_id = ?
+                    AND employees.status IN ('renewal_pending', 'renewal_completed')
+                    AND employees.terminated_at IS NULL)
+                +
+                (SELECT COUNT(*) FROM employee_renewal_links
+                    INNER JOIN employees ON employees.id = employee_renewal_links.employee_id
+                    WHERE employees.employer_id = employers.id
+                    AND employee_renewal_links.resolution_tab_id = ?
+                    AND employee_renewal_links.status IN ('renewal_pending', 'renewal_completed')
+                    AND employees.terminated_at IS NULL)
+            ) = 0 THEN 1 ELSE 0 END
+        ) ASC", [$tabId, $tabId]);
 
         $employerQuery->orderByRaw("(
             SELECT CASE WHEN status = 'renewal_resolution_cancelled' THEN 1 ELSE 0 END
@@ -895,32 +1020,99 @@ class RenewalController extends Controller
             ]);
         }
 
-        $employees = $query->get();
+        $primaryEmployees = $query->get();
 
-        // If filtering by step in PHP, we must get all first, filter, then manually paginate
+        // Dual-listed employees — Registration-Resolution employees also
+        // usable in this tab via EmployeeRenewalLink (see that model's
+        // docblock). Fetched separately since their real `status` column
+        // stays registration_* — every status-driven filter below is
+        // re-applied here against the LINK's own status instead. Search /
+        // operator / insurance filters are plain Employee-column filters,
+        // so they apply identically via the same query builder.
+        $linkedQuery = $employer->employees()
+            ->whereHas('renewalLinks', function ($q) {
+                $q->where('resolution_tab_id', $this->currentTab->id);
+            })
+            ->with(['registrationSteps', 'customFields', 'renewalLinks' => function ($q) {
+                $q->where('resolution_tab_id', $this->currentTab->id);
+            }]);
+        if (auth()->user()->can('manage-tickets')) {
+            $linkedQuery->withoutGlobalScope('employerTenancy');
+        }
+        if ($request->has('search') && $request->search) {
+            $this->applyEmployerSearchToQuery($linkedQuery, $employer, $request->search);
+        }
+        if ($request->has('operator_filter') && $request->operator_filter) {
+            if ($request->operator_filter === 'external') {
+                $linkedQuery->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+            } else {
+                $linkedQuery->where('operator_id', $request->operator_filter);
+            }
+        }
+        if ($request->has('insurance_filter') && $request->insurance_filter) {
+            if ($request->insurance_filter === 'none') {
+                $linkedQuery->where(function ($q) {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '');
+                });
+            } else {
+                $linkedQuery->where('insurance_type', $request->insurance_filter);
+            }
+        }
+        // The renewal-progress multi-select filter is status-column SQL —
+        // deferred for dual rows (Phase 2, same as the aggregate counters);
+        // when that filter is active, dual rows are simply left out rather
+        // than risk misreading their link status as their real status.
+        $linkedEmployees = empty($this->parseRenewalFilters($request)) ? $linkedQuery->get() : collect();
+
+        $hideCancelled = $request->boolean('hide_cancelled', true);
+        $filter = $request->input('filter');
+        $linkedEmployees = $linkedEmployees->filter(function ($emp) use ($hideCancelled, $filter, $stepOneId) {
+            $link = $emp->renewalLinks->first();
+            if (!$link) return false;
+            $emp->setRelation('activeRenewalLink', $link);
+
+            if ($hideCancelled && $link->status === 'renewal_cancelled') return false;
+
+            if ($filter) {
+                if ($filter === 'saved') return $link->status === 'renewal_completed';
+                if ($filter === 'cancelled') return $link->status === 'renewal_cancelled';
+                if ($filter === 'not_started') {
+                    if (!in_array($link->status, ['renewal_pending', 'renewal_completed'], true)) return false;
+                    return !$emp->registrationSteps->contains('id', $stepOneId);
+                }
+                if (is_numeric($filter)) {
+                    if ($link->status === 'renewal_cancelled') return false;
+                    $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                    return $highest && $highest->id == $filter;
+                }
+            }
+            return true;
+        })->values();
+
+        $merged = $primaryEmployees->concat($linkedEmployees);
+
+        // If filtering by step in PHP, the primary set also needs the same
+        // "highest step" re-check (unchanged from before — merged set just
+        // adds the already-step-filtered linked employees on top).
         if ($request->has('filter') && is_numeric($request->filter)) {
             $filterStepId = $request->filter;
-            $allEmployees = $query->get();
-            $filtered = $allEmployees->filter(function($emp) use ($filterStepId) {
+            $merged = $merged->filter(function($emp) use ($filterStepId) {
+                if ($emp->relationLoaded('activeRenewalLink')) return true; // already filtered above
                 if ($emp->status === 'renewal_cancelled') return false;
                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
                 return $highest && $highest->id == $filterStepId;
-            });
-
-            $perPage = $request->input('per_page', 100);
-            $page = $request->input('page', 1);
-            $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
-                $filtered->forPage($page, $perPage)->values(),
-                $filtered->count(),
-                $perPage,
-                $page,
-                ['path' => $request->url(), 'query' => $request->query()]
-            );
-            $employees = $paginator;
-        } else {
-            $perPage = $request->input('per_page', 100);
-            $employees = $query->paginate($perPage)->withQueryString();
+            })->values();
         }
+
+        $perPage = $request->input('per_page', 100);
+        $page = $request->input('page', 1);
+        $employees = new \Illuminate\Pagination\LengthAwarePaginator(
+            $merged->forPage($page, $perPage)->values(),
+            $merged->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         $financeOrder = ProductionOrder::with('financialGroups.transactions.items', 'financialGroups.transactions.payments')
             ->where('employer_id', $employerId)
@@ -1055,6 +1247,82 @@ class RenewalController extends Controller
                 'locked_completed' => $emp->status === 'renewal_completed',
             ];
         })->values();
+
+        // Dual-listed employees — same "pending, or completed-and-locked"
+        // eligibility rule, but evaluated against the LINK's own status/
+        // resolution_completed_at (their real Employee columns stay
+        // registration_*, so they can't be used here). Renewal-progress
+        // multi-filter deferred for these rows, same as fetchEmployees().
+        $linkedItems = collect();
+        if (empty($renewalFilters)) {
+            $linkedQuery = $employer->employees()
+                ->whereHas('renewalLinks', function ($q) {
+                    $q->where('resolution_tab_id', $this->currentTab->id);
+                })
+                ->with(['renewalLinks' => function ($q) {
+                    $q->where('resolution_tab_id', $this->currentTab->id);
+                }, 'registrationSteps:id,order']);
+            if (auth()->user()->can('manage-tickets')) {
+                $linkedQuery->withoutGlobalScope('employerTenancy');
+            }
+            if ($request->has('search') && $request->search) {
+                $this->applyEmployerSearchToQuery($linkedQuery, $employer, $request->search);
+            }
+            if ($request->has('operator_filter') && $request->operator_filter) {
+                if ($request->operator_filter === 'external') {
+                    $linkedQuery->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+                } else {
+                    $linkedQuery->where('operator_id', $request->operator_filter);
+                }
+            }
+            if ($request->has('insurance_filter') && $request->insurance_filter) {
+                if ($request->insurance_filter === 'none') {
+                    $linkedQuery->where(function ($q) {
+                        $q->whereNull('insurance_type')->orWhere('insurance_type', '');
+                    });
+                } else {
+                    $linkedQuery->where('insurance_type', $request->insurance_filter);
+                }
+            }
+
+            $filterVal = $request->input('filter');
+            $linkedItems = $linkedQuery->get()->filter(function ($emp) use ($filterVal, $stepOneId) {
+                $link = $emp->renewalLinks->first();
+                if (!$link) return false;
+                $isEligible = $link->status === 'renewal_pending'
+                    || ($link->status === 'renewal_completed' && $link->resolution_completed_at && $link->resolution_completed_at->lte(now()->subHours(24)));
+                if (!$isEligible) return false;
+
+                if ($filterVal) {
+                    if ($filterVal === 'saved' && $link->status !== 'renewal_completed') return false;
+                    if ($filterVal === 'not_started' && $emp->registrationSteps->contains('id', $stepOneId)) return false;
+                    if (is_numeric($filterVal)) {
+                        $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                        if (!$highest || $highest->id != $filterVal) return false;
+                    }
+                }
+                return true;
+            })->map(function ($emp) use ($employer) {
+                $link = $emp->renewalLinks->first();
+                return [
+                    'id' => $emp->id,
+                    'employer_id' => $emp->employer_id,
+                    'name_th' => $emp->employeeNameTh,
+                    'name_en' => $emp->employeeNameEn,
+                    'title_th' => $emp->employeeTitleTh,
+                    'title_en' => $emp->employeeTitleEn,
+                    'nationality' => $emp->employeeNationality,
+                    'photo' => $emp->employeePhoto ? Storage::disk('public')->url($emp->employeePhoto) : '',
+                    'employer_name' => $employer->employerNameTh ?? 'N/A',
+                    'insurance_type' => $emp->insurance_type,
+                    'passport' => $emp->employeePassport,
+                    'production_item_id' => '',
+                    'locked_completed' => $link->status === 'renewal_completed',
+                ];
+            })->values();
+        }
+
+        $items = $items->concat($linkedItems)->values();
 
         return response()->json(['success' => true, 'items' => $items]);
     }
@@ -1486,8 +1754,9 @@ class RenewalController extends Controller
         // 2. Sync Employees — assign/move to this tab
         $newlyAdded = 0;
         $reassigned = 0;
+        $linked = 0;
 
-        DB::transaction(function() use ($date, $tabId, &$newlyAdded, &$reassigned) {
+        DB::transaction(function() use ($date, $tabId, &$newlyAdded, &$reassigned, &$linked) {
             // Find all employees with matching expiry, excluding MOU types
             $baseQuery = Employee::where(function($q) use ($date) {
                 $q->whereDate('workPermitExpiryDate', $date)
@@ -1529,10 +1798,28 @@ class RenewalController extends Controller
                     'resolution_tab_id' => $tabId,
                 ]);
             }
+
+            // Group C: Registration-Resolution employees whose dates match too —
+            // dual-list them via a link instead of touching their real
+            // status/resolution_tab_id (they must stay fully intact in
+            // Registration Resolution). See EmployeeRenewalLink's docblock.
+            $registrationMatches = (clone $baseQuery)
+                ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+                ->pluck('id');
+
+            foreach ($registrationMatches as $empId) {
+                $link = \App\Models\EmployeeRenewalLink::firstOrCreate(
+                    ['employee_id' => $empId, 'resolution_tab_id' => $tabId],
+                    ['status' => 'renewal_pending']
+                );
+                if ($link->wasRecentlyCreated) {
+                    $linked++;
+                }
+            }
         });
 
-        $total = $newlyAdded + $reassigned;
-        $msg = "บันทึกการตั้งค่าเรียบร้อย — นำเข้าลูกจ้าง {$total} ราย (ใหม่ {$newlyAdded}, ย้ายจาก tab อื่น {$reassigned})";
+        $total = $newlyAdded + $reassigned + $linked;
+        $msg = "บันทึกการตั้งค่าเรียบร้อย — นำเข้าลูกจ้าง {$total} ราย (ใหม่ {$newlyAdded}, ย้ายจาก tab อื่น {$reassigned}, เชื่อมจากมติลงทะเบียน {$linked})";
 
         return redirect()->route('production.renewal.index', ['resolutionTab' => $this->currentTab->id])
             ->with('success', $msg);
@@ -1931,6 +2218,113 @@ class RenewalController extends Controller
         }
     }
 
+    /**
+     * Step-tick / finalize / cancel / restore for a DUAL-listed employee
+     * (Registration-Resolution employee also usable in this Renewal tab via
+     * EmployeeRenewalLink — see that model's docblock). These mutate ONLY
+     * the link's own status/resolution_completed_at/resolution_settings_applied
+     * — the real Employee row (status, resolution_tab_id, resolution_completed_at)
+     * is never touched, so Registration Resolution stays completely unaffected.
+     */
+    public function updateLinkProgress(Request $request, $resolutionTab, \App\Models\EmployeeRenewalLink $link)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+        if ($link->resolution_tab_id !== $this->currentTab->id) {
+            abort(403, 'This link does not belong to the current tab.');
+        }
+
+        $validated = $request->validate([
+            'step_id' => 'required|exists:registration_steps,id',
+            'completed' => 'required|boolean',
+        ]);
+
+        $employee = $link->employee;
+        $stepName = \App\Models\RegistrationStep::find($validated['step_id'])?->name ?? 'ขั้นตอน #' . $validated['step_id'];
+
+        if ($validated['completed']) {
+            $employee->registrationSteps()->syncWithoutDetaching([
+                $validated['step_id'] => ['completed_at' => now()]
+            ]);
+        } else {
+            $employee->registrationSteps()->detach($validated['step_id']);
+        }
+
+        \App\Models\ProductionOrder::where('employer_id', $employee->employer_id)
+            ->where('resolution_tab_id', $this->currentTab->id)
+            ->update(['updated_at' => now()]);
+
+        ActivityLogHelper::logAction('update', ($validated['completed'] ? 'ติ๊กขั้นตอน' : 'ยกเลิกติ๊กขั้นตอน') . ' "' . $stepName . '" ลูกจ้าง (มติต่ออายุ, เชื่อมจากมติลงทะเบียน) ' . ($employee->employeeNameTh ?: $employee->employeeNameEn), Employee::class, $employee->id, [
+            'step_id' => $validated['step_id'],
+            'step_name' => $stepName,
+            'completed' => $validated['completed'],
+            'via_renewal_link' => $link->id,
+        ]);
+
+        $employee->load('registrationSteps');
+
+        return response()->json([
+            'success' => true,
+            'html' => $this->getEmployeeCardHtml($employee, $link),
+        ]);
+    }
+
+    public function finalizeLink(Request $request, $resolutionTab, \App\Models\EmployeeRenewalLink $link)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) abort(403);
+        if ($link->resolution_tab_id !== $this->currentTab->id) abort(403);
+
+        $link->update([
+            'status' => 'renewal_completed',
+            'resolution_completed_at' => now(),
+            'resolution_settings_applied' => false,
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'html' => $this->getEmployeeCardHtml($link->employee, $link)]);
+        }
+        return back()->with('success', 'Employee saved.');
+    }
+
+    public function cancelLink(Request $request, $resolutionTab, \App\Models\EmployeeRenewalLink $link)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) abort(403);
+        if ($link->resolution_tab_id !== $this->currentTab->id) abort(403);
+
+        $link->update(['status' => 'renewal_cancelled']);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'html' => $this->getEmployeeCardHtml($link->employee, $link)]);
+        }
+        return back()->with('success', 'Employee cancelled.');
+    }
+
+    public function restoreLink(Request $request, $resolutionTab, \App\Models\EmployeeRenewalLink $link)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) abort(403);
+        if ($link->resolution_tab_id !== $this->currentTab->id) abort(403);
+
+        $link->update([
+            'status' => 'renewal_pending',
+            'resolution_completed_at' => null,
+            'resolution_settings_applied' => false,
+        ]);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'html' => $this->getEmployeeCardHtml($link->employee, $link)]);
+        }
+        return back()->with('success', 'Employee restored.');
+    }
+
     public function finalize(Request $request, $resolutionTab, Employee $employee)
     {
         $this->resolveTab($resolutionTab, 'renewal');
@@ -2232,7 +2626,7 @@ class RenewalController extends Controller
     /**
      * Helper to render employee card HTML.
      */
-    private function getEmployeeCardHtml(Employee $employee)
+    private function getEmployeeCardHtml(Employee $employee, ?\App\Models\EmployeeRenewalLink $renewalLink = null)
     {
         $steps = RegistrationStep::renewal()
             ->where('resolution_tab_id', $this->currentTab->id)
@@ -2241,7 +2635,9 @@ class RenewalController extends Controller
         return view('production.registration._employee_card', array_merge([
             'employee' => $employee,
             'steps' => $steps,
-            'isHistory' => false
+            'isHistory' => false,
+            'renewalLink' => $renewalLink,
+            'renewalTargets' => $this->getRenewalTargets('renewal'),
         ], $this->getTabViewData('renewal')))->render();
     }
 

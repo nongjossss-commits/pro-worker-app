@@ -24,6 +24,7 @@
         'currentTab' => $currentTab ?? null,
         'allTabs' => $allTabs ?? collect(),
         'renewalTargets' => $renewalTargets ?? null,
+        'renewalLink' => $employee->relationLoaded('activeRenewalLink') ? $employee->activeRenewalLink : null,
     ])
 @endforeach
 

@@ -265,11 +265,24 @@ class Employee extends Model
 
     public function getRenewalProgressAttribute(): string
     {
-        if (in_array($this->status, ['registration_completed', 'renewal_completed'], true)) {
+        $targets = $this->renewalProgressTargets ?? $this->resolveRenewalTargetsFromSettings();
+        return static::resolveRenewalProgress($this->status, $this->visaExpiryDate, $this->workPermitExpiryDate, $targets);
+    }
+
+    /**
+     * Pure status→color logic extracted out of getRenewalProgressAttribute()
+     * so a dual-listed employee's EmployeeRenewalLink (a separate status
+     * from the employee's real $this->status) can compute the same 4-colour
+     * progress without borrowing the real Employee status. See
+     * resolveRenewalProgressForLink() below — that's the one dual-listed
+     * cards actually call.
+     */
+    public static function resolveRenewalProgress(?string $status, $visaExpiryDate, $workPermitExpiryDate, array $targets): string
+    {
+        if (in_array($status, ['registration_completed', 'renewal_completed'], true)) {
             return 'completed';
         }
 
-        $targets = $this->renewalProgressTargets ?? $this->resolveRenewalTargetsFromSettings();
         $visaTarget = $targets['visa'] ?? null;
         $wpTarget = $targets['wp'] ?? null;
 
@@ -277,10 +290,10 @@ class Employee extends Model
             return 'none';
         }
 
-        $visaRenewed = $visaTarget && $this->visaExpiryDate
-            && \Carbon\Carbon::parse($this->visaExpiryDate)->gte(\Carbon\Carbon::parse($visaTarget));
-        $wpRenewed = $wpTarget && $this->workPermitExpiryDate
-            && \Carbon\Carbon::parse($this->workPermitExpiryDate)->gte(\Carbon\Carbon::parse($wpTarget));
+        $visaRenewed = $visaTarget && $visaExpiryDate
+            && \Carbon\Carbon::parse($visaExpiryDate)->gte(\Carbon\Carbon::parse($visaTarget));
+        $wpRenewed = $wpTarget && $workPermitExpiryDate
+            && \Carbon\Carbon::parse($workPermitExpiryDate)->gte(\Carbon\Carbon::parse($wpTarget));
 
         if ($visaRenewed && $wpRenewed) return 'both';
         if ($visaRenewed)               return 'visa_only';
@@ -288,14 +301,29 @@ class Employee extends Model
         return 'none';
     }
 
-    protected function resolveRenewalTargetsFromSettings(): array
+    /**
+     * Same 4-colour progress, but for a dual-listed card (Registration
+     * employee also usable inside a Renewal tab via EmployeeRenewalLink) —
+     * uses the link's own status and that RENEWAL TAB's own auto-target
+     * settings, never the employee's real status/resolution_tab_id (which
+     * would pull the wrong ('registration') settings group).
+     */
+    public function resolveRenewalProgressForLink(\App\Models\EmployeeRenewalLink $link, ?array $renewalTargets = null): string
     {
-        $group = match (true) {
+        $targets = $renewalTargets ?? $this->resolveRenewalTargetsFromSettings('renewal', $link->resolution_tab_id);
+        return static::resolveRenewalProgress($link->status, $this->visaExpiryDate, $this->workPermitExpiryDate, $targets);
+    }
+
+    protected function resolveRenewalTargetsFromSettings(?string $forceGroup = null, ?int $forceTabId = null): array
+    {
+        $group = $forceGroup ?? match (true) {
             in_array($this->status, ['registration_pending', 'registration_completed', 'registration_cancelled'], true) => 'registration',
             in_array($this->status, ['renewal_pending', 'renewal_completed', 'renewal_cancelled'], true)                => 'renewal',
             default => null,
         };
         if (!$group) return ['visa' => null, 'wp' => null];
+
+        $tabId = $forceTabId ?? $this->resolution_tab_id;
 
         $globalVisaKey = "{$group}_auto_visa_expiry";
         $globalWpKey   = "{$group}_auto_work_permit_expiry";
@@ -304,9 +332,9 @@ class Employee extends Model
         $keysToFetch = [$globalVisaKey, $globalWpKey];
         $perTabVisaKey = null;
         $perTabWpKey = null;
-        if ($this->resolution_tab_id) {
-            $perTabVisaKey = "{$globalVisaKey}__tab_{$this->resolution_tab_id}";
-            $perTabWpKey   = "{$globalWpKey}__tab_{$this->resolution_tab_id}";
+        if ($tabId) {
+            $perTabVisaKey = "{$globalVisaKey}__tab_{$tabId}";
+            $perTabWpKey   = "{$globalWpKey}__tab_{$tabId}";
             $keysToFetch[] = $perTabVisaKey;
             $keysToFetch[] = $perTabWpKey;
         }
@@ -418,6 +446,13 @@ class Employee extends Model
     public function resolutionTab()
     {
         return $this->belongsTo(\App\Models\ResolutionTab::class);
+    }
+
+    // Dual-listing: this employee's real resolution_tab_id never changes for
+    // these — see EmployeeRenewalLink's docblock.
+    public function renewalLinks()
+    {
+        return $this->hasMany(\App\Models\EmployeeRenewalLink::class);
     }
 
     // --- New Relationships for Registration Process ---

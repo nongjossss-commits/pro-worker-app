@@ -1,4 +1,4 @@
-@props(['employee', 'steps', 'isHistory' => false, 'show_employer' => false, 'currentTab' => null, 'allTabs' => null])
+@props(['employee', 'steps', 'isHistory' => false, 'show_employer' => false, 'currentTab' => null, 'allTabs' => null, 'renewalLink' => null])
 
 @php
     // Fallback for $currentTab if not passed (shouldn't happen in normal flow but safe guard)
@@ -14,6 +14,13 @@
     if (isset($employee->production_item)) {
         $isCompleted = $employee->production_item->status === 'completed';
         $isCancelled = $employee->production_item->status === 'cancelled';
+    } elseif ($renewalLink) {
+        // Dual-listed card (Registration employee also usable in this Renewal
+        // tab) — the employee's real status stays registration_*, so
+        // completed/cancelled here comes from the link instead. See
+        // EmployeeRenewalLink's docblock.
+        $isCompleted = $renewalLink->status === 'renewal_completed';
+        $isCancelled = $renewalLink->status === 'renewal_cancelled';
     }
 
     // Registration/Renewal only: once the 24h "Undo" grace window (see the
@@ -25,8 +32,11 @@
     // Production items (production_item branch) are untouched — this
     // doesn't apply there.
     $isLockedCompleted = false;
-    if ($isCompleted && !isset($employee->production_item) && $employee->resolution_completed_at) {
-        $isLockedCompleted = \Carbon\Carbon::parse($employee->resolution_completed_at)->addHours(24)->isPast();
+    if ($isCompleted && !isset($employee->production_item)) {
+        $completedAt = $renewalLink ? $renewalLink->resolution_completed_at : $employee->resolution_completed_at;
+        if ($completedAt) {
+            $isLockedCompleted = \Carbon\Carbon::parse($completedAt)->addHours(24)->isPast();
+        }
     }
 
     if ($isHistory) {
@@ -49,7 +59,7 @@
     }
     $renewalProgress = ($isCompleted || $isCancelled)
         ? ($isCancelled ? 'cancelled' : 'completed')
-        : $employee->renewal_progress;
+        : ($renewalLink ? $employee->resolveRenewalProgressForLink($renewalLink, $renewalTargets) : $employee->renewal_progress);
 
     $cardClass = 'bg-white border shadow-sm';
     $overlayClass = '';
@@ -92,8 +102,12 @@
 
     $isNotStarted = (!$isCancelled && !$hasStepOne);
 
-    // Contextual status for JS
-    $itemStatus = isset($employee->production_item) ? $employee->production_item->status : $employee->status;
+    // Contextual status for JS — dual-listed cards use the link's own
+    // status here too, so client-side filters/select-all logic (which read
+    // this data-status attribute) treat them correctly.
+    $itemStatus = isset($employee->production_item)
+        ? $employee->production_item->status
+        : ($renewalLink ? $renewalLink->status : $employee->status);
 
     // Operator Logic
     $operator = $employee->operator;
@@ -237,6 +251,11 @@
                             <button class="btn btn-sm btn-link p-0 btn-preview" style="text-decoration: none; line-height: 1;" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('Preview Employee') }}">
                                 <i class="bi bi-search text-info"></i>
                             </button>
+                            @if($renewalLink)
+                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size: 0.65rem;" title="{{ __('This employee is still fully active in Registration Resolution — this card is a separate, independent copy for Renewal only.') }}">
+                                    <i class="bi bi-link-45deg"></i> {{ __('From Registration Resolution') }}
+                                </span>
+                            @endif
                         </div>
                         <div class="text-muted small">
                             {{-- Thai Name + Title --}}
@@ -488,7 +507,12 @@
                     }
                 }">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <small class="text-muted d-block" style="font-size: 0.7rem;">{{ __('Appointment') }}</small>
+                        <small class="text-muted d-block" style="font-size: 0.7rem;">
+                            {{ __('Appointment') }}
+                            @if($renewalLink)
+                                <span title="{{ __('Shared with Registration Resolution') }}">({{ __('Shared with Registration Resolution') }})</span>
+                            @endif
+                        </small>
                         <div class="form-check form-switch" title="{{ __('Mark Appointment Completed') }}">
                             <input class="form-check-input cursor-pointer" type="checkbox" x-model="isAppCompleted" @change="toggleAppComplete()" style="transform: scale(0.8);">
                         </div>
@@ -964,11 +988,20 @@
                         <i class="bi bi-trash-fill"></i>
                     </button>
                 @else
+                    @php
+                        // Dual-listed card (Registration employee also usable in
+                        // this Renewal tab) — every action below must act on the
+                        // link, never the real Employee, so the buttons call a
+                        // different set of JS functions pointed at link/... routes.
+                        $saveFn = $renewalLink ? "finalizeRenewalLink({$renewalLink->id}, {$employee->id})" : "finalizeEmployee({$employee->id})";
+                        $cancelFn = $renewalLink ? "cancelRenewalLink({$renewalLink->id}, {$employee->id})" : "cancelEmployee({$employee->id})";
+                        $restoreFn = $renewalLink ? "restoreRenewalLinkState({$renewalLink->id}, {$employee->id})" : "restoreEmployeeState({$employee->id})";
+                    @endphp
                     {{-- SAVE TO DB (Registration Context) --}}
                     <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
                         id="btn-save-{{ $employee->id }}"
                         title="Save to Database"
-                        onclick="finalizeEmployee({{ $employee->id }})">
+                        onclick="{{ $saveFn }}">
                         <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Save to DB') }}</span>
                     </button>
 
@@ -976,7 +1009,7 @@
                     <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
                         id="btn-cancel-{{ $employee->id }}"
                         title="Cancel Registration"
-                        onclick="cancelEmployee({{ $employee->id }})">
+                        onclick="{{ $cancelFn }}">
                         <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
                     </button>
 
@@ -984,7 +1017,7 @@
                     <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCancelled || $isHistory) ? 'd-none' : '' }}"
                         id="btn-restore-{{ $employee->id }}"
                         title="Restore"
-                        onclick="restoreEmployeeState({{ $employee->id }})">
+                        onclick="{{ $restoreFn }}">
                         <i class="bi bi-arrow-counterclockwise"></i> {{ __('Restore') }}
                     </button>
 
@@ -992,23 +1025,27 @@
                     <button class="btn btn-sm btn-outline-warning rounded-pill px-3 {{ (!$isCompleted || $isHistory) ? 'd-none' : '' }}"
                         id="btn-undo-{{ $employee->id }}"
                         title="Undo / Restore"
-                        onclick="restoreEmployeeState({{ $employee->id }})">
+                        onclick="{{ $restoreFn }}">
                         <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
                     </button>
 
-                    {{-- Delete (Soft) --}}
+                    {{-- Delete (Soft) — a dual-listed card never exposes deleting
+                         the real Employee from what is effectively a secondary view. --}}
+                    @if(!$renewalLink)
                     <button class="btn btn-sm btn-outline-danger rounded-pill px-3" title="Delete" onclick="deleteEmployee({{ $employee->id }})">
                         <i class="bi bi-trash-fill"></i>
                     </button>
+                    @endif
                 @endif
                 @endcan
             </div>
         </div>
 
         {{-- COUNTDOWN TIMER (If Completed & Within 24h) --}}
-        @if($isCompleted && $employee->resolution_completed_at && !$isHistory)
+        @php $cardCompletedAt = $renewalLink ? $renewalLink->resolution_completed_at : $employee->resolution_completed_at; @endphp
+        @if($isCompleted && $cardCompletedAt && !$isHistory)
             @php
-                $completedAt = \Carbon\Carbon::parse($employee->resolution_completed_at);
+                $completedAt = \Carbon\Carbon::parse($cardCompletedAt);
                 $expiresAt = $completedAt->copy()->addHours(24);
                 $expiresAtTimestamp = $expiresAt->timestamp * 1000; // MS for JS
                 $isExpired = $expiresAt->isPast();
@@ -1099,7 +1136,8 @@
                                 $itemId = isset($employee->production_item) ? $employee->production_item->id : $employee->id;
                                 $onclick = $canManage ? "onclick=\"toggleWorkStep({$itemId}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
                             } else {
-                                $onclick = $canManage ? "onclick=\"toggleStep({$employee->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
+                                $linkIdArg = $renewalLink ? $renewalLink->id : 'null';
+                                $onclick = $canManage ? "onclick=\"toggleStep({$employee->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ", {$linkIdArg})\"" : '';
                             }
                         @endphp
                     <button

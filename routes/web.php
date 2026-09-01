@@ -449,6 +449,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restore'])->name('restore');
         Route::delete('/{employee}/destroy', [App\Http\Controllers\Production\RenewalController::class, 'destroy'])->name('destroy');
 
+        // Dual-listed employees (Registration-Resolution employee also usable
+        // in this tab via EmployeeRenewalLink — see that model's docblock).
+        // These act ONLY on the link, never on the real Employee row.
+        Route::post('/link/{link}/progress', [App\Http\Controllers\Production\RenewalController::class, 'updateLinkProgress'])->name('link.progress.update');
+        Route::post('/link/{link}/finalize', [App\Http\Controllers\Production\RenewalController::class, 'finalizeLink'])->name('link.finalize');
+        Route::post('/link/{link}/cancel', [App\Http\Controllers\Production\RenewalController::class, 'cancelLink'])->name('link.cancel');
+        Route::post('/link/{link}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreLink'])->name('link.restore');
+
         // Settings
         Route::post('/settings/resolution', [App\Http\Controllers\Production\RenewalController::class, 'updateResolutionSettings'])->name('settings.resolution');
 

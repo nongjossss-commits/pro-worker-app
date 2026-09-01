@@ -2272,5 +2272,18 @@
     "Completed only": "เฉพาะที่เสร็จสิ้นแล้ว",
     "Not completed only": "เฉพาะที่ยังไม่เสร็จสิ้น",
     "Failed to load employee list.": "โหลดรายชื่อลูกจ้างไม่สำเร็จ",
-    "Custom selection": "เลือกแบบกำหนดเอง"
+    "Custom selection": "เลือกแบบกำหนดเอง",
+    "No Photo": "ไม่มีรูปภาพ",
+    "Add Draft Person (Not Yet in the System)": "เพิ่มคนแบบร่าง (ยังไม่มีในระบบ)",
+    "ID No.": "เลขประจำตัว",
+    "From Registration Resolution": "จากมติลงทะเบียน",
+    "This employee is still fully active in Registration Resolution — this card is a separate, independent copy for Renewal only.": "ลูกจ้างรายนี้ยังคงอยู่ในมติลงทะเบียนตามปกติ — การ์ดนี้เป็นสำเนาแยกต่างหากสำหรับมติต่ออายุเท่านั้น",
+    "Shared with Registration Resolution": "ใช้ร่วมกับมติลงทะเบียน",
+    "Quotation: Show Grand Total": "ใบเสนอราคา: แสดงยอดรวม",
+    "When off, the quotation shows a per-unit price with no grand total — for when the exact headcount isn't committed yet.": "เมื่อปิด ใบเสนอราคาจะแสดงแค่ราคาต่อหัว/ต่อยูนิต ไม่มียอดรวม — ใช้เมื่อยังไม่ทราบจำนวนคนที่แน่ชัด",
+    "Quotations": "ใบเสนอราคา",
+    "No Employer (Per-Unit Quote)": "ไม่ระบุนายจ้าง (เสนอราคาต่อหัว)",
+    "No quotations found.": "ยังไม่มีใบเสนอราคา",
+    "Choose what kind of document this will be. More settings on the next screen match this choice.": "เลือกว่าจะสร้างเอกสารประเภทไหน หน้าตั้งค่าถัดไปจะปรับตามที่เลือก",
+    "Leave blank for a per-unit quotation with no committed headcount yet — you can still pick an employer if you already know who it's for.": "เว้นว่างได้สำหรับใบเสนอราคาแบบต่อหัวที่ยังไม่ทราบจำนวนคนแน่ชัด — ถ้ารู้แล้วว่าใบเสนอราคานี้ทำให้นายจ้างรายไหน ก็เลือกได้เลย"
 }

@@ -2240,5 +2240,18 @@
     "Completed only": "Completed only",
     "Not completed only": "Not completed only",
     "Failed to load employee list.": "Failed to load employee list.",
-    "Custom selection": "Custom selection"
+    "Custom selection": "Custom selection",
+    "No Photo": "No Photo",
+    "Add Draft Person (Not Yet in the System)": "Add Draft Person (Not Yet in the System)",
+    "ID No.": "ID No.",
+    "From Registration Resolution": "From Registration Resolution",
+    "This employee is still fully active in Registration Resolution — this card is a separate, independent copy for Renewal only.": "This employee is still fully active in Registration Resolution — this card is a separate, independent copy for Renewal only.",
+    "Shared with Registration Resolution": "Shared with Registration Resolution",
+    "Quotation: Show Grand Total": "Quotation: Show Grand Total",
+    "When off, the quotation shows a per-unit price with no grand total — for when the exact headcount isn't committed yet.": "When off, the quotation shows a per-unit price with no grand total — for when the exact headcount isn't committed yet.",
+    "Quotations": "Quotations",
+    "No Employer (Per-Unit Quote)": "No Employer (Per-Unit Quote)",
+    "No quotations found.": "No quotations found.",
+    "Choose what kind of document this will be. More settings on the next screen match this choice.": "Choose what kind of document this will be. More settings on the next screen match this choice.",
+    "Leave blank for a per-unit quotation with no committed headcount yet — you can still pick an employer if you already know who it's for.": "Leave blank for a per-unit quotation with no committed headcount yet — you can still pick an employer if you already know who it's for."
 }

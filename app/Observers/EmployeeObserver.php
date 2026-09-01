@@ -11,14 +11,18 @@ use Illuminate\Support\Facades\Log;
 class EmployeeObserver
 {
     /**
-     * Statuses that mean "employee is already in some resolution menu".
-     * The Observer never touches resolution_tab_id/status when employee is in any of these
-     * — auto-pull is one-way (add only). Manual completion/cancellation is the only way out.
+     * Statuses that mean "employee already has a real renewal-tab record" —
+     * the Observer never touches resolution_tab_id/status for these, same
+     * add-only rule as before.
      */
-    protected const RESOLUTION_STATUSES = [
-        'registration_pending', 'registration_completed', 'registration_cancelled',
-        'renewal_pending',      'renewal_completed',      'renewal_cancelled',
-    ];
+    protected const RENEWAL_STATUSES = ['renewal_pending', 'renewal_completed', 'renewal_cancelled'];
+
+    /**
+     * Statuses that mean "employee is a real registration-tab record" — this
+     * side is never mutated by the Observer either; at most it gains a
+     * separate EmployeeRenewalLink row (see syncRenewalStatus()).
+     */
+    protected const REGISTRATION_STATUSES = ['registration_pending', 'registration_completed', 'registration_cancelled'];
 
     /**
      * Handle the Employee "created" event.
@@ -210,26 +214,45 @@ class EmployeeObserver
      * Sync employee into the renewal menu when their dates newly match a renewal target.
      *
      * RULE (add-only):
-     *  - If the employee is already in ANY resolution menu (registration/renewal — pending or finalized)
-     *    → do nothing. Progress/color is handled by getRenewalProgressAttribute.
-     *  - Otherwise, if dates match a renewal tab target → pull into that tab.
+     *  - If the employee is already a real renewal_* employee → do nothing,
+     *    they're already there (progress/color handled by getRenewalProgressAttribute).
+     *  - If the employee is a registration_* employee, they must stay
+     *    registration_* forever (Registration Resolution is untouched by
+     *    this method) — but they can ALSO become usable inside the matching
+     *    renewal tab via a separate EmployeeRenewalLink row, since a
+     *    registration that drags on can genuinely overlap with a renewal
+     *    deadline. See EmployeeRenewalLink's docblock. Never removed here
+     *    even if dates later drift away — same add-only rule as below.
+     *  - Otherwise (no resolution status at all yet) → pull directly into
+     *    the renewal tab, same as before.
      *
      * Never auto-eject, never auto-move between tabs.
      */
     protected function syncRenewalStatus(Employee $employee)
     {
         try {
-            if (in_array($employee->status, self::RESOLUTION_STATUSES, true)) {
-                return; // already in some resolution menu — leave alone
+            if (in_array($employee->status, self::RENEWAL_STATUSES, true)) {
+                return; // already a real renewal-tab employee — leave alone
             }
 
             $matchedTabId = $this->findMatchingRenewalTab($employee);
-            if ($matchedTabId) {
-                $employee->updateQuietly([
-                    'status' => 'renewal_pending',
-                    'resolution_tab_id' => $matchedTabId,
-                ]);
+            if (!$matchedTabId) {
+                return;
             }
+
+            if (in_array($employee->status, self::REGISTRATION_STATUSES, true)) {
+                // Dual-list only — never touch the employee's real status/resolution_tab_id.
+                \App\Models\EmployeeRenewalLink::firstOrCreate(
+                    ['employee_id' => $employee->id, 'resolution_tab_id' => $matchedTabId],
+                    ['status' => 'renewal_pending']
+                );
+                return;
+            }
+
+            $employee->updateQuietly([
+                'status' => 'renewal_pending',
+                'resolution_tab_id' => $matchedTabId,
+            ]);
         } catch (\Throwable $e) {
             Log::error("Failed renewal sync for employee {$employee->id}: " . $e->getMessage());
         }
