@@ -13,6 +13,7 @@ use App\Http\Controllers\Labor\LaborContractTemplateController;
 use App\Http\Controllers\Labor\LaborExpenseCategoryController;
 use App\Http\Controllers\Labor\LaborDashboardController;
 use App\Http\Controllers\Labor\LaborLedgerController;
+use App\Http\Controllers\Labor\LaborMyNameController;
 use App\Http\Controllers\Labor\LaborReportController;
 use App\Http\Controllers\Labor\LaborTaxInvoiceController;
 use App\Http\Controllers\Labor\LaborTeamController;
@@ -32,11 +33,17 @@ use Illuminate\Support\Facades\Route;
 | can recognize them and let dedicated labor-* roles stay inside.
 */
 
-Route::middleware(['auth', 'labor.access'])
+Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
     ->prefix('pro-walker-labor')
     ->name('labor.')
     ->group(function () {
         Route::get('/', [LaborDashboardController::class, 'index'])->name('dashboard');
+
+        // Self-service — "ลูกทีม" (and anyone else matched to a
+        // LaborTeamMember) editing their own report-facing name, distinct
+        // from their login's User.name. See LaborMyNameController.
+        Route::get('/my-name', [LaborMyNameController::class, 'edit'])->name('my-name.edit');
+        Route::put('/my-name', [LaborMyNameController::class, 'update'])->name('my-name.update');
 
         Route::get('/teams', [LaborTeamController::class, 'index'])->name('teams.index');
         Route::post('/teams', [LaborTeamController::class, 'store'])->name('teams.store');

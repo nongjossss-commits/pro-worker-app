@@ -34,7 +34,7 @@ class LaborTeamMemberController extends Controller
         // matching isn't restricted to the same team as the member (a
         // shareholder with no team of their own can still personally be a
         // team's member), so this list is intentionally unfiltered by team.
-        $laborUsers = User::role(['labor-accounting', 'labor-shareholder', 'labor-team'])
+        $laborUsers = User::role(['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member'])
             ->orWhere(fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', 'admin'))->where('labor_access_level', '!=', 'none'))
             ->with('laborTeamMember')
             ->orderBy('name')
@@ -96,7 +96,7 @@ class LaborTeamMemberController extends Controller
                 function ($attribute, $value, $fail) {
                     $hasLaborAccess = User::whereKey($value)
                         ->where(function ($q) {
-                            $q->role(['labor-accounting', 'labor-shareholder', 'labor-team'])
+                            $q->role(['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member'])
                               ->orWhere(fn ($q2) => $q2->whereHas('roles', fn ($r) => $r->where('name', 'admin'))->where('labor_access_level', '!=', 'none'));
                         })
                         ->exists();

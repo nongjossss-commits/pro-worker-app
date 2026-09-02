@@ -7,11 +7,13 @@
         'labor-accounting' => __('Accounting Staff'),
         'labor-shareholder' => __('Shareholder'),
         'labor-team' => __('Team Lead'),
+        'labor-member' => __('Team Member'),
     ];
     $roleBadges = [
         'labor-accounting' => 'bg-warning text-dark',
         'labor-shareholder' => 'bg-info text-dark',
         'labor-team' => 'bg-primary',
+        'labor-member' => 'bg-secondary',
     ];
 @endphp
 

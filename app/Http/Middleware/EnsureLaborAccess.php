@@ -18,7 +18,9 @@ use Symfony\Component\HttpFoundation\Response;
  *    AppServiceProvider for the manage-labor-ledger/view-labor-ledger
  *    abilities, since permission-based gating here would let every admin
  *    in (they bypass Spatie permission checks otherwise).
- *  - labor-accounting / labor-shareholder / labor-team (dedicated roles, always)
+ *  - labor-accounting / labor-shareholder / labor-team / labor-member (dedicated roles, always —
+ *    labor-member's access within the module is then locked down to just
+ *    their own dashboard by App\Http\Middleware\RestrictLaborMemberAccess)
  */
 class EnsureLaborAccess
 {
@@ -31,7 +33,7 @@ class EnsureLaborAccess
         }
 
         $allowed = $user->hasRole('super-admin')
-            || $user->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team'])
+            || $user->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member'])
             || ($user->hasRole('admin') && $user->labor_access_level !== 'none');
 
         if (!$allowed) {

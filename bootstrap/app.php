@@ -32,5 +32,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'menu' => \App\Http\Middleware\CheckMenuAccess::class,
             'labor.access' => \App\Http\Middleware\EnsureLaborAccess::class,
+            'labor.member.restrict' => \App\Http\Middleware\RestrictLaborMemberAccess::class,
         ]);
     })->create();

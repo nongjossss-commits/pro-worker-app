@@ -10,8 +10,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 /**
- * Login credentials for the 3 dedicated Pro Walker Labor roles
- * (labor-accounting, labor-shareholder, labor-team — e.g. team leads).
+ * Login credentials for the 4 dedicated Pro Walker Labour roles
+ * (labor-accounting, labor-shareholder, labor-team — e.g. team leads,
+ * labor-member — rank-and-file, sees only their own data).
  *
  * Kept separate from Admin\UserController on purpose: account creation for
  * this module is Super Admin's exclusive responsibility (route already
@@ -22,12 +23,12 @@ use Illuminate\Validation\Rule;
  */
 class LaborUserController extends Controller
 {
-    protected const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team'];
+    protected const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member'];
 
     public function index()
     {
         $users = User::role(self::LABOR_ROLES)
-            ->with(['roles', 'laborTeam'])
+            ->with(['roles', 'laborTeam', 'laborTeamMember'])
             ->orderBy('name')
             ->get();
 
@@ -47,7 +48,7 @@ class LaborUserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role_name' => ['required', Rule::in(self::LABOR_ROLES)],
-            'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
+            'labor_team_id' => ['nullable', 'required_if:role_name,labor-team,labor-member', Rule::exists('labor_teams', 'id')],
         ]);
 
         $user = User::create([
@@ -58,7 +59,7 @@ class LaborUserController extends Controller
             // labor-team: assignment required (enforced above). labor-shareholder:
             // optional — a shareholder can now also lead their own team, seeing
             // both the all-teams overview and their own team's dashboard section.
-            'labor_team_id' => in_array($validated['role_name'], ['labor-team', 'labor-shareholder'], true)
+            'labor_team_id' => in_array($validated['role_name'], ['labor-team', 'labor-shareholder', 'labor-member'], true)
                 ? ($validated['labor_team_id'] ?? null)
                 : null,
         ]);
@@ -85,7 +86,7 @@ class LaborUserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'role_name' => ['required', Rule::in(self::LABOR_ROLES)],
-            'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
+            'labor_team_id' => ['nullable', 'required_if:role_name,labor-team,labor-member', Rule::exists('labor_teams', 'id')],
         ]);
 
         $updateData = [
@@ -94,7 +95,7 @@ class LaborUserController extends Controller
             // labor-team: assignment required (enforced above). labor-shareholder:
             // optional — a shareholder can now also lead their own team, seeing
             // both the all-teams overview and their own team's dashboard section.
-            'labor_team_id' => in_array($validated['role_name'], ['labor-team', 'labor-shareholder'], true)
+            'labor_team_id' => in_array($validated['role_name'], ['labor-team', 'labor-shareholder', 'labor-member'], true)
                 ? ($validated['labor_team_id'] ?? null)
                 : null,
         ];

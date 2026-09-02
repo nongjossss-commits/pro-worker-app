@@ -26,7 +26,7 @@ class ConfineToLaborModule
      * issuing a Pro Worker contract, since these are precisely the roles
      * with no access to the main app's Employer records.
      */
-    public const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team'];
+    public const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member'];
 
     // Routes a confined user must still be able to reach even outside the labor.* group.
     protected const ALLOWED_ROUTE_NAMES = ['logout', 'password.confirm', 'lang.switch', 'addresses.thai_data'];

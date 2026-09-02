@@ -71,8 +71,24 @@ class LaborContractController extends Controller
         ]);
     }
 
+    /**
+     * The same "sees every team's contracts, or only their own issuances"
+     * split used by index()'s query scope, applied here so a direct-URL
+     * visit to another team's contract can't bypass that list-level
+     * filtering. See index()'s $seesAllTeams for why this exact role list.
+     */
+    protected function assertCanAccessContract(ProWorkerContract $contract): void
+    {
+        $user = Auth::user();
+        $seesAllTeams = $user->hasAnyRole(['super-admin', 'admin', 'labor-accounting', 'labor-shareholder']);
+
+        abort_if(!$seesAllTeams && $contract->issued_by !== $user->id, 403);
+    }
+
     public function show(ProWorkerContract $contract)
     {
+        $this->assertCanAccessContract($contract);
+
         return view('labor.contracts.show', compact('contract'));
     }
 
@@ -84,6 +100,8 @@ class LaborContractController extends Controller
      */
     public function edit(ProWorkerContract $contract)
     {
+        $this->assertCanAccessContract($contract);
+
         $template = $contract->template;
 
         return view('labor.contracts.edit', [
@@ -95,6 +113,8 @@ class LaborContractController extends Controller
 
     public function update(Request $request, ProWorkerContract $contract, ProWorkerContractService $service)
     {
+        $this->assertCanAccessContract($contract);
+
         $template = $contract->template;
         $fields = $request->input('fields', []);
 
@@ -161,6 +181,8 @@ class LaborContractController extends Controller
      */
     public function download(Request $request, ProWorkerContract $contract, ProWorkerContractPdfService $pdfService)
     {
+        $this->assertCanAccessContract($contract);
+
         if (!Storage::disk('public')->exists($contract->file_path)) {
             abort(404);
         }
@@ -185,6 +207,8 @@ class LaborContractController extends Controller
      */
     public function view(ProWorkerContract $contract)
     {
+        $this->assertCanAccessContract($contract);
+
         if (!Storage::disk('public')->exists($contract->file_path)) {
             abort(404);
         }

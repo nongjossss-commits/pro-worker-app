@@ -15,8 +15,8 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    /** Pro Walker Labor roles — creation/editing restricted to Super Admin only. */
-    protected const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team'];
+    /** Pro Walker Labour roles — creation/editing restricted to Super Admin only. */
+    protected const LABOR_ROLES = ['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member'];
 
     /**
      * Display a listing of the resource.

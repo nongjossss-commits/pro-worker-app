@@ -44,7 +44,7 @@ class AuthenticatedSessionController extends Controller
 
             // Pro Walker Labor: dedicated roles never see the main operations app —
             // send them straight into their module instead of '/index'.
-            if (Auth::user()->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team'])) {
+            if (Auth::user()->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member'])) {
                 return redirect()->route('labor.dashboard');
             }
 

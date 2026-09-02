@@ -150,9 +150,16 @@
 
 @if(in_array($mode, ['own-team-only', 'overview-plus-own-team']))
 {{-- ================= OWN TEAM ================= --}}
-<h5 class="fw-bold mb-3 {{ $mode === 'overview-plus-own-team' ? 'mt-2' : '' }}">
-    <i class="bi bi-people-fill me-2"></i>{{ __('My Team') }}: {{ $ownTeam['team']->name }}
-</h5>
+<div class="d-flex justify-content-between align-items-center mb-3 {{ $mode === 'overview-plus-own-team' ? 'mt-2' : '' }}">
+    <h5 class="fw-bold mb-0">
+        <i class="bi bi-people-fill me-2"></i>{{ __('My Team') }}: {{ $ownTeam['team']->name }}
+    </h5>
+    @if(auth()->user()->laborTeamMember)
+        <a href="{{ route('labor.my-name.edit') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>{{ __('Edit My Name') }}
+        </a>
+    @endif
+</div>
 <div class="row g-3">
     <div class="col-lg-5">
         <div class="row g-3 mb-3">
@@ -251,6 +258,84 @@
                         @if($item['type'] === 'bill')
                             <span class="badge bg-primary">{{ $item['label'] }}</span>
                         @elseif($item['type'] === 'payment')
+                            <span class="badge bg-success">{{ $item['label'] }}</span>
+                        @else
+                            <span class="badge bg-warning text-dark">{{ $item['label'] }}</span>
+                        @endif
+                    </td>
+                    <td>{{ $item['description'] }}</td>
+                    <td class="text-end">{{ number_format(abs($item['amount']), 2) }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">{{ __('No activity yet.') }}</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
+@if($mode === 'own-member-only')
+{{-- ================= MY OWN DATA (labor-member) ================= --}}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0">
+        <i class="bi bi-person-fill me-2"></i>{{ __('My Data') }}: {{ $ownMember['member']->name }}
+    </h5>
+    @if(auth()->user()->laborTeamMember)
+        <a href="{{ route('labor.my-name.edit') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>{{ __('Edit My Name') }}
+        </a>
+    @endif
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card stat-card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-bold">{{ __('Billed') }}</div>
+                <div class="fs-4 fw-bold">{{ number_format($ownMember['billed'], 2) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-success small text-uppercase fw-bold">{{ __('Paid') }}</div>
+                <div class="fs-4 fw-bold text-success">{{ number_format($ownMember['paid'], 2) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-warning small text-uppercase fw-bold">{{ __('Outstanding') }}</div>
+                <div class="fs-4 fw-bold text-warning">{{ number_format($ownMember['outstanding'], 2) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>{{ __('Recent Activity') }}</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ __('Date') }}</th>
+                    <th>{{ __('Type') }}</th>
+                    <th>{{ __('Description') }}</th>
+                    <th class="text-end">{{ __('Amount') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($ownMember['recentActivity'] as $item)
+                <tr>
+                    <td class="text-nowrap">{{ optional($item['date'])->format('d/m/Y') }}</td>
+                    <td>
+                        @if($item['type'] === 'payment')
                             <span class="badge bg-success">{{ $item['label'] }}</span>
                         @else
                             <span class="badge bg-warning text-dark">{{ $item['label'] }}</span>

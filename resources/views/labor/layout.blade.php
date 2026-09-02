@@ -189,7 +189,7 @@
                         @endhasanyrole
                     </div>
 
-                    @unless(auth()->user()->hasRole('labor-team'))
+                    @unless(auth()->user()->hasAnyRole(['labor-team', 'labor-member']))
                     <a href="{{ route('labor.reports.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.reports.index') ? 'active' : '' }}">
                         <i class="bi bi-bar-chart-line me-2"></i>{{ __('Reports') }}
                     </a>
@@ -263,7 +263,7 @@
 
                 <div class="mt-auto pt-3">
                     <hr>
-                    @unless(auth()->user()->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team']))
+                    @unless(auth()->user()->hasAnyRole(['labor-accounting', 'labor-shareholder', 'labor-team', 'labor-member']))
                     <a href="{{ route('home') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-box-arrow-left me-2"></i>{{ __('Back to Main System') }}
                     </a>

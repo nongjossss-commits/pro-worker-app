@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             ApproveProductionPermissionSeeder::class,
             WorkflowPermissionSeeder::class,
             UpdateProgressStepsPermissionSeeder::class,
+            LaborMemberRolePermissionSeeder::class,
             SuperAdminSeeder::class,
         ]);
     }
