@@ -32,7 +32,7 @@ class EmployeeController extends Controller
         // Bulk edit methods must gate on edit-employees (not manage-tickets),
         // otherwise caretakers get through to a form that silently discards
         // their input when the runtime check inside bulkUpdate() bails.
-        $this->middleware('permission:edit-employees', ['only' => ['edit', 'update', 'bulkEditSelectFields', 'bulkEditForm', 'bulkUpdate']]);
+        $this->middleware('permission:edit-employees', ['only' => ['edit', 'update', 'bulkEditSelectFields', 'bulkEditForm', 'bulkUpdate', 'updateMenuFields']]);
         $this->middleware('permission:create-employees', ['only' => ['create', 'store']]);
         $this->middleware('permission:delete-employees', ['only' => ['destroy']]);
         $this->middleware('permission:terminate-employees', ['only' => ['terminate']]);

@@ -22,6 +22,7 @@ class PermissionHelper
         'view-employees' => ['th' => 'ดูข้อมูลลูกจ้าง', 'en' => 'View Employees', 'zh' => '查看员工'],
         'create-employees' => ['th' => 'สร้างลูกจ้าง', 'en' => 'Create Employees', 'zh' => '创建员工'],
         'edit-employees' => ['th' => 'แก้ไขลูกจ้าง', 'en' => 'Edit Employees', 'zh' => '编辑员工'],
+        'update-progress-steps' => ['th' => 'ติ๊กความคืบหน้าขั้นตอน (Pre-Production/Workflow/มติลงทะเบียน/มติต่ออายุ)', 'en' => 'Update Progress Steps', 'zh' => '更新进度步骤'],
         'delete-employees' => ['th' => 'ลบลูกจ้าง (ลงถังขยะ)', 'en' => 'Delete Employees', 'zh' => '删除员工'],
         'terminate-employees' => ['th' => 'แจ้งออกลูกจ้าง', 'en' => 'Terminate Employees', 'zh' => '解雇员工'],
         'restore-employees' => ['th' => 'กู้คืนลูกจ้าง', 'en' => 'Restore Employees', 'zh' => '恢复员工'],

@@ -1761,7 +1761,7 @@ class RegistrationController extends Controller
     {
         $this->resolveTab($resolutionTab, 'registration');
 
-        if (!auth()->user()->can('edit-employees')) {
+        if (!auth()->user()->can('update-progress-steps')) {
             abort(403);
         }
 

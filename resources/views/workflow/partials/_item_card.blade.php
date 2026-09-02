@@ -929,8 +929,9 @@
                              $btnClass = "btn-success text-white"; // Default success for workflow
                         }
 
-                        $disabled = ($isCompleted || $isCancelled || $isReadOnly) ? 'disabled' : '';
-                        $onclick = "onclick=\"toggleWorkStep({$item->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"";
+                        $canManage = auth()->user()->can('update-progress-steps');
+                        $disabled = ($isCompleted || $isCancelled || $isReadOnly || !$canManage) ? 'disabled' : '';
+                        $onclick = $canManage ? "onclick=\"toggleWorkStep({$item->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
                     @endphp
                     <button
                         class="btn btn-sm {{ $btnClass }} rounded-pill px-3 step-btn-{{ $item->id }}-{{ $step->id }}"

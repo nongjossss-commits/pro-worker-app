@@ -441,6 +441,10 @@ class ProductionController extends Controller
      */
     public function updateOutsourceLogin(Request $request, Employee $employee)
     {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
         $request->validate([
             'email' => 'nullable|string|max:255',
             'password' => 'nullable|string|max:255',
@@ -461,6 +465,10 @@ class ProductionController extends Controller
 
     public function updateItemFields(Request $request, ProductionItem $item)
     {
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
         $request->validate([
             'request_number' => 'nullable|string|max:255',
         ]);

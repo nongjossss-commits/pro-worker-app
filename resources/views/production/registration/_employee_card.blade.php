@@ -1122,7 +1122,7 @@
                         }
                     @endphp
                         @php
-                            $canManage = auth()->user()->can('edit-employees');
+                            $canManage = auth()->user()->can('update-progress-steps');
                             $disabled = ($isCompleted || $isCancelled || !$canManage) ? 'disabled' : '';
                             $pointerEvents = !$canManage ? 'pointer-events: none;' : '';
 

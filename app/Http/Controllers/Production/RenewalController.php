@@ -2055,7 +2055,7 @@ class RenewalController extends Controller
     {
         $this->resolveTab($resolutionTab, 'renewal');
 
-        if (!auth()->user()->can('edit-employees')) {
+        if (!auth()->user()->can('update-progress-steps')) {
             abort(403);
         }
 
@@ -2230,7 +2230,7 @@ class RenewalController extends Controller
     {
         $this->resolveTab($resolutionTab, 'renewal');
 
-        if (!auth()->user()->can('edit-employees')) {
+        if (!auth()->user()->can('update-progress-steps')) {
             abort(403);
         }
         if ($link->resolution_tab_id !== $this->currentTab->id) {

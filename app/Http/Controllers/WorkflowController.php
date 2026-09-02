@@ -1013,6 +1013,10 @@ class WorkflowController extends Controller
      */
     public function toggleStep(Request $request, $itemId)
     {
+        if (!auth()->user()->can('update-progress-steps')) {
+            abort(403);
+        }
+
         $request->validate([
             'step_id' => 'required|exists:work_type_steps,id',
             'completed' => 'required|boolean'
