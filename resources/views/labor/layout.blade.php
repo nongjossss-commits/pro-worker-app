@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Pro Walker Labor')</title>
+    <title>@yield('title', 'Pro Walker Labour')</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -135,7 +135,7 @@
             <div class="offcanvas-header">
                 <h5 class="offcanvas-title" id="sidebarLabel">
                     <a href="{{ route('labor.dashboard') }}" class="d-flex align-items-center gap-2 text-decoration-none text-reset">
-                        <i class="bi bi-briefcase-fill" style="color: var(--bs-primary); font-size: 1.3rem;"></i> Pro Walker Labor
+                        <i class="bi bi-briefcase-fill" style="color: var(--bs-primary); font-size: 1.3rem;"></i> Pro Walker Labour
                     </a>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="{{ __('Close') }}"></button>
@@ -284,7 +284,7 @@
                     <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                         <i class="bi bi-list"></i>
                     </button>
-                    <h5 class="mb-0 fw-bold text-dark">@yield('title', __('Pro Walker Labor'))</h5>
+                    <h5 class="mb-0 fw-bold text-dark">@yield('title', __('Pro Walker Labour'))</h5>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     @can('manage-labor-ledger')

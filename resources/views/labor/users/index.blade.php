@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'Manage Users - Pro Walker Labor')
+@section('title', 'Manage Users - Pro Walker Labour')
 
 @php
     $roleLabels = [
@@ -32,6 +32,7 @@
                     <th>{{ __('Email') }}</th>
                     <th>{{ __('Role') }}</th>
                     <th>{{ __('Team') }}</th>
+                    <th>{{ __('Matched Member') }}</th>
                     <th class="text-center">{{ __('Status') }}</th>
                     <th class="text-end">{{ __('Actions') }}</th>
                 </tr>
@@ -48,6 +49,13 @@
                         @endif
                     </td>
                     <td>{{ $user->laborTeam->name ?? '-' }}</td>
+                    <td>
+                        @if($user->laborTeamMember)
+                            <span class="badge bg-info text-dark">{{ $user->laborTeamMember->name }}</span>
+                        @else
+                            <span class="badge bg-light text-muted border">{{ __('Not matched') }}</span>
+                        @endif
+                    </td>
                     <td class="text-center">
                         @if($user->status === 'active')
                             <span class="badge bg-success">{{ __('Active') }}</span>
@@ -71,7 +79,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">{{ __('No accounts created yet.') }}</td>
+                    <td colspan="7" class="text-center text-muted py-4">{{ __('No accounts created yet.') }}</td>
                 </tr>
                 @endforelse
             </tbody>

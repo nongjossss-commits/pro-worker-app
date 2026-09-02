@@ -128,6 +128,17 @@ class User extends Authenticatable
     }
 
     /**
+     * The LaborTeamMember ("ลูกทีม") roster entry this login is matched to,
+     * if any — optional, see labor_team_members' user_id migration. Distinct
+     * from laborTeam() above: that's "which whole team do I belong to",
+     * this is "which specific name in the roster am I".
+     */
+    public function laborTeamMember(): HasOne
+    {
+        return $this->hasOne(LaborTeamMember::class);
+    }
+
+    /**
      * Get the user's avatar URL.
      */
     public function getAvatarUrlAttribute()

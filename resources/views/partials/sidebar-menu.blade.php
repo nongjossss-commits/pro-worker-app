@@ -244,7 +244,7 @@
 <hr>
 <a class="list-group-item list-group-item-action {{ request()->routeIs('labor.*') ? 'active' : '' }}" href="{{ route('labor.dashboard') }}">
     <i class="bi bi-briefcase-fill me-2"></i>
-    {{ __('Pro Walker Labor') }}
+    {{ __('Pro Walker Labour') }}
 </a>
 @endif
 

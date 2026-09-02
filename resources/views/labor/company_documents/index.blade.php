@@ -52,7 +52,7 @@
     @if(!auth()->user()->labor_team_id)
         <div class="alert alert-warning">
             <i class="bi bi-exclamation-triangle-fill me-1"></i>
-            {{ __('You have not been assigned to a Pro Walker Labor team yet. Please contact a Super Admin before downloading documents.') }}
+            {{ __('You have not been assigned to a Pro Walker Labour team yet. Please contact a Super Admin before downloading documents.') }}
         </div>
     @else
         <div class="card shadow-sm border-0">

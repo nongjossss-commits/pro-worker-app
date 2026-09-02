@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'New Login - Pro Walker Labor')
+@section('title', 'New Login - Pro Walker Labour')
 
 @section('content')
 <div class="row justify-content-center">

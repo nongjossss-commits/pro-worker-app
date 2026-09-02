@@ -207,7 +207,7 @@ class LaborBookController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Book Transactions');
 
-        $sheet->setCellValue('A1', 'Pro Walker Labor — ' . $account->name . ' — ' . __('Transaction History'));
+        $sheet->setCellValue('A1', 'Pro Walker Labour — ' . $account->name . ' — ' . __('Transaction History'));
         $sheet->mergeCells('A1:G1');
         $sheet->getStyle('A1')->applyFromArray([
             'font' => ['bold' => true, 'size' => 14],

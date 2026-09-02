@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', $team->name . ' - Pro Walker Labor')
+@section('title', $team->name . ' - Pro Walker Labour')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">

@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'Record Expense - Pro Walker Labor')
+@section('title', 'Record Expense - Pro Walker Labour')
 
 @section('content')
 <div class="mb-3">

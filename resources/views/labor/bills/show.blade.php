@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', $bill->bill_no . ' - Pro Walker Labor')
+@section('title', $bill->bill_no . ' - Pro Walker Labour')
 
 @section('content')
 <div class="mb-3">

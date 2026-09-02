@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'Audit Log - Pro Walker Labor')
+@section('title', 'Audit Log - Pro Walker Labour')
 
 @section('content')
 <h4 class="fw-bold mb-3">{{ __('Audit Log') }}</h4>

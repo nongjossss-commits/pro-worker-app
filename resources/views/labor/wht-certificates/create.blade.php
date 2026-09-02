@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'New WHT Certificate - Pro Walker Labor')
+@section('title', 'New WHT Certificate - Pro Walker Labour')
 
 @section('content')
 <div class="mb-3">

@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'New Tax Invoice - Pro Walker Labor')
+@section('title', 'New Tax Invoice - Pro Walker Labour')
 
 @section('content')
 <div x-data="laborTaxInvoiceForm({

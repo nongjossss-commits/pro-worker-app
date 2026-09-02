@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', $account->name . ' - Pro Walker Labor')
+@section('title', $account->name . ' - Pro Walker Labour')
 
 @section('content')
 <div class="mb-3">

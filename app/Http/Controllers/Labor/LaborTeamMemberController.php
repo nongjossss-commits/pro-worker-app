@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Labor;
 use App\Http\Controllers\Controller;
 use App\Models\LaborTeam;
 use App\Models\LaborTeamMember;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * Central registry for "ลูกทีม" (team members) — an ID is registered here
@@ -21,14 +23,24 @@ class LaborTeamMemberController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
-        $members = LaborTeamMember::with('team')
+        $members = LaborTeamMember::with(['team', 'user'])
             ->withCount('ledgerEntries')
             ->orderByDesc('id')
             ->paginate(30);
 
         $teams = LaborTeam::where('is_active', true)->orderBy('name')->get();
 
-        return view('labor.team-members.index', compact('members', 'teams'));
+        // Every login that has Pro Walker Labour module access at all —
+        // matching isn't restricted to the same team as the member (a
+        // shareholder with no team of their own can still personally be a
+        // team's member), so this list is intentionally unfiltered by team.
+        $laborUsers = User::role(['labor-accounting', 'labor-shareholder', 'labor-team'])
+            ->orWhere(fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', 'admin'))->where('labor_access_level', '!=', 'none'))
+            ->with('laborTeamMember')
+            ->orderBy('name')
+            ->get();
+
+        return view('labor.team-members.index', compact('members', 'teams', 'laborUsers'));
     }
 
     /**
@@ -73,11 +85,33 @@ class LaborTeamMemberController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
-        // Name and active status only — the team pairing is fixed at registration.
+        // Name, active status, and the optional login match — the team
+        // pairing itself is fixed at registration (see class docblock).
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'user_id' => [
+                'nullable',
+                Rule::exists('users', 'id'),
+                Rule::unique('labor_team_members', 'user_id')->ignore($member->id),
+                function ($attribute, $value, $fail) {
+                    $hasLaborAccess = User::whereKey($value)
+                        ->where(function ($q) {
+                            $q->role(['labor-accounting', 'labor-shareholder', 'labor-team'])
+                              ->orWhere(fn ($q2) => $q2->whereHas('roles', fn ($r) => $r->where('name', 'admin'))->where('labor_access_level', '!=', 'none'));
+                        })
+                        ->exists();
+                    if (!$hasLaborAccess) {
+                        $fail('รหัสผู้ใช้นี้ยังไม่มีสิทธิ์เข้าถึง Pro Walker Labour จับคู่ไม่ได้');
+                    }
+                },
+            ],
+        ], [
+            'user_id.unique' => 'รหัสผู้ใช้นี้ถูกจับคู่กับลูกทีมคนอื่นไปแล้ว เลือกรหัสอื่น หรือยกเลิกการจับคู่เดิมก่อน',
         ]);
         $validated['is_active'] = $request->boolean('is_active');
+        // Empty-string "-- ไม่จับคู่ --" selection must clear the link, not
+        // save a blank string into a nullable FK column.
+        $validated['user_id'] = $validated['user_id'] ?: null;
 
         $member->update($validated);
 

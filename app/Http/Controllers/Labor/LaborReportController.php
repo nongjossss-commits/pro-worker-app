@@ -97,7 +97,7 @@ class LaborReportController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Labor Summary');
 
-        $sheet->setCellValue('A1', 'Pro Walker Labor — สรุปประจำงวด ' . $from->format('d/m/Y') . ' - ' . $to->format('d/m/Y'));
+        $sheet->setCellValue('A1', 'Pro Walker Labour — สรุปประจำงวด ' . $from->format('d/m/Y') . ' - ' . $to->format('d/m/Y'));
         $sheet->mergeCells('A1:G1');
         $sheet->getStyle('A1')->applyFromArray([
             'font' => ['bold' => true, 'size' => 14],

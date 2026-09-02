@@ -155,7 +155,7 @@ class LaborDailySummaryPdfService
     protected function renderHeader(Fpdi $pdf, Carbon $from, Carbon $to): void
     {
         $pdf->SetFont('THSarabunNew', '', 16);
-        $pdf->Cell(190, 8, $this->txt('Pro Walker Labor — สรุปประจำงวด'), 0, 1, 'C');
+        $pdf->Cell(190, 8, $this->txt('Pro Walker Labour — สรุปประจำงวด'), 0, 1, 'C');
 
         $pdf->SetFont('THSarabunNew', '', 12);
         $period = $from->isSameDay($to)

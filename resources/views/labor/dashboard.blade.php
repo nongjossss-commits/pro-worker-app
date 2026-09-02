@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'Dashboard - Pro Walker Labor')
+@section('title', 'Dashboard - Pro Walker Labour')
 
 @section('content')
 

@@ -35,7 +35,7 @@ class LaborContractController extends Controller
     public function store(Request $request, ProWorkerContractService $service)
     {
         $user = Auth::user();
-        abort_unless($user->labor_team_id, 403, __('You have not been assigned to a Pro Walker Labor team yet. Please contact a Super Admin.'));
+        abort_unless($user->labor_team_id, 403, __('You have not been assigned to a Pro Walker Labour team yet. Please contact a Super Admin.'));
 
         $template = ProWorkerContractTemplate::findOrFail($request->input('template_id'));
         $fields = $request->input('fields', []);

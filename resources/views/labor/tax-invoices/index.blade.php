@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'Tax Invoices - Pro Walker Labor')
+@section('title', 'Tax Invoices - Pro Walker Labour')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">

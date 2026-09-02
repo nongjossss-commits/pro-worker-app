@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', 'Team Members - Pro Walker Labor')
+@section('title', 'Team Members - Pro Walker Labour')
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -19,6 +19,7 @@
                     <th>{{ __('ID') }}</th>
                     <th>{{ __('Name') }}</th>
                     <th>{{ __('Team') }}</th>
+                    <th>{{ __('Login Account') }}</th>
                     <th class="text-center">{{ __('Status') }}</th>
                     <th class="text-end">{{ __('Jobs Filed') }}</th>
                     <th class="text-end">{{ __('Actions') }}</th>
@@ -30,6 +31,13 @@
                     <td class="text-muted">#{{ $member->id }}</td>
                     <td>{{ $member->name }}</td>
                     <td>{{ $member->team->name ?? '-' }}</td>
+                    <td>
+                        @if($member->user)
+                            <span class="badge bg-info text-dark">{{ $member->user->name }}</span>
+                        @else
+                            <span class="badge bg-light text-muted border">{{ __('Not matched') }}</span>
+                        @endif
+                    </td>
                     <td class="text-center">
                         @if($member->is_active)
                             <span class="badge bg-success">{{ __('Active') }}</span>
@@ -72,6 +80,19 @@
                                         <input type="text" class="form-control" value="{{ $member->team->name ?? '-' }}" disabled>
                                         <div class="form-text">{{ __('Team is locked at registration and cannot be changed.') }}</div>
                                     </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('Login Account') }}</label>
+                                        <select name="user_id" class="form-select">
+                                            <option value="">-- {{ __('Not matched') }} --</option>
+                                            @foreach($laborUsers as $laborUser)
+                                                @continue($laborUser->laborTeamMember && $laborUser->laborTeamMember->id !== $member->id)
+                                                <option value="{{ $laborUser->id }}" {{ $member->user_id === $laborUser->id ? 'selected' : '' }}>
+                                                    {{ $laborUser->name }} ({{ $laborUser->email }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="form-text">{{ __('Optional — only for a member who should be able to log in and see their own data. A name with no login stays exactly as-is.') }}</div>
+                                    </div>
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" name="is_active" value="1"
                                                id="memberActive{{ $member->id }}" {{ $member->is_active ? 'checked' : '' }}>
@@ -88,7 +109,7 @@
                 </div>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">{{ __('No members registered yet.') }}</td>
+                    <td colspan="7" class="text-center text-muted py-4">{{ __('No members registered yet.') }}</td>
                 </tr>
                 @endforelse
             </tbody>

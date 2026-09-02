@@ -1,6 +1,6 @@
 @extends('labor.layout')
 
-@section('title', $cert->cert_no . ' - Pro Walker Labor')
+@section('title', $cert->cert_no . ' - Pro Walker Labour')
 
 @section('content')
 <div class="mb-3">
