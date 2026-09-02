@@ -167,6 +167,7 @@
 @endhasanyrole
 
 {{-- V2.4-S14: Production & Workflow Menus --}}
+@hasanyrole('admin|super-admin|staff|caretaker')
 @if(Route::has('production.index'))
     @if(\App\Facades\SuperAdmin::isVisible('production'))
     <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.*') ? 'active' : '' }}">
@@ -189,6 +190,7 @@
     </a>
     @endif
 @endif
+@endhasanyrole
 
 @if(auth()->user()->hasAnyRole(['super-admin', 'admin', 'staff']))
 @if(\App\Facades\SuperAdmin::isVisible('importers'))

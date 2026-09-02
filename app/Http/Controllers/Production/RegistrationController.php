@@ -28,9 +28,11 @@ class RegistrationController extends Controller
 
     public function __construct()
     {
-        // Permissions can be refined later.
-        // For now, assume 'admin' or 'staff' access.
         $this->middleware('auth');
+        // Matches WorkflowController/ProductionController's role gate —
+        // employer/labor-* accounts have no business in this menu; caretaker
+        // keeps access for their routine step-tick/employee work.
+        $this->middleware('role:admin|super-admin|staff|caretaker');
     }
 
     /**

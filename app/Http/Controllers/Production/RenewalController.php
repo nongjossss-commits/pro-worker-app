@@ -27,6 +27,10 @@ class RenewalController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
+        // Matches WorkflowController/ProductionController's role gate —
+        // employer/labor-* accounts have no business in this menu; caretaker
+        // keeps access for their routine step-tick/employee work.
+        $this->middleware('role:admin|super-admin|staff|caretaker');
     }
 
     /**

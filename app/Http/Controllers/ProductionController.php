@@ -21,6 +21,29 @@ class ProductionController extends Controller
 {
     use AddressFilterTrait;
 
+    public function __construct()
+    {
+        // Matches WorkflowController's role gate — employer/labor-* accounts
+        // have no business in this menu; caretaker keeps access for their
+        // routine step-tick/employee work.
+        $this->middleware('role:admin|super-admin|staff|caretaker');
+
+        // Preparation-stage step CONFIGURATION (add/rename/delete/reorder
+        // steps) — distinct from ticking a step, which stays under
+        // 'update-progress-steps'. Matches how step-config is gated in
+        // WorkflowController.
+        $this->middleware('permission:manage-own-workflow', ['only' => [
+            'storeStep', 'updateStep', 'destroyStep', 'reorderSteps',
+        ]]);
+
+        // Financial/billing data — matches the rest of the Finance module's
+        // 'manage-finance' permission (admin+staff only, caretaker excluded).
+        $this->middleware('permission:manage-finance', ['only' => [
+            'storeFinancialGroup', 'updateFinancialGroup', 'destroyFinancialGroup',
+            'storeDraftEmployee',
+        ]]);
+    }
+
     /**
      * Display a listing of Production Orders (Preparation / Pre-Production).
      */

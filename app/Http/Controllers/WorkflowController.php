@@ -21,6 +21,35 @@ class WorkflowController extends Controller
 {
     use AddressFilterTrait;
 
+    public function __construct()
+    {
+        // Matches the 'role:super-admin|admin|staff' gate already used on the
+        // Read and Sale route group — employer/labor-* accounts have no
+        // business in this menu at all. Caretaker is included because they
+        // do the day-to-day step-ticking/employee work here.
+        $this->middleware('role:admin|super-admin|staff|caretaker');
+
+        // Structural/config-level actions — matches how 'manage-own-workflow'
+        // is already scoped (admin+staff only) on updateOrderRemarks,
+        // updateMouImportType, restoreTrash, forceDeleteTrash, updateTrashSettings.
+        $this->middleware('permission:manage-own-workflow', ['only' => [
+            'store', 'sendOrderBackToPreProduction', 'sendBackToPreProduction',
+            'storeStep', 'updateStep', 'destroyStep', 'reorderSteps',
+            'updateNotificationSettings', 'exportAppointments',
+            'searchGlobalEmployees', 'toggleOperator',
+        ]]);
+
+        // Routine per-employee/per-item actions — matches how 'edit-employees'
+        // already gates toggleStep (step-ticking) and the equivalent
+        // Pre-Production actions.
+        $this->middleware('permission:edit-employees', ['only' => [
+            'updateRemarks', 'updateAppointmentDate', 'updateCredentials',
+            'toggleAppointmentComplete', 'updateItemTeam', 'updateGroup',
+            'updateNotifyOutFields', 'finalizeItem', 'cancelItem',
+            'restoreItem', 'destroyItem',
+        ]]);
+    }
+
     /**
      * Display the main Workflow Dashboard with Tabs.
      */
