@@ -27,8 +27,12 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required'],
         ]);
 
-        // Force "Remember Me" to true for persistent login (PWA/Mobile friendly)
-        if (Auth::attempt([...$credentials, 'status' => 'active'], true)) {
+        // "Remember me" now reflects the checkbox: unchecked (default) means
+        // the session cookie dies when the browser closes (see
+        // SESSION_EXPIRE_ON_CLOSE), so the next visit always requires a
+        // fresh login; checked sets Laravel's persistent remember_token
+        // cookie so the browser stays logged in across restarts.
+        if (Auth::attempt([...$credentials, 'status' => 'active'], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             // Restore whatever language this user last picked (see
