@@ -22,6 +22,9 @@
                 </select>
                 <span class="small text-muted">{{ __('of') }} <span x-text="totalPages"></span></span>
             </div>
+            <a href="{{ route('labor.contract-templates.form-order', $template) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-ol me-1"></i>{{ __('Order Form Fields') }} (จัดลำดับฟอร์ม)
+            </a>
             <button @click="saveMapping()" class="btn btn-primary btn-sm" :disabled="isSaving">
                 <span x-show="isSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                 <i class="bi bi-save me-1" x-show="!isSaving"></i>{{ __('Save Template') }}
@@ -51,6 +54,21 @@
                      @dragstart="dragStart($event, {type: 'address'})">
                     <i class="bi bi-geo-alt text-success"></i>
                     <span class="small fw-semibold">{{ __('Address') }} (ที่อยู่ ไทย+อังกฤษ)</span>
+                </div>
+                <div class="pwct-tool bg-white border rounded mb-2 d-flex align-items-center gap-2 p-2" draggable="true"
+                     @dragstart="dragStart($event, {type: 'business_type'})">
+                    <i class="bi bi-building text-success"></i>
+                    <span class="small fw-semibold">{{ __('Business Type') }} (ประเภทกิจการ ไทย+อังกฤษ)</span>
+                </div>
+                <div class="pwct-tool bg-white border rounded mb-2 d-flex align-items-center gap-2 p-2" draggable="true"
+                     @dragstart="dragStart($event, {type: 'fee'})">
+                    <i class="bi bi-cash-coin text-warning"></i>
+                    <span class="small fw-semibold">{{ __('Service Fee') }} (ค่าบริการ + ตัวบรรจงไทย/อังกฤษ)</span>
+                </div>
+                <div class="pwct-tool bg-white border rounded mb-2 d-flex align-items-center gap-2 p-2" draggable="true"
+                     @dragstart="dragStart($event, {type: 'nationality'})">
+                    <i class="bi bi-flag text-success"></i>
+                    <span class="small fw-semibold">{{ __('Nationality') }} (สัญชาติ ไทย+อังกฤษ)</span>
                 </div>
                 <div class="pwct-tool bg-white border rounded mb-2 d-flex align-items-center gap-2 p-2" draggable="true"
                      @dragstart="dragStart($event, {type: 'worker_count'})">
@@ -114,8 +132,8 @@
                             <template x-for="[item, index] in itemsForPage(pageNum)" :key="pageNum + '-' + index">
                                 <div class="pwct-item position-absolute border d-flex px-1"
                                      :class="{
-                                        'pwct-item-text': item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'static_text',
-                                        'pwct-item-address': item.type === 'address_th' || item.type === 'address_en',
+                                        'pwct-item-text': item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'static_text' || item.type === 'fee_number',
+                                        'pwct-item-address': item.type === 'address_th' || item.type === 'address_en' || item.type === 'business_type_th' || item.type === 'business_type_en' || item.type === 'fee_th_text' || item.type === 'fee_en_text' || item.type === 'nationality_th' || item.type === 'nationality_en',
                                         'pwct-item-mark': item.type === 'mark',
                                         'pwct-item-media': item.type === 'image' || item.type === 'stamp' || item.type === 'signature'
                                      }"
@@ -148,7 +166,7 @@
                                         </div>
                                     </template>
 
-                                    <template x-if="item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'address_th' || item.type === 'address_en' || item.type === 'static_text'">
+                                    <template x-if="item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'address_th' || item.type === 'address_en' || item.type === 'static_text' || item.type === 'business_type_th' || item.type === 'business_type_en' || item.type === 'fee_number' || item.type === 'fee_th_text' || item.type === 'fee_en_text' || item.type === 'nationality_th' || item.type === 'nationality_en'">
                                         <div class="w-100 h-100 d-flex flex-column justify-content-end overflow-hidden position-relative"
                                              :style="`pointer-events:none; font-family: 'THSarabunNew', sans-serif; font-size: ${item.fontSize || 16}pt; text-align: ${item.align || 'left'}; color:#000;`">
                                             <span class="d-block text-nowrap" x-text="item.type === 'static_text' ? (item.text || '{{ __('(empty fixed text)') }}') : item.label" style="line-height:1;"></span>
@@ -220,7 +238,7 @@
                                 </div>
                             </template>
 
-                            <template x-if="items[editingIndex].type === 'text' || items[editingIndex].type === 'worker_count' || items[editingIndex].type === 'issue_date' || items[editingIndex].type === 'address_th' || items[editingIndex].type === 'address_en' || items[editingIndex].type === 'static_text'">
+                            <template x-if="items[editingIndex].type === 'text' || items[editingIndex].type === 'worker_count' || items[editingIndex].type === 'issue_date' || items[editingIndex].type === 'address_th' || items[editingIndex].type === 'address_en' || items[editingIndex].type === 'static_text' || items[editingIndex].type === 'business_type_th' || items[editingIndex].type === 'business_type_en' || items[editingIndex].type === 'fee_number' || items[editingIndex].type === 'fee_th_text' || items[editingIndex].type === 'fee_en_text'">
                                 <div class="row g-2">
                                     <div class="col-6">
                                         <label class="form-label">{{ __('Font Size') }}</label>
@@ -456,6 +474,88 @@
                                 x: xPct, y: Math.min(yPct + 4, 95), w: 40, h: 3, page: pageNum,
                                 fontSize: 14, align: 'left', autoFit: false,
                             });
+                        } else if (data.type === 'business_type') {
+                            const groupId = 'biz_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                            this.items.push({
+                                type: 'business_type_th',
+                                key: groupId + '_th',
+                                businessTypeGroup: groupId,
+                                label: '{{ __('Business Type (Thai)') }}',
+                                x: xPct, y: yPct, w: 40, h: 3, page: pageNum,
+                                fontSize: 14, align: 'left', autoFit: false,
+                            });
+                            this.items.push({
+                                type: 'business_type_en',
+                                key: groupId + '_en',
+                                businessTypeGroup: groupId,
+                                label: '{{ __('Business Type (English)') }}',
+                                x: xPct, y: Math.min(yPct + 4, 95), w: 40, h: 3, page: pageNum,
+                                fontSize: 14, align: 'left', autoFit: false,
+                            });
+                        } else if (data.type === 'fee') {
+                            // One drop places all 4 positions at once: the two
+                            // "fee_number" items deliberately share the SAME key
+                            // (like copyItem() does) so the single amount typed
+                            // at issuance fills both; the two text items get
+                            // their own keys, computed server-side from that
+                            // amount (see LaborContractController::resolveFeeGroupValues()).
+                            const groupId = 'fee_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                            const numKey = groupId + '_num';
+                            this.items.push({
+                                type: 'fee_number',
+                                key: numKey,
+                                feeGroup: groupId,
+                                label: '{{ __('Service Fee') }} (ตัวเลข ไทย)',
+                                x: xPct, y: yPct, w: 20, h: 3, page: pageNum,
+                                fontSize: 16, align: 'left', autoFit: false,
+                            });
+                            this.items.push({
+                                type: 'fee_number',
+                                key: numKey,
+                                feeGroup: groupId,
+                                label: '{{ __('Service Fee') }} (ตัวเลข อังกฤษ)',
+                                x: xPct, y: Math.min(yPct + 4, 95), w: 20, h: 3, page: pageNum,
+                                fontSize: 16, align: 'left', autoFit: false,
+                            });
+                            this.items.push({
+                                type: 'fee_th_text',
+                                key: groupId + '_th',
+                                feeGroup: groupId,
+                                label: '{{ __('Service Fee') }} (ตัวบรรจงไทย)',
+                                x: xPct, y: Math.min(yPct + 8, 95), w: 60, h: 3, page: pageNum,
+                                fontSize: 14, align: 'left', autoFit: false,
+                            });
+                            this.items.push({
+                                type: 'fee_en_text',
+                                key: groupId + '_en',
+                                feeGroup: groupId,
+                                label: '{{ __('Service Fee') }} (ตัวบรรจงอังกฤษ)',
+                                x: xPct, y: Math.min(yPct + 12, 95), w: 60, h: 3, page: pageNum,
+                                fontSize: 14, align: 'left', autoFit: false,
+                            });
+                        } else if (data.type === 'nationality') {
+                            // Same shape as the "business_type" branch above
+                            // — two positions sharing a nationalityGroup —
+                            // except the issuance-side picker is a hardcoded
+                            // 4-option select (see _nationality_group.blade.php)
+                            // instead of a fetched lookup.
+                            const groupId = 'nat_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                            this.items.push({
+                                type: 'nationality_th',
+                                key: groupId + '_th',
+                                nationalityGroup: groupId,
+                                label: '{{ __('Nationality (Thai)') }}',
+                                x: xPct, y: yPct, w: 40, h: 3, page: pageNum,
+                                fontSize: 14, align: 'left', autoFit: false,
+                            });
+                            this.items.push({
+                                type: 'nationality_en',
+                                key: groupId + '_en',
+                                nationalityGroup: groupId,
+                                label: '{{ __('Nationality (English)') }}',
+                                x: xPct, y: Math.min(yPct + 4, 95), w: 40, h: 3, page: pageNum,
+                                fontSize: 14, align: 'left', autoFit: false,
+                            });
                         } else if (data.type === 'mark') {
                             this.items.push({
                                 type: 'mark',
@@ -649,6 +749,12 @@
                     const item = this.items[index];
                     if (item.addressGroup) {
                         this.items = this.items.filter(i => i.addressGroup !== item.addressGroup);
+                    } else if (item.businessTypeGroup) {
+                        this.items = this.items.filter(i => i.businessTypeGroup !== item.businessTypeGroup);
+                    } else if (item.feeGroup) {
+                        this.items = this.items.filter(i => i.feeGroup !== item.feeGroup);
+                    } else if (item.nationalityGroup) {
+                        this.items = this.items.filter(i => i.nationalityGroup !== item.nationalityGroup);
                     } else {
                         this.items.splice(index, 1);
                     }

@@ -29,7 +29,7 @@
                 @method('PUT')
                 <input type="hidden" name="template_id" value="{{ $template->id }}">
 
-                @include('labor.contracts._fields', ['template' => $template, 'addressGroups' => $addressGroups, 'values' => $contract->field_values ?? []])
+                @include('labor.contracts._fields', ['template' => $template, 'formItems' => $formItems, 'values' => $contract->field_values ?? []])
 
                 <div class="form-text mb-3">{{ __('Please double-check the document before confirming.') }}</div>
                 <div class="d-flex justify-content-end gap-2 mt-4">
@@ -48,4 +48,5 @@
 
 @push('scripts')
 <script src="{{ asset('js/proworker-address-picker.js') }}?v={{ @filemtime(public_path('js/proworker-address-picker.js')) }}"></script>
+<script src="{{ asset('js/proworker-business-type-picker.js') }}?v={{ @filemtime(public_path('js/proworker-business-type-picker.js')) }}"></script>
 @endpush

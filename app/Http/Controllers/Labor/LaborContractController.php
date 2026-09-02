@@ -9,6 +9,7 @@ use App\Models\ProWorkerContract;
 use App\Models\ProWorkerContractTemplate;
 use App\Services\ProWorkerContractPdfService;
 use App\Services\ProWorkerContractService;
+use App\Services\ProWorkerFormFieldsResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -22,13 +23,17 @@ use Illuminate\Support\Facades\Storage;
  */
 class LaborContractController extends Controller
 {
+    public function __construct(protected ProWorkerFormFieldsResolver $formFields)
+    {
+    }
+
     public function create()
     {
         $template = ProWorkerContractTemplate::latest()->first();
 
         return view('labor.contracts.create', [
             'template' => $template,
-            'addressGroups' => $template ? $this->addressGroups($template) : [],
+            'formItems' => $template ? $this->formFields->unifiedItems($template) : [],
         ]);
     }
 
@@ -43,6 +48,8 @@ class LaborContractController extends Controller
         if ($error = $this->validateFields($template, $fields)) {
             return back()->withErrors($error)->withInput();
         }
+
+        $fields = $this->resolveFeeGroupValues($template, $fields);
 
         $contract = $service->issue($template, $user, $fields);
 
@@ -61,7 +68,7 @@ class LaborContractController extends Controller
     public function preview(Request $request)
     {
         $template = ProWorkerContractTemplate::findOrFail($request->input('template_id'));
-        $fields = $request->input('fields', []);
+        $fields = $this->resolveFeeGroupValues($template, $request->input('fields', []));
 
         $pdfBytes = app(ProWorkerContractPdfService::class)->preview($template, $fields);
 
@@ -107,7 +114,7 @@ class LaborContractController extends Controller
         return view('labor.contracts.edit', [
             'contract' => $contract,
             'template' => $template,
-            'addressGroups' => $this->addressGroups($template),
+            'formItems' => $this->formFields->unifiedItems($template),
         ]);
     }
 
@@ -122,6 +129,8 @@ class LaborContractController extends Controller
             return back()->withErrors($error)->withInput();
         }
 
+        $fields = $this->resolveFeeGroupValues($template, $fields);
+
         $service->update($contract, $fields);
 
         return redirect()->route('labor.contracts.show', $contract)
@@ -129,32 +138,22 @@ class LaborContractController extends Controller
     }
 
     /**
-     * Only text/address/worker_count fields are ever rendered as inputs
-     * on the issuance/edit form (see create.blade.php/edit.blade.php) —
-     * image/stamp/signature/mark fields are fixed at template-build time
-     * and carry no per-issuance value, so they're excluded from this
-     * required check. Shared by store() and update() so both stay in sync.
+     * A contract can be issued completely blank and filled in later via
+     * the correction flow — no field is required, contract_no generation
+     * is unaffected either way. The only thing still checked here is data
+     * CONSISTENCY for whatever was voluntarily filled in (see below), not
+     * completeness. Shared by store() and update() so both stay in sync.
      */
     protected function validateFields(ProWorkerContractTemplate $template, array $fields): ?array
     {
-        $requiredKeys = collect($template->field_mapping ?? [])
-            ->whereIn('type', ['text', 'worker_count', 'address_th', 'address_en'])
-            ->pluck('key');
-
-        foreach ($requiredKeys as $key) {
-            if (!isset($fields[$key]) || $fields[$key] === '') {
-                return ['fields' => __('Please fill in every field.')];
-            }
-        }
-
         // A Thai Soi/Road with no English counterpart would otherwise
         // leave that detail silently missing from the composed English
         // address (see _address_group.blade.php/proworker-address-picker.js
         // — a blank EN part is OMITTED, never falls back to untranslated
-        // Thai text). The picker already makes the EN input required
-        // client-side once its Thai counterpart is typed; this repeats the
-        // same rule server-side in case JS is bypassed.
-        foreach (array_keys($this->addressGroups($template)) as $groupId) {
+        // Thai text). This does NOT require Soi/Road to be filled in at
+        // all — only that if the Thai half was typed, the English half was
+        // too, since the picker already enforces that pairing client-side.
+        foreach (array_keys($this->formFields->addressGroups($template)) as $groupId) {
             foreach (['soi', 'road'] as $part) {
                 $th = trim((string) ($fields["{$groupId}_{$part}"] ?? ''));
                 $en = trim((string) ($fields["{$groupId}_{$part}_en"] ?? ''));
@@ -296,24 +295,34 @@ class LaborContractController extends Controller
     }
 
     /**
-     * Group a template's field_mapping into distinct address blocks
-     * (paired address_th/address_en items sharing an addressGroup) plus
-     * the remaining plain text fields — used by create.blade.php to render
-     * one _address_group partial per block and a plain input per text field.
+     * Computes the two spelled-out amount fields for every "ค่าบริการ"
+     * group on the template from the single number the issuer typed —
+     * called right before the fields array reaches ProWorkerContractService,
+     * in both store() and update(), so a correction to the amount also
+     * regenerates the spelled-out text. Reuses the existing Thai converter
+     * (already used elsewhere for financial documents) and the new
+     * EnglishBahtHelper built for this feature.
      */
-    protected function addressGroups(ProWorkerContractTemplate $template): array
+    protected function resolveFeeGroupValues(ProWorkerContractTemplate $template, array $fields): array
     {
-        $groups = [];
-        foreach (($template->field_mapping ?? []) as $item) {
-            if (($item['type'] ?? null) === 'address_th' && !empty($item['addressGroup'])) {
-                $groups[$item['addressGroup']]['keyTh'] = $item['key'];
-                $groups[$item['addressGroup']]['labelTh'] = $item['label'];
-            } elseif (($item['type'] ?? null) === 'address_en' && !empty($item['addressGroup'])) {
-                $groups[$item['addressGroup']]['keyEn'] = $item['key'];
-                $groups[$item['addressGroup']]['labelEn'] = $item['label'];
+        foreach ($this->formFields->feeGroups($template) as $group) {
+            if (empty($group['numeralKey'])) {
+                continue;
+            }
+            $amount = $fields[$group['numeralKey']] ?? null;
+            if ($amount === null || $amount === '') {
+                continue;
+            }
+            $amount = (float) str_replace(',', '', $amount);
+
+            if (!empty($group['thTextKey'])) {
+                $fields[$group['thTextKey']] = \App\Helpers\ThaiBahtHelper::toText($amount);
+            }
+            if (!empty($group['enTextKey'])) {
+                $fields[$group['enTextKey']] = \App\Helpers\EnglishBahtHelper::toText($amount);
             }
         }
 
-        return $groups;
+        return $fields;
     }
 }

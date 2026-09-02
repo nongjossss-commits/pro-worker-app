@@ -199,6 +199,12 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
             Route::post('/upload-image', [LaborContractTemplateController::class, 'uploadImage'])->name('upload-image');
             Route::get('/{proworkerContractTemplate}/file', [LaborContractTemplateController::class, 'file'])->name('file');
             Route::get('/{proworkerContractTemplate}/builder', [LaborContractTemplateController::class, 'builder'])->name('builder');
+            // Independent of each field's physical page/x/y position on the
+            // PDF canvas — just the order the issuance form asks for them
+            // in. See ProWorkerFormFieldsResolver::unifiedItems() +
+            // LaborContractTemplateController::updateFormOrder().
+            Route::get('/{proworkerContractTemplate}/form-order', [LaborContractTemplateController::class, 'formOrder'])->name('form-order');
+            Route::put('/{proworkerContractTemplate}/form-order', [LaborContractTemplateController::class, 'updateFormOrder'])->name('form-order.update');
             Route::put('/{proworkerContractTemplate}', [LaborContractTemplateController::class, 'update'])->name('update');
             Route::delete('/{proworkerContractTemplate}', [LaborContractTemplateController::class, 'destroy'])->name('destroy');
         });

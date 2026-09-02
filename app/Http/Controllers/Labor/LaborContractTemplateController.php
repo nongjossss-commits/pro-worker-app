@@ -6,6 +6,7 @@ use App\Helpers\PdfHelper;
 use App\Http\Controllers\Controller;
 use App\Models\ProWorkerContractTemplate;
 use App\Services\PdfGeneratorService;
+use App\Services\ProWorkerFormFieldsResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -169,5 +170,109 @@ class LaborContractTemplateController extends Controller
 
         return redirect()->route('labor.contract-templates.index')
             ->with('success', __('Template deleted successfully.'));
+    }
+
+    /**
+     * "จัดลำดับฟอร์ม" — lets a Super Admin freely reorder the sequence the
+     * issuance form (labor/contracts/_fields.blade.php) asks for fields in,
+     * completely independent of each field's physical page/x/y position on
+     * the PDF canvas (that stays the builder's job). See
+     * ProWorkerFormFieldsResolver::unifiedItems() for the formOrder concept
+     * this reads/writes.
+     */
+    public function formOrder(ProWorkerContractTemplate $proworkerContractTemplate, ProWorkerFormFieldsResolver $formFields)
+    {
+        // `displayLabel` is whichever label the issuance form actually
+        // shows for this row — text/worker_count/fee use `label`, while
+        // address/business_type/nationality groups use `labelTh` (see
+        // _fields.blade.php) — computed once here so the view/JS below
+        // doesn't need to know that distinction itself.
+        $items = collect($formFields->unifiedItems($proworkerContractTemplate))
+            ->map(function ($item) {
+                $item['displayLabel'] = in_array($item['kind'], ['address', 'business_type', 'nationality'], true)
+                    ? ($item['labelTh'] ?? '')
+                    : ($item['label'] ?? '');
+
+                return $item;
+            })
+            ->values();
+
+        return view('labor.contract_templates.form_order', [
+            'template' => $proworkerContractTemplate,
+            'items' => $items,
+        ]);
+    }
+
+    /**
+     * Writes the new order, width, and optionally a new display label —
+     * this is also where the "two Service Fee groups showed an identical
+     * label" bug gets fixed, since a Super Admin can now name each group
+     * here — back onto the SAME field_mapping the builder manages. Only
+     * `formOrder`/`formWidth`/`label` of the matching item(s) are touched;
+     * every other property (x/y/w/h/page/fontSize/align/etc.) is left
+     * exactly as the builder set it.
+     */
+    public function updateFormOrder(Request $request, ProWorkerContractTemplate $proworkerContractTemplate)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*.kind' => 'required|string',
+            'order.*.key' => 'nullable|string',
+            'order.*.groupId' => 'nullable|string',
+            'order.*.label' => 'nullable|string',
+            'order.*.width' => 'nullable|integer|min:1|max:12',
+        ]);
+
+        // Only the ONE item type actually read as a group's display label
+        // by ProWorkerFormFieldsResolver's groupX() methods gets the new
+        // label — e.g. an address group's paired English-position item
+        // keeps its own internal-only label (shown in the builder's
+        // "Placed Fields" sidebar, never on the issuance form).
+        $labelableTypes = ['text', 'worker_count', 'address_th', 'business_type_th', 'nationality_th', 'fee_number'];
+
+        $mapping = $proworkerContractTemplate->field_mapping ?? [];
+
+        foreach ($request->input('order') as $sequence => $row) {
+            $kind = $row['kind'];
+            $key = $row['key'] ?? null;
+            $groupId = $row['groupId'] ?? null;
+            $label = $row['label'] ?? null;
+            $width = $row['width'] ?? 12;
+
+            foreach ($mapping as &$item) {
+                $belongsToRow = match ($kind) {
+                    'text', 'worker_count' => ($item['key'] ?? null) === $key,
+                    'address' => ($item['addressGroup'] ?? null) === $groupId,
+                    'business_type' => ($item['businessTypeGroup'] ?? null) === $groupId,
+                    'nationality' => ($item['nationalityGroup'] ?? null) === $groupId,
+                    'fee' => ($item['feeGroup'] ?? null) === $groupId,
+                    default => false,
+                };
+
+                if (!$belongsToRow) {
+                    continue;
+                }
+
+                $item['formOrder'] = $sequence;
+
+                // Unlike `label` (only meaningful on ONE representative
+                // item type per group — see $labelableTypes), `formWidth`
+                // is written to EVERY item sharing this key/group, since
+                // ProWorkerFormFieldsResolver's groupX() methods read it
+                // via `??=` from whichever item is encountered first —
+                // that must resolve to the same value no matter which one
+                // that happens to be.
+                $item['formWidth'] = $width ?: 12;
+
+                if ($label !== null && $label !== '' && in_array($item['type'] ?? null, $labelableTypes, true)) {
+                    $item['label'] = $label;
+                }
+            }
+            unset($item);
+        }
+
+        $proworkerContractTemplate->update(['field_mapping' => $mapping]);
+
+        return response()->json(['success' => true]);
     }
 }

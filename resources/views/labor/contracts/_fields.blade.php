@@ -3,60 +3,118 @@
     correction form (edit.blade.php) — kept as one partial so the two forms
     can never drift out of sync on which field types render as what.
 
-    Expects: $template, $addressGroups (from LaborContractController's
-    addressGroups() helper). Optional: $values (assoc array of previously
-    submitted values, e.g. $contract->field_values on the edit form —
-    defaults to old()-only prefill for a fresh issuance).
+    Expects: $template, $formItems (from
+    App\Services\ProWorkerFormFieldsResolver::unifiedItems() — already
+    formOrder-sorted and already covers every field/group type: text/
+    worker_count fields, address/business-type/nationality/fee groups, all
+    in ONE list, so a Super Admin's field-order settings (see
+    contract_templates/form_order.blade.php) can freely interleave them).
+    Optional: $values (assoc array of previously submitted values, e.g.
+    $contract->field_values on the edit form — defaults to old()-only
+    prefill for a fresh issuance).
+
+    No field here is `required` — a contract can be issued completely
+    blank and filled in later via the correction flow (see
+    LaborContractController::validateFields()).
+
+    Each item's `formWidth` (a Bootstrap column span out of 12, set via
+    the "จัดลำดับฟอร์ม" settings screen — see
+    LaborContractTemplateController::updateFormOrder()) sizes its column
+    inside the shared row below, so short fields (e.g. a Service Fee
+    numeral, a Nationality dropdown) can sit side by side on one line
+    instead of always taking a full row. Defaults to 12 (full row) so a
+    template that never had formWidth set keeps its original one-field-
+    per-row layout exactly.
 --}}
 @php($values = $values ?? [])
 
-{{--
-    $seenKeys dedupes by field key — the Template Builder lets an admin
-    "copy" a field so the same key is drawn at multiple positions on the
-    PDF (see builder.blade.php's copyItem()), meaning field_mapping can
-    legitimately contain two items with an identical key. Without this,
-    the form would render two <input name="fields[key]"> boxes for the
-    same key; only the LAST one's value would actually survive to the
-    server on submit (duplicate form field names silently overwrite), so
-    the first box would look like it worked but its value would be
-    discarded — showing one input per unique key is what makes "fill it
-    in once, it shows up everywhere it's mapped to" true instead of a trap.
---}}
-@php($seenKeys = [])
-@foreach($template->field_mapping ?? [] as $item)
-    @continue(!in_array($item['type'] ?? null, ['text', 'worker_count']))
-    @continue(in_array($item['key'] ?? null, $seenKeys, true))
-    @php($seenKeys[] = $item['key'] ?? null)
-    <div class="mb-3">
-        <label class="form-label">{{ $item['label'] }} *</label>
-        @if(($item['type'] ?? null) === 'worker_count')
-            <input type="number" min="0" name="fields[{{ $item['key'] }}]" class="form-control"
-                   value="{{ old('fields.' . $item['key'], $values[$item['key']] ?? '') }}" required>
-        @else
-            <input type="text" name="fields[{{ $item['key'] }}]" class="form-control"
-                   value="{{ old('fields.' . $item['key'], $values[$item['key']] ?? '') }}" required>
-        @endif
-    </div>
-@endforeach
+<div class="row g-3">
+@foreach($formItems as $formItem)
+    @php($formWidth = $formItem['formWidth'] ?? 12)
+    @switch($formItem['kind'])
+        @case('text')
+        @case('worker_count')
+            <div class="col-md-{{ $formWidth }} mb-3">
+                <label class="form-label">{{ $formItem['label'] }}</label>
+                @if($formItem['kind'] === 'worker_count')
+                    <input type="number" min="0" name="fields[{{ $formItem['key'] }}]" class="form-control"
+                           value="{{ old('fields.' . $formItem['key'], $values[$formItem['key']] ?? '') }}">
+                @else
+                    <input type="text" name="fields[{{ $formItem['key'] }}]" class="form-control"
+                           value="{{ old('fields.' . $formItem['key'], $values[$formItem['key']] ?? '') }}">
+                @endif
+            </div>
+            @break
 
-@foreach($addressGroups as $groupId => $group)
-    <label class="form-label fw-bold">{{ $group['labelTh'] ?? __('Address') }}</label>
-    @include('labor._address_group', [
-        'groupId' => $groupId,
-        'keyTh' => $group['keyTh'],
-        'keyEn' => $group['keyEn'],
-        'labelTh' => $group['labelTh'] ?? '',
-        'labelEn' => $group['labelEn'] ?? '',
-        'prefill' => empty($values) ? [] : [
-            'province' => $values["{$groupId}_province"] ?? '',
-            'district' => $values["{$groupId}_district"] ?? '',
-            'subdistrict' => $values["{$groupId}_subdistrict"] ?? '',
-            'no' => $values["{$groupId}_no"] ?? '',
-            'moo' => $values["{$groupId}_moo"] ?? '',
-            'soi' => $values["{$groupId}_soi"] ?? '',
-            'road' => $values["{$groupId}_road"] ?? '',
-            'soi_en' => $values["{$groupId}_soi_en"] ?? '',
-            'road_en' => $values["{$groupId}_road_en"] ?? '',
-        ],
-    ])
+        @case('address')
+            <div class="col-md-{{ $formWidth }} mb-3">
+                <label class="form-label fw-bold">{{ $formItem['labelTh'] ?? __('Address') }}</label>
+                @include('labor._address_group', [
+                    'groupId' => $formItem['groupId'],
+                    'keyTh' => $formItem['keyTh'] ?? null,
+                    'keyEn' => $formItem['keyEn'] ?? null,
+                    'labelTh' => $formItem['labelTh'] ?? '',
+                    'labelEn' => $formItem['labelEn'] ?? '',
+                    'prefill' => empty($values) ? [] : [
+                        'province' => $values["{$formItem['groupId']}_province"] ?? '',
+                        'district' => $values["{$formItem['groupId']}_district"] ?? '',
+                        'subdistrict' => $values["{$formItem['groupId']}_subdistrict"] ?? '',
+                        'no' => $values["{$formItem['groupId']}_no"] ?? '',
+                        'moo' => $values["{$formItem['groupId']}_moo"] ?? '',
+                        'soi' => $values["{$formItem['groupId']}_soi"] ?? '',
+                        'road' => $values["{$formItem['groupId']}_road"] ?? '',
+                        'soi_en' => $values["{$formItem['groupId']}_soi_en"] ?? '',
+                        'road_en' => $values["{$formItem['groupId']}_road_en"] ?? '',
+                    ],
+                ])
+            </div>
+            @break
+
+        @case('business_type')
+            <div class="col-md-{{ $formWidth }}">
+                @include('labor._business_type_group', [
+                    'groupId' => $formItem['groupId'],
+                    'keyTh' => $formItem['keyTh'] ?? null,
+                    'keyEn' => $formItem['keyEn'] ?? null,
+                    'labelTh' => $formItem['labelTh'] ?? __('Business Type'),
+                    'prefillTh' => $values[$formItem['keyTh'] ?? ''] ?? '',
+                    'prefillEn' => $values[$formItem['keyEn'] ?? ''] ?? '',
+                ])
+            </div>
+            @break
+
+        @case('nationality')
+            <div class="col-md-{{ $formWidth }}">
+                @include('labor._nationality_group', [
+                    'groupId' => $formItem['groupId'],
+                    'keyTh' => $formItem['keyTh'] ?? null,
+                    'keyEn' => $formItem['keyEn'] ?? null,
+                    'labelTh' => $formItem['labelTh'] ?? __('Nationality'),
+                    'prefillTh' => $values[$formItem['keyTh'] ?? ''] ?? '',
+                    'prefillEn' => $values[$formItem['keyEn'] ?? ''] ?? '',
+                ])
+            </div>
+            @break
+
+        @case('fee')
+            @if(!empty($formItem['numeralKey']))
+                <div class="col-md-{{ $formWidth }} mb-3">
+                    <label class="form-label">{{ $formItem['label'] ?? __('Service Fee') }}</label>
+                    <input type="number" min="0" step="0.01" name="fields[{{ $formItem['numeralKey'] }}]" class="form-control"
+                           value="{{ old('fields.' . $formItem['numeralKey'], $values[$formItem['numeralKey']] ?? '') }}">
+                    <div class="form-text">{{ __('Type the amount once — the spelled-out Thai and English text on the document are generated automatically.') }}</div>
+                </div>
+            @endif
+            @break
+    @endswitch
 @endforeach
+</div>
+
+@once
+@push('scripts')
+<script>
+    window.proworkerBusinessTypesUrl = '{{ route('admin.business-types.index') }}';
+    window.proworkerSelectLabel = '{{ __('Select...') }}';
+</script>
+@endpush
+@endonce
