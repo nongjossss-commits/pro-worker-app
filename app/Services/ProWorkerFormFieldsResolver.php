@@ -41,6 +41,7 @@ class ProWorkerFormFieldsResolver
             }
             $groups[$groupId]['formOrder'] ??= ($item['formOrder'] ?? $position);
             $groups[$groupId]['formWidth'] ??= ($item['formWidth'] ?? 12);
+            $groups[$groupId]['showOnVerify'] ??= (bool) ($item['showOnVerify'] ?? false);
         }
 
         return $groups;
@@ -73,6 +74,7 @@ class ProWorkerFormFieldsResolver
             }
             $groups[$groupId]['formOrder'] ??= ($item['formOrder'] ?? $position);
             $groups[$groupId]['formWidth'] ??= ($item['formWidth'] ?? 12);
+            $groups[$groupId]['showOnVerify'] ??= (bool) ($item['showOnVerify'] ?? false);
         }
 
         return $groups;
@@ -105,6 +107,7 @@ class ProWorkerFormFieldsResolver
             }
             $groups[$groupId]['formOrder'] ??= ($item['formOrder'] ?? $position);
             $groups[$groupId]['formWidth'] ??= ($item['formWidth'] ?? 12);
+            $groups[$groupId]['showOnVerify'] ??= (bool) ($item['showOnVerify'] ?? false);
         }
 
         return $groups;
@@ -140,6 +143,7 @@ class ProWorkerFormFieldsResolver
             }
             $groups[$groupId]['formOrder'] ??= ($item['formOrder'] ?? $position);
             $groups[$groupId]['formWidth'] ??= ($item['formWidth'] ?? 12);
+            $groups[$groupId]['showOnVerify'] ??= (bool) ($item['showOnVerify'] ?? false);
         }
 
         return $groups;
@@ -191,6 +195,7 @@ class ProWorkerFormFieldsResolver
                 'label' => $item['label'] ?? '',
                 'formOrder' => $item['formOrder'] ?? $position,
                 'formWidth' => $item['formWidth'] ?? 12,
+                'showOnVerify' => (bool) ($item['showOnVerify'] ?? false),
             ];
         }
 
@@ -216,5 +221,63 @@ class ProWorkerFormFieldsResolver
         usort($items, fn ($a, $b) => $a['formOrder'] <=> $b['formOrder']);
 
         return $items;
+    }
+
+    /**
+     * The fields a Super Admin has explicitly opted (via the "Show on the
+     * public verification page" toggle in the Template Builder — see
+     * builder.blade.php) to surface on the public, no-login QR-verify page
+     * (LaborContractController::publicVerify()), so whoever scanned the
+     * code can compare the value against what's actually printed on the
+     * physical document — a bare "this contract number exists" check alone
+     * can't catch a forged document that reuses a genuine number.
+     *
+     * Deliberately reads live from the ISSUED CONTRACT's own $fieldValues
+     * (never a separate snapshot column) — the exact same values the PDF
+     * was rendered from, so there's no way for this to drift stale or go
+     * blank the way employer_name_snapshot did once the employer-picker
+     * was removed from the issuance form (see ProWorkerContractService's
+     * docblock). `showOnVerify` defaults to false on every field (see the
+     * groupX() methods and the loop above), so a template that predates
+     * this feature shows nothing extra until a Super Admin opts fields in.
+     *
+     * Only the 6 kinds unifiedItems() ever produces (text, worker_count,
+     * address, business_type, nationality, fee) are eligible — static_text
+     * (identical on every contract, proves nothing) and issue_date
+     * (computed fresh at render time, never stored in field_values) were
+     * already excluded from unifiedItems() itself, so no extra filtering
+     * is needed here.
+     */
+    public function verifyVisibleItems(ProWorkerContractTemplate $template, array $fieldValues): array
+    {
+        $result = [];
+
+        foreach ($this->unifiedItems($template) as $item) {
+            if (empty($item['showOnVerify'])) {
+                continue;
+            }
+
+            [$label, $value] = match ($item['kind']) {
+                'text', 'worker_count' => [$item['label'] ?? '', $fieldValues[$item['key']] ?? ''],
+                'address' => [$item['labelTh'] ?? __('Address'), $fieldValues[$item['keyTh'] ?? ''] ?? ''],
+                'business_type' => [$item['labelTh'] ?? __('Business Type'), $fieldValues[$item['keyTh'] ?? ''] ?? ''],
+                'nationality' => [$item['labelTh'] ?? __('Nationality'), $fieldValues[$item['keyTh'] ?? ''] ?? ''],
+                'fee' => [
+                    $item['label'] ?? __('Service Fee'),
+                    isset($fieldValues[$item['numeralKey'] ?? '']) && $fieldValues[$item['numeralKey']] !== ''
+                        ? number_format((float) $fieldValues[$item['numeralKey']], 2)
+                        : '',
+                ],
+                default => [null, null],
+            };
+
+            if ($label === null) {
+                continue;
+            }
+
+            $result[] = ['label' => $label, 'value' => $value];
+        }
+
+        return $result;
     }
 }

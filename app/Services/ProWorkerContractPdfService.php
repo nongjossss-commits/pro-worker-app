@@ -6,6 +6,7 @@ use App\Models\CompanyProfile;
 use App\Models\ProWorkerContractTemplate;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use setasign\Fpdi\Fpdi;
 
@@ -149,7 +150,17 @@ class ProWorkerContractPdfService
                 try {
                     $pdf->Image(Storage::disk('public')->path($qrPath), $cornerX, $size['height'] - 20, 14);
                 } catch (\Throwable $e) {
-                    // ignore
+                    // A missing/broken QR shouldn't block contract issuance
+                    // (same soft-fail style as the logo above and
+                    // ensureQrCode() below), but silently swallowing every
+                    // exception here made "QR never shows up" undiagnosable
+                    // on a server this code isn't running on directly — see
+                    // ensureQrCode()'s docblock for the same reasoning.
+                    Log::warning('ProWorkerContractPdfService: failed to draw QR code image into PDF', [
+                        'contract_no' => $contractNo,
+                        'qr_path' => $qrPath,
+                        'exception' => $e->getMessage(),
+                    ]);
                 }
             }
 
@@ -275,7 +286,12 @@ class ProWorkerContractPdfService
      * the full field_values, per the confidentiality requirement between
      * contracting parties. Returns null (soft-fail, same style as
      * drawImageFit()) if generation fails for any reason — a missing QR
-     * shouldn't block contract issuance.
+     * shouldn't block contract issuance. The most common real-world cause
+     * is the server's PHP missing the `gd` extension (PngWriter needs it
+     * to render); other possibilities include the `public` disk not being
+     * writable, or `route()` throwing if APP_URL/route caching is
+     * misconfigured — see the Log::warning() below rather than guessing:
+     * storage/logs/laravel.log will name the exact exception.
      */
     protected function ensureQrCode(string $contractNo): ?string
     {
@@ -292,6 +308,11 @@ class ProWorkerContractPdfService
 
             return $path;
         } catch (\Throwable $e) {
+            Log::warning('ProWorkerContractPdfService: failed to generate QR code', [
+                'contract_no' => $contractNo,
+                'exception' => $e->getMessage(),
+            ]);
+
             return null;
         }
     }

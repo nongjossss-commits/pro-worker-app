@@ -180,6 +180,12 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         Route::get('/contracts/{contract}', [LaborContractController::class, 'show'])->name('contracts.show');
         Route::get('/contracts/{contract}/download', [LaborContractController::class, 'download'])->name('contracts.download');
         Route::get('/contracts/{contract}/view', [LaborContractController::class, 'view'])->name('contracts.view');
+        // Attaching the employer's signed copy back — open to anyone who can
+        // already view the contract, NOT issuer-only like edit/update above
+        // (see LaborContractController::uploadSignedCopy()'s docblock).
+        Route::put('/contracts/{contract}/signed-copy', [LaborContractController::class, 'uploadSignedCopy'])->name('contracts.signed-copy.update');
+        // "ดูประวัติการแก้ไข" — same viewers as show().
+        Route::get('/contracts/{contract}/history', [LaborContractController::class, 'history'])->name('contracts.history');
         Route::get('/contracts-verify', [LaborContractController::class, 'verifyForm'])->name('contracts.verify.form');
         Route::post('/contracts-verify', [LaborContractController::class, 'verify'])->name('contracts.verify');
 

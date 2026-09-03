@@ -24,14 +24,31 @@
                                     <th class="text-muted fw-normal">{{ __('Issued at') }}</th>
                                     <td>{{ $contract->issued_at->format('d/m/Y') }}</td>
                                 </tr>
+                                @if($contract->employer_name_snapshot)
                                 <tr>
                                     <th class="text-muted fw-normal">{{ __('Employer') }}</th>
-                                    <td>{{ $contract->employer_name_snapshot ?? '-' }}</td>
+                                    <td>{{ $contract->employer_name_snapshot }}</td>
+                                </tr>
+                                @endif
+                                <tr>
+                                    <th class="text-muted fw-normal">{{ __('Issuing Team') }}</th>
+                                    <td>{{ $contract->team->name ?? '-' }}</td>
                                 </tr>
                                 <tr>
                                     <th class="text-muted fw-normal">{{ __('Issued by') }}</th>
                                     <td>{{ $companyProfile->name ?? config('app.name') }}</td>
                                 </tr>
+                                {{-- Only fields a Super Admin explicitly opted into via the
+                                     Template Builder's "Show on the public verification page"
+                                     toggle — see ProWorkerFormFieldsResolver::verifyVisibleItems().
+                                     Lets whoever scanned the QR code compare these values against
+                                     what's actually printed on the physical document. --}}
+                                @foreach($verifyItems as $verifyItem)
+                                <tr>
+                                    <th class="text-muted fw-normal">{{ $verifyItem['label'] }}</th>
+                                    <td>{{ $verifyItem['value'] !== '' ? $verifyItem['value'] : '-' }}</td>
+                                </tr>
+                                @endforeach
                             </table>
                         @else
                             <i class="bi" style="font-size: 3rem; color: #dc2626;">&#10007;</i>

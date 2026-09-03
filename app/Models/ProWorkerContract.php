@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\LogActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,10 +31,24 @@ use Illuminate\Database\Eloquent\Model;
  * a real Employer when the issuer has main-app access; external teams
  * with no Employer records of their own only ever set the free-text
  * employer_name_snapshot.
+ *
+ * signed_copy_path is the scanned/photographed copy of the contract the
+ * employer actually signed, attached back onto the record after issuance
+ * (often days/weeks later, by anyone who can access the contract — not
+ * restricted to the issuer, unlike every other field here — see
+ * LaborContractController::uploadSignedCopy()). Its presence is what the
+ * "สัญญาสมบูรณ์" (Complete Contract) badge/filter checks.
+ *
+ * Uses LogActivity (app/Traits/LogActivity.php) for an automatic edit
+ * history — every create/update is logged to the generic ActivityLog
+ * table. LaborContractController::describeContractChanges() renders those
+ * raw diffs into human-readable Thai sentences (field_values specifically
+ * needs its own per-key diff there, since it's one large JSON blob of
+ * every issuance-form answer — see that method's docblock).
  */
 class ProWorkerContract extends Model
 {
-    use HasFactory;
+    use HasFactory, LogActivity;
 
     protected $fillable = [
         'contract_no',
@@ -44,6 +59,7 @@ class ProWorkerContract extends Model
         'employer_name_snapshot',
         'field_values',
         'file_path',
+        'signed_copy_path',
         'worker_count',
         'issued_at',
     ];

@@ -348,6 +348,28 @@
             });
         });
     </script>
+
+    {{-- Camera scan / upload / crop / rotate — the exact same component the
+         main app uses (resources/views/components/document-scanner.blade.php),
+         self-contained (loads its own JS + CDN deps). This module's layout
+         is entirely separate from layouts/app.blade.php, so it was never
+         pulled in here before — added for the contract signed-copy
+         attachment (LaborContractController::uploadSignedCopy()). --}}
+    @include('components.document-scanner')
+
+    {{-- <x-file-input-group>'s "View" button on an already-attached file
+         calls window.viewPDF(), defined in the main app's
+         layouts/_app_scripts.blade.php (not loaded here — see above). That
+         version opens a full preview modal this module doesn't have; this
+         is a minimal stand-in that just opens the file in a new tab, which
+         is all it needs to do here. --}}
+    <script>
+        window.viewPDF = function (url) {
+            if (!url) return;
+            window.open(url, '_blank');
+        };
+    </script>
+
     @stack('scripts')
 </body>
 </html>

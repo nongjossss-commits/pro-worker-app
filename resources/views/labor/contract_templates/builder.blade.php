@@ -168,7 +168,7 @@
 
                                     <template x-if="item.type === 'text' || item.type === 'worker_count' || item.type === 'issue_date' || item.type === 'address_th' || item.type === 'address_en' || item.type === 'static_text' || item.type === 'business_type_th' || item.type === 'business_type_en' || item.type === 'fee_number' || item.type === 'fee_th_text' || item.type === 'fee_en_text' || item.type === 'nationality_th' || item.type === 'nationality_en'">
                                         <div class="w-100 h-100 d-flex flex-column justify-content-end overflow-hidden position-relative"
-                                             :style="`pointer-events:none; font-family: 'THSarabunNew', sans-serif; font-size: ${item.fontSize || 16}pt; text-align: ${item.align || 'left'}; color:#000;`">
+                                             :style="`pointer-events:none; font-family: 'THSarabunNew', sans-serif; font-size: ${getFontSize(item, pageNum)}; text-align: ${item.align || 'left'}; color:#000;`">
                                             <span class="d-block text-nowrap" x-text="item.type === 'static_text' ? (item.text || '{{ __('(empty fixed text)') }}') : item.label" style="line-height:1;"></span>
                                         </div>
                                     </template>
@@ -238,19 +238,50 @@
                                 </div>
                             </template>
 
-                            <template x-if="items[editingIndex].type === 'text' || items[editingIndex].type === 'worker_count' || items[editingIndex].type === 'issue_date' || items[editingIndex].type === 'address_th' || items[editingIndex].type === 'address_en' || items[editingIndex].type === 'static_text' || items[editingIndex].type === 'business_type_th' || items[editingIndex].type === 'business_type_en' || items[editingIndex].type === 'fee_number' || items[editingIndex].type === 'fee_th_text' || items[editingIndex].type === 'fee_en_text'">
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <label class="form-label">{{ __('Font Size') }}</label>
-                                        <input type="number" class="form-control" x-model.number="items[editingIndex].fontSize" min="6" max="72">
+                            <template x-if="items[editingIndex].type === 'text' || items[editingIndex].type === 'worker_count' || items[editingIndex].type === 'issue_date' || items[editingIndex].type === 'address_th' || items[editingIndex].type === 'address_en' || items[editingIndex].type === 'static_text' || items[editingIndex].type === 'business_type_th' || items[editingIndex].type === 'business_type_en' || items[editingIndex].type === 'fee_number' || items[editingIndex].type === 'fee_th_text' || items[editingIndex].type === 'fee_en_text' || items[editingIndex].type === 'nationality_th' || items[editingIndex].type === 'nationality_en'">
+                                <div>
+                                    <div class="mb-2">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="autoFitToggle" x-model="items[editingIndex].autoFit">
+                                            <label class="form-check-label" for="autoFitToggle">{{ __('Auto-fit font size') }}</label>
+                                        </div>
+                                        <div class="form-text small text-muted">
+                                            {{ __('If enabled, the font size below is ignored — text automatically shrinks to fit inside the box, so long text never overflows onto the rest of the document.') }}
+                                        </div>
                                     </div>
-                                    <div class="col-6">
-                                        <label class="form-label">{{ __('Align') }}</label>
-                                        <select class="form-select" x-model="items[editingIndex].align">
-                                            <option value="left">{{ __('Left') }}</option>
-                                            <option value="center">{{ __('Center') }}</option>
-                                            <option value="right">{{ __('Right') }}</option>
-                                        </select>
+                                    <div class="row g-2">
+                                        <div class="col-6" x-show="!items[editingIndex].autoFit">
+                                            <label class="form-label">{{ __('Font Size') }}</label>
+                                            <input type="number" class="form-control" x-model.number="items[editingIndex].fontSize" min="6" max="72">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label">{{ __('Align') }}</label>
+                                            <select class="form-select" x-model="items[editingIndex].align">
+                                                <option value="left">{{ __('Left') }}</option>
+                                                <option value="center">{{ __('Center') }}</option>
+                                                <option value="right">{{ __('Right') }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            {{-- Deliberately a SEPARATE x-if from the Font Size/Align/Auto-fit
+                                 block above — that block also covers 'issue_date'/'static_text'
+                                 (for font styling), but this toggle has no effect on those two
+                                 types (see ProWorkerFormFieldsResolver::verifyVisibleItems() —
+                                 only reads the 6 kinds unifiedItems() ever produces, which
+                                 excludes issue_date/static_text entirely), so showing the
+                                 checkbox there would silently do nothing and confuse whoever's
+                                 building the template. --}}
+                            <template x-if="items[editingIndex].type === 'text' || items[editingIndex].type === 'worker_count' || items[editingIndex].type === 'address_th' || items[editingIndex].type === 'address_en' || items[editingIndex].type === 'business_type_th' || items[editingIndex].type === 'business_type_en' || items[editingIndex].type === 'fee_number' || items[editingIndex].type === 'fee_th_text' || items[editingIndex].type === 'fee_en_text' || items[editingIndex].type === 'nationality_th' || items[editingIndex].type === 'nationality_en'">
+                                <div class="mb-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="showOnVerifyToggle" x-model="items[editingIndex].showOnVerify">
+                                        <label class="form-check-label" for="showOnVerifyToggle">{{ __('Show on the public verification page') }}</label>
+                                    </div>
+                                    <div class="form-text small text-muted">
+                                        {{ __('Lets whoever scans the QR code compare this value against what\'s printed on the physical document.') }}
                                     </div>
                                 </div>
                             </template>
@@ -400,6 +431,26 @@
                         .filter(([item]) => parseInt(item.page) === pageNum);
                 },
 
+                // Live canvas approximation of the "Auto-fit font size"
+                // setting — mirrors the main app's PDF Template Builder
+                // (resources/views/pdf_templates/builder.blade.php's own
+                // getFontSize()) exactly: same 70%-of-box-height estimate,
+                // since this is just a visual preview (the label text
+                // shown here isn't real issuance data anyway, so measuring
+                // its actual width wouldn't be meaningful) — the real,
+                // width-aware shrink happens server-side at PDF render
+                // time (see ProWorkerContractPdfService::render(), which
+                // already implements this and needed no changes).
+                getFontSize(item, pageNum) {
+                    if (item.autoFit) {
+                        const dims = this.pageDimensions[pageNum];
+                        if (!dims) return '16px';
+                        const boxH = (item.h / 100) * dims.height;
+                        return `${boxH * 0.7}px`;
+                    }
+                    return `${item.fontSize || 16}pt`;
+                },
+
                 dragStart(event, data) {
                     event.dataTransfer.setData('text/plain', JSON.stringify(data));
                     event.dataTransfer.effectAllowed = 'copy';
@@ -424,7 +475,7 @@
                                 key: this.genKey(),
                                 label: '{{ __('New Field') }}',
                                 x: xPct, y: yPct, w: 20, h: 3, page: pageNum,
-                                fontSize: 16, align: 'left', autoFit: false,
+                                fontSize: 16, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.openSettings(this.items.length - 1);
                         } else if (data.type === 'static_text') {
@@ -443,7 +494,7 @@
                                 key: this.genKey(),
                                 label: '{{ __('Worker Count') }}',
                                 x: xPct, y: yPct, w: 20, h: 3, page: pageNum,
-                                fontSize: 16, align: 'left', autoFit: false,
+                                fontSize: 16, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.openSettings(this.items.length - 1);
                         } else if (data.type === 'issue_date') {
@@ -464,7 +515,7 @@
                                 addressGroup: groupId,
                                 label: '{{ __('Address (Thai)') }}',
                                 x: xPct, y: yPct, w: 40, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.items.push({
                                 type: 'address_en',
@@ -472,7 +523,7 @@
                                 addressGroup: groupId,
                                 label: '{{ __('Address (English)') }}',
                                 x: xPct, y: Math.min(yPct + 4, 95), w: 40, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                         } else if (data.type === 'business_type') {
                             const groupId = 'biz_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -482,7 +533,7 @@
                                 businessTypeGroup: groupId,
                                 label: '{{ __('Business Type (Thai)') }}',
                                 x: xPct, y: yPct, w: 40, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.items.push({
                                 type: 'business_type_en',
@@ -490,7 +541,7 @@
                                 businessTypeGroup: groupId,
                                 label: '{{ __('Business Type (English)') }}',
                                 x: xPct, y: Math.min(yPct + 4, 95), w: 40, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                         } else if (data.type === 'fee') {
                             // One drop places all 4 positions at once: the two
@@ -507,7 +558,7 @@
                                 feeGroup: groupId,
                                 label: '{{ __('Service Fee') }} (ตัวเลข ไทย)',
                                 x: xPct, y: yPct, w: 20, h: 3, page: pageNum,
-                                fontSize: 16, align: 'left', autoFit: false,
+                                fontSize: 16, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.items.push({
                                 type: 'fee_number',
@@ -515,7 +566,7 @@
                                 feeGroup: groupId,
                                 label: '{{ __('Service Fee') }} (ตัวเลข อังกฤษ)',
                                 x: xPct, y: Math.min(yPct + 4, 95), w: 20, h: 3, page: pageNum,
-                                fontSize: 16, align: 'left', autoFit: false,
+                                fontSize: 16, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.items.push({
                                 type: 'fee_th_text',
@@ -523,7 +574,7 @@
                                 feeGroup: groupId,
                                 label: '{{ __('Service Fee') }} (ตัวบรรจงไทย)',
                                 x: xPct, y: Math.min(yPct + 8, 95), w: 60, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.items.push({
                                 type: 'fee_en_text',
@@ -531,7 +582,7 @@
                                 feeGroup: groupId,
                                 label: '{{ __('Service Fee') }} (ตัวบรรจงอังกฤษ)',
                                 x: xPct, y: Math.min(yPct + 12, 95), w: 60, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                         } else if (data.type === 'nationality') {
                             // Same shape as the "business_type" branch above
@@ -546,7 +597,7 @@
                                 nationalityGroup: groupId,
                                 label: '{{ __('Nationality (Thai)') }}',
                                 x: xPct, y: yPct, w: 40, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                             this.items.push({
                                 type: 'nationality_en',
@@ -554,7 +605,7 @@
                                 nationalityGroup: groupId,
                                 label: '{{ __('Nationality (English)') }}',
                                 x: xPct, y: Math.min(yPct + 4, 95), w: 40, h: 3, page: pageNum,
-                                fontSize: 14, align: 'left', autoFit: false,
+                                fontSize: 14, align: 'left', autoFit: false, showOnVerify: false,
                             });
                         } else if (data.type === 'mark') {
                             this.items.push({

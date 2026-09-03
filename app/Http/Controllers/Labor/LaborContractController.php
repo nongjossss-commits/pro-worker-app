@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Labor;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\CompanyProfile;
 use App\Models\LaborTeam;
 use App\Models\ProWorkerContract;
@@ -92,6 +93,21 @@ class LaborContractController extends Controller
         abort_if(!$seesAllTeams && $contract->issued_by !== $user->id, 403);
     }
 
+    /**
+     * Editing (correcting) a contract's DATA is deliberately narrower than
+     * viewing it — only the original issuer may ever save changes, with no
+     * role exception at all (not even super-admin or a team lead — they
+     * can still open/view via assertCanAccessContract() above, just never
+     * save). Attaching the signed-copy scan back onto the record is a
+     * SEPARATE, looser action (see uploadSignedCopy()) that anyone who can
+     * view the contract may do — only correcting the issuance data itself
+     * is issuer-only.
+     */
+    protected function assertCanEditContract(ProWorkerContract $contract): void
+    {
+        abort_if($contract->issued_by !== Auth::id(), 403);
+    }
+
     public function show(ProWorkerContract $contract)
     {
         $this->assertCanAccessContract($contract);
@@ -107,7 +123,7 @@ class LaborContractController extends Controller
      */
     public function edit(ProWorkerContract $contract)
     {
-        $this->assertCanAccessContract($contract);
+        $this->assertCanEditContract($contract);
 
         $template = $contract->template;
 
@@ -120,7 +136,7 @@ class LaborContractController extends Controller
 
     public function update(Request $request, ProWorkerContract $contract, ProWorkerContractService $service)
     {
-        $this->assertCanAccessContract($contract);
+        $this->assertCanEditContract($contract);
 
         $template = $contract->template;
         $fields = $request->input('fields', []);
@@ -135,6 +151,42 @@ class LaborContractController extends Controller
 
         return redirect()->route('labor.contracts.show', $contract)
             ->with('success', __('Contract updated successfully.'));
+    }
+
+    /**
+     * Attaches the scanned/photographed copy of the contract the employer
+     * actually signed — usually done well after issuance, once it's been
+     * handed over, signed, and brought back. Gated by
+     * assertCanAccessContract() (same viewers as show()), NOT
+     * assertCanEditContract() — deliberately looser than correcting the
+     * contract's data, since anyone on the team who can see the contract
+     * may help attach the signed copy, not just the original issuer (see
+     * assertCanEditContract()'s docblock). Presence of signed_copy_path is
+     * what the "สัญญาสมบูรณ์" (Complete Contract) badge/filter checks —
+     * this write is auto-logged by ProWorkerContract's LogActivity trait,
+     * same as any other correction.
+     */
+    public function uploadSignedCopy(Request $request, ProWorkerContract $contract)
+    {
+        $this->assertCanAccessContract($contract);
+
+        $request->validate([
+            // Mirrors DelegateController::DELEGATE_RULES' 30MB cap
+            // (max is in KB) and LaborCompanyDocumentController's mime
+            // list — the scanner produces images, but a already-scanned
+            // PDF can also be uploaded directly without going through it.
+            'signed_copy' => 'required|mimes:jpeg,jpg,png,pdf|max:30720',
+        ]);
+
+        if ($contract->signed_copy_path && Storage::disk('public')->exists($contract->signed_copy_path)) {
+            Storage::disk('public')->delete($contract->signed_copy_path);
+        }
+
+        $path = $request->file('signed_copy')->store('proworker_contracts/signed_copies', 'public');
+        $contract->update(['signed_copy_path' => $path]);
+
+        return redirect()->route('labor.contracts.show', $contract)
+            ->with('success', __('Signed copy attached successfully.'));
     }
 
     /**
@@ -217,6 +269,39 @@ class LaborContractController extends Controller
         ]);
     }
 
+    /**
+     * "ดูประวัติการแก้ไข" — every create/update ActivityLog entry for this
+     * contract (see ProWorkerContract's `use LogActivity`), rendered as
+     * plain, immediately-readable Thai sentences via
+     * describeContractChanges() below, newest first. Gated the same as
+     * show() — whoever can view the contract (accounting, Super Admin, the
+     * issuer themselves) can see its history; editing stays issuer-only
+     * regardless (assertCanEditContract()).
+     */
+    public function history(ProWorkerContract $contract)
+    {
+        $this->assertCanAccessContract($contract);
+
+        $logs = ActivityLog::where('subject_type', ProWorkerContract::class)
+            ->where('subject_id', $contract->id)
+            ->with('user')
+            ->latest()
+            ->get()
+            ->map(fn (ActivityLog $log) => [
+                'log' => $log,
+                'changes' => $this->describeContractChanges($contract, $log),
+            ])
+            // A log entry with zero readable changes (e.g. only
+            // updated_at moved, already filtered out below) would just be
+            // visual noise — skip it.
+            ->filter(fn (array $entry) => !empty($entry['changes']))
+            ->values();
+
+        $editCount = $logs->filter(fn (array $entry) => $entry['log']->action === 'update')->count();
+
+        return view('labor.contracts.history', compact('contract', 'logs', 'editCount'));
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -243,28 +328,118 @@ class LaborContractController extends Controller
             $query->where('labor_team_id', $request->input('team_id'));
         }
 
+        // "สัญญาสมบูรณ์" (has the employer's signed copy attached) vs. not
+        // — see uploadSignedCopy(). Applies on top of the scoping above,
+        // same as the search/team filters.
+        if ($request->input('status') === 'complete') {
+            $query->whereNotNull('signed_copy_path');
+        } elseif ($request->input('status') === 'incomplete') {
+            $query->whereNull('signed_copy_path');
+        }
+
         $contracts = $query->paginate(20)->withQueryString();
         $teams = $seesAllTeams ? LaborTeam::orderBy('name')->get(['id', 'name']) : collect();
+        $summary = $this->buildCompletionSummary($user, $seesAllTeams);
 
-        return view('labor.contracts.index', compact('contracts', 'teams', 'seesAllTeams'));
+        return view('labor.contracts.index', compact('contracts', 'teams', 'seesAllTeams', 'summary'));
+    }
+
+    /**
+     * Total/complete/incomplete counts for the summary cards above the
+     * list — strictly bounded to each viewer's own existing access tier,
+     * never wider (per the user's explicit requirement — "จะไม่มีใครมองเห็น
+     * ยอดของคนอื่นหรือมากกว่าสิทธิ์ที่ตัวเองได้มอบหมาย"):
+     *   - $seesAllTeams roles (super-admin/admin/labor-accounting/
+     *     labor-shareholder): one row PER TEAM, every team.
+     *   - labor-team (a team lead): one row for their WHOLE team — wider
+     *     than the individual contract rows the list itself still shows
+     *     them (scoped to issued_by = own id, unchanged) — deliberately,
+     *     per the user's explicit "หัวหน้าทีมเห็นยอดรวมทั้งทีม" instruction.
+     *   - everyone else (e.g. labor-member): their own issuances only,
+     *     matching the list's existing issued_by scope exactly.
+     */
+    protected function buildCompletionSummary($user, bool $seesAllTeams): array
+    {
+        $counts = fn ($query) => $query
+            ->selectRaw('count(*) as total, sum(case when signed_copy_path is not null then 1 else 0 end) as complete')
+            ->first();
+
+        if ($seesAllTeams) {
+            $rows = ProWorkerContract::query()
+                ->selectRaw('labor_team_id, count(*) as total, sum(case when signed_copy_path is not null then 1 else 0 end) as complete')
+                ->groupBy('labor_team_id')
+                ->get()
+                ->keyBy('labor_team_id');
+
+            $teams = LaborTeam::orderBy('name')->get(['id', 'name']);
+
+            return [
+                'scope' => 'all_teams',
+                'rows' => $teams->map(function ($team) use ($rows) {
+                    $row = $rows->get($team->id);
+                    return [
+                        'label' => $team->name,
+                        'total' => (int) ($row->total ?? 0),
+                        'complete' => (int) ($row->complete ?? 0),
+                    ];
+                })->values(),
+            ];
+        }
+
+        if ($user->hasRole('labor-team') && $user->labor_team_id) {
+            $row = $counts(ProWorkerContract::where('labor_team_id', $user->labor_team_id));
+
+            return [
+                'scope' => 'own_team',
+                'rows' => [[
+                    'label' => $user->laborTeam->name ?? __('Your Team'),
+                    'total' => (int) ($row->total ?? 0),
+                    'complete' => (int) ($row->complete ?? 0),
+                ]],
+            ];
+        }
+
+        $row = $counts(ProWorkerContract::where('issued_by', $user->id));
+
+        return [
+            'scope' => 'own',
+            'rows' => [[
+                'label' => __('You'),
+                'total' => (int) ($row->total ?? 0),
+                'complete' => (int) ($row->complete ?? 0),
+            ]],
+        ];
     }
 
     /**
      * Public, no-login QR-code target (see routes/labor.php's unauthenticated
-     * route group) — confirms a contract number is genuine and shows the
-     * bare minimum: employer name + issuing company. Deliberately never
-     * exposes field_values, the issuing staff member's name, or the
-     * internal team, per the confidentiality requirement between
-     * contracting parties.
+     * route group) — confirms a contract number is genuine and shows enough
+     * to cross-check against the physical document someone scanned:
+     * employer name, the issuing team, and the issuing company — so a
+     * forged document can't just reuse a real contract number with fake
+     * details printed on it and still pass a scan. Deliberately never
+     * exposes field_values or the issuing staff member's own name, per the
+     * confidentiality requirement between contracting parties.
      */
     public function publicVerify(string $contractNo)
     {
-        $contract = ProWorkerContract::where('contract_no', trim($contractNo))->first();
+        $contract = ProWorkerContract::with(['team', 'template'])->where('contract_no', trim($contractNo))->first();
         $companyProfile = CompanyProfile::where('is_default', true)->first() ?? CompanyProfile::first();
+
+        // Only the fields a Super Admin explicitly opted into via the
+        // Template Builder's "Show on the public verification page"
+        // toggle — see ProWorkerFormFieldsResolver::verifyVisibleItems().
+        // $contract->template can be null (the template was deleted after
+        // this contract was issued — templates aren't soft-deleted), in
+        // which case there's nothing to resolve labels/values against.
+        $verifyItems = ($contract && $contract->template)
+            ? $this->formFields->verifyVisibleItems($contract->template, $contract->field_values ?? [])
+            : [];
 
         return view('labor.contracts.public_verify', [
             'contract' => $contract,
             'companyProfile' => $companyProfile,
+            'verifyItems' => $verifyItems,
         ]);
     }
 
@@ -303,6 +478,168 @@ class LaborContractController extends Controller
      * (already used elsewhere for financial documents) and the new
      * EnglishBahtHelper built for this feature.
      */
+    /**
+     * Turns one ActivityLog entry's raw create/update diff into a list of
+     * plain, immediately-readable Thai sentences — deliberately NOT
+     * reusing ActivityLogHelper::generateReadableChanges() (used by every
+     * other model's history), since that method would dump `field_values`
+     * (one JSON blob holding every issuance-form answer) as raw pretty-
+     * printed JSON whenever it changes — unreadable at a glance, and
+     * defeats the whole point of this screen. Every OTHER column here is a
+     * plain scalar, so those are described directly without needing
+     * ActivityLogHelper at all. ActivityLogHelper/LogActivity/ActivityLog
+     * themselves are left untouched — they're shared with Employee/
+     * Employer/User/etc., so any change there risks all of them.
+     */
+    protected function describeContractChanges(ProWorkerContract $contract, ActivityLog $log): array
+    {
+        if ($log->action === 'create') {
+            return [__('Contract created (first issuance).')];
+        }
+
+        if ($log->action !== 'update') {
+            return [];
+        }
+
+        $properties = $log->properties ?? [];
+        $old = $properties['old'] ?? [];
+        $new = $properties['attributes'] ?? [];
+        $changes = [];
+
+        // Local to this method — specific to ProWorkerContract, not
+        // shared with ActivityLogHelper::FIELD_LABELS (which serves
+        // several other models).
+        $labels = [
+            'file_path' => __('Document File'),
+            'signed_copy_path' => __('Signed Copy Attachment'),
+            'worker_count' => __('Worker Count'),
+            'employer_name_snapshot' => __('Employer Name'),
+            'employer_id' => __('Employer'),
+        ];
+        // Storage-path values are never shown raw — just note a file was
+        // attached/replaced.
+        $pathFields = ['file_path', 'signed_copy_path'];
+
+        foreach ($new as $key => $newVal) {
+            if ($key === 'field_values') {
+                continue; // handled separately below — needs a per-key diff, not a scalar compare
+            }
+            $oldVal = $old[$key] ?? null;
+            if ($oldVal == $newVal) {
+                continue;
+            }
+            $label = $labels[$key] ?? $key;
+            if (in_array($key, $pathFields, true)) {
+                $changes[] = $oldVal
+                    ? __(':label: a new file replaced the previous one.', ['label' => $label])
+                    : __(':label: a new file was attached.', ['label' => $label]);
+                continue;
+            }
+            $oldText = ($oldVal === null || $oldVal === '') ? '-' : $oldVal;
+            $newText = ($newVal === null || $newVal === '') ? '-' : $newVal;
+            $changes[] = "เปลี่ยน \"{$label}\" จาก \"{$oldText}\" เป็น \"{$newText}\"";
+        }
+
+        // field_values holds every issuance-form answer as one JSON blob —
+        // diff it key-by-key and translate each key to the SAME label
+        // already shown on the issuance form/Template Builder (via
+        // contractFieldValueLabels() below) instead of the raw storage
+        // key (e.g. "field_mt5i3f14mgsv").
+        if (array_key_exists('field_values', $new)) {
+            $oldFields = $this->decodeFieldValuesSnapshot($old['field_values'] ?? null);
+            $newFields = $this->decodeFieldValuesSnapshot($new['field_values'] ?? null);
+            $fieldLabels = $contract->template ? $this->contractFieldValueLabels($contract->template) : [];
+
+            foreach (array_unique(array_merge(array_keys($oldFields), array_keys($newFields))) as $key) {
+                $oldVal = $oldFields[$key] ?? '';
+                $newVal = $newFields[$key] ?? '';
+                if ($oldVal == $newVal) {
+                    continue;
+                }
+                $label = $fieldLabels[$key] ?? $key;
+                $oldText = ($oldVal === null || $oldVal === '') ? '-' : $oldVal;
+                $newText = ($newVal === null || $newVal === '') ? '-' : $newVal;
+                $changes[] = "เปลี่ยน \"{$label}\" จาก \"{$oldText}\" เป็น \"{$newText}\"";
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
+     * LogActivity stores field_values (a JSON-cast column) as whatever
+     * getAttributes()/getOriginal() hand back for it — which is the raw
+     * JSON-encoded STRING Eloquent keeps internally for json-cast columns,
+     * not the already-decoded array. Handles both shapes defensively
+     * since that internal detail isn't guaranteed API.
+     */
+    protected function decodeFieldValuesSnapshot($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return json_decode((string) $value, true) ?: [];
+    }
+
+    /**
+     * Maps every field_values key on a template to the SAME human label
+     * already shown on the issuance form / Template Builder (via
+     * ProWorkerFormFieldsResolver::unifiedItems()) — so
+     * describeContractChanges() names a field_values change exactly the
+     * way a Super Admin already recognizes it.
+     */
+    protected function contractFieldValueLabels(ProWorkerContractTemplate $template): array
+    {
+        $labels = [];
+
+        foreach ($this->formFields->unifiedItems($template) as $item) {
+            switch ($item['kind']) {
+                case 'text':
+                case 'worker_count':
+                    $labels[$item['key']] = $item['label'] ?? $item['key'];
+                    break;
+                case 'address':
+                    if (!empty($item['keyTh'])) {
+                        $labels[$item['keyTh']] = ($item['labelTh'] ?? __('Address')) . ' (' . __('Thai') . ')';
+                    }
+                    if (!empty($item['keyEn'])) {
+                        $labels[$item['keyEn']] = ($item['labelEn'] ?? __('Address')) . ' (' . __('English') . ')';
+                    }
+                    break;
+                case 'business_type':
+                    if (!empty($item['keyTh'])) {
+                        $labels[$item['keyTh']] = ($item['labelTh'] ?? __('Business Type')) . ' (' . __('Thai') . ')';
+                    }
+                    if (!empty($item['keyEn'])) {
+                        $labels[$item['keyEn']] = ($item['labelEn'] ?? __('Business Type')) . ' (' . __('English') . ')';
+                    }
+                    break;
+                case 'nationality':
+                    if (!empty($item['keyTh'])) {
+                        $labels[$item['keyTh']] = ($item['labelTh'] ?? __('Nationality')) . ' (' . __('Thai') . ')';
+                    }
+                    if (!empty($item['keyEn'])) {
+                        $labels[$item['keyEn']] = ($item['labelEn'] ?? __('Nationality')) . ' (' . __('English') . ')';
+                    }
+                    break;
+                case 'fee':
+                    if (!empty($item['numeralKey'])) {
+                        $labels[$item['numeralKey']] = $item['label'] ?? __('Service Fee');
+                    }
+                    if (!empty($item['thTextKey'])) {
+                        $labels[$item['thTextKey']] = ($item['label'] ?? __('Service Fee')) . ' (' . __('Thai spelled-out') . ')';
+                    }
+                    if (!empty($item['enTextKey'])) {
+                        $labels[$item['enTextKey']] = ($item['label'] ?? __('Service Fee')) . ' (' . __('English spelled-out') . ')';
+                    }
+                    break;
+            }
+        }
+
+        return $labels;
+    }
+
     protected function resolveFeeGroupValues(ProWorkerContractTemplate $template, array $fields): array
     {
         foreach ($this->formFields->feeGroups($template) as $group) {
