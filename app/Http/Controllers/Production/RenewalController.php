@@ -888,6 +888,72 @@ class RenewalController extends Controller
 
             $employees = $query->with('registrationSteps')->select('id', 'status', 'resolution_completed_at')->get();
 
+            // Dual-listed employees — still owned by Registration
+            // (employees.resolution_tab_id points there, status stays
+            // registration_*) but also usable in THIS renewal tab via
+            // EmployeeRenewalLink (see that model's docblock +
+            // EmployeeObserver::syncRenewalStatus()). Mirrors
+            // fetchEmployees()'s identical $linkedQuery pattern below —
+            // without this union, an employer whose renewal-eligible
+            // employees are ALL still Registration-owned shows 0 here
+            // despite fetchEmployees()'s drawer correctly showing them
+            // (the reported "card shows 0 but drawer has employees" bug).
+            $linkedQuery = $employer->employees()
+                ->whereHas('renewalLinks', fn ($q) => $q->where('resolution_tab_id', $this->currentTab->id))
+                ->with(['registrationSteps', 'renewalLinks' => fn ($q) => $q->where('resolution_tab_id', $this->currentTab->id)])
+                ->select('id', 'status', 'resolution_completed_at');
+
+            if (auth()->user()->can('manage-tickets')) {
+                $linkedQuery->withoutGlobalScope('employerTenancy');
+            }
+
+            // Operator/Insurance filters are plain Employee-column filters,
+            // so the exact same conditions apply identically here.
+            if ($request->has('operator_filter') && $request->operator_filter) {
+                if ($request->operator_filter === 'external') {
+                    $linkedQuery->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
+                } else {
+                    $linkedQuery->where('operator_id', $request->operator_filter);
+                }
+            }
+            if ($request->has('insurance_filter') && $request->insurance_filter) {
+                if ($request->insurance_filter === 'none') {
+                    $linkedQuery->where(function ($q) {
+                        $q->whereNull('insurance_type')->orWhere('insurance_type', '');
+                    });
+                } else {
+                    $linkedQuery->where('insurance_type', $request->insurance_filter);
+                }
+            }
+            if (!$employerMatches && $search) {
+                $trimmedSearch = trim($search);
+                $cleanedSearch = str_replace(' ', '', $trimmedSearch);
+                $linkedQuery->where(function ($q) use ($trimmedSearch, $cleanedSearch) {
+                    $q->where('employeeNameTh', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('employeeNameEn', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('name_suffix', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('employeePassport', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('employeeWorkPermit', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('employee_id_number', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('name_list_number', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('pinkCardNo', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('request_number', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('renewal_request_number', 'like', "%{$trimmedSearch}%")
+                        ->orWhere('employer_employee_id', 'like', "%{$trimmedSearch}%")
+                        ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
+                        ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
+                });
+            }
+
+            $linkedEmployees = $linkedQuery->get()->each(function ($emp) {
+                $link = $emp->renewalLinks->first();
+                if ($link) {
+                    $emp->setRelation('activeRenewalLink', $link);
+                }
+            });
+
+            $employees = $employees->concat($linkedEmployees);
+
             // Calculate in PHP
             $empStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
             $empNotStarted = 0;
@@ -897,27 +963,39 @@ class RenewalController extends Controller
             $graceCutoff = now()->subHours(24);
 
             foreach ($employees as $emp) {
-                if ($emp->status === 'renewal_cancelled') {
+                // Dual-listed employees keep employees.status = registration_*
+                // (and employees.resolution_completed_at unset for renewal
+                // purposes) forever (see docblock above) — their real
+                // renewal progress lives on the EmployeeRenewalLink row
+                // instead (which carries its own resolution_completed_at
+                // too), so every check below reads these "effective" values
+                // rather than $emp->status/$emp->resolution_completed_at
+                // directly.
+                $activeLink = $emp->relationLoaded('activeRenewalLink') ? $emp->activeRenewalLink : null;
+                $effectiveStatus = $activeLink ? $activeLink->status : $emp->status;
+                $effectiveCompletedAt = $activeLink ? $activeLink->resolution_completed_at : $emp->resolution_completed_at;
+
+                if ($effectiveStatus === 'renewal_cancelled') {
                     $empCancelledCount++;
                     continue;
                 }
 
                 $empActiveCount++;
 
-                if ($emp->status === 'renewal_completed') {
+                if ($effectiveStatus === 'renewal_completed') {
                     $empSavedCount++;
                 }
 
-                if ($stepOneId && in_array($emp->status, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                if ($stepOneId && in_array($effectiveStatus, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
                     $empNotStarted++;
                 }
 
                 // Step badge — same 24h grace as the global stats: completed
                 // employees whose 24h countdown finished no longer count
                 // toward the per-employer step badges either.
-                $countTowardsSteps = !($emp->status === 'renewal_completed'
-                    && $emp->resolution_completed_at
-                    && $emp->resolution_completed_at->lt($graceCutoff));
+                $countTowardsSteps = !($effectiveStatus === 'renewal_completed'
+                    && $effectiveCompletedAt
+                    && $effectiveCompletedAt->lt($graceCutoff));
 
                 if ($countTowardsSteps) {
                     $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
@@ -1486,6 +1564,24 @@ class RenewalController extends Controller
                 $q->where('production_order_id', $financeOrder->id);
             })
             ->get();
+
+        // Dual-listed employees — still owned by Registration but also
+        // usable in this renewal tab via EmployeeRenewalLink (see
+        // batchStats()'s identical comment/pattern above, and
+        // fetchEmployees()'s original $linkedQuery). Without this union an
+        // employer whose renewal-eligible employees are ALL still
+        // Registration-owned shows 0 employees available to bill here even
+        // though they're visible in the employer's own drawer.
+        $linkedQuery = $employer->employees()
+            ->whereHas('renewalLinks', fn ($q) => $q->where('resolution_tab_id', $this->currentTab->id))
+            ->whereDoesntHave('productionItems', function ($q) use ($financeOrder) {
+                $q->where('production_order_id', $financeOrder->id);
+            });
+        if (auth()->user()->can('manage-tickets')) {
+            $linkedQuery->withoutGlobalScope('employerTenancy');
+        }
+
+        $employees = $employees->concat($linkedQuery->get());
 
         return view('production.partials.financial-tab', [
             'production' => $financeOrder,
