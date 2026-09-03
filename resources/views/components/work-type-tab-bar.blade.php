@@ -16,7 +16,7 @@
             <span>{{ $tab->name }}</span>
             @if($isSuperAdmin)
                 <span class="d-inline-flex align-items-center ms-1"
-                      onclick="event.preventDefault(); event.stopPropagation(); editWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}')"
+                      onclick="event.preventDefault(); event.stopPropagation(); editWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}', {{ $tab->allow_multiple_orders ? 'true' : 'false' }}, {{ $tab->is_system ? 'true' : 'false' }})"
                       title="{{ __('Edit Name') }}" style="font-size: 0.7rem; opacity: 0.6;">
                     <i class="bi bi-pencil-fill"></i>
                 </span>

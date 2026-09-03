@@ -26,15 +26,27 @@ use Illuminate\Validation\Rule;
  * reassignment, which are NOT generically appropriate for an arbitrary
  * custom service.
  *
- * A custom tab (is_system = false) can also be deleted. Deleting cascades
- * (same shape as ResolutionTabController::forceDelete()): every order under
- * the tab is force-deleted, which lets the DB's own ON DELETE CASCADE
- * foreign keys wipe production_items, production_item_step,
- * production_financial_groups, and financial_transaction_items for those
- * orders — nothing is left dangling pointing at a tab that no longer
- * exists. Employees themselves are never deleted; they simply lose that
- * one job assignment, exactly as if they'd never been added to the tab.
+ * A custom tab (is_system = false) can also be deleted. Deleting is a SOFT
+ * delete (see WorkType's `use SoftDeletes`) — the tab just disappears from
+ * every listing (Eloquent excludes trashed rows automatically), while every
+ * ProductionOrder/ProductionItem/financial row ever processed under it
+ * stays completely untouched in the database, exactly as it was the moment
+ * before deletion. This used to force-delete every order under the tab
+ * (cascading via the DB's own FKs to wipe production_items etc.) — changed
+ * because that destroyed real production data an office may still need to
+ * look back on, which is never what "remove this tab from the list" should
+ * mean. Employees are never deleted either way; at most they lose one job
+ * assignment's *visibility in the tab list*, not the underlying record.
  * The 4 built-in tabs (is_system = true) can never be deleted, only renamed.
+ *
+ * `allow_multiple_orders` (settable at create/edit time here) decides
+ * whether a given employer can have more than one active order under this
+ * tab at once — see WorkflowController's order-creation branch, which used
+ * to hardcode this to "true only for slug mou/mou_import" and now reads
+ * this column instead. `show_mou_fields` is NOT settable here at all — it
+ * stays true only for the pre-existing MOU Import tab, so a new custom tab
+ * never inherits the MOU nationality/gender-count/import-type fields just
+ * because it also allows multiple orders.
  */
 class WorkTypeController extends Controller
 {
@@ -47,6 +59,7 @@ class WorkTypeController extends Controller
                 'slug' => $t->slug,
                 'order' => $t->order,
                 'is_system' => (bool) $t->is_system,
+                'allow_multiple_orders' => (bool) $t->allow_multiple_orders,
                 'orders_count' => $t->orders_count,
             ];
         });
@@ -62,6 +75,7 @@ class WorkTypeController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('work_types', 'name')],
+            'allow_multiple_orders' => ['nullable', 'boolean'],
         ]);
 
         $name = trim($validated['name']);
@@ -77,6 +91,11 @@ class WorkTypeController extends Controller
             'name' => $name,
             'slug' => $slug,
             'is_system' => false,
+            // Deliberately never set from the request — see the class
+            // docblock above. Only the pre-existing MOU Import tab has
+            // this true.
+            'show_mou_fields' => false,
+            'allow_multiple_orders' => $request->boolean('allow_multiple_orders'),
             'order' => $maxOrder + 1,
             'notify_days_advance' => 3,
         ]);
@@ -94,12 +113,27 @@ class WorkTypeController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('work_types', 'name')->ignore($workType->id)],
+            'allow_multiple_orders' => ['nullable', 'boolean'],
         ]);
 
         $oldName = $workType->name;
-        $workType->update(['name' => trim($validated['name'])]);
+        $oldAllowMultiple = $workType->allow_multiple_orders;
+        // A system tab's card-mode is fixed (MOU Import stays "multiple",
+        // everything else stays "single") — this form field is only ever
+        // shown for custom tabs anyway, but guard it here too in case of a
+        // direct request.
+        $updateData = ['name' => trim($validated['name'])];
+        if (!$workType->is_system && $request->has('allow_multiple_orders')) {
+            $updateData['allow_multiple_orders'] = $request->boolean('allow_multiple_orders');
+        }
+        $workType->update($updateData);
 
-        ActivityLogHelper::logAction('update', "เปลี่ยนชื่อแท็บงาน '{$oldName}' เป็น '{$workType->name}'", WorkType::class, $workType->id, ['old_name' => $oldName, 'new_name' => $workType->name]);
+        ActivityLogHelper::logAction('update', "เปลี่ยนชื่อแท็บงาน '{$oldName}' เป็น '{$workType->name}'", WorkType::class, $workType->id, [
+            'old_name' => $oldName,
+            'new_name' => $workType->name,
+            'old_allow_multiple_orders' => $oldAllowMultiple,
+            'new_allow_multiple_orders' => $workType->allow_multiple_orders,
+        ]);
 
         return response()->json(['success' => true, 'message' => 'อัพเดทชื่อแท็บเรียบร้อยแล้ว', 'type' => $workType]);
     }
@@ -136,17 +170,13 @@ class WorkTypeController extends Controller
         $slug = $workType->slug;
         $ordersCount = $workType->orders()->count();
 
-        // Cascade cleanup: force-delete every order under this tab so the
-        // DB's ON DELETE CASCADE foreign keys wipe production_items,
-        // production_item_step, production_financial_groups, and
-        // financial_transaction_items with it — same pattern as
-        // ResolutionTabController::forceDelete(). Employees are untouched;
-        // they just lose this one job assignment.
-        $workType->orders()->forceDelete();
-
+        // Soft delete only — see the class docblock above. Every order
+        // under this tab (and their items/financial rows) is left
+        // completely untouched; only the WorkType row itself gets
+        // deleted_at set, so it drops out of every normal listing.
         $workType->delete();
 
-        ActivityLogHelper::logAction('delete', "ลบแท็บงาน: {$name} (ลบงานที่ค้างอยู่ไปด้วย {$ordersCount} งาน)", WorkType::class, null, ['name' => $name, 'slug' => $slug, 'orders_deleted' => $ordersCount]);
+        ActivityLogHelper::logAction('delete', "ลบแท็บงาน: {$name} (มีงานที่เคยดำเนินการอยู่ {$ordersCount} งาน — ข้อมูลเดิมไม่ถูกลบ)", WorkType::class, null, ['name' => $name, 'slug' => $slug, 'orders_count' => $ordersCount]);
 
         return response()->json(['success' => true, 'message' => "ลบแท็บ '{$name}' เรียบร้อยแล้ว"]);
     }

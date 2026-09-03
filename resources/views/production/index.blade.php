@@ -148,7 +148,7 @@
             <button class="btn btn-light btn-sm shadow-sm border" data-bs-toggle="modal" data-bs-target="#manageStepsModal">
                 <i class="bi bi-gear-fill me-1"></i> {{ __('Steps') }}
             </button>
-            @if(isset($activeTab) && in_array($activeTab->slug, ['mou', 'mou_import']))
+            @if(isset($activeTab) && $activeTab->allow_multiple_orders)
                 <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
                     <i class="bi bi-plus-lg me-1"></i> {{ __('Create Job') }}
                 </button>
@@ -504,7 +504,7 @@
                                  </button>
                                  @endif
 
-                                @if(isset($activeTab) && in_array($activeTab->slug, ['mou', 'mou_import']))
+                                @if(isset($activeTab) && $activeTab->allow_multiple_orders)
                                 {{-- Custom Fields Button (Order/Job) --}}
                                 <button class="btn btn-outline-secondary btn-sm ms-2 fw-bold" onclick="toggleOrderInlineDrawer({{ $order->id }}, {{ json_encode($order->customFields ?? []) }}); event.stopPropagation();">
                                     <i class="bi bi-list-task"></i> {{ __('Fields') }}
@@ -526,7 +526,7 @@
                     </div>
 
                     {{-- Order Custom Fields Drawer --}}
-                    @if(isset($activeTab) && in_array($activeTab->slug, ['mou', 'mou_import']))
+                    @if(isset($activeTab) && $activeTab->allow_multiple_orders)
                     <div class="collapse mt-3 mx-4" id="drawer-order-{{ $order->id }}">
                         <div class="card card-body bg-light border-0 rounded-3 shadow-sm">
                             <div id="drawer-content-order-{{ $order->id }}" class="position-relative" style="min-height: 100px;">

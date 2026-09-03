@@ -658,7 +658,13 @@ class ProductionController extends Controller
         $errors = [];
 
         foreach ($request->item_ids as $itemId) {
-            $item = ProductionItem::with(['order', 'employee'])->find($itemId);
+            // visibleToUser() scopes this to the caller's own employer(s)
+            // for employer/caretaker roles — mirrors the same fix already
+            // applied to WorkflowController (see
+            // ProductionItem::scopeVisibleToUser()). An out-of-scope id
+            // simply comes back null and is skipped below, same as an
+            // already-nonexistent id.
+            $item = ProductionItem::with(['order', 'employee'])->visibleToUser()->find($itemId);
             if (!$item) continue;
 
             $currentOrder = $item->order;
@@ -687,8 +693,16 @@ class ProductionController extends Controller
 
             DB::beginTransaction();
             try {
-                // Find an Active Order for this Employer + WorkType
-                $activeOrder = ProductionOrder::where('employer_id', $currentOrder->employer_id)
+                // Find an Active Order for this Employer + WorkType — but only
+                // reuse/merge into one if this tab keeps a single ongoing card
+                // per employer. A tab with allow_multiple_orders=true (MOU
+                // Import, or any custom tab a Super Admin sets to "multiple
+                // cards") must NOT get silently merged into whatever the
+                // "latest" active order happens to be — each Pre-Production
+                // card becomes its own Active card, same as WorkflowController::store().
+                $allowMultipleOrders = (bool) ($currentOrder->workType->allow_multiple_orders ?? false);
+
+                $activeOrder = $allowMultipleOrders ? null : ProductionOrder::where('employer_id', $currentOrder->employer_id)
                                     ->where('work_type_id', $currentOrder->work_type_id)
                                     ->where('status', '!=', 'pre_production') // Active
                                     ->where('status', '!=', 'cancelled')
@@ -742,7 +756,8 @@ class ProductionController extends Controller
 
     public function sendToWorkflow(Request $request, $itemId)
     {
-        $item = ProductionItem::with(['order', 'employee'])->findOrFail($itemId);
+        // See bulkSendToWorkflow()'s comment above — same scoping.
+        $item = ProductionItem::with(['order', 'employee'])->visibleToUser()->findOrFail($itemId);
         $currentOrder = $item->order;
 
         if ($currentOrder->status !== 'pre_production') {
@@ -768,8 +783,11 @@ class ProductionController extends Controller
 
         DB::beginTransaction();
         try {
-            // Find an Active Order for this Employer + WorkType
-            $activeOrder = ProductionOrder::where('employer_id', $currentOrder->employer_id)
+            // Find an Active Order for this Employer + WorkType — see the same
+            // allow_multiple_orders guard in bulkSendToWorkflow() above.
+            $allowMultipleOrders = (bool) ($currentOrder->workType->allow_multiple_orders ?? false);
+
+            $activeOrder = $allowMultipleOrders ? null : ProductionOrder::where('employer_id', $currentOrder->employer_id)
                                 ->where('work_type_id', $currentOrder->work_type_id)
                                 ->where('status', '!=', 'pre_production') // Active
                                 ->where('status', '!=', 'cancelled')

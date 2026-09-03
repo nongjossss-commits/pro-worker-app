@@ -465,7 +465,7 @@ class WorkflowController extends Controller
     {
         $request->validate(['remarks' => 'nullable|string']);
 
-        $item = ProductionItem::findOrFail($itemId);
+        $item = ProductionItem::query()->visibleToUser()->findOrFail($itemId);
         $item->update(['remarks' => $request->remarks]);
 
         return response()->json(['success' => true]);
@@ -547,7 +547,12 @@ class WorkflowController extends Controller
             'appointment_location' => 'nullable|string|max:255',
         ]);
 
-        $item = ProductionItem::findOrFail($itemId);
+        // visibleToUser() scopes this to the caller's own employer(s) for
+        // employer/caretaker roles (mirrors Employee's employerTenancy
+        // scope, which ProductionItem has no automatic equivalent of —
+        // see ProductionItem::scopeVisibleToUser()) — an out-of-scope
+        // item 404s here instead of being silently updatable.
+        $item = ProductionItem::query()->visibleToUser()->findOrFail($itemId);
 
         $data = [];
         $isUpdated = false;
@@ -584,7 +589,7 @@ class WorkflowController extends Controller
      */
     public function updateCredentials(Request $request, $itemId)
     {
-        $item = ProductionItem::with('employee')->findOrFail($itemId);
+        $item = ProductionItem::with('employee')->visibleToUser()->findOrFail($itemId);
         $employeeId = $item->employee->id ?? null;
 
         $request->validate([
@@ -622,7 +627,8 @@ class WorkflowController extends Controller
      */
     public function toggleAppointmentComplete(Request $request, $itemId)
     {
-        $item = ProductionItem::findOrFail($itemId);
+        // See updateAppointmentDate()'s comment above — same scoping.
+        $item = ProductionItem::query()->visibleToUser()->findOrFail($itemId);
 
         // If completed, un-complete it (toggle), or user request implies specific action.
         // Usually buttons are "Finish". If already finished, maybe nothing.
@@ -647,11 +653,20 @@ class WorkflowController extends Controller
         $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        $counts = ProductionItem::select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
+        $query = ProductionItem::select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
             ->whereBetween('appointment_date', [$start, $end])
             ->where('status', '!=', 'cancelled')
             ->where('status', '!=', 'completed')
-            ->whereNull('appointment_completed_at') // Exclude completed appointments
+            ->whereNull('appointment_completed_at'); // Exclude completed appointments
+
+        // Mirrors RegistrationController/RenewalController's identical
+        // manage-tickets bypass for Employee's employerTenancy scope — see
+        // ProductionItem::scopeVisibleToUser().
+        if (!auth()->user()->can('manage-tickets')) {
+            $query->visibleToUser();
+        }
+
+        $counts = $query
             ->groupBy('date')
             ->get()
             ->mapWithKeys(function ($item) {
@@ -669,9 +684,15 @@ class WorkflowController extends Controller
         $request->validate(['date' => 'required|date']);
         $date = Carbon::parse($request->date);
 
-        $items = ProductionItem::whereDate('appointment_date', $date)
+        $query = ProductionItem::whereDate('appointment_date', $date)
             ->where('status', '!=', 'cancelled')
-            ->whereNull('appointment_completed_at') // Exclude completed
+            ->whereNull('appointment_completed_at'); // Exclude completed
+
+        if (!auth()->user()->can('manage-tickets')) {
+            $query->visibleToUser();
+        }
+
+        $items = $query
             ->with(['employee', 'order.employer', 'order.workType', 'completedWorkTypeSteps'])
             ->get();
 
@@ -830,7 +851,7 @@ class WorkflowController extends Controller
             'team_ids.*' => 'exists:employee_teams,id'
         ]);
 
-        $item = ProductionItem::with('employee')->findOrFail($itemId);
+        $item = ProductionItem::with('employee')->visibleToUser()->findOrFail($itemId);
 
         if (!$item->employee) {
             return response()->json(['success' => false, 'message' => 'Cannot assign team to draft employee.']);
@@ -1051,7 +1072,7 @@ class WorkflowController extends Controller
             'completed' => 'required|boolean'
         ]);
 
-        $item = ProductionItem::with('order.workType')->findOrFail($itemId);
+        $item = ProductionItem::with('order.workType')->visibleToUser()->findOrFail($itemId);
 
         $stepName = \App\Models\WorkTypeStep::find($request->step_id)?->name ?? 'ขั้นตอน #' . $request->step_id;
 
@@ -1257,7 +1278,7 @@ class WorkflowController extends Controller
     {
         $request->validate(['group_name' => 'nullable|string|max:255']);
 
-        $item = ProductionItem::findOrFail($itemId);
+        $item = ProductionItem::query()->visibleToUser()->findOrFail($itemId);
         $item->update(['group_name' => $request->group_name]);
 
         return response()->json(['success' => true]);
@@ -1534,18 +1555,25 @@ class WorkflowController extends Controller
             ]);
 
             $workType = WorkType::findOrFail($request->work_type_id);
-            $isMouImport = in_array($workType->slug, ['mou', 'mou_import']);
+            // `allow_multiple_orders`/`show_mou_fields` replace what used to be a
+            // hardcoded in_array($workType->slug, ['mou','mou_import']) check —
+            // see WorkType's docblock. Deliberately 2 separate reads: a custom
+            // tab a Super Admin sets to "multiple cards" does NOT automatically
+            // get the MOU-specific fields too.
+            $allowMultipleOrders = (bool) $workType->allow_multiple_orders;
+            $showMouFields = (bool) $workType->show_mou_fields;
 
             // Bucket Logic (Merge into existing if applicable)
             // Note: notify_out is handled above for existing employees, but if "New Employee" is created,
             // it falls through here. For New Employee, we use the selected employer (request->employer_id).
-            // MOU Import จะไม่ bucket — สร้าง demand card ใหม่ทุกครั้ง (1 employer = หลาย demands ได้)
+            // MOU Import (and any custom tab set to "allow multiple cards") จะไม่ bucket —
+            // สร้าง demand card ใหม่ทุกครั้ง (1 employer = หลาย demands ได้)
             // Every OTHER tab buckets by employer — including any custom tab a
             // Super Admin adds later (see WorkTypeController), so a new tab
             // behaves like notify_in/notify_out/mou_renewal by default: one
             // ongoing order per employer that employees get added to over
             // time, rather than a fresh order every single add.
-            if (!$isMouImport) {
+            if (!$allowMultipleOrders) {
                 $order = ProductionOrder::firstOrCreate(
                     [
                         'employer_id' => $request->employer_id,
@@ -1569,7 +1597,7 @@ class WorkflowController extends Controller
                 ];
 
                 // MOU Import — บันทึก nationality + เป้าหมายจำนวนชาย/หญิง + ประเภท (return/new) ของ demand card
-                if ($isMouImport) {
+                if ($showMouFields) {
                     $orderData['mou_nationality'] = $request->mou_nationality;
                     $orderData['mou_male_count'] = (int) ($request->mou_male_count ?? 0);
                     $orderData['mou_female_count'] = (int) ($request->mou_female_count ?? 0);
@@ -1775,7 +1803,7 @@ class WorkflowController extends Controller
             'notify_out_reason' => 'nullable|string|max:500',
         ]);
 
-        $item = ProductionItem::with('order.workType')->findOrFail($itemId);
+        $item = ProductionItem::with('order.workType')->visibleToUser()->findOrFail($itemId);
         $slug = $item->order->workType->slug ?? '';
         if ($slug !== 'notify_out') {
             return response()->json(['success' => false, 'message' => 'Item is not part of a notify_out workflow.'], 422);
@@ -1798,7 +1826,7 @@ class WorkflowController extends Controller
      */
     public function finalizeItem(Request $request, $itemId)
     {
-        $item = ProductionItem::with(['order.workType', 'employee'])->findOrFail($itemId);
+        $item = ProductionItem::with(['order.workType', 'employee'])->visibleToUser()->findOrFail($itemId);
         $slug = $item->order->workType->slug ?? '';
 
         try {
@@ -1859,7 +1887,7 @@ class WorkflowController extends Controller
      */
     public function cancelItem(Request $request, $itemId)
     {
-        $item = ProductionItem::findOrFail($itemId);
+        $item = ProductionItem::query()->visibleToUser()->findOrFail($itemId);
         $item->update(['status' => 'cancelled']);
 
         // Recalculate Stats
@@ -1873,7 +1901,7 @@ class WorkflowController extends Controller
      */
     public function restoreItem(Request $request, $itemId)
     {
-        $item = ProductionItem::with(['order.workType', 'employee'])->findOrFail($itemId);
+        $item = ProductionItem::with(['order.workType', 'employee'])->visibleToUser()->findOrFail($itemId);
         // Reset completed_at so if finalized again, timer restarts.
         // Also clear the MOU-applied flag so the next finalize gets a fresh
         // 24h window and re-evaluates the admin settings.
@@ -2022,7 +2050,7 @@ class WorkflowController extends Controller
      */
     public function destroyItem(Request $request, $itemId)
     {
-        $item = ProductionItem::with(['employee', 'order'])->findOrFail($itemId);
+        $item = ProductionItem::with(['employee', 'order'])->visibleToUser()->findOrFail($itemId);
         $order = $item->order; // Capture order before delete
 
         // Capture employee before deleting the item
@@ -2064,6 +2092,12 @@ class WorkflowController extends Controller
                 'slug' => 'mou_import',
                 'is_system' => true,
                 'order' => 3,
+                // Only this system tab allows multiple cards per employer AND
+                // shows the MOU nationality/gender-count/import-type fields —
+                // mirrors the data migration that sets these same 2 columns
+                // for installs that already had this row before it existed.
+                'allow_multiple_orders' => true,
+                'show_mou_fields' => true,
                 'steps' => ['Name List', 'Calling Visa', 'Stamp Visa', 'Work Permit', 'Card']
             ],
             [
@@ -2094,6 +2128,13 @@ class WorkflowController extends Controller
     public function show($id)
     {
         $order = ProductionOrder::with('workType')->findOrFail($id);
+        // The order's WorkType tab may since have been soft-deleted by a Super
+        // Admin (see WorkTypeController::destroy()) — the order/employee data
+        // itself is untouched, but there's no tab left to deep-link into, so
+        // fall back to the default Workflow view instead of crashing.
+        if (!$order->workType) {
+            return redirect()->route('workflow.index')->with('warning', __('This job\'s tab has been removed. The job itself is unaffected.'));
+        }
         return redirect()->route('workflow.index', ['tab' => $order->workType->slug]);
     }
 
@@ -2148,6 +2189,7 @@ class WorkflowController extends Controller
     {
         // Load filtered workflowSteps
         $item = ProductionItem::with(['employee', 'order.employer', 'order.workType', 'completedWorkTypeSteps'])
+            ->visibleToUser()
             ->findOrFail($itemId);
 
         $order = $item->order;
@@ -2172,6 +2214,7 @@ class WorkflowController extends Controller
         $isPreProduction = $request->boolean('is_pre_production');
 
         $query = ProductionItem::onlyTrashed()
+            ->visibleToUser()
             ->with(['order' => fn($q) => $q->withTrashed(), 'order.employer' => fn($q) => $q->withTrashed(), 'employee' => fn($q) => $q->withTrashed()])
             ->whereHas('order', function($q) use ($isPreProduction) {
                 // We must use withTrashed() for the whereHas query if the order itself is deleted
@@ -2230,7 +2273,7 @@ class WorkflowController extends Controller
             abort(403);
         }
 
-        $item = ProductionItem::onlyTrashed()->with(['employee' => fn($q) => $q->withTrashed(), 'order' => fn($q) => $q->withTrashed()])->findOrFail($id);
+        $item = ProductionItem::onlyTrashed()->visibleToUser()->with(['employee' => fn($q) => $q->withTrashed(), 'order' => fn($q) => $q->withTrashed()])->findOrFail($id);
 
         $item->restore();
 
@@ -2254,7 +2297,7 @@ class WorkflowController extends Controller
             abort(403);
         }
 
-        $item = ProductionItem::onlyTrashed()->findOrFail($id);
+        $item = ProductionItem::onlyTrashed()->visibleToUser()->findOrFail($id);
         $item->forceDelete();
 
         return response()->json(['success' => true]);

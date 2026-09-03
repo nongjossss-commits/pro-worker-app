@@ -1,10 +1,10 @@
 {{-- resources/views/workflow/partials/create_modal.blade.php --}}
 @php
-    // ใช้ slug ของ MOU import สำหรับ JS toggle (ตรวจทั้ง 'mou' และ 'mou_import' เพื่อรองรับข้อมูลเก่า)
-    $mouSlugs = ['mou', 'mou_import'];
-    // หา id ของ MOU tab จาก $tabs เพื่อให้ JS เปรียบเทียบ
+    // ใช้ show_mou_fields (ไม่ใช่ slug เดาตายตัวอีกต่อไป) เพื่อหาว่าแท็บไหนควรโชว์
+    // ฟิลด์เฉพาะ MOU (สัญชาติ/เพศ/ประเภทนำเข้า) — ปัจจุบันมีแค่แท็บ MOU นำเข้าเดิม
+    // ที่ตั้งค่านี้ไว้ true แต่ future-proof สำหรับแท็บอื่นที่อาจตั้งค่านี้ทีหลัง
     $mouTabIds = collect($tabs ?? [])
-        ->filter(fn($t) => in_array($t->slug, $mouSlugs))
+        ->filter(fn($t) => (bool) $t->show_mou_fields)
         ->pluck('id')
         ->values()
         ->all();

@@ -11,15 +11,30 @@
     function createWorkTypeTab() {
         Swal.fire({
             title: '{{ __("Create New Tab") }}',
-            input: 'text',
-            inputLabel: '{{ __("Tab Name") }}',
-            inputPlaceholder: '{{ __("e.g., ต่อวีซ่า") }}',
+            html:
+                '<input id="swal-tab-name" class="swal2-input" placeholder="{{ __("e.g., ต่อวีซ่า") }}">' +
+                '<div class="form-check text-start mx-4 mt-2">' +
+                    '<input class="form-check-input" type="checkbox" id="swal-allow-multiple">' +
+                    '<label class="form-check-label small" for="swal-allow-multiple">' +
+                        '{{ __("Allow multiple cards per employer") }} ' +
+                        '<span class="text-muted d-block">{{ __("Like MOU Import — a new card each time, instead of one shared card reused over and over") }}</span>' +
+                    '</label>' +
+                '</div>',
             showCancelButton: true,
             confirmButtonText: '{{ __("Create") }}',
             cancelButtonText: '{{ __("Cancel") }}',
             confirmButtonColor: '#3b82f6',
-            inputValidator: (value) => {
-                if (!value || !value.trim()) return '{{ __("Please enter a tab name") }}';
+            focusConfirm: false,
+            preConfirm: () => {
+                const name = document.getElementById('swal-tab-name').value.trim();
+                if (!name) {
+                    Swal.showValidationMessage('{{ __("Please enter a tab name") }}');
+                    return false;
+                }
+                return {
+                    name: name,
+                    allow_multiple_orders: document.getElementById('swal-allow-multiple').checked,
+                };
             }
         }).then((result) => {
             if (result.isConfirmed && result.value) {
@@ -30,7 +45,7 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ name: result.value.trim() })
+                    body: JSON.stringify(result.value)
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -49,17 +64,42 @@
         });
     }
 
-    function editWorkTypeTab(tabId, currentName) {
+    // allowMultipleOrders/isSystem come from the tab's own current values
+    // (see work-type-tab-bar.blade.php/workflow/dashboard.blade.php) so the
+    // checkbox opens pre-filled — system tabs (MOU Import etc.) never show
+    // it at all, since their card mode is fixed and WorkTypeController's
+    // own update() guard ignores the field for them anyway.
+    function editWorkTypeTab(tabId, currentName, allowMultipleOrders, isSystem) {
+        const checkboxHtml = isSystem ? '' :
+            '<div class="form-check text-start mx-4 mt-2">' +
+                '<input class="form-check-input" type="checkbox" id="swal-allow-multiple-edit"' + (allowMultipleOrders ? ' checked' : '') + '>' +
+                '<label class="form-check-label small" for="swal-allow-multiple-edit">' +
+                    '{{ __("Allow multiple cards per employer") }} ' +
+                    '<span class="text-muted d-block">{{ __("Like MOU Import — a new card each time, instead of one shared card reused over and over") }}</span>' +
+                '</label>' +
+            '</div>';
+
         Swal.fire({
             title: '{{ __("Edit Tab Name") }}',
-            input: 'text',
-            inputValue: currentName,
+            html:
+                '<input id="swal-tab-name-edit" class="swal2-input" value="' + currentName.replace(/"/g, '&quot;') + '">' +
+                checkboxHtml,
             showCancelButton: true,
             confirmButtonText: '{{ __("Save") }}',
             cancelButtonText: '{{ __("Cancel") }}',
             confirmButtonColor: '#3b82f6',
-            inputValidator: (value) => {
-                if (!value || !value.trim()) return '{{ __("Please enter a tab name") }}';
+            focusConfirm: false,
+            preConfirm: () => {
+                const name = document.getElementById('swal-tab-name-edit').value.trim();
+                if (!name) {
+                    Swal.showValidationMessage('{{ __("Please enter a tab name") }}');
+                    return false;
+                }
+                const payload = { name: name };
+                if (!isSystem) {
+                    payload.allow_multiple_orders = document.getElementById('swal-allow-multiple-edit').checked;
+                }
+                return payload;
             }
         }).then((result) => {
             if (result.isConfirmed && result.value) {
@@ -70,7 +110,7 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ name: result.value.trim() })
+                    body: JSON.stringify(result.value)
                 })
                 .then(res => res.json())
                 .then(data => {
@@ -87,13 +127,16 @@
     }
 
     function deleteWorkTypeTab(tabId, tabName, ordersCount) {
+        // Deleting a tab is a SOFT delete — it just disappears from the tab
+        // list; every job/card that was ever under it stays fully intact in
+        // the database (see WorkTypeController::destroy()'s docblock).
         const warnLine = ordersCount > 0
-            ? '{{ __("This tab currently has") }} ' + ordersCount + ' {{ __("job(s). They will be permanently deleted along with it.") }}'
+            ? '{{ __("This tab currently has") }} ' + ordersCount + ' {{ __("job(s). They will NOT be deleted — this only removes the tab from the list; the jobs\' data stays exactly as it is.") }}'
             : '{{ __("This tab has no jobs in it right now.") }}';
 
         Swal.fire({
             title: '{{ __("Delete this tab?") }} “' + tabName + '”',
-            html: '<div class="text-start small">' + warnLine + ' {{ __("This cannot be undone.") }}</div>',
+            html: '<div class="text-start small">' + warnLine + '</div>',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: '{{ __("Delete") }}',

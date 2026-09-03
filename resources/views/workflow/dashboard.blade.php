@@ -122,10 +122,12 @@
                                                 @endif
                                             </td>
                                             <td class="text-end pe-4">
+                                                @if($item->order->workType)
                                                 <a href="{{ route('workflow.index', ['tab' => $item->order->workType->slug]) }}#item-card-{{ $item->id }}"
                                                    class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-arrow-right"></i>
                                                 </a>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
@@ -199,7 +201,7 @@
                 <div class="card h-100 shadow-sm border hover-shadow transition-all position-relative">
                     @if(auth()->check() && auth()->user()->hasRole('super-admin'))
                         <div class="position-absolute d-flex gap-1" style="top: 8px; right: 10px; z-index: 2; font-size: 0.75rem; opacity: 0.6;">
-                            <span onclick="event.preventDefault(); editWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}')" title="{{ __('Edit Name') }}"><i class="bi bi-pencil-fill"></i></span>
+                            <span onclick="event.preventDefault(); editWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}', {{ $tab->allow_multiple_orders ? 'true' : 'false' }}, {{ $tab->is_system ? 'true' : 'false' }})" title="{{ __('Edit Name') }}"><i class="bi bi-pencil-fill"></i></span>
                             @if(!$tab->is_system)
                                 <span onclick="event.preventDefault(); deleteWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}', {{ (int) $tab->orders()->count() }})" title="{{ __('Delete Tab') }}"><i class="bi bi-trash-fill"></i></span>
                             @endif
