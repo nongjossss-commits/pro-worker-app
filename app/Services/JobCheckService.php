@@ -9,6 +9,7 @@ use App\Models\ProductionItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
@@ -371,6 +372,9 @@ class JobCheckService
             $sheet->getStyle('A1:L1')->getFont()->setBold(true);
             $sheet->getStyle('A1:L1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF2F2F2');
             $sheet->getStyle('A1:L1')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+            $sheet->getStyle('A1:L1')->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER);
 
             $rowNum = 2;
             $seq = 1;
@@ -392,6 +396,23 @@ class JobCheckService
 
                 $sheet->getRowDimension($rowNum)->setRowHeight(90); // ~120px, room for the photo
 
+                // Same per-cell styling as EmployeeController's Advanced
+                // Export (the "hasPhoto" branch): vertical-center keeps
+                // text floating in the middle of the now-tall photo row
+                // instead of sinking to Excel's default bottom alignment,
+                // wrapText + thin borders keep multi-line cells (remarks,
+                // employer names) readable and the grid looking tidy.
+                $sheet->getStyle("A{$rowNum}:L{$rowNum}")->applyFromArray([
+                    'alignment' => [
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'wrapText' => true,
+                    ],
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                    ],
+                ]);
+
                 if (!empty($row['photo_path']) && Storage::disk('public')->exists($row['photo_path'])) {
                     $drawing = new Drawing();
                     $drawing->setName('Employee Photo');
@@ -404,7 +425,6 @@ class JobCheckService
                     $drawing->setWorksheet($sheet);
                 } else {
                     $sheet->setCellValue("B{$rowNum}", __('No Photo'));
-                    $sheet->getStyle("B{$rowNum}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
                 }
 
                 $rowNum++;

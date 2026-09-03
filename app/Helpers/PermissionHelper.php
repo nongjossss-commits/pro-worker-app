@@ -56,6 +56,17 @@ class PermissionHelper
         'renew-notifications' => ['th' => 'ต่ออายุจากแจ้งเตือน', 'en' => 'Renew via Notification', 'zh' => '通过通知续订'],
         'restore-notifications' => ['th' => 'กู้คืนการแจ้งเตือน', 'en' => 'Restore Notifications', 'zh' => '恢复通知'],
         'force-delete-notifications' => ['th' => 'ลบการแจ้งเตือนถาวร', 'en' => 'Force Delete Notifications', 'zh' => '强制删除通知'],
+        'use-chat' => ['th' => 'ใช้งานแชท', 'en' => 'Use Chat', 'zh' => '使用聊天'],
+        'view-finance' => ['th' => 'ดูข้อมูลการเงิน', 'en' => 'View Finance', 'zh' => '查看财务'],
+        'manage-finance' => ['th' => 'จัดการการเงิน', 'en' => 'Manage Finance', 'zh' => '管理财务'],
+        'view-pdf-templates' => ['th' => 'ดูเทมเพลต PDF', 'en' => 'View PDF Templates', 'zh' => '查看 PDF 模板'],
+        'create-pdf-templates' => ['th' => 'สร้างเทมเพลต PDF', 'en' => 'Create PDF Templates', 'zh' => '创建 PDF 模板'],
+        'edit-pdf-templates' => ['th' => 'แก้ไขเทมเพลต PDF', 'en' => 'Edit PDF Templates', 'zh' => '编辑 PDF 模板'],
+        'delete-pdf-templates' => ['th' => 'ลบเทมเพลต PDF', 'en' => 'Delete PDF Templates', 'zh' => '删除 PDF 模板'],
+        'view-labor-ledger' => ['th' => 'ดูสมุดบัญชี Pro Walker Labor', 'en' => 'View Labor Ledger', 'zh' => '查看劳工账簿'],
+        'manage-labor-ledger' => ['th' => 'จัดการสมุดบัญชี Pro Walker Labor', 'en' => 'Manage Labor Ledger', 'zh' => '管理劳工账簿'],
+        'approve-production' => ['th' => 'อนุมัติงาน Pre-Production', 'en' => 'Approve Production', 'zh' => '批准生产'],
+        'manage-own-workflow' => ['th' => 'จัดการ Workflow ของตนเอง', 'en' => 'Manage Own Workflow', 'zh' => '管理自己的工作流程'],
     ];
 
     public static function getLabel($permissionName)

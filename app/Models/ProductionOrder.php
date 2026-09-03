@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class ProductionOrder extends Model
 {
@@ -50,6 +52,36 @@ class ProductionOrder extends Model
         static::saving(function ($model) {
             if (auth()->check()) {
                 $model->updated_by = auth()->id();
+            }
+        });
+
+        // Mirrors Employee::employerTenancy (app/Models/Employee.php:18-38)
+        // verbatim — ProductionOrder already carries a direct employer_id
+        // column, so no relation-chasing is needed like ProductionItem's
+        // own (deliberately local/opt-in) scopeVisibleToUser() needs.
+        // Being a GLOBAL scope, this automatically protects every
+        // ProductionOrder::-based query app-wide (Workflow, Pre-Production,
+        // Finance Hub, the main Dashboard, PDF document downloads, etc.)
+        // without those files needing individual changes — the same
+        // "automatic everywhere" guarantee Employee/Employer already give
+        // for their own data.
+        static::addGlobalScope('employerTenancy', function (Builder $builder) {
+            if (Auth::check()) {
+                $user = Auth::user();
+                if ($user->hasRole('employer')) {
+                    $employer = $user->employer;
+                    if ($employer) {
+                        $builder->where('employer_id', $employer->id);
+                    } else {
+                        $builder->whereRaw('1 = 0');
+                    }
+                } elseif ($user->hasRole('caretaker')) {
+                    $builder->whereHas('employer', function ($q) use ($user) {
+                        $q->whereHas('caretakers', function ($q2) use ($user) {
+                            $q2->where('users.id', $user->id);
+                        });
+                    });
+                }
             }
         });
     }

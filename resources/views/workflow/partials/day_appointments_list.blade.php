@@ -230,13 +230,20 @@
                         </div>
                     </div>
 
-                    {{-- Right: Action buttons --}}
+                    {{-- Right: Action buttons — the Update/Complete buttons require
+                         edit-employees, same as the bulk-select checkbox elsewhere in
+                         this partial; previously rendered unconditionally so a user
+                         without the permission still saw live, clickable buttons. The
+                         "Open in Workflow Board" link is left ungated since it's pure
+                         navigation (workflow.index() itself enforces its own role/
+                         permission checks), not a mutating action. --}}
                     <div class="flex-shrink-0 d-flex flex-column gap-2 align-items-end">
                         <a href="{{ route('workflow.index', ['tab' => $workType->slug ?? '']) }}#item-card-{{ $item->id }}"
                            class="btn btn-sm btn-outline-secondary" target="_blank"
                            title="{{ __('Open in Workflow Board') }}">
                             <i class="bi bi-box-arrow-up-right"></i>
                         </a>
+                        @can('edit-employees')
                         <div class="d-flex gap-1">
                             <button class="btn btn-sm fw-bold {{ $isAppCompleted ? 'btn-success' : 'btn-warning text-dark' }}"
                                     onclick="wfUpdateAppointment({{ $item->id }}, '{{ addslashes($appDateValue) }}', '{{ addslashes($appLocation) }}', this)"
@@ -255,6 +262,7 @@
                             </button>
                             @endif
                         </div>
+                        @endcan
                     </div>
 
                 </div>

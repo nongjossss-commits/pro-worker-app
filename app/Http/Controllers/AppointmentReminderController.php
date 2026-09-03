@@ -47,11 +47,19 @@ class AppointmentReminderController extends Controller
                 });
         }
 
-        ProductionItem::select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
+        $workflowQuery = ProductionItem::select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
             ->whereBetween('appointment_date', [$start, $end])
             ->where('status', '!=', 'cancelled')
             ->where('status', '!=', 'completed')
-            ->whereNull('appointment_completed_at')
+            ->whereNull('appointment_completed_at');
+
+        // ProductionItem has no automatic tenancy scope of its own (unlike
+        // Employee, used above) — see ProductionItem::scopeVisibleToUser().
+        if (!auth()->user()->can('manage-tickets')) {
+            $workflowQuery->visibleToUser();
+        }
+
+        $workflowQuery
             ->groupBy('date')
             ->get()
             ->each(function ($row) use (&$counts) {
@@ -102,9 +110,15 @@ class AppointmentReminderController extends Controller
                 });
         }
 
-        ProductionItem::whereDate('appointment_date', $date)
+        $workflowItemsQuery = ProductionItem::whereDate('appointment_date', $date)
             ->where('status', '!=', 'cancelled')
-            ->whereNull('appointment_completed_at')
+            ->whereNull('appointment_completed_at');
+
+        if (!auth()->user()->can('manage-tickets')) {
+            $workflowItemsQuery->visibleToUser();
+        }
+
+        $workflowItemsQuery
             ->with(['employee', 'order.employer'])
             ->get()
             ->each(function ($item) use (&$items) {

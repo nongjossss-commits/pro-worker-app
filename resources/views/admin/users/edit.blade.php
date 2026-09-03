@@ -85,7 +85,7 @@
                         <select id="role_name" name="role_name" x-model="selectedRole" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             @foreach ($roles as $role)
                                 <option value="{{ $role->name }}" {{ $user->roles->contains($role) ? 'selected' : '' }}>
-                                    {{ ucfirst($role->name) }}
+                                    {{ ucfirst(__($role->name)) }}
                                 </option>
                             @endforeach
                         </select>

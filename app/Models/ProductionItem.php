@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class ProductionItem extends Model
@@ -70,6 +72,51 @@ class ProductionItem extends Model
     public function order()
     {
         return $this->belongsTo(ProductionOrder::class, 'production_order_id');
+    }
+
+    /**
+     * Mirrors Employee::employerTenancy (app/Models/Employee.php) — same
+     * "employer role sees only their own employer_id, caretaker role sees
+     * only employers they're assigned to as caretaker" restriction — but
+     * ProductionItem has no direct employer_id column (only reachable via
+     * order->employer_id). This started as a deliberately LOCAL scope
+     * (called explicitly via `ProductionItem::visibleToUser()`, not an
+     * automatic global scope) so the first fix stayed narrowly confined to
+     * the appointment-reminder endpoints that were reported. It has since
+     * been applied to WorkflowController's remaining unscoped direct
+     * item-lookup methods too (updateRemarks, toggleStep, finalizeItem,
+     * fetchTrash, etc.) as a follow-up round — see ProductionOrder's own
+     * new employerTenancy GLOBAL scope for the sibling fix on Order-level
+     * lookups, which now protects those automatically everywhere instead.
+     *
+     * `->withTrashed()` on the `order` relation lookup is required here
+     * (not just cosmetic) because this scope is also used by the trash
+     * endpoints (fetchTrash/restoreTrash/forceDeleteTrash), where the
+     * ProductionItem itself is soft-deleted and its parent ProductionOrder
+     * is very often soft-deleted too — without it, `whereHas('order', ...)`
+     * would silently exclude those legitimately-visible trashed items
+     * (ProductionOrder's own SoftDeletes scope would otherwise still apply
+     * inside the closure).
+     */
+    public function scopeVisibleToUser(Builder $query, ?User $user = null): Builder
+    {
+        $user = $user ?? Auth::user();
+        if (!$user) {
+            return $query;
+        }
+
+        if ($user->hasRole('employer')) {
+            $employer = $user->employer;
+            if ($employer) {
+                $query->whereHas('order', fn ($q) => $q->withTrashed()->where('employer_id', $employer->id));
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } elseif ($user->hasRole('caretaker')) {
+            $query->whereHas('order', fn ($q) => $q->withTrashed()->whereHas('employer', fn ($q2) => $q2->whereHas('caretakers', fn ($q3) => $q3->where('users.id', $user->id))));
+        }
+
+        return $query;
     }
 
     public function employee()

@@ -203,7 +203,13 @@
                             @endif
                         </div>
 
-                        {{-- Action buttons (right side) --}}
+                        {{-- Action buttons (right side) — edit/update/complete all require
+                             edit-employees, same as the bulk-select checkbox and floating
+                             toolbar elsewhere in this partial; previously rendered
+                             unconditionally so a user without the permission still saw
+                             live, clickable buttons (backend correctly rejected the click,
+                             but the button shouldn't have been shown at all). --}}
+                        @can('edit-employees')
                         <div class="flex-shrink-0 d-flex flex-column gap-2 align-items-end">
                             {{-- Edit employee button --}}
                             <button type="button"
@@ -231,6 +237,7 @@
                                 @endif
                             </div>
                         </div>
+                        @endcan
 
                     </div>
                 </div>
