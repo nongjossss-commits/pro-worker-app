@@ -7,7 +7,9 @@ use App\Models\Employer;
 use App\Models\PdfTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Helpers\PdfHelper;
 use App\Services\PdfGeneratorService;
 
@@ -440,5 +442,172 @@ class PdfTemplateController extends Controller
         }
 
         return response()->file(Storage::disk('public')->path($path));
+    }
+
+    /**
+     * Export the field positions/settings of the selected templates as one
+     * downloadable JSON file, so an office renting out this program to a
+     * new client can import the same setup instead of rebuilding every
+     * field placement from scratch. The background PDF itself is embedded
+     * (base64) since it's normally the same standard form across installs;
+     * `image`-type fields (a logo/watermark the admin pasted in — distinct
+     * from `signature`/`stamp` fields, which are resolved from live
+     * Employer/Witness data at generation time and carry no stored file at
+     * all) have their file reference stripped since that picture is
+     * specific to this install — the position/box stays, so whoever
+     * imports it just needs to re-upload that one picture in the builder.
+     * `employer_id`/`type` and the witness-linked meta_data keys are also
+     * install-specific and are handled on the import side instead (always
+     * reset to global/null there), since they're not portable as-is.
+     */
+    public function export(Request $request)
+    {
+        $this->authorize('view-pdf-templates');
+
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:pdf_templates,id',
+        ]);
+
+        $payload = [
+            'app' => 'pro-worker-v2',
+            'export_type' => 'pdf_templates',
+            'exported_at' => now()->toIso8601String(),
+            'templates' => [],
+        ];
+
+        foreach (PdfTemplate::whereIn('id', $request->input('ids'))->get() as $template) {
+            // Per-object policy — a bulk export must not leak a template the
+            // user isn't individually allowed to view (e.g. another
+            // employer's employer-scoped template), even though they
+            // already passed the flat 'view-pdf-templates' gate above.
+            if (Auth::user()->cannot('view', $template)) {
+                continue;
+            }
+
+            if (!Storage::disk('public')->exists($template->file_path)) {
+                continue; // nothing usable to export without the background file
+            }
+
+            $fieldMapping = is_array($template->field_mapping) ? $template->field_mapping : [];
+            $imageFieldsNeedReupload = [];
+            foreach ($fieldMapping as &$item) {
+                if (($item['type'] ?? null) === 'image') {
+                    $imageFieldsNeedReupload[] = $item['label'] ?? ($item['key'] ?? __('Image field'));
+                    unset($item['path'], $item['url']);
+                }
+            }
+            unset($item);
+
+            $metaData = is_array($template->meta_data) ? $template->meta_data : [];
+            unset($metaData['witness_1_id'], $metaData['witness_2_id'], $metaData['cloned_from_template_id'], $metaData['cloned_from_name']);
+
+            $payload['templates'][] = [
+                'name' => $template->name,
+                'field_mapping' => $fieldMapping,
+                'meta_data' => $metaData,
+                'file_original_name' => $metaData['original_filename'] ?? ($template->name . '.pdf'),
+                'file_base64' => base64_encode(Storage::disk('public')->get($template->file_path)),
+                'image_fields_need_reupload' => $imageFieldsNeedReupload,
+            ];
+        }
+
+        if (empty($payload['templates'])) {
+            return back()->with('danger', __('No templates could be exported (missing permission, or the background file is gone).'));
+        }
+
+        $filename = 'pdf_templates_export_' . now()->format('Ymd_His') . '.json';
+
+        return response()->streamDownload(function () use ($payload) {
+            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }, $filename, ['Content-Type' => 'application/json']);
+    }
+
+    /**
+     * Import a JSON file produced by export() above. Always creates NEW
+     * templates (never overwrites an existing one) — type/employer_id are
+     * always reset to global/null since the exporting install's employer
+     * doesn't exist here; a template with the same name already present is
+     * skipped rather than duplicated, since the same export file may
+     * reasonably be uploaded more than once.
+     */
+    public function import(Request $request)
+    {
+        $this->authorize('create-pdf-templates');
+
+        $request->validate([
+            // Browsers/PHP often see a .json upload as text/plain rather
+            // than application/json depending on OS — validate by
+            // extension (mimes) like every other upload in this
+            // controller, not a MIME sniff that can false-reject a
+            // perfectly valid file.
+            'file' => 'required|mimes:json,txt|max:51200', // 50MB — several templates each embed a base64 PDF
+        ]);
+
+        $data = json_decode(file_get_contents($request->file('file')->getRealPath()), true);
+
+        if (!is_array($data) || ($data['export_type'] ?? null) !== 'pdf_templates' || !is_array($data['templates'] ?? null)) {
+            return back()->withErrors(['file' => __('This is not a valid PDF Templates export file.')]);
+        }
+
+        $imported = 0;
+        $skipped = [];
+        $imageWarnings = [];
+
+        DB::transaction(function () use ($data, &$imported, &$skipped, &$imageWarnings) {
+            foreach ($data['templates'] as $item) {
+                $name = trim($item['name'] ?? '');
+                if ($name === '' || empty($item['file_base64'])) {
+                    continue;
+                }
+
+                if (PdfTemplate::where('name', $name)->exists()) {
+                    $skipped[] = $name;
+                    continue;
+                }
+
+                $bytes = base64_decode($item['file_base64'], true);
+                if ($bytes === false) {
+                    $skipped[] = $name . ' (' . __('corrupted file') . ')';
+                    continue;
+                }
+
+                $storePath = 'pdf_templates/' . Str::random(40) . '.pdf';
+                Storage::disk('public')->put($storePath, $bytes);
+
+                $metaData = is_array($item['meta_data'] ?? null) ? $item['meta_data'] : [];
+                $metaData['original_filename'] = $item['file_original_name'] ?? ($name . '.pdf');
+                $metaData['imported_at'] = now()->toIso8601String();
+
+                PdfTemplate::create([
+                    'name' => $name,
+                    'file_path' => $storePath,
+                    'type' => 'global',
+                    'employer_id' => null,
+                    'created_by' => Auth::id(),
+                    'field_mapping' => is_array($item['field_mapping'] ?? null) ? $item['field_mapping'] : [],
+                    'meta_data' => $metaData,
+                ]);
+
+                $imported++;
+                if (!empty($item['image_fields_need_reupload'])) {
+                    $imageWarnings[$name] = $item['image_fields_need_reupload'];
+                }
+            }
+        });
+
+        $message = __(':count template(s) imported successfully.', ['count' => $imported]);
+        if (!empty($skipped)) {
+            $message .= ' ' . __('Skipped (name already exists or file corrupted): :names', ['names' => implode(', ', $skipped)]);
+        }
+        if (!empty($imageWarnings)) {
+            $notes = [];
+            foreach ($imageWarnings as $tplName => $fields) {
+                $notes[] = "\"{$tplName}\": " . implode(', ', $fields);
+            }
+            $message .= ' ' . __('These templates have image fields that need to be re-uploaded manually: :notes', ['notes' => implode(' | ', $notes)]);
+        }
+
+        return redirect()->route('admin.pdf-templates.index')->with('success', $message);
     }
 }

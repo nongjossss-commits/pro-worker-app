@@ -309,6 +309,11 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:pdf_templates'])->
     // PDF Templates CRUD
     Route::post('pdf-templates/upload-image', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'uploadImage'])->name('pdf-templates.upload-image');
     Route::get('pdf-templates/list-templates', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'listTemplates'])->name('pdf-templates.list');
+    // Export selected templates' field settings as a downloadable JSON file /
+    // import that file elsewhere — lets an office reuse the same template
+    // setup across client installs instead of rebuilding it from scratch.
+    Route::get('pdf-templates/export', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'export'])->name('pdf-templates.export');
+    Route::post('pdf-templates/import', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'import'])->name('pdf-templates.import');
     Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
     Route::get('pdf-templates/{pdf_template}/preview', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'preview'])->name('pdf-templates.preview');
     Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->except(['show']);

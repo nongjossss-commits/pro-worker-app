@@ -10,10 +10,17 @@
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#quickPrintModal">
                 <i class="bi bi-printer me-2"></i>พิมพ์เอกสาร
             </button>
+            <button type="submit" form="pdfTemplateExportForm" id="pdfTemplateExportBtn" class="btn btn-outline-secondary" disabled
+                    title="{{ __('Tick templates in the list below first') }}">
+                <i class="bi bi-download me-2"></i>{{ __('Export Selected') }}
+            </button>
             @endcan
             @can('create-pdf-templates')
             <button type="button" @click="openModal()" class="btn btn-outline-info">
                 <i class="bi bi-people me-2"></i>ตั้งค่ารายชื่อพยาน
+            </button>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importTemplateModal">
+                <i class="bi bi-upload me-2"></i>{{ __('Import') }}
             </button>
             <a href="{{ route('admin.pdf-templates.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-2"></i>Create New Template
@@ -21,6 +28,33 @@
             @endcan
         </div>
     </div>
+
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if(session('danger'))
+        <div class="alert alert-danger">{{ session('danger') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- Export/Import — settings-portability feature: lets an admin download
+         the selected templates' field positions (+ background PDF) as one
+         JSON file to hand off/re-upload into another install of this
+         program, instead of rebuilding the same layout from scratch there.
+         The checkboxes below are `form="pdfTemplateExportForm"`-linked to
+         this GET form rather than nested inside it, since they live inside
+         the results table further down the page. --}}
+    @can('view-pdf-templates')
+    <form id="pdfTemplateExportForm" method="GET" action="{{ route('admin.pdf-templates.export') }}"></form>
+    @endcan
 
     {{-- Filter Section --}}
     @if(auth()->user()->hasRole('super-admin') || auth()->user()->hasRole('admin') || auth()->user()->hasRole('staff') || auth()->user()->hasRole('caretaker'))
@@ -160,7 +194,12 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th class="ps-4">Template Name</th>
+                            @can('view-pdf-templates')
+                            <th class="ps-4" style="width: 1%;">
+                                <input type="checkbox" class="form-check-input" id="pdfTemplateSelectAll" title="{{ __('Select all') }}">
+                            </th>
+                            @endcan
+                            <th class="{{ auth()->user()->can('view-pdf-templates') ? '' : 'ps-4' }}">Template Name</th>
                             <th>Type</th>
                             <th>Owner (Employer)</th>
                             <th>Created By</th>
@@ -171,7 +210,12 @@
                     <tbody>
                         @forelse($templates as $template)
                         <tr>
+                            @can('view-pdf-templates')
                             <td class="ps-4">
+                                <input type="checkbox" class="form-check-input pdf-template-checkbox" name="ids[]" value="{{ $template->id }}" form="pdfTemplateExportForm">
+                            </td>
+                            @endcan
+                            <td>
                                 <div class="fw-bold text-gray-700">{{ $template->name }}</div>
                             </td>
                             <td>
@@ -214,7 +258,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="{{ auth()->user()->can('view-pdf-templates') ? 7 : 6 }}" class="text-center py-5 text-muted">
                                 No templates found. Create one to get started.
                             </td>
                         </tr>
@@ -560,6 +604,36 @@
             </div>
         </div>
     </div>
+
+    {{-- Import Template Modal — uploads a JSON file produced by "Export
+         Selected" above (from this install or another one running this
+         same program) and recreates the templates it contains. --}}
+    @can('create-pdf-templates')
+    <div class="modal fade" id="importTemplateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form class="modal-content" method="POST" action="{{ route('admin.pdf-templates.import') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-upload me-2"></i>{{ __('Import Templates') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label fw-bold">{{ __('Export file (.json)') }}</label>
+                    <input type="file" name="file" accept=".json" class="form-control" required>
+                    <div class="form-text">
+                        {{ __('This creates new templates — it never overwrites an existing one. A template whose name is already used here is skipped. Any image fields (logo/watermark) need to be re-uploaded manually afterward in the builder.') }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i> {{ __('Import') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endcan
 
     <!-- Witness Management Modal -->
     <div class="modal fade" id="witnessModal" tabindex="-1" aria-hidden="true" style="display: none;">
@@ -1024,6 +1098,30 @@
                 window.open(url, '_blank');
             }
         }));
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Export Selected — enable the button only once at least one row is
+        // ticked, and keep the header "select all" checkbox in sync both ways.
+        const exportBtn = document.getElementById('pdfTemplateExportBtn');
+        const selectAll = document.getElementById('pdfTemplateSelectAll');
+        const rowCheckboxes = document.querySelectorAll('.pdf-template-checkbox');
+
+        function refreshExportBtn() {
+            if (!exportBtn) return;
+            exportBtn.disabled = ![...rowCheckboxes].some(cb => cb.checked);
+        }
+
+        rowCheckboxes.forEach(cb => cb.addEventListener('change', refreshExportBtn));
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                rowCheckboxes.forEach(cb => { cb.checked = selectAll.checked; });
+                refreshExportBtn();
+            });
+        }
+
+        refreshExportBtn();
     });
 
     document.addEventListener('DOMContentLoaded', function() {

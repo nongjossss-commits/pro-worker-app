@@ -9,7 +9,9 @@ use App\Services\PdfGeneratorService;
 use App\Services\ProWorkerFormFieldsResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Templates for the Pro Worker <-> Employer contract — deliberately separate
@@ -274,5 +276,142 @@ class LaborContractTemplateController extends Controller
         $proworkerContractTemplate->update(['field_mapping' => $mapping]);
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Export the selected templates' field settings as one downloadable
+     * JSON file — same purpose/shape as Admin\PdfTemplateController::export()
+     * (see its docblock), kept as its own copy since this is a deliberately
+     * separate system. This system has no employer_id/type/witness FK to
+     * worry about (see the class docblock — every field is a free-form
+     * label, not data-bound), only the `image`/`stamp`/`signature` field
+     * types carry a stored picture that's specific to this install.
+     */
+    public function export(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:pro_worker_contract_templates,id',
+        ]);
+
+        $payload = [
+            'app' => 'pro-worker-v2',
+            'export_type' => 'pro_worker_contract_templates',
+            'exported_at' => now()->toIso8601String(),
+            'templates' => [],
+        ];
+
+        foreach (ProWorkerContractTemplate::whereIn('id', $request->input('ids'))->get() as $template) {
+            if (!Storage::disk('public')->exists($template->file_path)) {
+                continue; // nothing usable to export without the background file
+            }
+
+            $fieldMapping = is_array($template->field_mapping) ? $template->field_mapping : [];
+            $imageFieldsNeedReupload = [];
+            foreach ($fieldMapping as &$item) {
+                if (in_array($item['type'] ?? null, ['image', 'stamp', 'signature'], true)) {
+                    $imageFieldsNeedReupload[] = $item['label'] ?? ($item['key'] ?? __('Image field'));
+                    unset($item['path'], $item['url']);
+                }
+            }
+            unset($item);
+
+            $metaData = is_array($template->meta_data) ? $template->meta_data : [];
+
+            $payload['templates'][] = [
+                'name' => $template->name,
+                'field_mapping' => $fieldMapping,
+                'meta_data' => $metaData,
+                'file_original_name' => $metaData['original_filename'] ?? ($template->name . '.pdf'),
+                'file_base64' => base64_encode(Storage::disk('public')->get($template->file_path)),
+                'image_fields_need_reupload' => $imageFieldsNeedReupload,
+            ];
+        }
+
+        if (empty($payload['templates'])) {
+            return back()->with('danger', __('No templates could be exported (the background file is gone).'));
+        }
+
+        $filename = 'contract_templates_export_' . now()->format('Ymd_His') . '.json';
+
+        return response()->streamDownload(function () use ($payload) {
+            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }, $filename, ['Content-Type' => 'application/json']);
+    }
+
+    /**
+     * Import a JSON file produced by export() above — see
+     * Admin\PdfTemplateController::import()'s docblock for the shared
+     * behavior (always creates new rows, skips a name that already exists).
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:json,txt|max:51200',
+        ]);
+
+        $data = json_decode(file_get_contents($request->file('file')->getRealPath()), true);
+
+        if (!is_array($data) || ($data['export_type'] ?? null) !== 'pro_worker_contract_templates' || !is_array($data['templates'] ?? null)) {
+            return back()->withErrors(['file' => __('This is not a valid Contract Templates export file.')]);
+        }
+
+        $imported = 0;
+        $skipped = [];
+        $imageWarnings = [];
+
+        DB::transaction(function () use ($data, &$imported, &$skipped, &$imageWarnings) {
+            foreach ($data['templates'] as $item) {
+                $name = trim($item['name'] ?? '');
+                if ($name === '' || empty($item['file_base64'])) {
+                    continue;
+                }
+
+                if (ProWorkerContractTemplate::where('name', $name)->exists()) {
+                    $skipped[] = $name;
+                    continue;
+                }
+
+                $bytes = base64_decode($item['file_base64'], true);
+                if ($bytes === false) {
+                    $skipped[] = $name . ' (' . __('corrupted file') . ')';
+                    continue;
+                }
+
+                $storePath = 'proworker_contract_templates/' . Str::random(40) . '.pdf';
+                Storage::disk('public')->put($storePath, $bytes);
+
+                $metaData = is_array($item['meta_data'] ?? null) ? $item['meta_data'] : [];
+                $metaData['original_filename'] = $item['file_original_name'] ?? ($name . '.pdf');
+                $metaData['imported_at'] = now()->toIso8601String();
+
+                ProWorkerContractTemplate::create([
+                    'name' => $name,
+                    'file_path' => $storePath,
+                    'created_by' => Auth::id(),
+                    'field_mapping' => is_array($item['field_mapping'] ?? null) ? $item['field_mapping'] : [],
+                    'meta_data' => $metaData,
+                ]);
+
+                $imported++;
+                if (!empty($item['image_fields_need_reupload'])) {
+                    $imageWarnings[$name] = $item['image_fields_need_reupload'];
+                }
+            }
+        });
+
+        $message = __(':count template(s) imported successfully.', ['count' => $imported]);
+        if (!empty($skipped)) {
+            $message .= ' ' . __('Skipped (name already exists or file corrupted): :names', ['names' => implode(', ', $skipped)]);
+        }
+        if (!empty($imageWarnings)) {
+            $notes = [];
+            foreach ($imageWarnings as $tplName => $fields) {
+                $notes[] = "\"{$tplName}\": " . implode(', ', $fields);
+            }
+            $message .= ' ' . __('These templates have image fields that need to be re-uploaded manually: :notes', ['notes' => implode(' | ', $notes)]);
+        }
+
+        return redirect()->route('labor.contract-templates.index')->with('success', $message);
     }
 }
