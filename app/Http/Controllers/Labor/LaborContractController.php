@@ -185,7 +185,11 @@ class LaborContractController extends Controller
         $path = $request->file('signed_copy')->store('proworker_contracts/signed_copies', 'public');
         $contract->update(['signed_copy_path' => $path]);
 
-        return redirect()->route('labor.contracts.show', $contract)
+        // back() rather than a hardcoded route so this same form works both
+        // from show.blade.php (its original home) and the inline per-row
+        // copy on index.blade.php (added later) — each just lands back
+        // wherever it was submitted from.
+        return redirect()->back()
             ->with('success', __('Signed copy attached successfully.'));
     }
 
@@ -342,6 +346,123 @@ class LaborContractController extends Controller
         $summary = $this->buildCompletionSummary($user, $seesAllTeams);
 
         return view('labor.contracts.index', compact('contracts', 'teams', 'seesAllTeams', 'summary'));
+    }
+
+    /**
+     * Bulk-download the tick-selected contracts from the list page as one
+     * .zip — `variant=original` zips each contract's own generated PDF
+     * (`file_path`, always present since issue()); `variant=signed` zips
+     * only the employer-signed scan (`signed_copy_path`), silently skipping
+     * any selected contract that doesn't have one yet (counted and
+     * reported back in the flash message rather than failing the whole
+     * download). Deliberately synchronous (build the zip, stream it back
+     * immediately) rather than the Employee module's async
+     * DownloadTask/ProcessDownload Job+polling system — that system is
+     * built around many file TYPES + stamping per employee and would need
+     * either duplicating or awkwardly generalizing; a contract is always
+     * exactly one small PDF, so a direct zip is simpler and safer here
+     * without touching that Employee-only code at all.
+     *
+     * Re-runs index()'s own exact visibility scope against the submitted
+     * ids (never trusts the client's checkbox selection alone) — a
+     * $seesAllTeams role may bulk-download any contract, everyone else
+     * only their own issuances, identical to what index() lets them see
+     * and select in the first place.
+     */
+    public function bulkDownload(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:pro_worker_contracts,id',
+            'variant' => 'required|in:original,signed',
+        ]);
+
+        $user = Auth::user();
+        $seesAllTeams = $user->hasAnyRole(['super-admin', 'admin', 'labor-accounting', 'labor-shareholder']);
+
+        $query = ProWorkerContract::whereIn('id', $request->input('ids'));
+        if (!$seesAllTeams) {
+            $query->where('issued_by', $user->id);
+        }
+
+        $variant = $request->input('variant');
+        if ($variant === 'signed') {
+            $query->whereNotNull('signed_copy_path');
+        }
+
+        $contracts = $query->get();
+
+        if ($contracts->isEmpty()) {
+            // A real redirect (not the download response below), so this
+            // actually reaches labor.layout's existing $errors->any()
+            // block — a response()->download() never navigates the
+            // browser, so anything flashed alongside IT would go unseen
+            // until some unrelated later page load. The "some selected
+            // rows were skipped" case (partial success) is instead warned
+            // about client-side in the bulk-download modal BEFORE
+            // submitting, precisely to avoid that same invisible-flash
+            // problem for a response that never becomes a page load.
+            $message = $variant === 'signed'
+                ? __('None of the selected contracts have a signed copy attached yet.')
+                : __('No accessible contracts were found among the ones selected.');
+            return back()->withErrors(['bulk_download' => $message]);
+        }
+
+        $zipFileName = 'pro_worker_contracts_' . $variant . '_' . now()->format('Ymd_His') . '.zip';
+        $zipPath = tempnam(sys_get_temp_dir(), 'pwc_zip_') . '.zip';
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE) !== true) {
+            return back()->with('danger', __('Could not create the zip file.'));
+        }
+
+        $missingFileCount = 0;
+        $usedNames = [];
+
+        foreach ($contracts as $contract) {
+            $sourcePath = $variant === 'signed' ? $contract->signed_copy_path : $contract->file_path;
+
+            if (!$sourcePath || !Storage::disk('public')->exists($sourcePath)) {
+                $missingFileCount++;
+                continue;
+            }
+
+            // {sanitized employer name}_{contract no}.pdf — contract_no
+            // alone is already unique/filesystem-safe, the employer name
+            // is just there to make the zip's file listing scannable at a
+            // glance; falls back to contract_no alone when there's no
+            // employer name snapshot. Same sanitizing regex as
+            // ProcessDownload::sanitizeFileName() (no shared helper for
+            // this exists in the codebase yet).
+            $extension = pathinfo($sourcePath, PATHINFO_EXTENSION) ?: 'pdf';
+            $employerPart = trim((string) $contract->employer_name_snapshot);
+            $baseName = $employerPart !== ''
+                ? preg_replace('/[^a-zA-Z0-9\-\_\p{Thai}]/u', '_', $employerPart) . '_' . $contract->contract_no
+                : $contract->contract_no;
+            $entryName = $baseName . '.' . $extension;
+
+            // Guard against two contracts sanitizing to the same name
+            // (e.g. same employer, and somehow the same contract_no can't
+            // happen since it's unique — but stay defensive regardless).
+            if (isset($usedNames[$entryName])) {
+                $usedNames[$entryName]++;
+                $entryName = $baseName . '_' . $usedNames[$entryName] . '.' . $extension;
+            } else {
+                $usedNames[$entryName] = 1;
+            }
+
+            $zip->addFile(Storage::disk('public')->path($sourcePath), $entryName);
+        }
+
+        $zip->close();
+
+        // $missingFileCount (the file row exists in the DB but the actual
+        // file is gone from storage) isn't surfaced anywhere further —
+        // it's the same silent-skip behavior download()/view() already
+        // have for a single contract's missing file, just applied per-item
+        // here instead of a hard 404, so one bad file doesn't block the
+        // rest of the batch.
+        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
     }
 
     /**

@@ -174,6 +174,9 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         Route::get('/contracts/create', [LaborContractController::class, 'create'])->name('contracts.create');
         Route::post('/contracts', [LaborContractController::class, 'store'])->name('contracts.store');
         Route::post('/contracts/preview', [LaborContractController::class, 'preview'])->name('contracts.preview');
+        // Tick-select rows on the list page, download the batch as one zip
+        // — see LaborContractController::bulkDownload()'s docblock.
+        Route::post('/contracts/bulk-download', [LaborContractController::class, 'bulkDownload'])->name('contracts.bulk-download');
         Route::get('/contracts', [LaborContractController::class, 'index'])->name('contracts.index');
         Route::get('/contracts/{contract}/edit', [LaborContractController::class, 'edit'])->name('contracts.edit');
         Route::put('/contracts/{contract}', [LaborContractController::class, 'update'])->name('contracts.update');
@@ -203,6 +206,11 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
             Route::get('/create', [LaborContractTemplateController::class, 'create'])->name('create');
             Route::post('/', [LaborContractTemplateController::class, 'store'])->name('store');
             Route::post('/upload-image', [LaborContractTemplateController::class, 'uploadImage'])->name('upload-image');
+            // Export selected templates' field settings as a downloadable
+            // JSON file / import that file elsewhere — same idea as
+            // Admin\PdfTemplateController's own export/import.
+            Route::get('/export', [LaborContractTemplateController::class, 'export'])->name('export');
+            Route::post('/import', [LaborContractTemplateController::class, 'import'])->name('import');
             Route::get('/{proworkerContractTemplate}/file', [LaborContractTemplateController::class, 'file'])->name('file');
             Route::get('/{proworkerContractTemplate}/builder', [LaborContractTemplateController::class, 'builder'])->name('builder');
             // Independent of each field's physical page/x/y position on the
