@@ -18,15 +18,28 @@ class UpdateProgressStepsPermissionSeeder extends Seeder
         // that person's ability to edit employee data.
         $permission = Permission::firstOrCreate(['name' => 'update-progress-steps']);
 
-        // Assign to Admin, Staff and Caretaker — preserves everyone's current
-        // de facto ability to tick steps (previously covered only by
-        // 'edit-employees') so nothing regresses; an admin can then revoke
-        // it per individual caretaker at admin.users.edit as needed.
-        foreach (['admin', 'staff', 'caretaker'] as $roleName) {
+        // Assign to Admin and Staff — this is the basic, expected ability
+        // for operational staff. Deliberately NOT Caretaker: this seeder
+        // originally also granted it to Caretaker (to preserve everyone's
+        // pre-existing de facto ability, back when the check was just
+        // 'edit-employees') but that was a temporary regression-avoidance
+        // default, not the intended long-term policy — Caretaker is a more
+        // limited, customer-care-scoped role and should not tick workflow
+        // steps by default. Explicitly revoke it below too, so re-running
+        // this seeder on an install that already granted it (e.g. this
+        // exact seeder having run once before) actually corrects it instead
+        // of just skipping the (already-done) grant. An admin can still
+        // grant it to one specific Caretaker user at admin.users.edit.
+        foreach (['admin', 'staff'] as $roleName) {
             $role = Role::where('name', $roleName)->first();
             if ($role) {
                 $role->givePermissionTo($permission);
             }
+        }
+
+        $caretakerRole = Role::where('name', 'caretaker')->first();
+        if ($caretakerRole && $caretakerRole->hasPermissionTo($permission)) {
+            $caretakerRole->revokePermissionTo($permission);
         }
     }
 }
