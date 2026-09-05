@@ -678,6 +678,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/item/{item}/send-back', [\App\Http\Controllers\WorkflowController::class, 'sendBackToPreProduction'])->name('workflow.item.send_back');
     // ส่ง ProductionOrder ทั้งใบกลับไป Pre-Production (สำหรับ MOU demand card)
     Route::post('workflow/order/{order}/send-back', [\App\Http\Controllers\WorkflowController::class, 'sendOrderBackToPreProduction'])->name('workflow.order.send_back');
+    // Card-level equivalents of the per-item finalize/restore/cancel/destroy
+    // above — allow_multiple_orders tabs only (e.g. MOU Import), see each
+    // method's own docblock in WorkflowController.
+    Route::post('workflow/order/{order}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeOrder'])->name('workflow.order.finalize');
+    Route::post('workflow/order/{order}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreOrder'])->name('workflow.order.restore');
+    Route::post('workflow/order/{order}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelOrder'])->name('workflow.order.cancel');
+    Route::delete('workflow/order/{order}', [\App\Http\Controllers\WorkflowController::class, 'destroyOrder'])->name('workflow.order.destroy');
     Route::delete('workflow/item/{item}', [\App\Http\Controllers\WorkflowController::class, 'destroyItem'])->name('workflow.item.destroy');
     Route::get('workflow/api/resigned-employees', [\App\Http\Controllers\WorkflowController::class, 'searchResignedEmployees'])->name('workflow.api.resigned');
     Route::get('workflow/api/global-employees', [\App\Http\Controllers\WorkflowController::class, 'searchGlobalEmployees'])->name('workflow.api.global');

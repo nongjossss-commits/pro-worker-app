@@ -47,6 +47,10 @@ class WorkflowController extends Controller
             'toggleAppointmentComplete', 'updateItemTeam', 'updateGroup',
             'updateNotifyOutFields', 'finalizeItem', 'cancelItem',
             'restoreItem', 'destroyItem',
+            // Card-level equivalents (allow_multiple_orders tabs only —
+            // see each method's own docblock) — same gate as their
+            // per-item counterparts above.
+            'finalizeOrder', 'restoreOrder', 'cancelOrder', 'destroyOrder',
         ]]);
     }
 
@@ -76,9 +80,21 @@ class WorkflowController extends Controller
         $activeTab = $tabs->where('slug', $activeTabSlug)->first();
 
         // 3. Query Orders for this Tab
+        // "งานที่เสร็จสิ้นแล้ว" — completed whole-card jobs (allow_multiple_orders
+        // tabs only, see finalizeOrder()) are hidden from the normal view by
+        // default, same as pre_production ones, and only ever surfaced via
+        // this separate toggle — there is no other filter/tab that shows them.
+        $showCompletedJobs = $request->boolean('view_completed');
+
         $query = ProductionOrder::with(['employer.jobOwner', 'workType', 'creator', 'updater'])
             ->whereHas('employer')
             ->where('status', '!=', 'pre_production'); // Active workflows
+
+        if ($showCompletedJobs) {
+            $query->where('status', 'completed');
+        } else {
+            $query->where('status', '!=', 'completed');
+        }
 
         if ($activeTab) {
             $query->where('work_type_id', $activeTab->id);
@@ -422,7 +438,7 @@ class WorkflowController extends Controller
         $workflowAutoSettings = $this->loadWorkflowAutoSettings();
         $mouGroupOptions = \App\Models\WorkPermitType::ordered()->pluck('name')->push('อื่นๆ')->all();
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users', 'workflowAutoSettings', 'mouGroupOptions'));
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users', 'workflowAutoSettings', 'mouGroupOptions', 'showCompletedJobs'));
     }
 
     /**
@@ -1822,6 +1838,59 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Core per-item finalize logic (the slug-specific employee-record side
+     * effects — mou_import/mou_renewal's immediate employer reassignment,
+     * notify_out's date-required guard + termination stamp — plus the
+     * status/completed_at/workflow_settings_applied write itself). Shared
+     * by finalizeItem() (the per-employee "Finish" button) and
+     * finalizeOrder()'s cascade (the per-CARD "Finish this job" button, for
+     * allow_multiple_orders tabs — see its docblock) so both entry points
+     * can never diverge on what "finishing an item" actually does.
+     *
+     * @throws \Exception with message 'NOTIFY_OUT_DATE_REQUIRED' if a
+     *         notify_out item is missing its date — in practice this can
+     *         only ever be thrown from finalizeItem() itself, since
+     *         notify_out tabs never have allow_multiple_orders=true and so
+     *         never reach finalizeOrder()'s cascade.
+     */
+    private function finalizeOneItem(ProductionItem $item, string $slug): void
+    {
+        // For 'notify_in' (Change Employer), we DELAY the update by 24 hours.
+        // So we DO NOT update the employee record here. The Scheduled Job will handle it.
+        if (in_array($slug, ['mou_import', 'mou_renewal'])) {
+            if ($item->employee) {
+                $item->employee->update([
+                    'employer_id' => $item->order->employer_id,
+                    'status' => 'active',
+                    'terminated_at' => null,
+                    'termination_reason' => null
+                ]);
+            }
+        } elseif ($slug === 'notify_out') {
+            // Block completion if the per-item notify_out_date wasn't set yet —
+            // the user must explicitly record WHEN the employee was notified out.
+            if (!$item->notify_out_date) {
+                throw new \Exception('NOTIFY_OUT_DATE_REQUIRED');
+            }
+            if ($item->employee) {
+                $item->employee->update([
+                    'terminated_at' => $item->notify_out_date,
+                    'termination_reason' => $item->notify_out_reason ?: null,
+                    'status' => 'resigned',
+                ]);
+            }
+        }
+
+        $item->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+            // Reset the 24h MOU auto-apply flag so a re-finalize re-applies
+            // the latest admin-configured settings (see ApplyWorkflowSettings).
+            'workflow_settings_applied' => false,
+        ]);
+    }
+
+    /**
      * Finalize/Complete an Item (Logic depends on WorkType).
      */
     public function finalizeItem(Request $request, $itemId)
@@ -1831,39 +1900,7 @@ class WorkflowController extends Controller
 
         try {
             DB::transaction(function () use ($item, $slug) {
-            // For 'notify_in' (Change Employer), we DELAY the update by 24 hours.
-            // So we DO NOT update the employee record here. The Scheduled Job will handle it.
-            if (in_array($slug, ['mou_import', 'mou_renewal'])) {
-                if ($item->employee) {
-                    $item->employee->update([
-                        'employer_id' => $item->order->employer_id,
-                        'status' => 'active',
-                        'terminated_at' => null,
-                        'termination_reason' => null
-                    ]);
-                }
-            } elseif ($slug === 'notify_out') {
-                // Block completion if the per-item notify_out_date wasn't set yet —
-                // the user must explicitly record WHEN the employee was notified out.
-                if (!$item->notify_out_date) {
-                    throw new \Exception('NOTIFY_OUT_DATE_REQUIRED');
-                }
-                if ($item->employee) {
-                    $item->employee->update([
-                        'terminated_at' => $item->notify_out_date,
-                        'termination_reason' => $item->notify_out_reason ?: null,
-                        'status' => 'resigned',
-                    ]);
-                }
-            }
-
-            $item->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-                // Reset the 24h MOU auto-apply flag so a re-finalize re-applies
-                // the latest admin-configured settings (see ApplyWorkflowSettings).
-                'workflow_settings_applied' => false,
-            ]);
+                $this->finalizeOneItem($item, $slug);
             });
         } catch (\Throwable $e) {
             if ($e->getMessage() === 'NOTIFY_OUT_DATE_REQUIRED') {
@@ -1965,6 +2002,144 @@ class WorkflowController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * "เสร็จสิ้นงานนี้" — finish the WHOLE employer card at once, for
+     * multi-card (allow_multiple_orders) tabs like MOU Import, where each
+     * card is its own one-off job/case rather than an ongoing shared bucket
+     * (see WorkType's docblock). Cascades the exact same per-item finalize
+     * logic finalizeItem() itself uses (via finalizeOneItem()) to every
+     * still-pending item in the card, using the SAME completed_at moment as
+     * the order's own — so every item's own pre-existing 24h Undo countdown
+     * (_item_card.blade.php) starts ticking in sync with the card's,
+     * without that Blade/JS needing to change at all. Only reachable for
+     * allow_multiple_orders tabs — every other tab keeps finishing
+     * per-employee exactly as before (see _item_card.blade.php's
+     * @unless(...) hiding the per-item Finish button only for these tabs).
+     */
+    public function finalizeOrder(Request $request, ProductionOrder $order)
+    {
+        $order->loadMissing('workType');
+        abort_unless($order->workType && $order->workType->allow_multiple_orders, 403, 'This action is only available for tabs that allow multiple cards per employer.');
+
+        if ($order->status === 'completed') {
+            return response()->json(['success' => false, 'message' => 'Job is already completed.'], 400);
+        }
+        if ($order->status === 'cancelled') {
+            return response()->json(['success' => false, 'message' => 'Cannot finish a cancelled job.'], 400);
+        }
+
+        $slug = $order->workType->slug ?? '';
+
+        DB::transaction(function () use ($order, $slug) {
+            $order->update(['status' => 'completed', 'completed_at' => now()]);
+
+            $items = $order->items()->where('status', 'pending')->with('employee')->get();
+            foreach ($items as $item) {
+                try {
+                    $this->finalizeOneItem($item, $slug);
+                } catch (\Throwable $e) {
+                    // A notify_out-only guard (missing notify_out_date) can
+                    // never actually fire here — notify_out tabs never have
+                    // allow_multiple_orders=true — but stay defensive: skip
+                    // rather than abort finishing the whole card over one
+                    // unexpectedly-invalid item.
+                    continue;
+                }
+            }
+        });
+
+        $orderStats = $this->calculateOrderStats($order->fresh());
+
+        return response()->json(['success' => true, 'order_stats' => $orderStats]);
+    }
+
+    /**
+     * "Undo" the whole-card finish, within the same 24h window
+     * finalizeOrder() started — mirrors restoreItem()'s per-item Undo.
+     * Since a multi-card tab's items are never finalized individually (the
+     * per-item Finish button is hidden for these tabs — see
+     * _item_card.blade.php), any item still 'completed' in this order can
+     * only have gotten there via finalizeOrder()'s own cascade, so it's
+     * safe to restore ALL of them back to pending here unconditionally.
+     */
+    public function restoreOrder(Request $request, ProductionOrder $order)
+    {
+        $order->loadMissing('workType');
+        abort_unless($order->workType && $order->workType->allow_multiple_orders, 403, 'This action is only available for tabs that allow multiple cards per employer.');
+
+        if ($order->status !== 'completed' || !$order->completed_at) {
+            return response()->json(['success' => false, 'message' => 'Job is not in a completed state.'], 400);
+        }
+        if ($order->completed_at->copy()->addHours(24)->isPast()) {
+            return response()->json(['success' => false, 'message' => 'The 24-hour undo window has expired.'], 400);
+        }
+
+        DB::transaction(function () use ($order) {
+            $order->update(['status' => 'active', 'completed_at' => null]);
+
+            foreach ($order->items()->where('status', 'completed')->get() as $item) {
+                $item->update([
+                    'status' => 'pending',
+                    'completed_at' => null,
+                    'workflow_settings_applied' => false,
+                ]);
+            }
+        });
+
+        $orderStats = $this->calculateOrderStats($order->fresh());
+
+        return response()->json(['success' => true, 'order_stats' => $orderStats]);
+    }
+
+    /**
+     * "ยกเลิก" the whole employer card — a plain status flip, exactly like
+     * cancelItem() at the item level (no cascade to the items inside; they
+     * keep whatever state they were already in). index()'s existing sort
+     * already sinks 'cancelled' orders to the bottom of the list, so no
+     * further view changes are needed for this to take effect.
+     */
+    public function cancelOrder(Request $request, ProductionOrder $order)
+    {
+        $order->loadMissing('workType');
+        abort_unless($order->workType && $order->workType->allow_multiple_orders, 403, 'This action is only available for tabs that allow multiple cards per employer.');
+
+        $order->update(['status' => 'cancelled']);
+
+        $orderStats = $this->calculateOrderStats($order->fresh());
+
+        return response()->json(['success' => true, 'order_stats' => $orderStats]);
+    }
+
+    /**
+     * "ลบ" the whole employer card — soft-delete, mirroring destroyItem()'s
+     * per-item behavior applied to every item inside first (including its
+     * "delete the employee too if they only existed for this onboarding"
+     * rule), since the DB's own FK cascade on production_items only fires
+     * on a real SQL DELETE, never on Eloquent's soft delete — so without
+     * this loop, soft-deleting the order alone would silently leave its
+     * items behind, still fully intact and undeleted.
+     */
+    public function destroyOrder(Request $request, ProductionOrder $order)
+    {
+        $order->loadMissing('workType');
+        abort_unless($order->workType && $order->workType->allow_multiple_orders, 403, 'This action is only available for tabs that allow multiple cards per employer.');
+
+        DB::transaction(function () use ($order) {
+            $items = $order->items()->with('employee')->get();
+            foreach ($items as $item) {
+                $employee = $item->employee;
+                $item->delete();
+                if ($employee && $employee->status === 'onboarding') {
+                    $employee->delete();
+                }
+            }
+
+            $order->delete();
+        });
+
+        return response()->json(['success' => true, 'message' => 'Job card deleted.']);
     }
 
     /**

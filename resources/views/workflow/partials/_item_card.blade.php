@@ -812,13 +812,18 @@
                         <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
                     </button>
 
-                    {{-- SAVE TO DB (Finalize) --}}
+                    {{-- SAVE TO DB (Finalize) — hidden for multi-card (allow_multiple_orders)
+                         tabs like MOU Import: each card there is its own one-off job, finished
+                         all at once via the card-level "Finish this job" button instead (see
+                         WorkflowController::finalizeOrder()), not employee-by-employee. --}}
+                    @unless($order->workType->allow_multiple_orders ?? false)
                     <button class="btn btn-sm btn-success rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"
                         id="btn-save-{{ $item->id }}"
                         title="Mark as Completed"
                         onclick="finalizeItem({{ $item->id }})">
                         <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Finish') }}</span>
                     </button>
+                    @endunless
 
                     {{-- CANCEL --}}
                     <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled) ? 'd-none' : '' }}"

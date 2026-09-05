@@ -240,6 +240,22 @@
             <button class="btn btn-secondary shadow-sm" onclick="openTrashModal()">
                 <i class="bi bi-trash-fill me-1"></i> {{ __('Trash') }}
             </button>
+            {{-- Whole-card "finish" (see WorkflowController::finalizeOrder()) hides a
+                 completed job from the normal view — this is the only way back to it,
+                 same idea as Trash but for finished jobs instead of deleted ones. --}}
+            @if(isset($activeTab) && $activeTab->allow_multiple_orders)
+                @php
+                    $completedToggleQuery = request()->except('view_completed');
+                    if (!$showCompletedJobs) {
+                        $completedToggleQuery['view_completed'] = 1;
+                    }
+                @endphp
+                <a href="{{ route('workflow.index', array_merge($completedToggleQuery, ['tab' => $activeTab->slug])) }}"
+                   class="btn {{ $showCompletedJobs ? 'btn-success' : 'btn-outline-success' }} shadow-sm fw-bold">
+                    <i class="bi bi-check-circle me-1"></i>
+                    {{ $showCompletedJobs ? __('Showing Completed Jobs') : __('Completed Jobs') }}
+                </a>
+            @endif
             @if(isset($activeTab) && $activeTab->allow_multiple_orders)
                 <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
                     <i class="bi bi-plus-lg me-1"></i> {{ __('Create Job') }}
@@ -331,12 +347,31 @@
                          $mouBorderColor = '#f59e0b'; // orange = pending classification
                      }
                  }
+
+                 // Card-level "finish whole job" Undo window — mirrors
+                 // _item_card.blade.php's own $canRestore/$expiresAtTimestamp,
+                 // just anchored on the ORDER's own completed_at instead of an
+                 // item's. Only ever relevant for allow_multiple_orders tabs
+                 // (see WorkflowController::finalizeOrder()).
+                 $orderCanRestore = false;
+                 $orderExpiresAtTimestamp = 0;
+                 // Flat green, matching _item_card.blade.php's own $cardClass for a
+                 // completed item — makes a finished job visually obvious at a
+                 // glance the same way a finished employee card already is.
+                 $isOrderCompleted = $order->status === 'completed';
+                 if ($order->status === 'completed' && $order->completed_at) {
+                     $orderExpiresAt = $order->completed_at->copy()->addHours(24);
+                     if ($orderExpiresAt->isFuture()) {
+                         $orderCanRestore = true;
+                         $orderExpiresAtTimestamp = $orderExpiresAt->timestamp * 1000;
+                     }
+                 }
             @endphp
             <div class="production-order-card-container w-100 mb-4">
-                <div class="card border-0 shadow-sm production-order-card position-relative {{ !$isActive ? 'grayscale-mode' : '' }}"
+                <div class="card border-0 shadow-sm production-order-card position-relative {{ !$isActive ? 'grayscale-mode' : '' }} {{ $isOrderCompleted ? 'bg-success bg-opacity-10 text-muted' : '' }}"
                      @if($mouBorderColor) style="border-left: 5px solid {{ $mouBorderColor }} !important;" @endif>
                 <div class="employer-sequence-number"></div>
-                    <div class="card-header bg-white border-bottom py-3 px-4" id="heading-{{ $order->id }}">
+                    <div class="card-header {{ $isOrderCompleted ? 'bg-success bg-opacity-10' : 'bg-white' }} border-bottom py-3 px-4" id="heading-{{ $order->id }}">
 
                     {{-- Inline Note Editor (Top Center) --}}
                     <div class="d-flex justify-content-center mb-2">
@@ -597,11 +632,95 @@
                                 </button>
                                 @endif
 
+                                {{-- Whole-card finish/cancel/delete — allow_multiple_orders tabs only,
+                                     each card here is its own one-off job (see
+                                     WorkflowController::finalizeOrder()'s docblock), finished all at
+                                     once instead of employee-by-employee (per-item Finish is hidden for
+                                     these tabs, see _item_card.blade.php). --}}
+                                @if(isset($activeTab) && $activeTab->allow_multiple_orders)
+                                    @if($order->status === 'active')
+                                        <button class="btn btn-success btn-sm ms-2 fw-bold px-3 shadow-sm"
+                                                onclick="finalizeOrder({{ $order->id }})"
+                                                title="{{ __('Finish this whole job') }}">
+                                            <i class="bi bi-check-lg"></i> <span class="d-none d-lg-inline">{{ __('Finish Job') }}</span>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm ms-2 fw-bold px-3"
+                                                onclick="cancelOrder({{ $order->id }})"
+                                                title="{{ __('Cancel this job') }}">
+                                            <i class="bi bi-x-circle"></i> <span class="d-none d-lg-inline">{{ __('Cancel') }}</span>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm ms-2 fw-bold px-3"
+                                                onclick="destroyOrder({{ $order->id }})"
+                                                title="{{ __('Delete this job card') }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    @elseif($order->status === 'completed')
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success ms-2 px-3 py-2">
+                                            <i class="bi bi-patch-check-fill me-1"></i>{{ __('Completed') }}
+                                        </span>
+                                        @if($orderCanRestore)
+                                        <div x-data="{
+                                            expires: {{ $orderExpiresAtTimestamp }},
+                                            text: '',
+                                            init() { this.tick(); setInterval(() => this.tick(), 60000); },
+                                            tick() {
+                                                 const now = new Date().getTime();
+                                                 const diff = this.expires - now;
+                                                 if (diff <= 0) { this.text = 'Expired'; }
+                                                 else {
+                                                     const hours = Math.floor(diff / (1000 * 60 * 60));
+                                                     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                                     this.text = hours + 'h ' + minutes + 'm';
+                                                 }
+                                            }
+                                        }" class="d-inline-block ms-2">
+                                            <button class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="restoreOrder({{ $order->id }})">
+                                                <i class="bi bi-arrow-counterclockwise"></i> {{ __('Undo') }}
+                                                <span class="badge bg-warning text-dark ms-1" x-text="text"></span>
+                                            </button>
+                                        </div>
+                                        @endif
+                                    @endif
+                                @endif
+
                                 <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $order->id }}">
                                     <i class="bi bi-chevron-down"></i>
                                 </button>
                             </div>
                         </div>
+
+                        {{-- COUNTDOWN TIMER (whole-card finish, within 24h) — same prominent
+                             badge as _item_card.blade.php's own "X Hours/Minutes remaining"
+                             block, just anchored on the ORDER's own completed_at. --}}
+                        @if($orderCanRestore)
+                        <div class="mt-3 w-100 d-flex justify-content-center" x-data="{
+                            expires: {{ $orderExpiresAtTimestamp }},
+                            displayText: '',
+                            init() {
+                                    this.update();
+                                    setInterval(() => this.update(), 60000);
+                            },
+                            update() {
+                                    const now = new Date().getTime();
+                                    const diff = this.expires - now;
+                                    if (diff <= 0) {
+                                        this.displayText = '{{ __('Locked') }}';
+                                    } else {
+                                        const totalMinutes = Math.floor(diff / (1000 * 60));
+                                        const hours = Math.floor(totalMinutes / 60);
+                                        const minutes = totalMinutes % 60;
+
+                                        if (hours >= 1) {
+                                            this.displayText = hours + ' {{ __('Hours remaining') }}';
+                                        } else {
+                                            this.displayText = minutes + ' {{ __('Minutes remaining') }}';
+                                        }
+                                    }
+                            }
+                        }">
+                            <span class="badge bg-success fs-6 shadow-sm px-3 py-2" x-text="displayText" x-show="displayText !== '{{ __('Locked') }}'"></span>
+                        </div>
+                        @endif
                     </div>
 
                     {{-- Order Custom Fields Drawer --}}
@@ -1074,6 +1193,109 @@ document.addEventListener('alpine:init', () => {
             .then(data => {
                 if (data.success) {
                     Swal.fire({ icon: 'success', title: data.message, timer: 1800, showConfirmButton: false })
+                        .then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', data.message || 'Failed', 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', err.message, 'error'));
+        });
+    };
+
+    // Whole-card finish/undo/cancel/delete — allow_multiple_orders tabs only
+    // (e.g. MOU Import), see WorkflowController::finalizeOrder() & friends.
+    window.finalizeOrder = function(orderId) {
+        Swal.fire({
+            title: @json(__('Finish this whole job?')),
+            text: @json(__('Every employee still pending in this card will be marked completed too. You can undo this within 24 hours.')),
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            confirmButtonText: @json(__('Yes, finish it')),
+            cancelButtonText: @json(__('Cancel'))
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            fetch(`/workflow/order/${orderId}/finalize`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: @json(__('Job finished')), timer: 1800, showConfirmButton: false })
+                        .then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', data.message || 'Failed', 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', err.message, 'error'));
+        });
+    };
+
+    window.restoreOrder = function(orderId) {
+        fetch(`/workflow/order/${orderId}/restore`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: @json(__('Job restored')), timer: 1500, showConfirmButton: false })
+                    .then(() => window.location.reload());
+            } else {
+                Swal.fire('Error', data.message || 'Failed', 'error');
+            }
+        })
+        .catch(err => Swal.fire('Error', err.message, 'error'));
+    };
+
+    window.cancelOrder = function(orderId) {
+        Swal.fire({
+            title: @json(__('Cancel this job?')),
+            text: @json(__('The card stays, marked as cancelled — nothing inside it is deleted.')),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#6c757d',
+            confirmButtonText: @json(__('Yes, cancel it')),
+            cancelButtonText: @json(__('No'))
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            fetch(`/workflow/order/${orderId}/cancel`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: @json(__('Job cancelled')), timer: 1500, showConfirmButton: false })
+                        .then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', data.message || 'Failed', 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error', err.message, 'error'));
+        });
+    };
+
+    window.destroyOrder = function(orderId) {
+        Swal.fire({
+            title: @json(__('Delete this job card?')),
+            text: @json(__('This moves the card and everyone in it to Trash — it is not destroyed, and can be restored from there.')),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: @json(__('Yes, delete it')),
+            cancelButtonText: @json(__('Cancel'))
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            fetch(`/workflow/order/${orderId}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: @json(__('Job card deleted')), timer: 1500, showConfirmButton: false })
                         .then(() => window.location.reload());
                 } else {
                     Swal.fire('Error', data.message || 'Failed', 'error');

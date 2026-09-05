@@ -22,6 +22,10 @@ class ProductionOrder extends Model
         'project_name',
         'description',
         'status',
+        // Card-level "finish whole job" 24h Undo window for multi-card
+        // (allow_multiple_orders) WorkType tabs — mirrors
+        // ProductionItem.completed_at; see WorkflowController::finalizeOrder().
+        'completed_at',
         'remarks',
         'financial_data',
         'created_by',
@@ -43,6 +47,7 @@ class ProductionOrder extends Model
         'financial_data' => 'array',
         'document_ready_at' => 'datetime',
         'financial_approved_at' => 'datetime',
+        'completed_at' => 'datetime',
         'mou_male_count' => 'integer',
         'mou_female_count' => 'integer',
     ];
