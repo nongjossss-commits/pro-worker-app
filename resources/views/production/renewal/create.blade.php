@@ -21,7 +21,15 @@
     @endif
 
     {{-- Pass the specific action route for RenewalController --}}
-    <form action="{{ $formAction }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ $formAction }}" method="POST" enctype="multipart/form-data"
+        data-duplicate-check-url="{{ route('employees.check_duplicate') }}"
+        data-duplicate-model-type="employee"
+        data-duplicate-fields='["employeePassport","employeeWorkPermit","pinkCardNo","employee_id_number","employeeEmail"]'
+        data-duplicate-label-title="{{ __('Duplicate data found') }}"
+        data-duplicate-label-proceed="{{ __('Save anyway') }}"
+        data-duplicate-label-fix="{{ __('Cancel, fix data first') }}"
+        data-duplicate-label-ok="{{ __('OK') }}"
+        data-duplicate-label-terminated="{{ __('Terminated') }}">
         @csrf
 
         @include('employees.partials.create_form_partial_content')

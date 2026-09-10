@@ -23,6 +23,28 @@
                         </div>
                     @endif
 
+                    {{-- Nothing was saved yet — the file was scanned for rows whose
+                         passport/work permit/pink card/ID number already belong to
+                         an existing employee, same identity fields the Employees
+                         menu itself warns about. Re-select the file (browsers don't
+                         allow restoring a file selection after a redirect) and tick
+                         the box below to import anyway, or fix the file first. --}}
+                    @if(session('import_duplicate_warning'))
+                        <div class="alert alert-danger">
+                            <strong>{{ __('Possible duplicate data found — nothing was imported yet.') }}</strong>
+                            <ul class="mb-0 mt-2">
+                                @foreach(session('import_duplicate_warning') as $dup)
+                                    <li>
+                                        {{ __('Row') }} {{ $dup['row'] }} ({{ $dup['name'] }}):
+                                        {{ $dup['label'] }} "{{ $dup['value'] }}"
+                                        {{ __('already belongs to') }} <strong>{{ $dup['matched_name'] }}</strong>
+                                        ({{ $dup['matched_employer'] }})
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div class="alert alert-info d-flex align-items-center mb-4">
                         <i class="bi bi-info-circle-fill me-3 fs-4"></i>
                         <div>
@@ -184,6 +206,15 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        @if(session('import_duplicate_warning'))
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="confirm_duplicates" value="1" id="confirm_duplicates">
+                                <label class="form-check-label" for="confirm_duplicates">
+                                    {{ __('I understand some rows above match existing employees, and want to import anyway.') }}
+                                </label>
+                            </div>
+                        @endif
 
                         <div class="d-flex justify-content-between">
                             @if(isset($back_route))

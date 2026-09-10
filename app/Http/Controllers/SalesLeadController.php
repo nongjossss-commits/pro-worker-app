@@ -603,6 +603,44 @@ class SalesLeadController extends Controller
             'destination' => 'required|string', // e.g. 'production.registration', 'production.renewal', 'workflow.notify_out'
         ]);
 
+        // Duplicate check — before creating anything. Every SalesLeadEmployee
+        // on this lead that doesn't already have a linked employee_id is
+        // about to become a brand-new Employee row (see the loop below);
+        // check its passport/work permit against everyone already in the
+        // system first, same identity fields the Employees menu itself
+        // warns about (see resources/js/duplicate-check.js). Unless the
+        // user already ticked "transition anyway" on the modal, stop here
+        // instead of silently creating a duplicate person.
+        if (!$request->boolean('confirm_duplicates')) {
+            $duplicateWarnings = [];
+            foreach ($sales->employees as $slEmp) {
+                if ($slEmp->employee_id) {
+                    continue; // already an existing, known employee — nothing new being created
+                }
+                foreach (['employeePassport' => 'เลขพาสปอร์ต', 'employeeWorkPermit' => 'เลขที่ใบอนุญาตทำงาน'] as $column => $label) {
+                    $value = trim((string) $slEmp->{$column});
+                    if ($value === '') {
+                        continue;
+                    }
+                    $match = Employee::withoutGlobalScope('employerTenancy')->with('employer')->where($column, $value)->first();
+                    if ($match) {
+                        $duplicateWarnings[] = [
+                            'name' => $slEmp->employeeNameTh ?: $slEmp->employeeNameEn,
+                            'label' => $label,
+                            'value' => $value,
+                            'matched_name' => $match->employeeNameTh ?: $match->employeeNameEn,
+                            'matched_employer' => $match->employer->employerNameTh ?? '-',
+                        ];
+                    }
+                }
+            }
+            if (!empty($duplicateWarnings)) {
+                return back()
+                    ->with('transition_duplicate_warning', $duplicateWarnings)
+                    ->with('transition_duplicate_lead_id', $sales->id);
+            }
+        }
+
         DB::beginTransaction();
         try {
             // 1. Create Real Employer if it doesn't exist

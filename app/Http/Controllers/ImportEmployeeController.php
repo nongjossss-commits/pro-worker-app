@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\DuplicateDataHelper;
 use App\Models\Employee;
 use App\Models\Employer;
 use App\Models\ProductionOrder;
@@ -336,6 +337,23 @@ class ImportEmployeeController extends Controller
         }
 
         $path = $file->getPathname();
+
+        // Duplicate check pass — before any DB writes. Reads only the 4
+        // identity columns (passport/work permit/pink card/ID number —
+        // the same fields DuplicateDataHelper's "ข้อมูลซ้ำ" review page
+        // already uses) from every row and checks them against existing
+        // employees system-wide. Unless the user already ticked "import
+        // anyway" (import.blade.php's confirm_duplicates checkbox), stop
+        // here and let them review instead of silently creating duplicate
+        // people — mirrors the same warn-before-save protection the main
+        // Employees/Registration/Renewal/Workflow "add employee" forms
+        // already have (see resources/js/duplicate-check.js).
+        if (!$request->boolean('confirm_duplicates')) {
+            $duplicateWarnings = $this->scanForDuplicateEmployees($path);
+            if (!empty($duplicateWarnings)) {
+                return back()->withInput()->with('import_duplicate_warning', $duplicateWarnings);
+            }
+        }
 
         $count = 0;
         $errors = [];
@@ -724,6 +742,78 @@ class ImportEmployeeController extends Controller
             Log::error($e);
             return back()->with('error', 'Import failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Lightweight pre-scan for the duplicate-check pass in store() —
+     * deliberately reads only the 4 identity columns via a fresh, separate
+     * spreadsheet load rather than reusing/restructuring the main
+     * import loop (which also handles images, quotas, and dozens of other
+     * columns) — keeps this check fully isolated so it can never affect
+     * the existing, working import logic. Same exact-match, cross-employer
+     * lookup as EmployeeController::checkDuplicate() and
+     * DuplicateDataHelper::getGroups().
+     */
+    protected function scanForDuplicateEmployees(string $path): array
+    {
+        $warnings = [];
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+            try {
+                $sheet = $spreadsheet->getSheet(0);
+            } catch (\Exception $e) {
+                $sheet = $spreadsheet->getActiveSheet();
+            }
+
+            $startRow = 13;
+            $highestRow = $sheet->getHighestRow();
+
+            for ($rowIdx = $startRow; $rowIdx <= $highestRow; $rowIdx++) {
+                $nameEn = trim((string) $sheet->getCell('C' . $rowIdx)->getValue());
+                $nameTh = trim((string) $sheet->getCell('E' . $rowIdx)->getValue());
+                if ($nameEn === '' && $nameTh === '') {
+                    continue; // empty row
+                }
+
+                $fieldsToCheck = [
+                    'employeePassport' => trim((string) $sheet->getCell('H' . $rowIdx)->getValue()),
+                    'employeeWorkPermit' => trim((string) $sheet->getCell('J' . $rowIdx)->getValue()),
+                    'pinkCardNo' => trim((string) $sheet->getCell('M' . $rowIdx)->getValue()),
+                    'employee_id_number' => trim((string) $sheet->getCell('S' . $rowIdx)->getValue()),
+                ];
+
+                foreach ($fieldsToCheck as $column => $value) {
+                    if ($value === '') {
+                        continue;
+                    }
+
+                    $match = Employee::withoutGlobalScope('employerTenancy')
+                        ->with('employer')
+                        ->where($column, $value)
+                        ->first();
+
+                    if ($match) {
+                        $warnings[] = [
+                            'row' => $rowIdx,
+                            'name' => $nameTh ?: $nameEn,
+                            'label' => DuplicateDataHelper::EMPLOYEE_FIELDS[$column] ?? $column,
+                            'value' => $value,
+                            'matched_name' => $match->employeeNameTh ?: $match->employeeNameEn,
+                            'matched_employer' => $match->employer->employerNameTh ?? '-',
+                        ];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // A failed pre-scan (corrupt file, unexpected format, etc.)
+            // must never block a real import — the main parse loop below
+            // will surface a proper error if the file is genuinely bad.
+            Log::warning('scanForDuplicateEmployees failed: ' . $e->getMessage());
+            return [];
+        }
+
+        return $warnings;
     }
 
     /**

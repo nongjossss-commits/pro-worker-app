@@ -48,6 +48,24 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+    {{-- Nothing was transitioned yet — see SalesLeadController::transition().
+         The matching lead's own modal (_transition_modal.blade.php) re-opens
+         itself below with a "transition anyway" checkbox. --}}
+    @if(session('transition_duplicate_warning'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>{{ __('Possible duplicate data found — nothing was transitioned yet.') }}</strong>
+            <ul class="mb-0 mt-2">
+                @foreach(session('transition_duplicate_warning') as $dup)
+                    <li>
+                        {{ $dup['name'] }}: {{ $dup['label'] }} "{{ $dup['value'] }}"
+                        {{ __('already belongs to') }} <strong>{{ $dup['matched_name'] }}</strong>
+                        ({{ $dup['matched_employer'] }})
+                    </li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
 
     {{-- Kanban Board: ใช้ class kanban-board เพื่อบังคับ 3 คอลัมน์ --}}
     <div class="kanban-board">

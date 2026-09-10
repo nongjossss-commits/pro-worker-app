@@ -19,6 +19,14 @@
  * Once the check passes (or the user confirms "save anyway"), it calls
  * form.requestSubmit()/.submit(), which fires the real 'submit' event
  * exactly once and hands off to whatever that page normally does.
+ *
+ * This automatic path only ever fires for a real `type="submit"` button
+ * sitting INSIDE the `<form>` — a page whose "save" button lives outside
+ * the form (e.g. a modal-footer button wired to its own fetch() handler,
+ * type="button") never triggers it. For those, see
+ * `window.runManualDuplicateCheck()` below — same check + same popup,
+ * called explicitly by that page's own handler instead of being
+ * auto-intercepted.
  */
 document.addEventListener('click', function (e) {
     const btn = e.target.closest('button[type="submit"], input[type="submit"]');
@@ -32,10 +40,46 @@ document.addEventListener('click', function (e) {
     }
     e.preventDefault();
     e.stopPropagation();
-    runDuplicateCheck(form);
+
+    performCheck(form).then(function (duplicates) {
+        if (duplicates.length === 0) {
+            proceed(form);
+            return;
+        }
+        confirmDuplicates(form, duplicates).then(function (ok) {
+            if (ok) {
+                proceed(form);
+            }
+        });
+    });
 }, true);
 
-function runDuplicateCheck(form) {
+/**
+ * Manual entry point for a "save" action that ISN'T a plain form submit
+ * (e.g. a modal-footer button with its own fetch() handler) — reads the
+ * exact same `data-duplicate-*` attributes off `form` as the automatic
+ * path above, runs the same check + same SweetAlert2 popup, but instead
+ * of submitting anything itself, resolves a boolean the caller decides
+ * what to do with: `true` = no duplicates (or the user confirmed "save
+ * anyway"), safe to proceed with whatever save logic the caller already
+ * has; `false` = the user chose "cancel, fix data first" — the caller
+ * must not save.
+ *
+ *   window.runManualDuplicateCheck(form).then(function (ok) {
+ *       if (!ok) return;
+ *       // ... existing fetch()/save logic here, unchanged ...
+ *   });
+ */
+window.runManualDuplicateCheck = function (form) {
+    return performCheck(form).then(function (duplicates) {
+        if (duplicates.length === 0) {
+            return true;
+        }
+        return confirmDuplicates(form, duplicates);
+    });
+};
+
+function performCheck(form) {
     const fields = JSON.parse(form.dataset.duplicateFields || '[]');
     const checkUrl = form.dataset.duplicateCheckUrl;
     const excludeId = form.dataset.duplicateExcludeId || '';
@@ -50,7 +94,7 @@ function runDuplicateCheck(form) {
         payload.append('exclude_id', excludeId);
     }
 
-    fetch(checkUrl, {
+    return fetch(checkUrl, {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': tokenMeta ? tokenMeta.getAttribute('content') : '',
@@ -60,18 +104,11 @@ function runDuplicateCheck(form) {
         body: payload.toString(),
     })
         .then(function (r) { return r.json(); })
-        .then(function (data) {
-            const duplicates = data.duplicates || [];
-            if (duplicates.length === 0) {
-                proceed(form);
-                return;
-            }
-            showDuplicateWarning(form, duplicates);
-        })
+        .then(function (data) { return data.duplicates || []; })
         .catch(function () {
             // A failed check (network hiccup, etc.) must never block a
             // real save — this is a UX safety net, not a hard gate.
-            proceed(form);
+            return [];
         });
 }
 
@@ -85,7 +122,14 @@ function proceed(form) {
     setTimeout(function () { form.dataset.dupCheckPassed = '0'; }, 3000);
 }
 
-function showDuplicateWarning(form, duplicates) {
+/**
+ * Shows the SweetAlert2 comparison popup and resolves a Promise<boolean>:
+ * true if the user picked "save anyway" (or the duplicate wasn't
+ * blocking-severity and they confirmed), false if they picked "cancel,
+ * fix data first". A blocking duplicate only ever gets an "OK" — there is
+ * no "proceed" option, so it always resolves false.
+ */
+function confirmDuplicates(form, duplicates) {
     const modelType = form.dataset.duplicateModelType;
     const blocking = duplicates.some(function (d) { return d.blocking; });
     const labels = {
@@ -126,7 +170,7 @@ function showDuplicateWarning(form, duplicates) {
         ? '<p class="small text-muted text-start mt-2 mb-0">' + escapeHtml(labels.suffixHint) + '</p>'
         : '';
 
-    Swal.fire({
+    return Swal.fire({
         icon: blocking ? 'error' : 'warning',
         title: labels.title,
         html: '<div class="text-start">' + rows + '</div>' + suffixHint,
@@ -137,9 +181,7 @@ function showDuplicateWarning(form, duplicates) {
         reverseButtons: true,
         width: 600,
     }).then(function (result) {
-        if (!blocking && result.isConfirmed) {
-            proceed(form);
-        }
+        return !blocking && result.isConfirmed;
     });
 }
 

@@ -48,6 +48,18 @@
                             </ul>
                         </div>
                     </div>
+
+                    {{-- Only shown after SalesLeadController::transition() found a
+                         possible duplicate for THIS lead and sent the user back
+                         here — see the alert + auto-reopen script below. --}}
+                    @if(session('transition_duplicate_lead_id') == $lead->id)
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" name="confirm_duplicates" value="1" id="confirm_duplicates-{{ $lead->id }}">
+                            <label class="form-check-label" for="confirm_duplicates-{{ $lead->id }}">
+                                {{ __('I understand some employees above match existing records, and want to transition anyway.') }}
+                            </label>
+                        </div>
+                    @endif
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
@@ -59,6 +71,22 @@
         </div>
     </div>
 </div>
+
+@if(session('transition_duplicate_lead_id') == $lead->id)
+    {{-- Deliberately NOT @once (unlike the block below) — this modal partial
+         is included once per lead in a loop, and only the ONE lead that
+         actually triggered the duplicate warning should auto-reopen. --}}
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('transitionModal-{{ $lead->id }}');
+            if (modalEl) {
+                new bootstrap.Modal(modalEl).show();
+            }
+        });
+    </script>
+    @endpush
+@endif
 
 @push('scripts')
 @once

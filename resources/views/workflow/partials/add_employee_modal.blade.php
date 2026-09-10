@@ -121,7 +121,15 @@
 
                     {{-- Tab 2: New Manual --}}
                     <div class="tab-pane fade" id="tab-new" role="tabpanel" aria-labelledby="new-tab">
-                        <form action="{{ route('workflow.store') }}" method="POST" id="formNew" enctype="multipart/form-data">
+                        <form action="{{ route('workflow.store') }}" method="POST" id="formNew" enctype="multipart/form-data"
+                            data-duplicate-check-url="{{ route('employees.check_duplicate') }}"
+                            data-duplicate-model-type="employee"
+                            data-duplicate-fields='["employeePassport","employeeWorkPermit","pinkCardNo","employee_id_number","employeeEmail"]'
+                            data-duplicate-label-title="{{ __('Duplicate data found') }}"
+                            data-duplicate-label-proceed="{{ __('Save anyway') }}"
+                            data-duplicate-label-fix="{{ __('Cancel, fix data first') }}"
+                            data-duplicate-label-ok="{{ __('OK') }}"
+                            data-duplicate-label-terminated="{{ __('Terminated') }}">
                             @csrf
                             {{-- We need these hidden inputs here too if we want to attach to an order --}}
                             {{-- However, for New Employee, we usually use the inputs inside the partial or context --}}
@@ -322,6 +330,27 @@
                     return;
                 }
 
+                // "New / Manual" creates a brand-new Employee row — check for
+                // identity-field duplicates (same passport/work permit/pink
+                // card/ID number/email as someone already in the system)
+                // before saving, same warning used across the app. Not
+                // relevant for "Select Existing" (attaching an already-known
+                // employee, nothing new is created). This form's own
+                // "submit" button lives outside it (in the modal footer) so
+                // resources/js/duplicate-check.js's automatic click
+                // listener never sees it — call it explicitly instead; see
+                // window.runManualDuplicateCheck()'s own docblock.
+                if (targetId === '#tab-new' && window.runManualDuplicateCheck) {
+                    window.runManualDuplicateCheck(form).then(function (ok) {
+                        if (ok) submitAddEmployeeForm(form);
+                    });
+                } else {
+                    submitAddEmployeeForm(form);
+                }
+            });
+        }
+
+        function submitAddEmployeeForm(form) {
                 const originalText = submitBtn.innerHTML;
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
@@ -409,7 +438,6 @@
                     submitBtn.innerHTML = originalText;
                     Swal.fire('{{ __("Error") }}', '{{ __("Network error or server error.") }}', 'error');
                 });
-            });
         }
     });
 
