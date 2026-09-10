@@ -967,6 +967,16 @@
                         @endcan
                     @endif
 
+                    {{-- MANAGE TEAM (Pre-Production only — same modal/endpoint
+                         Workflow uses, see workflow/partials/_item_card.blade.php) --}}
+                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                        onclick="openManageTeamModal({{ $employee->production_item->id }}, this)"
+                        data-group-name="{{ $employee->production_item->group_name }}"
+                        data-order-id="{{ $order->id ?? '' }}"
+                        title="{{ __('Manage Team') }}">
+                        <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
+                    </button>
+
                     {{-- CANCEL --}}
                     <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
                         id="btn-cancel-{{ $employee->id }}"

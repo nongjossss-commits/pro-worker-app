@@ -813,12 +813,34 @@
                 if(uniqueGroups.size > 0) {
                     wrapper.classList.remove('d-none');
                     uniqueGroups.forEach(name => {
+                        const group = document.createElement('div');
+                        group.className = 'btn-group';
+
                         const badge = document.createElement('button');
-                        badge.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3';
+                        badge.className = 'btn btn-sm btn-outline-secondary rounded-start-pill px-3';
                         badge.type = 'button';
                         badge.innerText = name;
+                        badge.title = '{{ __('Click to select this team') }}';
                         badge.onclick = () => { nameInput.value = name; };
-                        list.appendChild(badge);
+                        group.appendChild(badge);
+
+                        const renameBtn = document.createElement('button');
+                        renameBtn.className = 'btn btn-sm btn-outline-secondary px-2';
+                        renameBtn.type = 'button';
+                        renameBtn.title = '{{ __('Rename team') }}';
+                        renameBtn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+                        renameBtn.onclick = () => window.renameTeamPill(orderId, name);
+                        group.appendChild(renameBtn);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'btn btn-sm btn-outline-danger rounded-end-pill px-2';
+                        deleteBtn.type = 'button';
+                        deleteBtn.title = '{{ __('Delete team') }}';
+                        deleteBtn.innerHTML = '<i class="bi bi-trash-fill"></i>';
+                        deleteBtn.onclick = () => window.deleteTeamPill(orderId, name);
+                        group.appendChild(deleteBtn);
+
+                        list.appendChild(group);
                     });
                 }
             }
@@ -826,6 +848,86 @@
 
         const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
         modal.show();
+    }
+
+    // Rename a team/batch across every item that shares it in this order —
+    // see WorkflowController::renameGroup(). Refreshes both the pill list
+    // (by re-opening the modal for the same item) and the on-screen group
+    // headers via refreshOrderContent().
+    window.renameTeamPill = function(orderId, oldName) {
+        Swal.fire({
+            title: '{{ __('Rename team') }}',
+            input: 'text',
+            inputValue: oldName,
+            showCancelButton: true,
+            confirmButtonText: '{{ __('Save') }}',
+            cancelButtonText: '{{ __('Cancel') }}',
+            inputValidator: (value) => {
+                if (!value || !value.trim()) return '{{ __('Please enter a team name') }}';
+            }
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            fetch(`/workflow/order/${orderId}/team/rename`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ old_name: oldName, new_name: result.value.trim() })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    refreshOrderContent(orderId);
+                    const itemId = document.getElementById('team_item_id').value;
+                    const btn = { dataset: { groupName: result.value.trim(), orderId: orderId } };
+                    window.openManageTeamModal(itemId, btn);
+                    Swal.fire({ icon: 'success', title: '{{ __('Saved') }}', timer: 1200, showConfirmButton: false });
+                } else {
+                    Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to rename team.') }}', 'error');
+                }
+            });
+        });
+    }
+
+    // Delete a team/batch label across every item that shares it in this
+    // order — see WorkflowController::deleteGroup(). Only clears the
+    // group_name label; employees/items themselves are never touched.
+    window.deleteTeamPill = function(orderId, groupName) {
+        Swal.fire({
+            icon: 'warning',
+            title: '{{ __('Delete this team?') }}',
+            text: '{{ __('This only removes the team label. Employees will NOT be deleted.') }}',
+            showCancelButton: true,
+            confirmButtonText: '{{ __('Delete') }}',
+            confirmButtonColor: '#dc3545',
+            cancelButtonText: '{{ __('Cancel') }}'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            fetch(`/workflow/order/${orderId}/team/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ name: groupName })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    refreshOrderContent(orderId);
+                    const itemId = document.getElementById('team_item_id').value;
+                    const btn = { dataset: { groupName: '', orderId: orderId } };
+                    window.openManageTeamModal(itemId, btn);
+                    Swal.fire({ icon: 'success', title: '{{ __('Deleted') }}', timer: 1200, showConfirmButton: false });
+                } else {
+                    Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to delete team.') }}', 'error');
+                }
+            });
+        });
+    }
+
+    // Clear the currently-open item's team back to "no team" — just
+    // blanks the name field and reuses saveItemTeam()'s existing save/
+    // refresh flow, same endpoint (empty group_name is treated as no
+    // team everywhere: grouping, headers, the "existing teams" pill scan).
+    window.clearItemTeam = function() {
+        document.getElementById('workflow_team_name').value = '';
+        saveItemTeam();
     }
 
     window.saveItemTeam = function() {

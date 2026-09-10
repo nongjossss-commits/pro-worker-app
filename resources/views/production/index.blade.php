@@ -679,6 +679,9 @@
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearItemTeam()" title="{{ __('Remove this employee from their team') }}">
+                    <i class="bi bi-x-circle me-1"></i> {{ __('No Team') }}
+                </button>
                 <button type="button" class="btn btn-primary px-4" onclick="saveItemTeam()">
                     <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
                 </button>

@@ -1301,6 +1301,47 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Rename a team/batch (group_name) across every item that shares it
+     * within one order — used by the "Manage Team" modal's pill rename
+     * action in both Workflow and Pre-Production (same underlying
+     * ProductionItem.group_name, see updateGroup() above).
+     */
+    public function renameGroup(Request $request, $orderId)
+    {
+        $data = $request->validate([
+            'old_name' => 'required|string|max:255',
+            'new_name' => 'required|string|max:255',
+        ]);
+
+        ProductionItem::query()->visibleToUser()
+            ->where('production_order_id', $orderId)
+            ->where('group_name', $data['old_name'])
+            ->update(['group_name' => $data['new_name']]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Delete a team/batch label (group_name) across every item that shares
+     * it within one order — only clears the label, never touches the
+     * employees/items themselves. Used by the "Manage Team" modal's pill
+     * delete action in both Workflow and Pre-Production.
+     */
+    public function deleteGroup(Request $request, $orderId)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        ProductionItem::query()->visibleToUser()
+            ->where('production_order_id', $orderId)
+            ->where('group_name', $data['name'])
+            ->update(['group_name' => null]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * API: Search Employees for "Notify In" (Resigned Status / Terminated).
      */
     public function searchResignedEmployees(Request $request)

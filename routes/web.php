@@ -671,6 +671,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('workflow/order/{order}/remarks', [\App\Http\Controllers\WorkflowController::class, 'updateOrderRemarks'])->name('workflow.order.remarks');
     Route::post('workflow/order/{order}/mou-import-type', [\App\Http\Controllers\WorkflowController::class, 'updateMouImportType'])->name('workflow.order.mou_import_type');
     Route::post('workflow/item/{item}/group', [\App\Http\Controllers\WorkflowController::class, 'updateGroup'])->name('workflow.item.group');
+    Route::post('workflow/order/{order}/team/rename', [\App\Http\Controllers\WorkflowController::class, 'renameGroup'])->name('workflow.order.team.rename');
+    Route::post('workflow/order/{order}/team/delete', [\App\Http\Controllers\WorkflowController::class, 'deleteGroup'])->name('workflow.order.team.delete');
     Route::post('workflow/item/{item}/finalize', [\App\Http\Controllers\WorkflowController::class, 'finalizeItem'])->name('workflow.item.finalize');
     Route::post('workflow/item/{item}/notify-out-fields', [\App\Http\Controllers\WorkflowController::class, 'updateNotifyOutFields'])->name('workflow.item.notify_out_fields');
     Route::post('workflow/item/{item}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelItem'])->name('workflow.item.cancel');
