@@ -6,6 +6,41 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <script>
+        // Mark every same-origin fetch() as an AJAX request (matching what
+        // jQuery's $.ajax already does automatically) — without this, a
+        // background fetch() (e.g. the chat widget's new-message poll,
+        // every 10s on every page) that happens to run right as the
+        // session has expired isn't recognized by Laravel as an AJAX call,
+        // so it gets treated like a real page visit: the raw JSON
+        // endpoint's own URL gets remembered as "where the user was
+        // headed", and the next successful login sends them straight to
+        // it — a blank page showing raw JSON text — instead of back to a
+        // real page. Setting this header up front, before any other
+        // script runs, makes every fetch() call in the app correctly
+        // self-identify as AJAX, so its URL is never saved for a
+        // post-login redirect in the first place. Placed here (must run
+        // before any other <script>, including the Tailwind CDN tag
+        // below) rather than only patching individual fetch() call sites,
+        // so this protects every current and future one at once.
+        (function () {
+            var originalFetch = window.fetch;
+            window.fetch = function (resource, options) {
+                options = options || {};
+                var url = typeof resource === 'string' ? resource : '';
+                var isSameOrigin = url === '' || (url.startsWith('/') && !url.startsWith('//')) || url.startsWith(window.location.origin);
+                if (isSameOrigin) {
+                    var headers = new Headers(options.headers || {});
+                    if (!headers.has('X-Requested-With')) {
+                        headers.set('X-Requested-With', 'XMLHttpRequest');
+                    }
+                    options = Object.assign({}, options, { headers: headers });
+                }
+                return originalFetch(resource, options);
+            };
+        })();
+    </script>
+
     <title>@yield('title', 'Company Records')</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

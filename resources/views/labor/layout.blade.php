@@ -4,6 +4,29 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    {{-- Same global fetch()-marks-itself-as-AJAX fix as layouts/app.blade.php —
+         see that file's comment for the full explanation. Placed here too so
+         any background poll added to this module gets the same protection. --}}
+    <script>
+        (function () {
+            var originalFetch = window.fetch;
+            window.fetch = function (resource, options) {
+                options = options || {};
+                var url = typeof resource === 'string' ? resource : '';
+                var isSameOrigin = url === '' || (url.startsWith('/') && !url.startsWith('//')) || url.startsWith(window.location.origin);
+                if (isSameOrigin) {
+                    var headers = new Headers(options.headers || {});
+                    if (!headers.has('X-Requested-With')) {
+                        headers.set('X-Requested-With', 'XMLHttpRequest');
+                    }
+                    options = Object.assign({}, options, { headers: headers });
+                }
+                return originalFetch(resource, options);
+            };
+        })();
+    </script>
+
     <title>@yield('title', 'Pro Walker Labour')</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
