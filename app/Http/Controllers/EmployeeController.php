@@ -844,6 +844,18 @@ public function create(Request $request) // เพิ่ม Request $request เ
             unset($data['outsource_code']);
         }
 
+        // Prevent passport_issue_place from being cleared out by inline
+        // updates the same way — several "quick inline update" widgets
+        // (e.g. production/registration/_employee_card.blade.php's
+        // insurance-type and RA-number quick edits, _item_card.blade.php's
+        // equivalent) POST a small partial FormData straight to this same
+        // update() route without this field, same shape of request that
+        // already needed this exact guard for employeeEmail/outsource_code
+        // above after each was independently found to go blank on save.
+        if (!array_key_exists('passport_issue_place', $request->all())) {
+            unset($data['passport_issue_place']);
+        }
+
         $validated = $data;
         // --- V-6: Step 3: Define ALL 18 File Fields ---
         $fileFields = [
