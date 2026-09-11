@@ -13,8 +13,24 @@
             var originalFetch = window.fetch;
             window.fetch = function (resource, options) {
                 options = options || {};
-                var url = typeof resource === 'string' ? resource : '';
-                var isSameOrigin = url === '' || (url.startsWith('/') && !url.startsWith('//')) || url.startsWith(window.location.origin);
+                // Same fix as layouts/app.blade.php — resolve the real URL
+                // for Request/URL-object resources instead of falling
+                // through to '' (which isSameOrigin's `url === ''` clause
+                // then wrongly treated as same-origin, leaking
+                // X-Requested-With onto cross-origin requests and breaking
+                // their CORS preflight). See that file's comment for the
+                // full explanation.
+                var url;
+                if (typeof resource === 'string') {
+                    url = resource;
+                } else if (typeof Request !== 'undefined' && resource instanceof Request) {
+                    url = resource.url;
+                } else if (typeof URL !== 'undefined' && resource instanceof URL) {
+                    url = resource.href;
+                } else {
+                    url = null;
+                }
+                var isSameOrigin = url !== null && (url === '' || (url.startsWith('/') && !url.startsWith('//')) || url.startsWith(window.location.origin));
                 if (isSameOrigin) {
                     var headers = new Headers(options.headers || {});
                     if (!headers.has('X-Requested-With')) {

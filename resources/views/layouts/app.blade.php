@@ -27,8 +27,31 @@
             var originalFetch = window.fetch;
             window.fetch = function (resource, options) {
                 options = options || {};
-                var url = typeof resource === 'string' ? resource : '';
-                var isSameOrigin = url === '' || (url.startsWith('/') && !url.startsWith('//')) || url.startsWith(window.location.origin);
+                // Resolve the actual URL regardless of how the caller passed
+                // it in — a plain string, a Request object (e.g. libraries
+                // that build `new Request(url, ...)` internally), or a URL
+                // object. BUG FIX: the old `typeof resource === 'string' ?
+                // resource : ''` fell through to '' for Request/URL objects,
+                // and isSameOrigin's `url === ''` clause then treated that
+                // as same-origin — so every fetch() using a Request/URL
+                // object, even to a completely different host, silently got
+                // X-Requested-With added. That extra header turns an
+                // otherwise "simple" cross-origin GET into one requiring a
+                // CORS preflight, which a third-party host may not allow —
+                // this is exactly what broke @imgly/background-removal's
+                // model fetch from staticimgly.com (reported as "Background
+                // removal failed on both GPU and CPU").
+                var url;
+                if (typeof resource === 'string') {
+                    url = resource;
+                } else if (typeof Request !== 'undefined' && resource instanceof Request) {
+                    url = resource.url;
+                } else if (typeof URL !== 'undefined' && resource instanceof URL) {
+                    url = resource.href;
+                } else {
+                    url = null; // Unrecognized shape — do NOT assume same-origin.
+                }
+                var isSameOrigin = url !== null && (url === '' || (url.startsWith('/') && !url.startsWith('//')) || url.startsWith(window.location.origin));
                 if (isSameOrigin) {
                     var headers = new Headers(options.headers || {});
                     if (!headers.has('X-Requested-With')) {
