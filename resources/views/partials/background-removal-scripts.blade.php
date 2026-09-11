@@ -52,10 +52,18 @@
                     }
 
                     // --- OPTIMIZATION: Resize large images ---
-                    // Downscaling to 1200px max dimension significantly speeds up processing (e.g. 10x faster for 12MP photos)
-                    // while retaining enough quality for ID cards.
+                    // Downscaling speeds up processing significantly (e.g.
+                    // much faster for 12MP+ phone photos) while still being
+                    // far more than an ID card needs. Raised from 1200 to
+                    // 1600px — 1200 was cutting away fine hair/edge detail
+                    // the AI model could otherwise have used, making cutouts
+                    // look rougher than necessary; 1600 keeps meaningfully
+                    // more of that detail for a modest cost, without
+                    // approaching the multi-second-per-megapixel territory
+                    // that would hurt users already on weaker/GPU-less
+                    // machines (see the GPU/CPU fallback right below).
                     if (onProgress) onProgress(true, 'Optimizing image size...');
-                    const resizedFile = await this.resizeImage(file, 1200);
+                    const resizedFile = await this.resizeImage(file, 1600);
 
                     if (onProgress) onProgress(true, 'Removing background (this may take a moment)...');
 
@@ -136,7 +144,18 @@
 
             // 4. Return based on color type
             if (colorType === 'transparent') {
-                return transparentBlob;
+                // "Remove BG" used to return the AI model's raw mask
+                // untouched — the edge refinement below (which fixes hair
+                // wisps / fine detail, see _refineMask) only ever ran for
+                // the colored-background options. Run it here too so
+                // Remove BG gets the same clean edges as White/Light Blue BG.
+                if (onProgress) onProgress(true, 'Refining edges...');
+                try {
+                    if (cancellationToken && cancellationToken.cancelled) throw new Error('Cancelled by user');
+                    return await this.refineTransparent(transparentBlob);
+                } finally {
+                    if (onProgress) onProgress(false);
+                }
             }
 
             // 5. Composite for colors
@@ -295,6 +314,36 @@
             });
         },
 
+        // Same edge refinement as compositeBackground(), but outputs a
+        // transparent PNG instead of compositing over a color — used by
+        // the "Remove BG" option so it gets the same clean edges as
+        // White/Light Blue BG instead of the AI model's raw, unrefined mask.
+        refineTransparent(imageBlob, opts = {}) {
+            const {
+                opaqueCutoff = 200,
+                transparentCutoff = 50,
+                erode = 1,
+                feather = true,
+            } = opts;
+
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const w = img.width, h = img.height;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const data = ctx.getImageData(0, 0, w, h);
+                    const refined = this._refineMask(data, { opaqueCutoff, transparentCutoff, erode, feather });
+                    ctx.putImageData(refined, 0, 0);
+                    canvas.toBlob((blob) => resolve(blob), 'image/png', 0.95);
+                };
+                img.onerror = reject;
+                img.src = URL.createObjectURL(imageBlob);
+            });
+        },
+
         // Threshold + morphological erosion + optional edge feathering on the
         // alpha channel only. RGB is left untouched so foreground colors stay
         // vivid.
@@ -302,7 +351,11 @@
             const w = imageData.width, h = imageData.height;
             const src = imageData.data;
 
-            // Build a binary opacity map first (0 = out, 1 = in)
+            // Build a binary "solid interior" map (0 = not solid, 1 = solid)
+            // — only pixels at or above opaqueCutoff are candidates. This
+            // feeds the erosion step below, whose job is to strip the
+            // background-color-bled ring immediately around genuinely
+            // solid foreground (see erosion comment further down).
             const inside = new Uint8Array(w * h);
             for (let i = 0, p = 0; i < src.length; i += 4, p++) {
                 inside[p] = src[i + 3] >= opaqueCutoff ? 1 : 0;
@@ -327,28 +380,50 @@
                 eroded = next;
             }
 
-            // Apply back to alpha channel with optional 1px feather:
-            //   inside pixel adjacent to outside → alpha 128 (soft edge)
-            //   inside surrounded by inside → alpha 255 (crisp)
-            //   outside → alpha 0
+            // Apply back to alpha channel:
+            //   core solid, surrounded by core solid  -> 255 (crisp)
+            //   core solid, adjacent to non-solid      -> 180 (soft edge)
+            //   was solid but stripped by erosion       -> 0 (the
+            //     background-color-bled ring the erosion pass exists to
+            //     discard — unchanged from before)
+            //   NEW — genuinely soft pixel per the AI's own mask (hair
+            //   wisps, glasses rims, motion-blurred fringes: alpha below
+            //   opaqueCutoff, so never a "solid" candidate at all) ->
+            //   alpha scaled linearly between transparentCutoff and
+            //   opaqueCutoff, preserving the gradient. BUG FIX: this whole
+            //   band used to be force-zeroed too (transparentCutoff was
+            //   declared but never actually used), which discarded the
+            //   AI's soft-edge estimate entirely and produced hard,
+            //   jagged cutouts around hair/fine detail.
+            const range = Math.max(1, opaqueCutoff - transparentCutoff);
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
                     const p = y * w + x;
                     const i = p * 4;
-                    if (!eroded[p]) {
+
+                    if (eroded[p]) {
+                        if (!feather) { src[i + 3] = 255; continue; }
+                        const up = y > 0 ? eroded[p - w] : 1;
+                        const dn = y < h - 1 ? eroded[p + w] : 1;
+                        const lt = x > 0 ? eroded[p - 1] : 1;
+                        const rt = x < w - 1 ? eroded[p + 1] : 1;
+                        src[i + 3] = (up && dn && lt && rt) ? 255 : 180;
+                        continue;
+                    }
+
+                    if (inside[p]) {
+                        // Solid per the threshold, but stripped by erosion.
                         src[i + 3] = 0;
                         continue;
                     }
-                    if (!feather) {
-                        src[i + 3] = 255;
-                        continue;
+
+                    const origAlpha = src[i + 3];
+                    if (origAlpha <= transparentCutoff) {
+                        src[i + 3] = 0;
+                    } else {
+                        const t = (origAlpha - transparentCutoff) / range;
+                        src[i + 3] = Math.round(t * 255);
                     }
-                    // Feather: check if any 4-neighbour is outside
-                    const up = y > 0 ? eroded[p - w] : 1;
-                    const dn = y < h - 1 ? eroded[p + w] : 1;
-                    const lt = x > 0 ? eroded[p - 1] : 1;
-                    const rt = x < w - 1 ? eroded[p + 1] : 1;
-                    src[i + 3] = (up && dn && lt && rt) ? 255 : 180;
                 }
             }
             return imageData;
