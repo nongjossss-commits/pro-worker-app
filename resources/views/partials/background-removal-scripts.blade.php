@@ -272,11 +272,22 @@
         //      partial-alpha ring) is discarded instead of blended.
         //   3. Soft feather in the transition band so the cut looks natural.
         //
-        // opts: { opaqueCutoff:200, transparentCutoff:50, erode:1, feather:true }
+        // opts: { opaqueCutoff:200, transparentCutoff:190, erode:1, feather:true }
+        //
+        // transparentCutoff was originally 50 (a wide 150-unit gradient band
+        // between it and opaqueCutoff, meant to preserve the AI's own soft
+        // edge estimate for hair wisps instead of hard-cutting it). In
+        // testing that band turned out to be far wider than a real photo's
+        // natural antialiasing — every edge on the whole silhouette (not
+        // just hair) got several pixels of gradual semi-transparency, which
+        // reads as a visible "traced outline" once viewed at normal size,
+        // even though each individual pixel's alpha is smooth. Narrowing it
+        // to 190 (just a 10-unit band) removes that visible outline while
+        // still keeping noticeably softer hair edges than a hard 0/255 cut.
         compositeBackground(imageBlob, colorHex, opts = {}) {
             const {
                 opaqueCutoff = 200,
-                transparentCutoff = 50,
+                transparentCutoff = 190,
                 erode = 1,
                 feather = true,
             } = opts;
@@ -321,7 +332,7 @@
         refineTransparent(imageBlob, opts = {}) {
             const {
                 opaqueCutoff = 200,
-                transparentCutoff = 50,
+                transparentCutoff = 190,
                 erode = 1,
                 feather = true,
             } = opts;
@@ -381,20 +392,28 @@
             }
 
             // Apply back to alpha channel:
-            //   core solid, surrounded by core solid  -> 255 (crisp)
-            //   core solid, adjacent to non-solid      -> 180 (soft edge)
+            //   core solid (survived erosion)          -> 255 (crisp)
             //   was solid but stripped by erosion       -> 0 (the
             //     background-color-bled ring the erosion pass exists to
             //     discard — unchanged from before)
-            //   NEW — genuinely soft pixel per the AI's own mask (hair
-            //   wisps, glasses rims, motion-blurred fringes: alpha below
+            //   genuinely soft pixel per the AI's own mask (hair wisps,
+            //   glasses rims, motion-blurred fringes: alpha below
             //   opaqueCutoff, so never a "solid" candidate at all) ->
             //   alpha scaled linearly between transparentCutoff and
-            //   opaqueCutoff, preserving the gradient. BUG FIX: this whole
-            //   band used to be force-zeroed too (transparentCutoff was
-            //   declared but never actually used), which discarded the
-            //   AI's soft-edge estimate entirely and produced hard,
-            //   jagged cutouts around hair/fine detail.
+            //   opaqueCutoff, preserving the gradient. BUG FIX (first
+            //   pass): this whole band used to be force-zeroed too
+            //   (transparentCutoff was declared but never actually used),
+            //   which discarded the AI's soft-edge estimate entirely and
+            //   produced hard, jagged cutouts around hair/fine detail.
+            //
+            //   BUG FIX (this pass): eroded-boundary pixels used to get a
+            //   hardcoded flat alpha of 180 instead of 255 ("feathering"
+            //   predating the gradient band above) — a uniform
+            //   semi-transparent ring traced the whole silhouette at a
+            //   constant, artificial opacity, on top of whatever gradient
+            //   was already happening. Eroded pixels are just opaque now;
+            //   the gradient band above already provides all the real
+            //   antialiasing the AI's mask supports.
             const range = Math.max(1, opaqueCutoff - transparentCutoff);
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
@@ -402,12 +421,7 @@
                     const i = p * 4;
 
                     if (eroded[p]) {
-                        if (!feather) { src[i + 3] = 255; continue; }
-                        const up = y > 0 ? eroded[p - w] : 1;
-                        const dn = y < h - 1 ? eroded[p + w] : 1;
-                        const lt = x > 0 ? eroded[p - 1] : 1;
-                        const rt = x < w - 1 ? eroded[p + 1] : 1;
-                        src[i + 3] = (up && dn && lt && rt) ? 255 : 180;
+                        src[i + 3] = 255;
                         continue;
                     }
 
