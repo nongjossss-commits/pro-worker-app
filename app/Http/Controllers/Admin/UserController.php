@@ -301,6 +301,22 @@ class UserController extends Controller
             // Revocations are enforced in User::hasPermissionTo().
             if (in_array($request->role_name, ['admin', 'super-admin'], true)) {
                 $user->update(['revoked_permissions' => null]);
+
+                // Admin is the one exception: 'move-attachments' is
+                // explicitly carved out of the admin Gate::before bypass
+                // (see AppServiceProvider), so it's the only checkbox the
+                // edit form actually shows for Admin (see
+                // admin/users/edit.blade.php's $adminDelegatablePermissions)
+                // — sync just that one permission from it. Super Admin gets
+                // no checkboxes at all and is untouched here.
+                if ($request->role_name === 'admin') {
+                    $checkedPermissions = $request->input('permissions', []);
+                    if (in_array('move-attachments', $checkedPermissions, true)) {
+                        $user->givePermissionTo('move-attachments');
+                    } else {
+                        $user->revokePermissionTo('move-attachments');
+                    }
+                }
             } else {
                 // Compare submitted checkboxes against the new role's base permission
                 // set: extra checks beyond the role's base become direct grants (as

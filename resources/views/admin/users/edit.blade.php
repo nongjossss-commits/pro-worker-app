@@ -142,12 +142,24 @@
                     </div>
                     @endif
 
-                    <div class="mt-6" x-show="!['admin', 'super-admin'].includes(selectedRole)" x-transition>
+                    <div class="mt-6" x-show="selectedRole !== 'super-admin'" x-transition>
                         <h3 class="text-lg font-medium">{{ __('Delegate Permissions') }}</h3>
-                        <p class="text-xs text-gray-500 mt-1">{{ __('Ticked = this ID currently has access. Untick to revoke below the role\'s default, or tick extra ones to grant beyond it.') }}</p>
+                        <p class="text-xs text-gray-500 mt-1" x-show="selectedRole !== 'admin'">{{ __('Ticked = this ID currently has access. Untick to revoke below the role\'s default, or tick extra ones to grant beyond it.') }}</p>
+                        <p class="text-xs text-gray-500 mt-1" x-show="selectedRole === 'admin'" style="display: none;">{{ __('Admin has full access to everything else already — the items below are the only ones that must be granted individually.') }}</p>
                         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {{--
+                                Admin bypasses every permission check automatically (see the
+                                Gate::before in AppServiceProvider) EXCEPT the ones explicitly
+                                carved out of that bypass — currently just 'move-attachments',
+                                which Super Admin must delegate to a specific Admin the same way
+                                as Staff. Ticking any OTHER checkbox for an Admin would have zero
+                                effect (Gate::before already short-circuits before Spatie's own
+                                check ever runs), so only permissions listed in the in_array()
+                                below are shown when Admin is selected — keep this list in sync
+                                with AppServiceProvider's Gate::before.
+                            --}}
                             @foreach ($allPermissions as $permission)
-                                <div>
+                                <div x-show="selectedRole !== 'admin' || {{ in_array($permission->name, ['move-attachments'], true) ? 'true' : 'false' }}">
                                     <label for="perm-{{ $permission->id }}" class="inline-flex items-center">
                                         <input id="perm-{{ $permission->id }}" type="checkbox" name="permissions[]" value="{{ $permission->name }}"
                                             {{ in_array($permission->name, $initialCheckedPermissions, true) ? 'checked' : '' }}
@@ -156,16 +168,16 @@
                                             >
                                         <span class="ml-2 text-sm text-gray-600">
                                             {{ \App\Helpers\PermissionHelper::getLabel($permission->name) }}
-                                            <span class="text-red-600" x-show="isRevokedFromRole('{{ $permission->name }}')">({{ __('revoked') }})</span>
-                                            <span class="text-blue-600" x-show="isExtraGrant('{{ $permission->name }}')">({{ __('extra') }})</span>
+                                            <span class="text-red-600" x-show="selectedRole !== 'admin' && isRevokedFromRole('{{ $permission->name }}')">({{ __('revoked') }})</span>
+                                            <span class="text-blue-600" x-show="selectedRole === 'admin' ? checkedState['{{ $permission->name }}'] : isExtraGrant('{{ $permission->name }}')">({{ __('granted') }})</span>
                                         </span>
                                     </label>
                                 </div>
                             @endforeach
                         </div>
                     </div>
-                    <div class="mt-6 text-sm text-gray-500" x-show="['admin', 'super-admin'].includes(selectedRole)" x-transition style="display: none;">
-                        {{ __('Admin and Super Admin always have full access — individual permissions cannot be restricted for these roles.') }}
+                    <div class="mt-6 text-sm text-gray-500" x-show="selectedRole === 'super-admin'" x-transition style="display: none;">
+                        {{ __('Super Admin always has full access — individual permissions cannot be restricted for this role.') }}
                     </div>
 
 
