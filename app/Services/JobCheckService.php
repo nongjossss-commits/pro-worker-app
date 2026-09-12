@@ -7,6 +7,7 @@ use App\Models\JobCheckSession;
 use App\Models\JobCheckSessionSnapshot;
 use App\Models\ProductionItem;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -168,28 +169,56 @@ class JobCheckService
      */
     public function completeSession(JobCheckSession $session, Carbon $now): array
     {
-        [$moved, $notMoved] = $this->diff($session, $now);
+        // BUG FIX: this used to flip status -> 'completed' only as its very
+        // last statement, with nothing guarding the diff/export work above
+        // it — if any of that threw (a bad employee photo file breaking the
+        // Excel Drawing embed, a disk-full/permission error, etc.), the
+        // session stayed 'active' in the database forever for that user,
+        // and EnforceJobCheckMode confines by reading exactly that column,
+        // so the only way out was logging out and back in (which doesn't
+        // even touch this row) — effectively permanent until someone
+        // manually fixed the DB. Now any failure here marks the session
+        // 'failed' (excluded from JobCheckSession::scopeCurrent(), so the
+        // middleware stops confining immediately) and re-throws so the
+        // existing frontend error handling (jobCheckFinish()'s alert) still
+        // fires exactly as before.
+        try {
+            [$moved, $notMoved] = $this->diff($session, $now);
 
-        Storage::disk('local')->makeDirectory("job-check/{$session->id}");
-        $this->writeWorkbook($moved, Storage::disk('local')->path("job-check/{$session->id}/moved.xlsx"));
-        $this->writeWorkbook($notMoved, Storage::disk('local')->path("job-check/{$session->id}/not_moved.xlsx"));
+            Storage::disk('local')->makeDirectory("job-check/{$session->id}");
+            $this->writeWorkbook($moved, Storage::disk('local')->path("job-check/{$session->id}/moved.xlsx"));
+            $this->writeWorkbook($notMoved, Storage::disk('local')->path("job-check/{$session->id}/not_moved.xlsx"));
 
-        $businessDate = AccountingPeriodService::businessDate($session->started_at ?? $now);
-        $sequence = (int) (JobCheckSession::where('business_date', $businessDate->toDateString())
-            ->where('status', 'completed')
-            ->max('sequence_in_day') ?? 0) + 1;
+            $businessDate = AccountingPeriodService::businessDate($session->started_at ?? $now);
+            $sequence = (int) (JobCheckSession::where('business_date', $businessDate->toDateString())
+                ->where('status', 'completed')
+                ->max('sequence_in_day') ?? 0) + 1;
 
-        $session->update([
-            'status' => 'completed',
-            'ended_at' => $now,
-            'business_date' => $businessDate,
-            'sequence_in_day' => $sequence,
-        ]);
+            $session->update([
+                'status' => 'completed',
+                'ended_at' => $now,
+                'business_date' => $businessDate,
+                'sequence_in_day' => $sequence,
+            ]);
 
-        return [
-            'moved_count' => array_sum(array_map('count', $moved)),
-            'not_moved_count' => array_sum(array_map('count', $notMoved)),
-        ];
+            return [
+                'moved_count' => array_sum(array_map('count', $moved)),
+                'not_moved_count' => array_sum(array_map('count', $notMoved)),
+            ];
+        } catch (\Throwable $e) {
+            Log::error('JobCheckService::completeSession failed — marking session failed instead of leaving it stuck active', [
+                'job_check_session_id' => $session->id,
+                'user_id' => $session->user_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            $session->update([
+                'status' => 'failed',
+                'ended_at' => $now,
+            ]);
+
+            throw $e;
+        }
     }
 
     // ------------------------------------------------------------------

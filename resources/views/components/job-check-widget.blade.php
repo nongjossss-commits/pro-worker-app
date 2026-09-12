@@ -235,6 +235,22 @@
             try { sessionStorage.setItem(STORAGE_KEY, v); } catch (e) {}
         }
 
+        // Self-healing: if this user has no active/paused session server-side
+        // right now, this tab should never stay confined — clear a stale
+        // marker immediately. BUG FIX: Finish and Cancel never explicitly
+        // cleared this marker themselves (only the manual "leave this tab"
+        // button did, and that button disappears the moment the mode ends),
+        // so it used to stay 'in' forever after finishing/cancelling,
+        // silently re-arming confinement + the X-Job-Check-Tab header on
+        // every future request in this tab. Checking server truth on every
+        // page load covers Finish, Cancel, and the stale-session auto-closer
+        // cron uniformly, without needing to patch each exit path. This does
+        // NOT interfere with jobCheckLeaveTab()/jobCheckJoinTab() below,
+        // since those only matter while a session genuinely IS active.
+        if (!@json((bool) $jobCheckSession)) {
+            try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        }
+
         var params = new URLSearchParams(window.location.search);
         if (params.get('_jc') === '1') {
             setTabMode('in');
