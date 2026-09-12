@@ -32,6 +32,11 @@
                 <i class="bi bi-sliders"></i> Settings
             </button>
 
+            <button @click="previewSample()" class="btn btn-outline-primary btn-sm flex items-center gap-2" :disabled="isPreviewing" title="ดูตัวอย่างเอกสารพร้อมข้อความตัวอย่าง (ไม่ต้อง Save ก่อน)">
+                <span x-show="isPreviewing" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <i class="bi bi-eye" x-show="!isPreviewing"></i> Preview
+            </button>
+
             <button @click="saveMapping()" class="btn btn-primary btn-sm flex items-center gap-2" :disabled="isSaving">
                 <span x-show="isSaving" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 <i class="bi bi-save" x-show="!isSaving"></i> Save Template
@@ -565,6 +570,7 @@
                 currentEmployeeSlot: 1,
                 searchQuery: '',
                 isSaving: false,
+                isPreviewing: false,
                 isUploadingImage: false,
                 editingIndex: null,
 
@@ -1392,6 +1398,47 @@
                     console.error(error);
                 } finally {
                     this.isSaving = false;
+                }
+            },
+
+            // "Preview" toolbar button — renders the CURRENT in-browser
+            // field layout (not yet saved) with the same dummyData already
+            // used for the on-canvas preview text, so a template editor
+            // can check real positioning/font-size/alignment without
+            // leaving the builder. Nothing is persisted; opens the PDF
+            // inline in a new tab (closing it just returns to this tab,
+            // which still has every unsaved edit intact) — repeat
+            // adjust → Preview as many times as needed before Save.
+            async previewSample() {
+                this.isPreviewing = true;
+                try {
+                    const itemsToPreview = JSON.parse(JSON.stringify(this.items));
+
+                    const response = await fetch('{{ route("admin.pdf-templates.preview-sample", $template) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            field_mapping: itemsToPreview,
+                            sample_data: this.dummyData
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Preview failed');
+                    }
+
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                } catch (error) {
+                    showToast('Error generating preview: ' + error.message, 'danger');
+                    console.error(error);
+                } finally {
+                    this.isPreviewing = false;
                 }
             }
         }; // Return object end

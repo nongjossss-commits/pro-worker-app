@@ -316,6 +316,7 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:pdf_templates'])->
     Route::post('pdf-templates/import', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'import'])->name('pdf-templates.import');
     Route::get('pdf-templates/{pdf_template}/file', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'file'])->name('pdf-templates.file');
     Route::get('pdf-templates/{pdf_template}/preview', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'preview'])->name('pdf-templates.preview');
+    Route::post('pdf-templates/{pdf_template}/preview-sample', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'previewSample'])->name('pdf-templates.preview-sample');
     Route::resource('pdf-templates', \App\Http\Controllers\Admin\PdfTemplateController::class)->except(['show']);
     Route::get('pdf-templates/{pdf_template}/builder', [\App\Http\Controllers\Admin\PdfTemplateController::class, 'builder'])->name('pdf-templates.builder');
 });

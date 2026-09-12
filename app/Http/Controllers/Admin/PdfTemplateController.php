@@ -423,6 +423,35 @@ class PdfTemplateController extends Controller
         }
     }
 
+    /**
+     * Builder "Preview" button — renders the field layout currently in the
+     * browser (possibly not yet saved) with sample placeholder text, so a
+     * template editor can check position/size/alignment without leaving
+     * the builder or generating a real employee document. Nothing is
+     * persisted; the template's own saved field_mapping is untouched.
+     */
+    public function previewSample(Request $request, PdfTemplate $pdf_template, PdfGeneratorService $pdfService)
+    {
+        $this->authorize('edit-pdf-templates', $pdf_template);
+
+        $request->validate([
+            'field_mapping' => 'nullable|array',
+            'sample_data' => 'nullable|array',
+        ]);
+
+        try {
+            $content = $pdfService->generatePreviewPdf($pdf_template, $request->field_mapping, $request->sample_data);
+
+            return response($content, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="preview.pdf"',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("PDF Sample Preview Error: " . $e->getMessage());
+            return response()->json(['message' => 'Failed to generate preview: ' . $e->getMessage()], 422);
+        }
+    }
+
     public function file(Request $request, PdfTemplate $pdf_template)
     {
         $this->authorize('view-pdf-templates');

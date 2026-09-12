@@ -319,7 +319,15 @@ class PdfGeneratorService
         return $results;
     }
 
-    public function generatePreviewPdf(PdfTemplate $template)
+    /**
+     * $fieldMappingOverride / $sampleValues are optional — when omitted,
+     * behavior is identical to before (reads $template->field_mapping,
+     * db-type fields show as "[$key]" bracket placeholders). Passing both
+     * lets the Builder page preview in-progress, not-yet-saved field
+     * positions with realistic sample text instead — see
+     * PdfTemplateController::previewSample().
+     */
+    public function generatePreviewPdf(PdfTemplate $template, ?array $fieldMappingOverride = null, ?array $sampleValues = null)
     {
         $pdf = new Fpdi();
 
@@ -365,7 +373,7 @@ class PdfGeneratorService
                 $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $pdf->useTemplate($templateId);
 
-                $items = collect($template->field_mapping)->where('page', $pageNo);
+                $items = collect($fieldMappingOverride ?? $template->field_mapping)->where('page', $pageNo);
 
                 foreach ($items as $item) {
                     $x = ($item['x'] / 100) * $size['width'];
@@ -413,7 +421,7 @@ class PdfGeneratorService
                         $text = $item['text'] ?? '';
                     } elseif ($item['type'] === 'db') {
                         $key = $item['key'] ?? 'data';
-                        $text = "[$key]";
+                        $text = $sampleValues !== null ? ($sampleValues[$key] ?? "[$key]") : "[$key]";
                     }
 
                     if ($text) {
