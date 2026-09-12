@@ -468,9 +468,9 @@
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#" id="bulk-download-btn"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
                         <li><a class="dropdown-item" href="#" id="bulk-transfer-btn"><i class="bi bi-arrow-left-right me-2"></i>{{ __('Transfer') }}</a></li>
-                        @if(auth()->user()->hasRole('super-admin'))
+                        @can('move-attachments')
                         <li><a class="dropdown-item text-warning-emphasis" href="#" id="bulk-move-attachments-btn"><i class="bi bi-folder-symlink-fill me-2"></i>{{ __('Move Attachment Files') }}</a></li>
-                        @endif
+                        @endcan
                         <li><a class="dropdown-item" href="#" id="bulk-send-data-btn"><i class="bi bi-send me-2"></i>{{ __('Send Data') }}</a></li>
                         @can('manage-tickets')
                         <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>

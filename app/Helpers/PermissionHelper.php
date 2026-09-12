@@ -67,6 +67,7 @@ class PermissionHelper
         'manage-labor-ledger' => ['th' => 'จัดการสมุดบัญชี Pro Walker Labor', 'en' => 'Manage Labor Ledger', 'zh' => '管理劳工账簿'],
         'approve-production' => ['th' => 'อนุมัติงาน Pre-Production', 'en' => 'Approve Production', 'zh' => '批准生产'],
         'manage-own-workflow' => ['th' => 'จัดการ Workflow ของตนเอง', 'en' => 'Manage Own Workflow', 'zh' => '管理自己的工作流程'],
+        'move-attachments' => ['th' => 'โยกย้ายไฟล์แนบ (Move Attachment Files)', 'en' => 'Move Attachment Files', 'zh' => '移动附件文件'],
     ];
 
     public static function getLabel($permissionName)

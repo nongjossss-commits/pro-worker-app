@@ -67,9 +67,9 @@
             <i class="bi bi-person-up me-2"></i>{{ __('ย้ายนายจ้าง') }}
         </a>
     </li>
-    @if(auth()->user()->hasRole('super-admin'))
+    @can('move-attachments')
     <li><a class="dropdown-item text-warning-emphasis" href="#" id="history-bulk-move-attachments-btn"><i class="bi bi-folder-symlink-fill me-2"></i>{{ __('Move Attachment Files') }}</a></li>
-    @endif
+    @endcan
     <li><a class="dropdown-item" href="#" id="history-bulk-advanced-export-btn"><i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Advanced Export') }}</a></li>
     @can('manage-tickets')
     <li><a class="dropdown-item" href="#" id="history-bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>

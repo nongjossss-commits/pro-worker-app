@@ -66,6 +66,18 @@ class AppServiceProvider extends ServiceProvider
                 return in_array($user->labor_access_level, ['view', 'edit'], true) ? true : null;
             }
 
+            // 'move-attachments' (Super Admin's "Move Attachment Files" bulk
+            // tool) is explicitly opt-in even for Admin — per explicit
+            // request, Admin must be individually ticked by a Super Admin
+            // via admin.users.edit's Delegate Permissions list, same as
+            // Staff, rather than getting it automatically like every other
+            // permission. Returning null here (not false) defers to the
+            // normal per-user permission check instead of denying outright.
+            // Super Admin is untouched — still always bypasses.
+            if ($ability === 'move-attachments') {
+                return $user->hasRole('super-admin') ? true : null;
+            }
+
             return $user->hasRole('admin') || $user->hasRole('super-admin') ? true : null;
         });
 

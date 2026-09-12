@@ -876,7 +876,7 @@
                     </a>
 
                     <x-job-check-widget />
-                    @if(auth()->check() && auth()->user()->hasRole('super-admin'))
+                    @if(auth()->check() && auth()->user()->can('move-attachments'))
                         <x-bulk-move-attachments-modal />
                     @endif
                 </div>

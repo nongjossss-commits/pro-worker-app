@@ -1554,16 +1554,18 @@ public function create(Request $request) // เพิ่ม Request $request เ
     }
 
     /**
-     * Super Admin only — move/swap/merge one attachment slot into another
-     * for a checkbox-selected batch of employees. Replaces the old
-     * settings-page "swap all employees system-wide" tool, which was too
-     * blunt: different resolution groups often have their attachments in
-     * different positions, so a blanket move would corrupt unrelated
-     * employees. This only ever touches the IDs explicitly selected.
+     * Super Admin (and any Admin/Staff explicitly delegated the
+     * 'move-attachments' permission via admin.users.edit) only — move/swap/
+     * merge one attachment slot into another for a checkbox-selected batch
+     * of employees. Replaces the old settings-page "swap all employees
+     * system-wide" tool, which was too blunt: different resolution groups
+     * often have their attachments in different positions, so a blanket
+     * move would corrupt unrelated employees. This only ever touches the
+     * IDs explicitly selected.
      */
     public function bulkMoveAttachments(Request $request)
     {
-        if (!auth()->user()->hasRole('super-admin')) {
+        if (!auth()->user()->can('move-attachments')) {
             abort(403);
         }
 
