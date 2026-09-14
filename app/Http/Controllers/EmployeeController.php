@@ -931,6 +931,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeeWorkPermit' => ['column' => 'employeeWorkPermit', 'label' => 'เลขที่ใบอนุญาตทำงาน', 'blocking' => false],
             'pinkCardNo' => ['column' => 'pinkCardNo', 'label' => 'เลขบัตรชมพู', 'blocking' => false],
             'employee_id_number' => ['column' => 'employee_id_number', 'label' => 'เลขประจำตัว', 'blocking' => false],
+            'name_list_number' => ['column' => 'name_list_number', 'label' => 'เลข RA', 'blocking' => false],
             'employeeEmail' => ['column' => 'email', 'label' => 'อีเมล', 'blocking' => true],
         ];
 

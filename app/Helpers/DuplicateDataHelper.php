@@ -21,6 +21,7 @@ class DuplicateDataHelper
         'employeeWorkPermit' => 'เลขที่ใบอนุญาตทำงาน',
         'pinkCardNo' => 'เลขบัตรชมพู',
         'employee_id_number' => 'เลขประจำตัว',
+        'name_list_number' => 'เลข RA',
     ];
 
     public const EMPLOYER_FIELDS = [

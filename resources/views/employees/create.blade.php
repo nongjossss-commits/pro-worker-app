@@ -23,7 +23,7 @@
     <form action="{{ route('employees.store') }}" method="POST" enctype="multipart/form-data"
         data-duplicate-check-url="{{ route('employees.check_duplicate') }}"
         data-duplicate-model-type="employee"
-        data-duplicate-fields='["employeePassport","employeeWorkPermit","pinkCardNo","employee_id_number","employeeEmail"]'
+        data-duplicate-fields='["employeePassport","employeeWorkPermit","pinkCardNo","employee_id_number","name_list_number","employeeEmail"]'
         data-duplicate-label-title="{{ __('Duplicate data found') }}"
         data-duplicate-label-proceed="{{ __('Save anyway') }}"
         data-duplicate-label-fix="{{ __('Cancel, fix data first') }}"
