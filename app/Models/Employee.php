@@ -455,6 +455,17 @@ class Employee extends Model
         return $this->hasMany(\App\Models\EmployeeRenewalLink::class);
     }
 
+    // One independent appointment per ResolutionTab this employee is
+    // visible in (their own "home" tab, or any Renewal tab they're
+    // dual-listed into) — see EmployeeAppointment's docblock. Never read
+    // this employee's own appointment_date/location/completed_at columns
+    // directly for Registration/Renewal display — those are legacy/unused,
+    // kept only so nothing already set before this table existed was lost.
+    public function appointments()
+    {
+        return $this->hasMany(\App\Models\EmployeeAppointment::class);
+    }
+
     // --- New Relationships for Registration Process ---
     public function registrationSteps()
     {

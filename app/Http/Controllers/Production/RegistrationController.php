@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Production;
 use App\Http\Controllers\Controller;
 use App\Helpers\ActivityLogHelper;
 use App\Models\Employee;
+use App\Models\EmployeeAppointment;
 use App\Models\Employer;
 use App\Models\ProductionOrder;
 use App\Models\RegistrationStep;
@@ -65,19 +66,25 @@ class RegistrationController extends Controller
         $start = \Carbon\Carbon::now()->startOfDay();
         $end = \Carbon\Carbon::now()->addDays($days)->endOfDay();
 
+        $tabId = $this->currentTab->id;
         $query = Employee::query()
-            ->where('resolution_tab_id', $this->currentTab->id)
+            ->where('resolution_tab_id', $tabId)
             ->whereIn('status', ['registration_pending', 'registration_completed'])
-            ->whereNotNull('appointment_date')
-            ->whereBetween('appointment_date', [$start, $end])
-            ->whereNull('appointment_completed_at')
+            ->whereHas('appointments', function ($q) use ($tabId, $start, $end) {
+                $q->where('resolution_tab_id', $tabId)
+                    ->whereNotNull('appointment_date')
+                    ->whereBetween('appointment_date', [$start, $end])
+                    ->whereNull('appointment_completed_at');
+            })
             ->with(['employer']);
 
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $upcomingAppointments = $query->orderBy('appointment_date', 'asc')->get();
+        $upcomingAppointments = $query->get();
+        $this->applyTabAppointments($upcomingAppointments, $tabId);
+        $upcomingAppointments = $upcomingAppointments->sortBy('appointment_date')->values();
 
         return view('production.registration.dashboard', array_merge(compact('upcomingAppointments'), $this->getTabViewData('registration')));
     }
@@ -153,16 +160,26 @@ class RegistrationController extends Controller
                  $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
                        ->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
-                 $totalEmployeesQuery->whereNotNull('appointment_date');
+                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
+                     $aq->where('resolution_tab_id', $this->currentTab->id)->whereNotNull('appointment_date');
+                 });
             } elseif ($filter === 'appointment_not_scheduled') {
                  $totalEmployeesQuery->whereIn('status', ['registration_pending', 'registration_completed'])
-                       ->whereNull('appointment_date');
+                       ->whereDoesntHave('appointments', function ($aq) {
+                           $aq->where('resolution_tab_id', $this->currentTab->id)->whereNotNull('appointment_date');
+                       });
             } elseif ($filter === 'appointment_pending') {
-                 $totalEmployeesQuery->whereNotNull('appointment_date')
-                       ->whereNull('appointment_completed_at');
+                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
+                     $aq->where('resolution_tab_id', $this->currentTab->id)
+                        ->whereNotNull('appointment_date')
+                        ->whereNull('appointment_completed_at');
+                 });
             } elseif ($filter === 'appointment_completed') {
-                 $totalEmployeesQuery->whereNotNull('appointment_date')
-                       ->whereNotNull('appointment_completed_at');
+                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
+                     $aq->where('resolution_tab_id', $this->currentTab->id)
+                        ->whereNotNull('appointment_date')
+                        ->whereNotNull('appointment_completed_at');
+                 });
             } elseif (is_numeric($filter)) {
                 // Approximate filtering for count: must have this step
                  $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
@@ -205,20 +222,29 @@ class RegistrationController extends Controller
 
         // Total Appointments (use same base query with search/operator filters)
         $appointmentsBaseQuery = clone $statsQuery;
+        $tabIdForAppointments = $this->currentTab->id;
 
         $totalNotScheduled = (clone $appointmentsBaseQuery)
             ->whereIn('status', ['registration_pending', 'registration_completed'])
-            ->whereNull('appointment_date')
+            ->whereDoesntHave('appointments', function ($aq) use ($tabIdForAppointments) {
+                $aq->where('resolution_tab_id', $tabIdForAppointments)->whereNotNull('appointment_date');
+            })
             ->count();
 
         $totalAppointmentsPending = (clone $appointmentsBaseQuery)
-            ->whereNotNull('appointment_date')
-            ->whereNull('appointment_completed_at')
+            ->whereHas('appointments', function ($aq) use ($tabIdForAppointments) {
+                $aq->where('resolution_tab_id', $tabIdForAppointments)
+                   ->whereNotNull('appointment_date')
+                   ->whereNull('appointment_completed_at');
+            })
             ->count();
 
         $totalAppointmentsCompleted = (clone $appointmentsBaseQuery)
-            ->whereNotNull('appointment_date')
-            ->whereNotNull('appointment_completed_at')
+            ->whereHas('appointments', function ($aq) use ($tabIdForAppointments) {
+                $aq->where('resolution_tab_id', $tabIdForAppointments)
+                   ->whereNotNull('appointment_date')
+                   ->whereNotNull('appointment_completed_at');
+            })
             ->count();
 
         // Total Employers (Global, relevant to search)
@@ -643,7 +669,8 @@ class RegistrationController extends Controller
         }
 
         // For other filters, we check if the employer has ANY employee matching the criteria
-        $query->whereHas('employees', function($q) use ($filter, $stepOneId) {
+        $tabId = $this->currentTab->id;
+        $query->whereHas('employees', function($q) use ($filter, $stepOneId, $tabId) {
             if ($filter === 'not_started') {
                  $q->whereIn('status', ['registration_pending', 'registration_completed'])
                    ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
@@ -660,16 +687,26 @@ class RegistrationController extends Controller
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
-                 $q->whereNotNull('appointment_date');
+                 $q->whereHas('appointments', function ($aq) use ($tabId) {
+                     $aq->where('resolution_tab_id', $tabId)->whereNotNull('appointment_date');
+                 });
             } elseif ($filter === 'appointment_not_scheduled') {
                  $q->whereIn('status', ['registration_pending', 'registration_completed'])
-                   ->whereNull('appointment_date');
+                   ->whereDoesntHave('appointments', function ($aq) use ($tabId) {
+                       $aq->where('resolution_tab_id', $tabId)->whereNotNull('appointment_date');
+                   });
             } elseif ($filter === 'appointment_pending') {
-                 $q->whereNotNull('appointment_date')
-                   ->whereNull('appointment_completed_at');
+                 $q->whereHas('appointments', function ($aq) use ($tabId) {
+                     $aq->where('resolution_tab_id', $tabId)
+                        ->whereNotNull('appointment_date')
+                        ->whereNull('appointment_completed_at');
+                 });
             } elseif ($filter === 'appointment_completed') {
-                 $q->whereNotNull('appointment_date')
-                   ->whereNotNull('appointment_completed_at');
+                 $q->whereHas('appointments', function ($aq) use ($tabId) {
+                     $aq->where('resolution_tab_id', $tabId)
+                        ->whereNotNull('appointment_date')
+                        ->whereNotNull('appointment_completed_at');
+                 });
             } elseif (is_numeric($filter)) { // Step ID (Highest Step Logic approximation for filter)
                  // Strict Highest Step Filtering to match Employee List Logic
                  $q->where('status', '!=', 'registration_cancelled')
@@ -976,8 +1013,10 @@ class RegistrationController extends Controller
                  $query->where('status', '!=', 'registration_cancelled')
                        ->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
-                 $query
-                       ->whereNotNull('appointment_date');
+                 $query->whereHas('appointments', function ($q) {
+                       $q->where('resolution_tab_id', $this->currentTab->id)
+                         ->whereNotNull('appointment_date');
+                   });
             } elseif (is_numeric($filter)) { // Step ID
                  $query->where('status', '!=', 'registration_cancelled');
                  // We filter by highest step in PHP below
@@ -1031,6 +1070,15 @@ class RegistrationController extends Controller
             ->first();
 
         $employeeFinancialStatus = \App\Services\FinancialStatusService::calculateStatusForEmployees($financeOrder, $employees->pluck('id'));
+
+        // Overwrite the employee's own (legacy, un-scoped) appointment
+        // attributes in-memory with THIS tab's appointment — never
+        // persisted, just makes every existing read of
+        // $employee->appointment_date/location/completed_at (the card
+        // partial, exports, etc.) transparently correct without having to
+        // touch each of those read sites individually. See
+        // $this->applyTabAppointments().
+        $this->applyTabAppointments($employees, $this->currentTab->id);
 
         foreach ($employees as $emp) {
             $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
@@ -1112,7 +1160,10 @@ class RegistrationController extends Controller
             } elseif ($filter === 'biometrics_not_collected') {
                 $query->whereNull('biometrics_collected_at');
             } elseif ($filter === 'total_appointments') {
-                $query->whereNotNull('appointment_date');
+                $tabId = $this->currentTab->id;
+                $query->whereHas('appointments', function ($aq) use ($tabId) {
+                    $aq->where('resolution_tab_id', $tabId)->whereNotNull('appointment_date');
+                });
             }
             // 'cancelled' is intentionally not handled — cancelled employees
             // are never select-all eligible regardless of the active filter.
@@ -1857,16 +1908,23 @@ class RegistrationController extends Controller
             }
             $activeStatuses = ['registration_pending', 'registration_completed'];
 
+            // NOTE: intentionally not scoped to $this->currentTab->id here —
+            // matching this query's pre-existing behavior (no
+            // resolution_tab_id filter at all before this fix either), just
+            // redirected from the old employees.appointment_date column to
+            // the new per-tab table without narrowing what it already counted.
             $globalAppointmentsPending = (clone $globalQuery)
                 ->whereIn('status', $activeStatuses)
-                ->whereNotNull('appointment_date')
-                ->whereNull('appointment_completed_at')
+                ->whereHas('appointments', function ($aq) {
+                    $aq->whereNotNull('appointment_date')->whereNull('appointment_completed_at');
+                })
                 ->count();
 
             $globalAppointmentsCompleted = (clone $globalQuery)
                 ->whereIn('status', $activeStatuses)
-                ->whereNotNull('appointment_date')
-                ->whereNotNull('appointment_completed_at')
+                ->whereHas('appointments', function ($aq) {
+                    $aq->whereNotNull('appointment_date')->whereNotNull('appointment_completed_at');
+                })
                 ->count();
 
             // Employer Stats
@@ -2233,18 +2291,23 @@ class RegistrationController extends Controller
         // 6. Total Biometrics Collected
         $globalBiometrics = (clone $globalQuery)->whereIn('status', $activeStatuses)->whereNotNull('biometrics_collected_at')->count();
 
-        // 8. Appointments Pending
+        // 8. Appointments Pending — intentionally not scoped to a specific
+        // resolution_tab_id, matching this method's pre-existing "global
+        // across the whole Registration module" behavior (see comment
+        // above this method's other global counts).
         $globalAppointmentsPending = (clone $globalQuery)
             ->whereIn('status', $activeStatuses)
-            ->whereNotNull('appointment_date')
-            ->whereNull('appointment_completed_at')
+            ->whereHas('appointments', function ($aq) {
+                $aq->whereNotNull('appointment_date')->whereNull('appointment_completed_at');
+            })
             ->count();
 
         // 9. Appointments Completed
         $globalAppointmentsCompleted = (clone $globalQuery)
             ->whereIn('status', $activeStatuses)
-            ->whereNotNull('appointment_date')
-            ->whereNotNull('appointment_completed_at')
+            ->whereHas('appointments', function ($aq) {
+                $aq->whereNotNull('appointment_date')->whereNotNull('appointment_completed_at');
+            })
             ->count();
 
         $stats = [
@@ -2490,10 +2553,18 @@ class RegistrationController extends Controller
 
     /**
      * API: Update Appointment Date & Location
+     *
+     * Scoped to the current ResolutionTab (EmployeeAppointment, keyed by
+     * employee_id + resolution_tab_id) instead of writing to the employee's
+     * own appointment_date/location columns — those are shared by every
+     * menu/tab that touches this Employee row, so writing there would leak
+     * this appointment into Renewal Resolution (or any other Registration/
+     * Renewal tab this employee is dual-listed into). See
+     * database/migrations/2026_10_10_000007_create_employee_appointments_table.php.
      */
     public function updateAppointment(Request $request, $resolutionTab, Employee $employee)
     {
-        $this->resolveTab($resolutionTab, 'registration');
+        $tab = $this->resolveTab($resolutionTab, 'registration');
 
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
@@ -2504,18 +2575,23 @@ class RegistrationController extends Controller
             'appointment_location' => 'nullable|string|max:255',
         ]);
 
+        $appointment = EmployeeAppointment::firstOrNew([
+            'employee_id' => $employee->id,
+            'resolution_tab_id' => $tab->id,
+        ]);
+
         $data = [];
         $isUpdated = false;
 
         if ($request->has('appointment_date')) {
             $data['appointment_date'] = $request->appointment_date;
-            if ($employee->appointment_date != $request->appointment_date) {
+            if ($appointment->appointment_date != $request->appointment_date) {
                 $isUpdated = true;
             }
         }
         if ($request->has('appointment_location')) {
             $data['appointment_location'] = $request->appointment_location;
-            if ($employee->appointment_location != $request->appointment_location) {
+            if ($appointment->appointment_location != $request->appointment_location) {
                 $isUpdated = true;
             }
         }
@@ -2525,7 +2601,8 @@ class RegistrationController extends Controller
             $data['appointment_updated_at'] = now();
         }
 
-        $employee->update($data);
+        $appointment->fill($data);
+        $appointment->save();
 
         return response()->json([
             'success' => true,
@@ -2539,19 +2616,21 @@ class RegistrationController extends Controller
      */
     public function toggleAppointmentComplete(Request $request, $resolutionTab, Employee $employee)
     {
-        $this->resolveTab($resolutionTab, 'registration');
+        $tab = $this->resolveTab($resolutionTab, 'registration');
 
         if (!auth()->user()->can('edit-employees')) {
             abort(403);
         }
 
-        if ($employee->appointment_completed_at) {
-            $employee->update(['appointment_completed_at' => null]);
-        } else {
-            $employee->update(['appointment_completed_at' => now()]);
-        }
+        $appointment = EmployeeAppointment::firstOrNew([
+            'employee_id' => $employee->id,
+            'resolution_tab_id' => $tab->id,
+        ]);
 
-        return response()->json(['success' => true, 'completed_at' => $employee->appointment_completed_at]);
+        $appointment->appointment_completed_at = $appointment->appointment_completed_at ? null : now();
+        $appointment->save();
+
+        return response()->json(['success' => true, 'completed_at' => $appointment->appointment_completed_at]);
     }
 
     /**
@@ -2654,16 +2733,25 @@ class RegistrationController extends Controller
         $start = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $end = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
+        $tabId = $this->currentTab->id;
         $query = Employee::query()
-            ->where('resolution_tab_id', $this->currentTab->id);
+            ->where('employees.resolution_tab_id', $tabId);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $counts = $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
-            ->whereBetween('appointment_date', [$start, $end])
-
-            ->whereNull('appointment_completed_at') // Exclude completed appointments
+        // Joined (not whereHas) so appointment_date can be SELECTed/GROUPed
+        // by directly — scoped to this tab via the join condition, so a
+        // dual-listed employee's appointment in a DIFFERENT tab never
+        // counts here.
+        $counts = $query
+            ->join('employee_appointments', function ($join) use ($tabId) {
+                $join->on('employee_appointments.employee_id', '=', 'employees.id')
+                    ->where('employee_appointments.resolution_tab_id', $tabId);
+            })
+            ->select(DB::raw('DATE(employee_appointments.appointment_date) as date'), DB::raw('count(*) as count'))
+            ->whereBetween('employee_appointments.appointment_date', [$start, $end])
+            ->whereNull('employee_appointments.appointment_completed_at') // Exclude completed appointments
             ->groupBy('date')
             ->get()
             ->mapWithKeys(function ($item) {
@@ -2683,17 +2771,29 @@ class RegistrationController extends Controller
         $request->validate(['date' => 'required|date']);
         $date = Carbon::parse($request->date);
 
+        $tabId = $this->currentTab->id;
         $query = Employee::query()
-            ->where('resolution_tab_id', $this->currentTab->id);
+            ->where('employees.resolution_tab_id', $tabId);
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        $employees = $query->whereDate('appointment_date', $date)
+        // Joined (not whereHas), and employee_appointments' own columns
+        // selected aliased over employees.* — so every existing read of
+        // $employee->appointment_date/location/completed_at in
+        // day_appointments_list.blade.php stays correct for this tab
+        // without needing to change that view.
+        $employees = $query
+            ->join('employee_appointments', function ($join) use ($tabId) {
+                $join->on('employee_appointments.employee_id', '=', 'employees.id')
+                    ->where('employee_appointments.resolution_tab_id', $tabId);
+            })
+            ->whereDate('employee_appointments.appointment_date', $date)
             ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
-            ->whereNull('appointment_completed_at')
+            ->whereNull('employee_appointments.appointment_completed_at')
             ->with(['employer', 'registrationSteps'])
-            ->orderBy('appointment_date')
+            ->orderBy('employee_appointments.appointment_date')
+            ->select('employees.*', 'employee_appointments.appointment_date as appointment_date', 'employee_appointments.appointment_location as appointment_location', 'employee_appointments.appointment_completed_at as appointment_completed_at')
             ->get();
 
         $steps = RegistrationStep::registration()->orderBy('order')->get();

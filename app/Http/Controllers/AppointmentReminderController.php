@@ -10,12 +10,15 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Combined appointment reminder — sums pending appointments across the 3
- * places they're tracked independently: Employee.appointment_date scoped to
- * a 'registration' ResolutionTab, the same scoped to 'renewal', and
- * ProductionItem.appointment_date (Workflow, a separate model entirely).
- * Mirrors the per-module calendar logic in RegistrationController/
- * RenewalController/WorkflowController exactly (same status/tenancy-scope
- * conditions) rather than introducing new filtering rules.
+ * places they're tracked independently: employee_appointments rows whose
+ * resolution_tab_id belongs to a 'registration' ResolutionTab, the same for
+ * 'renewal' (this naturally includes dual-listed employees too — each
+ * dual-listed appointment is its own row scoped to that specific renewal
+ * tab, see EmployeeAppointment), and ProductionItem.appointment_date
+ * (Workflow, a separate model entirely). Mirrors the per-module calendar
+ * logic in RegistrationController/RenewalController/WorkflowController
+ * exactly (same status/tenancy-scope conditions) rather than introducing
+ * new filtering rules.
  */
 class AppointmentReminderController extends Controller
 {
@@ -31,15 +34,21 @@ class AppointmentReminderController extends Controller
         $counts = [];
 
         foreach (['registration', 'renewal'] as $type) {
+            // Joined through employee_appointments (not Employee's own
+            // resolution_tab_id) so dual-listed employees' tab-specific
+            // appointments are counted too — each dual listing has its own
+            // row here, scoped to the exact renewal tab it belongs to.
             $query = Employee::query()
-                ->whereHas('resolutionTab', fn ($q) => $q->where('type', $type));
+                ->join('employee_appointments', 'employee_appointments.employee_id', '=', 'employees.id')
+                ->join('resolution_tabs', 'resolution_tabs.id', '=', 'employee_appointments.resolution_tab_id')
+                ->where('resolution_tabs.type', $type);
             if (auth()->user()->can('manage-tickets')) {
                 $query->withoutGlobalScope('employerTenancy');
             }
 
-            $query->select(DB::raw('DATE(appointment_date) as date'), DB::raw('count(*) as count'))
-                ->whereBetween('appointment_date', [$start, $end])
-                ->whereNull('appointment_completed_at')
+            $query->select(DB::raw('DATE(employee_appointments.appointment_date) as date'), DB::raw('count(*) as count'))
+                ->whereBetween('employee_appointments.appointment_date', [$start, $end])
+                ->whereNull('employee_appointments.appointment_completed_at')
                 ->groupBy('date')
                 ->get()
                 ->each(function ($row) use (&$counts) {
@@ -79,16 +88,31 @@ class AppointmentReminderController extends Controller
         $items = collect();
 
         foreach (['registration' => 'มติลงทะเบียน', 'renewal' => 'มติต่ออายุ'] as $type => $label) {
+            // Same join as calendarData() — also covers dual-listed
+            // employees, and employees.* is aliased over by
+            // employee_appointments' own columns (including
+            // resolution_tab_id) so the link below points at the exact
+            // tab this appointment belongs to, not necessarily the
+            // employee's home tab.
             $query = Employee::query()
-                ->whereHas('resolutionTab', fn ($q) => $q->where('type', $type));
+                ->join('employee_appointments', 'employee_appointments.employee_id', '=', 'employees.id')
+                ->join('resolution_tabs', 'resolution_tabs.id', '=', 'employee_appointments.resolution_tab_id')
+                ->where('resolution_tabs.type', $type);
             if (auth()->user()->can('manage-tickets')) {
                 $query->withoutGlobalScope('employerTenancy');
             }
 
-            $query->whereDate('appointment_date', $date)
-                ->whereNull('appointment_completed_at')
+            $query->select(
+                    'employees.*',
+                    'employee_appointments.resolution_tab_id as resolution_tab_id',
+                    'employee_appointments.appointment_date as appointment_date',
+                    'employee_appointments.appointment_location as appointment_location',
+                    'employee_appointments.appointment_completed_at as appointment_completed_at'
+                )
+                ->whereDate('employee_appointments.appointment_date', $date)
+                ->whereNull('employee_appointments.appointment_completed_at')
                 ->with(['employer', 'resolutionTab'])
-                ->orderBy('appointment_date')
+                ->orderBy('employee_appointments.appointment_date')
                 ->get()
                 ->each(function ($employee) use (&$items, $type, $label) {
                     $items->push((object) [

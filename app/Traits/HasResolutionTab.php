@@ -116,4 +116,51 @@ trait HasResolutionTab
             'allTabs' => $this->getAllTabs($type),
         ];
     }
+
+    /**
+     * Overwrite each Employee model's own (legacy, un-scoped)
+     * appointment_date/appointment_location/appointment_completed_at/
+     * appointment_updated_by/appointment_updated_at attributes IN-MEMORY
+     * with the appointment scoped to $resolutionTabId — never persisted,
+     * this Employee instance is never save()'d after this call. Lets every
+     * existing read of those attributes (Blade card partials, exports,
+     * PHP-side sorting/grouping) stay correct for whichever
+     * Registration/Renewal tab is actually being viewed, without having to
+     * individually convert every read site to the new
+     * EmployeeAppointment/employee_appointments table. See that model's
+     * docblock for why appointments had to move off the Employee row.
+     *
+     * @param  \Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Collection|iterable  $employees
+     */
+    protected function applyTabAppointments($employees, int $resolutionTabId): void
+    {
+        // Plain foreach (not collect($employees)->pluck(...)) deliberately
+        // — $employees is sometimes a LengthAwarePaginator, and
+        // collect()'ing one converts it via its Arrayable::toArray(),
+        // which returns the pagination META array, not the item list.
+        $ids = [];
+        foreach ($employees as $employee) {
+            if ($employee->id) {
+                $ids[] = $employee->id;
+            }
+        }
+        $ids = array_unique($ids);
+        if (empty($ids)) {
+            return;
+        }
+
+        $appointments = \App\Models\EmployeeAppointment::where('resolution_tab_id', $resolutionTabId)
+            ->whereIn('employee_id', $ids)
+            ->get()
+            ->keyBy('employee_id');
+
+        foreach ($employees as $employee) {
+            $appointment = $appointments->get($employee->id);
+            $employee->appointment_date = $appointment->appointment_date ?? null;
+            $employee->appointment_location = $appointment->appointment_location ?? null;
+            $employee->appointment_completed_at = $appointment->appointment_completed_at ?? null;
+            $employee->appointment_updated_by = $appointment->appointment_updated_by ?? null;
+            $employee->appointment_updated_at = $appointment->appointment_updated_at ?? null;
+        }
+    }
 }
