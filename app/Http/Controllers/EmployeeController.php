@@ -163,14 +163,23 @@ public function reinstate(Employee $employee)
 
     public function index(Request $request)
 {
-    // Filter out 'registration_cancelled' statuses so they don't appear until finalized
-    // Note: 'registration_pending' is now INCLUDED as per user request to show Resolution employees in the main list.
-    $query = Employee::query()
-        ->whereNull('terminated_at')
-        ->where(function($q) {
-            $q->whereNotIn('status', ['registration_cancelled'])
-              ->orWhereNull('status');
-        });
+    $query = Employee::query();
+
+    // Filter out terminated / 'registration_cancelled' employees from the
+    // default browse view so they don't clutter it (registration_pending IS
+    // included, per earlier request, to show Resolution employees here).
+    // This filter is SKIPPED once a search term is typed — otherwise a
+    // terminated/cancelled employee sharing an identity number (passport,
+    // RA number, etc.) with an active one is invisible here even though the
+    // duplicate-data warning flags it, leaving staff with no way to find
+    // and compare the two records to decide which to fix/remove.
+    if (!$request->filled('search')) {
+        $query->whereNull('terminated_at')
+            ->where(function($q) {
+                $q->whereNotIn('status', ['registration_cancelled'])
+                  ->orWhereNull('status');
+            });
+    }
 
     // --- START: ADDED FILTERING LOGIC ---
     if ($request->filled('search')) {

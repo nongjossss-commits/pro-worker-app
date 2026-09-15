@@ -156,6 +156,16 @@
                 {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? __('No English Name') }}
             </span>
 
+            {{-- Only ever appears here when searching (the default browse
+                 view excludes these), so staff can visually tell which
+                 record is the inactive one when comparing two identity-field
+                 duplicates. --}}
+            @if($employee->terminated_at)
+                <span class="badge bg-secondary ms-1">{{ __('Terminated') }}</span>
+            @elseif($employee->status === 'registration_cancelled')
+                <span class="badge bg-secondary ms-1">{{ __('Registration Cancelled') }}</span>
+            @endif
+
             <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employee" data-model-id="{{ $employee->id }}" title="{{ __('Preview Data') }}">
                 <i class="bi bi-search"></i>
             </button>
