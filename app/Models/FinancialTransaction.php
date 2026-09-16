@@ -15,6 +15,7 @@ class FinancialTransaction extends Model
         'type', // installment, down_payment, full_payment
         'amount',
         'discount_amount',
+        'credit_amount',
         'discount_description',
         'due_date',
         'paid_at',
@@ -34,6 +35,7 @@ class FinancialTransaction extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'credit_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'due_date' => 'date',
         'paid_at' => 'datetime',
@@ -68,5 +70,10 @@ class FinancialTransaction extends Model
     public function payments()
     {
         return $this->hasMany(FinancialPayment::class);
+    }
+
+    public function creditNotes()
+    {
+        return $this->hasMany(CreditNote::class);
     }
 }

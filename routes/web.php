@@ -417,6 +417,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/employer/{employer}/employees', [App\Http\Controllers\Production\RenewalController::class, 'fetchEmployees'])->name('employer.employees')->withTrashed();
         Route::get('/employer/{employer}/select-all-ids', [App\Http\Controllers\Production\RenewalController::class, 'selectAllEmployerEmployeeIds'])->name('employer.select_all_ids')->withTrashed();
         Route::get('/employer/{employer}/history', [App\Http\Controllers\Production\RenewalController::class, 'fetchHistory'])->name('employer.history');
+        Route::get('/employer/{employer}/search-existing', [App\Http\Controllers\Production\RenewalController::class, 'searchExistingEmployees'])->name('employer.search_existing');
+        Route::post('/add-existing', [App\Http\Controllers\Production\RenewalController::class, 'addExisting'])->name('add_existing');
 
         // Stats & Lazy Loading Routes
         Route::post('/stats-batch', [App\Http\Controllers\Production\RenewalController::class, 'batchStats'])->name('stats.batch');
@@ -584,6 +586,13 @@ Route::middleware(['auth'])->group(function () {
         // Tax Invoices (Phase 2.1 — ใบกำกับภาษีขาย)
         Route::get('tax-invoices/{taxInvoice}/pdf', [App\Http\Controllers\Finance\TaxInvoiceController::class, 'pdf'])->name('tax-invoices.pdf');
         Route::resource('tax-invoices', App\Http\Controllers\Finance\TaxInvoiceController::class)->except(['edit']);
+
+        // Credit Notes (ใบลดหนี้) — reduces a specific FinancialTransaction's
+        // effective balance; see CreditNoteService's docblock.
+        Route::get('credit-notes/{creditNote}/pdf', [App\Http\Controllers\Finance\CreditNoteController::class, 'pdf'])->name('credit-notes.pdf');
+        Route::post('credit-notes/{creditNote}/issue', [App\Http\Controllers\Finance\CreditNoteController::class, 'issue'])->name('credit-notes.issue');
+        Route::post('credit-notes/{creditNote}/void', [App\Http\Controllers\Finance\CreditNoteController::class, 'void'])->name('credit-notes.void');
+        Route::resource('credit-notes', App\Http\Controllers\Finance\CreditNoteController::class)->except(['edit', 'update']);
 
         // WHT Certificates (Phase 2.1 — ใบหัก ณ ที่จ่าย ทั้ง issued+received)
         Route::get('wht-certificates/{whtCertificate}/pdf', [App\Http\Controllers\Finance\WhtCertificateController::class, 'pdf'])->name('wht-certificates.pdf');

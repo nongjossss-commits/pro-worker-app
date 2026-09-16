@@ -1545,8 +1545,15 @@ if (typeof window.financialManager === 'undefined') {
             get totalPaidAmount() {
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0);
             },
+            // Sum of issued credit notes against these transactions (see
+            // CreditNoteService — credit_amount is recomputed server-side,
+            // never edited directly here). Netted out of the balance due
+            // exactly like a payment would be.
+            get totalCreditAmount() {
+                return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.credit_amount || 0), 0);
+            },
             get remainingBalance() {
-                return Math.max(0, this.grandTotalReceivable - this.totalPaidAmount);
+                return Math.max(0, this.grandTotalReceivable - this.totalPaidAmount - this.totalCreditAmount);
             },
             get advancePaid() {
                 return this.advanceTransactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0);

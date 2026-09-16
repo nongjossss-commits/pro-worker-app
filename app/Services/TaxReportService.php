@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CreditNote;
 use App\Models\LedgerEntry;
 use App\Models\TaxInvoice;
 use App\Models\WhtCertificate;
@@ -44,6 +45,23 @@ class TaxReportService
         $outputSubtotal = (float) $outputInvoices->sum('subtotal');
         $outputVat = (float) $outputInvoices->sum('vat_amount');
 
+        // Credit notes issued this month reduce output VAT for the period
+        // they're issued in (มาตรา 82/10) — netted out of output_subtotal/
+        // output_vat/net_vat below, and also broken out on their own so the
+        // report shows exactly what was deducted and why, not just a
+        // smaller unexplained output figure.
+        $creditNotes = CreditNote::where('status', 'issued')
+            ->whereBetween('credit_note_date', [$start, $end])
+            ->orderBy('credit_note_date')
+            ->orderBy('credit_note_no')
+            ->get();
+
+        $creditSubtotal = (float) $creditNotes->sum('subtotal');
+        $creditVat = (float) $creditNotes->sum('vat_amount');
+
+        $outputSubtotal -= $creditSubtotal;
+        $outputVat -= $creditVat;
+
         // Input VAT — expense ledger entries with VAT + tax invoice reference
         $inputEntries = LedgerEntry::with('bankAccount')
             ->where('type', 'expense')
@@ -64,6 +82,9 @@ class TaxReportService
             'output_invoices' => $outputInvoices,
             'output_subtotal' => round($outputSubtotal, 2),
             'output_vat' => round($outputVat, 2),
+            'credit_notes' => $creditNotes,
+            'credit_subtotal' => round($creditSubtotal, 2),
+            'credit_vat' => round($creditVat, 2),
             'input_entries' => $inputEntries,
             'input_subtotal' => round($inputSubtotal, 2),
             'input_vat' => round($inputVat, 2),
@@ -112,10 +133,13 @@ class TaxReportService
         $spreadsheet->removeSheetByIndex(0);
 
         $this->buildVatOutputSheet($spreadsheet, $report);
+        if (count($report['credit_notes']) > 0) {
+            $this->buildVatCreditNoteSheet($spreadsheet, $report);
+        }
         $this->buildVatInputSheet($spreadsheet, $report);
         $this->buildVatSummarySheet($spreadsheet, $report);
 
-        $spreadsheet->setActiveSheetIndex(2);
+        $spreadsheet->setActiveSheetIndex($spreadsheet->getSheetCount() - 1);
 
         $filename = sprintf('PP30-%04d-%02d.xlsx', $year, $month);
         return [$spreadsheet, $filename];
@@ -289,6 +313,54 @@ class TaxReportService
         }
     }
 
+    protected function buildVatCreditNoteSheet(Spreadsheet $spreadsheet, array $report): void
+    {
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle('Credit Notes');
+
+        $sheet->setCellValue('A1', 'ใบลดหนี้ (Credit Notes) — เดือน ' . $report['period_label']);
+        $sheet->mergeCells('A1:G1');
+        $sheet->getStyle('A1')->applyFromArray([
+            'font' => ['bold' => true, 'size' => 14],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        $columns = ['ลำดับ', 'เลขที่ใบลดหนี้', 'วันที่', 'ลูกค้า', 'ลดยอดบิลเลขที่', 'มูลค่าก่อน VAT', 'VAT'];
+        foreach ($columns as $i => $col) {
+            $sheet->getCell([$i + 1, 3])->setValue($col);
+        }
+        $this->styleHeader($sheet, 'A3:G3');
+
+        $row = 4;
+        foreach ($report['credit_notes'] as $idx => $cn) {
+            $sheet->setCellValue("A{$row}", $idx + 1);
+            $sheet->getCell("B{$row}")->setValueExplicit($cn->credit_note_no, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue("C{$row}", optional($cn->credit_note_date)->format('d/m/Y'));
+            $sheet->setCellValue("D{$row}", $cn->customer_name);
+            $sheet->setCellValue("E{$row}", '#' . $cn->financial_transaction_id);
+            $sheet->setCellValue("F{$row}", (float) $cn->subtotal);
+            $sheet->setCellValue("G{$row}", (float) $cn->vat_amount);
+            $row++;
+        }
+        $sheet->setCellValue("E{$row}", 'รวม');
+        $sheet->setCellValue("F{$row}", $report['credit_subtotal']);
+        $sheet->setCellValue("G{$row}", $report['credit_vat']);
+        $sheet->getStyle("A{$row}:G{$row}")->applyFromArray([
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFE0E0E0']],
+        ]);
+
+        $sheet->getStyle("A4:G{$row}")->applyFromArray([
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+        ]);
+        foreach (['F', 'G'] as $col) {
+            $sheet->getStyle("{$col}4:{$col}{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+    }
+
     protected function buildVatSummarySheet(Spreadsheet $spreadsheet, array $report): void
     {
         $sheet = $spreadsheet->createSheet();
@@ -302,8 +374,9 @@ class TaxReportService
         ]);
 
         $rows = [
-            ['ยอดขาย (Output Subtotal)', $report['output_subtotal']],
-            ['ภาษีขาย (Output VAT)', $report['output_vat']],
+            ['ยอดขาย (Output Subtotal, หักใบลดหนี้แล้ว)', $report['output_subtotal']],
+            ['ภาษีขาย (Output VAT, หักใบลดหนี้แล้ว)', $report['output_vat']],
+            ['หักด้วยใบลดหนี้ (Credit Notes, VAT)', -$report['credit_vat']],
             ['ยอดซื้อ (Input Subtotal)', $report['input_subtotal']],
             ['ภาษีซื้อ (Input VAT)', $report['input_vat']],
             ['ภาษีสุทธิ (Net VAT)', $report['net_vat']],

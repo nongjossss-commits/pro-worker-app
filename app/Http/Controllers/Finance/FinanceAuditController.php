@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\CreditNote;
 use App\Models\LedgerEntry;
 use App\Models\TaxInvoice;
 use App\Models\User;
@@ -24,6 +25,7 @@ class FinanceAuditController extends Controller
         LedgerEntry::class,
         TaxInvoice::class,
         WhtCertificate::class,
+        CreditNote::class,
     ];
 
     public function index(Request $request)
@@ -38,6 +40,7 @@ class FinanceAuditController extends Controller
                 'ledger' => LedgerEntry::class,
                 'invoice' => TaxInvoice::class,
                 'wht' => WhtCertificate::class,
+                'credit_note' => CreditNote::class,
                 default => null,
             };
             if ($class) {

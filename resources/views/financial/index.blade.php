@@ -33,6 +33,11 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" href="{{ route('finance.credit-notes.index') }}">
+                <i class="bi bi-file-earmark-minus me-1"></i> {{ __('Credit Notes') }}
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link" href="{{ route('finance.wht-certificates.index') }}">
                 <i class="bi bi-file-earmark-text me-1"></i> {{ __('WHT Certs') }}
             </a>

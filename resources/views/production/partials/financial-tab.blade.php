@@ -397,6 +397,10 @@ class="row">
                     <span class="text-muted">{{ __('Total Paid') }}:</span>
                     <span x-text="formatCurrency(totalPaidAmount)"></span>
                 </div>
+                <div class="d-flex justify-content-between mb-1 small text-danger" x-show="totalCreditAmount > 0">
+                    <span class="text-muted">{{ __('Credited (Credit Notes)') }}:</span>
+                    <span>- <span x-text="formatCurrency(totalCreditAmount)"></span></span>
+                </div>
                 <div class="d-flex justify-content-between mb-1 small text-danger fw-bold">
                     <span class="text-muted">{{ __('Balance Due') }}:</span>
                     <span x-text="formatCurrency(remainingBalance)"></span>
@@ -553,6 +557,11 @@ class="row">
                                                 <span x-show="t.discount_description" class="text-muted ms-1">(<span x-text="t.discount_description"></span>)</span>
                                             </div>
                                         </template>
+                                        <template x-if="t.credit_amount > 0">
+                                            <div class="small text-danger mt-1">
+                                                <i class="bi bi-file-earmark-minus-fill me-1"></i>ใบลดหนี้: <span x-text="formatCurrency(t.credit_amount)"></span>
+                                            </div>
+                                        </template>
                                         <div x-show="t.slip_path" class="mt-1">
                                             <a href="#" @click.prevent="viewPDF('/storage/' + t.slip_path, 'View Slip')" class="badge bg-info text-decoration-none">View Slip</a>
                                         </div>
@@ -561,7 +570,7 @@ class="row">
                                     <td class="text-end" x-text="formatCurrency(t.amount)"></td>
                                     <td class="text-end">
                                         <span x-text="formatCurrency(t.paid_amount || 0)"></span><br>
-                                        <small class="text-muted" x-show="t.amount - (parseFloat(t.discount_amount) || 0) - (t.paid_amount || 0) > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - (parseFloat(t.discount_amount) || 0) - (t.paid_amount || 0)))"></span></small>
+                                        <small class="text-muted" x-show="t.amount - (parseFloat(t.discount_amount) || 0) - (parseFloat(t.credit_amount) || 0) - (t.paid_amount || 0) > 0">Remaining: <span x-text="formatCurrency(Math.max(0, t.amount - (parseFloat(t.discount_amount) || 0) - (parseFloat(t.credit_amount) || 0) - (t.paid_amount || 0)))"></span></small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
@@ -574,6 +583,9 @@ class="row">
                                             <button class="btn btn-sm btn-outline-primary py-0" @click="openCreateInvoiceModal(t)" title="สร้างใบแจ้งหนี้ / Create Invoice">
                                                 <i class="bi bi-receipt"></i>
                                             </button>
+                                            <a class="btn btn-sm btn-outline-warning py-0" :href="'{{ route('finance.credit-notes.create') }}?financial_transaction_id=' + t.id" target="_blank" title="ออกใบลดหนี้ / Issue Credit Note">
+                                                <i class="bi bi-file-earmark-minus"></i>
+                                            </a>
                                             <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>

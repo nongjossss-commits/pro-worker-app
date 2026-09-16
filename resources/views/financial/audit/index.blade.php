@@ -24,6 +24,7 @@
                         <option value="ledger" {{ request('entity') === 'ledger' ? 'selected' : '' }}>{{ __('Ledger Entry') }}</option>
                         <option value="invoice" {{ request('entity') === 'invoice' ? 'selected' : '' }}>{{ __('Tax Invoice') }}</option>
                         <option value="wht" {{ request('entity') === 'wht' ? 'selected' : '' }}>{{ __('WHT Certificate') }}</option>
+                        <option value="credit_note" {{ request('entity') === 'credit_note' ? 'selected' : '' }}>{{ __('Credit Note') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -80,6 +81,7 @@
                                             'LedgerEntry' => 'primary',
                                             'TaxInvoice' => 'info',
                                             'WhtCertificate' => 'warning',
+                                            'CreditNote' => 'danger',
                                             default => 'secondary',
                                         };
                                     @endphp

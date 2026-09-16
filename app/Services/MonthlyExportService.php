@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BankAccount;
+use App\Models\CreditNote;
 use App\Models\ExpenseCategory;
 use App\Models\IncomeCategory;
 use App\Models\LedgerEntry;
@@ -362,6 +363,18 @@ class MonthlyExportService
             $path = sprintf('tax_invoices/%04d/%s.pdf', $inv->fiscal_year, $inv->invoice_no);
             if ($disk->exists($path)) {
                 $zip->addFile($disk->path($path), "attachments/tax_invoices/{$inv->invoice_no}.pdf");
+            }
+        }
+
+        // Credit notes issued in period
+        $creditNotes = CreditNote::whereYear('credit_note_date', $year)
+            ->whereMonth('credit_note_date', $month)
+            ->where('status', 'issued')
+            ->get();
+        foreach ($creditNotes as $cn) {
+            $path = sprintf('credit_notes/%04d/%s.pdf', $cn->fiscal_year, $cn->credit_note_no);
+            if ($disk->exists($path)) {
+                $zip->addFile($disk->path($path), "attachments/credit_notes/{$cn->credit_note_no}.pdf");
             }
         }
 

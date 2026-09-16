@@ -47,15 +47,28 @@ class FinancialHubController extends Controller
             $today = Carbon::today();
             $startOfMonth = Carbon::now()->startOfMonth();
 
+            // Quotation-stage bills (ProductionOrder.manual_bill_type ===
+            // 'quotation' — the same flag the "Manual Bills"/"Quotations"
+            // tabs below already filter on) must never count toward the
+            // real outstanding/income totals here: a quotation is often
+            // used once and revised, so mixing it into Overview corrupted
+            // "ยอดคงค้าง"/pending totals. Applied via a closure so every
+            // query below (stats, list, filtered aggregate) stays in sync.
+            $excludeQuotations = function ($q) {
+                $q->whereDoesntHave('productionOrder', function ($po) {
+                    $po->where('manual_bill_type', 'quotation');
+                });
+            };
+
             $stats = [
-                'income_today' => FinancialTransaction::whereDate('paid_at', $today)->sum('paid_amount'),
-                'income_month' => FinancialTransaction::whereDate('paid_at', '>=', $startOfMonth)->sum('paid_amount'),
-                'pending_amount' => FinancialTransaction::whereIn('status', ['pending', 'partial'])->sum(DB::raw('amount - paid_amount')),
-                'overdue_amount' => FinancialTransaction::where('status', 'overdue')->sum(DB::raw('amount - paid_amount')),
+                'income_today' => FinancialTransaction::whereDate('paid_at', $today)->where($excludeQuotations)->sum('paid_amount'),
+                'income_month' => FinancialTransaction::whereDate('paid_at', '>=', $startOfMonth)->where($excludeQuotations)->sum('paid_amount'),
+                'pending_amount' => FinancialTransaction::whereIn('status', ['pending', 'partial'])->where($excludeQuotations)->sum(DB::raw('amount - paid_amount - credit_amount')),
+                'overdue_amount' => FinancialTransaction::where('status', 'overdue')->where($excludeQuotations)->sum(DB::raw('amount - paid_amount - credit_amount')),
             ];
 
             // 2. Query Transactions
-            $query = FinancialTransaction::query()->latest('created_at');
+            $query = FinancialTransaction::query()->where($excludeQuotations)->latest('created_at');
 
             // Search — id, notes, project, employer (Th/En/suffix), job owner
             if ($request->filled('search')) {
@@ -108,7 +121,7 @@ class FinancialHubController extends Controller
                     COUNT(*) as total_count,
                     COALESCE(SUM(amount), 0) as total_amount,
                     COALESCE(SUM(paid_amount), 0) as total_paid,
-                    COALESCE(SUM(amount - paid_amount), 0) as total_outstanding,
+                    COALESCE(SUM(amount - paid_amount - credit_amount), 0) as total_outstanding,
                     SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid_count,
                     SUM(CASE WHEN status IN ('pending', 'partial') THEN 1 ELSE 0 END) as unpaid_count,
                     SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_count
@@ -454,8 +467,8 @@ class FinancialHubController extends Controller
             ->select([
                 DB::raw("SUM(CASE WHEN DATE(paid_at) = '" . $today->toDateString() . "' THEN paid_amount ELSE 0 END) as income_today"),
                 DB::raw("SUM(CASE WHEN paid_at >= '" . $startOfMonth->toDateTimeString() . "' THEN paid_amount ELSE 0 END) as income_month"),
-                DB::raw("SUM(CASE WHEN status IN ('pending', 'partial') THEN amount - paid_amount ELSE 0 END) as pending_amount"),
-                DB::raw("SUM(CASE WHEN status = 'overdue' THEN amount - paid_amount ELSE 0 END) as overdue_amount"),
+                DB::raw("SUM(CASE WHEN status IN ('pending', 'partial') THEN amount - paid_amount - credit_amount ELSE 0 END) as pending_amount"),
+                DB::raw("SUM(CASE WHEN status = 'overdue' THEN amount - paid_amount - credit_amount ELSE 0 END) as overdue_amount"),
             ])
             ->first();
 
@@ -520,15 +533,18 @@ class FinancialHubController extends Controller
 
         $billedAmount = 0;
         $paidAmount = 0;
+        $creditedAmount = 0;
         foreach ($order->financialGroups as $group) {
             foreach ($group->transactions as $txn) {
                 $billedAmount += $txn->amount;
                 $paidAmount += $txn->paid_amount;
+                $creditedAmount += $txn->credit_amount;
             }
         }
         $order->billed_amount = $billedAmount;
         $order->paid_amount = $paidAmount;
-        $order->pending_amount = max(0, $billedAmount - $paidAmount);
+        $order->credited_amount = $creditedAmount;
+        $order->pending_amount = max(0, $billedAmount - $paidAmount - $creditedAmount);
 
         // Custom total logic to handle cases where there are fixed amounts instead of per head
         // In reality, actual transaction amounts generated rule over expected calculations.

@@ -23,6 +23,9 @@
                     <div class="small text-muted">{{ __('Output VAT (ภาษีขาย)') }}</div>
                     <div class="h4 mb-0 text-primary">{{ number_format($report['output_vat'], 2) }}</div>
                     <div class="small text-muted">{{ __('จากยอดขาย') }}: {{ number_format($report['output_subtotal'], 2) }}</div>
+                    @if($report['credit_vat'] > 0)
+                        <div class="small text-danger">{{ __('หักใบลดหนี้') }}: -{{ number_format($report['credit_vat'], 2) }}</div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -113,6 +116,55 @@
             </div>
         </div>
     </div>
+
+    {{-- Credit Notes table — reduces output VAT for this period (มาตรา 82/10) --}}
+    @if(count($report['credit_notes']) > 0)
+    <div class="card shadow mb-3">
+        <div class="card-header bg-danger-subtle">
+            <strong class="text-danger">{{ __('Credit Notes — ใบลดหนี้ที่ออกในเดือน') }}</strong>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>{{ __('Credit Note No') }}</th>
+                            <th>{{ __('Date') }}</th>
+                            <th>{{ __('Customer') }}</th>
+                            <th>{{ __('Reduces Bill') }}</th>
+                            <th class="text-end">{{ __('Subtotal') }}</th>
+                            <th class="text-end">{{ __('VAT') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($report['credit_notes'] as $idx => $cn)
+                            <tr>
+                                <td>{{ $idx + 1 }}</td>
+                                <td><a href="{{ route('finance.credit-notes.show', $cn) }}" class="text-decoration-none fw-bold">{{ $cn->credit_note_no }}</a></td>
+                                <td>{{ optional($cn->credit_note_date)->format('d/m/Y') }}</td>
+                                <td>{{ $cn->customer_name }}</td>
+                                <td>#{{ $cn->financial_transaction_id }}</td>
+                                <td class="text-end">{{ number_format($cn->subtotal, 2) }}</td>
+                                <td class="text-end text-danger">-{{ number_format($cn->vat_amount, 2) }}</td>
+                                <td><a href="{{ route('finance.credit-notes.pdf', $cn) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-pdf"></i></a></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-active fw-bold">
+                            <td colspan="5" class="text-end">{{ __('Total') }}</td>
+                            <td class="text-end">{{ number_format($report['credit_subtotal'], 2) }}</td>
+                            <td class="text-end text-danger">-{{ number_format($report['credit_vat'], 2) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Input VAT table --}}
     <div class="card shadow">

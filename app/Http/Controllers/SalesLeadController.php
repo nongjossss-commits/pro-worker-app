@@ -728,37 +728,22 @@ class SalesLeadController extends Controller
             $sales->workflow_destination = $request->destination;
             $sales->save();
 
-            // 4. Generate actual Finance Transaction from Quotation if exists
-            if ($sales->quotation) {
-                // We create a generic FinancialTransaction linked to the employer.
-                // The main system's finance module uses `FinancialTransaction` Model.
-                if (class_exists(\App\Models\FinancialTransaction::class)) {
-                    $transaction = \App\Models\FinancialTransaction::create([
-                        'employer_id' => $realEmployer->id,
-                        'financial_profile_id' => $sales->quotation->financial_profile_id,
-                        'type' => 'income',
-                        'status' => 'pending',
-                        'amount' => $sales->quotation->grand_total,
-                        'transaction_date' => now(),
-                        'reference_number' => 'SL-' . str_pad($sales->id, 5, '0', STR_PAD_LEFT),
-                        'remarks' => 'Generated from Read and Sale Quotation',
-                        'created_by' => auth()->id(),
-                    ]);
-
-                    // Iterate items to create transaction items
-                    if (class_exists(\App\Models\FinancialTransactionItem::class) && is_array($sales->quotation->items_data)) {
-                        foreach ($sales->quotation->items_data as $item) {
-                            \App\Models\FinancialTransactionItem::create([
-                                'transaction_id' => $transaction->id,
-                                'description' => $item['description'],
-                                'quantity' => $item['qty'],
-                                'unit_price' => $item['price'],
-                                'total_amount' => $item['total'],
-                            ]);
-                        }
-                    }
-                }
-            }
+            // NOTE: this used to auto-create a "pending" FinancialTransaction
+            // from the lead's quotation right here. Removed — at this point
+            // in the flow there is no real ProductionOrder for the
+            // converted job yet (one only gets created later, when staff
+            // set up billing/pricing for the employer in Registration/
+            // Renewal/Workflow), so that FinancialTransaction::create() call
+            // was sending fields (employer_id, transaction_date,
+            // reference_number, remarks) that aren't in the model's
+            // $fillable — Laravel silently dropped them, leaving a
+            // permanently orphaned row (no production_order_id, no
+            // employer_id) that stayed 'pending' forever and double-counted
+            // against the real bill created later on the actual job. The
+            // quotation's own figures remain available via
+            // SalesLead::quotation for reference; real billing now only
+            // ever starts from the normal Financial Hub flow on the
+            // converted employer, same as any other employer.
 
             // 5. Redirect the user to the respective page
             DB::commit();
@@ -803,6 +788,14 @@ class SalesLeadController extends Controller
                     'type'          => 'employer',
                     'project_name'  => 'Sales Quotation - ' . $sales->employerNameTh,
                     'financial_data' => [],
+                    // Reuses the same manual_bill_type flag the Finance Hub's
+                    // "Manual Bills" vs "Quotations" tabs already filter on
+                    // (see FinancialHubController::index()) — without this,
+                    // a still-quoting lead's FinancialTransactions were only
+                    // ever visible in the Overview tab (which should not
+                    // count quotation-stage amounts at all), and invisible
+                    // everywhere else.
+                    'manual_bill_type' => 'quotation',
                 ]);
             }
 
