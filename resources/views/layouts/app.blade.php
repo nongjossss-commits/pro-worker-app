@@ -6,6 +6,14 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Alpine's `x-cloak` attribute relies on this rule to actually hide
+         anything before Alpine boots (it's loaded via `defer` below, so the
+         browser can parse/paint the raw server-rendered HTML first) — several
+         views already use x-cloak expecting this, but the rule never existed
+         anywhere in the project, so every one of those was a silent no-op
+         (a flash of the uncloaked content) until now. --}}
+    <style>[x-cloak] { display: none !important; }</style>
+
     <script>
         // Mark every same-origin fetch() as an AJAX request (matching what
         // jQuery's $.ajax already does automatically) — without this, a

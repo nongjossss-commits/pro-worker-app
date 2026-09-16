@@ -91,7 +91,7 @@
                         </select>
                     </div>
 
-                    <div class="mt-4" x-show="selectedRole === 'employer'" style="display: none;" x-transition>
+                    <div class="mt-4" x-cloak x-show="selectedRole === 'employer'" style="display: none;" x-transition>
                         <label for="employer_id" class="block font-medium text-sm text-gray-700">{{ __('Link to Employer (Required)') }}</label>
                         <select id="employer_id" name="employer_id" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">-- {{ __('Select Employer') }} --</option>
@@ -103,7 +103,7 @@
                         </select>
                     </div>
 
-                    <div class="mt-4" x-show="selectedRole === 'labor-team'" style="display: none;" x-transition>
+                    <div class="mt-4" x-cloak x-show="selectedRole === 'labor-team'" style="display: none;" x-transition>
                         <label for="labor_team_id" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labour — Team (Required)') }}</label>
                         <select id="labor_team_id" name="labor_team_id" :disabled="selectedRole !== 'labor-team'" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">-- {{ __('Select Team') }} --</option>
@@ -116,7 +116,7 @@
                     </div>
 
                     @if(auth()->user()->hasRole('super-admin'))
-                    <div class="mt-4" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
+                    <div class="mt-4" x-cloak x-show="selectedRole === 'admin'" style="display: none;" x-transition>
                         <label for="labor_access_level" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labour access') }}</label>
                         <select id="labor_access_level" name="labor_access_level" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             @php($currentLevel = old('labor_access_level', $user->labor_access_level))
@@ -126,7 +126,7 @@
                         </select>
                     </div>
 
-                    <div class="mt-4" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
+                    <div class="mt-4" x-cloak x-show="selectedRole === 'admin'" style="display: none;" x-transition>
                         <label for="labor_team_id_admin" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labour — Team') }} ({{ __('optional') }})</label>
                         <select id="labor_team_id_admin" name="labor_team_id" :disabled="selectedRole !== 'admin'" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">-- {{ __('Select Team') }} --</option>
@@ -142,10 +142,10 @@
                     </div>
                     @endif
 
-                    <div class="mt-6" x-show="selectedRole !== 'super-admin'" x-transition>
+                    <div class="mt-6" x-cloak x-show="selectedRole !== 'super-admin'" x-transition>
                         <h3 class="text-lg font-medium">{{ __('Delegate Permissions') }}</h3>
-                        <p class="text-xs text-gray-500 mt-1" x-show="selectedRole !== 'admin'">{{ __('Ticked = this ID currently has access. Untick to revoke below the role\'s default, or tick extra ones to grant beyond it.') }}</p>
-                        <p class="text-xs text-gray-500 mt-1" x-show="selectedRole === 'admin'" style="display: none;">{{ __('Admin has full access to everything else already — the items below are the only ones that must be granted individually.') }}</p>
+                        <p class="text-xs text-gray-500 mt-1" x-cloak x-show="selectedRole !== 'admin'">{{ __('Ticked = this ID currently has access. Untick to revoke below the role\'s default, or tick extra ones to grant beyond it.') }}</p>
+                        <p class="text-xs text-gray-500 mt-1" x-cloak x-show="selectedRole === 'admin'" style="display: none;">{{ __('Admin has full access to everything else already — the items below are the only ones that must be granted individually.') }}</p>
                         <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                             {{--
                                 Admin bypasses every permission check automatically (see the
@@ -159,7 +159,7 @@
                                 with AppServiceProvider's Gate::before.
                             --}}
                             @foreach ($allPermissions as $permission)
-                                <div x-show="selectedRole !== 'admin' || {{ in_array($permission->name, ['move-attachments'], true) ? 'true' : 'false' }}">
+                                <div x-cloak x-show="selectedRole !== 'admin' || {{ in_array($permission->name, ['move-attachments'], true) ? 'true' : 'false' }}">
                                     <label for="perm-{{ $permission->id }}" class="inline-flex items-center">
                                         <input id="perm-{{ $permission->id }}" type="checkbox" name="permissions[]" value="{{ $permission->name }}"
                                             {{ in_array($permission->name, $initialCheckedPermissions, true) ? 'checked' : '' }}
@@ -176,7 +176,7 @@
                             @endforeach
                         </div>
                     </div>
-                    <div class="mt-6 text-sm text-gray-500" x-show="selectedRole === 'super-admin'" x-transition style="display: none;">
+                    <div class="mt-6 text-sm text-gray-500" x-cloak x-show="selectedRole === 'super-admin'" x-transition style="display: none;">
                         {{ __('Super Admin always has full access — individual permissions cannot be restricted for this role.') }}
                     </div>
 
