@@ -187,7 +187,13 @@ class JobCheckService
 
             Storage::disk('local')->makeDirectory("job-check/{$session->id}");
             $this->writeWorkbook($moved, Storage::disk('local')->path("job-check/{$session->id}/moved.xlsx"));
-            $this->writeWorkbook($notMoved, Storage::disk('local')->path("job-check/{$session->id}/not_moved.xlsx"));
+            // No photos for "not moved" — this bucket is typically the vast
+            // majority of subjects, and embedding a photo per row (a disk
+            // exists() check + a PhpSpreadsheet Drawing) was the dominant
+            // cost of finishing a job-check session. A "nothing changed"
+            // confirmation list doesn't need per-row visual verification the
+            // way the "moved" report does.
+            $this->writeWorkbook($notMoved, Storage::disk('local')->path("job-check/{$session->id}/not_moved.xlsx"), includePhotos: false);
 
             $businessDate = AccountingPeriodService::businessDate($session->started_at ?? $now);
             $sequence = (int) (JobCheckSession::where('business_date', $businessDate->toDateString())
@@ -369,7 +375,7 @@ class JobCheckService
     // Excel export
     // ------------------------------------------------------------------
 
-    protected function writeWorkbook(array $rowsByMenu, string $absolutePath): void
+    protected function writeWorkbook(array $rowsByMenu, string $absolutePath, bool $includePhotos = true): void
     {
         $spreadsheet = new Spreadsheet();
         $spreadsheet->removeSheetByIndex(0);
@@ -423,7 +429,9 @@ class JobCheckService
                     $row['checked_at'],
                 ], null, "A{$rowNum}");
 
-                $sheet->getRowDimension($rowNum)->setRowHeight(90); // ~120px, room for the photo
+                if ($includePhotos) {
+                    $sheet->getRowDimension($rowNum)->setRowHeight(90); // ~120px, room for the photo
+                }
 
                 // Same per-cell styling as EmployeeController's Advanced
                 // Export (the "hasPhoto" branch): vertical-center keeps
@@ -442,7 +450,13 @@ class JobCheckService
                     ],
                 ]);
 
-                if (!empty($row['photo_path']) && Storage::disk('public')->exists($row['photo_path'])) {
+                // Photo embedding (a Storage::exists() disk hit + a
+                // PhpSpreadsheet Drawing per row) is the dominant cost of
+                // this method — skipped entirely for the "not moved"
+                // workbook (see completeSession()), since that report is
+                // just a large confirmation list, not something needing
+                // per-row visual identity verification like "moved" does.
+                if ($includePhotos && !empty($row['photo_path']) && Storage::disk('public')->exists($row['photo_path'])) {
                     $drawing = new Drawing();
                     $drawing->setName('Employee Photo');
                     $drawing->setDescription('Employee Photo');
@@ -452,7 +466,7 @@ class JobCheckService
                     $drawing->setOffsetX(28);
                     $drawing->setOffsetY(10);
                     $drawing->setWorksheet($sheet);
-                } else {
+                } elseif ($includePhotos) {
                     $sheet->setCellValue("B{$rowNum}", __('No Photo'));
                 }
 
