@@ -411,6 +411,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     @if(in_array($mode, ['overview', 'overview-plus-own-team']))
     const overviewCtx = document.getElementById('overviewChart').getContext('2d');
+    // Grouped (not stacked): a team with a small Paid or Outstanding value
+    // next to a much bigger one on the other axis would otherwise be
+    // squeezed into an unreadable, unclickable sliver inside the stack.
     new Chart(overviewCtx, {
         type: 'bar',
         data: {
@@ -420,13 +423,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     label: '{{ __('Paid') }}',
                     data: @json($teams->pluck('paid')),
                     backgroundColor: '#198754',
-                    stack: 'total',
+                    minBarLength: 4,
                 },
                 {
                     label: '{{ __('Outstanding') }}',
                     data: @json($teams->pluck('outstanding')),
                     backgroundColor: '#ffc107',
-                    stack: 'total',
+                    minBarLength: 4,
                 },
             ],
         },
@@ -434,8 +437,8 @@ document.addEventListener('DOMContentLoaded', function () {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { stacked: true, grid: { display: false } },
-                y: { stacked: true, beginAtZero: true, grid: { borderDash: [2, 4] } },
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
             },
             plugins: {
                 legend: { position: 'bottom' },
