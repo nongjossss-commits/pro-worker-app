@@ -423,9 +423,9 @@
 
                 <div class="d-flex gap-2 flex-wrap justify-content-end">
                     @can('edit-employees')
-                    <a href="{{ route('production.renewal.create', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-warning text-white fw-bold">
-                        <i class="bi bi-plus-lg me-1"></i> {{ __('New Employee') }}
-                    </a>
+                    <button type="button" class="btn btn-warning text-white fw-bold" onclick="window.openRenewalAddEmployeeModal(null, null)">
+                        <i class="bi bi-plus-lg me-1"></i> {{ __('Add Employee') }}
+                    </button>
                     <a href="{{ route('production.renewal.import', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-success fw-bold">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> {{ __('Import Employees') }}
                     </a>
@@ -685,9 +685,10 @@
 
                                  @can('edit-employees')
                                  {{-- Add Employee Button --}}
-                                 <a href="{{ route('production.renewal.create', ['employer_id' => $employer->id, 'resolutionTab' => $currentTab->id]) }}" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}">
+                                 <button type="button" class="btn btn-outline-warning btn-sm fw-bold {{ $isEmployerCancelled ? 'd-none' : '' }}"
+                                         onclick="event.stopPropagation(); window.openRenewalAddEmployeeModal({{ $employer->id }}, {{ Js::from($employer->employerNameTh ?? $employer->employerNameEn) }})">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
-                                 </a>
+                                 </button>
 
                                  {{-- History Button removed — completed employees now stay in the main list
                                       as green cards instead of being archived after 24 hours. --}}
@@ -903,6 +904,9 @@
 
 {{-- Cropper Modal (Required for Employee Edit) --}}
 <x-cropper-modal />
+
+{{-- Add Employee Modal (New / Search Internal / Import Excel) --}}
+@include('production.renewal.partials.add_employee_modal')
 
 {{-- Resolution Auto-Settings Modal (per-tab) --}}
 <div class="modal fade" id="resolutionSettingsModal" tabindex="-1">

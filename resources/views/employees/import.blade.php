@@ -85,6 +85,10 @@
                             <input type="hidden" name="return_to" value="{{ request('return_to') }}">
                         @endif
 
+                        @if(request('resolution_tab_id'))
+                            <input type="hidden" name="resolution_tab_id" value="{{ request('resolution_tab_id') }}">
+                        @endif
+
                         <div class="mb-4">
                             <label for="employer_id" class="form-label fw-bold required">{{ __('Select Employer') }}</label>
 

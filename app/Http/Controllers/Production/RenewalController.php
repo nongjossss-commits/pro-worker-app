@@ -1491,7 +1491,12 @@ class RenewalController extends Controller
              }
         }
 
-        $request->merge(['target_status' => 'renewal_pending']);
+        // resolution_tab_id must travel with the import form (see
+        // employees/import.blade.php's hidden inputs) — without it,
+        // ImportEmployeeController::store() creates employees with
+        // resolution_tab_id = NULL, which are then invisible in every
+        // Renewal tab (every tab's own query filters by its own tab id).
+        $request->merge(['target_status' => 'renewal_pending', 'resolution_tab_id' => $this->currentTab->id]);
         session()->flash('finish_route', route('production.renewal.index', ['resolutionTab' => $this->currentTab->id]));
 
         // Hydrate imported employees from session IDs if available (Restoring Preview Feature)
@@ -1988,6 +1993,147 @@ class RenewalController extends Controller
 
         return redirect()->route('production.renewal.index', ['resolutionTab' => $this->currentTab->id])
             ->with('success', $msg);
+    }
+
+    /**
+     * API: Search employees already in the system under a specific
+     * employer, for the "Add Employee" modal's "Search Internal" tab. Used
+     * to pull an EXISTING employee into the currently-open renewal tab
+     * (see addExisting() below) instead of re-entering them from scratch.
+     *
+     * Unlike WorkflowController::searchGlobalEmployees()/
+     * searchResignedEmployees() (which this mirrors for the field list),
+     * employer_id here is MANDATORY, not an optional filter — an employee
+     * must belong to the employer selected in the modal to ever be a valid
+     * result, matching how Renewal Resolution is always employer-scoped.
+     */
+    public function searchExistingEmployees(Request $request, $resolutionTab, $employerId)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        $search = trim((string) $request->input('q', ''));
+
+        $query = Employee::withoutGlobalScope('employerTenancy')
+            ->where('employer_id', $employerId)
+            ->whereNull('terminated_at')
+            ->with('employer');
+
+        if ($search !== '') {
+            $term = "%{$search}%";
+            $query->where(function ($q) use ($term) {
+                $q->where('employeeNameTh', 'like', $term)
+                  ->orWhere('employeeNameEn', 'like', $term)
+                  ->orWhere('name_suffix', 'like', $term)
+                  ->orWhere('employeePassport', 'like', $term)
+                  ->orWhere('employeeWorkPermit', 'like', $term)
+                  ->orWhere('employee_id_number', 'like', $term)
+                  ->orWhere('name_list_number', 'like', $term)
+                  ->orWhere('employer_employee_id', 'like', $term);
+            });
+        }
+
+        $employees = $query->orderBy('employeeNameTh')->limit(50)->get();
+
+        return response()->json($employees->map(function (Employee $employee) {
+            return [
+                'id' => $employee->id,
+                'employeeNameTh' => $employee->employeeNameTh,
+                'employeeNameEn' => $employee->employeeNameEn,
+                'employeePassport' => $employee->employeePassport,
+                'name_list_number' => $employee->name_list_number,
+                'status' => $employee->status,
+                'photo_url' => $employee->photo_url,
+                'employer' => $employee->employer ? [
+                    'employerNameTh' => $employee->employer->employerNameTh,
+                    'employerNameEn' => $employee->employer->employerNameEn,
+                ] : null,
+            ];
+        }));
+    }
+
+    /**
+     * API: Attach one or more EXISTING employees (found via
+     * searchExistingEmployees() above) into the currently-open renewal
+     * tab. Re-validates employer_id server-side for every employee (the
+     * client-side search already scopes by employer, but a request could
+     * be forged) — any employee that doesn't actually belong to the given
+     * employer is silently skipped, never attached.
+     */
+    public function addExisting(Request $request, $resolutionTab)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        $validated = $request->validate([
+            'employer_id' => 'required|exists:employers,id',
+            'employee_ids' => 'required|array|min:1',
+            'employee_ids.*' => 'integer',
+        ]);
+
+        $tabId = $this->currentTab->id;
+        $attached = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($validated, $tabId, &$attached, &$skipped) {
+            $employees = Employee::withoutGlobalScope('employerTenancy')
+                ->whereIn('id', $validated['employee_ids'])
+                ->where('employer_id', $validated['employer_id'])
+                ->whereNull('terminated_at')
+                ->get();
+
+            $skipped = count($validated['employee_ids']) - $employees->count();
+
+            foreach ($employees as $employee) {
+                if ($this->attachExistingEmployeeToTab($employee, $tabId)) {
+                    $attached++;
+                }
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'attached' => $attached,
+            'skipped' => $skipped,
+            'message' => "เพิ่มลูกจ้างเข้ามติต่ออายุนี้แล้ว {$attached} ราย" . ($skipped > 0 ? " (ข้าม {$skipped} รายที่ไม่ตรงเงื่อนไข)" : ''),
+        ]);
+    }
+
+    /**
+     * Attach a single existing Employee into resolution tab $tabId — the
+     * same 3-way decision configureExpiry() applies in bulk (by expiry
+     * date), extracted here so a manually-picked single employee (via
+     * addExisting() above) gets identical, correct tab-scoping:
+     *   - Registration-status → dual-list via EmployeeRenewalLink, their
+     *     real status/resolution_tab_id is never touched.
+     *   - renewal_pending in a DIFFERENT tab → moved (resolution_tab_id
+     *     reassigned) into this tab.
+     *   - No resolution status yet → pulled straight in.
+     *   - Already in this tab → no-op.
+     * Returns true if something changed, false if it was already in this
+     * tab (nothing to do).
+     */
+    protected function attachExistingEmployeeToTab(Employee $employee, int $tabId): bool
+    {
+        $registrationStatuses = ['registration_pending', 'registration_completed', 'registration_cancelled'];
+
+        if (in_array($employee->status, $registrationStatuses, true)) {
+            $link = \App\Models\EmployeeRenewalLink::firstOrCreate(
+                ['employee_id' => $employee->id, 'resolution_tab_id' => $tabId],
+                ['status' => 'renewal_pending']
+            );
+            return $link->wasRecentlyCreated;
+        }
+
+        if ($employee->status === 'renewal_pending') {
+            if ((int) $employee->resolution_tab_id === $tabId) {
+                return false; // already here
+            }
+            $employee->update(['resolution_tab_id' => $tabId]);
+            return true;
+        }
+
+        // No resolution status yet — pull straight in.
+        $employee->update(['status' => 'renewal_pending', 'resolution_tab_id' => $tabId]);
+        return true;
     }
 
     /**

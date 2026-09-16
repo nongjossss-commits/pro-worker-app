@@ -1485,7 +1485,11 @@ class RegistrationController extends Controller
              }
         }
 
-        $request->merge(['target_status' => 'registration_pending']);
+        // resolution_tab_id must travel with the import form (see
+        // employees/import.blade.php's hidden inputs) — without it,
+        // ImportEmployeeController::store() creates employees with
+        // resolution_tab_id = NULL, invisible in every Registration tab.
+        $request->merge(['target_status' => 'registration_pending', 'resolution_tab_id' => $this->currentTab->id]);
 
         session()->flash('finish_route', route('production.registration.index', ['resolutionTab' => $this->currentTab->id]));
 

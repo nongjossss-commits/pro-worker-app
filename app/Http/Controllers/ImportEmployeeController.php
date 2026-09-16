@@ -279,6 +279,7 @@ class ImportEmployeeController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,xlsm|max:20480', // 20MB limit
             'production_id' => 'nullable|exists:production_orders,id',
             'target_status' => 'nullable|string', // Added target_status
+            'resolution_tab_id' => 'nullable|exists:resolution_tabs,id',
         ]);
 
         $employerId = $request->input('employer_id');
@@ -286,6 +287,11 @@ class ImportEmployeeController extends Controller
         $targetStatus = $request->input('target_status'); // Get target status
         $workTypeId = $request->input('work_type_id'); // New
         $returnTo = $request->input('return_to'); // New
+        // Only present when imported from inside a specific Registration/
+        // Renewal Resolution tab (see RenewalController::importView()'s
+        // docblock) — without this, imported employees ended up with
+        // resolution_tab_id = NULL and were invisible in every tab.
+        $resolutionTabId = $request->input('resolution_tab_id');
         $file = $request->file('file');
 
         // Logic to create order if missing (when importing from generic context)
@@ -679,6 +685,10 @@ class ImportEmployeeController extends Controller
                     'visaEndorsementNo' => $visaEndorsementNo,
                     'workPermitIssueDate' => $workPermitIssueDate,
                 ];
+
+                if ($resolutionTabId) {
+                    $employeeData['resolution_tab_id'] = $resolutionTabId;
+                }
 
                 if ($nationality === 'กัมพูชา') {
                     $employeeData['passport_type_cambodia'] = $bookType;
