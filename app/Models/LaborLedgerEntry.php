@@ -22,6 +22,10 @@ class LaborLedgerEntry extends Model
         'request_number',
         'quantity',
         'unit_rate',
+        'qty_laos',
+        'qty_myanmar',
+        'qty_cambodia',
+        'qty_vietnam',
         'created_by',
         'updated_by',
     ];
@@ -33,6 +37,10 @@ class LaborLedgerEntry extends Model
             'amount' => 'decimal:2',
             'unit_rate' => 'decimal:2',
             'quantity' => 'integer',
+            'qty_laos' => 'integer',
+            'qty_myanmar' => 'integer',
+            'qty_cambodia' => 'integer',
+            'qty_vietnam' => 'integer',
         ];
     }
 

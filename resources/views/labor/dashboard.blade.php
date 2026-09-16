@@ -14,9 +14,9 @@
 <h5 class="fw-bold mb-3"><i class="bi bi-globe me-2"></i>{{ __('All Teams Overview') }}</h5>
 <div class="row mb-3 g-3">
     <div class="col-md-3">
-        <div class="card stat-card shadow-sm border-0 bg-dark text-white">
+        <div class="card stat-card shadow-sm border-0 text-dark" style="background-color: #fd7e14;">
             <div class="card-body">
-                <div class="text-white-50 small text-uppercase fw-bold">{{ __('Total Billed') }}</div>
+                <div class="small text-uppercase fw-bold opacity-75">{{ __('Total Billed') }}</div>
                 <div class="fs-2 fw-bold">{{ number_format($overviewBilled, 2) }}</div>
             </div>
         </div>
@@ -59,6 +59,54 @@
         </div>
     </div>
 </div>
+
+@if($chargeTypeStats->isNotEmpty())
+<div class="card stat-card shadow-sm border-0 mb-4 text-dark" style="background-color: #fd7e14;">
+    <div class="card-body text-center py-4">
+        <div class="small text-uppercase fw-bold mb-1 opacity-75"><i class="bi bi-people-fill me-1"></i>{{ __('Total Headcount (All Charge Types)') }}</div>
+        <div class="display-4 fw-bold">{{ number_format($chargeTypeGrandTotal) }}</div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-bar-chart-steps me-2"></i>{{ __('Headcount by Charge Type & Nationality') }}</h6>
+    </div>
+    <div class="card-body">
+        <div style="position: relative; height: 340px; width: 100%;">
+            <canvas id="chargeTypeNationalityChart"></canvas>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ __('Charge Type') }}</th>
+                    <th class="text-end">{{ __('Total') }}</th>
+                    <th class="text-end">ลาว</th>
+                    <th class="text-end">เมียนมา</th>
+                    <th class="text-end">กัมพูชา</th>
+                    <th class="text-end">เวียดนาม</th>
+                    <th class="text-end text-muted">{{ __('Unspecified') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($chargeTypeStats as $stat)
+                <tr>
+                    <td>{{ $stat['type']->name }}</td>
+                    <td class="text-end fw-bold">{{ number_format($stat['total']) }}</td>
+                    <td class="text-end">{{ number_format($stat['laos']) }}</td>
+                    <td class="text-end">{{ number_format($stat['myanmar']) }}</td>
+                    <td class="text-end">{{ number_format($stat['cambodia']) }}</td>
+                    <td class="text-end">{{ number_format($stat['vietnam']) }}</td>
+                    <td class="text-end text-muted">{{ $stat['unspecified'] > 0 ? number_format($stat['unspecified']) : '-' }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -388,6 +436,41 @@ document.addEventListener('DOMContentLoaded', function () {
             scales: {
                 x: { stacked: true, grid: { display: false } },
                 y: { stacked: true, beginAtZero: true, grid: { borderDash: [2, 4] } },
+            },
+            plugins: {
+                legend: { position: 'bottom' },
+            },
+        },
+    });
+    @endif
+
+    @if($chargeTypeStats->isNotEmpty())
+    const chargeTypeCtx = document.getElementById('chargeTypeNationalityChart').getContext('2d');
+    new Chart(chargeTypeCtx, {
+        type: 'bar',
+        data: {
+            labels: @json($chargeTypeStats->pluck('type.name')),
+            // Grouped (not stacked) on purpose: stacking squeezes a small
+            // nationality's count into a sliver a few pixels tall inside a
+            // much bigger total, making it unreadable and basically
+            // unclickable. Each bar getting its own full-height column (plus
+            // minBarLength so even a count of 1 stays visibly clickable)
+            // keeps every value legible regardless of how the totals compare
+            // across charge types.
+            datasets: [
+                { label: 'ลาว', data: @json($chargeTypeStats->pluck('laos')), backgroundColor: '#2a78d6', minBarLength: 4 },
+                { label: 'เมียนมา', data: @json($chargeTypeStats->pluck('myanmar')), backgroundColor: '#eb6834', minBarLength: 4 },
+                { label: 'กัมพูชา', data: @json($chargeTypeStats->pluck('cambodia')), backgroundColor: '#1baf7a', minBarLength: 4 },
+                { label: 'เวียดนาม', data: @json($chargeTypeStats->pluck('vietnam')), backgroundColor: '#eda100', minBarLength: 4 },
+                { label: '{{ __('Unspecified') }}', data: @json($chargeTypeStats->pluck('unspecified')), backgroundColor: '#898781', minBarLength: 4 },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, ticks: { precision: 0 }, grid: { borderDash: [2, 4] } },
             },
             plugins: {
                 legend: { position: 'bottom' },

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Labor;
 use App\Http\Controllers\Controller;
 use App\Models\LaborBill;
 use App\Models\LaborBookAccount;
+use App\Models\LaborChargeType;
 use App\Models\LaborLedgerEntry;
 use App\Models\LaborTeam;
 use App\Models\LaborTeamMember;
@@ -57,6 +58,7 @@ class LaborDashboardController extends Controller
         }
 
         $summaries = LaborTeam::orderBy('name')->get()->map(fn ($team) => $this->teamSummary($team->id));
+        $chargeTypeStats = LaborChargeType::nationalityStats();
 
         $data = [
             'mode' => 'overview',
@@ -64,6 +66,8 @@ class LaborDashboardController extends Controller
             'canManage' => $user->can('manage-labor-ledger'),
             'recentActivity' => $this->recentActivity(null),
             'booksBalance' => $this->totalBooksBalance(),
+            'chargeTypeStats' => $chargeTypeStats,
+            'chargeTypeGrandTotal' => $chargeTypeStats->sum('total'),
         ];
 
         if ($user->hasRole('labor-shareholder') && $user->labor_team_id) {
