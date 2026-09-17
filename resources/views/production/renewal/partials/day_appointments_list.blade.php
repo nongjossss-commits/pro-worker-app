@@ -81,7 +81,7 @@
         @foreach($employees as $employee)
         @php
             $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
-            $reqNo = $employee->renewal_request_number ?? $employee->registration_request_number ?? $employee->request_number ?? null;
+            $reqNo = $employee->renewal_request_number;
         @endphp
         <div class="col-12 appt-card-item"
              data-search="{{ strtolower(implode(' ', array_filter([

@@ -642,16 +642,20 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
     public function updateMenuFields(Request $request, Employee $employee)
     {
-        $request->validate([
+        $validated = $request->validate([
             'type' => 'required|in:registration,renewal',
             'request_number' => 'nullable|string|max:255',
+            'resolution_tab_id' => 'required|exists:resolution_tabs,id',
         ]);
 
-        if ($request->type === 'registration') {
-            $employee->update(['registration_request_number' => $request->request_number]);
-        } elseif ($request->type === 'renewal') {
-            $employee->update(['renewal_request_number' => $request->request_number]);
-        }
+        // Scoped per (employee, resolution_tab_id) — see
+        // EmployeeRequestNumber's docblock. The old flat
+        // registration_request_number/renewal_request_number columns are no
+        // longer written here; they're left as unused legacy data.
+        \App\Models\EmployeeRequestNumber::updateOrCreate(
+            ['employee_id' => $employee->id, 'resolution_tab_id' => $validated['resolution_tab_id']],
+            ['request_number' => $validated['request_number']]
+        );
 
         return response()->json(['success' => true]);
     }
