@@ -163,4 +163,91 @@ trait HasResolutionTab
             $employee->appointment_updated_at = $appointment->appointment_updated_at ?? null;
         }
     }
+
+    /**
+     * Same idea as applyTabAppointments() but for "เลขรับคำขอ" (request
+     * number) — overwrite each Employee model's own (legacy, un-scoped)
+     * registration_request_number/renewal_request_number attributes
+     * IN-MEMORY with the value scoped to $resolutionTabId. Never persisted.
+     *
+     * @param  \Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Collection|iterable  $employees
+     */
+    protected function applyTabRequestNumbers($employees, int $resolutionTabId): void
+    {
+        $ids = [];
+        foreach ($employees as $employee) {
+            if ($employee->id) {
+                $ids[] = $employee->id;
+            }
+        }
+        $ids = array_unique($ids);
+        if (empty($ids)) {
+            return;
+        }
+
+        $requestNumbers = \App\Models\EmployeeRequestNumber::where('resolution_tab_id', $resolutionTabId)
+            ->whereIn('employee_id', $ids)
+            ->get()
+            ->keyBy('employee_id');
+
+        foreach ($employees as $employee) {
+            $value = $requestNumbers->get($employee->id)->request_number ?? null;
+            $employee->registration_request_number = $value;
+            $employee->renewal_request_number = $value;
+        }
+    }
+
+    /**
+     * Overwrite each Employee model's team_name attribute IN-MEMORY (a
+     * transient attribute — there is no such column on `employees`) with
+     * the team assignment scoped to $resolutionTabId. Never persisted.
+     *
+     * @param  \Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Collection|iterable  $employees
+     */
+    protected function applyTabTeams($employees, int $resolutionTabId): void
+    {
+        $ids = [];
+        foreach ($employees as $employee) {
+            if ($employee->id) {
+                $ids[] = $employee->id;
+            }
+        }
+        $ids = array_unique($ids);
+        if (empty($ids)) {
+            return;
+        }
+
+        $assignments = \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $resolutionTabId)
+            ->whereIn('employee_id', $ids)
+            ->get()
+            ->keyBy('employee_id');
+
+        foreach ($employees as $employee) {
+            $employee->team_name = $assignments->get($employee->id)->team_name ?? null;
+        }
+    }
+
+    /**
+     * Distinct team names already in use within this tab AND this employer,
+     * for the "existing teams" chip list in the "จัดทีม" modal — queried
+     * straight from the database instead of scraped from rendered HTML (as
+     * Workflow's version does), since Registration/Renewal's employee list
+     * is AJAX-paginated per employer and would never have every team
+     * visible in the DOM at once.
+     *
+     * Scoped per employer on purpose (not tab-wide): team names are a
+     * small, free-form vocabulary each employer defines for their own
+     * batch of employees — Employer B opening this modal must never see
+     * Employer A's "Team 1"/"Team 2"/"Team 3" as suggestions, even though
+     * both sit in the same tab.
+     */
+    protected function getTabTeamNames(int $resolutionTabId, int $employerId): array
+    {
+        return \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $resolutionTabId)
+            ->where('employer_id', $employerId)
+            ->distinct()
+            ->orderBy('team_name')
+            ->pluck('team_name')
+            ->all();
+    }
 }

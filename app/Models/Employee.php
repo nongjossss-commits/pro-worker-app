@@ -466,6 +466,27 @@ class Employee extends Model
         return $this->hasMany(\App\Models\EmployeeAppointment::class);
     }
 
+    // One independent "เลขรับคำขอ" per ResolutionTab this employee is
+    // visible in — see EmployeeRequestNumber's docblock. Never read this
+    // employee's own registration_request_number/renewal_request_number/
+    // request_number columns directly for Registration/Renewal display —
+    // those are legacy/unused, kept only so nothing already set before this
+    // table existed was lost.
+    public function requestNumbers()
+    {
+        return $this->hasMany(\App\Models\EmployeeRequestNumber::class);
+    }
+
+    // One independent team assignment per ResolutionTab this employee is
+    // visible in — see EmployeeTeamAssignment's docblock. Unrelated to
+    // teams()/EmployeeTeam above (that's the employer-scoped grouping
+    // feature under /groups, not the per-tab "จัดทีม" feature ported from
+    // Workflow).
+    public function teamAssignments()
+    {
+        return $this->hasMany(\App\Models\EmployeeTeamAssignment::class);
+    }
+
     // --- New Relationships for Registration Process ---
     public function registrationSteps()
     {

@@ -1266,6 +1266,8 @@ class RenewalController extends Controller
         // since both are keyed the same way in employee_appointments. See
         // HasResolutionTab::applyTabAppointments().
         $this->applyTabAppointments($employees, $this->currentTab->id);
+        $this->applyTabRequestNumbers($employees, $this->currentTab->id);
+        $this->applyTabTeams($employees, $this->currentTab->id);
 
         foreach ($employees as $emp) {
             $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
@@ -1276,6 +1278,7 @@ class RenewalController extends Controller
             'employer' => $employer,
             'steps' => $steps,
             'renewalTargets' => $this->getRenewalTargets('renewal'),
+            'existingTeamNames' => $this->getTabTeamNames($this->currentTab->id, $employer->id),
         ], $this->getTabViewData('renewal')));
     }
 
@@ -2198,6 +2201,109 @@ class RenewalController extends Controller
     }
 
     /**
+     * Assign or clear one employee's team for this tab — see
+     * EmployeeTeamAssignment's docblock. Ported from Workflow's
+     * WorkflowController::updateGroup() (the live "จัดทีม" feature there),
+     * scoped by resolution_tab_id instead of production_order_id.
+     */
+    public function updateEmployeeTeam(Request $request, $resolutionTab, Employee $employee)
+    {
+        $tab = $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $validated = $request->validate(['team_name' => 'nullable|string|max:255']);
+        $teamName = trim((string) ($validated['team_name'] ?? ''));
+
+        if ($teamName === '') {
+            \App\Models\EmployeeTeamAssignment::where('employee_id', $employee->id)
+                ->where('resolution_tab_id', $tab->id)
+                ->delete();
+        } else {
+            \App\Models\EmployeeTeamAssignment::updateOrCreate(
+                ['employee_id' => $employee->id, 'resolution_tab_id' => $tab->id],
+                ['employer_id' => $employee->employer_id, 'team_name' => $teamName]
+            );
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Rename a team across every employee under this employer, in this tab,
+     * who shares the name — ported from WorkflowController::renameGroup(),
+     * additionally scoped by employer_id (see EmployeeTeamAssignment's
+     * docblock: team names are a per-employer vocabulary).
+     */
+    public function renameTeam(Request $request, $resolutionTab)
+    {
+        $tab = $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'employer_id' => 'required|exists:employers,id',
+            'old_name' => 'required|string|max:255',
+            'new_name' => 'required|string|max:255',
+        ]);
+
+        \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $tab->id)
+            ->where('employer_id', $data['employer_id'])
+            ->where('team_name', $data['old_name'])
+            ->update(['team_name' => $data['new_name']]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Clear a team label across every employee under this employer, in this
+     * tab, who shares the name — ported from WorkflowController::
+     * deleteGroup(). Only clears the label; employees are never touched.
+     */
+    public function deleteTeam(Request $request, $resolutionTab)
+    {
+        $tab = $this->resolveTab($resolutionTab, 'renewal');
+
+        if (!auth()->user()->can('edit-employees')) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'employer_id' => 'required|exists:employers,id',
+            'name' => 'required|string|max:255',
+        ]);
+
+        \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $tab->id)
+            ->where('employer_id', $data['employer_id'])
+            ->where('team_name', $data['name'])
+            ->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Distinct team names currently in use under this employer, in this tab
+     * — fetched fresh each time the "จัดทีม" modal opens, instead of
+     * scraped from whatever happens to be rendered in the DOM (Workflow's
+     * version does that, but it only works there because a whole order's
+     * items are always fully rendered at once; Registration/Renewal's
+     * employee list is AJAX-paginated per employer, so nowhere near every
+     * team would ever be visible in the DOM at once).
+     */
+    public function teamNames(Request $request, $resolutionTab)
+    {
+        $tab = $this->resolveTab($resolutionTab, 'renewal');
+
+        $data = $request->validate(['employer_id' => 'required|exists:employers,id']);
+
+        return response()->json(['names' => $this->getTabTeamNames($tab->id, (int) $data['employer_id'])]);
+    }
+
+    /**
      * API: Toggle Appointment Complete
      */
     public function toggleAppointmentComplete(Request $request, $resolutionTab, Employee $employee)
@@ -2323,6 +2429,8 @@ class RenewalController extends Controller
             ->with(['employer'])
             ->orderBy('employee_appointments.appointment_date')
             ->get();
+
+        $this->applyTabRequestNumbers($employees, $tabId);
 
         $steps = RegistrationStep::renewal()->orderBy('order')->get();
 

@@ -908,6 +908,9 @@
 {{-- Add Employee Modal (New / Search Internal / Import Excel) --}}
 @include('production.renewal.partials.add_employee_modal')
 
+{{-- Manage Team Modal (ported from Workflow's "จัดทีม") --}}
+@include('production.partials.manage_team_modal', ['teamRouteNamespace' => 'production.renewal'])
+
 {{-- Resolution Auto-Settings Modal (per-tab) --}}
 <div class="modal fade" id="resolutionSettingsModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">

@@ -768,6 +768,7 @@
                 refId: @js($employee->employee_reference_id ?? ''),
                 updateMethod: @js($updateMethod),
                 updateUrl: @js($updateUrl),
+                resolutionTabId: @js(optional($currentTab ?? null)->id),
                 copy(el, text) {
                     if (!text) return;
                     navigator.clipboard.writeText(text).then(() => {
@@ -811,6 +812,7 @@
                     } else if (this.updateMethod === 'menu_update') {
                         formData.append('type', '{{ $isRegistration ? 'registration' : 'renewal' }}');
                         formData.append('request_number', this.reqNo);
+                        formData.append('resolution_tab_id', this.resolutionTabId);
                     }
 
                     // Request 1: Update the specific request number (item or menu)
@@ -976,7 +978,23 @@
                         title="{{ __('Manage Team') }}">
                         <i class="bi bi-people-fill"></i> <span class="d-none d-lg-inline">{{ __('Team') }}</span>
                     </button>
+                @endif
 
+                @if($isRegistration || $isRenewal)
+                    {{-- TEAM (ported from Workflow's "จัดทีม", scoped per
+                         Resolution Tab instead of ProductionOrder — see
+                         EmployeeTeamAssignment's docblock) --}}
+                    <button class="btn btn-sm rounded-pill px-3 {{ $employee->team_name ?? null ? 'btn-primary' : 'btn-outline-primary' }}"
+                        onclick="openManageEmployeeTeamModal({{ $employee->id }}, this)"
+                        data-team-name="{{ $employee->team_name ?? '' }}"
+                        data-employer-id="{{ $employee->employer_id }}"
+                        title="{{ __('Manage Team') }}">
+                        <i class="bi bi-people-fill"></i>
+                        <span class="d-none d-lg-inline">{{ ($employee->team_name ?? null) ?: __('Team') }}</span>
+                    </button>
+                @endif
+
+                @if($isPreProductionContext && isset($employee->production_item))
                     {{-- CANCEL --}}
                     <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 {{ ($isCompleted || $isCancelled || $isHistory) ? 'd-none' : '' }}"
                         id="btn-cancel-{{ $employee->id }}"

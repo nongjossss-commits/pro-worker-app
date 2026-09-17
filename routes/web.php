@@ -392,6 +392,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RegistrationController::class, 'updateAppointment'])->name('appointment');
         Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RegistrationController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
 
+        // Team assignment (ported from Workflow's "จัดทีม")
+        Route::post('/{employee}/team', [App\Http\Controllers\Production\RegistrationController::class, 'updateEmployeeTeam'])->name('team.update');
+        Route::post('/team/rename', [App\Http\Controllers\Production\RegistrationController::class, 'renameTeam'])->name('team.rename');
+        Route::post('/team/delete', [App\Http\Controllers\Production\RegistrationController::class, 'deleteTeam'])->name('team.delete');
+        Route::get('/team/names', [App\Http\Controllers\Production\RegistrationController::class, 'teamNames'])->name('team.names');
+
         Route::post('/settings/notification', [App\Http\Controllers\Production\RegistrationController::class, 'updateNotificationSettings'])->name('settings.notification');
         Route::post('/settings/resolution', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionSettings'])->name('settings.resolution');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RegistrationController::class, 'getCalendarData'])->name('api.calendar');
@@ -447,6 +453,13 @@ Route::middleware(['auth'])->group(function () {
         // Appointments & Calendar
         Route::post('/{employee}/appointment', [App\Http\Controllers\Production\RenewalController::class, 'updateAppointment'])->name('appointment');
         Route::post('/{employee}/appointment-complete', [App\Http\Controllers\Production\RenewalController::class, 'toggleAppointmentComplete'])->name('appointment_complete');
+
+        // Team assignment (ported from Workflow's "จัดทีม")
+        Route::post('/{employee}/team', [App\Http\Controllers\Production\RenewalController::class, 'updateEmployeeTeam'])->name('team.update');
+        Route::post('/team/rename', [App\Http\Controllers\Production\RenewalController::class, 'renameTeam'])->name('team.rename');
+        Route::post('/team/delete', [App\Http\Controllers\Production\RenewalController::class, 'deleteTeam'])->name('team.delete');
+        Route::get('/team/names', [App\Http\Controllers\Production\RenewalController::class, 'teamNames'])->name('team.names');
+
         Route::post('/settings/notification', [App\Http\Controllers\Production\RenewalController::class, 'updateNotificationSettings'])->name('settings.notification');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RenewalController::class, 'getCalendarData'])->name('api.calendar');
         Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RenewalController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');

@@ -898,6 +898,9 @@
 {{-- Cropper Modal (Required for Employee Edit) --}}
 <x-cropper-modal />
 
+{{-- Manage Team Modal (ported from Workflow's "จัดทีม") --}}
+@include('production.partials.manage_team_modal', ['teamRouteNamespace' => 'production.registration'])
+
 {{-- Manage Steps Modal --}}
 <x-manage-steps-modal
     :steps="$steps"
