@@ -32,19 +32,47 @@ class LaborChargeEntryController extends Controller
         $teams = LaborTeam::orderBy('name')->get();
 
         $search = trim((string) $request->query('search'));
+        $nationality = $request->query('nationality');
+        $nationalityColumns = ['laos' => 'qty_laos', 'myanmar' => 'qty_myanmar', 'cambodia' => 'qty_cambodia', 'vietnam' => 'qty_vietnam'];
 
         $entriesQuery = LaborLedgerEntry::whereNotNull('labor_charge_type_id')
             ->with(['team', 'member', 'chargeType', 'creator'])
             ->when($search !== '', fn ($q) => $q->where('request_number', 'like', '%' . $search . '%'))
             ->when($request->query('team_id'), fn ($q, $v) => $q->where('labor_team_id', $v))
             ->when($request->query('member_id'), fn ($q, $v) => $q->where('labor_team_member_id', $v))
-            ->when($request->query('charge_type_id'), fn ($q, $v) => $q->where('labor_charge_type_id', $v));
+            ->when($request->query('charge_type_id'), fn ($q, $v) => $q->where('labor_charge_type_id', $v))
+            ->when($nationality && $nationality !== 'unspecified' && isset($nationalityColumns[$nationality]), fn ($q) => $q->where($nationalityColumns[$nationality], '>', 0))
+            ->when($nationality === 'unspecified', fn ($q) => $q->whereNull('qty_laos')->whereNull('qty_myanmar')->whereNull('qty_cambodia')->whereNull('qty_vietnam'));
 
         $entries = $entriesQuery
             ->orderByDesc('entry_date')
             ->orderByDesc('id')
             ->paginate(30)
             ->withQueryString();
+
+        // Always the true overall counts, independent of whichever filters are
+        // currently active — shown as the filter dropdown's option labels so
+        // the user can see "how many have no nationality, how many of each"
+        // at a glance before even picking one.
+        $entriesBaseQuery = fn () => LaborLedgerEntry::whereNotNull('labor_charge_type_id');
+        $nationalityCounts = [
+            'laos' => $entriesBaseQuery()->where('qty_laos', '>', 0)->count(),
+            'myanmar' => $entriesBaseQuery()->where('qty_myanmar', '>', 0)->count(),
+            'cambodia' => $entriesBaseQuery()->where('qty_cambodia', '>', 0)->count(),
+            'vietnam' => $entriesBaseQuery()->where('qty_vietnam', '>', 0)->count(),
+            'unspecified' => $entriesBaseQuery()->whereNull('qty_laos')->whereNull('qty_myanmar')->whereNull('qty_cambodia')->whereNull('qty_vietnam')->count(),
+        ];
+
+        // Last 3 entries touched (created or edited), regardless of the
+        // filters/search above — so right after recording or fixing
+        // something, the user can immediately double-check it without
+        // hunting through pagination for wherever its entry_date happens to
+        // sort it.
+        $recentEntries = LaborLedgerEntry::whereNotNull('labor_charge_type_id')
+            ->with(['team', 'member', 'chargeType'])
+            ->orderByDesc('updated_at')
+            ->limit(3)
+            ->get();
 
         // Every active member, grouped by their (fixed-at-registration) team —
         // rendered as a plain <select> with <optgroup> per team. Small roster,
@@ -70,14 +98,25 @@ class LaborChargeEntryController extends Controller
             ->get()
             ->groupBy(fn ($m) => $m->team->name ?? __('No Team'));
 
-        $filters = $request->only(['search', 'team_id', 'member_id', 'charge_type_id']);
+        $filters = $request->only(['search', 'team_id', 'member_id', 'charge_type_id', 'nationality']);
 
         // Always the all-time grand total across every entry, independent of
         // the filters/search above — this is a standing overview, not a
         // reflection of whatever the user happens to be looking at right now.
         $chargeTypeStats = LaborChargeType::nationalityStats();
 
-        return view('labor.charges.index', compact('chargeTypes', 'entries', 'membersByTeam', 'teams', 'allMembersByTeam', 'filters', 'chargeTypeStats'));
+        // The edit modal for a "recent" entry must exist in the DOM even when
+        // that entry is excluded by the current filters/page — otherwise its
+        // "Edit" button in the recent-activity panel would point at a modal
+        // id nothing rendered. Rendering modals for entries+recentEntries
+        // together (deduplicated) covers that without changing what the main
+        // table itself shows.
+        $modalEntries = $entries->getCollection()->concat($recentEntries)->unique('id')->values();
+
+        return view('labor.charges.index', compact(
+            'chargeTypes', 'entries', 'membersByTeam', 'teams', 'allMembersByTeam', 'filters',
+            'chargeTypeStats', 'nationalityCounts', 'recentEntries', 'modalEntries'
+        ));
     }
 
     public function store(Request $request)

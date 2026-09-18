@@ -97,6 +97,49 @@
 </div>
 @endif
 
+@if($recentEntries->isNotEmpty())
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white py-3">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>{{ __('Recently Added or Edited') }}</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ __('Date') }}</th>
+                    <th>{{ __('Team') }}</th>
+                    <th>{{ __('Filed By') }}</th>
+                    <th>{{ __('Charge Type') }}</th>
+                    <th>{{ __('Request No.') }}</th>
+                    <th class="text-end">{{ __('Qty') }}</th>
+                    <th class="text-end">{{ __('Amount') }}</th>
+                    <th class="text-end">{{ __('Actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($recentEntries as $entry)
+                <tr>
+                    <td>{{ $entry->entry_date->format('d/m/Y') }}</td>
+                    <td>{{ $entry->team->name ?? '-' }}</td>
+                    <td>{{ $entry->member->name ?? '-' }}</td>
+                    <td>{{ $entry->chargeType->name ?? '-' }}</td>
+                    <td>{{ $entry->request_number }}</td>
+                    <td class="text-end">{{ $entry->quantity }}</td>
+                    <td class="text-end fw-bold">{{ number_format($entry->amount, 2) }}</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="modal" data-bs-target="#editChargeModal{{ $entry->id }}">
+                            <i class="bi bi-pencil"></i> {{ __('Edit') }}
+                        </button>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 <form method="GET" action="{{ route('labor.charges.index') }}" class="card shadow-sm border-0 mb-3">
     <div class="card-body">
         <div class="row g-2 align-items-end">
@@ -137,6 +180,17 @@
                     @foreach($chargeTypes as $type)
                         <option value="{{ $type->id }}" {{ (string) ($filters['charge_type_id'] ?? '') === (string) $type->id ? 'selected' : '' }}>{{ $type->name }}</option>
                     @endforeach
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small">{{ __('Nationality') }}</label>
+                <select name="nationality" class="form-select">
+                    <option value="">{{ __('All') }}</option>
+                    <option value="laos" {{ ($filters['nationality'] ?? '') === 'laos' ? 'selected' : '' }}>ลาว ({{ number_format($nationalityCounts['laos']) }})</option>
+                    <option value="myanmar" {{ ($filters['nationality'] ?? '') === 'myanmar' ? 'selected' : '' }}>เมียนมา ({{ number_format($nationalityCounts['myanmar']) }})</option>
+                    <option value="cambodia" {{ ($filters['nationality'] ?? '') === 'cambodia' ? 'selected' : '' }}>กัมพูชา ({{ number_format($nationalityCounts['cambodia']) }})</option>
+                    <option value="vietnam" {{ ($filters['nationality'] ?? '') === 'vietnam' ? 'selected' : '' }}>เวียดนาม ({{ number_format($nationalityCounts['vietnam']) }})</option>
+                    <option value="unspecified" {{ ($filters['nationality'] ?? '') === 'unspecified' ? 'selected' : '' }}>{{ __('Unspecified') }} ({{ number_format($nationalityCounts['unspecified']) }})</option>
                 </select>
             </div>
             <div class="col-6 col-md-2 d-flex gap-2">
@@ -217,8 +271,12 @@
      was silently mangling the <form> inside (collapsing it to zero children
      and stranding its own Save button outside of it — Edit Charge could
      never actually save, and the qty×rate live-total script crashed trying
-     to bind listeners on the orphaned, now-childless form). --}}
-@foreach($entries as $entry)
+     to bind listeners on the orphaned, now-childless form). Iterates
+     $modalEntries (current page's entries + the "recently added/edited"
+     list, deduplicated) rather than just $entries, so the recent-activity
+     panel's Edit button always has a matching modal even when that entry
+     is filtered out of, or on a different page than, the main table. --}}
+@foreach($modalEntries as $entry)
 <div class="modal fade" id="editChargeModal{{ $entry->id }}" tabindex="-1">
     <div class="modal-dialog">
         <form method="POST" action="{{ route('labor.charges.update', $entry) }}" class="charge-form">

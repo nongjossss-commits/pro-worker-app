@@ -2386,5 +2386,6 @@
     "Fill in the boxes above to record the breakdown, or leave them all blank to keep the total unchanged.": "กรอกช่องด้านบนเพื่อบันทึกการแยกสัญชาติ หรือเว้นว่างทั้งหมดเพื่อคงยอดรวมเดิมไว้",
     "Quick search (Request No.)": "ค้นหาด่วน (เลขคำขอ)",
     "Total Headcount (All Charge Types)": "จำนวนพนักงานรวมทั้งหมด",
-    "Headcount by Charge Type & Nationality": "จำนวนคนแยกตามประเภทค่าใช้จ่ายและสัญชาติ"
+    "Headcount by Charge Type & Nationality": "จำนวนคนแยกตามประเภทค่าใช้จ่ายและสัญชาติ",
+    "Recently Added or Edited": "รายการล่าสุด (เพิ่ม/แก้ไข)"
 }
