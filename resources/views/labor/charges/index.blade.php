@@ -321,7 +321,7 @@
                         <label class="form-label">{{ __('Request No.') }}</label>
                         <input type="text" name="request_number" class="form-control" value="{{ $entry->request_number }}" required>
                     </div>
-                    @php($hasBreakdown = !is_null($entry->qty_laos) || !is_null($entry->qty_myanmar) || !is_null($entry->qty_cambodia) || !is_null($entry->qty_vietnam))
+                    @php($hasBreakdown = !is_null($entry->qty_laos) || !is_null($entry->qty_myanmar) || !is_null($entry->qty_cambodia) || !is_null($entry->qty_vietnam) || !is_null($entry->qty_other))
                     <div class="mb-3">
                         <label class="form-label">{{ __('Quantity by Nationality') }}</label>
                         <div class="row g-2">
@@ -340,6 +340,10 @@
                             <div class="col-6 col-md-3">
                                 <label class="form-label small text-muted mb-1">เวียดนาม</label>
                                 <input type="number" min="0" step="1" name="qty_vietnam" class="form-control qty-nat-input" placeholder="0" value="{{ $hasBreakdown ? $entry->qty_vietnam : '' }}">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small text-muted mb-1">{{ __('Other') }}</label>
+                                <input type="number" min="0" step="1" name="qty_other" class="form-control qty-nat-input" placeholder="0" value="{{ $hasBreakdown ? $entry->qty_other : '' }}">
                             </div>
                         </div>
                         <div class="form-text">{{ __('Total headcount') }}: <span class="fw-bold qty-total-preview">{{ $hasBreakdown ? $entry->quantity : 0 }}</span></div>
@@ -429,6 +433,10 @@
                             <div class="col-6 col-md-3">
                                 <label class="form-label small text-muted mb-1">เวียดนาม</label>
                                 <input type="number" min="0" step="1" name="qty_vietnam" class="form-control qty-nat-input" placeholder="0">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label small text-muted mb-1">{{ __('Other') }}</label>
+                                <input type="number" min="0" step="1" name="qty_other" class="form-control qty-nat-input" placeholder="0">
                             </div>
                         </div>
                         <div class="form-text">{{ __('Total headcount') }}: <span class="fw-bold qty-total-preview">0</span></div>

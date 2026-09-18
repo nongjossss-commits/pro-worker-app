@@ -26,6 +26,7 @@ class LaborLedgerEntry extends Model
         'qty_myanmar',
         'qty_cambodia',
         'qty_vietnam',
+        'qty_other',
         'created_by',
         'updated_by',
     ];
@@ -41,6 +42,7 @@ class LaborLedgerEntry extends Model
             'qty_myanmar' => 'integer',
             'qty_cambodia' => 'integer',
             'qty_vietnam' => 'integer',
+            'qty_other' => 'integer',
         ];
     }
 

@@ -35,6 +35,18 @@ class LaborChargeEntryController extends Controller
         $nationality = $request->query('nationality');
         $nationalityColumns = ['laos' => 'qty_laos', 'myanmar' => 'qty_myanmar', 'cambodia' => 'qty_cambodia', 'vietnam' => 'qty_vietnam'];
 
+        // "Unspecified" covers two cases that read the same to staff: an
+        // entry never broken down at all (all 4 named columns NULL, from
+        // before this feature existed), and an entry that WAS broken down
+        // but includes a headcount for a nationality outside the 4 tracked
+        // ones (qty_other > 0). Neither is "one of our 4 main nationalities",
+        // so both fall under the same filter/bucket everywhere it's shown.
+        $unspecifiedScope = fn ($q) => $q->where(function ($q2) {
+            $q2->where(function ($q3) {
+                $q3->whereNull('qty_laos')->whereNull('qty_myanmar')->whereNull('qty_cambodia')->whereNull('qty_vietnam');
+            })->orWhere('qty_other', '>', 0);
+        });
+
         $entriesQuery = LaborLedgerEntry::whereNotNull('labor_charge_type_id')
             ->with(['team', 'member', 'chargeType', 'creator'])
             ->when($search !== '', fn ($q) => $q->where('request_number', 'like', '%' . $search . '%'))
@@ -42,7 +54,7 @@ class LaborChargeEntryController extends Controller
             ->when($request->query('member_id'), fn ($q, $v) => $q->where('labor_team_member_id', $v))
             ->when($request->query('charge_type_id'), fn ($q, $v) => $q->where('labor_charge_type_id', $v))
             ->when($nationality && $nationality !== 'unspecified' && isset($nationalityColumns[$nationality]), fn ($q) => $q->where($nationalityColumns[$nationality], '>', 0))
-            ->when($nationality === 'unspecified', fn ($q) => $q->whereNull('qty_laos')->whereNull('qty_myanmar')->whereNull('qty_cambodia')->whereNull('qty_vietnam'));
+            ->when($nationality === 'unspecified', $unspecifiedScope);
 
         $entries = $entriesQuery
             ->orderByDesc('entry_date')
@@ -60,7 +72,7 @@ class LaborChargeEntryController extends Controller
             'myanmar' => $entriesBaseQuery()->where('qty_myanmar', '>', 0)->count(),
             'cambodia' => $entriesBaseQuery()->where('qty_cambodia', '>', 0)->count(),
             'vietnam' => $entriesBaseQuery()->where('qty_vietnam', '>', 0)->count(),
-            'unspecified' => $entriesBaseQuery()->whereNull('qty_laos')->whereNull('qty_myanmar')->whereNull('qty_cambodia')->whereNull('qty_vietnam')->count(),
+            'unspecified' => $unspecifiedScope($entriesBaseQuery())->count(),
         ];
 
         // Last 3 entries touched (created or edited), regardless of the
@@ -136,6 +148,7 @@ class LaborChargeEntryController extends Controller
             'qty_myanmar' => ['nullable', 'integer', 'min:0'],
             'qty_cambodia' => ['nullable', 'integer', 'min:0'],
             'qty_vietnam' => ['nullable', 'integer', 'min:0'],
+            'qty_other' => ['nullable', 'integer', 'min:0'],
         ]);
 
         [$quantity, $breakdown] = $this->resolveQuantity($request, $validated);
@@ -185,6 +198,7 @@ class LaborChargeEntryController extends Controller
             'qty_myanmar' => ['nullable', 'integer', 'min:0'],
             'qty_cambodia' => ['nullable', 'integer', 'min:0'],
             'qty_vietnam' => ['nullable', 'integer', 'min:0'],
+            'qty_other' => ['nullable', 'integer', 'min:0'],
         ]);
 
         [$quantity, $breakdown] = $this->resolveQuantity($request, $validated, $entry);
@@ -234,7 +248,7 @@ class LaborChargeEntryController extends Controller
      */
     protected function resolveQuantity(Request $request, array $validated, ?LaborLedgerEntry $existing = null): array
     {
-        $natFields = ['qty_laos', 'qty_myanmar', 'qty_cambodia', 'qty_vietnam'];
+        $natFields = ['qty_laos', 'qty_myanmar', 'qty_cambodia', 'qty_vietnam', 'qty_other'];
         $anyProvided = collect($natFields)->contains(fn ($f) => $request->filled($f));
 
         if ($anyProvided) {
