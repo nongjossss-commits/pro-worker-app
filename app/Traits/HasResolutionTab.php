@@ -250,4 +250,23 @@ trait HasResolutionTab
             ->pluck('team_name')
             ->all();
     }
+
+    /**
+     * The step an employee is "currently at" WITHIN this tab specifically.
+     * Employee::registrationSteps() is a single global (un-tab-scoped)
+     * pivot relation covering every tab the employee has ever touched, and
+     * a new tab's steps always restart at order=1 — so naively taking
+     * ->sortByDesc('order')->first() over the whole relation picks up
+     * whichever tab (often an older one) happens to have the numerically
+     * highest order, not the highest step within the tab actually being
+     * viewed. Every place that needs "employee's current step" for
+     * counting/filtering must filter the pivot collection down to this
+     * tab's step ids first.
+     */
+    protected function highestStepInTab($employee, \Illuminate\Support\Collection $tabSteps): ?\App\Models\RegistrationStep
+    {
+        $tabStepIds = $tabSteps->pluck('id');
+
+        return $employee->registrationSteps->whereIn('id', $tabStepIds)->sortByDesc('order')->first();
+    }
 }

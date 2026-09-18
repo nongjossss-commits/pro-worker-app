@@ -304,7 +304,7 @@ class RenewalController extends Controller
             return true;
         });
         foreach ($dualStepStatsBase as $dualEmp) {
-            $highest = $dualEmp->registrationSteps->sortByDesc('order')->first();
+            $highest = $this->highestStepInTab($dualEmp, $steps);
             if ($highest && isset($stepStats[$highest->id])) {
                 $stepStats[$highest->id]++;
             }
@@ -591,9 +591,15 @@ class RenewalController extends Controller
 
     private function getGlobalStepStats($baseQuery, $steps)
     {
+        // resolution_tab_id filter is essential, not just tidy: without it a
+        // pivot row from a DIFFERENT tab (registration_steps.order restarts
+        // at 1 per tab) can outrank this tab's actual highest step in the
+        // sortByDesc('order') pick below, silently dropping that employee
+        // from every count. See HasResolutionTab::highestStepInTab().
         $pivotQuery = DB::table('employee_registration_status')
             ->join('registration_steps', 'employee_registration_status.registration_step_id', '=', 'registration_steps.id')
             ->joinSub($baseQuery->select('id'), 'filtered_employees', 'employee_registration_status.employee_id', '=', 'filtered_employees.id')
+            ->where('registration_steps.resolution_tab_id', $this->currentTab->id)
             ->select('employee_registration_status.employee_id', 'registration_steps.id as step_id', 'registration_steps.order');
 
         $records = $pivotQuery->get();
@@ -809,15 +815,20 @@ class RenewalController extends Controller
                         ->whereNotNull('appointment_completed_at');
                  });
             } elseif (is_numeric($filter)) { // Step ID (Highest Step Logic approximation for filter)
+                 // resolution_tab_id filter required here too: without it a
+                 // higher-order step from a DIFFERENT tab can win the
+                 // ORDER BY...LIMIT 1 pick, so an employee genuinely at this
+                 // step in the current tab silently fails to match.
                  $q->where('status', '!=', 'renewal_cancelled')
                    ->whereRaw("
                         (SELECT registration_step_id
                          FROM employee_registration_status
                          JOIN registration_steps ON employee_registration_status.registration_step_id = registration_steps.id
                          WHERE employee_registration_status.employee_id = employees.id
+                         AND registration_steps.resolution_tab_id = ?
                          ORDER BY registration_steps.`order` DESC
                          LIMIT 1
-                        ) = ?", [$filter]);
+                        ) = ?", [$tabId, $filter]);
             }
         });
     }
@@ -1042,7 +1053,7 @@ class RenewalController extends Controller
                     && $effectiveCompletedAt->lt($graceCutoff));
 
                 if ($countTowardsSteps) {
-                    $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                    $highestStep = $this->highestStepInTab($emp, $steps);
                     if ($highestStep && isset($empStats[$highestStep->id])) {
                         $empStats[$highestStep->id]++;
                     }
@@ -1205,7 +1216,7 @@ class RenewalController extends Controller
 
         $hideCancelled = $request->boolean('hide_cancelled', true);
         $filter = $request->input('filter');
-        $linkedEmployees = $linkedEmployees->filter(function ($emp) use ($hideCancelled, $filter, $stepOneId) {
+        $linkedEmployees = $linkedEmployees->filter(function ($emp) use ($hideCancelled, $filter, $stepOneId, $steps) {
             $link = $emp->renewalLinks->first();
             if (!$link) return false;
             $emp->setRelation('activeRenewalLink', $link);
@@ -1221,7 +1232,7 @@ class RenewalController extends Controller
                 }
                 if (is_numeric($filter)) {
                     if ($link->status === 'renewal_cancelled') return false;
-                    $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                    $highest = $this->highestStepInTab($emp, $steps);
                     return $highest && $highest->id == $filter;
                 }
             }
@@ -1235,10 +1246,10 @@ class RenewalController extends Controller
         // adds the already-step-filtered linked employees on top).
         if ($request->has('filter') && is_numeric($request->filter)) {
             $filterStepId = $request->filter;
-            $merged = $merged->filter(function($emp) use ($filterStepId) {
+            $merged = $merged->filter(function($emp) use ($filterStepId, $steps) {
                 if ($emp->relationLoaded('activeRenewalLink')) return true; // already filtered above
                 if ($emp->status === 'renewal_cancelled') return false;
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                $highest = $this->highestStepInTab($emp, $steps);
                 return $highest && $highest->id == $filterStepId;
             })->values();
         }
@@ -1373,8 +1384,8 @@ class RenewalController extends Controller
 
         if ($isStepFilter) {
             $filterStepId = $request->filter;
-            $employees = $employees->filter(function ($emp) use ($filterStepId) {
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+            $employees = $employees->filter(function ($emp) use ($filterStepId, $steps) {
+                $highest = $this->highestStepInTab($emp, $steps);
                 return $highest && $highest->id == $filterStepId;
             })->values();
         }
@@ -1436,7 +1447,7 @@ class RenewalController extends Controller
             }
 
             $filterVal = $request->input('filter');
-            $linkedItems = $linkedQuery->get()->filter(function ($emp) use ($filterVal, $stepOneId) {
+            $linkedItems = $linkedQuery->get()->filter(function ($emp) use ($filterVal, $stepOneId, $steps) {
                 $link = $emp->renewalLinks->first();
                 if (!$link) return false;
                 $isEligible = $link->status === 'renewal_pending'
@@ -1447,7 +1458,7 @@ class RenewalController extends Controller
                     if ($filterVal === 'saved' && $link->status !== 'renewal_completed') return false;
                     if ($filterVal === 'not_started' && $emp->registrationSteps->contains('id', $stepOneId)) return false;
                     if (is_numeric($filterVal)) {
-                        $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                        $highest = $this->highestStepInTab($emp, $steps);
                         if (!$highest || $highest->id != $filterVal) return false;
                     }
                 }
@@ -1678,7 +1689,10 @@ class RenewalController extends Controller
         DB::transaction(function () use ($order, $behavior) {
             // Handle Step 1 Change Logic
             if ($behavior === 'auto_tick') {
-                $oldStepOne = RegistrationStep::renewal()->orderBy('order')->first();
+                // resolution_tab_id required — without it this can pick up
+                // another tab's step 1 entirely, then auto-tick every
+                // employee who ever completed THAT unrelated step.
+                $oldStepOne = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->first();
                 $newStepOneId = $order[0] ?? null;
 
                 if ($oldStepOne && $newStepOneId && $oldStepOne->id != $newStepOneId) {
@@ -2432,7 +2446,7 @@ class RenewalController extends Controller
 
         $this->applyTabRequestNumbers($employees, $tabId);
 
-        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $tabId)->orderBy('order')->get();
 
         $html = view('production.renewal.partials.day_appointments_list', compact('employees', 'steps'))->render();
 
@@ -2563,38 +2577,10 @@ class RenewalController extends Controller
             DB::commit();
 
             // --- Recalculate Stats for Response (Highest Step Logic) ---
-            $allQuery = Employee::query();
-            if (auth()->user()->can('manage-tickets')) {
-                $allQuery->withoutGlobalScope('employerTenancy');
-            }
-            $allQuery->whereNull('deleted_at');
-
-            if ($request->has('search') && $request->search) {
-                $this->applySearchToQuery($allQuery, $request->search);
-            }
-
-            $allEmployees = $allQuery
-                                    ->with('registrationSteps')
-                                    ->get();
-
-            $steps = RegistrationStep::renewal()->orderBy('order')->get();
+            $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
             $stepOneId = $steps->sortBy('order')->first()?->id;
 
-            $globalStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $globalNotStarted = 0;
-
-            foreach ($allEmployees as $emp) {
-                if ($emp->status === 'renewal_cancelled') {
-                    continue;
-                }
-                if ($stepOneId && in_array($emp->status, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
-                    $globalNotStarted++;
-                }
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
-                if ($highest && isset($globalStats[$highest->id])) {
-                    $globalStats[$highest->id]++;
-                }
-            }
+            ['stats' => $globalStats, 'notStarted' => $globalNotStarted] = $this->computeGlobalStepStats($request, $steps, $stepOneId);
 
             // Also get daily check and appointments logic for toggle step
             $globalQuery = Employee::query();
@@ -2625,44 +2611,7 @@ class RenewalController extends Controller
                 })
                 ->count();
 
-            $empQuery = Employee::query();
-            if (auth()->user()->can('manage-tickets')) {
-                $empQuery->withoutGlobalScope('employerTenancy');
-            }
-            $empQuery->whereNull('deleted_at');
-
-            $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
-
-                                        ->with('registrationSteps');
-
-            if ($request->has('search') && $request->search) {
-                 $employer = $employee->employer;
-                 if (!$employer) {
-                     $employerQuery = Employer::query();
-                     if (auth()->user()->can('manage-tickets')) {
-                         $employerQuery->withoutGlobalScope('employerTenancy');
-                     }
-                     $employer = $employerQuery->find($employee->employer_id);
-                 }
-                 if ($employer) $this->applyEmployerSearchToQuery($employerEmployeesQuery, $employer, $request->search);
-            }
-
-            $employerEmployees = $employerEmployeesQuery->get();
-            $employerStats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
-            $employerNotStarted = 0;
-
-            foreach ($employerEmployees as $emp) {
-                 if ($emp->status === 'renewal_cancelled') {
-                     continue;
-                 }
-                 if ($stepOneId && in_array($emp->status, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
-                     $employerNotStarted++;
-                 }
-                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
-                 if ($highest && isset($employerStats[$highest->id])) {
-                     $employerStats[$highest->id]++;
-                 }
-            }
+            ['stats' => $employerStats, 'notStarted' => $employerNotStarted] = $this->computeEmployerStepStats($request, $employee->employer_id, $steps, $stepOneId);
 
             // Reload steps for correct HTML rendering
             $employee->load('registrationSteps');
@@ -2734,9 +2683,22 @@ class RenewalController extends Controller
 
         $employee->load('registrationSteps');
 
+        // Stats for the badges (global + employer) — this dual-listed
+        // employee's own step tick must be reflected in the same live
+        // response, same as a real employee's tick via updateProgress().
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
+        $stepOneId = $steps->sortBy('order')->first()?->id;
+        ['stats' => $globalStats, 'notStarted' => $globalNotStarted] = $this->computeGlobalStepStats($request, $steps, $stepOneId);
+        ['stats' => $employerStats, 'notStarted' => $employerNotStarted] = $this->computeEmployerStepStats($request, $employee->employer_id, $steps, $stepOneId);
+
         return response()->json([
             'success' => true,
             'html' => $this->getEmployeeCardHtml($employee, $link),
+            'globalStats' => $globalStats,
+            'globalNotStarted' => $globalNotStarted,
+            'employerStats' => $employerStats,
+            'employerNotStarted' => $employerNotStarted,
+            'employerId' => $employee->employer_id,
         ]);
     }
 
@@ -2869,7 +2831,7 @@ class RenewalController extends Controller
             ->with(['registrationSteps'])
             ->get();
 
-        $steps = RegistrationStep::renewal()->orderBy('order')->get();
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
 
         return view('production.renewal._employee_list_content', array_merge([
             'employees' => $employees,
@@ -2938,6 +2900,140 @@ class RenewalController extends Controller
     }
 
     // --- Helpers ---
+
+    /**
+     * Global step-badge stats for the updateProgress()/updateLinkProgress()
+     * live AJAX responses, INCLUDING dual-listed employees (still owned by
+     * Registration, but tracked in this Renewal tab via EmployeeRenewalLink
+     * — see that model's docblock). Mirrors batchStats()'s proven
+     * real+linked union pattern; without it, a step tick's immediate
+     * response silently omits every dual-listed employee's contribution
+     * (a subsequent full page reload, which uses batchStats(), would show
+     * them correctly — only this live response was wrong).
+     */
+    private function computeGlobalStepStats(Request $request, \Illuminate\Support\Collection $steps, $stepOneId): array
+    {
+        $allQuery = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $allQuery->withoutGlobalScope('employerTenancy');
+        }
+        $allQuery->whereNull('deleted_at')->where('resolution_tab_id', $this->currentTab->id);
+        if ($request->has('search') && $request->search) {
+            $this->applySearchToQuery($allQuery, $request->search);
+        }
+        $allEmployees = $allQuery->with('registrationSteps')->get();
+
+        $linkedQuery = Employee::query()
+            ->whereHas('renewalLinks', fn ($q) => $q->where('resolution_tab_id', $this->currentTab->id))
+            ->with(['registrationSteps', 'renewalLinks' => fn ($q) => $q->where('resolution_tab_id', $this->currentTab->id)]);
+        if (auth()->user()->can('manage-tickets')) {
+            $linkedQuery->withoutGlobalScope('employerTenancy');
+        }
+        if ($request->has('search') && $request->search) {
+            $this->applySearchToQuery($linkedQuery, $request->search);
+        }
+        $linkedEmployees = $linkedQuery->get()->each(function ($emp) {
+            $link = $emp->renewalLinks->first();
+            if ($link) {
+                $emp->setRelation('activeRenewalLink', $link);
+            }
+        });
+
+        $allEmployees = $allEmployees->concat($linkedEmployees);
+
+        $stats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+        $notStarted = 0;
+
+        foreach ($allEmployees as $emp) {
+            $activeLink = $emp->relationLoaded('activeRenewalLink') ? $emp->activeRenewalLink : null;
+            $effectiveStatus = $activeLink ? $activeLink->status : $emp->status;
+
+            if ($effectiveStatus === 'renewal_cancelled') {
+                continue;
+            }
+            if ($stepOneId && in_array($effectiveStatus, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                $notStarted++;
+            }
+            $highest = $this->highestStepInTab($emp, $steps);
+            if ($highest && isset($stats[$highest->id])) {
+                $stats[$highest->id]++;
+            }
+        }
+
+        return ['stats' => $stats, 'notStarted' => $notStarted];
+    }
+
+    /**
+     * Same as computeGlobalStepStats() but scoped to one employer — the
+     * per-employer step badges. See that method's docblock for why the
+     * dual-listed union is required.
+     */
+    private function computeEmployerStepStats(Request $request, int $employerId, \Illuminate\Support\Collection $steps, $stepOneId): array
+    {
+        $empQuery = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $empQuery->withoutGlobalScope('employerTenancy');
+        }
+        $empQuery->whereNull('deleted_at')
+            ->where('employer_id', $employerId)
+            ->where('resolution_tab_id', $this->currentTab->id)
+            ->with('registrationSteps');
+
+        $employer = null;
+        if ($request->has('search') && $request->search) {
+            $employerQuery = Employer::query();
+            if (auth()->user()->can('manage-tickets')) {
+                $employerQuery->withoutGlobalScope('employerTenancy');
+            }
+            $employer = $employerQuery->find($employerId);
+            if ($employer) {
+                $this->applyEmployerSearchToQuery($empQuery, $employer, $request->search);
+            }
+        }
+
+        $employerEmployees = $empQuery->get();
+
+        $linkedQuery = Employee::query()
+            ->where('employer_id', $employerId)
+            ->whereHas('renewalLinks', fn ($q) => $q->where('resolution_tab_id', $this->currentTab->id))
+            ->with(['registrationSteps', 'renewalLinks' => fn ($q) => $q->where('resolution_tab_id', $this->currentTab->id)]);
+        if (auth()->user()->can('manage-tickets')) {
+            $linkedQuery->withoutGlobalScope('employerTenancy');
+        }
+        if ($employer) {
+            $this->applyEmployerSearchToQuery($linkedQuery, $employer, $request->search);
+        }
+        $linkedEmployees = $linkedQuery->get()->each(function ($emp) {
+            $link = $emp->renewalLinks->first();
+            if ($link) {
+                $emp->setRelation('activeRenewalLink', $link);
+            }
+        });
+
+        $employerEmployees = $employerEmployees->concat($linkedEmployees);
+
+        $stats = $steps->pluck('id')->mapWithKeys(fn($id) => [$id => 0])->toArray();
+        $notStarted = 0;
+
+        foreach ($employerEmployees as $emp) {
+            $activeLink = $emp->relationLoaded('activeRenewalLink') ? $emp->activeRenewalLink : null;
+            $effectiveStatus = $activeLink ? $activeLink->status : $emp->status;
+
+            if ($effectiveStatus === 'renewal_cancelled') {
+                continue;
+            }
+            if ($stepOneId && in_array($effectiveStatus, ['renewal_pending', 'renewal_completed']) && !$emp->registrationSteps->contains('id', $stepOneId)) {
+                $notStarted++;
+            }
+            $highest = $this->highestStepInTab($emp, $steps);
+            if ($highest && isset($stats[$highest->id])) {
+                $stats[$highest->id]++;
+            }
+        }
+
+        return ['stats' => $stats, 'notStarted' => $notStarted];
+    }
+
     private function applySearchToQuery($query, $search)
     {
         $search = trim($search);

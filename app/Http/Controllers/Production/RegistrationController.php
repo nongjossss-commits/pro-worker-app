@@ -470,10 +470,17 @@ class RegistrationController extends Controller
 
     private function getGlobalStepStats($baseQuery, $steps)
     {
-        // Use a subquery join to filter pivot table efficiently
+        // Use a subquery join to filter pivot table efficiently. The
+        // resolution_tab_id filter is essential, not just tidy: without it
+        // a pivot row from a DIFFERENT tab (registration_steps.order
+        // restarts at 1 per tab) can outrank this tab's actual highest
+        // step in the sortByDesc('order') pick below, silently dropping
+        // that employee from every count. See HasResolutionTab::
+        // highestStepInTab()'s docblock for the same issue elsewhere.
         $pivotQuery = DB::table('employee_registration_status')
             ->join('registration_steps', 'employee_registration_status.registration_step_id', '=', 'registration_steps.id')
             ->joinSub($baseQuery->select('id'), 'filtered_employees', 'employee_registration_status.employee_id', '=', 'filtered_employees.id')
+            ->where('registration_steps.resolution_tab_id', $this->currentTab->id)
             ->select('employee_registration_status.employee_id', 'registration_steps.id as step_id', 'registration_steps.order');
 
         $records = $pivotQuery->get();
@@ -709,15 +716,20 @@ class RegistrationController extends Controller
                  });
             } elseif (is_numeric($filter)) { // Step ID (Highest Step Logic approximation for filter)
                  // Strict Highest Step Filtering to match Employee List Logic
+                 // — resolution_tab_id filter required here too: without it
+                 // a higher-order step from a DIFFERENT tab can win the
+                 // ORDER BY...LIMIT 1 pick, so an employee genuinely at
+                 // this step in the current tab silently fails to match.
                  $q->where('status', '!=', 'registration_cancelled')
                    ->whereRaw("
                         (SELECT registration_step_id
                          FROM employee_registration_status
                          JOIN registration_steps ON employee_registration_status.registration_step_id = registration_steps.id
                          WHERE employee_registration_status.employee_id = employees.id
+                         AND registration_steps.resolution_tab_id = ?
                          ORDER BY registration_steps.`order` DESC
                          LIMIT 1
-                        ) = ?", [$filter]);
+                        ) = ?", [$tabId, $filter]);
             }
         });
     }
@@ -864,7 +876,7 @@ class RegistrationController extends Controller
                     && $emp->resolution_completed_at->lt($graceCutoff));
 
                 if ($countTowardsSteps) {
-                    $highestStep = $emp->registrationSteps->sortByDesc('order')->first();
+                    $highestStep = $this->highestStepInTab($emp, $steps);
                     if ($highestStep && isset($empStats[$highestStep->id])) {
                         $empStats[$highestStep->id]++;
                     }
@@ -1042,9 +1054,9 @@ class RegistrationController extends Controller
         if ($request->has('filter') && is_numeric($request->filter)) {
             $filterStepId = $request->filter;
             $allEmployees = $query->get();
-            $filtered = $allEmployees->filter(function($emp) use ($filterStepId) {
+            $filtered = $allEmployees->filter(function($emp) use ($filterStepId, $steps) {
                 if ($emp->status === 'registration_cancelled') return false;
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                $highest = $this->highestStepInTab($emp, $steps);
                 return $highest && $highest->id == $filterStepId;
             });
 
@@ -1194,8 +1206,8 @@ class RegistrationController extends Controller
 
         if ($isStepFilter) {
             $filterStepId = $request->filter;
-            $employees = $employees->filter(function ($emp) use ($filterStepId) {
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+            $employees = $employees->filter(function ($emp) use ($filterStepId, $steps) {
+                $highest = $this->highestStepInTab($emp, $steps);
                 return $highest && $highest->id == $filterStepId;
             })->values();
         }
@@ -1394,7 +1406,7 @@ class RegistrationController extends Controller
             ->with(['registrationSteps'])
             ->get();
 
-        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
 
         return view('production.registration._employee_list_content', array_merge([
             'employees' => $employees,
@@ -1788,7 +1800,10 @@ class RegistrationController extends Controller
         DB::transaction(function () use ($order, $behavior) {
             // Handle Step 1 Change Logic
             if ($behavior === 'auto_tick') {
-                $oldStepOne = RegistrationStep::registration()->orderBy('order')->first();
+                // resolution_tab_id required — without it this can pick up
+                // another tab's step 1 entirely, then auto-tick every
+                // employee who ever completed THAT unrelated step.
+                $oldStepOne = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->first();
                 $newStepOneId = $order[0] ?? null;
 
                 if ($oldStepOne && $newStepOneId && $oldStepOne->id != $newStepOneId) {
@@ -1867,11 +1882,17 @@ class RegistrationController extends Controller
             DB::commit();
 
             // --- Recalculate Stats for Response (Highest Step Logic) ---
+            // resolution_tab_id filter required on both the employee set
+            // and the steps list — without it this recomputes stats across
+            // every tab's employees/steps combined, which is a correctness
+            // bug (an employee ticking a step in tab B can shift tab A's
+            // counts) as well as a scale problem (every employee in the
+            // whole system, not just this tab).
             $allQuery = Employee::query();
             if (auth()->user()->can('manage-tickets')) {
                 $allQuery->withoutGlobalScope('employerTenancy');
             }
-            $allQuery->whereNull('deleted_at');
+            $allQuery->whereNull('deleted_at')->where('resolution_tab_id', $this->currentTab->id);
 
             if ($request->has('search') && $request->search) {
                 $this->applySearchToQuery($allQuery, $request->search);
@@ -1881,7 +1902,7 @@ class RegistrationController extends Controller
                                     ->with('registrationSteps')
                                     ->get();
 
-            $steps = RegistrationStep::registration()->orderBy('order')->get();
+            $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
             // Determine step 1 ID for "Not Started" logic
             $stepOneId = $steps->sortBy('order')->first()?->id;
 
@@ -1898,7 +1919,7 @@ class RegistrationController extends Controller
                     $globalNotStarted++;
                 }
 
-                $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                $highest = $this->highestStepInTab($emp, $steps);
                 if ($highest && isset($globalStats[$highest->id])) {
                     $globalStats[$highest->id]++;
                 }
@@ -1942,7 +1963,7 @@ class RegistrationController extends Controller
             $empQuery->whereNull('deleted_at');
 
             $employerEmployeesQuery = $empQuery->where('employer_id', $employee->employer_id)
-
+                                        ->where('resolution_tab_id', $this->currentTab->id)
                                         ->with('registrationSteps');
 
             if ($request->has('search') && $request->search) {
@@ -1974,7 +1995,7 @@ class RegistrationController extends Controller
                      $employerNotStarted++;
                  }
 
-                 $highest = $emp->registrationSteps->sortByDesc('order')->first();
+                 $highest = $this->highestStepInTab($emp, $steps);
                  if ($highest && isset($employerStats[$highest->id])) {
                      $employerStats[$highest->id]++;
                  }
@@ -2257,8 +2278,10 @@ class RegistrationController extends Controller
         $activeStatuses = ['registration_pending', 'registration_completed'];
         $allStatuses = ['registration_pending', 'registration_completed', 'registration_cancelled'];
 
-        // Get Steps info
-        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        // Get Steps info — resolution_tab_id filter required, otherwise
+        // $stepOneId can resolve to a different tab's "step 1" entirely,
+        // making the "not started" count below meaningless for this tab.
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         // --- GLOBAL STATS ---
@@ -2336,7 +2359,9 @@ class RegistrationController extends Controller
             if (auth()->user()->can('manage-tickets')) {
                 $empQuery->withoutGlobalScope('employerTenancy');
             }
-            $empQuery->where('employer_id', $employerId);
+            // resolution_tab_id required — employer_id alone spans every
+            // tab this employer has ever had employees in.
+            $empQuery->where('employer_id', $employerId)->where('resolution_tab_id', $this->currentTab->id);
 
             if ($request && $request->has('search') && $request->search) {
                  $employerQuery = Employer::query();
@@ -2904,7 +2929,7 @@ class RegistrationController extends Controller
 
         $this->applyTabRequestNumbers($employees, $tabId);
 
-        $steps = RegistrationStep::registration()->orderBy('order')->get();
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $tabId)->orderBy('order')->get();
 
         $html = view('production.registration.partials.day_appointments_list', compact('employees', 'steps'))->render();
 
