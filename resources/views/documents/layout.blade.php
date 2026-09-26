@@ -4,171 +4,300 @@
     <meta charset="UTF-8">
     <title>{{ $page_title ?? $title ?? ucfirst($type) }}</title>
     <!-- Google Fonts for Sarabun -->
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    @php
+        // Accent colour = the installation's brand colour (Super Admin → Branding).
+        try {
+            $docBrand = \App\Services\BrandService::current();
+            $accent = $docBrand['primary_color'] ?: '#F97316';
+            $accentRgb = \App\Services\BrandService::hexToRgb($accent);
+            $accentDark = \App\Services\BrandService::darken($accent, 0.18);
+        } catch (\Throwable $e) {
+            $accent = '#F97316';
+            $accentRgb = '249, 115, 22';
+            $accentDark = '#C2570F';
+        }
+    @endphp
     <style>
-        body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 20px; color: #333; background: #f3f4f6; }
+        :root {
+            --accent: {{ $accent }};
+            --accent-rgb: {{ $accentRgb }};
+            --accent-dark: {{ $accentDark }};
+            --ink: #0f172a;
+            --ink-2: #334155;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --soft: #f8fafc;
+        }
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { font-family: 'Sarabun', sans-serif; margin: 0; padding: 24px; color: var(--ink-2); background: #e9edf3; }
 
         /* A4 Page Styling */
         .page {
             max-width: 210mm;
             margin: 0 auto;
             background: white;
-            padding: 30px 35px;
-            border: 1px solid #ddd;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 0 34px 28px;
+            border-radius: 6px;
+            box-shadow: 0 20px 50px -20px rgba(15, 23, 42, .35);
             position: relative;
             min-height: 297mm;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+        }
+        .doc-band {
+            height: 8px;
+            margin: 0 -34px 22px;
+            background: linear-gradient(90deg, var(--accent-dark), var(--accent) 55%, rgba(var(--accent-rgb), .55));
         }
 
         /* Print Specifics */
         @media print {
             body { background: white; padding: 0; }
             .page {
-                border: none;
                 box-shadow: none;
-                padding: 0;
+                border-radius: 0;
+                padding: 0 0 6mm;
                 margin: 0;
                 width: 100%;
                 height: auto;
                 min-height: auto;
                 display: block;
+                overflow: visible;
             }
+            .doc-band { margin: 0 0 16px; }
             @page { margin: 10mm; size: A4 portrait; }
             .no-print { display: none !important; }
             table.items-table, .totals-container, .signatures-container { page-break-inside: auto; }
             tr { page-break-inside: avoid; page-break-after: auto; }
         }
 
-        /* Header Table — slimmed to leave more room for items and footer. */
-        table.header-table { width: 100%; margin-bottom: 10px; border-collapse: collapse; }
-        table.header-table td { vertical-align: top; }
+        /* ---------- Header ---------- */
+        .doc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 18px; }
+        .issuer { display: flex; gap: 14px; align-items: flex-start; min-width: 0; flex: 1 1 58%; }
+        .company-logo { height: 58px; max-width: 120px; object-fit: contain; flex-shrink: 0; }
+        .company-name { font-size: 17px; font-weight: 800; color: var(--accent-dark); margin-bottom: 3px; line-height: 1.25; }
+        .company-address { font-size: 11px; color: var(--muted); line-height: 1.45; }
+        .tax-id { font-size: 11px; margin-top: 2px; color: var(--muted); }
 
-        .company-logo { height: 36px; margin-bottom: 4px; max-width: 140px; object-fit: contain; }
-        .company-name { font-size: 13px; font-weight: bold; color: #F97316; margin-bottom: 2px; line-height: 1.2; }
-        .company-address { font-size: 10px; color: #555; line-height: 1.35; }
-        .tax-id { font-size: 10px; margin-top: 1px; color: #555; }
-
-        .doc-title { text-align: right; vertical-align: top; }
+        .doc-title { text-align: right; flex: 0 0 auto; }
         .doc-title h1 {
-            margin: 0 0 4px 0;
-            font-size: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #333;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -.01em;
+            color: var(--ink);
+            line-height: 1.15;
             white-space: nowrap;
         }
-        .meta-table { float: right; font-size: 11px; border-collapse: collapse; }
-        .meta-table td { padding: 1px 0 1px 12px; }
-        .meta-label { font-weight: bold; text-align: right; color: #555; }
+        .doc-type {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 3px 12px;
+            border-radius: 999px;
+            background: rgba(var(--accent-rgb), .12);
+            color: var(--accent-dark);
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
 
-        /* Client Info — tighter padding. */
+        /* ---------- Meta chips ---------- */
+        .meta-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        .meta-chip {
+            flex: 1 1 0;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 7px 12px;
+            background: var(--soft);
+        }
+        .meta-chip .k { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+        .meta-chip .v { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: 1px; }
+        .meta-chip.due { border-color: rgba(var(--accent-rgb), .45); background: rgba(var(--accent-rgb), .07); }
+        .meta-chip.due .v { color: var(--accent-dark); }
+
+        /* ---------- Bill to + amount ---------- */
+        .parties { display: flex; gap: 14px; margin-bottom: 18px; align-items: stretch; }
         .client-box {
-            margin-bottom: 12px;
-            border: 1px solid #eee;
-            padding: 8px 10px;
-            border-radius: 4px;
-            background: #fdfdfd;
+            flex: 1 1 auto;
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--accent);
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: #fff;
             font-size: 12px;
+            line-height: 1.5;
+            color: var(--ink-2);
         }
-        .client-label { font-weight: bold; color: #888; font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }
-        .client-name { font-weight: bold; font-size: 13px; margin-bottom: 2px; }
+        .client-label { font-weight: 700; color: var(--accent-dark); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px; }
+        .client-name { font-weight: 800; font-size: 15px; color: var(--ink); margin-bottom: 2px; }
+        .amount-card {
+            flex: 0 0 34%;
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 10px 24px -14px rgba(var(--accent-rgb), .9);
+        }
+        .amount-card .k { font-size: 11px; opacity: .9; font-weight: 600; }
+        .amount-card .v { font-size: 26px; font-weight: 800; line-height: 1.15; margin: 2px 0; letter-spacing: -.01em; }
+        .amount-card .s { font-size: 10.5px; opacity: .88; }
 
-        /* Items Table */
-        table.items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        /* ---------- Items Table ---------- */
+        table.items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 18px; }
         table.items-table th {
-            background: #f3f4f6;
-            padding: 8px;
+            background: rgba(var(--accent-rgb), .1);
+            color: var(--ink);
+            padding: 9px 10px;
             text-align: left;
-            font-weight: bold;
-            border-top: 1px solid #ddd;
-            border-bottom: 1px solid #ddd;
+            font-weight: 700;
+            border-bottom: 2px solid var(--accent);
             font-size: 12px;
+            white-space: nowrap;
+            vertical-align: bottom;
         }
+        table.items-table th .en-label { display: block; margin-left: 0; font-size: 10px; font-weight: 500; }
+        table.items-table th:first-child { border-top-left-radius: 8px; }
+        table.items-table th:last-child { border-top-right-radius: 8px; }
         table.items-table td {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
+            padding: 9px 10px;
+            border-bottom: 1px solid #edf1f6;
             font-size: 12px;
             vertical-align: top;
+            color: var(--ink-2);
         }
+        table.items-table tbody tr:nth-child(even) td:not(.section-header) { background: #fafbfd; }
+        table.items-table td strong { color: var(--ink); }
         .text-right { text-align: right; }
         .text-center { text-align: center; }
+        .text-muted { color: var(--muted); }
 
-        /* Totals Section */
-        .totals-container { width: 50%; margin-left: auto; }
-        table.totals-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        table.totals-table td { padding: 5px 0; }
-        .total-label { text-align: left; color: #555; }
-        .total-value { text-align: right; }
-
-        .grand-total-row td {
-            border-top: 2px solid #333;
-            border-bottom: double 4px #333;
-            padding: 8px 0;
-            font-weight: bold;
-            font-size: 15px;
-            color: #000;
+        .section-header {
+            background-color: #f1f5f9;
+            padding: 6px 10px !important;
+            font-weight: 800;
+            font-size: 10.5px !important;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--ink-2) !important;
+            border-bottom: 1px solid var(--line) !important;
         }
 
-        /* Signatures Container */
+        /* ---------- Summary: words + payment (left) / totals (right) ---------- */
+        .summary { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 6px; }
+        .summary-left { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+        .totals-container {
+            flex: 0 0 46%;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 14px 12px;
+            background: var(--soft);
+            box-sizing: border-box;
+        }
+        table.totals-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+        table.totals-table td { padding: 5px 0; }
+        .total-label { text-align: left; color: var(--muted); }
+        .total-value { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+        table.totals-table .grand-total-row td {
+            padding: 9px 12px;
+            font-weight: 800;
+            font-size: 15px;
+            color: #fff;
+            background: var(--accent);
+        }
+        .grand-total-row td:first-child { border-radius: 8px 0 0 8px; box-shadow: 2px 0 0 var(--accent); }
+        .grand-total-row td:last-child { border-radius: 0 8px 8px 0; color: #fff; }
+        .grand-total-row .en-label { color: rgba(255, 255, 255, .85); }
+        .grand-spacer td { padding: 3px 0 !important; }
+
+        .words-box {
+            border-radius: 10px;
+            padding: 8px 12px;
+            background: rgba(var(--accent-rgb), .07);
+            border: 1px dashed rgba(var(--accent-rgb), .45);
+        }
+        .words-box .k { font-size: 10px; color: var(--accent-dark); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+        .words-box .v { font-size: 13px; font-weight: 700; color: var(--ink); }
+
+        .pay-box { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 12px; line-height: 1.45; }
+        .pay-box .title { font-weight: 800; margin-bottom: 6px; color: var(--ink); font-size: 11.5px; }
+        .check { display: inline-block; width: 10px; height: 10px; border: 1.5px solid #94a3b8; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+
+        .tax-note {
+            margin-top: 12px;
+            font-size: 11.5px;
+            line-height: 1.5;
+            color: #9a3412;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 10px;
+            padding: 8px 12px;
+        }
+        .tax-note .en-label { color: #b45309; }
+
+        /* ---------- Signatures ---------- */
         .signatures-container {
             margin-top: auto; /* Pushes to bottom in flex container on screen */
-            padding-top: 50px;
+            padding-top: 34px;
             page-break-inside: avoid;
         }
+        .signatures { display: flex; justify-content: space-between; page-break-inside: avoid; margin-bottom: 26px; gap: 24px; }
+        .sig-block { width: 42%; text-align: center; position: relative; }
+        .sig-block.filled { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 10px; background: #fff; }
+        .sig-line { border-bottom: 1.5px solid #cbd5e1; height: 40px; margin-bottom: 8px; width: 80%; margin-left: 10%; }
+        .sig-text { font-size: 12px; color: var(--muted); }
+        .sig-title { font-weight: 800; margin-bottom: 30px; color: var(--ink); font-size: 13px; }
 
-        /* Signatures */
-        .signatures { display: flex; justify-content: space-between; page-break-inside: avoid; margin-bottom: 40px; }
-        .sig-block { width: 40%; text-align: center; position: relative; }
-        .sig-line { border-bottom: 1px solid #ccc; height: 40px; margin-bottom: 10px; width: 80%; margin-left: 10%; }
-        .sig-text { font-size: 12px; color: #555; }
-        .sig-title { font-weight: bold; margin-bottom: 40px; }
-
-        /* Footer */
+        /* ---------- Footer ---------- */
         .footer {
-            border-top: 1px solid #eee;
-            padding-top: 15px;
+            border-top: 1px solid var(--line);
+            padding-top: 12px;
             font-size: 12px;
-            color: #888;
+            color: var(--muted);
             text-align: center;
             page-break-inside: avoid;
         }
+        .footer .thanks { font-weight: 800; color: var(--accent-dark); font-size: 13px; }
 
-        /* Action Bar */
+        /* ---------- Action Bar ---------- */
         .action-bar {
-            text-align: center;
-            margin-bottom: 20px;
-            background: #333;
-            padding: 10px;
-            border-radius: 5px;
-            color: white;
+            max-width: 210mm;
+            margin: 0 auto 16px;
+            background: #0f172a;
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-sizing: border-box;
+            font-size: 13px;
         }
-        .btn { padding: 8px 15px; background: white; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px;}
-        .btn:hover { background: #eee; }
+        .btn { padding: 8px 16px; background: #fff; color: #0f172a; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; text-decoration: none; font-size: 14px; font-family: inherit; }
+        .btn:hover { background: #e2e8f0; }
+        .btn-accent { background: var(--accent); color: #fff; }
+        .btn-accent:hover { background: var(--accent-dark); }
 
-        .section-header {
-            background-color: #e5e7eb;
-            padding: 4px 8px;
-            font-weight: bold;
-            font-size: 11px;
-            text-transform: uppercase;
-            margin-top: 8px;
-            border-bottom: 1px solid #ccc;
-        }
+        .en-label { color: var(--muted); font-weight: normal; font-size: 0.9em; margin-left: 3px; }
 
-        .en-label { color: #888; font-weight: normal; font-size: 0.9em; margin-left: 3px; }
+        /* Employee list page */
+        table.items-table.list-table th { white-space: normal; padding: 8px 6px; }
+        table.items-table.list-table td { padding: 8px 6px; }
+        .list-title { text-align: center; margin: 22px 0 18px; font-size: 19px; font-weight: 800; color: var(--ink); }
     </style>
 </head>
 <body>
     <div class="no-print action-bar">
         <span>Document Preview ({{ ucfirst($mode ?? 'standard') }})</span>
         <div>
-            <button class="btn" onclick="window.print()">Print / Save PDF</button>
+            <button class="btn btn-accent" onclick="window.print()">Print / Save PDF</button>
             <button class="btn" onclick="window.close()" style="margin-left: 10px;">Close</button>
         </div>
     </div>
@@ -176,88 +305,7 @@
     {{-- list-only mode: ข้าม invoice content ทั้งหมด ออกเฉพาะตารางรายชื่อท้ายไฟล์ --}}
     @unless(!empty($listOnly) && $listOnly)
     <div class="page">
-        <!-- Header -->
-        <table class="header-table">
-            <tr>
-                <td style="width: 55%;">
-                    @if(isset($billerProfile) && $billerProfile->logo_path)
-                        <img src="{{ asset('storage/' . $billerProfile->logo_path) }}" class="company-logo" alt="Logo">
-                    @elseif(!isset($billerProfile) && $profile->logo_path)
-                        <img src="{{ asset('storage/' . $profile->logo_path) }}" class="company-logo" alt="Logo">
-                    @endif
-                    @php
-                        // Single source of company info — biller profile wins, else fall through to $profile.
-                        $issuer = isset($billerProfile) ? $billerProfile : $profile;
-                        // Collapse multi-line address to one tight line. Saves 1-2 vertical rows.
-                        $issuerAddress = trim(preg_replace('/\s+/u', ' ', (string) $issuer->address));
-                        $issuerMeta = [];
-                        if ($issuer->tax_id) $issuerMeta[] = 'Tax ID: ' . $issuer->tax_id;
-                        if ($issuer->phone)  $issuerMeta[] = 'Tel: '    . $issuer->phone;
-                    @endphp
-                    <div class="company-name">{{ $issuer->name }}</div>
-                    @if($issuerAddress)
-                        <div class="company-address">{{ $issuerAddress }}</div>
-                    @endif
-                    @if(!empty($issuerMeta))
-                        <div class="tax-id">{{ implode('   ·   ', $issuerMeta) }}</div>
-                    @endif
-                </td>
-                <td style="width: 45%;" class="doc-title">
-                    <h1>{{ $title ?? ucfirst($type) }}</h1>
-                    <table class="meta-table">
-                        <tr>
-                            <td class="meta-label">No:</td>
-                            <td>{{ $doc_number ?? 'DRAFT' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="meta-label">Date <span class="en-label">/ วันที่</span>:</td>
-                            <td>{{ date('d/m/Y') }}</td>
-                        </tr>
-                        <tr>
-                            <td class="meta-label">Ref:</td>
-                            <td>#{{ $production->id }}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-
-        <!-- Client Info -->
-        <div class="client-box">
-            <div class="client-label">Bill To <span class="en-label">/ ลูกค้า</span></div>
-            @if(isset($customerProfile))
-                 <div class="client-name">{{ $customerProfile->name }}</div>
-                 <div>{!! nl2br(e($customerProfile->address)) !!}</div>
-                 <div>Tax ID: {{ $customerProfile->tax_id ?? '-' }}</div>
-                 <div>Tel: {{ $customerProfile->phone ?? '-' }}</div>
-            @elseif(isset($financial['customer_override']) && $financial['customer_override']['name'])
-                 <div class="client-name">{{ $financial['customer_override']['name'] }}</div>
-                 <div>{!! nl2br(e($financial['customer_override']['address'] ?? '-')) !!}</div>
-                 <div>Tax ID: {{ $financial['customer_override']['tax_id'] ?? '-' }}</div>
-                 <div>Tel: {{ $financial['customer_override']['phone'] ?? '-' }}</div>
-            @elseif($production->employer)
-                 @php
-                     $emp = $production->employer;
-                     $empName = array_filter([$emp->getRawOriginal('employerNameTh'), $emp->employerNameEn]);
-                     $empNameStr = !empty($empName) ? implode(' / ', $empName) : 'N/A';
-
-                     $empAddress = '';
-                     if ($emp->addresses && $emp->addresses->isNotEmpty()) {
-                         $addr = $emp->addresses->firstWhere('type', 'registered') ?? $emp->addresses->first();
-                         $addrParts = array_filter([$addr->full_address_th, $addr->full_address_en]);
-                         $empAddress = implode("\n", $addrParts);
-                     }
-                 @endphp
-                 <div class="client-name">{{ $empNameStr }}</div>
-                 <div>{!! nl2br(e($empAddress)) !!}</div>
-                 <div>Tax ID: {{ $emp->employerTaxId ?? '-' }}</div>
-                 <div>Tel: {{ $emp->employerPhone ?? '-' }}</div>
-            @else
-                 {{-- No employer at all — e.g. a per-unit quotation with no
-                      committed customer yet. --}}
-                 <div class="client-name">{{ $production->project_name ?? '-' }}</div>
-            @endif
-        </div>
+        <div class="doc-band"></div>
 
         @php
             // ใช้ FQN แทน use Illuminate\Support\Str; เพราะบล็อกนี้อยู่ภายใน @unless
@@ -393,7 +441,144 @@
                 $serviceVat = $serviceBase * ($vatRate/100);
                 $totalServiceIncVat = $serviceBase + $serviceVat;
             }
+
+            $grandTotal = ($showService ? $totalServiceIncVat : 0) + ($showAdvance ? $advanceTotal : 0);
+            $whtAmount = ($showService && $whtEnabled) ? ($serviceBase * ($whtRate/100)) : 0;
+            $netPayable = $grandTotal - $whtAmount;
+
+            // ---- Presentation only (nothing above depends on these) ----
+            $typeLower = strtolower((string) $type);
+            $isQuotation = str_contains($typeLower, 'quotation');
+            if (str_contains($typeLower, 'credit note')) {
+                $amountLabel = 'ยอดลดหนี้ / Credit Amount';
+            } elseif ($isQuotation) {
+                $amountLabel = 'ยอดรวมใบเสนอราคา / Quotation Total';
+            } elseif (str_contains($typeLower, 'receipt')) {
+                $amountLabel = 'ยอดที่ได้รับชำระ / Amount Received';
+            } elseif (str_contains($typeLower, 'tax invoice')) {
+                $amountLabel = 'ยอดรวมทั้งสิ้น / Total Amount';
+            } else {
+                $amountLabel = 'ยอดที่ต้องชำระ / Amount Due';
+            }
+            $heroAmount = ($showService && $whtEnabled) ? $netPayable : $grandTotal;
+            // $type arrives as "receipt" / "Receipt" etc. — match case-insensitively here
+            $isPaidDocument = str_contains($typeLower, 'receipt') || str_contains($typeLower, 'tax invoice');
+            $dueDate = (!$isPaidDocument && !$isQuotation && $hasSpecificTransactions)
+                ? $transactions->pluck('due_date')->filter()->min()
+                : null;
+            $titleParts = array_map('trim', explode(' / ', (string) ($title ?? ucfirst($type)), 2));
+
+            // Single source of company info — biller profile wins, else fall through to $profile.
+            $issuer = isset($billerProfile) ? $billerProfile : $profile;
+            // Collapse multi-line address to one tight line. Saves 1-2 vertical rows.
+            $issuerAddress = trim(preg_replace('/\s+/u', ' ', (string) $issuer->address));
+            $issuerMeta = [];
+            if ($issuer->tax_id) $issuerMeta[] = 'Tax ID: ' . $issuer->tax_id;
+            if ($issuer->phone)  $issuerMeta[] = 'Tel: '    . $issuer->phone;
         @endphp
+
+        <!-- Header -->
+        <div class="doc-header">
+            <div class="issuer">
+                @if(isset($billerProfile) && $billerProfile->logo_path)
+                    <img src="{{ asset('storage/' . $billerProfile->logo_path) }}" class="company-logo" alt="Logo">
+                @elseif(!isset($billerProfile) && $profile->logo_path)
+                    <img src="{{ asset('storage/' . $profile->logo_path) }}" class="company-logo" alt="Logo">
+                @endif
+                <div style="min-width: 0;">
+                    <div class="company-name">{{ $issuer->name }}</div>
+                    @if($issuerAddress)
+                        <div class="company-address">{{ $issuerAddress }}</div>
+                    @endif
+                    @if(!empty($issuerMeta))
+                        <div class="tax-id">{{ implode('   ·   ', $issuerMeta) }}</div>
+                    @endif
+                </div>
+            </div>
+            <div class="doc-title">
+                <h1>{{ $titleParts[0] }}</h1>
+                @if(!empty($titleParts[1]))
+                    <div class="doc-type">{{ $titleParts[1] }}</div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Document details -->
+        <div class="meta-row">
+            <div class="meta-chip">
+                <div class="k">No. <span class="en-label">/ เลขที่</span></div>
+                <div class="v">{{ $doc_number ?? 'DRAFT' }}</div>
+            </div>
+            <div class="meta-chip">
+                <div class="k">Date <span class="en-label">/ วันที่</span></div>
+                <div class="v">{{ date('d/m/Y') }}</div>
+            </div>
+            <div class="meta-chip">
+                <div class="k">Ref <span class="en-label">/ อ้างอิง</span></div>
+                <div class="v">#{{ $production->id }}</div>
+            </div>
+            @if($dueDate)
+                <div class="meta-chip due">
+                    <div class="k">Due Date <span class="en-label">/ ครบกำหนดชำระ</span></div>
+                    <div class="v">{{ \Carbon\Carbon::parse($dueDate)->format('d/m/Y') }}</div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Client Info + amount -->
+        <div class="parties">
+            <div class="client-box">
+                <div class="client-label">Bill To <span class="en-label">/ ลูกค้า</span></div>
+                @if(isset($customerProfile))
+                     <div class="client-name">{{ $customerProfile->name }}</div>
+                     <div>{!! nl2br(e($customerProfile->address)) !!}</div>
+                     <div>Tax ID: {{ $customerProfile->tax_id ?? '-' }}</div>
+                     <div>Tel: {{ $customerProfile->phone ?? '-' }}</div>
+                @elseif(isset($financial['customer_override']) && $financial['customer_override']['name'])
+                     <div class="client-name">{{ $financial['customer_override']['name'] }}</div>
+                     <div>{!! nl2br(e($financial['customer_override']['address'] ?? '-')) !!}</div>
+                     <div>Tax ID: {{ $financial['customer_override']['tax_id'] ?? '-' }}</div>
+                     <div>Tel: {{ $financial['customer_override']['phone'] ?? '-' }}</div>
+                @elseif($production->employer)
+                     @php
+                         $emp = $production->employer;
+                         $empName = array_filter([$emp->getRawOriginal('employerNameTh'), $emp->employerNameEn]);
+                         $empNameStr = !empty($empName) ? implode(' / ', $empName) : 'N/A';
+
+                         $empAddress = '';
+                         if ($emp->addresses && $emp->addresses->isNotEmpty()) {
+                             $addr = $emp->addresses->firstWhere('type', 'registered') ?? $emp->addresses->first();
+                             $addrParts = array_filter([$addr->full_address_th, $addr->full_address_en]);
+                             $empAddress = implode("\n", $addrParts);
+                         }
+                     @endphp
+                     <div class="client-name">{{ $empNameStr }}</div>
+                     <div>{!! nl2br(e($empAddress)) !!}</div>
+                     <div>Tax ID: {{ $emp->employerTaxId ?? '-' }}</div>
+                     <div>Tel: {{ $emp->employerPhone ?? '-' }}</div>
+                @else
+                     {{-- No employer at all — e.g. a per-unit quotation with no
+                          committed customer yet. --}}
+                     <div class="client-name">{{ $production->project_name ?? '-' }}</div>
+                @endif
+            </div>
+
+            @if($showTotal)
+                <div class="amount-card">
+                    <div class="k">{{ $amountLabel }}</div>
+                    <div class="v">฿{{ number_format($heroAmount, 2) }}</div>
+                    <div class="s">
+                        @if($showService && $whtEnabled)
+                            Net after {{ rtrim(rtrim(number_format($whtRate, 2), '0'), '.') }}% WHT / หลังหักภาษี ณ ที่จ่าย
+                        @elseif($dueDate)
+                            Due {{ \Carbon\Carbon::parse($dueDate)->format('d/m/Y') }} / ครบกำหนดชำระ
+                        @else
+                            {{ $isPaidDocument ? 'Thank you for your payment / ขอบคุณที่ชำระเงิน' : 'Total incl. all charges / รวมทุกรายการ' }}
+                        @endif
+                    </div>
+                </div>
+            @endif
+        </div>
 
         <!-- Items Table -->
         <table class="items-table">
@@ -469,11 +654,11 @@
                                         <td>
                                             <strong>{{ $desc }}</strong>
                                             <br><span class="text-muted" style="font-size: 11px;">{{ $showTotal ? $count.' Employees @ ' : '' }}{{ number_format($price, 2) }} ฿{{ $showTotal ? '' : ' / head' }}</span>
-                                            @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                            @if($t->due_date)<br><span style="color: #94a3b8; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
                                         </td>
                                         <td class="text-center">{{ $showTotal ? $count : '1' }}</td>
                                         <td class="text-right">{{ number_format($price, 2) }}</td>
-                                        <td class="text-right">{{ $showTotal ? number_format($subtotal, 2) : '—' }}</td>
+                                        <td class="text-right"><strong>{{ $showTotal ? number_format($subtotal, 2) : '—' }}</strong></td>
                                     </tr>
                                 @endforeach
                             @else
@@ -482,11 +667,11 @@
                                     <td class="text-center">{{ $lineIdx++ }}</td>
                                     <td>
                                         <strong>{{ $t->notes ?: ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
-                                        @if($t->due_date)<br><span style="color: #999; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                        @if($t->due_date)<br><span style="color: #94a3b8; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
                                     </td>
                                     <td class="text-center">1</td>
                                     <td class="text-right">{{ number_format($amount, 2) }}</td>
-                                    <td class="text-right">{{ $showTotal ? number_format($amount, 2) : '—' }}</td>
+                                    <td class="text-right"><strong>{{ $showTotal ? number_format($amount, 2) : '—' }}</strong></td>
                                 </tr>
                             @endif
                         @endforeach
@@ -512,7 +697,7 @@
                                         </td>
                                         <td class="text-center">{{ $showTotal ? $count : '1' }}</td>
                                         <td class="text-right">{{ number_format($tier['price'], 2) }}</td>
-                                        <td class="text-right">{{ $showTotal ? number_format($tier['price'] * $count, 2) : '—' }}</td>
+                                        <td class="text-right"><strong>{{ $showTotal ? number_format($tier['price'] * $count, 2) : '—' }}</strong></td>
                                     </tr>
                                 @endif
                             @endforeach
@@ -522,7 +707,7 @@
                                 <td>{{ $production->project_name ?? 'Service Fee' }}</td>
                                 <td class="text-center">1</td>
                                 <td class="text-right">{{ number_format($serviceTotal, 2) }}</td>
-                                <td class="text-right">{{ $showTotal ? number_format($serviceTotal, 2) : '—' }}</td>
+                                <td class="text-right"><strong>{{ $showTotal ? number_format($serviceTotal, 2) : '—' }}</strong></td>
                             </tr>
                         @endif
                     @endif
@@ -532,7 +717,7 @@
                 @if($showAdvance)
                     @if($advanceTransactions->isNotEmpty())
                          <tr>
-                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย)</td>
+                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #c2410c !important;">Advance Payments (เงินสำรองจ่าย)</td>
                         </tr>
                         @foreach($advanceTransactions as $index => $t)
                             @php
@@ -544,18 +729,18 @@
                                 <td>
                                     <strong>{{ $description }}</strong>
                                      @if($isReceiptContext && $t->amount > $amount)
-                                        <br><span class="badge" style="font-size: 10px; background: #eee; padding: 2px 4px; border-radius: 4px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
+                                        <br><span class="badge" style="font-size: 10px; background: #f1f5f9; padding: 2px 6px; border-radius: 999px;">Partial Payment (Full: {{ number_format($t->amount, 2) }})</span>
                                     @endif
                                 </td>
                                 <td class="text-center">1</td>
                                 <td class="text-right">{{ number_format($amount, 2) }}</td>
-                                <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                <td class="text-right"><strong>{{ number_format($amount, 2) }}</strong></td>
                             </tr>
                         @endforeach
 
                     @elseif(!$hasSpecificTransactions && isset($advanceItems) && $advanceItems->isNotEmpty())
                         <tr>
-                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #ea580c;">Advance Payments (เงินสำรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #666;">(No VAT)</span></td>
+                            <td colspan="5" class="section-header" style="background-color: #fff7ed; color: #c2410c !important;">Advance Payments (เงินสำรองจ่าย) <span style="font-size: 10px; font-weight: normal; color: #9a3412;">(No VAT)</span></td>
                         </tr>
                         @foreach($advanceItems as $index => $item)
                             <tr>
@@ -563,7 +748,7 @@
                                 <td>{{ $item->description }}</td>
                                 <td class="text-center">{{ $item->quantity }}</td>
                                 <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                                <td class="text-right">{{ number_format($item->total, 2) }}</td>
+                                <td class="text-right"><strong>{{ number_format($item->total, 2) }}</strong></td>
                             </tr>
                         @endforeach
                     @endif
@@ -571,151 +756,153 @@
             </tbody>
         </table>
 
-        <!-- Calculations -->
-        @if($showTotal)
-        <div class="totals-container">
-            <table class="totals-table">
-                @if($showService)
-                    @if(isset($discount) && $discount > 0)
-                        <tr>
-                            <td class="total-label"><strong>Service Fee (Gross) <span class="en-label">/ ค่าบริการ (ก่อนส่วนลด)</span></strong></td>
-                            <td class="total-value">{{ number_format($serviceTotal + $discount, 2) }}</td>
-                        </tr>
-                        <tr style="color: #dc3545;">
-                            <td class="total-label"><strong>Discount <span class="en-label">/ ส่วนลด</span></strong> @if(!empty($discountDescription))<small>({{ $discountDescription }})</small>@endif</td>
-                            <td class="total-value">-{{ number_format($discount, 2) }}</td>
-                        </tr>
-                    @endif
-                    @if($vatEnabled && $vatRate > 0)
-                        <tr>
-                            <td class="total-label"><strong>Service Base <span class="en-label">/ มูลค่าบริการ (ก่อน VAT)</span></strong></td>
-                            <td class="total-value">{{ number_format($serviceBase, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="total-label">VAT ({{ $vatRate }}%)</td>
-                            <td class="total-value">{{ number_format($serviceVat, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="total-label" style="border-bottom: 1px solid #ddd;">Service Total <span class="en-label">/ รวมค่าบริการ (รวม VAT)</span></td>
-                            <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
-                        </tr>
-                    @else
-                        <tr>
-                            <td class="total-label" style="border-bottom: 1px solid #ddd;"><strong>Service Total <span class="en-label">/ รวมค่าบริการ</span></strong></td>
-                            <td class="total-value" style="border-bottom: 1px solid #ddd;">{{ number_format($totalServiceIncVat, 2) }}</td>
-                        </tr>
-                    @endif
+        <div class="summary">
+            <div class="summary-left">
+                <!-- Thai Baht Text -->
+                @if($showTotal)
+                    <div class="words-box">
+                        <div class="k">Amount in words <span class="en-label">/ จำนวนเงินตัวอักษร</span></div>
+                        <div class="v">( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )</div>
+                    </div>
                 @endif
 
-                @if($showAdvance && $advanceTotal > 0)
-                    <tr>
-                        <td class="total-label" style="color: #ea580c;"><strong>Total Advance Payments <span class="en-label">/ รวมเงินสำรองจ่าย</span></strong></td>
-                        <td class="total-value" style="color: #ea580c;">{{ number_format($advanceTotal, 2) }}</td>
-                    </tr>
-                @endif
-
-                @php
-                    $grandTotal = ($showService ? $totalServiceIncVat : 0) + ($showAdvance ? $advanceTotal : 0);
-                    $whtAmount = ($showService && $whtEnabled) ? ($serviceBase * ($whtRate/100)) : 0;
-                    $netPayable = $grandTotal - $whtAmount;
-                @endphp
-
-                <tr class="grand-total-row">
-                    <td>Grand Total <span class="en-label">/ รวมทั้งสิ้น</span></td>
-                    <td class="total-value">{{ number_format($grandTotal, 2) }}</td>
-                </tr>
-
-                @if($showService && $whtEnabled)
-                <tr style="color: #EF4444;">
-                    <td class="total-label">Less WHT ({{ $whtRate }}% on Service)</td>
-                    <td class="total-value">-{{ number_format($whtAmount, 2) }}</td>
-                </tr>
-                <tr style="font-weight: bold; border-top: 1px dashed #ccc;">
-                    <td class="total-label" style="padding-top: 5px;">Net Payable <span class="en-label">/ ยอดสุทธิ</span></td>
-                    <td class="total-value" style="padding-top: 5px;">{{ number_format($netPayable, 2) }}</td>
-                </tr>
-                @endif
-            </table>
-        </div>
-
-        <!-- Thai Baht Text -->
-        <div style="margin-top: 10px; font-style: italic; color: #666; font-size: 13px; text-align: right;">
-            ( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )
-        </div>
-        @endif
-
-        {{-- Payment Methods (ช่องทางการชำระเงิน) — compact bottom-left block.
-             Bank Transfer rows get a colored brand badge so the recipient
-             recognises the bank at a glance (กสิกร/กรุงไทย/กรุงเทพ all start
-             with ก/ก-, name alone is confusing). Color + initial come from
-             config/thai_banks.php matched by bank_code. --}}
-        @if(!empty($paymentMethods))
-            @php $bankPresets = collect(config('thai_banks', []))->keyBy('code'); @endphp
-            <div style="margin-top: 10px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; background: #fafafa; font-size: 12px; line-height: 1.4;">
-                <div style="font-weight: bold; margin-bottom: 4px; color: #333; font-size: 11px;">
-                    ช่องทางการชำระเงิน <span style="color:#999; font-weight: normal;">/ Payment Information</span>
-                </div>
-                @foreach($paymentMethods as $pm)
-                    @php $ptype = $pm['type'] ?? ''; @endphp
-
-                    @if($ptype === 'cash')
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; margin-right: 5px; vertical-align: middle;"></span>
-                            ชำระเป็นเงินสด
-                            <span style="border-bottom: 1px dotted #888; display: inline-block; min-width: 100px; margin: 0 3px;">&nbsp;</span>
-                            บาท
+                {{-- Payment Methods (ช่องทางการชำระเงิน). Bank Transfer rows get a
+                     colored brand badge so the recipient recognises the bank at a
+                     glance (กสิกร/กรุงไทย/กรุงเทพ all start with ก/ก-, name alone is
+                     confusing). Color + initial come from config/thai_banks.php
+                     matched by bank_code. --}}
+                @if(!empty($paymentMethods))
+                    @php $bankPresets = collect(config('thai_banks', []))->keyBy('code'); @endphp
+                    <div class="pay-box">
+                        <div class="title">
+                            ช่องทางการชำระเงิน <span class="en-label">/ Payment Information</span>
                         </div>
+                        @foreach($paymentMethods as $pm)
+                            @php $ptype = $pm['type'] ?? ''; @endphp
 
-                    @elseif($ptype === 'promptpay')
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; margin-right: 5px; vertical-align: middle;"></span>
-                            PromptPay: <strong>{{ $pm['promptpay_id'] ?? '-' }}</strong>
-                            <span style="border-bottom: 1px dotted #888; display: inline-block; min-width: 80px; margin: 0 3px;">&nbsp;</span>
-                            บาท
-                        </div>
-
-                    @elseif($ptype === 'transfer')
-                        @php
-                            $preset = !empty($pm['bank_code']) ? ($bankPresets[$pm['bank_code']] ?? null) : null;
-                            $badgeColor   = $preset['color']   ?? '#6B7280';
-                            $badgeInitial = $preset['initial'] ?? mb_substr($pm['bank_name'] ?? '?', 0, 1);
-                        @endphp
-                        <div style="margin-bottom: 4px; display: flex; align-items: flex-start; gap: 6px;">
-                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; flex-shrink: 0; margin-top: 3px;"></span>
-                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: {{ $badgeColor }}; color: #fff; font-weight: bold; font-size: 10px; border-radius: 3px; flex-shrink: 0;">{{ $badgeInitial }}</span>
-                            <div style="flex-grow: 1; min-width: 0;">
-                                <div>
-                                    <strong>{{ $pm['bank_name'] ?? '-' }}</strong>
-                                    @if(!empty($pm['account_name']))
-                                        <span style="color: #555;"> · {{ $pm['account_name'] }}</span>
-                                    @endif
+                            @if($ptype === 'cash')
+                                <div style="margin-bottom: 3px;">
+                                    <span class="check"></span>
+                                    ชำระเป็นเงินสด
+                                    <span style="border-bottom: 1px dotted #94a3b8; display: inline-block; min-width: 100px; margin: 0 3px;">&nbsp;</span>
+                                    บาท
                                 </div>
-                                @if(!empty($pm['account_number']))
-                                    <div style="color: #555; font-size: 11px;">
-                                        เลขที่บัญชี: <strong style="color: #222;">{{ $pm['account_number'] }}</strong>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
 
-                    @elseif($ptype === 'other')
-                        <div style="margin-bottom: 2px;">
-                            <span style="display: inline-block; width: 10px; height: 10px; border: 1px solid #444; margin-right: 5px; vertical-align: middle;"></span>
-                            อื่นๆ: {{ $pm['note'] ?? '-' }}
-                            <span style="border-bottom: 1px dotted #888; display: inline-block; min-width: 80px; margin: 0 3px;">&nbsp;</span>
-                            บาท
-                        </div>
-                    @endif
-                @endforeach
+                            @elseif($ptype === 'promptpay')
+                                <div style="margin-bottom: 3px;">
+                                    <span class="check"></span>
+                                    PromptPay: <strong>{{ $pm['promptpay_id'] ?? '-' }}</strong>
+                                    <span style="border-bottom: 1px dotted #94a3b8; display: inline-block; min-width: 80px; margin: 0 3px;">&nbsp;</span>
+                                    บาท
+                                </div>
+
+                            @elseif($ptype === 'transfer')
+                                @php
+                                    $preset = !empty($pm['bank_code']) ? ($bankPresets[$pm['bank_code']] ?? null) : null;
+                                    $badgeColor   = $preset['color']   ?? '#6B7280';
+                                    $badgeInitial = $preset['initial'] ?? mb_substr($pm['bank_name'] ?? '?', 0, 1);
+                                @endphp
+                                <div style="margin-bottom: 5px; display: flex; align-items: flex-start; gap: 7px;">
+                                    <span class="check" style="margin-top: 5px; margin-right: 0; flex-shrink: 0;"></span>
+                                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: {{ $badgeColor }}; color: #fff; font-weight: bold; font-size: 10px; border-radius: 6px; flex-shrink: 0;">{{ $badgeInitial }}</span>
+                                    <div style="flex-grow: 1; min-width: 0;">
+                                        <div>
+                                            <strong style="color: var(--ink);">{{ $pm['bank_name'] ?? '-' }}</strong>
+                                            @if(!empty($pm['account_name']))
+                                                <span style="color: var(--muted);"> · {{ $pm['account_name'] }}</span>
+                                            @endif
+                                        </div>
+                                        @if(!empty($pm['account_number']))
+                                            <div style="color: var(--muted); font-size: 11px;">
+                                                เลขที่บัญชี: <strong style="color: var(--ink); font-size: 12.5px; letter-spacing: .03em;">{{ $pm['account_number'] }}</strong>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+
+                            @elseif($ptype === 'other')
+                                <div style="margin-bottom: 3px;">
+                                    <span class="check"></span>
+                                    อื่นๆ: {{ $pm['note'] ?? '-' }}
+                                    <span style="border-bottom: 1px dotted #94a3b8; display: inline-block; min-width: 80px; margin: 0 3px;">&nbsp;</span>
+                                    บาท
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
             </div>
-        @endif
+
+            <!-- Calculations -->
+            @if($showTotal)
+            <div class="totals-container">
+                <table class="totals-table">
+                    @if($showService)
+                        @if(isset($discount) && $discount > 0)
+                            <tr>
+                                <td class="total-label"><strong>Service Fee (Gross) <span class="en-label">/ ค่าบริการ (ก่อนส่วนลด)</span></strong></td>
+                                <td class="total-value">{{ number_format($serviceTotal + $discount, 2) }}</td>
+                            </tr>
+                            <tr style="color: #dc2626;">
+                                <td class="total-label" style="color: #dc2626;"><strong>Discount <span class="en-label">/ ส่วนลด</span></strong> @if(!empty($discountDescription))<small>({{ $discountDescription }})</small>@endif</td>
+                                <td class="total-value" style="color: #dc2626;">-{{ number_format($discount, 2) }}</td>
+                            </tr>
+                        @endif
+                        @if($vatEnabled && $vatRate > 0)
+                            <tr>
+                                <td class="total-label"><strong>Service Base <span class="en-label">/ มูลค่าบริการ (ก่อน VAT)</span></strong></td>
+                                <td class="total-value">{{ number_format($serviceBase, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="total-label">VAT ({{ $vatRate }}%)</td>
+                                <td class="total-value">{{ number_format($serviceVat, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="total-label" style="border-bottom: 1px solid var(--line);">Service Total <span class="en-label">/ รวมค่าบริการ (รวม VAT)</span></td>
+                                <td class="total-value" style="border-bottom: 1px solid var(--line);">{{ number_format($totalServiceIncVat, 2) }}</td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td class="total-label" style="border-bottom: 1px solid var(--line);"><strong>Service Total <span class="en-label">/ รวมค่าบริการ</span></strong></td>
+                                <td class="total-value" style="border-bottom: 1px solid var(--line);">{{ number_format($totalServiceIncVat, 2) }}</td>
+                            </tr>
+                        @endif
+                    @endif
+
+                    @if($showAdvance && $advanceTotal > 0)
+                        <tr>
+                            <td class="total-label" style="color: #c2410c;"><strong>Total Advance Payments <span class="en-label">/ รวมเงินสำรองจ่าย</span></strong></td>
+                            <td class="total-value" style="color: #c2410c;">{{ number_format($advanceTotal, 2) }}</td>
+                        </tr>
+                    @endif
+
+                    <tr class="grand-spacer"><td colspan="2"></td></tr>
+                    <tr class="grand-total-row">
+                        <td>Grand Total <span class="en-label">/ รวมทั้งสิ้น</span></td>
+                        <td class="total-value">{{ number_format($grandTotal, 2) }}</td>
+                    </tr>
+
+                    @if($showService && $whtEnabled)
+                    <tr style="color: #dc2626;">
+                        <td class="total-label" style="color: #dc2626; padding-top: 8px;">Less WHT ({{ $whtRate }}% on Service)</td>
+                        <td class="total-value" style="color: #dc2626; padding-top: 8px;">-{{ number_format($whtAmount, 2) }}</td>
+                    </tr>
+                    <tr style="font-weight: bold;">
+                        <td class="total-label" style="padding-top: 6px; border-top: 1px dashed #cbd5e1; color: var(--ink);">Net Payable <span class="en-label">/ ยอดสุทธิ</span></td>
+                        <td class="total-value" style="padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 14px;">{{ number_format($netPayable, 2) }}</td>
+                    </tr>
+                    @endif
+                </table>
+            </div>
+            @endif
+        </div>
 
         {{-- Tax status note — states plainly whether the price shown is VAT-
              inclusive/exclusive and whether WHT applies, so the customer
              can't misread the amount due. Tied to $showService because VAT/
              WHT in this document only ever apply to the service fee. --}}
         @if($showService)
-            <div style="margin-top: 10px; font-size: 12px; color: #EF4444; line-height: 1.5;">
+            <div class="tax-note">
                 @if(!$vatEnabled)
                     <div>Note: This price does not yet include Value Added Tax (VAT). Please contact us if a VAT-inclusive quotation or tax invoice is required.
                         <span class="en-label">/ หมายเหตุ: ราคานี้ยังไม่รวมภาษีมูลค่าเพิ่ม (VAT) หากต้องการใบเสนอราคาหรือใบกำกับภาษีที่รวม VAT กรุณาติดต่อเจ้าหน้าที่</span></div>
@@ -734,7 +921,7 @@
             <!-- Signatures Section -->
             <div class="signatures">
                 @if($type !== 'quotation')
-                <div class="sig-block">
+                <div class="sig-block filled">
                     <div class="sig-title">Received By <span class="en-label">/ ผู้รับเงิน</span></div>
                     <div class="sig-line"></div>
                     <div class="sig-text">Date <span class="en-label">/ วันที่</span>: ____/____/______</div>
@@ -746,7 +933,7 @@
                 <div class="sig-block"></div>
                 @endif
 
-                <div class="sig-block">
+                <div class="sig-block filled">
                     <div class="sig-title">Authorized Signature <span class="en-label">/ ผู้มีอำนาจลงนาม</span></div>
 
                     <div style="position: relative; display: flex; justify-content: center; align-items: end; height: 50px; margin-bottom: 10px;">
@@ -790,7 +977,7 @@
 
             <!-- Footer -->
             <div class="footer">
-                Thank you for your business. <br>
+                <span class="thanks">Thank you for your business.</span><br>
                 Please check the correctness of this document.
             </div>
         </div>
@@ -800,8 +987,9 @@
     @if(!empty($includeEmployeeList) && $includeEmployeeList)
     {{-- ใน list-only mode ไม่ใส่ page-break-before เพราะไม่มีหน้าก่อนหน้า --}}
     <div class="page" style="@unless(!empty($listOnly) && $listOnly) page-break-before: always; @endunless margin-top: 20px;">
-        <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px;">ตารางรายชื่อพนักงาน / Employee List</h2>
-        <table class="items-table" style="font-size: 12px;">
+        <div class="doc-band"></div>
+        <h2 class="list-title">ตารางรายชื่อพนักงาน / Employee List</h2>
+        <table class="items-table list-table" style="font-size: 12px;">
             <thead>
                 <tr>
                     <th style="width: 3%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
@@ -822,9 +1010,9 @@
                     <td style="text-align: center; vertical-align: middle;">{{ $emp['index'] }}</td>
                     <td style="text-align: center; vertical-align: middle;">
                         @if(!empty($emp['image']))
-                            <img src="{{ asset('storage/' . $emp['image']) }}" alt="Photo" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                            <img src="{{ asset('storage/' . $emp['image']) }}" alt="Photo" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                         @else
-                            <div style="width: 50px; height: 50px; background-color: #f3f4f6; border-radius: 4px; display: inline-block; line-height: 50px; color: #9ca3af; font-size: 10px;">No Image</div>
+                            <div style="width: 50px; height: 50px; background-color: #f1f5f9; border-radius: 8px; display: inline-block; line-height: 50px; color: #94a3b8; font-size: 10px;">No Image</div>
                         @endif
                     </td>
                     <td style="vertical-align: middle;">{{ $emp['employee_id'] ?: '-' }}</td>
