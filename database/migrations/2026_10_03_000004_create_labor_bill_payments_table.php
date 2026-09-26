@@ -21,6 +21,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // May already have been created by the earlier-timestamped add_reference_no_to_labor_bill_payments_table migration.
+        if (Schema::hasTable('labor_bill_payments')) {
+            return;
+        }
+
         Schema::create('labor_bill_payments', function (Blueprint $table) {
             $table->id();
 

@@ -9,26 +9,29 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Convert table to DYNAMIC row format to allow more columns
-        DB::statement('ALTER TABLE sales_lead_employees ROW_FORMAT=DYNAMIC');
+        // Row-format/column-storage tuning below is MySQL-specific syntax; skip on other drivers (e.g. local SQLite dev).
+        if (DB::getDriverName() === 'mysql') {
+            // Convert table to DYNAMIC row format to allow more columns
+            DB::statement('ALTER TABLE sales_lead_employees ROW_FORMAT=DYNAMIC');
 
-        // Convert existing large varchar columns to TEXT to free row space
-        $existingPathCols = [
-            'employee_doc_1', 'employee_doc_2', 'employee_doc_visa', 'employee_doc_3', 'employee_doc_4',
-            'employee_doc_other_1', 'employee_doc_other_2', 'employee_doc_other_3',
-            'photo_path', 'employeeAddress',
-        ];
-        foreach ($existingPathCols as $col) {
-            if (Schema::hasColumn('sales_lead_employees', $col)) {
-                DB::statement("ALTER TABLE sales_lead_employees MODIFY `{$col}` TEXT NULL");
+            // Convert existing large varchar columns to TEXT to free row space
+            $existingPathCols = [
+                'employee_doc_1', 'employee_doc_2', 'employee_doc_visa', 'employee_doc_3', 'employee_doc_4',
+                'employee_doc_other_1', 'employee_doc_other_2', 'employee_doc_other_3',
+                'photo_path', 'employeeAddress',
+            ];
+            foreach ($existingPathCols as $col) {
+                if (Schema::hasColumn('sales_lead_employees', $col)) {
+                    DB::statement("ALTER TABLE sales_lead_employees MODIFY `{$col}` TEXT NULL");
+                }
             }
-        }
 
-        // Also convert existing other doc columns from previous migration
-        for ($i = 4; $i <= 10; $i++) {
-            $col = 'employee_doc_other_' . $i;
-            if (Schema::hasColumn('sales_lead_employees', $col)) {
-                DB::statement("ALTER TABLE sales_lead_employees MODIFY `{$col}` TEXT NULL");
+            // Also convert existing other doc columns from previous migration
+            for ($i = 4; $i <= 10; $i++) {
+                $col = 'employee_doc_other_' . $i;
+                if (Schema::hasColumn('sales_lead_employees', $col)) {
+                    DB::statement("ALTER TABLE sales_lead_employees MODIFY `{$col}` TEXT NULL");
+                }
             }
         }
 

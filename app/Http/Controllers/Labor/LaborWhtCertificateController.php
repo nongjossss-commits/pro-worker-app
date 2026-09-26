@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Labor;
 
 use App\Http\Controllers\Controller;
 use App\Models\LaborBill;
+use App\Models\LaborTaxInvoice;
+use App\Models\LaborTeam;
 use App\Models\LaborWhtCertificate;
 use App\Services\LaborWhtCertificatePdfService;
 use App\Services\LaborWhtCertificateService;
@@ -25,7 +27,7 @@ class LaborWhtCertificateController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
-        $query = LaborWhtCertificate::with(['bill.team', 'creator'])
+        $query = LaborWhtCertificate::with(['bill.team', 'taxInvoice.customer', 'team', 'creator'])
             ->latest('paid_at')
             ->latest('id');
 
@@ -41,6 +43,13 @@ class LaborWhtCertificateController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        // labor_team_id is denormalized from either the bill or the
+        // standalone tax invoice (see LaborWhtCertificateService::
+        // resolveTeamId()) — lets accounting track WHT certs coming back
+        // for a specific team's external customers too, not just team bills.
+        if ($request->filled('team_id')) {
+            $query->where('labor_team_id', $request->team_id);
+        }
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -51,8 +60,9 @@ class LaborWhtCertificateController extends Controller
         }
 
         $certificates = $query->paginate(25)->withQueryString();
+        $teams = LaborTeam::orderBy('name')->get();
 
-        return view('labor.wht-certificates.index', compact('certificates'));
+        return view('labor.wht-certificates.index', compact('certificates', 'teams'));
     }
 
     public function create(Request $request)
@@ -60,7 +70,16 @@ class LaborWhtCertificateController extends Controller
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
         $bills = LaborBill::with('team', 'financialProfile')->active()->orderByDesc('issued_at')->limit(100)->get();
-        return view('labor.wht-certificates.create', compact('bills'));
+        // Standalone (bill-less) external-customer invoices — see
+        // LaborTaxInvoice.labor_customer_id — are also eligible payers for a
+        // WHT certificate, same as a team-billed LaborBill.
+        $taxInvoices = LaborTaxInvoice::with('customer', 'team')
+            ->whereNotNull('labor_customer_id')
+            ->active()
+            ->orderByDesc('invoice_date')
+            ->limit(100)
+            ->get();
+        return view('labor.wht-certificates.create', compact('bills', 'taxInvoices'));
     }
 
     public function store(Request $request)
@@ -85,7 +104,7 @@ class LaborWhtCertificateController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
-        $whtCertificate->load(['bill.team', 'creator', 'updater']);
+        $whtCertificate->load(['bill.team', 'taxInvoice.customer', 'team', 'creator', 'updater']);
         return view('labor.wht-certificates.show', ['cert' => $whtCertificate]);
     }
 
@@ -162,6 +181,7 @@ class LaborWhtCertificateController extends Controller
             'tax_period_year' => 'nullable|integer|min:2000|max:2100',
             'tax_period_month' => 'nullable|integer|min:1|max:12',
             'labor_bill_id' => 'nullable|exists:labor_bills,id',
+            'labor_tax_invoice_id' => 'nullable|exists:labor_tax_invoices,id',
             'payer_name' => 'required|string|max:255',
             'payer_tax_id' => 'nullable|string|max:15',
             'payee_name' => 'required|string|max:255',

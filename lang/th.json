@@ -2278,6 +2278,10 @@
     "This employer has both pending and already-completed employees. Which do you want to select?": "นายจ้างรายนี้มีทั้งลูกจ้างที่ยังไม่เสร็จสิ้นและที่เสร็จสิ้นแล้ว คุณต้องการเลือกกลุ่มไหน?",
     "Completed only": "เฉพาะที่เสร็จสิ้นแล้ว",
     "Not completed only": "เฉพาะที่ยังไม่เสร็จสิ้น",
+    "In progress": "กำลังดำเนินการ",
+    "In progress only": "เฉพาะที่กำลังดำเนินการ",
+    "Cancelled only": "เฉพาะที่ถูกยกเลิก",
+    "Please select at least one status": "กรุณาเลือกอย่างน้อยหนึ่งสถานะ",
     "Failed to load employee list.": "โหลดรายชื่อลูกจ้างไม่สำเร็จ",
     "Custom selection": "เลือกแบบกำหนดเอง",
     "No Photo": "ไม่มีรูปภาพ",
@@ -2387,5 +2391,13 @@
     "Quick search (Request No.)": "ค้นหาด่วน (เลขคำขอ)",
     "Total Headcount (All Charge Types)": "จำนวนพนักงานรวมทั้งหมด",
     "Headcount by Charge Type & Nationality": "จำนวนคนแยกตามประเภทค่าใช้จ่ายและสัญชาติ",
-    "Recently Added or Edited": "รายการล่าสุด (เพิ่ม/แก้ไข)"
+    "Recently Added or Edited": "รายการล่าสุด (เพิ่ม/แก้ไข)",
+    "The work tab this bill came from has been deleted. The bill and its payments are kept.": "แถบงานที่สร้างบิลนี้ถูกลบไปแล้ว แต่บิลและประวัติการชำระเงินยังถูกเก็บไว้ครบ",
+    "Unknown tab": "ไม่ทราบชื่อแถบ",
+    "Tab deleted": "แถบถูกลบแล้ว",
+    "All Sources": "ทุกที่มา",
+    "From Active Tabs": "จากแถบที่ใช้งานอยู่",
+    "From Deleted Tabs": "จากแถบที่ถูกลบแล้ว",
+    "There are :count unpaid bills totalling :amount from work tabs that have been deleted.": "มีบิลค้างชำระ :count ใบ ยอดรวม :amount บาท ที่มาจากแถบงานที่ถูกลบไปแล้ว",
+    "View these bills": "ดูบิลเหล่านี้"
 }

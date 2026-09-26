@@ -52,6 +52,11 @@ class LaborTeam extends Model
         return $this->hasMany(LaborBill::class);
     }
 
+    public function customers(): HasMany
+    {
+        return $this->hasMany(LaborCustomer::class);
+    }
+
     public function getTotalOwedAttribute(): float
     {
         return (float) $this->ledgerEntries()->sum('amount');

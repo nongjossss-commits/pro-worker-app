@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * One-time data correction: LaborBillPaymentService::recordPayment() never
@@ -17,6 +18,12 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration {
     public function up(): void
     {
+        // This migration's table is created by a later-timestamped migration, so on a
+        // fresh install there is no legacy data to backfill yet — nothing to do here.
+        if (!Schema::hasTable('labor_bill_payments')) {
+            return;
+        }
+
         $payments = DB::table('labor_bill_payments')
             ->whereNull('deleted_at')
             ->whereNotIn('id', function ($query) {

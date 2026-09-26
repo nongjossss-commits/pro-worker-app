@@ -1313,22 +1313,29 @@ window.updateEmployerSelectionLabel = function (employerId) {
     if (!eligible) return;
 
     const selectedIds = window.getGlobalSelectedIds();
-    const pendingIds = eligible.pending.map(i => i.id);
-    const lockedIds = eligible.locked.map(i => i.id);
-    const allIds = [...pendingIds, ...lockedIds];
+    const groupIds = {
+        pending: eligible.pending.map(i => i.id),
+        completed: eligible.completed.map(i => i.id),
+        cancelled: eligible.cancelled.map(i => i.id),
+    };
+    const allIds = [...groupIds.pending, ...groupIds.completed, ...groupIds.cancelled];
     if (allIds.length === 0) { labelEl.classList.add('d-none'); return; }
 
     const selectedCount = allIds.filter(id => selectedIds.includes(id)).length;
+    const fullyIn = (ids) => ids.length > 0 && ids.every(id => selectedIds.includes(id));
+    const noneIn = (ids) => ids.every(id => !selectedIds.includes(id));
 
     let text = '';
     if (selectedCount === 0) {
         text = '';
     } else if (selectedCount === allIds.length) {
         text = '{{ __("All") }}';
-    } else if (lockedIds.length > 0 && lockedIds.every(id => selectedIds.includes(id)) && pendingIds.every(id => !selectedIds.includes(id))) {
+    } else if (fullyIn(groupIds.completed) && noneIn(groupIds.pending) && noneIn(groupIds.cancelled)) {
         text = '{{ __("Completed only") }}';
-    } else if (pendingIds.length > 0 && pendingIds.every(id => selectedIds.includes(id)) && lockedIds.every(id => !selectedIds.includes(id))) {
-        text = '{{ __("Not completed only") }}';
+    } else if (fullyIn(groupIds.cancelled) && noneIn(groupIds.pending) && noneIn(groupIds.completed)) {
+        text = '{{ __("Cancelled only") }}';
+    } else if (fullyIn(groupIds.pending) && noneIn(groupIds.completed) && noneIn(groupIds.cancelled)) {
+        text = '{{ __("In progress only") }}';
     } else {
         text = '{{ __("Custom selection") }}';
     }
@@ -1341,10 +1348,18 @@ window.updateEmployerSelectionLabel = function (employerId) {
  * @param {HTMLInputElement} masterCb  the employer-select-all checkbox that just changed
  * @param {string} endpointUrl         lightweight JSON endpoint, no query string
  * @param {object} opts
- *   - supportsLockedCompleted: bool   true if the response can mix "pending"
- *                                     and "locked completed" items
- *                                     (Registration/Renewal only) and the
- *                                     3-way prompt should be offered for that mix
+ *   - supportsLockedCompleted: bool   true for Registration/Renewal, whose
+ *                                     items carry a `status_group` of
+ *                                     'pending' | 'completed' | 'cancelled'.
+ *                                     When true, checking the box always
+ *                                     offers the status-group prompt below
+ *                                     (so the user can export/select
+ *                                     completed and cancelled employee cards
+ *                                     too, not just in-progress ones) —
+ *                                     works the same for the default tabs
+ *                                     and any tab a super-admin creates,
+ *                                     since it only ever looks at each
+ *                                     item's own status_group, never a tab id.
  */
 window.smartEmployerSelectAll = function (masterCb, endpointUrl, opts = {}) {
     const isChecked = masterCb.checked;
@@ -1352,9 +1367,14 @@ window.smartEmployerSelectAll = function (masterCb, endpointUrl, opts = {}) {
     const cacheKey = endpointUrl + '|' + window.location.search;
 
     const finish = (items) => {
-        const pendingItems = opts.supportsLockedCompleted ? items.filter(i => !i.locked_completed) : items;
-        const lockedItems = opts.supportsLockedCompleted ? items.filter(i => i.locked_completed) : [];
-        window._employerEligibleItems[employerId] = { pending: pendingItems, locked: lockedItems };
+        const groups = opts.supportsLockedCompleted
+            ? {
+                pending: items.filter(i => i.status_group === 'pending'),
+                completed: items.filter(i => i.status_group === 'completed'),
+                cancelled: items.filter(i => i.status_group === 'cancelled'),
+            }
+            : { pending: items, completed: [], cancelled: [] };
+        window._employerEligibleItems[employerId] = groups;
 
         const applySelection = (chosenItems) => {
             if (isChecked) {
@@ -1378,33 +1398,66 @@ window.smartEmployerSelectAll = function (masterCb, endpointUrl, opts = {}) {
             return;
         }
 
-        if (opts.supportsLockedCompleted && pendingItems.length > 0 && lockedItems.length > 0) {
-            Swal.fire({
-                title: '{{ __("Select which employees?") }}',
-                text: '{{ __("This employer has both pending and already-completed employees. Which do you want to select?") }}',
-                icon: 'question',
-                showDenyButton: true,
-                showCancelButton: true,
-                confirmButtonText: '{{ __("All") }}',
-                denyButtonText: '{{ __("Completed only") }}',
-                cancelButtonText: '{{ __("Not completed only") }}',
-                confirmButtonColor: '#3b82f6',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    applySelection(items);
-                } else if (result.isDenied) {
-                    applySelection(lockedItems);
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    applySelection(pendingItems);
-                } else {
-                    // Closed via ESC/backdrop — abort, select nothing.
-                    masterCb.checked = false;
-                    masterCb.disabled = false;
-                }
-            });
-        } else {
+        if (!opts.supportsLockedCompleted || items.length === 0) {
             applySelection(items);
+            return;
         }
+
+        // Status-group prompt — lets the user pick any combination of
+        // in-progress / completed / cancelled employee cards to select, e.g.
+        // for exporting a report or downloading documents across every
+        // status, not just the ones normally editable. Checkboxes with zero
+        // eligible employees are disabled rather than hidden, so the counts
+        // are always visible.
+        const counts = {
+            pending: groups.pending.length,
+            completed: groups.completed.length,
+            cancelled: groups.cancelled.length,
+        };
+        Swal.fire({
+            title: '{{ __("Select which employees?") }}',
+            html: `
+                <div class="text-start">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="swal-status-pending" ${counts.pending > 0 ? 'checked' : 'disabled'}>
+                        <label class="form-check-label" for="swal-status-pending">{{ __('In progress') }} (${counts.pending})</label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="swal-status-completed" ${counts.completed === 0 ? 'disabled' : ''}>
+                        <label class="form-check-label" for="swal-status-completed">{{ __('Completed') }} (${counts.completed})</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="swal-status-cancelled" ${counts.cancelled === 0 ? 'disabled' : ''}>
+                        <label class="form-check-label" for="swal-status-cancelled">{{ __('Cancelled') }} (${counts.cancelled})</label>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '{{ __("Confirm") }}',
+            cancelButtonText: '{{ __("Cancel") }}',
+            confirmButtonColor: '#3b82f6',
+            focusConfirm: false,
+            preConfirm: () => {
+                const chosenGroups = [];
+                if (document.getElementById('swal-status-pending').checked) chosenGroups.push('pending');
+                if (document.getElementById('swal-status-completed').checked) chosenGroups.push('completed');
+                if (document.getElementById('swal-status-cancelled').checked) chosenGroups.push('cancelled');
+                if (chosenGroups.length === 0) {
+                    Swal.showValidationMessage('{{ __("Please select at least one status") }}');
+                    return false;
+                }
+                return chosenGroups;
+            },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const chosen = items.filter(i => result.value.includes(i.status_group));
+                applySelection(chosen);
+            } else {
+                // Cancelled/closed via button, ESC, or backdrop — abort, select nothing.
+                masterCb.checked = false;
+                masterCb.disabled = false;
+            }
+        });
     };
 
     masterCb.disabled = true;

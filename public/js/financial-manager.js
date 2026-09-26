@@ -1215,8 +1215,23 @@ if (typeof window.financialManager === 'undefined') {
             // Mount Swal inside any open Bootstrap modal so its focus trap doesn't
             // fight with the textarea/input — otherwise typing is impossible.
             _swalTarget() {
-                const openModal = document.querySelector('.modal.show');
+                const openModal = this._topOpenModal();
                 return openModal || document.body;
+            },
+
+            // When modals are stacked (e.g. Payment History opened on top of the
+            // workflow Finance modal), querySelector('.modal.show') returns the
+            // bottom one and Swal renders underneath the top modal. Pick the
+            // top-most open modal instead: highest z-index, later in DOM wins ties.
+            _topOpenModal() {
+                const modals = Array.from(document.querySelectorAll('.modal.show'));
+                let top = null;
+                let topZ = -Infinity;
+                modals.forEach((m) => {
+                    const z = parseInt(window.getComputedStyle(m).zIndex, 10) || 0;
+                    if (z >= topZ) { topZ = z; top = m; }
+                });
+                return top;
             },
 
             // Open Swal with Bootstrap-modal-aware config.
@@ -1227,7 +1242,7 @@ if (typeof window.financialManager === 'undefined') {
             // rogue focus event that fires between Swal's own auto-focus and our
             // trap-deactivation.
             _safeFire(config) {
-                const openModal = document.querySelector('.modal.show');
+                const openModal = this._topOpenModal();
                 const modalInstance = openModal && window.bootstrap ? bootstrap.Modal.getInstance(openModal) : null;
                 const focusTrap = modalInstance && modalInstance._focustrap ? modalInstance._focustrap : null;
 

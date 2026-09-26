@@ -361,6 +361,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (task.status === 'completed') {
                         const url = '{{ route("admin.downloads.download", ":id") }}'.replace(':id', task.id);
                         actionBtn = `<a href="${url}" class="btn btn-sm btn-success" download><i class="bi bi-download"></i> Download</a>`;
+                        // A 'completed' task can still be missing some requested files
+                        // (never uploaded, or the file went missing from storage) —
+                        // ProcessDownload records that in error_message even though the
+                        // task itself succeeded, so it doesn't look like everything
+                        // downloaded fine when some files were silently skipped.
+                        if (task.error_message) {
+                            actionBtn += ` <i class="bi bi-exclamation-triangle-fill ms-1 text-warning" data-bs-toggle="tooltip" title="${task.error_message}"></i>`;
+                        }
                     } else if (task.status === 'failed') {
                         actionBtn = `
                             <span class="text-danger fw-bold">Failed</span>

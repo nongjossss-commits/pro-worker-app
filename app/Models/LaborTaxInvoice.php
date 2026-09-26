@@ -15,6 +15,10 @@ class LaborTaxInvoice extends Model
         'invoice_date',
         'fiscal_year',
         'labor_bill_id',
+        'labor_customer_id',
+        'labor_team_id',
+        'period_start',
+        'period_end',
         'issuer_profile_id',
         'customer_name',
         'customer_tax_id',
@@ -36,6 +40,8 @@ class LaborTaxInvoice extends Model
 
     protected $casts = [
         'invoice_date' => 'date',
+        'period_start' => 'date',
+        'period_end' => 'date',
         'issued_at' => 'datetime',
         'voided_at' => 'datetime',
         'subtotal' => 'decimal:2',
@@ -48,6 +54,21 @@ class LaborTaxInvoice extends Model
     public function bill()
     {
         return $this->belongsTo(LaborBill::class, 'labor_bill_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(LaborCustomer::class, 'labor_customer_id');
+    }
+
+    public function team()
+    {
+        return $this->belongsTo(LaborTeam::class, 'labor_team_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(LaborTaxInvoiceItem::class)->orderBy('sort_order');
     }
 
     public function issuerProfile()

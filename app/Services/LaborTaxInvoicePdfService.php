@@ -26,7 +26,7 @@ class LaborTaxInvoicePdfService
 
     public function generate(LaborTaxInvoice $invoice, string $copyLabel = 'original'): string
     {
-        $invoice->loadMissing('issuerProfile');
+        $invoice->loadMissing('issuerProfile', 'items');
 
         $pdf = new Fpdi();
         $this->setupFont($pdf);
@@ -200,27 +200,124 @@ class LaborTaxInvoicePdfService
         }
     }
 
+    /**
+     * Itemized table — "this service, at this price, for this many
+     * people/units, comes to this much", one row per LaborTaxInvoiceItem.
+     * Each row's height adapts to however many lines its description wraps
+     * to (computed via wrapLines() against the actual loaded font's
+     * metrics), so the qty/price/amount columns on that row always line up
+     * with the full description instead of clipping it.
+     */
     protected function renderItemsTable(Fpdi $pdf, LaborTaxInvoice $invoice, float $headerBottom): void
     {
+        $items = $invoice->items->isNotEmpty() ? $invoice->items : collect([(object) [
+            'description' => 'ค่าบริการ',
+            'quantity' => 1,
+            'unit_price' => (float) $invoice->subtotal,
+            'amount' => (float) $invoice->subtotal,
+        ]]);
+
+        $x = 10;
         $y = $headerBottom + 38;
-        $pdf->SetXY(10, $y);
+        $colNo = 10;
+        $colDesc = 80;
+        $colQty = 25;
+        $colPrice = 35;
+        $colAmount = 40;
+        $lineH = 4.6;
 
-        $pdf->SetFillColor(230, 230, 230);
-        $pdf->SetFont('THSarabunNew', '', 11);
-        $pdf->Cell(15, 7, $this->txt('ลำดับ'), 1, 0, 'C', true);
-        $pdf->Cell(115, 7, $this->txt('รายการ / Description'), 1, 0, 'C', true);
-        $pdf->Cell(20, 7, $this->txt('จำนวน'), 1, 0, 'C', true);
-        $pdf->Cell(40, 7, $this->txt('จำนวนเงิน (บาท)'), 1, 1, 'C', true);
+        $pdf->SetXY($x, $y);
+        $pdf->SetFillColor(52, 73, 94);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetFont('THSarabunNew', '', 10.5);
+        $pdf->Cell($colNo, 8, $this->txt('ลำดับ'), 1, 0, 'C', true);
+        $pdf->Cell($colDesc, 8, $this->txt('รายการ / Description'), 1, 0, 'C', true);
+        $pdf->Cell($colQty, 8, $this->txt('จำนวน'), 1, 0, 'C', true);
+        $pdf->Cell($colPrice, 8, $this->txt('ราคาต่อหน่วย'), 1, 0, 'C', true);
+        $pdf->Cell($colAmount, 8, $this->txt('จำนวนเงิน (บาท)'), 1, 1, 'C', true);
+        $pdf->SetTextColor(0, 0, 0);
 
-        $pdf->SetFont('THSarabunNew', '', 11);
-        $description = $invoice->notes ?: ($invoice->bill
-            ? 'ค่าบริการตามใบวางบิลเลขที่ ' . $invoice->bill->bill_no
-                . ' งวด ' . $invoice->bill->period_start->format('d/m/Y') . '-' . $invoice->bill->period_end->format('d/m/Y')
-            : 'ค่าบริการ');
-        $pdf->Cell(15, 7, '1', 1, 0, 'C');
-        $pdf->Cell(115, 7, $this->txt($description), 1, 0, 'L');
-        $pdf->Cell(20, 7, '1', 1, 0, 'C');
-        $pdf->Cell(40, 7, number_format((float) $invoice->subtotal, 2), 1, 1, 'R');
+        $pdf->SetFont('THSarabunNew', '', 10.5);
+        foreach ($items as $i => $item) {
+            $rowY = $pdf->GetY();
+            $descLines = $this->wrapLines($pdf, $this->txt((string) $item->description), $colDesc - 4);
+            $rowH = max(7, count($descLines) * $lineH + 2.4);
+            $fill = ($i % 2 === 1);
+            if ($fill) {
+                $pdf->SetFillColor(244, 246, 249);
+            }
+
+            $descX = $x + $colNo;
+            $qtyX = $descX + $colDesc;
+            $priceX = $qtyX + $colQty;
+            $amtX = $priceX + $colPrice;
+
+            $style = $fill ? 'DF' : 'D';
+            $pdf->Rect($x, $rowY, $colNo, $rowH, $style);
+            $pdf->Rect($descX, $rowY, $colDesc, $rowH, $style);
+            $pdf->Rect($qtyX, $rowY, $colQty, $rowH, $style);
+            $pdf->Rect($priceX, $rowY, $colPrice, $rowH, $style);
+            $pdf->Rect($amtX, $rowY, $colAmount, $rowH, $style);
+
+            $pdf->SetXY($x, $rowY + ($rowH - 5) / 2);
+            $pdf->Cell($colNo, 5, (string) ($i + 1), 0, 0, 'C');
+
+            $descTextY = $rowY + ($rowH - count($descLines) * $lineH) / 2;
+            foreach ($descLines as $li => $line) {
+                $pdf->SetXY($descX + 2, $descTextY + $li * $lineH);
+                $pdf->Cell($colDesc - 4, $lineH, $line, 0, 0, 'L');
+            }
+
+            $pdf->SetXY($qtyX, $rowY + ($rowH - 5) / 2);
+            $pdf->Cell($colQty, 5, $this->formatQty((float) $item->quantity), 0, 0, 'C');
+
+            $pdf->SetXY($priceX, $rowY + ($rowH - 5) / 2);
+            $pdf->Cell($colPrice - 2, 5, number_format((float) $item->unit_price, 2), 0, 0, 'R');
+
+            $pdf->SetXY($amtX, $rowY + ($rowH - 5) / 2);
+            $pdf->Cell($colAmount - 2, 5, number_format((float) $item->amount, 2), 0, 0, 'R');
+
+            $pdf->SetXY($x, $rowY + $rowH);
+        }
+    }
+
+    /**
+     * Word-wraps already-font-encoded text (see txt()) to fit $width mm,
+     * measured against the currently selected font's real metrics —
+     * returns each wrapped line as its own encoded string, ready to draw
+     * directly with Cell(). Splitting happens on the encoded bytes, which
+     * is safe here since cp874 keeps ASCII space at the same byte value.
+     */
+    protected function wrapLines(Fpdi $pdf, string $encodedText, float $width): array
+    {
+        $words = preg_split('/\s+/', trim($encodedText));
+        if (empty($words)) {
+            return [''];
+        }
+
+        $lines = [];
+        $current = '';
+        foreach ($words as $word) {
+            $candidate = $current === '' ? $word : $current . ' ' . $word;
+            if ($current !== '' && $pdf->GetStringWidth($candidate) > $width) {
+                $lines[] = $current;
+                $current = $word;
+            } else {
+                $current = $candidate;
+            }
+        }
+        if ($current !== '') {
+            $lines[] = $current;
+        }
+
+        return $lines ?: [''];
+    }
+
+    protected function formatQty(float $qty): string
+    {
+        // Whole-number quantities ("5 people") print without decimals;
+        // fractional ones ("2.5 hours") keep up to 2.
+        return $qty == floor($qty) ? number_format($qty, 0) : rtrim(rtrim(number_format($qty, 2), '0'), '.');
     }
 
     protected function renderTotals(Fpdi $pdf, LaborTaxInvoice $invoice): void

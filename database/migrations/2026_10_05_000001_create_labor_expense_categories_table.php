@@ -14,6 +14,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // May already have been created by the earlier-timestamped add_note_to_labor_expense_categories_table migration.
+        if (Schema::hasTable('labor_expense_categories')) {
+            return;
+        }
+
         Schema::create('labor_expense_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');

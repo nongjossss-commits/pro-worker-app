@@ -17,6 +17,8 @@ class LaborWhtCertificate extends Model
         'tax_period_year',
         'tax_period_month',
         'labor_bill_id',
+        'labor_tax_invoice_id',
+        'labor_team_id',
         'payer_name',
         'payer_tax_id',
         'payee_name',
@@ -43,6 +45,16 @@ class LaborWhtCertificate extends Model
     public function bill()
     {
         return $this->belongsTo(LaborBill::class, 'labor_bill_id');
+    }
+
+    public function taxInvoice()
+    {
+        return $this->belongsTo(LaborTaxInvoice::class, 'labor_tax_invoice_id');
+    }
+
+    public function team()
+    {
+        return $this->belongsTo(LaborTeam::class, 'labor_team_id');
     }
 
     public function payments()

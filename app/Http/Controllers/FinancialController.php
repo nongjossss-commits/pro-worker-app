@@ -266,7 +266,8 @@ class FinancialController extends Controller
                 $transaction->paid_amount = $transaction->payments()->sum('amount');
                 $transaction->paid_at = now();
 
-                $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0);
+                // Minus issued credit notes too — same rule as CreditNoteService::recalculateTransaction().
+                $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - ($transaction->credit_amount ?? 0);
                 if ($transaction->paid_amount >= $effectiveAmount) {
                     $transaction->status = 'paid';
                 } else {
@@ -421,10 +422,11 @@ class FinancialController extends Controller
                 $newTotalPaid = $transaction->payments()->sum('amount');
                 $transaction->paid_amount = $newTotalPaid;
 
-                $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0);
+                // Minus issued credit notes too — same rule as CreditNoteService::recalculateTransaction().
+                $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - ($transaction->credit_amount ?? 0);
                 if ($newTotalPaid >= $effectiveAmount) {
                     $transaction->status = 'paid';
-                } else if ($newTotalPaid > 0) {
+                } else if ($newTotalPaid > 0 || ($transaction->credit_amount ?? 0) > 0) {
                     $transaction->status = 'partial';
                 } else {
                     $transaction->status = 'pending';
@@ -477,10 +479,11 @@ class FinancialController extends Controller
             $newTotalPaid = $transaction->payments()->sum('amount');
             $transaction->paid_amount = $newTotalPaid;
 
-            $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0);
+            // Minus issued credit notes too — same rule as CreditNoteService::recalculateTransaction().
+            $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - ($transaction->credit_amount ?? 0);
             if ($newTotalPaid >= $effectiveAmount) {
                 $transaction->status = 'paid';
-            } else if ($newTotalPaid > 0) {
+            } else if ($newTotalPaid > 0 || ($transaction->credit_amount ?? 0) > 0) {
                 $transaction->status = 'partial';
             } else {
                 $transaction->status = 'pending';

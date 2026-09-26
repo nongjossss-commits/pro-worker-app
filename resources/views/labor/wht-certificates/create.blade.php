@@ -40,6 +40,18 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-md-4">
+                    <label class="form-label">{{ __('Tax Invoice Reference (optional)') }}</label>
+                    <select name="labor_tax_invoice_id" class="form-select">
+                        <option value="">-- {{ __('None') }} --</option>
+                        @foreach($taxInvoices as $ti)
+                            <option value="{{ $ti->id }}" {{ (string) old('labor_tax_invoice_id') === (string) $ti->id ? 'selected' : '' }}>
+                                {{ $ti->invoice_no }} — {{ $ti->customer->name ?? $ti->customer_name }} ({{ $ti->team->name ?? '-' }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">{{ __('For a certificate withheld by an external customer\'s standalone invoice, not a team bill.') }}</div>
+                </div>
             </div>
         </div>
     </div>

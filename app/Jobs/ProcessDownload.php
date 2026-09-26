@@ -27,6 +27,39 @@ class ProcessDownload implements ShouldQueue
     protected $downloadProfile;
     protected $tempImageFiles = [];
 
+    // Tracks file types that were requested but couldn't be added for a given
+    // employee, keyed by "{employee_id}|{fileType}" — surfaced to the admin
+    // via DownloadTask::error_message (kept even on a 'completed' task, not
+    // just 'failed' ones) so a silently-skipped file is visible instead of
+    // just producing a smaller-than-expected zip with no explanation.
+    protected $missingFiles = [];
+
+    // Thai labels matching the checkboxes in download-modals.blade.php —
+    // used only for the missing-files summary message.
+    protected $fileTypeLabels = [
+        'photo' => 'รูปถ่าย',
+        'insurance' => 'ไฟล์แนบประกัน',
+        'passport' => 'พาสปอร์ต',
+        'visa' => 'วีซ่า',
+        'work_permit' => 'ใบอนุญาตทำงาน',
+        'pink_card' => 'บัตรชมพู',
+        'tor_ror_38' => 'ทร. 38',
+        'medical_certificate' => 'ใบรับรองแพทย์',
+        'report_90_day' => 'รายงานตัว 90 วัน',
+        'residence_notification' => 'ใบแจ้งที่พักอาศัย',
+        'hometown_doc' => 'เอกสารบ้านเกิด',
+        'other_doc_1' => 'เอกสารอื่นๆ 1',
+        'other_doc_2' => 'เอกสารอื่นๆ 2',
+        'other_doc_3' => 'เอกสารอื่นๆ 3',
+        'other_doc_4' => 'เอกสารอื่นๆ 4',
+        'other_doc_5' => 'เอกสารอื่นๆ 5',
+        'other_doc_6' => 'เอกสารอื่นๆ 6',
+        'other_doc_7' => 'เอกสารอื่นๆ 7',
+        'other_doc_8' => 'เอกสารอื่นๆ 8',
+        'other_doc_9' => 'เอกสารอื่นๆ 9',
+        'other_doc_10' => 'เอกสารอื่นๆ 10',
+    ];
+
     // Map frontend checkbox values to model attributes
     protected $fileMap = [
         'photo' => 'employeePhoto',
@@ -132,7 +165,8 @@ class ProcessDownload implements ShouldQueue
 
             $task->update([
                 'status' => 'completed',
-                'file_path' => $outputFile
+                'file_path' => $outputFile,
+                'error_message' => $this->buildMissingFilesSummary(),
             ]);
 
             // Cleanup temp dir and normalized images
@@ -207,10 +241,15 @@ class ProcessDownload implements ShouldQueue
             $attributes = [$attributes];
         }
 
+        $hadValue = false;
+        $added = false;
+
         foreach ($attributes as $attr) {
             if (!empty($employee->$attr)) {
+                $hadValue = true;
                 $filePath = $this->getFilePath($employee->$attr);
                 if ($filePath && file_exists($filePath)) {
+                    $added = true;
                     $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
 
                     // Construct the internal path in the zip
@@ -243,6 +282,10 @@ class ProcessDownload implements ShouldQueue
                     }
                 }
             }
+        }
+
+        if (!$added) {
+            $this->recordMissing($employee, $fileType, $hadValue);
         }
     }
 
@@ -376,10 +419,15 @@ class ProcessDownload implements ShouldQueue
             $attributes = [$attributes];
         }
 
+        $hadValue = false;
+        $added = false;
+
         foreach ($attributes as $attr) {
             if (!empty($employee->$attr)) {
+                $hadValue = true;
                 $originalFilePath = $this->getFilePath($employee->$attr);
                 if ($originalFilePath && file_exists($originalFilePath)) {
+                    $added = true;
                     try {
                         $mime = @mime_content_type($originalFilePath);
 
@@ -451,6 +499,10 @@ class ProcessDownload implements ShouldQueue
                     }
                 }
             }
+        }
+
+        if (!$added) {
+            $this->recordMissing($employee, $fileType, $hadValue);
         }
     }
 
@@ -696,6 +748,61 @@ class ProcessDownload implements ShouldQueue
             }
         }
         $this->tempImageFiles = [];
+    }
+
+    /**
+     * Record that $fileType was requested for $employee but nothing could be
+     * added to the output — either the field was never uploaded at all, or
+     * it has a stored path whose file is no longer on disk. Deduplicated per
+     * employee+fileType so a multi-page PDF doesn't log/report the same gap
+     * repeatedly.
+     */
+    protected function recordMissing($employee, string $fileType, bool $hadValue): void
+    {
+        $key = $employee->id . '|' . $fileType;
+        if (isset($this->missingFiles[$key])) {
+            return;
+        }
+
+        $reason = $hadValue
+            ? 'มีข้อมูล path ในระบบแต่ไม่พบไฟล์จริงในเซิร์ฟเวอร์ (ไฟล์อาจถูกลบหรือย้ายหาย)'
+            : 'ยังไม่เคยอัปโหลดไฟล์นี้ให้ลูกจ้างรายนี้';
+
+        $this->missingFiles[$key] = [
+            'employee_id' => $employee->id,
+            'employee_name' => $employee->employeeNameTh ?: $employee->employeeNameEn ?: ('ลูกจ้าง #' . $employee->id),
+            'file_type' => $fileType,
+            'had_value' => $hadValue,
+        ];
+
+        Log::warning("ProcessDownload: missing '{$fileType}' for employee #{$employee->id} — {$reason}");
+    }
+
+    /**
+     * Human-readable summary of every recorded gap, grouped by employee —
+     * written to DownloadTask::error_message even when the task otherwise
+     * completes successfully, so the admin sees exactly who/what was
+     * skipped instead of just getting a smaller-than-expected file.
+     */
+    protected function buildMissingFilesSummary(): ?string
+    {
+        if (empty($this->missingFiles)) {
+            return null;
+        }
+
+        $byEmployee = [];
+        foreach ($this->missingFiles as $entry) {
+            $byEmployee[$entry['employee_id']]['name'] = $entry['employee_name'];
+            $label = $this->fileTypeLabels[$entry['file_type']] ?? $entry['file_type'];
+            $byEmployee[$entry['employee_id']]['items'][] = $label . ($entry['had_value'] ? ' (ไฟล์หาย)' : ' (ไม่เคยอัปโหลด)');
+        }
+
+        $lines = [];
+        foreach ($byEmployee as $empId => $data) {
+            $lines[] = $data['name'] . " (#{$empId}): " . implode(', ', $data['items']);
+        }
+
+        return 'บางไฟล์ที่เลือกไม่มีอยู่จริง จึงถูกข้ามไป — ' . implode(' | ', $lines);
     }
 
     protected function getFilePath($dbPath)

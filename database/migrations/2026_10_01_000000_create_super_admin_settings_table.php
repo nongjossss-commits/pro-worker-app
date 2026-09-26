@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // May already have been created by the earlier-timestamped add_value_to_super_admin_settings_table migration.
+        if (Schema::hasTable('super_admin_settings')) {
+            return;
+        }
+
         Schema::create('super_admin_settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();

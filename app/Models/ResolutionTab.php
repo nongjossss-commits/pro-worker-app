@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ResolutionTab extends Model
@@ -116,6 +117,29 @@ class ResolutionTab extends Model
     {
         if (!$this->trashed()) return 0;
         return (int) max(0, 7 - floor($this->deleted_at->diffInDays(now())));
+    }
+
+    /**
+     * IDs of this tab's production orders (including soft-deleted ones) that
+     * carry at least one bill (financial_transactions row). Purging must never
+     * force-delete these: production_orders → financial_transactions →
+     * financial_payments all cascade at the DB level, which would wipe real
+     * billing/payment history while the posted LedgerEntry rows (polymorphic,
+     * no FK) stay behind in the bank balance with no source bill.
+     * Raw query builder on purpose — bypasses SoftDeletes and the
+     * employerTenancy global scope so nothing is missed.
+     */
+    public function productionOrderIdsWithBills(): array
+    {
+        return DB::table('production_orders')
+            ->where('resolution_tab_id', $this->id)
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                  ->from('financial_transactions')
+                  ->whereColumn('financial_transactions.production_order_id', 'production_orders.id');
+            })
+            ->pluck('id')
+            ->all();
     }
 
     // --- Boot ---

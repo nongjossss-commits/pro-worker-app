@@ -10,6 +10,7 @@ use App\Http\Controllers\Labor\LaborCompanyDocumentController;
 use App\Http\Controllers\Labor\LaborContractController;
 use App\Http\Controllers\Labor\LaborContractReportController;
 use App\Http\Controllers\Labor\LaborContractTemplateController;
+use App\Http\Controllers\Labor\LaborCustomerController;
 use App\Http\Controllers\Labor\LaborExpenseCategoryController;
 use App\Http\Controllers\Labor\LaborDashboardController;
 use App\Http\Controllers\Labor\LaborLedgerController;
@@ -73,6 +74,14 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         Route::put('/team-members/{member}', [LaborTeamMemberController::class, 'update'])->name('team-members.update');
         Route::delete('/team-members/{member}', [LaborTeamMemberController::class, 'destroy'])->name('team-members.destroy');
         Route::get('/team-members/search', [LaborTeamMemberController::class, 'search'])->name('team-members.search');
+
+        // A team's own external customer roster — see LaborCustomer's
+        // docblock. Team pairing fixed at creation, same convention as
+        // team-members above.
+        Route::get('/customers', [LaborCustomerController::class, 'index'])->name('customers.index');
+        Route::post('/customers', [LaborCustomerController::class, 'store'])->name('customers.store');
+        Route::put('/customers/{customer}', [LaborCustomerController::class, 'update'])->name('customers.update');
+        Route::delete('/customers/{customer}', [LaborCustomerController::class, 'destroy'])->name('customers.destroy');
 
         // Central Billing statements — periodic snapshots for each team, generated
         // manually here or automatically by the scheduled command (per-team cadence

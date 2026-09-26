@@ -3,8 +3,15 @@
 @section('title', 'New Tax Invoice - Pro Walker Labour')
 
 @section('content')
+@php
+    // On validation-error redisplay, old('items') is the raw JSON string the
+    // hidden field submitted (see itemsJson below) — decode it back to an
+    // array so both branches feed Alpine the same shape.
+    $oldItemsRaw = old('items');
+    $itemsForJs = is_string($oldItemsRaw) ? (json_decode($oldItemsRaw, true) ?: []) : ($oldItemsRaw ?? ($prefill['items'] ?? []));
+@endphp
 <div x-data="laborTaxInvoiceForm({
-        subtotal: {{ (float) old('subtotal', $prefill['subtotal'] ?? 0) }},
+        items: {{ Illuminate\Support\Js::from($itemsForJs) }},
         vatRate: {{ (float) old('vat_rate', $prefill['vat_rate'] ?? 7) }},
     })">
     <div class="mb-3">
@@ -35,17 +42,29 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <label class="form-label">{{ __('From Bill (optional)') }}</label>
                         <select name="labor_bill_id" class="form-select" onchange="if(this.value) window.location = '{{ route('labor.tax-invoices.create') }}?labor_bill_id=' + this.value">
-                            <option value="">-- {{ __('None — manual entry') }} --</option>
+                            <option value="">-- {{ __('None') }} --</option>
                             @foreach($bills as $bill)
                                 <option value="{{ $bill->id }}" {{ (string) old('labor_bill_id', $prefill['labor_bill_id'] ?? '') === (string) $bill->id ? 'selected' : '' }}>
                                     {{ $bill->bill_no }} — {{ $bill->team->name ?? '-' }} ({{ number_format($bill->period_charges, 2) }} {{ __('baht') }})
                                 </option>
                             @endforeach
                         </select>
-                        <div class="form-text">{{ __('Picking a bill pre-fills customer and subtotal from it.') }}</div>
+                        <div class="form-text">{{ __('Bills the team itself for its own labor charges.') }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ __('From External Customer (optional)') }}</label>
+                        <select name="labor_customer_id" class="form-select" onchange="if(this.value) window.location = '{{ route('labor.tax-invoices.create') }}?labor_customer_id=' + this.value">
+                            <option value="">-- {{ __('None') }} --</option>
+                            @foreach($customers as $customer)
+                                <option value="{{ $customer->id }}" {{ (string) old('labor_customer_id', $prefill['labor_customer_id'] ?? '') === (string) $customer->id ? 'selected' : '' }}>
+                                    {{ $customer->name }} — {{ $customer->team->name ?? '-' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">{{ __('A team\'s own external customer — pick a bill above OR a customer here, not both.') }}</div>
                     </div>
                 </div>
             </div>
@@ -79,24 +98,88 @@
         </div>
 
         <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-white"><strong>{{ __('Amounts') }}</strong></div>
+            <div class="card-header bg-white"><strong>{{ __('Billing Period') }}</strong></div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">{{ __('Subtotal') }} *</label>
-                        <input type="number" step="0.01" min="0" name="subtotal" class="form-control" x-model.number="subtotal" @input="recalculate" required>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ __('Period Start') }}{{ ($prefill['labor_customer_id'] ?? old('labor_customer_id')) ? ' *' : '' }}</label>
+                        <input type="date" name="period_start" class="form-control"
+                               value="{{ old('period_start', $prefill['period_start'] ?? '') }}">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ __('VAT Rate (%)') }} *</label>
-                        <input type="number" step="0.01" min="0" max="100" name="vat_rate" class="form-control" x-model.number="vatRate" @input="recalculate" required>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ __('Period End') }}{{ ($prefill['labor_customer_id'] ?? old('labor_customer_id')) ? ' *' : '' }}</label>
+                        <input type="date" name="period_end" class="form-control"
+                               value="{{ old('period_end', $prefill['period_end'] ?? '') }}">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ __('VAT Amount') }} *</label>
-                        <input type="number" step="0.01" min="0" name="vat_amount" class="form-control" x-model.number="vatAmount" required>
+                    <div class="col-12">
+                        <div class="form-text">{{ __('Which billing period this invoice covers — required for external-customer invoices so the same month is never billed twice.') }}</div>
+                        @error('period_start')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ __('Total') }} *</label>
-                        <input type="number" step="0.01" min="0" name="total" class="form-control" x-model.number="total" required readonly>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" name="items" :value="itemsJson">
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong>{{ __('Line Items') }}</strong>
+                <button type="button" class="btn btn-sm btn-outline-primary" @click="addItem">
+                    <i class="bi bi-plus-circle me-1"></i>{{ __('Add Item') }}
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 45%">{{ __('Description') }}</th>
+                                <th style="width: 15%">{{ __('Qty (people/units)') }}</th>
+                                <th style="width: 17%">{{ __('Unit Price') }}</th>
+                                <th style="width: 17%" class="text-end">{{ __('Amount') }}</th>
+                                <th style="width: 6%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(item, idx) in items" :key="idx">
+                                <tr>
+                                    <td><input type="text" class="form-control form-control-sm" x-model="item.description" placeholder="{{ __('e.g. Cleaning service, March 2026') }}"></td>
+                                    <td><input type="number" step="0.01" min="0.01" class="form-control form-control-sm" x-model.number="item.quantity"></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control form-control-sm" x-model.number="item.unit_price"></td>
+                                    <td class="text-end fw-bold" x-text="formatMoney(itemAmount(item))"></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @click="items.splice(idx, 1)" x-show="items.length > 1">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                @error('items')
+                    <div class="text-danger small p-3">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-body">
+                <div class="row g-2 justify-content-end">
+                    <div class="col-md-4 d-flex justify-content-between">
+                        <span class="text-muted">{{ __('Subtotal') }}</span>
+                        <span class="fw-bold" x-text="formatMoney(subtotal)"></span>
+                    </div>
+                    <div class="col-md-4 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">
+                            {{ __('VAT') }} (<input type="number" step="0.01" min="0" max="100" name="vat_rate" class="d-inline-block text-center" style="width: 3.5rem; border: none; border-bottom: 1px dashed #ccc;" x-model.number="vatRate">%)
+                        </span>
+                        <span class="fw-bold" x-text="formatMoney(vatAmount)"></span>
+                    </div>
+                    <div class="col-md-4 d-flex justify-content-between border-top pt-2 mt-1">
+                        <span class="fw-bold">{{ __('Grand Total') }}</span>
+                        <span class="fw-bold fs-5 text-primary" x-text="formatMoney(total)"></span>
                     </div>
                 </div>
             </div>
@@ -104,9 +187,9 @@
 
         <div class="card shadow-sm border-0 mb-3">
             <div class="card-body">
-                <label class="form-label">{{ __('Description / Notes') }}</label>
+                <label class="form-label">{{ __('Notes') }}</label>
                 <textarea name="notes" class="form-control" rows="2">{{ old('notes') }}</textarea>
-                <div class="form-text">{{ __('Shown as the line-item description on the PDF. Leave blank to auto-describe from the linked bill.') }}</div>
+                <div class="form-text">{{ __('Extra remarks shown on the PDF below the totals — payment terms, etc. The line items above already carry their own descriptions.') }}</div>
             </div>
         </div>
 
@@ -173,10 +256,8 @@
 <script>
 function laborTaxInvoiceForm(opts) {
     return {
-        subtotal: opts.subtotal || 0,
+        items: (opts.items && opts.items.length) ? opts.items : [{ description: '', quantity: 1, unit_price: 0 }],
         vatRate: opts.vatRate || 7,
-        vatAmount: 0,
-        total: 0,
         usingCash: false,
         usingTransfer: false,
         usingPromptPay: false,
@@ -184,14 +265,29 @@ function laborTaxInvoiceForm(opts) {
         promptPayId: '',
         otherNote: '',
         transferList: [],
-        init() {
-            this.recalculate();
+        addItem() {
+            this.items.push({ description: '', quantity: 1, unit_price: 0 });
         },
-        recalculate() {
-            const s = parseFloat(this.subtotal) || 0;
+        itemAmount(item) {
+            const q = parseFloat(item.quantity) || 0;
+            const p = parseFloat(item.unit_price) || 0;
+            return Math.round(q * p * 100) / 100;
+        },
+        formatMoney(n) {
+            return (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        get subtotal() {
+            return Math.round(this.items.reduce((sum, item) => sum + this.itemAmount(item), 0) * 100) / 100;
+        },
+        get vatAmount() {
             const r = parseFloat(this.vatRate) || 0;
-            this.vatAmount = Math.round((s * r / 100) * 100) / 100;
-            this.total = Math.round((s + this.vatAmount) * 100) / 100;
+            return Math.round((this.subtotal * r / 100) * 100) / 100;
+        },
+        get total() {
+            return Math.round((this.subtotal + this.vatAmount) * 100) / 100;
+        },
+        get itemsJson() {
+            return JSON.stringify(this.items);
         },
         get paymentMethodsJson() {
             const out = [];

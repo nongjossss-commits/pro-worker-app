@@ -109,10 +109,47 @@ class FinancialHubController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
+            // Bills whose source tab (Resolution tab / Workflow WorkType) has
+            // been deleted. They stay in every total above on purpose — they
+            // are still real receivables/income — but get flagged so Finance
+            // can decide per bill: keep collecting, or credit-note the rest.
+            $fromDeletedTab = function ($q) {
+                $q->whereHas('productionOrder', function ($po) {
+                    $po->where(function ($w) {
+                        $w->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'])
+                          ->where(function ($t) {
+                              $t->whereNull('resolution_tab_id')
+                                ->orWhereHas('resolutionTab', fn ($r) => $r->onlyTrashed());
+                          });
+                    })->orWhere(function ($w) {
+                        $w->whereNotNull('work_type_id')
+                          ->whereHas('workType', fn ($wt) => $wt->onlyTrashed());
+                    });
+                });
+            };
+
+            if ($request->input('source') === 'deleted_tab') {
+                $query->where($fromDeletedTab);
+            } elseif ($request->input('source') === 'active_tab') {
+                $query->whereNot($fromDeletedTab);
+            }
+
+            $deletedTabAgg = FinancialTransaction::where($excludeQuotations)
+                ->where($fromDeletedTab)
+                ->selectRaw("
+                    COUNT(*) as total_count,
+                    SUM(CASE WHEN status IN ('pending', 'partial', 'overdue') THEN 1 ELSE 0 END) as open_count,
+                    COALESCE(SUM(CASE WHEN status IN ('pending', 'partial', 'overdue') THEN amount - paid_amount - credit_amount ELSE 0 END), 0) as open_outstanding
+                ")->first();
+            $stats['deleted_tab_count'] = (int) ($deletedTabAgg->total_count ?? 0);
+            $stats['deleted_tab_open_count'] = (int) ($deletedTabAgg->open_count ?? 0);
+            $stats['deleted_tab_outstanding'] = (float) ($deletedTabAgg->open_outstanding ?? 0);
+
             // Filtered Summary — aggregate ของผลลัพธ์ทั้งหมด (ก่อน paginate) แสดงเฉพาะตอนมี filter
             $filteredStats = null;
             $hasFilter = $request->filled('search')
                 || $request->filled('status')
+                || $request->filled('source')
                 || $request->filled('date_from')
                 || $request->filled('date_to');
 
@@ -138,7 +175,12 @@ class FinancialHubController extends Controller
                 ];
             }
 
-            $transactions = $query->with(['productionOrder.employer.jobOwner', 'financialGroup'])
+            $transactions = $query->with([
+                    'productionOrder.employer.jobOwner',
+                    'productionOrder.resolutionTab',
+                    'productionOrder.workType' => fn ($q) => $q->withTrashed(),
+                    'financialGroup',
+                ])
                 ->paginate(20)->withQueryString();
         }
         elseif ($tab === 'workflow') {
@@ -147,7 +189,7 @@ class FinancialHubController extends Controller
 
             $stats = $this->getStatsForOrders($baseQuery);
 
-            $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions', 'financialGroups.transactions.payments'])
+            $query = (clone $baseQuery)->with(['employer', 'workType' => fn ($q) => $q->withTrashed(), 'financialGroups.transactions', 'financialGroups.transactions.payments'])
                 ->latest('created_at')
                 ->withCount('items');
 
@@ -180,7 +222,7 @@ class FinancialHubController extends Controller
 
             $stats = $this->getStatsForOrders($baseQuery);
 
-            $query = (clone $baseQuery)->with(['employer'])
+            $query = (clone $baseQuery)->with(['employer', 'resolutionTab'])
                 ->latest('created_at');
 
             if ($request->filled('search')) {
@@ -275,7 +317,7 @@ class FinancialHubController extends Controller
 
             $stats = $this->getStatsForOrders($baseQuery);
 
-            $query = (clone $baseQuery)->with(['employer'])
+            $query = (clone $baseQuery)->with(['employer', 'resolutionTab'])
                 ->latest('created_at');
 
             if ($request->filled('search')) {

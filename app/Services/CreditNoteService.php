@@ -164,12 +164,15 @@ class CreditNoteService
     {
         $transaction->credit_amount = $transaction->creditNotes()->where('status', 'issued')->sum('total_credit');
 
+        // credit_amount is taken off the amount due ONCE — adding it to
+        // "covered" as well double-counted it (e.g. 5,000 bill + 2,500 credit
+        // note + 0 paid was marked 'paid' with 2,500 still owed).
         $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - $transaction->credit_amount;
-        $covered = ($transaction->paid_amount ?? 0) + $transaction->credit_amount;
+        $paid = (float) ($transaction->paid_amount ?? 0);
 
-        if ($covered >= $effectiveAmount) {
+        if ($paid >= $effectiveAmount) {
             $transaction->status = 'paid';
-        } elseif ($covered > 0) {
+        } elseif ($paid + $transaction->credit_amount > 0) {
             $transaction->status = 'partial';
         } else {
             $transaction->status = 'pending';

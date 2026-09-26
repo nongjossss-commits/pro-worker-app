@@ -69,7 +69,10 @@
                     <tr>
                         <td>#{{ $order->id }}</td>
                         <td>{{ $order->employer ? $order->employer->employerNameTh : __('Unknown') }}</td>
-                        <td>{{ $order->project_name }}</td>
+                        <td>
+                            {{ $order->project_name }}
+                            <div>@include('financial.partials._source_badge', ['order' => $order])</div>
+                        </td>
                         <td class="text-center">{{ $order->items_count }}</td>
                         <td class="text-center">
                             <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $order->status)) }}</span>

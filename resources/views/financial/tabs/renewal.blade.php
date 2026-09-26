@@ -81,7 +81,10 @@
                         }
                     @endphp
                     <tr>
-                        <td>{{ $order->employer ? $order->employer->employerNameTh : __('Unknown') }}</td>
+                        <td>
+                            {{ $order->employer ? $order->employer->employerNameTh : __('Unknown') }}
+                            <div>@include('financial.partials._source_badge', ['order' => $order])</div>
+                        </td>
                         <td class="text-center">{{ $order->total_employees }}</td>
                         <td class="text-center text-success">{{ $order->priced_employees_count }}</td>
                         <td class="text-center text-danger">{{ $order->unpriced_employees_count }}</td>

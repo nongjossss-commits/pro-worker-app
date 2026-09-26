@@ -116,6 +116,56 @@ class ProductionOrder extends Model
         return $this->belongsTo(WorkType::class);
     }
 
+    /**
+     * The Registration/Renewal Resolution tab this order was billed under.
+     * Includes soft-deleted tabs so Finance can still label bills whose tab
+     * has since been removed (see financeSource()).
+     */
+    public function resolutionTab()
+    {
+        return $this->belongsTo(ResolutionTab::class)->withTrashed();
+    }
+
+    /**
+     * Which menu/tab this order's bills came from — for the Finance Hub
+     * source badge. Uses the (withTrashed) workType / resolutionTab relations,
+     * so eager-load them as `workType` => withTrashed() and `resolutionTab`.
+     *
+     * 'deleted' is true when the tab was deleted (soft-deleted, or already
+     * purged before bills were protected — then 'tab' is null too).
+     *
+     * @return array{menu: string, tab: ?string, deleted: bool, deleted_at: ?\Illuminate\Support\Carbon}
+     */
+    public function financeSource(): array
+    {
+        if (in_array($this->status, ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'], true)) {
+            $tab = $this->resolutionTab;
+            return [
+                'menu' => str_starts_with($this->status, 'registration') ? 'มติลงทะเบียน' : 'มติต่ออายุ',
+                'tab' => $tab?->name,
+                'deleted' => !$tab || $tab->trashed(),
+                'deleted_at' => $tab?->deleted_at,
+            ];
+        }
+
+        if ($this->work_type_id) {
+            $workType = $this->workType;
+            return [
+                'menu' => $this->status === 'pre_production' ? 'Pre-Production' : 'Workflow',
+                'tab' => $workType?->name,
+                'deleted' => !$workType || $workType->trashed(),
+                'deleted_at' => $workType?->deleted_at,
+            ];
+        }
+
+        return [
+            'menu' => $this->sales_lead_id ? 'Sales' : 'บิล Manual',
+            'tab' => null,
+            'deleted' => false,
+            'deleted_at' => null,
+        ];
+    }
+
     public function items()
     {
         return $this->hasMany(ProductionItem::class);

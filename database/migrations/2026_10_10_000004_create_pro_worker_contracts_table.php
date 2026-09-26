@@ -19,6 +19,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // May already have been created by the earlier-timestamped add_worker_count_to_pro_worker_contracts_table migration.
+        if (Schema::hasTable('pro_worker_contracts')) {
+            return;
+        }
+
         Schema::create('pro_worker_contracts', function (Blueprint $table) {
             $table->id();
             $table->string('contract_no')->unique();

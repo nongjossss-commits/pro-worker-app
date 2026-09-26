@@ -134,9 +134,13 @@ class ResolutionTabController extends Controller
 
         $resolutionTab->delete(); // Soft delete
 
+        $billedCount = count($resolutionTab->productionOrderIdsWithBills());
+
         return response()->json([
             'success' => true,
-            'message' => 'แถบถูกลบแล้ว จะถูกลบถาวรหลังจาก 7 วัน',
+            'message' => $billedCount > 0
+                ? "แถบถูกลบแล้ว — มีบิลที่วางไปแล้ว {$billedCount} งาน บิลและประวัติการชำระเงินจะยังอยู่ในเมนูการเงิน (แสดงป้าย \"แถบถูกลบแล้ว\")"
+                : 'แถบถูกลบแล้ว จะถูกลบถาวรหลังจาก 7 วัน',
         ]);
     }
 
@@ -168,30 +172,49 @@ class ResolutionTabController extends Controller
             ], 422);
         }
 
-        // Cascade: set employees' resolution_tab_id to NULL
-        $tab->employees()->update(['resolution_tab_id' => null]);
+        // One transaction so a failure part-way can't leave the tab half-purged
+        // (employees detached / steps gone but the tab and its orders still there).
+        $billedOrderIds = \DB::transaction(function () use ($tab) {
+            // Cascade: set employees' resolution_tab_id to NULL
+            $tab->employees()->update(['resolution_tab_id' => null]);
 
-        // Delete related steps
-        $tab->steps()->delete();
+            // Delete related steps
+            $tab->steps()->delete();
 
-        // Delete related settings
-        $tab->systemSettings()->delete();
-        $tab->notificationSettings()->delete();
+            // Delete related settings
+            $tab->systemSettings()->delete();
+            $tab->notificationSettings()->delete();
 
-        // Delete the legacy "Import by Expiry" SystemConfig row (no FK relation,
-        // key is `{type}_target_expiry_date_{tabId}` — see EmployeeObserver::findMatchingRenewalTab()).
-        // Without this it survives as orphaned data that a tab-existence check
-        // must guard against forever instead of it simply being gone.
-        \App\Models\SystemConfig::where('key', $tab->type . '_target_expiry_date_' . $tab->id)->delete();
+            // Delete the legacy "Import by Expiry" SystemConfig row (no FK relation,
+            // key is `{type}_target_expiry_date_{tabId}` — see EmployeeObserver::findMatchingRenewalTab()).
+            // Without this it survives as orphaned data that a tab-existence check
+            // must guard against forever instead of it simply being gone.
+            \App\Models\SystemConfig::where('key', $tab->type . '_target_expiry_date_' . $tab->id)->delete();
 
-        // Delete production orders
-        $tab->productionOrders()->forceDelete();
+            // Delete production orders — except ones that already have bills,
+            // which are kept with their payment history (same rule as
+            // PurgeDeletedResolutionTabs; see ResolutionTab::productionOrderIdsWithBills()).
+            $billedOrderIds = $tab->productionOrderIdsWithBills();
+            $tab->productionOrders()->whereNotIn('id', $billedOrderIds)->forceDelete();
 
-        // Delete employer pivot
-        \DB::table('employer_resolution_tab')->where('resolution_tab_id', $tab->id)->delete();
+            // Delete employer pivot
+            \DB::table('employer_resolution_tab')->where('resolution_tab_id', $tab->id)->delete();
 
-        // Finally, force delete the tab itself
-        $tab->forceDelete();
+            // Finally, force delete the tab itself — unless billed orders still
+            // reference it; then it stays soft-deleted as their source label.
+            if (empty($billedOrderIds)) {
+                $tab->forceDelete();
+            }
+
+            return $billedOrderIds;
+        });
+
+        if (!empty($billedOrderIds)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบข้อมูลการทำงานของแถบนี้แล้ว แต่เก็บแถบไว้ในสถานะ "ถูกลบ" เนื่องจากมีบิลที่วางไปแล้ว ' . count($billedOrderIds) . ' งาน — บิลและประวัติการชำระเงินยังดูและจัดการได้ในเมนูการเงิน',
+            ]);
+        }
 
         return response()->json([
             'success' => true,

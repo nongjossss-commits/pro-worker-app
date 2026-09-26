@@ -2245,6 +2245,10 @@
     "Select which employees?": "Select which employees?",
     "This employer has both pending and already-completed employees. Which do you want to select?": "This employer has both pending and already-completed employees. Which do you want to select?",
     "Completed only": "Completed only",
+    "In progress": "In progress",
+    "In progress only": "In progress only",
+    "Cancelled only": "Cancelled only",
+    "Please select at least one status": "Please select at least one status",
     "Not completed only": "Not completed only",
     "Failed to load employee list.": "Failed to load employee list.",
     "Custom selection": "Custom selection",
@@ -2318,5 +2322,13 @@
     "labor-accounting": "Accounting Staff",
     "labor-shareholder": "Shareholder",
     "labor-team": "Team Lead",
-    "labor-member": "Team Member"
+    "labor-member": "Team Member",
+    "The work tab this bill came from has been deleted. The bill and its payments are kept.": "The work tab this bill came from has been deleted. The bill and its payments are kept.",
+    "Unknown tab": "Unknown tab",
+    "Tab deleted": "Tab deleted",
+    "All Sources": "All Sources",
+    "From Active Tabs": "From Active Tabs",
+    "From Deleted Tabs": "From Deleted Tabs",
+    "There are :count unpaid bills totalling :amount from work tabs that have been deleted.": "There are :count unpaid bills totalling :amount from work tabs that have been deleted.",
+    "View these bills": "View these bills"
 }

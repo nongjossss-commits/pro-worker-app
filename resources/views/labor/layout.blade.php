@@ -267,7 +267,7 @@
 
                         @php
                             $isSettingsActive = request()->routeIs('labor.teams.index');
-                            $isSettingsSubActive = request()->routeIs(['labor.teams.*', 'labor.team-members.*', 'labor.users.*']);
+                            $isSettingsSubActive = request()->routeIs(['labor.teams.*', 'labor.team-members.*', 'labor.customers.*', 'labor.users.*']);
                         @endphp
                         <div class="nav-section-label">{{ __('Settings') }}</div>
                         <div class="list-group-item list-group-item-action p-0" style="border:none;">
@@ -283,6 +283,9 @@
                         <div class="collapse {{ $isSettingsSubActive ? 'show' : '' }}" id="laborSettingsSubMenu">
                             <a href="{{ route('labor.team-members.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.team-members.*') ? 'active' : '' }}" style="padding-left:2.5rem;">
                                 <i class="bi bi-person-lines-fill me-2"></i>{{ __('Manage Members') }}
+                            </a>
+                            <a href="{{ route('labor.customers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.customers.*') ? 'active' : '' }}" style="padding-left:2.5rem;">
+                                <i class="bi bi-building me-2"></i>{{ __('Manage Customers') }}
                             </a>
                             @role('super-admin')
                             <a href="{{ route('labor.users.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('labor.users.*') ? 'active' : '' }}" style="padding-left:2.5rem;">

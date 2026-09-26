@@ -104,6 +104,10 @@ class LaborTeamController extends Controller
         // team) — this is how each team reviews its outstanding balance history.
         $bills = $team->bills()->orderByDesc('issued_at')->orderByDesc('id')->limit(20)->get();
 
-        return view('labor.teams.show', compact('team', 'entries', 'totalOwed', 'canManage', 'members', 'bills'));
+        // External customers — read-only summary here, managed from the
+        // dedicated /customers page (same convention as Team Members below).
+        $customers = $team->customers()->withCount('taxInvoices')->orderBy('name')->get();
+
+        return view('labor.teams.show', compact('team', 'entries', 'totalOwed', 'canManage', 'members', 'bills', 'customers'));
     }
 }

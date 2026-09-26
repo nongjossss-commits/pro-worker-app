@@ -71,7 +71,7 @@
     <div class="card-body">
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">
             <input type="hidden" name="tab" value="overview">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input type="text" name="search" class="form-control" placeholder="{{ __('Search Bill #, Employer, Project, Job Owner...') }}" value="{{ request('search') }}">
             </div>
             <div class="col-md-2">
@@ -85,17 +85,39 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <select name="source" class="form-select">
+                    <option value="">{{ __('All Sources') }}</option>
+                    <option value="active_tab"  {{ request('source') == 'active_tab'  ? 'selected' : '' }}>{{ __('From Active Tabs') }}</option>
+                    <option value="deleted_tab" {{ request('source') == 'deleted_tab' ? 'selected' : '' }}>{{ __('From Deleted Tabs') }}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <input type="date" name="date_from" class="form-control" placeholder="{{ __('From Date') }}" value="{{ request('date_from') }}">
             </div>
             <div class="col-md-2">
                 <input type="date" name="date_to" class="form-control" placeholder="{{ __('To Date') }}" value="{{ request('date_to') }}">
             </div>
-            <div class="col-md-2 d-grid">
+            <div class="col-md-1 d-grid">
                 <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> {{ __('Filter') }}</button>
             </div>
         </form>
     </div>
 </div>
+
+{{-- Bills from deleted work tabs — still real receivables, so they stay in
+     every total above; this only flags them so Finance can decide per bill
+     (keep collecting, or issue a credit note for the remaining balance). --}}
+@if(($stats['deleted_tab_open_count'] ?? 0) > 0 && request('source') !== 'deleted_tab')
+<div class="alert alert-danger d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        {{ __('There are :count unpaid bills totalling :amount from work tabs that have been deleted.', ['count' => number_format($stats['deleted_tab_open_count']), 'amount' => number_format($stats['deleted_tab_outstanding'], 2)]) }}
+    </div>
+    <a href="{{ route('finance.index', ['tab' => 'overview', 'source' => 'deleted_tab']) }}" class="btn btn-sm btn-danger">
+        {{ __('View these bills') }}
+    </a>
+</div>
+@endif
 
 {{-- Filtered Summary — แสดงเมื่อมี filter active --}}
 @if(!empty($filteredStats))
@@ -120,6 +142,9 @@
                         ];
                     @endphp
                     <span class="badge bg-info-subtle text-info ms-1">{{ __('Status') }}: {{ $statusLabels[request('status')] ?? ucfirst(request('status')) }}</span>
+                @endif
+                @if(request('source'))
+                    <span class="badge bg-info-subtle text-info ms-1">{{ __('Source') }}: {{ request('source') === 'deleted_tab' ? __('From Deleted Tabs') : __('From Active Tabs') }}</span>
                 @endif
                 @if(request('date_from') || request('date_to'))
                     <span class="badge bg-info-subtle text-info ms-1">
@@ -208,7 +233,9 @@
                 <tbody>
                     @forelse($transactions as $txn)
                     @php
-                        $outstanding = (float) $txn->amount - (float) $txn->paid_amount;
+                        // Subtract issued credit notes too — same formula as the stats cards
+                        // above, so a bill whose remainder was credit-noted shows 0 here.
+                        $outstanding = (float) $txn->amount - (float) $txn->paid_amount - (float) $txn->credit_amount;
                         $jobOwnerName = optional(optional(optional($txn->productionOrder)->employer)->jobOwner)->name;
                     @endphp
                     <tr>
@@ -222,6 +249,7 @@
                             @if($txn->productionOrder && $txn->productionOrder->employer)
                                 <div class="fw-bold">{{ $txn->productionOrder->employer->employerNameTh }}</div>
                                 <div class="small text-muted">{{ $txn->productionOrder->project_name }}</div>
+                                @include('financial.partials._source_badge', ['order' => $txn->productionOrder])
                             @else
                                 <span class="text-muted">{{ __('Unknown') }}</span>
                             @endif

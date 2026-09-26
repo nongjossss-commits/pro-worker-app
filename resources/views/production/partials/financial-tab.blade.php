@@ -8,20 +8,30 @@
         'financialGroups.transactions.payments',
         'financialGroups.advanceItems',
     ]);
+
+    // employee->registrationSteps is a single global (un-tab-scoped) pivot
+    // relation covering every resolution tab the employee has ever touched,
+    // and each tab's steps restart their own order at 1 — so without scoping
+    // down to this order's own tab first, an employee who still carries
+    // pivot rows from a DIFFERENT tab can show that tab's step name here
+    // instead of their real progress in the tab this document belongs to.
+    // Same fix as HasResolutionTab::highestStepInTab()/_employee_card.blade.php.
+    $tabStepIds = $production->resolution_tab_id
+        ? \App\Models\RegistrationStep::where('resolution_tab_id', $production->resolution_tab_id)->pluck('id')
+        : null;
 @endphp
 <div x-data="financialManager({
     financialGroups: {{ json_encode($production->financialGroups) }},
     transactions: {{ json_encode($production->financialGroups->pluck('transactions')->flatten()) }},
-    productionItems: {{ json_encode($production->items->map(function($item) {
+    productionItems: {{ json_encode($production->items->map(function($item) use ($tabStepIds) {
         $lastStepName = null;
         $emp = $item->employee;
         $tempData = $item->new_employee_data;
 
         if ($emp) {
-            if (request()->is('production/registration*')) {
-                $lastStepName = $emp->registrationSteps->sortByDesc('order')->first()?->name;
-            } elseif (request()->is('production/renewal*')) {
-                $lastStepName = $emp->registrationSteps->sortByDesc('order')->first()?->name;
+            if (request()->is('production/registration*') || request()->is('production/renewal*')) {
+                $empSteps = $tabStepIds ? $emp->registrationSteps->whereIn('id', $tabStepIds) : $emp->registrationSteps;
+                $lastStepName = $empSteps->sortByDesc('order')->first()?->name;
             } else {
                 $lastStepName = $item->completedWorkTypeSteps?->sortByDesc('order')->first()?->name;
             }
@@ -49,10 +59,11 @@
             'reference_id' => $emp ? $emp->employee_reference_id : ''
         ];
     })) }},
-    employees: {{ json_encode(($employees ?? collect())->map(function($emp) {
+    employees: {{ json_encode(($employees ?? collect())->map(function($emp) use ($tabStepIds) {
         $lastStepName = null;
         if (request()->is('production/registration*') || request()->is('production/renewal*')) {
-            $lastStepName = $emp->registrationSteps->sortByDesc('order')->first()?->name;
+            $empSteps = $tabStepIds ? $emp->registrationSteps->whereIn('id', $tabStepIds) : $emp->registrationSteps;
+            $lastStepName = $empSteps->sortByDesc('order')->first()?->name;
         }
 
         return [

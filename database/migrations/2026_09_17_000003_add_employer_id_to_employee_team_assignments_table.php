@@ -18,13 +18,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('employee_team_assignments', function (Blueprint $table) {
-            $table->foreignId('employer_id')->nullable()->after('resolution_tab_id')->constrained()->cascadeOnDelete();
-        });
+        if (!Schema::hasColumn('employee_team_assignments', 'employer_id')) {
+            Schema::table('employee_team_assignments', function (Blueprint $table) {
+                $table->foreignId('employer_id')->nullable()->after('resolution_tab_id')->constrained()->cascadeOnDelete();
+            });
+        }
 
-        DB::table('employee_team_assignments')
-            ->join('employees', 'employees.id', '=', 'employee_team_assignments.employee_id')
-            ->update(['employee_team_assignments.employer_id' => DB::raw('employees.employer_id')]);
+        // A joined UPDATE...SET (MySQL-style) isn't portable across drivers; a correlated
+        // subquery in the SET clause works the same on MySQL, SQLite, and Postgres.
+        DB::table('employee_team_assignments')->update([
+            'employer_id' => DB::raw(
+                '(select employees.employer_id from employees where employees.id = employee_team_assignments.employee_id)'
+            ),
+        ]);
 
         Schema::table('employee_team_assignments', function (Blueprint $table) {
             $table->foreignId('employer_id')->nullable(false)->change();

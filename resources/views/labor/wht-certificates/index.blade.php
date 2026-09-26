@@ -10,6 +10,38 @@
     </a>
 </div>
 
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small">{{ __('Search') }}</label>
+                <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="{{ __('Cert no., payer, or payee...') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">{{ __('Team') }}</label>
+                <select name="team_id" class="form-select">
+                    <option value="">{{ __('All') }}</option>
+                    @foreach($teams as $t)
+                        <option value="{{ $t->id }}" {{ (string) request('team_id') === (string) $t->id ? 'selected' : '' }}>{{ $t->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">{{ __('Status') }}</label>
+                <select name="status" class="form-select">
+                    <option value="">{{ __('All') }}</option>
+                    <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>{{ __('Draft') }}</option>
+                    <option value="issued" {{ request('status') === 'issued' ? 'selected' : '' }}>{{ __('Issued') }}</option>
+                    <option value="submitted" {{ request('status') === 'submitted' ? 'selected' : '' }}>{{ __('Submitted') }}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-secondary w-100">{{ __('Filter') }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -18,6 +50,7 @@
                     <th>{{ __('Cert No.') }}</th>
                     <th>{{ __('Type') }}</th>
                     <th>{{ __('Form') }}</th>
+                    <th>{{ __('Team') }}</th>
                     <th>{{ __('Payer') }}</th>
                     <th>{{ __('Payee') }}</th>
                     <th class="text-end">{{ __('WHT Amount') }}</th>
@@ -31,6 +64,7 @@
                     <td><a href="{{ route('labor.wht-certificates.show', $cert) }}">{{ $cert->cert_no }}</a></td>
                     <td>{{ $cert->type === 'received' ? __('Received') : __('Issued') }}</td>
                     <td>{{ strtoupper($cert->wht_type) }}</td>
+                    <td>{{ $cert->team->name ?? '-' }}</td>
                     <td>{{ $cert->payer_name }}</td>
                     <td>{{ $cert->payee_name }}</td>
                     <td class="text-end fw-bold">{{ number_format($cert->wht_amount, 2) }}</td>
@@ -48,7 +82,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="text-center text-muted py-4">{{ __('No WHT certificates yet.') }}</td></tr>
+                <tr><td colspan="9" class="text-center text-muted py-4">{{ __('No WHT certificates yet.') }}</td></tr>
                 @endforelse
             </tbody>
         </table>

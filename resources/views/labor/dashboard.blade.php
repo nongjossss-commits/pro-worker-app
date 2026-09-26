@@ -447,7 +447,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     @endif
 
-    @if($chargeTypeStats->isNotEmpty())
+    {{-- $chargeTypeStats is only passed in overview modes (labor-member /
+         labor-team dashboards don't get it, nor the chart canvas). --}}
+    @if(isset($chargeTypeStats) && $chargeTypeStats->isNotEmpty())
     const chargeTypeCtx = document.getElementById('chargeTypeNationalityChart').getContext('2d');
     new Chart(chargeTypeCtx, {
         type: 'bar',

@@ -13,11 +13,20 @@
 <div class="card shadow-sm border-0 mb-3">
     <div class="card-body">
         <form method="GET" class="row g-2 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label small">{{ __('Search') }}</label>
                 <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="{{ __('Invoice no. or customer...') }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <label class="form-label small">{{ __('Team') }}</label>
+                <select name="team_id" class="form-select">
+                    <option value="">{{ __('All') }}</option>
+                    @foreach($teams as $t)
+                        <option value="{{ $t->id }}" {{ (string) request('team_id') === (string) $t->id ? 'selected' : '' }}>{{ $t->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label small">{{ __('Fiscal Year') }}</label>
                 <select name="fiscal_year" class="form-select">
                     <option value="">{{ __('All') }}</option>
@@ -49,6 +58,7 @@
                 <tr>
                     <th>{{ __('Invoice No.') }}</th>
                     <th>{{ __('Date') }}</th>
+                    <th>{{ __('Team') }}</th>
                     <th>{{ __('Customer') }}</th>
                     <th>{{ __('Bill Ref.') }}</th>
                     <th class="text-end">{{ __('Total') }}</th>
@@ -61,8 +71,9 @@
                 <tr>
                     <td><a href="{{ route('labor.tax-invoices.show', $invoice) }}">{{ $invoice->invoice_no }}</a></td>
                     <td>{{ $invoice->invoice_date->format('d/m/Y') }}</td>
+                    <td>{{ $invoice->team->name ?? '-' }}</td>
                     <td>{{ $invoice->customer_name }}</td>
-                    <td>{{ $invoice->bill->bill_no ?? '-' }}</td>
+                    <td>{{ $invoice->bill->bill_no ?? ($invoice->customer->name ?? '-') }}</td>
                     <td class="text-end fw-bold">{{ number_format($invoice->total, 2) }}</td>
                     <td class="text-center">
                         @if($invoice->status === 'issued')
@@ -78,7 +89,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">{{ __('No tax invoices yet.') }}</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">{{ __('No tax invoices yet.') }}</td></tr>
                 @endforelse
             </tbody>
         </table>

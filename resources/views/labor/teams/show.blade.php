@@ -173,6 +173,54 @@
     </div>
 </div>
 
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-bold">{{ __('External Customers') }}</h6>
+        @can('manage-labor-ledger')
+        <a href="{{ route('labor.customers.index', ['team_id' => $team->id]) }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-person-gear me-1"></i>{{ __('Manage Customers') }}
+        </a>
+        @endcan
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ __('Name') }}</th>
+                    <th>{{ __('Tax ID') }}</th>
+                    <th class="text-center">{{ __('Status') }}</th>
+                    <th class="text-end">{{ __('Invoices') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($customers as $customer)
+                <tr>
+                    <td>{{ $customer->name }}</td>
+                    <td>{{ $customer->tax_id ?? '-' }}</td>
+                    <td class="text-center">
+                        @if($customer->is_active)
+                            <span class="badge bg-success">{{ __('Active') }}</span>
+                        @else
+                            <span class="badge bg-secondary">{{ __('Inactive') }}</span>
+                        @endif
+                    </td>
+                    <td class="text-end">{{ $customer->tax_invoices_count }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-3">
+                        {{ __('No external customers yet.') }}
+                        @can('manage-labor-ledger')
+                            <a href="{{ route('labor.customers.index', ['team_id' => $team->id]) }}">{{ __('Add one') }}</a>
+                        @endcan
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">

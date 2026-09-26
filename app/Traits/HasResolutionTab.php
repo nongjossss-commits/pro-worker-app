@@ -18,14 +18,17 @@ trait HasResolutionTab
     /**
      * Resolve the current tab from the route parameter or find the first tab of the given type.
      */
-    protected function resolveTab($tabIdOrSlug, string $type): ResolutionTab
+    protected function resolveTab($tabIdOrSlug, string $type, bool $withTrashed = false): ResolutionTab
     {
         if ($tabIdOrSlug instanceof ResolutionTab) {
             $this->currentTab = $tabIdOrSlug;
             return $this->currentTab;
         }
 
-        $this->currentTab = ResolutionTab::where('type', $type)
+        // $withTrashed: only for read-the-bills entry points (loadFinancialTab)
+        // so Finance can still open billing of a tab that has been deleted.
+        $this->currentTab = ResolutionTab::when($withTrashed, fn ($q) => $q->withTrashed())
+            ->where('type', $type)
             ->where(function ($q) use ($tabIdOrSlug) {
                 $q->where('id', $tabIdOrSlug)
                   ->orWhere('slug', $tabIdOrSlug);

@@ -300,11 +300,15 @@ class RegistrationController extends Controller
             });
         }
 
-        // Operator Filter (Server-Side)
+        // Operator Filter (Server-Side) — resolution_tab_id required inside this
+        // closure too (see applyFilterToEmployerQuery()'s docblock for the full
+        // rationale): without it, an employer can match on an employee sitting in
+        // a completely different resolution tab who happens to share the operator.
         if ($request->has('operator_filter') && $request->operator_filter) {
             $opFilter = $request->operator_filter;
-            $employerQuery->whereHas('employees', function($q) use ($opFilter) {
-                // Should only check relevant status?
+            $tabIdForOperator = $this->currentTab->id;
+            $employerQuery->whereHas('employees', function($q) use ($opFilter, $tabIdForOperator) {
+                $q->where('resolution_tab_id', $tabIdForOperator);
                 if ($opFilter === 'external') {
                     $q->whereNotNull('custom_operator_name')->where('custom_operator_name', '!=', '');
                 } else {
@@ -501,14 +505,17 @@ class RegistrationController extends Controller
     private function applyEmployerLevelSearch($query, $search)
     {
         $search = trim($search);
+        $tabId = $this->currentTab->id;
 
-        // Support ID:123 format for direct employee/employer ID lookup
+        // Support ID:123 format for direct employee/employer ID lookup —
+        // resolution_tab_id required on the employee branch: without it, an
+        // employee ID belonging to a DIFFERENT registration tab would match.
         if (preg_match('/^ID:\s*(\d+)$/i', $search, $matches)) {
             $targetId = (int) $matches[1];
-            $query->where(function($q) use ($targetId) {
+            $query->where(function($q) use ($targetId, $tabId) {
                 $q->where('id', $targetId)
-                  ->orWhereHas('employees', function($qEmp) use ($targetId) {
-                      $qEmp->where('id', $targetId);
+                  ->orWhereHas('employees', function($qEmp) use ($targetId, $tabId) {
+                      $qEmp->where('id', $targetId)->where('resolution_tab_id', $tabId);
                   });
             });
             return;
@@ -516,7 +523,7 @@ class RegistrationController extends Controller
 
         $cleanedSearch = str_replace(' ', '', $search);
 
-        $query->where(function($q) use ($search, $cleanedSearch) {
+        $query->where(function($q) use ($search, $cleanedSearch, $tabId) {
             // Employer Fields
             $q->where('employerNameTh', 'like', "%{$search}%")
               ->orWhere('employerNameEn', 'like', "%{$search}%")
@@ -531,9 +538,17 @@ class RegistrationController extends Controller
               ->orWhere(function($addrQ) use ($search) {
                   $addrQ->filterByAddress($search);
               })
-              // Employees (Robust Search) - Scoped to relevant statuses
-              ->orWhereHas('employees', function($qEmp) use ($search, $cleanedSearch) {
-                  $qEmp->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+              // Employees (Robust Search) - Scoped to this tab and its
+              // relevant statuses. resolution_tab_id is required here (not
+              // just left to the outer tab-scoping whereHas('employees', ...)
+              // in index()) — Eloquent compiles each whereHas() call into its
+              // own independent EXISTS subquery, so without it an employee
+              // matching the search text in a DIFFERENT registration tab
+              // would surface this employer here too. Same fix as
+              // applyFilterToEmployerQuery()'s docblock explains in full.
+              ->orWhereHas('employees', function($qEmp) use ($search, $cleanedSearch, $tabId) {
+                  $qEmp->where('resolution_tab_id', $tabId)
+                       ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
                        ->where(function($sub) use ($search, $cleanedSearch) {
                            $sub->where('employeeNameTh', 'like', "%{$search}%")
                                ->orWhere('employeeNameEn', 'like', "%{$search}%")
@@ -675,9 +690,19 @@ class RegistrationController extends Controller
             return;
         }
 
-        // For other filters, we check if the employer has ANY employee matching the criteria
+        // For other filters, we check if the employer has ANY employee matching the criteria.
+        // resolution_tab_id must be the FIRST condition inside this closure (not left
+        // to the outer whereHas('employees', ...) scoping call in index()) — Eloquent
+        // compiles each whereHas() call into its own independent EXISTS subquery, so
+        // without it here too, this filter can match on a completely different employee
+        // of the same employer who merely happens to sit in a DIFFERENT resolution tab,
+        // as long as *some* employee elsewhere satisfies the tab-scoping whereHas. Every
+        // branch below (not_started/saved/cancelled/biometrics/appointments) shares this
+        // one base condition instead of repeating it, so a future new filter can't forget it.
         $tabId = $this->currentTab->id;
         $query->whereHas('employees', function($q) use ($filter, $stepOneId, $tabId) {
+            $q->where('resolution_tab_id', $tabId);
+
             if ($filter === 'not_started') {
                  $q->whereIn('status', ['registration_pending', 'registration_completed'])
                    ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
@@ -901,7 +926,8 @@ class RegistrationController extends Controller
      */
     public function loadFinancialTab(Request $request, $resolutionTab, Employer $employer)
     {
-        $this->resolveTab($resolutionTab, 'registration');
+        // withTrashed: bills of a deleted tab must stay reachable from Finance.
+        $this->resolveTab($resolutionTab, 'registration', true);
 
         // Permission Check
         if (!auth()->user()->can('view-finance') && !auth()->user()->can('edit-employees')) {
@@ -913,6 +939,11 @@ class RegistrationController extends Controller
             ->whereIn('status', ['registration_resolution', 'registration_resolution_cancelled'])
             ->where('resolution_tab_id', $this->currentTab->id)
             ->first();
+
+        // Deleted tab: only existing bills may be opened — never start a new order under it.
+        if (!$financeOrder && $this->currentTab->trashed()) {
+            abort(404);
+        }
 
         if (!$financeOrder) {
             $financeOrder = ProductionOrder::create([
@@ -1132,23 +1163,12 @@ class RegistrationController extends Controller
         $stepOneId = $steps->sortBy('order')->first()?->id;
 
         $query = $employer->employees()
-            ->where('resolution_tab_id', $this->currentTab->id);
+            ->where('resolution_tab_id', $this->currentTab->id)
+            ->whereIn('status', $this->currentTab->getEmployeeStatuses());
 
         if (auth()->user()->can('manage-tickets')) {
             $query->withoutGlobalScope('employerTenancy');
         }
-
-        // Select-all never offers cancelled employees, and only offers
-        // completed ones once their 24h Undo window has locked (matches the
-        // checkbox visibility rule in _employee_card.blade.php).
-        $query->where(function ($q) {
-            $q->where('status', 'registration_pending')
-              ->orWhere(function ($q2) {
-                  $q2->where('status', 'registration_completed')
-                     ->whereNotNull('resolution_completed_at')
-                     ->where('resolution_completed_at', '<=', now()->subHours(24));
-              });
-        });
 
         if ($request->has('search') && $request->search) {
             $this->applyEmployerSearchToQuery($query, $employer, $request->search);
@@ -1180,11 +1200,12 @@ class RegistrationController extends Controller
                     $aq->where('resolution_tab_id', $tabId)->whereNotNull('appointment_date');
                 });
             }
-            // 'cancelled' is intentionally not handled — cancelled employees
-            // are never select-all eligible regardless of the active filter.
-            // The numeric (step-id) case is handled after the query runs,
-            // below, same as fetchEmployees() does — "highest completed
-            // step" can't be expressed as a single whereHas.
+            // 'cancelled' pill isn't handled here — the status-group prompt
+            // (see smartEmployerSelectAll()) is how cancelled employees get
+            // included in select-all now. The numeric (step-id) case is
+            // handled after the query runs, below, same as fetchEmployees()
+            // does — "highest completed step" can't be expressed as a single
+            // whereHas.
         }
 
         $renewalFilters = $this->parseRenewalFilters($request);
@@ -1227,6 +1248,11 @@ class RegistrationController extends Controller
                 'passport' => $emp->employeePassport,
                 'production_item_id' => '',
                 'locked_completed' => $emp->status === 'registration_completed',
+                // Drives the "which statuses do you want to select?" prompt
+                // in smartEmployerSelectAll() — see that function's docblock.
+                'status_group' => $emp->status === 'registration_cancelled'
+                    ? 'cancelled'
+                    : ($emp->status === 'registration_completed' ? 'completed' : 'pending'),
             ];
         })->values();
 

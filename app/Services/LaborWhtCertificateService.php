@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\LaborBill;
+use App\Models\LaborTaxInvoice;
 use App\Models\LaborWhtCertificate;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,7 @@ class LaborWhtCertificateService
     public function create(array $data): LaborWhtCertificate
     {
         $this->validatePayload($data);
+        $data['labor_team_id'] = $this->resolveTeamId($data);
 
         return DB::transaction(function () use ($data) {
             $paidAt = \Carbon\Carbon::parse($data['paid_at']);
@@ -66,12 +69,35 @@ class LaborWhtCertificateService
             throw new RuntimeException('Cannot edit a submitted certificate.');
         }
 
+        if (array_key_exists('labor_bill_id', $data) || array_key_exists('labor_tax_invoice_id', $data)) {
+            $data['labor_team_id'] = $this->resolveTeamId($data);
+        }
+
         $cert->update(array_merge($data, ['updated_by' => Auth::id()]));
 
         return $cert->fresh();
     }
 
     // -------- Internal --------
+
+    /**
+     * labor_team_id is always derived here, never trusted from the caller —
+     * a cert can link to a team-billed LaborBill or a standalone (external-
+     * customer) LaborTaxInvoice, and either way the team must come from
+     * that record, not a client-supplied value, so accounting's team filter
+     * on the WHT list can never be spoofed or drift. Mirrors
+     * LaborTaxInvoiceService::create()'s same derivation.
+     */
+    protected function resolveTeamId(array $data): ?int
+    {
+        if (!empty($data['labor_bill_id'])) {
+            return LaborBill::find($data['labor_bill_id'])?->labor_team_id;
+        }
+        if (!empty($data['labor_tax_invoice_id'])) {
+            return LaborTaxInvoice::find($data['labor_tax_invoice_id'])?->labor_team_id;
+        }
+        return null;
+    }
 
     /**
      * Format: LWHT-{TYPE}-{YYYY}{MM}-#### — separate sequence from the main

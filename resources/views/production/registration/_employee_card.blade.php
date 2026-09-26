@@ -91,6 +91,17 @@
         ? $employee->production_item->completedWorkTypeSteps
         : $employee->registrationSteps;
 
+    // Registration/Renewal: employee->registrationSteps is a single global
+    // (un-tab-scoped) pivot relation covering every resolution tab the
+    // employee has ever touched, and each tab's steps restart at order=1 —
+    // so an employee who still carries pivot rows from a PREVIOUS tab (e.g.
+    // moved into a newly-created tab) can have an old, higher-order step
+    // outrank their real current-tab progress. Scope down to this tab's own
+    // step ids first, same fix as HasResolutionTab::highestStepInTab().
+    if (!isset($employee->production_item) && isset($steps) && $steps instanceof \Illuminate\Support\Collection) {
+        $completedStepsCollection = $completedStepsCollection->whereIn('id', $steps->pluck('id'));
+    }
+
     // Determine Highest Completed Step for Filtering
     $highestStep = $completedStepsCollection->sortByDesc('order')->first();
     $highestStepId = $highestStep ? $highestStep->id : '';
