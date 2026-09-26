@@ -52,7 +52,7 @@
                             <i class="bi bi-pencil"></i>
                         </button>
                         <form method="POST" action="{{ route('labor.team-members.destroy', $member) }}" class="d-inline"
-                              onsubmit="return confirm('{{ __('Remove this member? Their recorded entries stay, just unlinked from this name.') }}');">
+                              data-confirm="{{ __('Remove this member? Their recorded entries stay, just unlinked from this name.') }}" data-confirm-danger>
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

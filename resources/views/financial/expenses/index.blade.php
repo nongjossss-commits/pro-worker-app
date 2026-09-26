@@ -82,7 +82,7 @@
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <form action="{{ route('finance.expenses.destroy', $expense) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this expense? The bank balance will be restored.') }}');">
+                                    <form action="{{ route('finance.expenses.destroy', $expense) }}" method="POST" class="d-inline" data-confirm="{{ __('Are you sure you want to delete this expense? The bank balance will be restored.') }}" data-confirm-danger>
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-danger" title="{{ __('Delete') }}">

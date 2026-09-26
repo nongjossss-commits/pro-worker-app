@@ -568,7 +568,7 @@
                                                             </button>
                                                         </form>
                                                     @endunless
-                                                    <form action="{{ route('super-admin.brand.logo.delete') }}" method="POST" onsubmit="return confirm('{{ __('Delete this logo?') }}')">
+                                                    <form action="{{ route('super-admin.brand.logo.delete') }}" method="POST" data-confirm="{{ __('Delete this logo?') }}" data-confirm-danger>
                                                         @csrf
                                                         <input type="hidden" name="path" value="{{ $logo['path'] }}">
                                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
@@ -668,7 +668,7 @@
                             </form>
 
                             <form action="{{ route('super-admin.brand.colors.reset') }}" method="POST" class="mt-2"
-                                  onsubmit="return confirm('{{ __('Reset all theme colors to factory defaults?') }}')">
+                                  data-confirm="{{ __('Reset all theme colors to factory defaults?') }}" data-confirm-danger>
                                 @csrf
                                 <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
                                     <i class="bi bi-arrow-counterclockwise"></i> {{ __('Reset to defaults') }}

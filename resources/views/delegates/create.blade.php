@@ -339,14 +339,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const type = deleteBtn.dataset.type;
             const index = parseInt(deleteBtn.dataset.index, 10);
 
-            if (confirm('{{ __('Are you sure you want to delete this address?') }}')) {
+            appConfirm('{{ __('Are you sure you want to delete this address?') }}', { danger: true }).then((confirmed) => { if (confirmed) {
                 if (type === 'registered') {
                     tempRegisteredAddresses.splice(index, 1);
                 } else {
                     tempWorkplaceAddresses.splice(index, 1);
                 }
                 renderTempAddressList(type);
-            }
+            } });
         }
     });
 

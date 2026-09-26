@@ -321,7 +321,10 @@ class SettingsController extends Controller
      */
     public function unlockForm($key)
     {
-        return view('auth.menu-unlock', compact('key'));
+        // e.g. 'registration_resolution' → "Registration Resolution" → translated menu name
+        $menuLabel = __(\Illuminate\Support\Str::headline($key));
+
+        return view('auth.menu-unlock', compact('key', 'menuLabel'));
     }
 
     /**

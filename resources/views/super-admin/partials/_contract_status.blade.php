@@ -151,7 +151,7 @@
             @if($contract && $contract->grace_end_date)
                 <div class="col-md-4 d-flex align-items-end">
                     <form action="{{ route('super-admin.contract.grace.stop') }}" method="POST" class="w-100"
-                          onsubmit="return confirm('ปิดโหมดชั่วคราวและกลับไปยึดตามวันสิ้นสุดสัญญาจริงหรือไม่?');">
+                          data-confirm="ปิดโหมดชั่วคราวและกลับไปยึดตามวันสิ้นสุดสัญญาจริงหรือไม่?">
                         @csrf
                         <button type="submit" class="btn btn-outline-danger w-100">
                             <i class="bi bi-stop-fill me-1"></i> ปิดโหมดชั่วคราว
@@ -247,7 +247,7 @@
                         @if($hasFile)
                             <form action="{{ route('super-admin.contract.attachment.delete', $slot) }}" method="POST"
                                   class="mt-2"
-                                  onsubmit="return confirm('ลบไฟล์แนบช่องที่ {{ $slot }}?');">
+                                  data-confirm="ลบไฟล์แนบช่องที่ {{ $slot }}?" data-confirm-danger>
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger w-100">

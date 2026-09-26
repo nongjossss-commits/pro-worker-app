@@ -77,7 +77,7 @@
                     <input type="hidden" name="action_issue" value="1">
                     <button type="submit" class="btn btn-success w-100">{{ __('Issue Certificate') }}</button>
                 </form>
-                <form method="POST" action="{{ route('labor.wht-certificates.destroy', $cert) }}" onsubmit="return confirm('{{ __('Delete this draft?') }}')">
+                <form method="POST" action="{{ route('labor.wht-certificates.destroy', $cert) }}" data-confirm="{{ __('Delete this draft?') }}" data-confirm-danger>
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-outline-danger w-100">{{ __('Delete Draft') }}</button>
                 </form>

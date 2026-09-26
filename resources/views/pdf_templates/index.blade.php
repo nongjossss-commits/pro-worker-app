@@ -849,7 +849,7 @@
             },
 
             async deleteWitness(id) {
-                if(!confirm('Are you sure you want to delete this witness?')) return;
+                if (!(await appConfirm('Are you sure you want to delete this witness?', { danger: true }))) return;
 
                 try {
                     const res = await fetch('/admin/pdf-templates/witnesses/' + id, {

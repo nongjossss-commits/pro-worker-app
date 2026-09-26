@@ -74,7 +74,7 @@
                                     <a href="{{ route('labor.contract-templates.builder', $template) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-pencil-square"></i> {{ __('Edit Fields') }}
                                     </a>
-                                    <form action="{{ route('labor.contract-templates.destroy', $template) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete this template?') }}')">
+                                    <form action="{{ route('labor.contract-templates.destroy', $template) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this template?') }}" data-confirm-danger>
                                         @csrf @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                                     </form>

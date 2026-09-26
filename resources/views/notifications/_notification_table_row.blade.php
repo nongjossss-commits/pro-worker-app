@@ -141,7 +141,7 @@
                     @csrf
                     <button type="submit" class="btn btn-info btn-sm" title="กู้คืน"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
                 </form>
-                 <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');">
+                 <form action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" class="d-grid d-md-inline" data-confirm="คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?" data-confirm-danger>
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger btn-sm" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>

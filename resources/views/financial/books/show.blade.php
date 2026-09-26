@@ -208,7 +208,7 @@
                                 <a href="{{ route('finance.ledger.show', $t) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('View / Edit (VAT & WHT details)') }}">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form method="POST" action="{{ route('finance.ledger.destroy', $t) }}" class="d-inline" onsubmit="return confirm('{{ __('Delete this transaction?') }}')">
+                                <form method="POST" action="{{ route('finance.ledger.destroy', $t) }}" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" data-confirm-danger>
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                                 </form>

@@ -201,7 +201,7 @@
                                 <i class="bi bi-arrow-counterclockwise"></i>
                             </button>
 
-                            <form id="force-delete-form-{{ $notification->id }}" action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?');" style="display: none;">
+                            <form id="force-delete-form-{{ $notification->id }}" action="{{ route('notifications.forceDelete', $notification->id) }}" method="POST" data-confirm="คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้อย่างถาวร?" data-confirm-danger style="display: none;">
                                 @csrf
                                 @method('DELETE')
                             </form>

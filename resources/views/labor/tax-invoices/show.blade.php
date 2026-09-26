@@ -81,11 +81,11 @@
                 <form method="POST" action="{{ route('labor.tax-invoices.update', $invoice) }}">
                     @csrf @method('PUT')
                     <input type="hidden" name="action_issue" value="1">
-                    <button type="submit" class="btn btn-success w-100" onclick="return confirm('{{ __('Issue this invoice? The number will be locked.') }}')">
+                    <button type="submit" class="btn btn-success w-100" data-confirm="{{ __('Issue this invoice? The number will be locked.') }}">
                         <i class="bi bi-check-circle me-1"></i>{{ __('Issue Invoice') }}
                     </button>
                 </form>
-                <form method="POST" action="{{ route('labor.tax-invoices.destroy', $invoice) }}" onsubmit="return confirm('{{ __('Delete this draft?') }}')">
+                <form method="POST" action="{{ route('labor.tax-invoices.destroy', $invoice) }}" data-confirm="{{ __('Delete this draft?') }}" data-confirm-danger>
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-outline-danger w-100">{{ __('Delete Draft') }}</button>
                 </form>

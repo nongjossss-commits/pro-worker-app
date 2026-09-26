@@ -1317,7 +1317,7 @@
                 if (e.target.closest('.delete-business-type')) {
                     const btn = e.target.closest('.delete-business-type');
                     const id = btn.dataset.id;
-                    if (confirm('Delete this type?')) {
+                    appConfirm('Delete this type?', { danger: true }).then((confirmed) => { if (confirmed) {
                         fetch(`{{ url('admin/business-types') }}/${id}`, {
                             method: 'DELETE',
                             headers: {
@@ -1330,7 +1330,7 @@
                                 fetchBusinessTypes();
                             }
                         });
-                    }
+                    } });
                 }
             });
         }

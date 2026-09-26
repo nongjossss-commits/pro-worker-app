@@ -112,7 +112,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 ${showEdit ? `<li><a class="dropdown-item small" href="#" onclick="event.preventDefault(); document.getElementById('${displayId}').classList.add('d-none'); document.getElementById('${editFormId}').classList.remove('d-none');">Edit</a></li>` : ''}
                                 <li>
-                                    <form action="${deleteUrl}" method="POST" onsubmit="return confirm('Delete this field?');">
+                                    <form action="${deleteUrl}" method="POST" data-confirm="Delete this field?" data-confirm-danger>
                                         <input type="hidden" name="_token" value="${csrfToken}">
                                         <input type="hidden" name="_method" value="DELETE">
                                         <button type="submit" class="dropdown-item small text-danger">Delete</button>

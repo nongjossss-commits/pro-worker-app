@@ -835,6 +835,7 @@
             }
         }
     </style>
+    @include('partials._ui_theme_styles')
 </head>
 <body>
 
@@ -1730,9 +1731,9 @@
         jobOwnerList.addEventListener('click', function(e) {
             if (e.target.classList.contains('delete-job-owner-icon')) {
                 const ownerId = e.target.dataset.id;
-                if (confirm('{{ __('Are you sure you want to delete this job owner?') }}')) {
+                appConfirm('{{ __('Are you sure you want to delete this job owner?') }}', { danger: true }).then((confirmed) => { if (confirmed) {
                     deleteOwner(ownerId);
-                }
+                } });
             }
         });
 
@@ -1741,9 +1742,9 @@
             deleteJobOwnerBtn.addEventListener('click', function() {
                 const selectedOwnerId = mainJobOwnerSelect.value;
                 if (selectedOwnerId && selectedOwnerId !== '--- เลือกเจ้าของงาน ---') { // Note: This check might be fragile if translation changes, using ID is better but logic is based on value
-                     if (confirm('{{ __('Are you sure you want to delete this job owner?') }}')) {
+                     appConfirm('{{ __('Are you sure you want to delete this job owner?') }}', { danger: true }).then((confirmed) => { if (confirmed) {
                         deleteOwner(selectedOwnerId);
-                    }
+                    } });
                 } else {
                     alert('{{ __('Please select a job owner to delete') }}');
                 }
@@ -1845,6 +1846,7 @@
     }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @include('partials._ui_theme_scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Flatpickr JS -->

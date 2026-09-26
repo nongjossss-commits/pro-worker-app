@@ -70,7 +70,7 @@
                             <i class="bi bi-pencil"></i>
                         </a>
                         <form method="POST" action="{{ route('labor.users.toggle-status', $user) }}" class="d-inline"
-                              onsubmit="return confirm('{{ __('Change this account\'s status?') }}');">
+                              data-confirm="{{ __('Change this account\'s status?') }}">
                             @csrf
                             @method('PATCH')
                             <button type="submit" class="btn btn-sm btn-outline-{{ $user->status === 'active' ? 'danger' : 'success' }}">

@@ -46,7 +46,7 @@
                                     <td>{{ $item->updated_at->format('d/m/Y H:i') }}</td>
                                     <td>
                                         @if($item->trashed() || $item->status == 'cancelled')
-                                            <form action="{{ route('sales.restore', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ยืนยันการกู้คืนรายการนี้ เพื่อกลับไปหน้า เสนอราคา หรือไม่?');">
+                                            <form action="{{ route('sales.restore', $item->id) }}" method="POST" class="d-inline" data-confirm="ยืนยันการกู้คืนรายการนี้ เพื่อกลับไปหน้า เสนอราคา หรือไม่?">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-arrow-counterclockwise"></i> กู้คืน</button>
                                             </form>

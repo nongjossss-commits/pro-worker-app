@@ -1,13 +1,19 @@
 {{-- Stats Cards --}}
 <div class="row mb-4">
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-start border-primary border-4 shadow h-100 py-2">
+        {{-- Click = list the bills behind this number; click again = clear. --}}
+        <a href="{{ request('card') === 'income_today' ? route('finance.index', ['tab' => 'overview']) : route('finance.index', ['tab' => 'overview', 'card' => 'income_today']) }}"
+           class="text-decoration-none" title="{{ __('Click to list these bills') }}">
+        <div class="card border-start border-primary border-4 shadow h-100 py-2 {{ request('card') === 'income_today' ? 'bg-primary-subtle' : '' }}">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="small fw-bold text-primary text-uppercase mb-1">
                             {{ __('Income Today') }}</div>
                         <div class="h5 mb-0 fw-bold text-dark">{{ number_format($stats['income_today'], 2) }}</div>
+                        @if(request('card') === 'income_today')
+                            <div class="small text-muted mt-1"><i class="bi bi-funnel-fill"></i> {{ __('Filtering — click again to clear') }}</div>
+                        @endif
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-calendar-day fs-2 text-secondary"></i>
@@ -15,15 +21,22 @@
                 </div>
             </div>
         </div>
+        </a>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-start border-success border-4 shadow h-100 py-2">
+        {{-- Click = list the bills behind this number; click again = clear. --}}
+        <a href="{{ request('card') === 'income_month' ? route('finance.index', ['tab' => 'overview']) : route('finance.index', ['tab' => 'overview', 'card' => 'income_month']) }}"
+           class="text-decoration-none" title="{{ __('Click to list these bills') }}">
+        <div class="card border-start border-success border-4 shadow h-100 py-2 {{ request('card') === 'income_month' ? 'bg-success-subtle' : '' }}">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="small fw-bold text-success text-uppercase mb-1">
                             {{ __('Income This Month') }}</div>
                         <div class="h5 mb-0 fw-bold text-dark">{{ number_format($stats['income_month'], 2) }}</div>
+                        @if(request('card') === 'income_month')
+                            <div class="small text-muted mt-1"><i class="bi bi-funnel-fill"></i> {{ __('Filtering — click again to clear') }}</div>
+                        @endif
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-calendar-month fs-2 text-secondary"></i>
@@ -31,15 +44,22 @@
                 </div>
             </div>
         </div>
+        </a>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-start border-warning border-4 shadow h-100 py-2">
+        {{-- Click = list the bills behind this number; click again = clear. --}}
+        <a href="{{ request('card') === 'pending' ? route('finance.index', ['tab' => 'overview']) : route('finance.index', ['tab' => 'overview', 'card' => 'pending']) }}"
+           class="text-decoration-none" title="{{ __('Click to list these bills') }}">
+        <div class="card border-start border-warning border-4 shadow h-100 py-2 {{ request('card') === 'pending' ? 'bg-warning-subtle' : '' }}">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="small fw-bold text-warning text-uppercase mb-1">
                             {{ __('Pending Amount') }}</div>
                         <div class="h5 mb-0 fw-bold text-dark">{{ number_format($stats['pending_amount'], 2) }}</div>
+                        @if(request('card') === 'pending')
+                            <div class="small text-muted mt-1"><i class="bi bi-funnel-fill"></i> {{ __('Filtering — click again to clear') }}</div>
+                        @endif
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-clock-history fs-2 text-secondary"></i>
@@ -47,15 +67,22 @@
                 </div>
             </div>
         </div>
+        </a>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-start border-danger border-4 shadow h-100 py-2">
+        {{-- Click = list the bills behind this number; click again = clear. --}}
+        <a href="{{ request('card') === 'overdue' ? route('finance.index', ['tab' => 'overview']) : route('finance.index', ['tab' => 'overview', 'card' => 'overdue']) }}"
+           class="text-decoration-none" title="{{ __('Click to list these bills') }}">
+        <div class="card border-start border-danger border-4 shadow h-100 py-2 {{ request('card') === 'overdue' ? 'bg-danger-subtle' : '' }}">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="small fw-bold text-danger text-uppercase mb-1">
                             {{ __('Overdue Amount') }}</div>
                         <div class="h5 mb-0 fw-bold text-dark">{{ number_format($stats['overdue_amount'], 2) }}</div>
+                        @if(request('card') === 'overdue')
+                            <div class="small text-muted mt-1"><i class="bi bi-funnel-fill"></i> {{ __('Filtering — click again to clear') }}</div>
+                        @endif
                     </div>
                     <div class="col-auto">
                         <i class="bi bi-exclamation-circle fs-2 text-secondary"></i>
@@ -63,6 +90,7 @@
                 </div>
             </div>
         </div>
+        </a>
     </div>
 </div>
 
@@ -71,6 +99,9 @@
     <div class="card-body">
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">
             <input type="hidden" name="tab" value="overview">
+            @if(request('card'))
+                <input type="hidden" name="card" value="{{ request('card') }}">
+            @endif
             <div class="col-md-3">
                 <input type="text" name="search" class="form-control" placeholder="{{ __('Search Bill #, Employer, Project, Job Owner...') }}" value="{{ request('search') }}">
             </div>
@@ -142,6 +173,17 @@
                         ];
                     @endphp
                     <span class="badge bg-info-subtle text-info ms-1">{{ __('Status') }}: {{ $statusLabels[request('status')] ?? ucfirst(request('status')) }}</span>
+                @endif
+                @if(request('card'))
+                    @php
+                        $cardLabels = [
+                            'income_today' => __('Income Today'),
+                            'income_month' => __('Income This Month'),
+                            'pending'      => __('Pending Amount'),
+                            'overdue'      => __('Overdue Amount'),
+                        ];
+                    @endphp
+                    <span class="badge bg-info-subtle text-info ms-1">{{ $cardLabels[request('card')] ?? request('card') }}</span>
                 @endif
                 @if(request('source'))
                     <span class="badge bg-info-subtle text-info ms-1">{{ __('Source') }}: {{ request('source') === 'deleted_tab' ? __('From Deleted Tabs') : __('From Active Tabs') }}</span>
@@ -267,6 +309,18 @@
                         <td class="text-end">{{ number_format($txn->amount, 2) }}</td>
                         <td class="text-end {{ $txn->paid_amount >= $txn->amount ? 'text-success' : 'text-warning' }}">
                             {{ number_format($txn->paid_amount, 2) }}
+                            @if(in_array(request('card'), ['income_today', 'income_month'], true) && $txn->payments->isNotEmpty())
+                                {{-- Each payment on this bill, so it's clear whether today's
+                                     money cleared the bill or only part of it. --}}
+                                <div class="small text-muted text-nowrap mt-1">
+                                    @foreach($txn->payments as $pay)
+                                        <div title="{{ $pay->bankAccount ? $pay->bankAccount->bank_name . ' ' . $pay->bankAccount->account_number : __('No bank account') }}">
+                                            {{ \Carbon\Carbon::parse($pay->paid_at)->format('d/m/Y') }}:
+                                            <span class="text-success">+{{ number_format($pay->amount, 2) }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </td>
                         <td class="text-end {{ $outstanding > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
                             {{ number_format($outstanding, 2) }}

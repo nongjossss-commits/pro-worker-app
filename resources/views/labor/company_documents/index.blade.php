@@ -80,7 +80,7 @@
                             </td>
                             @role('super-admin')
                             <td class="text-end">
-                                <form method="POST" action="{{ route('labor.company-documents.destroy', $doc) }}" onsubmit="return confirm('{{ __('Remove this document?') }}')">
+                                <form method="POST" action="{{ route('labor.company-documents.destroy', $doc) }}" data-confirm="{{ __('Remove this document?') }}" data-confirm-danger>
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                                 </form>

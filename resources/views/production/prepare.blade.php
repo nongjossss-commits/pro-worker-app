@@ -17,7 +17,7 @@
                 <input type="hidden" name="start_workflow" value="1">
                 <button type="submit" class="btn btn-success btn-lg shadow-sm"
                     :disabled="!isReadyToStart"
-                    onclick="return confirm('Confirm sending this project to Workflow? This will activate tracking and confirm pending employees.');">
+                    data-confirm="Confirm sending this project to Workflow? This will activate tracking and confirm pending employees.">
                     <i class="bi bi-send-check me-2"></i>Send to Workflow
                 </button>
             </form>

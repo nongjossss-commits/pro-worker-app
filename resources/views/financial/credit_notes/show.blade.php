@@ -28,11 +28,11 @@
             @if($note->status === 'draft')
                 <form action="{{ route('finance.credit-notes.issue', $note) }}" method="POST" class="d-inline">
                     @csrf
-                    <button type="submit" class="btn btn-success" onclick="return confirm('{{ __('Issue this credit note? The number will be locked and the bill\'s balance will be reduced.') }}')">
+                    <button type="submit" class="btn btn-success" data-confirm="{{ __('Issue this credit note? The number will be locked and the bill\'s balance will be reduced.') }}">
                         <i class="bi bi-check-circle"></i> {{ __('Issue') }}
                     </button>
                 </form>
-                <form action="{{ route('finance.credit-notes.destroy', $note) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Delete this draft credit note?') }}')">
+                <form action="{{ route('finance.credit-notes.destroy', $note) }}" method="POST" class="d-inline" data-confirm="{{ __('Delete this draft credit note?') }}" data-confirm-danger>
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>

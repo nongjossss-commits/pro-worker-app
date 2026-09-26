@@ -14,7 +14,7 @@
                 @endif
             </h1>
         </div>
-        <form action="{{ route('finance.ledger.destroy', $entry) }}" method="POST" onsubmit="return confirm('{{ __('Delete this entry? Balance will be restored.') }}')">
+        <form action="{{ route('finance.ledger.destroy', $entry) }}" method="POST" data-confirm="{{ __('Delete this entry? Balance will be restored.') }}" data-confirm-danger>
             @csrf @method('DELETE')
             <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> {{ __('Delete') }}</button>
         </form>

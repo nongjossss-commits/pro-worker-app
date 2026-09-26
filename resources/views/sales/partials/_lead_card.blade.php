@@ -27,7 +27,7 @@
                             </a>
                         </li>
                     @endif
-                    <li><a class="dropdown-item text-danger" href="#" onclick="if(confirm('ย้ายรายการนี้ลงประวัติ/ถังขยะ ใช่หรือไม่?')) { document.getElementById('delete-lead-{{ $lead->id }}').submit(); }"><i class="bi bi-trash me-2"></i>ทิ้ง/ยกเลิก</a></li>
+                    <li><a class="dropdown-item text-danger" href="#" data-confirm="ย้ายรายการนี้ลงประวัติ/ถังขยะ ใช่หรือไม่?" data-confirm-danger onclick="event.preventDefault(); document.getElementById('delete-lead-{{ $lead->id }}').submit();"><i class="bi bi-trash me-2"></i>ทิ้ง/ยกเลิก</a></li>
                 </ul>
                 <form id="delete-lead-{{ $lead->id }}" action="{{ route('sales.destroy', $lead->id) }}" method="POST" class="d-none">
                     @csrf

@@ -209,8 +209,7 @@
                     // A quick reload makes sure all action buttons inside the card refresh properly.
                     window.location.reload();
                 } else {
-                    alert('Error updating status');
-                    window.location.reload();
+                    appAlert('Error updating status', { icon: 'error' }).then(() => window.location.reload());
                 }
             })
             .catch(error => {

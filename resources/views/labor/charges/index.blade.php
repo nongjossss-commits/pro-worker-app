@@ -243,7 +243,7 @@
                             <i class="bi bi-pencil"></i>
                         </button>
                         <form method="POST" action="{{ route('labor.charges.destroy', $entry) }}" class="d-inline"
-                              onsubmit="return confirm('{{ __('Remove this charge?') }}');">
+                              data-confirm="{{ __('Remove this charge?') }}" data-confirm-danger>
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>

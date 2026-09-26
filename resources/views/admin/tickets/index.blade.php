@@ -105,7 +105,7 @@
                                     </span>
                                 @endif
                             </a>
-                            <form action="{{ route('admin.tickets.hide', $ticket) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this job ticket from the view? It will reappear if there is a new response.') }}')">
+                            <form action="{{ route('admin.tickets.hide', $ticket) }}" method="POST" class="d-inline" data-confirm="{{ __('Are you sure you want to delete this job ticket from the view? It will reappear if there is a new response.') }}" data-confirm-danger>
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ __('Delete') }}">
                                     <i class="bi bi-trash"></i>

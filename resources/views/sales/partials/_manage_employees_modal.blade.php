@@ -58,7 +58,7 @@
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endif
-                                        <form action="{{ route('sales.employees.destroy', [$lead->id, $emp->id]) }}" method="POST" onsubmit="return confirm('ยืนยันการลบลูกจ้าง?');" class="d-inline">
+                                        <form action="{{ route('sales.employees.destroy', [$lead->id, $emp->id]) }}" method="POST" data-confirm="ยืนยันการลบลูกจ้าง?" data-confirm-danger class="d-inline">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="ลบ"><i class="bi bi-trash"></i></button>
                                         </form>

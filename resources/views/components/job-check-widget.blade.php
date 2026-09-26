@@ -86,7 +86,7 @@
                     </button>
                 </div>
                 <div>
-                    <form method="POST" action="{{ route('job-check.cancel') }}" class="d-inline" onsubmit="return confirm('{{ __('Cancel Job Check Mode without exporting a report?') }}');">
+                    <form method="POST" action="{{ route('job-check.cancel') }}" class="d-inline" data-confirm="{{ __('Cancel Job Check Mode without exporting a report?') }}" data-confirm-danger>
                         @csrf
                         <button type="submit" class="btn btn-outline-danger btn-sm">{{ __('Cancel Mode (No Export)') }}</button>
                     </form>

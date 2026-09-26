@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (deleteBtn) {
             const id = deleteBtn.dataset.id;
-            if (confirm('{{ __('Are you sure you want to delete this address?') }}')) {
+            appConfirm('{{ __('Are you sure you want to delete this address?') }}', { danger: true }).then((confirmed) => { if (confirmed) {
                 fetch(`/addresses/${id}`, {
                     method: 'DELETE',
                     headers: {
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         location.reload();
                     }
                 });
-            }
+            } });
         }
     });
 

@@ -208,7 +208,7 @@
                             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editTxnModal{{ $t->id }}">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <form method="POST" action="{{ route('labor.books.transactions.destroy', [$account, $t]) }}" class="d-inline" onsubmit="return confirm('{{ __('Delete this transaction?') }}')">
+                            <form method="POST" action="{{ route('labor.books.transactions.destroy', [$account, $t]) }}" class="d-inline" data-confirm="{{ __('Delete this transaction?') }}" data-confirm-danger>
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                             </form>

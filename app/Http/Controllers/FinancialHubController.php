@@ -109,6 +109,22 @@ class FinancialHubController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
+            // Stat-card filter — clicking a card lists exactly the bills that
+            // make up its number (same conditions as $stats above), so the
+            // list's "Received"/"Outstanding" summary matches the card.
+            // Income cards sort by latest payment first so today's
+            // collections sit on top regardless of when the bill was issued.
+            $card = $request->input('card');
+            if ($card === 'income_today') {
+                $query->whereDate('paid_at', $today)->reorder()->latest('paid_at');
+            } elseif ($card === 'income_month') {
+                $query->whereDate('paid_at', '>=', $startOfMonth)->reorder()->latest('paid_at');
+            } elseif ($card === 'pending') {
+                $query->whereIn('status', ['pending', 'partial']);
+            } elseif ($card === 'overdue') {
+                $query->where('status', 'overdue');
+            }
+
             // Bills whose source tab (Resolution tab / Workflow WorkType) has
             // been deleted. They stay in every total above on purpose — they
             // are still real receivables/income — but get flagged so Finance
@@ -150,6 +166,7 @@ class FinancialHubController extends Controller
             $hasFilter = $request->filled('search')
                 || $request->filled('status')
                 || $request->filled('source')
+                || in_array($card, ['income_today', 'income_month', 'pending', 'overdue'], true)
                 || $request->filled('date_from')
                 || $request->filled('date_to');
 
@@ -180,6 +197,8 @@ class FinancialHubController extends Controller
                     'productionOrder.resolutionTab',
                     'productionOrder.workType' => fn ($q) => $q->withTrashed(),
                     'financialGroup',
+                    // Payment breakdown shown under "Paid" when an income card is active.
+                    'payments' => fn ($q) => $q->with('bankAccount')->orderBy('paid_at'),
                 ])
                 ->paginate(20)->withQueryString();
         }

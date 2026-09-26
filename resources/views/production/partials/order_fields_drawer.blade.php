@@ -70,7 +70,7 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item small" href="#" onclick="event.preventDefault(); document.getElementById('${displayId}').classList.add('d-none'); document.getElementById('${editFormId}').classList.remove('d-none');">{{ __('Edit') }}</a></li>
                                 <li>
-                                    <form action="${deleteUrl}" method="POST" onsubmit="return confirm('{{ __('Delete this field?') }}');">
+                                    <form action="${deleteUrl}" method="POST" data-confirm="{{ __('Delete this field?') }}" data-confirm-danger>
                                         <input type="hidden" name="_token" value="${csrfToken}">
                                         <input type="hidden" name="_method" value="DELETE">
                                         <button type="submit" class="dropdown-item small text-danger">{{ __('Delete') }}</button>
