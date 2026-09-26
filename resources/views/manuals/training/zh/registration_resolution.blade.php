@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker(仅可查看)</span>
+        <span class="role-pill role-readonly">Caretaker(日常工作)</span>
     </div>
 </div>
 
@@ -113,6 +113,33 @@
             <li>打开雇主卡片 → 查看雇员名单</li>
             <li>勾选各已完成步骤的勾选框</li>
             <li>系统会自动记录时间戳</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 5</div>
+    <h2 class="slide-title">选择员工 + 分组</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>已完成的员工在 24 小时撤销期后可再次选择</li>
+            <li>雇主全选 → <strong>全部 / 仅已完成 / 仅未完成</strong></li>
+            <li>员工卡片上的 <strong>分组</strong>(按标签页和雇主分开)</li>
+            <li>预约和申请编号按标签页保存</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">超级管理员工具</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>标签页提示标记开关</strong>:隐藏提前准备的标签页的"属于决议组…"标记</li>
+            <li><strong>移动附件</strong>:对所选员工交换 / 移动 / 合并 PDF</li>
+            <li><strong>删除标签页</strong>:已开账单的工作会保留,账单仍可在财务中处理</li>
         </ol>
     </div>
 </section>

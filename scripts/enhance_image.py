@@ -12,6 +12,18 @@ import cv2
 import numpy as np
 from pathlib import Path
 
+# basicsr (used by GFPGAN and Real-ESRGAN) still imports
+# torchvision.transforms.functional_tensor, which torchvision removed in 0.17.
+# Point that old name at its replacement so both old and new torchvision work.
+try:
+    import torchvision.transforms.functional_tensor  # noqa: F401
+except ImportError:
+    try:
+        import torchvision.transforms.functional as _tv_functional
+        sys.modules['torchvision.transforms.functional_tensor'] = _tv_functional
+    except ImportError:
+        pass
+
 def enhance_image(input_path, output_path, mode='auto', upscale=2):
     """
     Enhance an image using AI super-resolution.

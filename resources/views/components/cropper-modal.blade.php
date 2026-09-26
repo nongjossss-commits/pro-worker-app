@@ -20,8 +20,8 @@
                 <!-- Refine Editor Overlay -->
                 <div id="refineEditorContainer" class="position-absolute top-0 start-0 w-100 h-100 bg-white d-flex flex-column d-none" style="z-index: 15;">
                     <!-- Toolbar -->
-                    <div class="p-2 border-bottom bg-light d-flex justify-content-between align-items-center">
-                        <div class="d-flex gap-2 align-items-center">
+                    <div class="p-2 border-bottom bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
                             <span class="fw-bold text-primary"><i class="bi bi-brush"></i> {{ __('Refine Mask') }}</span>
                             <div class="vr mx-2"></div>
 
@@ -33,18 +33,29 @@
                                 <button type="button" class="btn btn-outline-success btn-sm" id="refineToolRestore" title="{{ __('Restore (Manual)') }}">
                                     <i class="bi bi-pencil-fill"></i> {{ __('Restore') }}
                                 </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="refineToolSmart" title="{{ __('Smart Eraser (AI)') }}">
-                                    <i class="bi bi-magic"></i> {{ __('Smart Erase') }}
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="refineToolSmart" title="{{ __('Magic wand: click an area of similar colour to erase it all (W)') }}">
+                                    <i class="bi bi-magic"></i> {{ __('Magic Wand') }}
                                 </button>
                             </div>
+
+                            {{-- Edge-aware brush + ghost of the un-cut photo (see refineManager) --}}
+                            <button type="button" class="btn btn-outline-warning btn-sm text-dark active" id="refineToggleSmartEdge" aria-pressed="true"
+                                    title="{{ __('Smart edge: the brush only affects the colour under its centre and stops at edges by itself (S)') }}">
+                                <i class="bi bi-bullseye"></i> {{ __('Smart Edge') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm active" id="refineToggleGhost" aria-pressed="true"
+                                    title="{{ __('Show the original photo faintly behind, so removed parts can be seen and restored (G)') }}">
+                                <i class="bi bi-person-bounding-box"></i> {{ __('Ghost') }}
+                            </button>
 
                             <div class="vr mx-2"></div>
 
                             <!-- Brush Size -->
-                            <div class="d-flex align-items-center gap-2" style="width: 150px;">
+                            <div class="d-flex align-items-center gap-2" style="width: 190px;">
                                 <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i>
                                 <input type="range" class="form-range" id="refineBrushSize" min="5" max="100" value="20">
                                 <i class="bi bi-circle-fill" style="font-size: 1.2rem;"></i>
+                                <span class="small text-muted text-nowrap" id="refineBrushSizeLabel" style="min-width:42px;">20px</span>
                             </div>
                         </div>
                         <div class="d-flex gap-2 align-items-center">
@@ -66,10 +77,19 @@
                         </div>
                     </div>
 
+                    <div class="px-2 py-1 border-bottom small text-muted bg-white">
+                        <i class="bi bi-info-circle"></i>
+                        {{ __('Smart Edge: put the centre of the brush on the background — the edge of the brush may overlap the person, it stops at the edge by itself.') }}
+                        <span class="text-nowrap">· {{ __('Wheel = zoom · Space / right-drag = move · [ ] = brush size · Ctrl+Z = undo') }}</span>
+                    </div>
+
                     <!-- Canvas Area -->
                     <div class="flex-grow-1 position-relative" id="refineCanvasWrapper" style="cursor: crosshair; overflow: auto; background-image: linear-gradient(45deg, #e0e0e0 25%, transparent 25%), linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0e0e0 75%), linear-gradient(-45deg, transparent 75%, #e0e0e0 75%); background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;">
 
                         <canvas id="refineCanvas" style="position: relative; z-index: 1; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: block;"></canvas>
+
+                        <!-- Brush outline that follows the cursor (actual brush size) -->
+                        <div id="refineBrushCursor" style="display:none; position:fixed; border:2px solid #dc2626; border-radius:50%; pointer-events:none; z-index:99; box-shadow:0 0 0 1px rgba(255,255,255,0.9);"></div>
 
                         <!-- Magnifier Circle -->
                         <div id="refineMagnifier" style="display:none; position:fixed; width:150px; height:150px; border-radius:50%; border:3px solid #FF6600; box-shadow:0 0 15px rgba(255,102,0,0.5); overflow:hidden; pointer-events:none; z-index:100;">
@@ -247,11 +267,11 @@
                         <button type="button" class="btn btn-outline-success btn-sm" id="autoLevelBtn" title="ปรับแสงเงาอัตโนมัติ (Histogram Stretch)">
                             🎯 Auto-Level
                         </button>
-                        <button type="button" class="btn btn-outline-info btn-sm" id="autoFaceCropBtn" title="ตัดกรอบให้ใบหน้าอยู่กลาง (ใช้ FaceDetector ของ browser)">
+                        <button type="button" class="btn btn-outline-info btn-sm" id="autoFaceCropBtn" title="{{ __('Frame the photo so the face is centred (finds the face automatically — the first use may take a few seconds)') }}">
                             📐 Auto Face Center Crop
                         </button>
                         <small class="text-muted ms-2">
-                            <i class="bi bi-info-circle"></i> Face Detect รองรับบน Chrome/Edge เท่านั้น
+                            <i class="bi bi-info-circle"></i> {{ __('Finds the face automatically in every browser') }}
                         </small>
                     </div>
                 </div>

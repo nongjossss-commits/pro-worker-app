@@ -50,6 +50,14 @@
 @endcan
 @endif
 
+@if(\App\Facades\SuperAdmin::isVisible('attachment_sizes'))
+@hasanyrole('admin|super-admin')
+<a href="{{ route('admin.attachment-sizes.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.attachment-sizes.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+    <i class="bi bi-hdd-stack-fill me-2"></i>{{ __('Attachment File Sizes') }}
+</a>
+@endhasanyrole
+@endif
+
 {{-- START V2.4: Smart Ticket Links --}}
 {{-- V2.4: Admin/Staff Ticket Inbox --}}
 {{-- Visible if the user has 'manage-tickets' permission. This takes precedence. --}}
@@ -96,12 +104,16 @@
 <a href="{{ route('employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.*') ? 'active' : '' }}">
     <i class="bi bi-people-fill me-2"></i>{{ __('Employees') }}
 </a>
+@if(\App\Facades\SuperAdmin::isVisible('employment_history'))
 <a href="{{ route('employees.history') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.history') ? 'active' : '' }}" style="padding-left: 2.5rem;">
     <i class="bi bi-person-badge me-2"></i>{{ __('Employment History') }}
 </a>
+@endif
+@if(\App\Facades\SuperAdmin::isVisible('group_team'))
 <a href="{{ route('groups.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('groups.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
     <i class="bi bi-people-fill me-2"></i>{{ __('Group & Team') }}
 </a>
+@endif
 @endcan
 @endif
 
@@ -134,21 +146,29 @@
             ->where('wht_status', 'pending')
             ->count();
     @endphp
+    @if(\App\Facades\SuperAdmin::isVisible('finance_books'))
     <a href="{{ route('finance.books.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.books.*') ? 'active' : '' }}" style="padding-left: 3rem; border-top: none;">
         <i class="bi bi-journal-text me-2"></i>{{ __('Income & Expense Books') }}
     </a>
+    @endif
+    @if(\App\Facades\SuperAdmin::isVisible('wht_inbox'))
     <a href="{{ route('finance.wht_inbox') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.wht_inbox') || request()->routeIs('finance.wht_received') ? 'active' : '' }}" style="padding-left: 3rem;">
         <i class="bi bi-inbox-fill me-2"></i>{{ __('WHT Inbox') }}
         @if($whtPendingCount > 0)
             <span class="badge bg-warning text-dark ms-1">{{ $whtPendingCount }}</span>
         @endif
     </a>
+    @endif
+    @if(\App\Facades\SuperAdmin::isVisible('bank_accounts'))
     <a href="{{ route('finance.bank-accounts.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.bank-accounts.*') ? 'active' : '' }}" style="padding-left: 3rem;">
         <i class="bi bi-bank me-2"></i>{{ __('Bank Accounts') }}
     </a>
+    @endif
+    @if(\App\Facades\SuperAdmin::isVisible('expense_categories'))
     <a href="{{ route('finance.expense-categories.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.expense-categories.*') ? 'active' : '' }}" style="padding-left: 3rem;">
         <i class="bi bi-tags me-2"></i>{{ __('Expense Categories') }}
     </a>
+    @endif
     @if(\App\Facades\SuperAdmin::isVisible('financial_profiles'))
     <a href="{{ route('finance.profiles.builder') }}" class="list-group-item list-group-item-action {{ request()->routeIs('finance.profiles.*') ? 'active' : '' }}" style="padding-left: 3rem;">
         <i class="bi bi-file-earmark-person me-2"></i>{{ __('Financial Profiles') }}
@@ -240,7 +260,7 @@
 @endcan
 @endif
 
-@if(auth()->user()->hasRole('super-admin') || (auth()->user()->hasRole('admin') && auth()->user()->labor_access_level !== 'none'))
+@if(\App\Facades\SuperAdmin::isVisible('pro_walker_labour') && (auth()->user()->hasRole('super-admin') || (auth()->user()->hasRole('admin') && auth()->user()->labor_access_level !== 'none')))
 <hr>
 <a class="list-group-item list-group-item-action {{ request()->routeIs('labor.*') ? 'active' : '' }}" href="{{ route('labor.dashboard') }}">
     <i class="bi bi-briefcase-fill me-2"></i>

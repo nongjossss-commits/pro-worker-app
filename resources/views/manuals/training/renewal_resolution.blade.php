@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (ดูได้)</span>
+        <span class="role-pill role-readonly">Caretaker (งานประจำวัน)</span>
     </div>
 </div>
 
@@ -136,6 +136,46 @@
 
     <div class="slide-tip">
         💡 <strong>คลิกที่การ์ดสถิติ:</strong> = filter ไปยังหมวดนั้นทันที (เช่น คลิก "เสร็จสิ้น" → กรองเฉพาะที่เสร็จแล้ว)
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">เพิ่มลูกจ้าง 3 แบบ + ลูกจ้างจากมติลงทะเบียน</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ปุ่ม <strong>เพิ่มลูกจ้าง</strong>: <strong>เลือกที่มีอยู่</strong> (ค้นชื่อ/พาสปอร์ต/เลข RA/ใบอนุญาต/เลขประจำตัว) · <strong>สร้างใหม่</strong> · <strong>นำเข้า Excel</strong> — เข้าเฉพาะแถบที่เปิดอยู่</li>
+            <li>ลูกจ้างจากมติลงทะเบียนที่วันหมดอายุตรงกับวันเป้าหมาย จะแสดงคู่พร้อมป้าย <strong>"From Registration Resolution"</strong> — ทำงานได้เต็มที่โดยไม่กระทบมติลงทะเบียน</li>
+            <li>ลูกจ้างที่ถูกแจ้งออกแล้วจะไม่แสดงในมติต่ออายุของนายจ้างเดิม</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">เลือกลูกจ้าง + จัดทีม</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Checkbox ของคนที่กดเสร็จแล้วจะกลับมาให้เลือกได้หลังพ้นช่วง Undo 24 ชม.</li>
+            <li>Select All ของนายจ้าง → เลือก <strong>ทั้งหมด / เฉพาะที่เสร็จ / เฉพาะที่ยังไม่เสร็จ</strong></li>
+            <li>ปุ่ม <strong>จัดทีม</strong> บนการ์ดลูกจ้าง → เลือก/สร้างทีม (ทีมแยกตามแถบและตามนายจ้าง)</li>
+            <li>วันนัด / สถานที่นัด / เลขคำขอ เก็บแยกตามแถบมติ ไม่ปนกันข้ามแถบ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">เครื่องมือของ Super Admin</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>ป้ายแจ้งเตือนของแถบ:</strong> ปิดป้าย "อยู่ในกลุ่มมติ..." ของแถบที่เตรียมไว้ล่วงหน้า — ลูกจ้างยังทำงานได้ปกติ</li>
+            <li><strong>ย้ายไฟล์แนบ:</strong> เลือกลูกจ้าง → สลับ / ย้าย / รวมไฟล์ PDF ระหว่างช่องแนบ (เฉพาะคนที่เลือก)</li>
+            <li><strong>ลบแถบ:</strong> ซ่อน 7 วันแล้วลบถาวร — งานที่มีบิลแล้วจะถูกเก็บไว้ บิลยังจัดการได้ในเมนูการเงิน</li>
+        </ol>
     </div>
 </section>
 

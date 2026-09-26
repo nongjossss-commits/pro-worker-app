@@ -13,7 +13,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (ကြည့်ရှုရုံသာ)</span>
+        <span class="role-pill role-readonly">Caretaker (နေ့စဉ်အလုပ်)</span>
     </div>
 </div>
 
@@ -114,6 +114,33 @@
             <li>အလုပ်ရှင်ကတ်ကို ဖွင့်ပါ → ဝန်ထမ်းစာရင်း ကြည့်ပါ</li>
             <li>ပြီးစီးသော အဆင့်တစ်ခုစီအတွက် checkbox ကို ခြစ်ပါ</li>
             <li>စနစ်သည် အချိန်တံဆိပ်ကို အလိုအလျောက် မှတ်တမ်းတင်သည်</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 5</div>
+    <h2 class="slide-title">ဝန်ထမ်းရွေးခြင်း + အဖွဲ့ခွဲခြင်း</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ပြီးသော ဝန်ထမ်းများကို ၂၄ နာရီ Undo ကာလ ပြီးနောက် ပြန်ရွေးနိုင်</li>
+            <li>အလုပ်ရှင် အားလုံးရွေး → <strong>အားလုံး / ပြီးသူများသာ / မပြီးသေးသူများသာ</strong></li>
+            <li>ဝန်ထမ်းကတ်ပေါ်ရှိ <strong>အဖွဲ့စီမံ</strong> (tab နှင့် အလုပ်ရှင်အလိုက်)</li>
+            <li>ချိန်းဆိုမှုနှင့် လျှောက်လွှာနံပါတ်ကို tab အလိုက် သိမ်း</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Super Admin ကိရိယာများ</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Tab အမှတ်အသား ခလုတ်</strong>: ကြိုတင်ပြင်ဆင်ထားသော tab ၏ "ဆုံးဖြတ်ချက်အုပ်စုတွင်…" အမှတ်အသား ဝှက်</li>
+            <li><strong>ပူးတွဲဖိုင်ရွှေ့</strong>: ရွေးထားသူများ၏ PDF လဲလှယ် / ရွှေ့ / ပေါင်း</li>
+            <li><strong>Tab ဖျက်ခြင်း</strong>: ဘေလ်ရှိသော အလုပ်များ ကျန်ရှိ၊ ငွေကြေးမီနူးတွင် ဆက်စီမံနိုင်</li>
         </ol>
     </div>
 </section>

@@ -22,6 +22,7 @@ class ActivityLogHelper
         'restore'            => 'กู้คืน',
         'login'              => 'เข้าสู่ระบบ',
         'logout'             => 'ออกจากระบบ',
+        'login_failed'       => 'เข้าสู่ระบบไม่สำเร็จ',
         'download'           => 'ดาวน์โหลด',
         'export'             => 'ส่งออก (Export)',
         'upload'             => 'อัพโหลดไฟล์',
@@ -179,6 +180,9 @@ class ActivityLogHelper
             'Employer'  => $subject->employerNameTh ?: $subject->employerNameEn,
             'User'      => $subject->name,
             'JobTicket' => $subject->title ?? null,
+            'Agent'     => $subject->agentNameEn ?? null,
+            'Importer'  => $subject->importerNameTh ?: ($subject->importerNameEn ?? null),
+            'Delegate'  => $subject->delegateNameTh ?: ($subject->delegateNameEn ?? null),
             default     => null,
         };
     }
@@ -237,6 +241,14 @@ class ActivityLogHelper
 
     public static function generateReadableChanges(ActivityLog $log)
     {
+        // Human-readable lines (field names as on the forms, files, moves, …) —
+        // see App\Support\ActivityLogPresenter. The code below is the old
+        // fallback, kept for anything the presenter returns nothing for.
+        $lines = \App\Support\ActivityLogPresenter::changeLines($log);
+        if ($lines) {
+            return $lines;
+        }
+
         $changes = [];
         $properties = $log->properties;
         if (!$properties) return [];

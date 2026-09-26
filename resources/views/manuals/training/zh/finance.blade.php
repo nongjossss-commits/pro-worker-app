@@ -148,6 +148,63 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">财务中心 —— 点击卡片筛选</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/06-card-filter',
+        'alt' => '点击"本月收入"—— 只显示本月有收款的账单并附汇总',
+        'caption' => '点击"本月收入"—— 只显示本月有收款的账单并附汇总',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>今日 / 本月收入</strong> = 按每笔收款日期计算的实际收款</li>
+            <li>点击卡片列出构成数字的账单;"已付"下方列出收款(粗体 = 本期)</li>
+            <li>标记显示账单来自哪个菜单/标签页;来源筛选可分出来自已删除标签页的账单</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">按工作菜单开账单 + 收款</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/09-registration-tab',
+        'alt' => '按工作菜单的标签页 —— 每个雇主的总额 / 已开账单 / 未结',
+        'caption' => '按工作菜单的标签页 —— 每个雇主的总额 / 已开账单 / 未结',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>管理财务</strong> → 设置价格 → 开账单</li>
+            <li>填写金额、收款日期、账户和凭证 —— 可分多期</li>
+            <li>未选账户 → 需确认,因为不会计入银行余额</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">贷项通知单 + 报价单</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/07-credit-notes',
+        'alt' => '贷项通知单 —— 减少已开出账单的金额',
+        'caption' => '贷项通知单 —— 减少已开出账单的金额',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>客户不再支付余款 → 按余额开具贷项通知单,账单变为"已付"</li>
+            <li><strong>手动账单</strong>:先选报价单或发票;报价单有独立标签页,不计入收入</li>
+            <li>手动账单可加入草稿员工</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">常见问题</h2>
 

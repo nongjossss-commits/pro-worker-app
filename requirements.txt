@@ -1,4 +1,8 @@
 pypdf==6.5.0
 gfpgan
 basicsr
-opencv-python-headless
+realesrgan
+# OpenCV 5 dropped cv2.CascadeClassifier, which scripts/enhance_image.py uses
+# to detect faces; basicsr also pulls in opencv-python, so pin both to 4.x.
+opencv-python-headless<5
+opencv-python<5

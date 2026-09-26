@@ -146,6 +146,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">报价单选项 + 转移时的重复检查</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>关闭<strong>显示总额</strong> = 只显示单价</li>
+            <li>报价单记录与真实账单分开 —— 不计入收入/未结</li>
+            <li>转移时有重复员工需勾选"仍然转移"</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">常见问题</h2>
 

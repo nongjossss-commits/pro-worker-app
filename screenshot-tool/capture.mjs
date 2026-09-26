@@ -15,6 +15,16 @@
  *   ADMIN_PASSWORD=SuperAdmin@2026
  *   ONLY=workflow/01-main-view,dashboard/01-overview   (comma list of keys to run)
  *   HEADED=1                                            (show browser instead of headless)
+ *   BROWSER_CHANNEL=chrome                              (use the installed Google Chrome instead of
+ *                                                        Playwright's own Chromium — used automatically
+ *                                                        if `npx playwright install chromium` wasn't run)
+ *
+ * A screenshot is only saved when the page really rendered: HTTP errors,
+ * redirects to /login or /menu-unlock, and the app's error pages are reported
+ * as failures and the existing image is left untouched (older runs silently
+ * saved "403 / menu disabled" and "Menu Password" screens into the manual).
+ * Make sure every menu is visible and has no menu password on the machine you
+ * capture from.
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
@@ -125,7 +135,29 @@ async function runActions(page, actions) {
     }
 }
 
-async function capture(page, entry, tabIds) {
+/**
+ * Why this page must NOT be saved as a manual screenshot, or null if it's fine.
+ */
+async function badPageReason(page, response) {
+    const status = response ? response.status() : 0;
+    if (status >= 400) return `HTTP ${status}`;
+    const url = page.url();
+    if (url.includes('/login') && !page.__guest) return 'redirected to login';
+    if (url.includes('/menu-unlock/')) return 'menu is password-locked (menu-unlock page)';
+    const marker = await page.evaluate(() => {
+        if (document.querySelector('main.card .code')) return 'app error page';          // errors/minimal
+        if (document.querySelector('.auth-card') && !window.__captureGuest) return 'login / password page'; // layouts/guest
+        const text = (document.body && document.body.innerText || '').slice(0, 400).toUpperCase();
+        if (/(403|404|419|500|503)/.test(text) && text.length < 200) return 'framework error page';
+        return null;
+    }).catch(() => null);
+    return marker;
+}
+
+async function capture(page, entry, tabIds, guestPage) {
+    // "guest": true entries (login / forgot-password screens) are taken
+    // from a separate, logged-out browser context.
+    if (entry.guest) page = guestPage;
     let url = entry.url;
     if (entry.needsTabId) {
         const key = entry.needsTabId === 'registration' ? 'REGISTRATION_TAB_ID' : 'RENEWAL_TAB_ID';
@@ -139,10 +171,16 @@ async function capture(page, entry, tabIds) {
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
     try {
-        await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 20000 }).catch(() => {});
+        const response = await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 20000 }).catch(() => null);
         // Generic settle pause for Alpine/Vue/Bootstrap to finish rendering
         await page.waitForTimeout(900);
         await runActions(page, entry.actions);
+
+        const problem = await badPageReason(page, response);
+        if (problem) {
+            fail(`${entry.key} — ${problem} (kept the existing image)`);
+            return false;
+        }
 
         await page.screenshot({ path: outPath, fullPage: false });
         ok(`${entry.key.padEnd(45)} → ${path.relative(PROJECT, outPath)}`);
@@ -160,13 +198,27 @@ async function capture(page, entry, tabIds) {
     log(`${c.dim}Entries:${c.reset}    ${entries.length}${ONLY.length ? ` (filtered to ${ONLY.length})` : ''}`);
     log('');
 
-    const browser = await chromium.launch({ headless: !HEADED });
+    const launch = (channel) => chromium.launch({ headless: !HEADED, ...(channel ? { channel } : {}) });
+    let browser;
+    try {
+        browser = await launch(process.env.BROWSER_CHANNEL);
+    } catch (e) {
+        if (process.env.BROWSER_CHANNEL) throw e;
+        log(`${c.yellow}!${c.reset} Playwright Chromium not installed — using the installed Google Chrome instead.`);
+        browser = await launch('chrome');
+    }
     const context = await browser.newContext({
         viewport: VIEWPORT,
         locale: 'th-TH',
         timezoneId: 'Asia/Bangkok',
     });
     const page = await context.newPage();
+    const guestContext = await browser.newContext({ viewport: VIEWPORT, locale: 'th-TH', timezoneId: 'Asia/Bangkok' });
+    await guestContext.addInitScript(() => { window.__captureGuest = true; });
+    const guestPage = await guestContext.newPage();
+    guestPage.__guest = true;
+    // Guests have no user locale — pick Thai the same way a visitor would (language switcher).
+    await guestPage.goto(`${APP_URL}/lang/th`, { waitUntil: 'domcontentloaded' }).catch(() => {});
 
     try {
         await login(page);
@@ -175,7 +227,7 @@ async function capture(page, entry, tabIds) {
 
         let okCount = 0, failCount = 0;
         for (const entry of entries) {
-            const success = await capture(page, entry, tabIds);
+            const success = await capture(page, entry, tabIds, guestPage);
             success ? okCount++ : failCount++;
         }
 

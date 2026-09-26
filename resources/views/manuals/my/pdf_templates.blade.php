@@ -73,6 +73,16 @@
     </ol>
 </div>
 
+<h5>၅။ Field နေရာချစဉ် Preview</h5>
+<div class="manual-step">
+    Builder တွင် <strong>Preview</strong> ကိုနှိပ်၍ သိမ်းမီ လက်ရှိ field နေရာများဖြင့် PDF အစစ်ကို ကြည့်နိုင်သည်။
+</div>
+
+<h5>၆။ Template ဆက်တင် Export / Import (Super Admin)</h5>
+<div class="manual-step">
+    စာရင်းတွင် template များကို ရွေး → JSON ဖိုင် <strong>Export</strong> (field နေရာ + နောက်ခံ PDF) → အခြားစနစ်တွင် <strong>Import</strong>။ ပုံ field များအတွက် ပုံကို ပြန်တင်ရမည်၊ import သည် template အသစ်အမြဲ ဖန်တီးပြီး ရှိပြီးသား အမည်များကို ကျော်သည်။
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>အကြံပြုချက်များ</h4>
 
 <div class="manual-tip">

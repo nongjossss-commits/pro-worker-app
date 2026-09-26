@@ -6,7 +6,7 @@
     </h3>
     <p class="training-intro-desc">
         เมนู <strong>"การเงิน (Finance)"</strong> เป็นโมดูล <strong>add-on</strong> สำหรับสำนักงานที่ต้องการระบบบัญชีในตัว
-        ประกอบด้วย Ledger (สมุดบัญชี), Tax Invoices (ใบกำกับภาษี), WHT (หัก ณ ที่จ่าย),
+        ประกอบด้วย ศูนย์รวมการเงิน (วางบิล/รับชำระ), ใบลดหนี้, Ledger (สมุดบัญชี), Tax Invoices (ใบกำกับภาษี), WHT (หัก ณ ที่จ่าย),
         ภ.พ.30 / ภ.ง.ด.3/53, Bank Reconciliation, Monthly Bundle และ Audit Log
     </p>
     <div class="training-role-row">
@@ -144,6 +144,78 @@
 
     <div class="slide-tip">
         💡 <strong>เคล็ดลับ:</strong> ปลายเดือน → Generate Monthly Bundle → Bank Reconcile → ตรวจ Audit Log = ปิดสิ้นเดือนครบในขั้นตอนเดียว
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">ศูนย์รวมการเงิน — การ์ดสถิติกดเพื่อกรอง</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/06-card-filter',
+        'alt' => 'หน้าภาพรวมที่กดการ์ดรายรับเดือนนี้',
+        'caption' => 'กดการ์ด "รายรับเดือนนี้" — ตารางแสดงเฉพาะบิลที่มีการรับเงินในเดือนนี้ พร้อมกล่องสรุปผล',
+        'callouts' => [
+            '<strong>การ์ดที่เลือก:</strong> พื้นสีอ่อน + ข้อความ "กำลังกรอง — คลิกอีกครั้งเพื่อยกเลิก"',
+            '<strong>รับชำระในช่วงนี้:</strong> เท่ากับตัวเลขบนการ์ดเสมอ',
+            '<strong>แถบสีแดง:</strong> บิลค้างจากแถบงานที่ถูกลบแล้ว — กดดูบิลเหล่านั้นได้',
+        ],
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>รายรับวันนี้ / เดือนนี้</strong> = เงินที่รับจริงตามวันที่รับเงินแต่ละครั้ง (ไม่ใช่ยอดสะสมของบิล)</li>
+            <li>กดการ์ด → เห็นบิลที่อยู่เบื้องหลังตัวเลข · ใต้ช่อง "ชำระแล้ว" มีรายการรับเงิน: ตัวหนา = ในช่วงนี้, สีจาง = ช่วงอื่น</li>
+            <li>ป้ายใต้ชื่อโครงการบอกว่าบิลมาจากเมนู/แถบไหน · ตัวกรอง "ที่มา" แยกบิลจากแถบที่ถูกลบแล้ว</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">วางบิลตามเมนูงาน + รับชำระ</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/09-registration-tab',
+        'alt' => 'แท็บมติลงทะเบียนในศูนย์รวมการเงิน',
+        'caption' => 'แท็บตามเมนูงาน — ยอดรวม / วางบิลแล้ว / คงค้าง ของแต่ละนายจ้าง พร้อมปุ่มจัดการการเงิน',
+        'callouts' => [
+            '<strong>ป้ายที่มา:</strong> บอกเมนูและชื่อแถบของงาน',
+            '<strong>สถานะการวางบิล:</strong> ยังไม่วางบิล / วางบางส่วน / วางครบ',
+            '<strong>จัดการการเงิน:</strong> ตั้งราคาต่อหัว วางบิล และรับชำระ',
+        ],
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>กด <strong>จัดการการเงิน</strong> → ตั้งราคา → สร้างบิล (เลือกลูกจ้างที่อยู่ในบิล)</li>
+            <li>รับชำระ: กรอกยอด วันที่รับเงิน บัญชี และแนบสลิป — รับได้หลายงวด</li>
+            <li>ไม่เลือกบัญชี → ระบบถามยืนยัน เพราะยอดนี้จะไม่ลงยอดคงเหลือของบัญชีธนาคาร</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">ใบลดหนี้ + ใบเสนอราคา</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/07-credit-notes',
+        'alt' => 'หน้ารายการใบลดหนี้',
+        'caption' => 'Credit Notes — ลดยอดของบิลที่ออกไปแล้ว',
+        'callouts' => [
+            '<strong>สร้างใบลดหนี้:</strong> เลือกบิล กรอกยอดและเหตุผล',
+            '<strong>ออกใบลดหนี้:</strong> ล็อกเลขที่ และลดยอดคงค้างของบิล',
+            '<strong>Void:</strong> ยกเลิกใบลดหนี้ ยอดบิลกลับเหมือนเดิม',
+        ],
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ลูกค้าไม่จ่ายส่วนที่เหลือ → ออกใบลดหนี้เท่ายอดที่เหลือ บิลจะปิดเป็น "ชำระแล้ว"</li>
+            <li><strong>สร้างบิลด้วยตนเอง</strong>: เลือก ใบเสนอราคา หรือ ใบแจ้งหนี้ ก่อน · ใบเสนอราคาอยู่แท็บแยก และไม่ถูกนับในยอดรายรับ/คงค้าง</li>
+            <li>บิล manual เพิ่ม "ลูกจ้างฉบับร่าง" ได้โดยไม่สร้างข้อมูลลูกจ้างจริง</li>
+        </ol>
     </div>
 </section>
 

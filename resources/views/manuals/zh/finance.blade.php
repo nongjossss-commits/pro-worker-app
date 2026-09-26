@@ -66,6 +66,41 @@
     进入月度打包(Monthly Bundle) → 选择月份 → 点击"生成" → 下载包含当月所有文件的 ZIP 压缩包
 </div>
 
+<h5>6. 总览与统计卡片(点击即可筛选)</h5>
+<div class="manual-step">
+    4 张卡片:<strong>今日 / 本月收入</strong> = 当日/当月实际收到的钱,按每笔收款日期计算(上月部分付款、本月付清的账单会正确分到两个月,不重复计算);<strong>待处理金额</strong> = 未付或部分付款账单的未结金额;<strong>逾期金额</strong> = 标记为逾期账单的未结金额。<strong>点击卡片</strong>只显示构成该数字的账单(再点一次取消)。收入卡片会在"已付"栏下列出每笔收款 —— 粗体 = 本期,淡色 = 其他期间;筛选汇总显示的"本期收款"与卡片数字一致。报价单不计入。
+</div>
+
+<h5>7. 账单来源 —— 来源标记与筛选</h5>
+<div class="manual-step">
+    雇主/项目名称下方显示来源标记,如 <code>Workflow › MOU 续签</code>、<code>续签决议 › 标签页 X</code>、<code>手动账单</code>。来源标签页已删除时标记为<strong>红色</strong>("标签页已删除" + 日期)—— 账单仍然有效,可继续收款或开具贷项通知单。<strong>来源</strong>筛选:全部 / 来自使用中的标签页 / 来自已删除的标签页。有来自已删除标签页的未付账单时会显示红色提示条。
+</div>
+
+<h5>8. 按工作菜单分的标签页</h5>
+<div class="manual-step">
+    <strong>Workflow 与 Pre-Production</strong>、<strong>注册决议</strong>、<strong>续签决议</strong> 标签页显示每个雇主的总额 / 已开账单 / 未结;<strong>管理财务</strong>可设置价格、开账单和收款。<strong>手动账单</strong>与<strong>报价单</strong>是独立标签页 —— 报价单记录不会与真实账单混在一起。
+</div>
+
+<h5>9. 收款(Payment History)</h5>
+<div class="manual-step">
+    打开账单 → 填写<strong>金额</strong>、<strong>收款日期</strong>、<strong>收款账户</strong>并附上凭证。可分多期收款,状态自动变为"部分付款"/"已付"(包括贷项通知单)。未选账户时系统会先确认,因为这笔款<strong>不会</strong>计入任何银行余额。选择了账户的收款会按收款日期记入账簿(Ledger)。
+</div>
+
+<h5>10. 贷项通知单(Credit Note)</h5>
+<div class="manual-step">
+    用于减少已开出账单的金额(折扣或放弃剩余款项):<strong>贷项通知单</strong> → <strong>新建</strong> → 选择账单、金额和原因(保存为草稿)→ <strong>开具</strong>锁定单号并立即减少未结金额。开错 → <strong>作废</strong>;草稿可删除。贷项通知单会包含在月度汇总中。
+</div>
+
+<h5>11. 手动创建账单</h5>
+<div class="manual-step">
+    先选择<strong>单据类型</strong>:<strong>报价单</strong>(雇主可不选)或<strong>发票</strong>(必须选雇主)。可加入<strong>草稿员工</strong>(填写姓名/国籍/护照/照片,不创建真实员工资料 —— 仅限手动账单)。报价单可选择显示<strong>总额</strong>或只显示单价。所有单据都会附上系统设定的增值税/预扣税说明。
+</div>
+
+<h5>12. 月度报告</h5>
+<div class="manual-step">
+    <strong>月度报告</strong> → 选择月份/开票方 → 下载 ZIP(CSV + 凭证 + 预扣税文件)。收入<strong>每笔收款一行</strong>,按实际收款日期 —— 跨多个月付款的账单会出现在各月报告中。账单的预扣税只在最后一期收款行显示一次。不包括报价单。
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>
 
 <div class="manual-tip">

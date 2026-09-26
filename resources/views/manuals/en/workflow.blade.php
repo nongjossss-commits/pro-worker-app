@@ -10,7 +10,8 @@
 <h4><i class="bi bi-person-check me-2"></i>Who can access this menu?</h4>
 <ul>
     <li><span class="manual-role">Super Admin</span> <span class="manual-role">Admin</span> <span class="manual-role">Staff</span> — can access</li>
-    <li><span class="manual-role">Caretaker</span> — view only, cannot edit</li>
+    <li><span class="manual-role">Caretaker</span> — can do day-to-day work (employee data, appointments) but cannot change workflow structure or finance data; ticks steps only when granted the "update progress steps" permission</li>
+    <li><span class="manual-role">Employer</span> (customer account) — cannot open this menu</li>
 </ul>
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
@@ -100,6 +101,41 @@
         <li>Click "Finish" → the system will immediately <strong>auto-update employee.terminated_at + termination_reason + status='resigned'</strong></li>
         <li><strong>If the notify-out date isn't filled in yet</strong> → you can't click Finish; it will warn "you must enter a notify-out date first"</li>
     </ol>
+</div>
+
+<h5>9. Single-card vs. multi-card tabs</h5>
+<div class="manual-step">
+    The Super Admin chooses when creating or editing a tab: <strong>single card</strong> — one employer keeps one card and employees are added to it (e.g. Notify In / Change Employer, Notify Out, MOU Renewal); <strong>multi-card</strong> — every job gets a new card (e.g. MOU Import). On multi-card tabs the <strong>Finish Job</strong> button closes the whole card and every still-pending employee in it; see or undo it under <strong>Completed Jobs</strong> (within 24 h). <strong>Cancel</strong> marks the card cancelled, <strong>Delete</strong> removes it (restorable from the Trash).
+</div>
+
+<h5>10. Add / rename / delete work tabs</h5>
+<div class="manual-step">
+    The Super Admin manages tabs from the Workflow Dashboard or from each tab page. Built-in tabs can only be renamed. Deleting a custom tab <strong>hides</strong> it — all its jobs and finance records stay intact and remain visible in Finance (with a "tab deleted" badge).
+</div>
+
+<h5>11. Teams and steps</h5>
+<div class="manual-step">
+    <strong>Manage Team:</strong> button on the employee card → pick or create a team; rename or delete a team from its pill (deleting only clears the label, employees stay); "No Team" removes the employee from a team. <strong>Steps button:</strong> add / rename / delete / drag to reorder steps instantly, no page reload (same window in all 4 menus).
+</div>
+
+<h5>12. Employer "Select All"</h5>
+<div class="manual-step">
+    The employer checkbox selects <strong>every</strong> employee of that employer that matches the current filters, even if the card is collapsed or paginated. A badge next to it shows what is selected (All / Completed only / Not completed only / Custom).
+</div>
+
+<h5>13. Job Check Mode</h5>
+<div class="manual-step">
+    Click <strong>Job Check Mode</strong> in the top bar → <strong>Start</strong>: the system snapshots every employee in the 4 menus. Work normally — the tab in the mode is limited to Pre-Production / Workflow / Registration / Renewal (other tabs work as usual). <strong>Pause</strong> to work elsewhere, <strong>Resume</strong> to continue with the same snapshot. <strong>Finish</strong> downloads two Excel files — <em>with movement</em> and <em>no movement</em> (with photos, request numbers, remarks and source tab). History is kept 7 days; a forgotten session is closed automatically at 05:00.
+</div>
+
+<h5>14. Duplicate employee check</h5>
+<div class="manual-step">
+    When adding a new employee (Add Employee window, Excel import) the system compares passport / work permit / pink card / ID number / RA number with existing employees and warns before saving.
+</div>
+
+<h5>15. Notify In / Change Employer — notified-out employees</h5>
+<div class="manual-step">
+    Adding an employee from the "Notified-Out Employees" list to the <strong>Notify In / Change Employer</strong> tab moves them to the new employer and clears the notified-out status immediately.
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>

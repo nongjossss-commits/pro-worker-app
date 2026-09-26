@@ -44,7 +44,7 @@
     </div>
 
     <div class="slide-tip">
-        💡 <strong>Tip:</strong> the "Employment History" menu shows everyone including terminated employees — unlike this menu, which only shows active ones
+        💡 <strong>Tip:</strong> the default list shows active employees only, but a <strong>search</strong> also finds notified-out / cancelled employees (with a status badge); the full list of notified-out employees is in the "Notified-Out Employees" menu
     </div>
 </section>
 
@@ -179,6 +179,20 @@
 {{-- ═════════════════════════════════════════════════════════════════════ --}}
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Duplicate check + moving attachments</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Every way of creating an employee compares passport / work permit / pink card / ID number / RA number</li>
+            <li>Search finds every status — cards show a Terminated / Registration Cancelled badge</li>
+            <li><strong>Move Attachment Files</strong> (Super Admin): swap / move / merge PDFs for the selected employees</li>
+            <li>Work permit types are managed by the Super Admin in Settings</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">Frequently Asked Questions</h2>
 
@@ -187,7 +201,7 @@
         <dd>A: Check the Employee Cap — the system limits the count based on the subscription; contact Super Admin if you need it raised</dd>
 
         <dt>Q: An employee is missing from the list?</dt>
-        <dd>A: Check the "Employment History" menu — they may have been notified out/had their contract end, or been deleted into "Central Trash"</dd>
+        <dd>A: Check the "Notified-Out Employees" menu — they may have been notified out/had their contract end, or been deleted into "Central Trash"</dd>
 
         <dt>Q: Caretaker sees fewer employees than expected?</dt>
         <dd>A: Caretaker only sees employees of employers assigned to them</dd>

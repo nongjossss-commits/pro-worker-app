@@ -13,7 +13,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker(仅可查看)</span>
+        <span class="role-pill role-readonly">Caretaker(日常工作)</span>
     </div>
 </div>
 
@@ -170,6 +170,58 @@
 </section>
 
 {{-- ═════════════════════════════════════════════════════════════════════ --}}
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">多卡片标签页 —— 完成整张卡片</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'workflow/07-multi-card',
+        'alt' => '多卡片标签页(如 MOU 引进)—— 每张卡片是一项工作',
+        'caption' => '多卡片标签页(如 MOU 引进)—— 每张卡片是一项工作',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>超级管理员为每个标签页选择<strong>单卡片</strong>(每个雇主一张)或<strong>多卡片</strong>(每项工作一张,如 MOU 引进)</li>
+            <li>多卡片:<strong>Finish Job</strong> 完成整张卡片;24 小时内可在 <strong>Completed Jobs</strong> 撤销</li>
+            <li><strong>Cancel</strong> 标记取消 · <strong>Delete</strong> 删除(可从回收站恢复)</li>
+            <li>删除自建标签页只是隐藏 —— 工作和财务数据保留</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">分组 + 管理步骤</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>员工卡片上的 <strong>分组</strong>:选择/新建、重命名、删除或"无分组"</li>
+            <li><strong>Steps</strong> 按钮:即时新增 / 重命名 / 删除 / 排序 —— 4 个菜单相同</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">工作核查模式</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'workflow/06-job-check-mode',
+        'alt' => '工作核查模式 —— 开始时记录快照,结束时汇总变动',
+        'caption' => '工作核查模式 —— 开始时记录快照,结束时汇总变动',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>工作核查模式 → 开始</strong>,记录 4 个菜单中所有员工的状态</li>
+            <li>照常工作;可随时 <strong>Pause</strong> / <strong>Resume</strong></li>
+            <li><strong>Finish</strong> → Excel "有变动" 与 "无变动"(含照片和来源标签页)</li>
+            <li>记录保留 7 天;忘记结束时 05:00 自动结束</li>
+        </ol>
+    </div>
+</section>
 
 <section class="training-slide">
     <div class="slide-number">FAQ</div>

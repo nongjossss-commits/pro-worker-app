@@ -81,6 +81,9 @@
     <i class="bi bi-cash-coin"></i>
     {{ __('FINANCE TRAINING EDITION') }} — {{ __('Press Ctrl+P to print or save as PDF.') }}
     <button onclick="window.print()">{{ __('Print now') }}</button>
+    @unless(!empty($manualExport))
+        @include('manuals._lang_switch')
+    @endunless
 </div>
 
 {{-- Cover --}}
@@ -141,5 +144,6 @@
     @endif
 @endforeach
 
+@include('manuals._viewer')
 </body>
 </html>

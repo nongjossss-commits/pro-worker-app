@@ -32,14 +32,22 @@ class SettingsController extends Controller
         $menus = [
             'dashboard' => 'Dashboard',
             'finance' => 'Finance (การเงิน)',
-            'financial_profiles' => 'Financial Profiles (ข้อมูลผู้ตั้งบิล)',
+            'finance_books' => '— Income & Expense Books (บันทึกรายรับรายจ่าย)',
+            'wht_inbox' => '— WHT Inbox (กล่องใบหัก ณ ที่จ่าย)',
+            'bank_accounts' => '— Bank Accounts (บัญชีธนาคาร)',
+            'expense_categories' => '— Expense Categories (หมวดรายจ่าย)',
+            'financial_profiles' => '— Financial Profiles (ข้อมูลผู้ตั้งบิล)',
             'activity_logs' => 'Activity Logs',
             'notifications' => 'Notifications',
-            'incomplete_data' => 'Incomplete Data',
+            'incomplete_data' => '— Incomplete Data (ข้อมูลไม่ครบ)',
+            'duplicate_records' => '— Duplicate Records (ข้อมูลซ้ำ)',
+            'attachment_sizes' => '— Attachment File Sizes (ขนาดไฟล์แนบ)',
             'ticket_inbox' => 'Ticket Inbox',
             'employer_ticket' => 'Employer Ticket',
             'employers' => 'Employers',
             'employees' => 'Employees',
+            'employment_history' => '— Notified-Out Employees (ลูกจ้างที่ถูกแจ้งออก)',
+            'group_team' => '— Group & Team (กลุ่มและทีม)',
             'sales' => 'Read and Sale (การขายและใบเสนอราคา)',
             'production' => 'P Production',
             'workflow' => 'Workflow',
@@ -51,6 +59,7 @@ class SettingsController extends Controller
             'user_management' => 'User Management',
             'pdf_templates' => 'PDF Templates',
             'central_trash' => 'Central Trash',
+            'pro_walker_labour' => 'Pro Walker Labour (ลิงก์ในเมนูโปรแกรมหลัก)',
         ];
 
         // Fetch current settings from DB
@@ -182,6 +191,8 @@ class SettingsController extends Controller
      */
     public function manualBundle()
     {
+        \App\Services\ManualShareService::applyLang(request('lang'));
+
         return view('manuals._bundle');
     }
 
@@ -191,6 +202,8 @@ class SettingsController extends Controller
      */
     public function financeManualBundle()
     {
+        \App\Services\ManualShareService::applyLang(request('lang'));
+
         return view('manuals._finance_bundle');
     }
 
@@ -201,6 +214,8 @@ class SettingsController extends Controller
      */
     public function trainingBundle()
     {
+        \App\Services\ManualShareService::applyLang(request('lang'));
+
         return view('manuals._training_bundle');
     }
 
@@ -210,6 +225,8 @@ class SettingsController extends Controller
      */
     public function trainingFinanceBundle()
     {
+        \App\Services\ManualShareService::applyLang(request('lang'));
+
         return view('manuals._training_finance_bundle');
     }
 

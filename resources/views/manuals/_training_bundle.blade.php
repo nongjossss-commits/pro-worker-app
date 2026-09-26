@@ -93,6 +93,9 @@
     <i class="bi bi-easel-fill"></i>
     {{ __('TRAINING EDITION') }} — {{ __('Press Ctrl+P to print or save as PDF.') }}
     <button onclick="window.print()">{{ __('Print now') }}</button>
+    @unless(!empty($manualExport))
+        @include('manuals._lang_switch')
+    @endunless
 </div>
 
 {{-- Cover --}}
@@ -109,7 +112,7 @@
     </div>
     <div class="note">
         <strong>{{ __('สำคัญ:') }}</strong>
-        {{ __('คู่มือเล่มนี้เป็น Phase 1 prototype — เริ่มต้นด้วย Workflow + Employees เท่านั้น ภาพประกอบใส่ไว้ที่ public/images/manuals/{menu}/ — เมนูที่ยังไม่มีภาพจะแสดง placeholder') }}
+        {{ __('Screenshots in this manual use sample data from a test system — company names, people and figures are not real.') }}
         <br><br>
         <strong>{{ __('หมายเหตุ:') }}</strong>
         {{ __('ฟีเจอร์การเงิน (Finance) อยู่ในคู่มือฝึกอบรมแยกต่างหาก') }}
@@ -131,7 +134,7 @@
         ['key' => 'registration_resolution',  'title' => '📑 มติลงทะเบียน — Registration Resolution',     'title_en' => '📑 Registration Resolution',         'title_zh' => '📑 登记决议',         'title_my' => '📑 မှတ်ပုံတင် ဆုံးဖြတ်ချက်'],
         ['key' => 'renewal_resolution',       'title' => '🔄 มติต่ออายุ — Renewal Resolution',            'title_en' => '🔄 Renewal Resolution',              'title_zh' => '🔄 续签决议',         'title_my' => '🔄 သက်တမ်းတိုး ဆုံးဖြတ်ချက်'],
         ['key' => 'employees',                'title' => '👥 ข้อมูลลูกจ้าง — Employees',                  'title_en' => '👥 Employees',                       'title_zh' => '👥 雇员',             'title_my' => '👥 ဝန်ထမ်းများ'],
-        ['key' => 'employment_history',       'title' => '📜 ประวัติการจ้างงาน — Employment History',     'title_en' => '📜 Employment History',              'title_zh' => '📜 雇用历史',         'title_my' => '📜 အလုပ်ခန့်ထားမှု မှတ်တမ်း'],
+        ['key' => 'employment_history',       'title' => '📜 ลูกจ้างที่ถูกแจ้งออก — Notified-Out Employees',     'title_en' => '📜 Notified-Out Employees',              'title_zh' => '📜 已通知离职的员工',         'title_my' => '📜 အလုပ်ထွက်ကြောင်း အကြောင်းကြားပြီး ဝန်ထမ်းများ'],
         ['key' => 'group_team',               'title' => '👨‍👩‍👧 กลุ่มและทีม — Group & Team',                 'title_en' => '👨‍👩‍👧 Group & Team',                     'title_zh' => '👨‍👩‍👧 分组与团队',       'title_my' => '👨‍👩‍👧 အုပ်စုနှင့် အသင်း'],
         ['key' => 'employers',                'title' => '🏢 ข้อมูลนายจ้าง — Employers',                  'title_en' => '🏢 Employers',                       'title_zh' => '🏢 雇主',             'title_my' => '🏢 အလုပ်ရှင်များ'],
         ['key' => 'delegates',                'title' => '👤 ผู้แทน — Delegates',                         'title_en' => '👤 Delegates',                       'title_zh' => '👤 授权代表',         'title_my' => '👤 ကိုယ်စားလှယ်များ'],
@@ -178,5 +181,6 @@
     @endif
 @endforeach
 
+@include('manuals._viewer')
 </body>
 </html>

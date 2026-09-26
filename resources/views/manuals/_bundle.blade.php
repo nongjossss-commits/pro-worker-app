@@ -56,6 +56,9 @@
     <i class="bi bi-printer-fill"></i>
     {{ __('Press Ctrl+P (or Cmd+P on Mac) to print or save as PDF.') }}
     <button onclick="window.print()">{{ __('Print now') }}</button>
+    @unless(!empty($manualExport))
+        @include('manuals._lang_switch')
+    @endunless
 </div>
 
 {{-- Cover --}}
@@ -71,7 +74,7 @@
     </div>
     <div style="margin-top: 30px; padding: 12px 18px; background: #eef2ff; border-left: 4px solid #6366f1; border-radius: 4px; text-align: left; font-size: 13px; color: #3730a3; max-width: 600px; margin-left: auto; margin-right: auto;">
         <strong>{{ __('Note:') }}</strong>
-        {{ __('Finance feature (Ledger, Tax Invoices, Financial Profiles, etc.) is distributed in a SEPARATE Finance Manual Bundle — download it from Super Admin Settings if your subscription includes the Finance module.') }}
+        {{ __('Finance features (Ledger, Tax Invoices, Financial Profiles, etc.) are covered in a separate Finance Manual, provided to customers whose subscription includes the Finance module.') }}
     </div>
 </div>
 
@@ -84,11 +87,12 @@
         ['key' => 'notifications',            'title' => 'การแจ้งเตือน / Notifications',                 'title_en' => 'Notifications',            'title_zh' => '通知',             'title_my' => 'အသိပေးချက်များ'],
         ['key' => 'activity_logs',            'title' => 'ประวัติการกระทำ / Activity Logs',              'title_en' => 'Activity Logs',            'title_zh' => '操作日志',         'title_my' => 'လုပ်ဆောင်ချက် မှတ်တမ်း'],
         ['key' => 'incomplete_data',          'title' => 'ข้อมูลไม่ครบ / Incomplete Data',               'title_en' => 'Incomplete Data',          'title_zh' => '数据不完整',       'title_my' => 'ဒေတာမပြည့်စုံ'],
+        ['key' => 'attachment_sizes',         'title' => 'ขนาดไฟล์แนบ / Attachment File Sizes',          'title_en' => 'Attachment File Sizes',    'title_zh' => '附件文件大小',     'title_my' => 'ပူးတွဲဖိုင် အရွယ်အစား'],
         ['key' => 'ticket_inbox',             'title' => 'กล่องรับเรื่อง / Ticket Inbox',                'title_en' => 'Ticket Inbox',             'title_zh' => '工单收件箱',       'title_my' => 'တောင်းဆိုချက် စာပုံး'],
         ['key' => 'employer_ticket',          'title' => 'ส่งคำขอ / Employer Ticket',                    'title_en' => 'Employer Ticket',          'title_zh' => '提交请求',         'title_my' => 'အလုပ်ရှင် တောင်းဆိုချက်'],
         ['key' => 'employers',                'title' => 'ข้อมูลนายจ้าง / Employers',                    'title_en' => 'Employers',                'title_zh' => '雇主',             'title_my' => 'အလုပ်ရှင်များ'],
         ['key' => 'employees',                'title' => 'ข้อมูลลูกจ้าง / Employees',                    'title_en' => 'Employees',                'title_zh' => '雇员',             'title_my' => 'ဝန်ထမ်းများ'],
-        ['key' => 'employment_history',       'title' => 'ประวัติการจ้างงาน / Employment History',       'title_en' => 'Employment History',       'title_zh' => '雇用历史',         'title_my' => 'အလုပ်ခန့်ထားမှု မှတ်တမ်း'],
+        ['key' => 'employment_history',       'title' => 'ลูกจ้างที่ถูกแจ้งออก / Notified-Out Employees',       'title_en' => 'Notified-Out Employees',       'title_zh' => '已通知离职的员工',         'title_my' => 'အလုပ်ထွက်ကြောင်း အကြောင်းကြားပြီး ဝန်ထမ်းများ'],
         ['key' => 'group_team',               'title' => 'กลุ่มและทีม / Group & Team',                   'title_en' => 'Group & Team',             'title_zh' => '分组与团队',       'title_my' => 'အုပ်စုနှင့် အသင်း'],
         // Sales intentionally moved to the Finance bundle — Sales generates
         // quotations/invoices which are part of the Finance flow, sold as part
@@ -139,5 +143,6 @@
     @endif
 @endforeach
 
+@include('manuals._viewer')
 </body>
 </html>

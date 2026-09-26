@@ -58,6 +58,9 @@
     <i class="bi bi-printer-fill"></i>
     {{ __('Press Ctrl+P (or Cmd+P on Mac) to print or save as PDF.') }}
     <button onclick="window.print()">{{ __('Print now') }}</button>
+    @unless(!empty($manualExport))
+        @include('manuals._lang_switch')
+    @endunless
 </div>
 
 {{-- Cover --}}
@@ -120,5 +123,6 @@
     @endif
 @endforeach
 
+@include('manuals._viewer')
 </body>
 </html>

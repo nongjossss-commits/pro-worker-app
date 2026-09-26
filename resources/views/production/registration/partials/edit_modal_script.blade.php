@@ -138,7 +138,16 @@
         // 1. Update Names
         const nameDiv = card.querySelector('.fw-bold.text-dark');
         if (nameDiv) {
-            nameDiv.innerText = `${emp.employeeTitleEn || ''} ${emp.employeeNameEn || '-'}`;
+            // Only the name text changes. The same line also holds the
+            // employee preview (magnifier) button and badges; setting the
+            // whole div's innerText wiped them out after every save.
+            const nameText = `${emp.employeeTitleEn || ''} ${emp.employeeNameEn || '-'}`;
+            const nameSpan = nameDiv.querySelector(':scope > span:not(.badge)');
+            if (nameSpan) {
+                nameSpan.innerText = nameText;
+            } else if (!nameDiv.querySelector('.btn-preview, .badge')) {
+                nameDiv.innerText = nameText;
+            }
         }
         const thaiNameDiv = card.querySelector('.text-muted.small');
         if (thaiNameDiv) {

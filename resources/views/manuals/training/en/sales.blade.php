@@ -146,6 +146,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Quotation options + duplicate check on transition</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Show Grand Total</strong> off = unit prices only</li>
+            <li>Quotation history is separate from real bills — never counted as income/outstanding</li>
+            <li>Transition with duplicate employees requires ticking "transition anyway"</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">Frequently Asked Questions</h2>
 

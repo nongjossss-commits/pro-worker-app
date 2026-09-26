@@ -81,6 +81,16 @@
     </div>
 </div>
 
+<h5>5. Quotation — grand total or unit price</h5>
+<div class="manual-step">
+    <strong>Show Grand Total</strong>: on = quantity/amount/total columns; off = unit price only (no quantity/amount and no "received by" signature). Quotation history is kept separate from real bills in Finance and never counts as income or outstanding.
+</div>
+
+<h5>6. Duplicate check when closing a sale</h5>
+<div class="manual-step">
+    On Transition to Registration / Renewal / Workflow the system checks employees for duplicates (passport / work permit / pink card / ID number / RA number); if found you must tick "transition anyway" to continue.
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Things to know / Tips</h4>
 
 <div class="manual-tip">

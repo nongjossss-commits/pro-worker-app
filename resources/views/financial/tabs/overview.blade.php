@@ -233,7 +233,7 @@
             </div>
             <div class="col-md-4">
                 <div class="border rounded p-2">
-                    <div class="small text-muted">{{ __('Received') }}</div>
+                    <div class="small text-muted">{{ !empty($filteredStats['period_from']) ? __('Received in this period') : __('Received') }}</div>
                     <div class="h5 mb-0 fw-bold text-success">{{ number_format($filteredStats['total_paid'], 2) }}</div>
                 </div>
             </div>
@@ -314,9 +314,15 @@
                                      money cleared the bill or only part of it. --}}
                                 <div class="small text-muted text-nowrap mt-1">
                                     @foreach($txn->payments as $pay)
-                                        <div title="{{ $pay->bankAccount ? $pay->bankAccount->bank_name . ' ' . $pay->bankAccount->account_number : __('No bank account') }}">
+                                        @php
+                                            // Bold = counted in this card's period; faded = received in another period.
+                                            $payDate = \Carbon\Carbon::parse($pay->paid_at)->toDateString();
+                                            $inPeriod = !empty($filteredStats['period_from'])
+                                                && $payDate >= $filteredStats['period_from'] && $payDate <= $filteredStats['period_to'];
+                                        @endphp
+                                        <div class="{{ $inPeriod ? 'fw-bold' : 'opacity-50' }}" title="{{ $pay->bankAccount ? $pay->bankAccount->bank_name . ' ' . $pay->bankAccount->account_number : __('No bank account') }}">
                                             {{ \Carbon\Carbon::parse($pay->paid_at)->format('d/m/Y') }}:
-                                            <span class="text-success">+{{ number_format($pay->amount, 2) }}</span>
+                                            <span class="{{ $inPeriod ? 'text-success' : '' }}">+{{ number_format($pay->amount, 2) }}</span>
                                         </div>
                                     @endforeach
                                 </div>

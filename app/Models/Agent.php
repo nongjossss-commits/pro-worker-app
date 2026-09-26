@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\LogActivity;
 
 class Agent extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, LogActivity;
 
     protected $fillable = [
         'agentNameEn',

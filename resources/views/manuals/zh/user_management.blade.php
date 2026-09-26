@@ -53,6 +53,21 @@
     滚动至页面底部 —— "角色与权限"区块会显示所有角色及其关联的权限
 </div>
 
+<h5>6. 按用户设置的权限</h5>
+<div class="manual-step">
+    用户编辑页列出可逐人授予或撤销的权限:<strong>更新进度步骤</strong>(勾选步骤;Admin/Staff 默认有,Caretaker 没有)·<strong>编辑员工</strong>(员工资料、预约、登录信息 —— 与勾选步骤分开)·<strong>管理工作流程</strong>(创建工作、设置步骤和通知)·<strong>管理财务</strong>(价格、账单、收款)·<strong>移动附件</strong>(超级管理员可授予特定 Admin/Staff)。
+</div>
+
+<h5>7. 雇主账号与 Pro Walker Labour 账号</h5>
+<div class="manual-step">
+    <strong>Employer</strong> 账号只能看到自己公司的数据,不能进入工作菜单(Pre-Production / Workflow / 决议)。Pro Walker Labour 账号(会计 / 股东 / 组长 / 组员)只能由超级管理员创建,且只能访问 Labour 模块。
+</div>
+
+<h5>8. 登录与安全</h5>
+<div class="manual-step">
+    关闭浏览器或应用后必须重新登录;程序的页面全部关闭超过 5 分钟会自动登出。"记住我"只在该设备上记住邮箱(密码请交由浏览器保存)。连续多次输错密码会暂时禁止登录。
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>
 
 <div class="manual-tip">

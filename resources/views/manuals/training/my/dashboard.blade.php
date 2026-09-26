@@ -18,6 +18,26 @@
 </div>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 0</div>
+    <h2 class="slide-title">Login + လုံခြုံရေး</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'dashboard/03-login',
+        'alt' => 'Login စာမျက်နှာ — အရောင်နှင့် logo သည် စနစ်၏ brand ဆက်တင်အတိုင်း',
+        'caption' => 'Login စာမျက်နှာ — အရောင်နှင့် logo သည် စနစ်၏ brand ဆက်တင်အတိုင်း',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Browser / app ပိတ်လျှင် → နောက်တစ်ကြိမ် ပြန် login ဝင်ရ</li>
+            <li>ပရိုဂရမ်စာမျက်နှာ ၅ မိနစ်ထက်ပို မဖွင့်ထားလျှင် → အလိုအလျောက် logout</li>
+            <li>Refresh သို့မဟုတ် tab အသစ် → ပုံမှန်သုံးနိုင်</li>
+            <li>"Remember me" က email မှတ်၊ "Forgot your password?" က reset link ပို့ (၆၀ မိနစ်)</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">STEP 1</div>
     <h2 class="slide-title">Dashboard ဖွင့်ပြီး ခြုံငုံသုံးသပ်ချက် ကြည့်ရှုရန်</h2>
 
@@ -38,6 +58,7 @@
             <li>အကောင့်ဝင်ပါ → Dashboard သို့ အလိုအလျောက် ရောက်ရှိပါမည်</li>
             <li>အပေါ်ပိုင်းရှိ အနှစ်ချုပ်ကတ်များကို စစ်ဆေးပါ</li>
             <li>လိုအပ်သော မီနူးသို့ သွားရန် ကတ် သို့မဟုတ် ဖြတ်လမ်းလင့်ကို နှိပ်ပါ</li>
+            <li>ဘာသာစကားခလုတ်၏ နောက်ရှိ ခလုတ် = <strong>အလင်း / အမှောင် / စက်ပစ္စည်း အတိုင်း</strong> မုဒ် — refresh မလိုဘဲ ချက်ချင်း ပြောင်းပြီး စက်တစ်ခုချင်းစီ မှတ်ထားသည်</li>
         </ol>
     </div>
 </section>

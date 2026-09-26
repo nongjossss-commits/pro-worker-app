@@ -148,6 +148,63 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">ငွေကြေးစင်တာ — ကတ်နှိပ်၍ စစ်ထုတ်</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/06-card-filter',
+        'alt' => '"ဤလ ဝင်ငွေ" ကိုနှိပ်ခြင်း — ဤလ ငွေရရှိသော ဘေလ်များသာ အကျဉ်းချုပ်နှင့်',
+        'caption' => '"ဤလ ဝင်ငွေ" ကိုနှိပ်ခြင်း — ဤလ ငွေရရှိသော ဘေလ်များသာ အကျဉ်းချုပ်နှင့်',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>ယနေ့ / ဤလ ဝင်ငွေ</strong> = ငွေလက်ခံရက်အလိုက် အမှန်ရရှိငွေ</li>
+            <li>ကတ်နှိပ်လျှင် ဂဏန်းနောက်ကွယ်ရှိ ဘေလ်များ ပြ၊ "ပေးပြီး" အောက်တွင် ငွေလက်ခံမှုများ (စာလုံးထူ = ဤကာလ)</li>
+            <li>အမှတ်အသားက ဘေလ် လာရာ မီနူး/tab ကို ပြ၊ မူလအရင်းအမြစ် filter ဖြင့် ဖျက်ပြီး tab မှ ဘေလ်များ ခွဲ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">လုပ်ငန်းမီနူးအလိုက် ဘေလ်တင် + ငွေလက်ခံ</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/09-registration-tab',
+        'alt' => 'လုပ်ငန်းမီနူးအလိုက် tab — အလုပ်ရှင်အလိုက် စုစုပေါင်း / ဘေလ်တင်ပြီး / ကျန်ငွေ',
+        'caption' => 'လုပ်ငန်းမီနူးအလိုက် tab — အလုပ်ရှင်အလိုက် စုစုပေါင်း / ဘေလ်တင်ပြီး / ကျန်ငွေ',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>ငွေကြေးစီမံ</strong> → ဈေးသတ်မှတ် → ဘေလ်ဖန်တီး</li>
+            <li>ပမာဏ၊ လက်ခံရက်၊ အကောင့်၊ slip ထည့် — အရစ်ကျ အကြိမ်ကြိမ် ရ</li>
+            <li>အကောင့်မရွေးလျှင် ဘဏ်လက်ကျန်ထဲ မဝင်သဖြင့် အတည်ပြုခိုင်း</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">Credit note + ဈေးနှုန်းကမ်းလှမ်းချက်</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/07-credit-notes',
+        'alt' => 'Credit Notes — ထုတ်ပြီး ဘေလ်၏ ပမာဏ လျှော့ခြင်း',
+        'caption' => 'Credit Notes — ထုတ်ပြီး ဘေလ်၏ ပမာဏ လျှော့ခြင်း',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ဖောက်သည်က ကျန်ငွေ မပေးတော့လျှင် ကျန်ငွေအတွက် credit note ထုတ်၊ ဘေလ် "ပေးပြီး" ဖြစ်</li>
+            <li><strong>Manual ဘေလ်</strong>: ဈေးနှုန်းကမ်းလှမ်းချက် သို့မဟုတ် Invoice ကို ဦးစွာရွေး၊ ဈေးနှုန်းမှာ သီးခြား tab ဖြစ်ပြီး ဝင်ငွေအဖြစ် မတွက်</li>
+            <li>Manual ဘေလ်တွင် မူကြမ်းဝန်ထမ်း ထည့်နိုင်</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">မေးလေ့ရှိသော မေးခွန်းများ</h2>
 

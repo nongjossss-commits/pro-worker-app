@@ -150,6 +150,7 @@
                                             'restore' => 'info',
                                             'login' => 'success',
                                             'logout' => 'secondary',
+                                            'login_failed' => 'danger',
                                             'download' => 'warning',
                                             'export' => 'warning',
                                             'upload' => 'info',
@@ -169,11 +170,11 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ $log->description }}</div>
+                                    <div class="fw-bold">{{ \App\Support\ActivityLogPresenter::sentence($log) }}</div>
                                     @if($log->subject_type)
                                         <div class="small text-muted">
                                             <span class="badge bg-light text-dark border me-1">ID: {{ $log->subject_id }}</span>
-                                            {{ \App\Helpers\ActivityLogHelper::formatModel($log->subject_type) }}
+                                            {{ \App\Support\ActivityLogPresenter::modelName($log->subject_type) }}
                                         </div>
                                     @endif
 
@@ -204,12 +205,20 @@
                                     @endif
                                 </td>
                                 <td>
+                                    @php $readableChanges = \App\Helpers\ActivityLogHelper::generateReadableChanges($log); @endphp
+                                    @if(count($readableChanges))
+                                        <ul class="list-unstyled small mb-1 activity-change-preview">
+                                            @foreach(array_slice($readableChanges, 0, 3) as $change)
+                                                <li class="mb-1"><i class="bi bi-dot"></i>{!! $change !!}</li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
                                     @if($log->properties && (isset($log->properties['old']) || isset($log->properties['attributes'])))
                                         <button class="btn btn-sm btn-outline-secondary btn-view-changes"
                                                 type="button"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#changesModal-{{ $log->id }}">
-                                            <i class="bi bi-eye"></i> ดูการเปลี่ยนแปลง
+                                            <i class="bi bi-eye"></i> {{ count($readableChanges) > 3 ? 'ดูทั้งหมด (' . count($readableChanges) . ' รายการ)' : 'ดูรายละเอียด' }}
                                         </button>
 
                                         <div class="modal fade" id="changesModal-{{ $log->id }}" tabindex="-1" aria-hidden="true">
@@ -225,9 +234,6 @@
                                                             | <strong>IP:</strong> {{ $log->ip_address }}
                                                         </div>
 
-                                                        @php
-                                                            $readableChanges = \App\Helpers\ActivityLogHelper::generateReadableChanges($log);
-                                                        @endphp
 
                                                         @if(count($readableChanges) > 0)
                                                             <ul class="list-group">
@@ -264,12 +270,13 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    @else
+                                    @elseif(!count($readableChanges))
                                         <span class="text-muted">-</span>
                                     @endif
                                 </td>
                                 <td class="small text-muted">
                                     {{ $log->ip_address }}
+                                    <div class="text-truncate" style="max-width: 130px;" title="{{ $log->user_agent }}">{{ \App\Support\ActivityLogPresenter::device($log->user_agent) }}</div>
                                 </td>
                             </tr>
                         @empty

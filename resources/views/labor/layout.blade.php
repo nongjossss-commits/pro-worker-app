@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    @include('partials._theme_init')
+
     {{-- Same global fetch()-marks-itself-as-AJAX fix as layouts/app.blade.php —
          see that file's comment for the full explanation. Placed here too so
          any background poll added to this module gets the same protection. --}}
@@ -168,6 +170,7 @@
     <!-- Alpine.js (same as the main app — used for conditional form fields) -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('partials._ui_theme_styles')
+    <link rel="stylesheet" href="{{ asset('css/theme-dark.css') }}?v={{ @filemtime(public_path('css/theme-dark.css')) }}">
 </head>
 <body>
     <div class="main-layout">
@@ -352,6 +355,7 @@
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'my') }}">🇲🇲 မြန်မာ (Myanmar)</a></li>
                         </ul>
                     </div>
+                    @include('partials._theme_switcher')
                 </div>
             </div>
 
@@ -380,6 +384,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @include('partials._ui_theme_scripts')
+    @include('partials._session_heartbeat')
     <!-- Flatpickr — only initialized on inputs opted in via .js-flatpickr, so
          every other plain <input type="date"> in the Labor module keeps its
          native browser behavior unchanged. -->

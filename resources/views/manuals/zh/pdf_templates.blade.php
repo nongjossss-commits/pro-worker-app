@@ -73,6 +73,16 @@
     </ol>
 </div>
 
+<h5>5. 放置字段时预览</h5>
+<div class="manual-step">
+    在 Builder 中点击 <strong>Preview</strong>,保存前即可查看带当前字段位置的真实 PDF。
+</div>
+
+<h5>6. 导出 / 导入模板设置(超级管理员)</h5>
+<div class="manual-step">
+    在列表中勾选模板 → <strong>导出</strong> JSON 文件(字段位置 + 背景 PDF)→ 在另一套系统中<strong>导入</strong>。图片字段导入后需重新上传图片;导入总是新建模板,并跳过已存在的名称。
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>
 
 <div class="manual-tip">

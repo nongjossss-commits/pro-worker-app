@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (ดูได้)</span>
+        <span class="role-pill role-readonly">Caretaker (งานประจำวัน)</span>
     </div>
 </div>
 
@@ -113,6 +113,33 @@
             <li>เปิดการ์ดนายจ้าง → ดูรายชื่อลูกจ้าง</li>
             <li>ติ๊ก checkbox ของแต่ละขั้นตอนที่ทำเสร็จ</li>
             <li>ระบบบันทึก timestamp อัตโนมัติ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 5</div>
+    <h2 class="slide-title">เลือกลูกจ้าง + จัดทีม</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Checkbox ของคนที่กดเสร็จแล้วจะกลับมาให้เลือกได้หลังพ้นช่วง Undo 24 ชม.</li>
+            <li>Select All ของนายจ้าง → เลือก <strong>ทั้งหมด / เฉพาะที่เสร็จ / เฉพาะที่ยังไม่เสร็จ</strong></li>
+            <li>ปุ่ม <strong>จัดทีม</strong> บนการ์ดลูกจ้าง → เลือก/สร้างทีม (ทีมแยกตามแถบและตามนายจ้าง)</li>
+            <li>วันนัด / สถานที่นัด / เลขคำขอ เก็บแยกตามแถบมติ ไม่ปนกันข้ามแถบ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">เครื่องมือของ Super Admin</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>ป้ายแจ้งเตือนของแถบ:</strong> ปิดป้าย "อยู่ในกลุ่มมติ..." ของแถบที่เตรียมไว้ล่วงหน้า — ลูกจ้างยังทำงานได้ปกติ</li>
+            <li><strong>ย้ายไฟล์แนบ:</strong> เลือกลูกจ้าง → สลับ / ย้าย / รวมไฟล์ PDF ระหว่างช่องแนบ (เฉพาะคนที่เลือก)</li>
+            <li><strong>ลบแถบ:</strong> ซ่อน 7 วันแล้วลบถาวร — งานที่มีบิลแล้วจะถูกเก็บไว้ บิลยังจัดการได้ในเมนูการเงิน</li>
         </ol>
     </div>
 </section>

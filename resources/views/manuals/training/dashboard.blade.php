@@ -18,6 +18,39 @@
 </div>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 0</div>
+    <h2 class="slide-title">เข้าสู่ระบบ + ความปลอดภัย</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'dashboard/03-login',
+        'alt' => 'หน้าเข้าสู่ระบบ',
+        'caption' => 'หน้าเข้าสู่ระบบ — สีและโลโก้เปลี่ยนตามการตั้งค่าแบรนด์ของระบบ',
+        'callouts' => [
+            '<strong>รูปตา:</strong> แสดง/ซ่อนรหัสผ่านที่พิมพ์',
+            '<strong>จดจำฉัน:</strong> จำอีเมลไว้ในเครื่องนี้ (รหัสผ่านให้เบราว์เซอร์บันทึก)',
+            '<strong>ลืมรหัสผ่าน?:</strong> ส่งลิงก์ตั้งรหัสใหม่ทางอีเมล',
+        ],
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ปิดเบราว์เซอร์ / ปิดแอป → เปิดใหม่ต้องเข้าสู่ระบบใหม่เสมอ</li>
+            <li>ไม่มีหน้าโปรแกรมเปิดอยู่เกิน 5 นาที (เช่น พับแอปบนมือถือ) → ระบบออกจากระบบให้อัตโนมัติ</li>
+            <li>รีเฟรช หรือเปิดแท็บใหม่ ใช้งานต่อได้ตามปกติ</li>
+        </ol>
+    </div>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'dashboard/04-forgot-password',
+        'alt' => 'หน้าลืมรหัสผ่าน',
+        'caption' => 'ลืมรหัสผ่าน — กรอกอีเมล แล้วเปิดลิงก์ในอีเมลภายใน 60 นาที',
+        'callouts' => [
+            '<strong>ขอหลายครั้ง:</strong> ใช้ได้เฉพาะลิงก์ในอีเมลฉบับล่าสุด',
+        ],
+    ])
+</section>
+
+<section class="training-slide">
     <div class="slide-number">STEP 1</div>
     <h2 class="slide-title">เปิด Dashboard + ดูภาพรวม</h2>
 
@@ -38,6 +71,7 @@
             <li>Login เข้าระบบ → ไป Dashboard อัตโนมัติ</li>
             <li>ดู summary cards ด้านบน</li>
             <li>คลิก card หรือ quick link เพื่อไปยังเมนูที่ต้องการ</li>
+            <li>ปุ่มถัดจากปุ่มภาษา = เลือก<strong>โหมดสว่าง / มืด / ตามอุปกรณ์</strong> — เปลี่ยนทันทีไม่ต้องรีเฟรช และจำไว้แยกตามเครื่อง</li>
         </ol>
     </div>
 </section>

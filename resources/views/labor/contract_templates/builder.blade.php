@@ -120,7 +120,7 @@
         <div class="pwct-canvas-area flex-grow-1 overflow-auto d-flex justify-content-center p-4">
             <div class="d-flex flex-column gap-4 pb-5">
                 <template x-for="pageNum in totalPages" :key="pageNum">
-                    <div class="position-relative shadow bg-white"
+                    <div class="position-relative shadow bg-white theme-keep-light" data-bs-theme="light"
                          :id="'page-container-' + pageNum"
                          :style="pageDimensions[pageNum] ? `width: ${pageDimensions[pageNum].width}px; height: ${pageDimensions[pageNum].height}px;` : 'min-height: 200px;'">
 

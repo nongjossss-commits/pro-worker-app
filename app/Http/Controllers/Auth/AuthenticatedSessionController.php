@@ -27,12 +27,12 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required'],
         ]);
 
-        // "Remember me" now reflects the checkbox: unchecked (default) means
-        // the session cookie dies when the browser closes (see
-        // SESSION_EXPIRE_ON_CLOSE), so the next visit always requires a
-        // fresh login; checked sets Laravel's persistent remember_token
-        // cookie so the browser stays logged in across restarts.
-        if (Auth::attempt([...$credentials, 'status' => 'active'], $request->boolean('remember'))) {
+        // Never a persistent login: closing the browser / app always means
+        // logging in again (SESSION_EXPIRE_ON_CLOSE + EnsureBrowserSessionAlive).
+        // The "Remember me" checkbox now only remembers the email on the
+        // login page (client-side, see auth/login.blade.php); the password is
+        // left to the browser's own password manager.
+        if (Auth::attempt([...$credentials, 'status' => 'active'], false)) {
             $request->session()->regenerate();
 
             // Restore whatever language this user last picked (see

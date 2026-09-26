@@ -77,6 +77,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">Preview + template export/import</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Builder တွင် <strong>Preview</strong> နှိပ်၍ PDF အစစ် ကြည့်</li>
+            <li>စာရင်းတွင် template ရွေး → JSON <strong>Export</strong></li>
+            <li>အခြားစနစ် → <strong>Import</strong> (ပုံ field များ ပုံပြန်တင်ရ)</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">မေးလေ့ရှိသော မေးခွန်းများ</h2>
 

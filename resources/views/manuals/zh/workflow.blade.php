@@ -10,7 +10,8 @@
 <h4><i class="bi bi-person-check me-2"></i>谁可以进入这个菜单?</h4>
 <ul>
     <li><span class="manual-role">Super Admin</span> <span class="manual-role">Admin</span> <span class="manual-role">Staff</span> —— 可以进入</li>
-    <li><span class="manual-role">Caretaker</span> —— 仅可查看，不可编辑</li>
+    <li><span class="manual-role">Caretaker</span> —— 可处理日常工作(员工资料、预约),但不能修改工作流程结构或财务数据;获得"更新进度步骤"权限后才能勾选步骤</li>
+    <li><span class="manual-role">Employer</span>(客户账号)—— 无法进入此菜单</li>
 </ul>
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
@@ -100,6 +101,41 @@
         <li>点击"Finish" → 系统会立即<strong>自动更新 employee.terminated_at + termination_reason + status='resigned'</strong></li>
         <li><strong>如尚未填写离职通知日期</strong> → 无法点击 Finish，系统会提示"请先填写离职通知日期"</li>
     </ol>
+</div>
+
+<h5>9. 单卡片 / 多卡片标签页</h5>
+<div class="manual-step">
+    超级管理员在创建或编辑标签页时选择:<strong>单卡片</strong> —— 每个雇主一直使用同一张卡片,员工加入该卡片(如 入职/变更雇主、离职通知、MOU 续签);<strong>多卡片</strong> —— 每项工作新建一张卡片(如 MOU 引进)。多卡片标签页用 <strong>Finish Job</strong> 按钮完成整张卡片,卡片内尚未完成的员工一并完成;可在 <strong>Completed Jobs</strong> 查看或撤销(24 小时内)。<strong>Cancel</strong> 标记为已取消,<strong>Delete</strong> 删除卡片(可从回收站恢复)。
+</div>
+
+<h5>10. 新增 / 重命名 / 删除工作标签页</h5>
+<div class="manual-step">
+    超级管理员可在 Workflow 仪表板或各标签页管理标签页。系统内置标签页只能重命名。删除自建标签页只是<strong>隐藏</strong> —— 原有工作和财务记录全部保留,并仍显示在财务菜单中(带"标签页已删除"标记)。
+</div>
+
+<h5>11. 分组与步骤</h5>
+<div class="manual-step">
+    <strong>分组:</strong> 点击员工卡片上的分组按钮 → 选择或新建分组;可在分组标签上重命名或删除(删除只清除分组名,员工不受影响);"无分组"可将员工移出分组。<strong>Steps 按钮:</strong> 新增 / 重命名 / 删除 / 拖动排序步骤,即时生效无需刷新(4 个菜单使用同一窗口)。
+</div>
+
+<h5>12. 雇主"全选"</h5>
+<div class="manual-step">
+    雇主复选框会按当前筛选条件选中该雇主的<strong>全部</strong>员工,即使卡片未展开或分多页。旁边的标记显示选择方式(全部 / 仅已完成 / 仅未完成 / 自定义)。
+</div>
+
+<h5>13. 工作核查模式(Job Check Mode)</h5>
+<div class="manual-step">
+    点击顶部栏的 <strong>工作核查模式</strong> → <strong>开始</strong>:系统记录 4 个菜单中所有员工的状态。照常工作 —— 处于该模式的标签页只能打开 Pre-Production / Workflow / 注册决议 / 续签决议(其他标签页正常使用)。<strong>Pause</strong> 可暂停去做其他工作,<strong>Resume</strong> 以原快照继续。<strong>Finish</strong> 下载两个 Excel:<em>有变动</em> 与 <em>无变动</em>(含照片、申请编号、备注及来源标签页)。记录保留 7 天;忘记结束时系统会在 05:00 自动结束。
+</div>
+
+<h5>14. 员工重复检查</h5>
+<div class="manual-step">
+    新增员工时(添加员工窗口、Excel 导入),系统会将 护照 / 工作证 / 粉卡 / 身份证号 / RA 编号 与现有员工比对,重复时在保存前提示。
+</div>
+
+<h5>15. 入职 / 变更雇主 —— 已通知离职的员工</h5>
+<div class="manual-step">
+    将"已通知离职的员工"列表中的员工加入 <strong>入职 / 变更雇主</strong> 标签页时,系统会立即把员工转到新雇主并清除离职状态。
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>

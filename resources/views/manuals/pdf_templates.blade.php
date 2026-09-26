@@ -73,6 +73,17 @@
     </ol>
 </div>
 
+<h5>5. พรีวิวระหว่างจัดวางฟิลด์</h5>
+<div class="manual-step">
+    ในหน้า Builder กดปุ่ม <strong>Preview</strong> เพื่อดู PDF จริงพร้อมตำแหน่งฟิลด์ปัจจุบัน ก่อนบันทึก
+</div>
+
+<h5>6. ส่งออก / นำเข้าการตั้งค่า Template (Super Admin)</h5>
+<div class="manual-step">
+    ติ๊กเลือก template ในหน้ารายการ → <strong>Export</strong> ได้ไฟล์ JSON (ตำแหน่งฟิลด์ + PDF พื้นหลัง) → นำไป <strong>Import</strong> ในโปรแกรมอีกชุดหนึ่งได้ ·
+    ฟิลด์รูปภาพต้องอัปโหลดรูปใหม่หลังนำเข้า · นำเข้าจะสร้าง template ใหม่เสมอ (ไม่ทับของเดิม) และข้ามชื่อที่มีอยู่แล้ว
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

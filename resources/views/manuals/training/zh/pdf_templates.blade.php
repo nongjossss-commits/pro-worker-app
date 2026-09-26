@@ -77,6 +77,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">预览 + 导出/导入模板</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>在 Builder 中点击 <strong>Preview</strong> 查看真实 PDF</li>
+            <li>在列表勾选模板 → <strong>导出</strong> JSON</li>
+            <li>在另一套系统 → <strong>导入</strong>(图片字段需重新上传)</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">常见问题</h2>
 

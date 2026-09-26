@@ -53,8 +53,8 @@
             '<strong>super-admin:</strong> ทุกอย่าง (root)',
             '<strong>admin:</strong> manage ทุกข้อมูล แต่ไม่แก้ permission/role',
             '<strong>staff:</strong> ทำงานทั่วไป — กรอก/แก้ข้อมูล',
-            '<strong>caretaker:</strong> ดูเฉพาะนายจ้างที่ assigned',
-            '<strong>employer:</strong> ลูกค้า — เห็นเฉพาะข้อมูลของตัวเอง',
+            '<strong>caretaker:</strong> ดูแลเฉพาะนายจ้างที่ assigned — งานประจำวัน ไม่แก้โครงสร้างงาน/การเงิน',
+            '<strong>employer:</strong> ลูกค้า — เห็นเฉพาะข้อมูลของตัวเอง เข้าเมนูงานไม่ได้',
         ],
     ])
 </section>
@@ -81,6 +81,24 @@
             <li>กด Save</li>
             <li>Caretaker เหล่านั้นจะเห็นนายจ้างนี้ใน Sidebar</li>
         </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">สิทธิ์ย่อยรายคน</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>อัปเดตขั้นตอนความคืบหน้า</strong> — ติ๊กขั้นตอน (Admin/Staff มี, Caretaker ไม่มีโดยค่าเริ่มต้น)</li>
+            <li><strong>แก้ไขข้อมูลลูกจ้าง</strong> — แยกจากการติ๊กขั้นตอน ให้คนละสิทธิ์กันได้</li>
+            <li><strong>จัดการ Workflow</strong> — สร้างงาน/ตั้งขั้นตอน · <strong>จัดการการเงิน</strong> — ราคา/บิล/รับชำระ</li>
+            <li><strong>ย้ายไฟล์แนบ</strong> — Super Admin มอบให้ Admin/Staff เฉพาะคนได้</li>
+        </ol>
+    </div>
+
+    <div class="slide-tip">
+        💡 บัญชี Pro Walker Labour (ฝ่ายบัญชี / ผู้ถือหุ้น / หัวหน้าทีม / ลูกทีม) สร้างได้โดย Super Admin เท่านั้น
     </div>
 </section>
 

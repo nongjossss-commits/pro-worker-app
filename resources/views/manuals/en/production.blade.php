@@ -10,7 +10,8 @@
 <h4><i class="bi bi-person-check me-2"></i>Who can access this menu?</h4>
 <ul>
     <li><span class="manual-role">Super Admin</span> <span class="manual-role">Admin</span> <span class="manual-role">Staff</span> — full access</li>
-    <li><span class="manual-role">Caretaker</span> — view only, can't edit some things</li>
+    <li><span class="manual-role">Caretaker</span> — can do day-to-day work (employee data, appointments) but cannot change workflow structure or finance data; ticks steps only when granted the "update progress steps" permission</li>
+    <li><span class="manual-role">Employer</span> (customer account) — cannot open this menu</li>
 </ul>
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
@@ -74,6 +75,26 @@
         <li>This note also appears on any invoice/receipt issued for that tier</li>
         <li>Click <i class="bi bi-trash"></i> to delete a tier — a confirmation appears, warning if employees are still assigned to it</li>
     </ul>
+</div>
+
+<h5>8. Teams in Pre-Production</h5>
+<div class="manual-step">
+    Click <strong>Manage Team</strong> on the employee card → pick or create a team; employees are grouped by team like in Workflow. Rename/delete a team from its pill; "No Team" removes the employee from a team.
+</div>
+
+<h5>9. Manage preparation steps (Steps button)</h5>
+<div class="manual-step">
+    Add / rename / delete / drag to reorder preparation steps in one window, no page reload (Pre-Production steps are separate from Workflow steps).
+</div>
+
+<h5>10. Multi-card tabs and Send to Workflow</h5>
+<div class="manual-step">
+    On <strong>multi-card</strong> tabs (e.g. MOU Import) each card is sent to Workflow as its own job and is never merged with another card of the same employer.
+</div>
+
+<h5>11. Duplicate check + Job Check Mode</h5>
+<div class="manual-step">
+    Adding a new employee warns when passport / work permit / pink card / ID number / RA number matches an existing employee. This menu is one of the 4 menus covered by <strong>Job Check Mode</strong> (see the Workflow manual).
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>

@@ -13,7 +13,8 @@
 <h4><i class="bi bi-person-check me-2"></i>Who can access this menu?</h4>
 <ul>
     <li><span class="manual-role">Super Admin</span> <span class="manual-role">Admin</span> <span class="manual-role">Staff</span> — can access</li>
-    <li><span class="manual-role">Caretaker</span> — view only</li>
+    <li><span class="manual-role">Caretaker</span> — can do day-to-day work (employee data, appointments) but cannot change workflow structure or finance data; ticks steps only when granted the "update progress steps" permission</li>
+    <li><span class="manual-role">Employer</span> (customer account) — cannot open this menu</li>
 </ul>
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
@@ -45,10 +46,9 @@
     The summary card at the top shows: total employees in this resolution, completed, and remaining
 </div>
 
-<h5>4. Auto-apply</h5>
+<h5>4. Progress updates</h5>
 <div class="manual-step">
-    The <strong>Workflow MOU Auto-apply</strong> system works together with this resolution —
-    renewal work done in Workflow is auto-applied back to this resolution every 24 hours
+    There is no automatic 24-hour pull from Workflow any more — users tick each employee's progress with the colour system. <strong>Auto Settings</strong> update expiry dates automatically 24 hours after an employee is marked completed.
 </div>
 
 <h5>5. Auto Settings — per-tab configuration</h5>
@@ -85,6 +85,51 @@
     An employee whose WP or Visa expiry matches a tab's Auto Settings is <strong>auto-pulled into that tab</strong> immediately whenever the date is updated
     <br>
     <strong>"Add-only" behavior:</strong> an employee already in the menu <strong>is never bumped out</strong> when dates are updated — only their color changes based on progress (they can only be removed by manually finishing or cancelling)
+</div>
+
+<h5>8. Selecting completed employees and 3-way Select All</h5>
+<div class="manual-step">
+    A completed employee's checkbox is hidden during the 24-hour Undo window and comes back after it. Select All on an employer with both completed and not-completed employees asks: <strong>All / Completed only / Not completed only</strong> (for export, bulk edit, download).
+</div>
+
+<h5>9. Teams</h5>
+<div class="manual-step">
+    <strong>Manage Team</strong> on the employee card → pick or create a team (e.g. "Batch 1"). Teams are separate per resolution tab and per employer; rename/delete updates instantly without reloading.
+</div>
+
+<h5>10. Appointments and request numbers per tab</h5>
+<div class="manual-step">
+    Appointment date/place and request number are stored <strong>per resolution tab</strong> — setting them in one tab never shows up in another tab or menu.
+</div>
+
+<h5>11. Tab badge switch (Super Admin)</h5>
+<div class="manual-step">
+    Next to the tab edit button — for a tab prepared in advance but not live yet: employees still work normally but the "in resolution group…" card badge and notification badge are hidden, so it doesn't clash with the current round.
+</div>
+
+<h5>12. Move attachment files for many employees (Super Admin)</h5>
+<div class="manual-step">
+    Tick employees → <strong>Move Attachment Files</strong> → swap / move & delete source / <strong>merge into B</strong> (combines both PDFs). Selected employees only; can be delegated to specific Admin/Staff.
+</div>
+
+<h5>13. Deleting a tab that already has bills</h5>
+<div class="manual-step">
+    Deleting a tab hides it for 7 days (restorable), then deletes it permanently. Jobs <strong>with bills</strong> are never deleted — bills and payment history stay and can still be collected or credited in Finance (red "tab deleted" badge).
+</div>
+
+<h5>14. Employees from Registration Resolution (dual-listed)</h5>
+<div class="manual-step">
+    An employee still in Registration Resolution whose visa/work-permit expiry matches this renewal tab's target date also appears here with a <strong>"From Registration Resolution"</strong> badge — tick/finish/cancel/restore freely without changing their Registration status (Delete is hidden on these cards).
+</div>
+
+<h5>15. Add employees — 3 ways</h5>
+<div class="manual-step">
+    <strong>Add Employee</strong> offers: <strong>select existing</strong> (search by name / passport / RA number / work permit / ID / employee code), <strong>create new</strong> (with duplicate warning), <strong>import from Excel</strong>. Added employees join only the open tab; tabs stay independent.
+</div>
+
+<h5>16. Notified-out employees</h5>
+<div class="manual-step">
+    Employees notified out from an employer (and not yet moved to a new one) no longer appear in that employer's renewal tabs.
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>

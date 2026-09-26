@@ -44,7 +44,7 @@
     </div>
 
     <div class="slide-tip">
-        💡 <strong>小贴士:</strong> "雇用历史"菜单会显示所有人，包括已离职雇员 —— 与本菜单不同，本菜单只显示在职雇员
+        💡 <strong>小贴士:</strong> 默认列表只显示在职员工,但<strong>搜索</strong>时也会找到已离职/已取消的员工(带状态标记);完整名单请见"已通知离职的员工"菜单
     </div>
 </section>
 
@@ -179,6 +179,20 @@
 {{-- ═════════════════════════════════════════════════════════════════════ --}}
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">重复检查 + 移动附件</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>所有新建员工的途径都会比对 护照 / 工作证 / 粉卡 / 身份证号 / RA 编号</li>
+            <li>搜索可找到所有状态 —— 卡片显示 Terminated / Registration Cancelled 标记</li>
+            <li><strong>移动附件</strong>(超级管理员):对所选员工交换 / 移动 / 合并 PDF</li>
+            <li>工作证类型由超级管理员在设置中管理</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">常见问题</h2>
 
@@ -187,7 +201,7 @@
         <dd>A: 请检查 Employee Cap —— 系统会根据订阅套餐限制数量，如需增加请联系 Super Admin</dd>
 
         <dt>Q: 雇员从列表中消失了?</dt>
-        <dd>A: 请前往"雇用历史"菜单查看 —— 可能已办理离职/合同到期，或已被删除至"回收站"</dd>
+        <dd>A: 请前往"已通知离职的员工"菜单查看 —— 可能已办理离职/合同到期，或已被删除至"回收站"</dd>
 
         <dt>Q: Caretaker 看到的雇员比预期少?</dt>
         <dd>A: Caretaker 只能看到自己所负责雇主的雇员</dd>

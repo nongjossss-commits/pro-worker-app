@@ -2,9 +2,7 @@
 
 <h4><i class="bi bi-person-badge me-2"></i>这个菜单是做什么的?</h4>
 <p>
-    <strong>"雇用历史(Employment History)"</strong> 菜单汇集了曾经在系统中出现过的<strong>所有雇员</strong>，
-    无论是<em>目前在职</em>、<em>已离职(Resigned)</em>、<em>合同已到期</em>，还是<em>已转至其他雇主</em>。
-    用于<strong>查看历史记录</strong>、<strong>查找旧雇员</strong>，以及将已离职雇员<strong>批量转移</strong>到新雇主
+    <strong>"已通知离职的员工"</strong>菜单(原名"雇用历史")列出已<strong>通知离职</strong>的员工 —— 辞职、解雇或合同到期 —— 并显示日期和原因。在职员工请见"员工"菜单。可用于查找以前的员工,并将其<strong>转移</strong>到新雇主。
 </p>
 
 <h4><i class="bi bi-person-check me-2"></i>谁可以进入这个菜单?</h4>
@@ -55,6 +53,16 @@
 <h5>4. 批量自动生成 PDF</h5>
 <div class="manual-step">
     勾选多名雇员 → 批量操作栏 → "Automated PDF" → 选择模板 → 系统会为所有人一次性生成 PDF
+</div>
+
+<h5>5. 通过 Workflow 入职 / 变更雇主</h5>
+<div class="manual-step">
+    除了本页的转移按钮,也可以把列表中的员工加入 Workflow 的 <strong>入职 / 变更雇主</strong> 标签页 —— 系统立即转到新雇主并清除离职状态。
+</div>
+
+<h5>6. 批量移动附件(超级管理员)</h5>
+<div class="manual-step">
+    勾选员工 → <strong>移动附件</strong> → 在附件栏位之间交换 / 移动 / 合并 PDF,仅作用于所选员工。
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>

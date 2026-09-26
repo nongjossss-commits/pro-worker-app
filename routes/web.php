@@ -55,6 +55,10 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::get('/manuals/finance-bundle', [SuperAdminSettingsController::class, 'financeManualBundle'])->name('manuals.finance_bundle');
     Route::get('/manuals/training-bundle', [SuperAdminSettingsController::class, 'trainingBundle'])->name('manuals.training_bundle');
     Route::get('/manuals/training-finance-bundle', [SuperAdminSettingsController::class, 'trainingFinanceBundle'])->name('manuals.training_finance_bundle');
+    // Public share links for the manuals (see ManualShareService)
+    Route::post('/manuals/{bundle}/share', [\App\Http\Controllers\ManualShareController::class, 'generate'])->name('manuals.share.generate');
+    Route::post('/manuals/{bundle}/share/revoke', [\App\Http\Controllers\ManualShareController::class, 'revoke'])->name('manuals.share.revoke');
+    Route::get('/manuals/{bundle}/download', [\App\Http\Controllers\ManualShareController::class, 'download'])->name('manuals.download');
 
     Route::resource('download-profiles', DownloadProfileController::class)->except(['show']);
 
@@ -78,11 +82,22 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
          ->name('contract.attachment.download');
 });
 
+// Public, read-only manual page opened from a Super Admin share link — no
+// login, shows only that manual (see ManualShareController::show).
+Route::get('/manual/{token}', [\App\Http\Controllers\ManualShareController::class, 'show'])
+    ->where('token', '[A-Za-z0-9]{40}')
+    ->middleware('throttle:60,1')
+    ->name('manuals.public');
+
 // Menu Unlock Routes (Publicly accessible for auth users)
 Route::middleware(['auth'])->group(function () {
     Route::get('/menu-unlock/{key}', [SuperAdminSettingsController::class, 'unlockForm'])->name('menu.unlock.form');
     Route::post('/menu-unlock/{key}', [SuperAdminSettingsController::class, 'unlock'])->name('menu.unlock');
     Route::get('/menu-check/{key}', [SuperAdminSettingsController::class, 'checkAccess'])->name('menu.check'); // NEW AJAX Check
+
+    // "This page is still open" ping — see EnsureBrowserSessionAlive. GET so
+    // the read-only contract mode (which blocks writes) never blocks it.
+    Route::get('/session/heartbeat', fn () => response()->noContent()->header('Cache-Control', 'no-store'))->name('session.heartbeat');
 });
 
 Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])->name('addresses.thai_data');
@@ -153,7 +168,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/{employee}/create-job', [JobController::class, 'createFromEmployee'])->name('jobs.create_from_employee');
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
     Route::post('/employees/advanced-export', [EmployeeController::class, 'advancedExport'])->name('employees.advanced_export');
-    Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->name('employees.history');
+    Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->middleware('menu:employment_history')->name('employees.history');
     Route::get('/employees/{employee}/documents/{field}', [EmployeeController::class, 'serveDocument'])->name('employees.documents.serve');
     Route::get('/employees/{employee}/documents/{field}/pdf', [EmployeeController::class, 'downloadDocumentAsPdf'])->name('employees.documents.pdf');
     Route::get('custom-fields/{id}/pdf', [App\Http\Controllers\CustomFieldController::class, 'downloadCustomFieldPdf'])->name('custom-fields.pdf');
@@ -239,10 +254,10 @@ Route::middleware('auth')->group(function () {
     Route::post('employees/bulk-to-ticket', [App\Http\Controllers\TicketRedirectController::class, 'bulkToTicket'])->name('employees.bulk_to_ticket');
 
     // === Group & Team Routes ===
-    Route::get('/groups', [App\Http\Controllers\GroupTeamController::class, 'index'])->name('groups.index');
-    Route::get('/groups/affiliated', [App\Http\Controllers\GroupTeamController::class, 'indexAffiliated'])->name('groups.affiliated.index');
-    Route::get('/groups/affiliated/{employer}/manage', [App\Http\Controllers\GroupTeamController::class, 'manageAffiliated'])->name('groups.affiliated.manage');
-    Route::get('/groups/independent/manage', [App\Http\Controllers\GroupTeamController::class, 'manageIndependent'])->name('groups.independent.manage');
+    Route::get('/groups', [App\Http\Controllers\GroupTeamController::class, 'index'])->middleware('menu:group_team')->name('groups.index');
+    Route::get('/groups/affiliated', [App\Http\Controllers\GroupTeamController::class, 'indexAffiliated'])->middleware('menu:group_team')->name('groups.affiliated.index');
+    Route::get('/groups/affiliated/{employer}/manage', [App\Http\Controllers\GroupTeamController::class, 'manageAffiliated'])->middleware('menu:group_team')->name('groups.affiliated.manage');
+    Route::get('/groups/independent/manage', [App\Http\Controllers\GroupTeamController::class, 'manageIndependent'])->middleware('menu:group_team')->name('groups.independent.manage');
     Route::post('/groups', [App\Http\Controllers\GroupTeamController::class, 'storeGroup'])->name('groups.store');
     Route::put('/groups/{group}', [App\Http\Controllers\GroupTeamController::class, 'updateGroup'])->name('groups.update');
     Route::delete('/groups/{group}', [App\Http\Controllers\GroupTeamController::class, 'destroyGroup'])->name('groups.destroy');
@@ -563,8 +578,8 @@ Route::middleware(['auth'])->group(function () {
     // Financial Hub Routes (Central Menu)
     Route::middleware('menu:finance')->prefix('finance')->name('finance.')->group(function () {
         // Finance Additions
-        Route::resource('bank-accounts', App\Http\Controllers\Finance\BankAccountController::class)->except(['create', 'edit', 'show']);
-        Route::resource('expense-categories', App\Http\Controllers\Finance\ExpenseCategoryController::class)->except(['create', 'edit', 'show']);
+        Route::resource('bank-accounts', App\Http\Controllers\Finance\BankAccountController::class)->except(['create', 'edit', 'show'])->middleware('menu:bank_accounts');
+        Route::resource('expense-categories', App\Http\Controllers\Finance\ExpenseCategoryController::class)->except(['create', 'edit', 'show'])->middleware('menu:expense_categories');
         Route::resource('income-categories', App\Http\Controllers\Finance\IncomeCategoryController::class)->except(['create', 'edit', 'show']);
         Route::resource('expenses', App\Http\Controllers\Finance\ExpenseController::class)->only(['index', 'store', 'destroy']);
 
@@ -586,13 +601,13 @@ Route::middleware(['auth'])->group(function () {
         // the Ledger/BankAccount backend above (see Finance\FinanceBookController
         // docblock). /books-expense/create must come before /books/{account}
         // so 'books-expense' isn't captured as an account ID.
-        Route::get('/books-expense/create', [App\Http\Controllers\Finance\FinanceBookController::class, 'createExpense'])->name('books.expense.create');
-        Route::get('/books', [App\Http\Controllers\Finance\FinanceBookController::class, 'index'])->name('books.index');
-        Route::get('/books/{account}', [App\Http\Controllers\Finance\FinanceBookController::class, 'show'])->name('books.show');
+        Route::get('/books-expense/create', [App\Http\Controllers\Finance\FinanceBookController::class, 'createExpense'])->middleware('menu:finance_books')->name('books.expense.create');
+        Route::get('/books', [App\Http\Controllers\Finance\FinanceBookController::class, 'index'])->middleware('menu:finance_books')->name('books.index');
+        Route::get('/books/{account}', [App\Http\Controllers\Finance\FinanceBookController::class, 'show'])->middleware('menu:finance_books')->name('books.show');
         Route::get('/books/{account}/export', [App\Http\Controllers\Finance\FinanceBookController::class, 'export'])->name('books.export');
         Route::post('/books-entry/{ledger}/correct', [App\Http\Controllers\Finance\FinanceBookController::class, 'correctEntry'])->name('books.correct');
 
-        Route::get('/books-reports', [App\Http\Controllers\Finance\FinanceReportController::class, 'index'])->name('books-reports.index');
+        Route::get('/books-reports', [App\Http\Controllers\Finance\FinanceReportController::class, 'index'])->middleware('menu:finance_books')->name('books-reports.index');
         Route::get('/books-reports/pdf', [App\Http\Controllers\Finance\FinanceReportController::class, 'pdf'])->name('books-reports.pdf');
         Route::get('/books-reports/export', [App\Http\Controllers\Finance\FinanceReportController::class, 'export'])->name('books-reports.export');
 
@@ -628,7 +643,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('audit', [App\Http\Controllers\Finance\FinanceAuditController::class, 'index'])->name('audit.index');
 
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
-        Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->name('wht_inbox');
+        Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->middleware('menu:wht_inbox')->name('wht_inbox');
         Route::post('/wht-inbox/{transaction}/received', [\App\Http\Controllers\FinancialController::class, 'markWhtReceived'])->name('wht_received');
         Route::post('/wht-inbox/{transaction}/no-certificate', [\App\Http\Controllers\FinancialController::class, 'markWhtNoCertificate'])->name('wht_no_certificate');
 
@@ -769,6 +784,7 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('ad
     Route::get('/activity-logs/{year}/{month}/{day}', [ActivityLogController::class, 'showDay'])->name('activity-logs.day');
 
     Route::get('/duplicate-records', [DuplicateRecordController::class, 'index'])->middleware('menu:duplicate_records')->name('duplicate-records.index');
+    Route::get('/attachment-sizes', [\App\Http\Controllers\Admin\AttachmentSizeController::class, 'index'])->middleware('menu:attachment_sizes')->name('attachment-sizes.index');
 
     Route::get('/notification-settings', [NotificationSettingController::class, 'index'])->name('notification_settings.index');
     Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');

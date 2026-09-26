@@ -10,7 +10,8 @@
 <h4><i class="bi bi-person-check me-2"></i>谁可以进入这个菜单?</h4>
 <ul>
     <li><span class="manual-role">Super Admin</span> <span class="manual-role">Admin</span> <span class="manual-role">Staff</span> —— 拥有完整权限</li>
-    <li><span class="manual-role">Caretaker</span> —— 仅可查看，部分内容无法编辑</li>
+    <li><span class="manual-role">Caretaker</span> —— 可处理日常工作(员工资料、预约),但不能修改工作流程结构或财务数据;获得"更新进度步骤"权限后才能勾选步骤</li>
+    <li><span class="manual-role">Employer</span>(客户账号)—— 无法进入此菜单</li>
 </ul>
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
@@ -74,6 +75,26 @@
         <li>该备注也会显示在按此分期开具的发票/收据上</li>
         <li>点击 <i class="bi bi-trash"></i> 删除分期 —— 会出现确认提示，若有雇员已分配至该分期会另行警告</li>
     </ul>
+</div>
+
+<h5>8. Pre-Production 中的分组</h5>
+<div class="manual-step">
+    点击员工卡片上的 <strong>分组</strong> → 选择或新建分组;员工列表按分组显示,与 Workflow 相同。可在分组标签上重命名/删除;"无分组"将员工移出分组。
+</div>
+
+<h5>9. 管理准备步骤(Steps 按钮)</h5>
+<div class="manual-step">
+    在同一窗口新增 / 重命名 / 删除 / 拖动排序准备步骤,无需刷新(Pre-Production 的步骤与 Workflow 的步骤分开)。
+</div>
+
+<h5>10. 多卡片标签页与发送到 Workflow</h5>
+<div class="manual-step">
+    <strong>多卡片</strong>标签页(如 MOU 引进)的每张卡片会作为独立工作发送到 Workflow,不会与同一雇主的其他卡片合并。
+</div>
+
+<h5>11. 重复检查 + 工作核查模式</h5>
+<div class="manual-step">
+    新增员工时若 护照 / 工作证 / 粉卡 / 身份证号 / RA 编号 与现有员工相同会提示。本菜单是<strong>工作核查模式</strong>覆盖的 4 个菜单之一(详见 Workflow 手册)。
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>

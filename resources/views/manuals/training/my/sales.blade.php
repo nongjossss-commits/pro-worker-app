@@ -146,6 +146,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">ဈေးနှုန်း ရွေးချယ်မှု + လွှဲပြောင်းစဉ် ထပ်နေမှုစစ်</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Show Grand Total</strong> ပိတ် = ယူနစ်ဈေးသာ</li>
+            <li>ဈေးနှုန်းမှတ်တမ်းသည် ဘေလ်အစစ်နှင့် သီးခြား — ဝင်ငွေ/ကျန်ငွေ မတွက်</li>
+            <li>ထပ်နေသော ဝန်ထမ်းပါက "လွှဲပြောင်းမည်" ကို အမှန်ခြစ်ရ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">မေးလေ့ရှိသော မေးခွန်းများ</h2>
 

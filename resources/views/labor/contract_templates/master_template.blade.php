@@ -301,7 +301,7 @@
         {{ __('No company logo has been uploaded to the system yet — the box in the header below is a placeholder. Print this page (or "Save as PDF") to get the actual file, then upload it via Contract Templates.') }}
     </div>
 
-    <div class="mt-doc">
+    <div class="mt-doc theme-keep-light" data-bs-theme="light">
         <div class="mt-letterhead">
             <div class="mt-logo-box">LOGO</div>
             <div class="mt-company">

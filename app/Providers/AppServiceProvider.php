@@ -87,8 +87,9 @@ class AppServiceProvider extends ServiceProvider
         LaborLedgerEntry::observe(LaborLedgerEntryObserver::class);
         LaborBill::observe(LaborBillObserver::class);
 
-        Event::listen(Login::class, LogSuccessfulLogin::class);
-        Event::listen(Logout::class, LogSuccessfulLogout::class);
+        // LogSuccessfulLogin / LogSuccessfulLogout (and LogFailedLogin) are picked up by
+        // Laravel's event discovery in app/Listeners — registering them here as well
+        // wrote every login/logout to the activity log twice.
 
         // Share incomplete employee count with specific views (layout)
         view()->composer('layouts.app', function ($view) {

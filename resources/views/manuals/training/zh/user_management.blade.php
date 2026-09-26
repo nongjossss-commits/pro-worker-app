@@ -85,6 +85,20 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">按用户设置的权限</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>更新进度步骤</strong> —— 勾选步骤(Admin/Staff 有,Caretaker 默认没有)</li>
+            <li><strong>编辑员工</strong> —— 与勾选步骤分开</li>
+            <li><strong>管理工作流程</strong> —— 工作/步骤 · <strong>管理财务</strong> —— 价格/账单/收款</li>
+            <li><strong>移动附件</strong> —— 可授予特定用户</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">常见问题</h2>
 

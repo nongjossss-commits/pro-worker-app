@@ -18,6 +18,26 @@
 </div>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 0</div>
+    <h2 class="slide-title">登录 + 安全</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'dashboard/03-login',
+        'alt' => '登录页面 —— 颜色和标志跟随系统品牌设置',
+        'caption' => '登录页面 —— 颜色和标志跟随系统品牌设置',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>关闭浏览器 / 应用 → 下次需重新登录</li>
+            <li>程序页面全部关闭超过 5 分钟 → 自动登出</li>
+            <li>刷新或新标签页 → 照常使用</li>
+            <li>"记住我"记住邮箱;"忘记密码?"发送重设链接(60 分钟有效)</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">STEP 1</div>
     <h2 class="slide-title">打开 Dashboard + 查看总览</h2>
 
@@ -38,6 +58,7 @@
             <li>登录 → 自动进入 Dashboard</li>
             <li>查看顶部的摘要卡片</li>
             <li>点击卡片或快捷链接前往所需菜单</li>
+            <li>语言按钮后的按钮 = <strong>浅色 / 深色 / 跟随设备</strong>模式 —— 立即切换无需刷新,按设备分别记住</li>
         </ol>
     </div>
 </section>

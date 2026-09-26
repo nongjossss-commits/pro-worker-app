@@ -148,6 +148,63 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Finance Hub — click a card to filter</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/06-card-filter',
+        'alt' => 'Clicking "Income this month" — only bills that received money this month, with a summary',
+        'caption' => 'Clicking "Income this month" — only bills that received money this month, with a summary',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Income today / this month</strong> = money actually received, by each payment date</li>
+            <li>Click a card to list the bills behind the number; payments are shown under "Paid" (bold = this period)</li>
+            <li>A badge shows which menu/tab each bill came from; the Source filter separates bills from deleted tabs</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">Billing per work menu + receiving payments</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/09-registration-tab',
+        'alt' => 'Tabs per work menu — total / billed / outstanding per employer',
+        'caption' => 'Tabs per work menu — total / billed / outstanding per employer',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Manage Finance</strong> → set prices → create the bill</li>
+            <li>Record amount, date received, account and slip — several instalments allowed</li>
+            <li>No account selected → confirmation, because it won't post to any bank balance</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">Credit notes + quotations</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'finance/07-credit-notes',
+        'alt' => 'Credit Notes — reduce a bill that was already issued',
+        'caption' => 'Credit Notes — reduce a bill that was already issued',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Customer won't pay the rest → issue a credit note for the remaining amount; the bill becomes "paid"</li>
+            <li><strong>Manual bill</strong>: choose Quotation or Invoice first; quotations have their own tab and never count as income</li>
+            <li>Manual bills can include draft employees</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">Frequently Asked Questions</h2>
 

@@ -12,10 +12,52 @@ use Carbon\Carbon;
 
 class ActivityLogController extends Controller
 {
+    /** Employee columns searched by name / any ID number (RA = name_list_number). */
+    protected const EMPLOYEE_SEARCH_COLUMNS = [
+        'employeeNameTh', 'employeeNameEn', 'name_suffix', 'employeePassport', 'employee_reference_id',
+        'request_number', 'registration_request_number', 'renewal_request_number', 'name_list_number',
+        'employeeWorkPermit', 'pinkCardNo', 'employee_id_number', 'tax_id_number', 'employer_employee_id',
+        'social_security_number', 'visaEndorsementNo', 'outsource_code', 'employeePhone', 'email',
+    ];
+
+    protected const EMPLOYER_SEARCH_COLUMNS = [
+        'employerNameTh', 'employerNameEn', 'name_suffix', 'employerId', 'employerTaxId',
+        'outsource_re_code', 'employerPhone', 'employerEmail',
+    ];
+
+    /**
+     * IDs of employees / employers / users whose name or ID numbers match
+     * $term — keyed by model class, for the day view's search box.
+     */
+    protected function matchingSubjects(string $term): array
+    {
+        if (mb_strlen($term) < 2) {
+            return [];
+        }
+        $like = '%' . $term . '%';
+        $search = function ($query, array $columns) use ($like) {
+            return $query->where(function ($q) use ($columns, $like) {
+                foreach ($columns as $column) {
+                    $q->orWhere($column, 'like', $like);
+                }
+            })->limit(500)->pluck('id')->all();
+        };
+
+        return [
+            Employee::class => $search(Employee::withTrashed(), self::EMPLOYEE_SEARCH_COLUMNS),
+            Employer::class => $search(Employer::withTrashed(), self::EMPLOYER_SEARCH_COLUMNS),
+            User::class => $search(User::query(), ['name', 'email']),
+        ];
+    }
+
     public function index()
     {
         // Get distinct years from created_at
-        $years = ActivityLog::selectRaw('YEAR(created_at) as year')
+        // YEAR() is MySQL-only; SQLite (local dev / tests) needs strftime().
+        $yearExpr = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite'
+            ? "CAST(strftime('%Y', created_at) AS INTEGER)"
+            : 'YEAR(created_at)';
+        $years = ActivityLog::selectRaw($yearExpr . ' as year')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year');
@@ -76,10 +118,26 @@ class ActivityLogController extends Controller
                 // Search by subject ID
                 $query->where('subject_id', (int) $matches[1]);
             } else {
-                // Search by description or subject name (via properties or description text)
-                $query->where(function ($q) use ($searchTerm) {
+                // Match the text itself, the changed values (so an RA / passport /
+                // request number typed into a form is found on the day it was
+                // entered), and every log of an employee / employer / user whose
+                // name or ID numbers match.
+                $matches = $this->matchingSubjects($searchTerm);
+                // properties is stored as JSON with Thai escaped (\u0e..), so also look for that form
+                $escaped = trim(json_encode($searchTerm), '"');
+                $query->where(function ($q) use ($searchTerm, $escaped, $matches) {
                     $q->where('description', 'like', '%' . $searchTerm . '%')
-                      ->orWhere('subject_id', 'like', '%' . $searchTerm . '%');
+                      ->orWhere('subject_id', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('properties', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('properties', 'like', '%' . $escaped . '%');
+                    foreach ($matches as $type => $ids) {
+                        if ($ids) {
+                            $q->orWhere(fn ($s) => $s->where('subject_type', $type)->whereIn('subject_id', $ids));
+                        }
+                    }
+                    if (!empty($matches[User::class])) {
+                        $q->orWhereIn('user_id', $matches[User::class]);
+                    }
                 });
             }
         }
@@ -130,21 +188,16 @@ class ActivityLogController extends Controller
 
         $results = [];
 
-        // ค้นหาลูกจ้าง
-        $employees = Employee::where(function ($query) use ($q) {
-                $query->where('employeeNameTh', 'like', "%{$q}%")
-                      ->orWhere('employeeNameEn', 'like', "%{$q}%")
-                      ->orWhere('name_suffix', 'like', "%{$q}%")
-                      ->orWhere('employeePassport', 'like', "%{$q}%")
-                      ->orWhere('employee_reference_id', 'like', "%{$q}%")
-                      ->orWhere('request_number', 'like', "%{$q}%")
-                      ->orWhere('registration_request_number', 'like', "%{$q}%")
-                      ->orWhere('renewal_request_number', 'like', "%{$q}%")
-                      ->orWhere('id', $q);
+        // ค้นหาลูกจ้าง — ชื่อ และเลขทุกชนิดที่มีในฟอร์ม (RA, พาสปอร์ต, ใบอนุญาตทำงาน, คำขอ, …)
+        $employees = Employee::withTrashed()->where(function ($query) use ($q) {
+                foreach (self::EMPLOYEE_SEARCH_COLUMNS as $column) {
+                    $query->orWhere($column, 'like', "%{$q}%");
+                }
+                $query->orWhere('id', $q);
             })
             ->with('employer:id,employerNameTh,employerNameEn')
             ->limit(15)
-            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'employee_reference_id', 'employer_id']);
+            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeePassport', 'employee_reference_id', 'name_list_number', 'employeeWorkPermit', 'employer_id', 'deleted_at']);
 
         foreach ($employees as $emp) {
             $results[] = [
@@ -156,18 +209,21 @@ class ActivityLogController extends Controller
                 'name_sub' => $emp->employeeNameTh ?: '',
                 'detail' => implode(' | ', array_filter([
                     $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                    $emp->name_list_number ? "RA: {$emp->name_list_number}" : null,
+                    $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
                     $emp->employee_reference_id ? "Ref: {$emp->employee_reference_id}" : null,
+                    $emp->deleted_at ? 'อยู่ในถังขยะ' : null,
                 ])),
                 'employer' => $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? '',
             ];
         }
 
         // ค้นหานายจ้าง
-        $employers = Employer::where(function ($query) use ($q) {
-                $query->where('employerNameTh', 'like', "%{$q}%")
-                      ->orWhere('employerNameEn', 'like', "%{$q}%")
-                      ->orWhere('name_suffix', 'like', "%{$q}%")
-                      ->orWhere('id', $q);
+        $employers = Employer::withTrashed()->where(function ($query) use ($q) {
+                foreach (self::EMPLOYER_SEARCH_COLUMNS as $column) {
+                    $query->orWhere($column, 'like', "%{$q}%");
+                }
+                $query->orWhere('id', $q);
             })
             ->limit(10)
             ->get(['id', 'employerNameTh', 'employerNameEn']);

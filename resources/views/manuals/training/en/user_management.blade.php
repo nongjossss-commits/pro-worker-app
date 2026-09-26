@@ -85,6 +85,20 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">Per-user permissions</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Update progress steps</strong> — tick steps (Admin/Staff yes, Caretaker no by default)</li>
+            <li><strong>Edit employees</strong> — separate from ticking steps</li>
+            <li><strong>Manage workflow</strong> — jobs/steps · <strong>Manage finance</strong> — prices/bills/payments</li>
+            <li><strong>Move attachment files</strong> — can be delegated to specific users</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">Frequently Asked Questions</h2>
 

@@ -1,13 +1,13 @@
-{{-- Training Edition: Employment History --}}
+{{-- Training Edition: Notified-Out Employees (เดิม: Employment History) --}}
 
 <div class="training-intro">
     <h3 class="training-intro-title">
-        <i class="bi bi-person-badge"></i> {{ __('ประวัติการจ้างงาน (Employment History)') }} — {{ __('รายชื่อลูกจ้างทุกคน รวมที่ลาออก/ครบสัญญา') }}
+        <i class="bi bi-person-badge"></i> {{ __('ลูกจ้างที่ถูกแจ้งออก (Notified-Out Employees)') }} — {{ __('รายชื่อลูกจ้างที่ลาออก / เลิกจ้าง / ครบสัญญาแล้ว') }}
     </h3>
     <p class="training-intro-desc">
-        เมนู <strong>"ประวัติการจ้างงาน"</strong> แสดง<strong>ลูกจ้างทุกคน</strong>ที่เคยอยู่ในระบบ
-        ไม่ว่าจะ active, ลาออกแล้ว, ครบสัญญา, หรือเปลี่ยนนายจ้างไปแล้ว
-        ใช้สำหรับดูประวัติย้อนหลัง, หาลูกจ้างเก่า, และ <strong>ย้ายนายจ้าง</strong>ลูกจ้างที่ออกแล้ว
+        เมนู <strong>"ลูกจ้างที่ถูกแจ้งออก"</strong> (เดิมชื่อ "ประวัติการจ้างงาน") แสดง<strong>ลูกจ้างที่ถูกแจ้งออกแล้ว</strong>
+        (ลาออก / เลิกจ้าง / ครบสัญญา) พร้อมวันที่และเหตุผล
+        ใช้สำหรับหาลูกจ้างเก่า และ <strong>ย้ายนายจ้าง</strong>ลูกจ้างที่ออกแล้วเข้าทำงานใหม่
     </p>
     <div class="training-role-row">
         <span class="role-pill role-admin">Super Admin</span>
@@ -23,8 +23,8 @@
 
     @include('manuals.training._screenshot', [
         'src' => 'employment_history/01-search-filter',
-        'alt' => 'หน้าประวัติการจ้างงาน + filter bar',
-        'caption' => 'Employment History — แสดงลูกจ้างทั้งหมด รวมที่ไม่ active',
+        'alt' => 'หน้าลูกจ้างที่ถูกแจ้งออก + filter bar',
+        'caption' => 'ลูกจ้างที่ถูกแจ้งออก — แสดงวันที่แจ้งออกและเหตุผลของแต่ละคน',
         'callouts' => [
             '<strong>ค้นหา:</strong> พิมพ์ชื่อ / passport',
             '<strong>กรองสัญชาติ:</strong> เมียนมา / ลาว / กัมพูชา / เวียดนาม',
@@ -36,7 +36,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>ประวัติการจ้างงาน</strong></li>
+            <li>Sidebar → <strong>ลูกจ้างที่ถูกแจ้งออก</strong></li>
             <li>พิมพ์ค้นหาหรือใช้ filter ที่ด้านบน</li>
             <li>กด "กรอง" — ผลลัพธ์รวมทั้ง active + ไม่ active</li>
         </ol>
@@ -99,7 +99,10 @@
 
     <dl class="slide-faq">
         <dt>Q: ต่างจากเมนู "ข้อมูลลูกจ้าง" ยังไง?</dt>
-        <dd>A: ลูกจ้าง = active เท่านั้น, ประวัติ = ทุกคน รวมลาออก/ครบสัญญา/แจ้งออก</dd>
+        <dd>A: "ข้อมูลลูกจ้าง" = คนที่ยังทำงานอยู่ · "ลูกจ้างที่ถูกแจ้งออก" = คนที่ลาออก/เลิกจ้าง/ครบสัญญาแล้ว (ถ้าค้นหาในเมนูข้อมูลลูกจ้าง จะเจอคนที่ถูกแจ้งออกด้วย พร้อมป้ายบอกสถานะ)</dd>
+
+        <dt>Q: เอาลูกจ้างกลับมาทำงานกับนายจ้างใหม่?</dt>
+        <dd>A: ใช้ปุ่มย้ายนายจ้างในเมนูนี้ หรือเพิ่มเข้าแท็บ "แจ้งเข้า / เปลี่ยนนายจ้าง" ใน Workflow — ระบบย้ายให้ทันที</dd>
 
         <dt>Q: ลูกจ้างที่อยู่ถังขยะ เห็นที่นี่ไหม?</dt>
         <dd>A: ไม่ — ต้องไป "ถังขยะกลาง" (Central Trash) — กู้คืนได้</dd>

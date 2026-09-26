@@ -81,6 +81,16 @@
     </div>
 </div>
 
+<h5>5. 报价单 —— 显示总额或单价</h5>
+<div class="manual-step">
+    <strong>显示总额(Show Grand Total)</strong>:开启 = 显示数量/金额/总额;关闭 = 只显示单价(无数量/金额栏,也无"收件人签名")。报价单记录与财务中的真实账单分开,不计入收入或未结金额。
+</div>
+
+<h5>6. 成交转移时的重复检查</h5>
+<div class="manual-step">
+    转移到注册决议 / 续签决议 / Workflow 时,系统会检查员工是否重复(护照 / 工作证 / 粉卡 / 身份证号 / RA 编号);如有重复,需勾选"仍然转移"才能继续。
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>须知事项 / 使用小贴士</h4>
 
 <div class="manual-tip">

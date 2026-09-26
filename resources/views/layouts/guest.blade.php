@@ -26,6 +26,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    @include('partials._theme_init')
     <meta name="theme-color" content="{{ $primary }}">
 
     <title>{{ isset($heading) && trim(strip_tags($heading)) !== '' ? trim(strip_tags($heading)) . ' - ' : '' }}{{ $brand['app_name'] }}</title>
@@ -195,6 +196,25 @@
         .auth-footer-links { margin-top: 20px; text-align: center; font-size: 14px; color: var(--ink-soft); }
         .auth-footer-links a { display: inline-flex; align-items: center; gap: 6px; }
         .auth-copy { font-size: 12px; color: var(--ink-muted); text-align: center; }
+
+        /* Dark display mode (the choice made in the app's top bar, or the device setting) */
+        html[data-bs-theme="dark"] {
+            --ink: #f1f5f9; --ink-soft: #cbd5e1; --ink-muted: #94a3b8;
+            --line: #334155; --surface: #1e293b;
+            color-scheme: dark;
+        }
+        html[data-bs-theme="dark"] body.auth-body {
+            background:
+                radial-gradient(900px 480px at 0% 0%, rgba(var(--brand-rgb), .20), transparent 60%),
+                radial-gradient(700px 420px at 100% 100%, rgba(var(--brand-rgb), .14), transparent 60%),
+                #0f172a;
+        }
+        html[data-bs-theme="dark"] .auth-card { box-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 48px -12px rgba(0, 0, 0, .6); }
+        html[data-bs-theme="dark"] .auth-input { background: #0f172a; }
+        html[data-bs-theme="dark"] .auth-input[readonly] { background: #273449; }
+        html[data-bs-theme="dark"] .auth-toggle:hover { background: #334155; }
+        html[data-bs-theme="dark"] .auth-alert--success { background: rgba(34, 197, 94, .12); color: #86efac; border-color: rgba(34, 197, 94, .3); }
+        html[data-bs-theme="dark"] .auth-btn--ghost:hover { background: #273449; }
     </style>
     @stack('head')
 </head>

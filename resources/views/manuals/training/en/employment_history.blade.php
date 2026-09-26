@@ -2,12 +2,10 @@
 
 <div class="training-intro">
     <h3 class="training-intro-title">
-        <i class="bi bi-person-badge"></i> {{ __('Employment History') }} — {{ __('Every employee ever, including terminated/contract-ended') }}
+        <i class="bi bi-person-badge"></i> Notified-Out Employees — Employees who resigned, were dismissed or whose contract ended
     </h3>
     <p class="training-intro-desc">
-        The <strong>"Employment History"</strong> menu shows <strong>every employee</strong> that has ever been in the system,
-        whether active, terminated, contract-ended, or already transferred to another employer.
-        Used to review past history, find old employees, and <strong>transfer</strong> former employees to a new employer
+        The <strong>"Notified-Out Employees"</strong> menu (formerly "Employment History") lists employees who have been <strong>notified out</strong> — resigned, dismissed or contract ended — with the date and reason. Active employees are in the "Employees" menu. Use it to find former employees and to <strong>transfer</strong> them to a new employer.
     </p>
     <div class="training-role-row">
         <span class="role-pill role-admin">Super Admin</span>
@@ -23,8 +21,8 @@
 
     @include('manuals.training._screenshot', [
         'src' => 'employment_history/01-search-filter',
-        'alt' => 'Employment History page + filter bar',
-        'caption' => 'Employment History — shows every employee, including inactive ones',
+        'alt' => 'Notified-Out Employees page + filter bar',
+        'caption' => 'Employees who resigned, were dismissed or whose contract ended',
         'callouts' => [
             '<strong>Search:</strong> type a name / passport number',
             '<strong>Filter by nationality:</strong> Myanmar / Laos / Cambodia / Vietnam',
@@ -36,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Employment History</strong></li>
+            <li>Sidebar → <strong>Notified-Out Employees</strong></li>
             <li>Type a search or use the filters at the top</li>
             <li>Click "Filter" — results include both active + inactive employees</li>
         </ol>
@@ -99,7 +97,7 @@
 
     <dl class="slide-faq">
         <dt>Q: How is this different from the "Employees" menu?</dt>
-        <dd>A: Employees = active only, Employment History = everyone, including terminated/contract-ended/notified-out</dd>
+        <dd>A: Employees = people still working · Notified-Out Employees = people who resigned / were dismissed / whose contract ended (a search in Employees also finds them, with a status badge)</dd>
 
         <dt>Q: Do employees in the trash show up here?</dt>
         <dd>A: No — go to "Central Trash" instead — they can be restored from there</dd>

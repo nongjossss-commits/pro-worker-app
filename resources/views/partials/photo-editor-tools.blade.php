@@ -230,19 +230,109 @@
         // ---------- Face-center crop (native FaceDetector where available) ----------
 
         // Returns { x, y, width, height } in image pixel coords or null.
+        //
+        // The browser's FaceDetector API only exists in a few browsers (desktop
+        // Chrome/Edge on Windows don't have it without a flag), so when it is
+        // missing or finds nothing, the face is located from the person's
+        // outline instead — cut out with the same AI background-removal
+        // library the photo editor already loads (window.backgroundRemoval).
         async function detectFace(file) {
-            if (typeof FaceDetector === 'undefined') return null;
+            if (typeof FaceDetector !== 'undefined') {
+                try {
+                    const img = await fileToImage(file);
+                    const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+                    const faces = await detector.detect(canvasFromImage(img));
+                    if (faces && faces.length) return faces[0].boundingBox; // {x,y,width,height}
+                } catch (e) {
+                    console.warn('FaceDetector failed, using the outline method:', e);
+                }
+            }
+            return await detectFaceFromOutline(file);
+        }
+
+        async function detectFaceFromOutline(file) {
+            const br = window.backgroundRemoval;
+            if (!br || typeof br.waitForLibrary !== 'function') return null;
             try {
-                const img = await fileToImage(file);
-                const canvas = canvasFromImage(img);
-                const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
-                const faces = await detector.detect(canvas);
-                if (!faces || !faces.length) return null;
-                return faces[0].boundingBox; // {x,y,width,height}
+                const removeBg = await br.waitForLibrary();
+                // A small copy is plenty to find the head and keeps it quick.
+                const small = await br.resizeImage(file, 400);
+                const cfg = { output: { format: 'image/png' } };
+                let cutout;
+                try { cutout = await removeBg(small, { ...cfg, device: 'gpu' }); }
+                catch (e) { cutout = await removeBg(small, { ...cfg, device: 'cpu' }); }
+
+                const [img, cut] = await Promise.all([fileToImage(file), fileToImage(cutout)]);
+                const box = headBoxFromMask(cut);
+                if (!box) return null;
+                const sx = img.width / cut.width, sy = img.height / cut.height;
+                return { x: box.x * sx, y: box.y * sy, width: box.width * sx, height: box.height * sy };
             } catch (e) {
-                console.warn('FaceDetector failed:', e);
+                console.warn('Face-from-outline failed:', e);
                 return null;
             }
+        }
+
+        // Head position from a cut-out (alpha) image: walk down from the top of
+        // the person — the outline widens over the head, narrows at the neck,
+        // then widens again at the shoulders. Returns a box shaped like a face
+        // detector's (forehead-to-chin), in the cut-out's own pixel coords.
+        function headBoxFromMask(cut) {
+            const w = cut.width, h = cut.height;
+            const data = canvasFromImage(cut).getContext('2d').getImageData(0, 0, w, h).data;
+            const rows = [];
+            for (let y = 0; y < h; y++) {
+                let left = -1, right = -1, count = 0;
+                for (let x = 0; x < w; x++) {
+                    if (data[(y * w + x) * 4 + 3] >= 128) {
+                        if (left < 0) left = x;
+                        right = x; count++;
+                    }
+                }
+                rows.push({ left, right, count });
+            }
+            const minRow = Math.max(3, w * 0.02);
+            const top = rows.findIndex(r => r.count >= minRow);
+            if (top < 0) return null;
+
+            // 1. Widest part of the head (hair / ear level): the outline grows
+            //    from the crown, then gets narrower again below the ears.
+            let headMax = 0, peakEnd = -1;
+            for (let y = top; y < h; y++) {
+                const c = rows[y].count;
+                if (c > headMax) headMax = c;
+                else if (c < headMax * 0.9 && y - top > 5) { peakEnd = y; break; }
+            }
+            if (peakEnd < 0) return null; // no head shape (e.g. hair down to the shoulders)
+
+            // 2. Chin: below the head the outline is narrowest (face / neck),
+            //    then widens again at the collar, hood or shoulders.
+            let minW = Infinity, riseY = -1;
+            for (let y = peakEnd; y < h; y++) {
+                const c = rows[y].count;
+                if (c > 0 && c < minW) minW = c;
+                if (c > minW * 1.3) { riseY = y; break; }
+            }
+            // A head is about 1.0–1.35× as tall (crown to chin) as it is wide:
+            // keep the chin inside that range so a long neck or a very early
+            // collar can't throw it off.
+            let chinY = riseY > 0 ? riseY : top + Math.round(headMax * 1.25);
+            chinY = Math.max(top + Math.round(headMax * 1.0), Math.min(chinY, top + Math.round(headMax * 1.35)));
+            chinY = Math.min(chinY, h - 1);
+
+            const headH = chinY - top;
+            if (headH < 8) return null;
+            // Horizontal centre = middle of the head band (between eyes and chin).
+            let sum = 0, n = 0;
+            for (let y = top + Math.round(headH * 0.3); y <= top + Math.round(headH * 0.85); y++) {
+                const r = rows[y];
+                if (r.count > 0) { sum += (r.left + r.right) / 2; n++; }
+            }
+            const cx = n ? sum / n : w / 2;
+            // Face detectors box roughly eyebrows-to-chin: the lower ~62% of the head.
+            const faceW = Math.min(headMax, headH) * 0.8;
+            const faceH = headH * 0.62;
+            return { x: cx - faceW / 2, y: top + headH * 0.38, width: faceW, height: faceH };
         }
 
         // Auto-crop centered on face with 2:2.4 aspect ratio (150x180 ID photo).

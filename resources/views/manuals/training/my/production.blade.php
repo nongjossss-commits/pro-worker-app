@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (ကြည့်ရှုရုံသာ)</span>
+        <span class="role-pill role-readonly">Caretaker (နေ့စဉ်အလုပ်)</span>
     </div>
 </div>
 
@@ -146,6 +146,20 @@
 
     <div class="slide-warn">
         ⚠️ <strong>သတိပြုရန်:</strong> Workflow သို့ ပို့ပြီးသော အလုပ်ကို Pre-Prod တွင် ထပ်မံပြင်ဆင်၍ မရတော့ပါ — Workflow တွင်သာ ပြင်ဆင်ရမည်
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">အဖွဲ့ခွဲခြင်း + ပြင်ဆင်မှုအဆင့်များ</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ဝန်ထမ်းကတ်ပေါ်ရှိ <strong>အဖွဲ့စီမံ</strong> — ဝန်ထမ်းများကို အဖွဲ့လိုက် ပြသည်</li>
+            <li>အဖွဲ့အမည် ပြောင်း/ဖျက်၊ "အဖွဲ့မရှိ" ဖြင့် ထုတ်</li>
+            <li><strong>Steps</strong> ခလုတ်: စာမျက်နှာ ပြန်မဖွင့်ဘဲ ပြင်ဆင်မှုအဆင့်များ ထည့် / အမည်ပြောင်း / ဖျက် / အစီအစဉ်ပြောင်း</li>
+            <li>ကတ်များစွာ tab ၏ ကတ်တစ်ခုစီကို Workflow သို့ သီးခြားပို့၊ ထပ်နေသော ဝန်ထမ်းကို သတိပေး</li>
+        </ol>
     </div>
 </section>
 

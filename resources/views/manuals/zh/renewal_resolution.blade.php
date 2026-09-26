@@ -13,7 +13,8 @@
 <h4><i class="bi bi-person-check me-2"></i>谁可以进入这个菜单?</h4>
 <ul>
     <li><span class="manual-role">Super Admin</span> <span class="manual-role">Admin</span> <span class="manual-role">Staff</span> —— 可以进入</li>
-    <li><span class="manual-role">Caretaker</span> —— 仅可查看</li>
+    <li><span class="manual-role">Caretaker</span> —— 可处理日常工作(员工资料、预约),但不能修改工作流程结构或财务数据;获得"更新进度步骤"权限后才能勾选步骤</li>
+    <li><span class="manual-role">Employer</span>(客户账号)—— 无法进入此菜单</li>
 </ul>
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
@@ -45,10 +46,9 @@
     顶部摘要卡片显示：该决议中的雇员总数、已完成数、剩余数
 </div>
 
-<h5>4. 自动应用(Auto-apply)</h5>
+<h5>4. 进度更新</h5>
 <div class="manual-step">
-    <strong>Workflow MOU 自动应用</strong>系统会与本决议协同工作 ——
-    在 Workflow 中完成的续签工作，每 24 小时会自动应用回本决议
+    不再每 24 小时自动从 Workflow 拉取结果 —— 由用户按颜色系统勾选每位员工的进度。<strong>Auto Settings</strong> 会在员工标记完成 24 小时后自动更新到期日期。
 </div>
 
 <h5>5. Auto Settings —— 按标签单独设置(Per-tab)</h5>
@@ -85,6 +85,51 @@
     工作许可证或签证到期日与某标签的 Auto Settings 相符的雇员，会在日期更新时<strong>立即被自动拉入该标签</strong>
     <br>
     <strong>"仅新增(add-only)"机制:</strong> 已在菜单中的雇员，在日期更新时<strong>不会被移除</strong> —— 只会根据进度更改颜色(只有手动点击完成/取消才会将其移出菜单)
+</div>
+
+<h5>8. 选择已完成的员工与三种全选方式</h5>
+<div class="manual-step">
+    已完成员工的复选框在 24 小时撤销期内隐藏,过后重新可选。对同时有已完成和未完成员工的雇主点击全选时,系统会询问:<strong>全部 / 仅已完成 / 仅未完成</strong>(用于导出、批量编辑、下载)。
+</div>
+
+<h5>9. 分组</h5>
+<div class="manual-step">
+    点击员工卡片上的 <strong>分组</strong> → 选择或新建分组(如"第 1 批")。分组按决议标签页和雇主分开;重命名/删除即时生效,无需刷新。
+</div>
+
+<h5>10. 预约与申请编号按标签页分开</h5>
+<div class="manual-step">
+    预约日期/地点和申请编号<strong>按决议标签页</strong>保存 —— 在一个标签页设置不会出现在其他标签页或菜单。
+</div>
+
+<h5>11. 标签页提示标记开关(超级管理员)</h5>
+<div class="manual-step">
+    位于标签页编辑按钮旁 —— 用于提前准备但尚未启用的标签页:员工照常处理,但卡片上的"属于决议组…"标记和通知标记会隐藏,避免与当前轮次混淆。
+</div>
+
+<h5>12. 批量移动附件(超级管理员)</h5>
+<div class="manual-step">
+    勾选员工 → <strong>移动附件</strong> → 交换 / 移动并删除来源 / <strong>合并到 B</strong>(合并两个 PDF)。只作用于所选员工;可授予特定 Admin/Staff。
+</div>
+
+<h5>13. 删除已开账单的标签页</h5>
+<div class="manual-step">
+    删除标签页会先隐藏 7 天(可恢复),之后永久删除。<strong>已开账单</strong>的工作不会被删除 —— 账单和收款记录仍保留,可在财务菜单继续收款或开具贷项通知单(红色"标签页已删除"标记)。
+</div>
+
+<h5>14. 来自注册决议的员工(双重显示)</h5>
+<div class="manual-step">
+    仍在注册决议中的员工,若签证/工作证到期日与本续签标签页的目标日期相同,也会在此显示并带有 <strong>"From Registration Resolution"</strong> 标记 —— 可自由勾选/完成/取消/恢复,不影响其在注册决议中的状态(此类卡片隐藏删除按钮)。
+</div>
+
+<h5>15. 三种方式添加员工</h5>
+<div class="manual-step">
+    <strong>添加员工</strong>提供:<strong>选择现有员工</strong>(按姓名 / 护照 / RA 编号 / 工作证 / 身份证号 / 员工编号搜索)、<strong>新建</strong>(带重复提示)、<strong>从 Excel 导入</strong>。添加的员工只加入当前标签页,各标签页互相独立。
+</div>
+
+<h5>16. 已通知离职的员工</h5>
+<div class="manual-step">
+    已从雇主处通知离职(尚未转到新雇主)的员工,不再出现在原雇主的续签标签页中。
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>

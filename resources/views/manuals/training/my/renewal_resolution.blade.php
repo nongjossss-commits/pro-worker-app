@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (ကြည့်ရှုရုံသာ)</span>
+        <span class="role-pill role-readonly">Caretaker (နေ့စဉ်အလုပ်)</span>
     </div>
 </div>
 
@@ -136,6 +136,46 @@
 
     <div class="slide-tip">
         💡 <strong>Stat ကတ်ကို နှိပ်ပါ:</strong> = ထိုအမျိုးအစားသို့ ချက်ချင်း စစ်ထုတ်သည် (ဥပမာ "Finished" ကို နှိပ်ပါက → ပြီးစီးသူများကိုသာ စစ်ထုတ်သည်)
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">ဝန်ထမ်းထည့်နည်း ၃ မျိုး + နှစ်နေရာ ပြသ ဝန်ထမ်းများ</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>ဝန်ထမ်းထည့်</strong>: ရှိပြီးသားရွေး / အသစ်ဖန်တီး / Excel import — ဖွင့်ထားသော tab ထဲသာ</li>
+            <li>သက်တမ်းကုန်ရက် ပစ်မှတ်ရက်နှင့် တူသော မှတ်ပုံတင်ဝန်ထမ်းများ <strong>"From Registration Resolution"</strong> အမှတ်အသားဖြင့် ပေါ်</li>
+            <li>အလုပ်ထွက်ကြောင်း အကြောင်းကြားပြီးသူများ အလုပ်ရှင်ဟောင်း၏ သက်တမ်းတိုး tab တွင် မပေါ်တော့</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">ဝန်ထမ်းရွေးခြင်း + အဖွဲ့ခွဲခြင်း</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ပြီးသော ဝန်ထမ်းများကို ၂၄ နာရီ Undo ကာလ ပြီးနောက် ပြန်ရွေးနိုင်</li>
+            <li>အလုပ်ရှင် အားလုံးရွေး → <strong>အားလုံး / ပြီးသူများသာ / မပြီးသေးသူများသာ</strong></li>
+            <li>ဝန်ထမ်းကတ်ပေါ်ရှိ <strong>အဖွဲ့စီမံ</strong> (tab နှင့် အလုပ်ရှင်အလိုက်)</li>
+            <li>ချိန်းဆိုမှုနှင့် လျှောက်လွှာနံပါတ်ကို tab အလိုက် သိမ်း</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">Super Admin ကိရိယာများ</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Tab အမှတ်အသား ခလုတ်</strong>: ကြိုတင်ပြင်ဆင်ထားသော tab ၏ "ဆုံးဖြတ်ချက်အုပ်စုတွင်…" အမှတ်အသား ဝှက်</li>
+            <li><strong>ပူးတွဲဖိုင်ရွှေ့</strong>: ရွေးထားသူများ၏ PDF လဲလှယ် / ရွှေ့ / ပေါင်း</li>
+            <li><strong>Tab ဖျက်ခြင်း</strong>: ဘေလ်ရှိသော အလုပ်များ ကျန်ရှိ၊ ငွေကြေးမီနူးတွင် ဆက်စီမံနိုင်</li>
+        </ol>
     </div>
 </section>
 

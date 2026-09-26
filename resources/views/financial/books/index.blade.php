@@ -10,12 +10,16 @@
             <a href="{{ route('finance.income-categories.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-tags me-1"></i>{{ __('Income Categories') }}
             </a>
+            @if(\App\Facades\SuperAdmin::isVisible('expense_categories'))
             <a href="{{ route('finance.expense-categories.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-tags me-1"></i>{{ __('Expense Categories') }}
             </a>
+            @endif
+            @if(\App\Facades\SuperAdmin::isVisible('bank_accounts'))
             <a href="{{ route('finance.bank-accounts.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-bank me-1"></i>{{ __('Bank Accounts') }}
             </a>
+            @endif
         </div>
     </div>
 

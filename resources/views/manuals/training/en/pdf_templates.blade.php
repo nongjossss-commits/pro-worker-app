@@ -77,6 +77,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">Preview + export/import templates</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>In the Builder click <strong>Preview</strong> to see the real PDF</li>
+            <li>On the list, tick templates → <strong>Export</strong> JSON</li>
+            <li>In another installation → <strong>Import</strong> (image fields need re-upload)</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">Frequently Asked Questions</h2>
 

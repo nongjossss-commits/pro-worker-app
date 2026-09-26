@@ -13,7 +13,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (ကြည့်ရှုရုံသာ)</span>
+        <span class="role-pill role-readonly">Caretaker (နေ့စဉ်အလုပ်)</span>
     </div>
 </div>
 
@@ -170,6 +170,58 @@
 </section>
 
 {{-- ═════════════════════════════════════════════════════════════════════ --}}
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">ကတ်များစွာ tab — ကတ်တစ်ခုလုံး ပြီးစေခြင်း</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'workflow/07-multi-card',
+        'alt' => 'ကတ်များစွာ tab (ဥပမာ MOU တင်သွင်း) — ကတ်တစ်ခုလျှင် အလုပ်တစ်ခု',
+        'caption' => 'ကတ်များစွာ tab (ဥပမာ MOU တင်သွင်း) — ကတ်တစ်ခုလျှင် အလုပ်တစ်ခု',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Super Admin က tab တစ်ခုစီအတွက် <strong>ကတ်တစ်ခု</strong> (အလုပ်ရှင်တစ်ဦး ကတ်တစ်ခု) သို့မဟုတ် <strong>ကတ်များစွာ</strong> (အလုပ်တစ်ခု ကတ်တစ်ခု၊ ဥပမာ MOU တင်သွင်း) ရွေးသည်</li>
+            <li>ကတ်များစွာ: <strong>Finish Job</strong> က ကတ်တစ်ခုလုံးကို ပြီးစေသည်၊ ၂၄ နာရီအတွင်း <strong>Completed Jobs</strong> မှ ပြန်ဖျက်နိုင်</li>
+            <li><strong>Cancel</strong> ပယ်ဖျက်ကြောင်း မှတ် · <strong>Delete</strong> ဖျက် (Trash မှ ပြန်ယူနိုင်)</li>
+            <li>ကိုယ်တိုင်ဖန်တီးသော tab ဖျက်ခြင်းသည် ဝှက်ရုံသာ — အလုပ်နှင့် ငွေကြေးဒေတာ ကျန်ရှိ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">အဖွဲ့ခွဲခြင်း + အဆင့်များ စီမံခြင်း</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ဝန်ထမ်းကတ်ပေါ်ရှိ <strong>အဖွဲ့စီမံ</strong>: ရွေး/ဖန်တီး၊ အမည်ပြောင်း၊ ဖျက် သို့မဟုတ် "အဖွဲ့မရှိ"</li>
+            <li><strong>Steps</strong> ခလုတ်: ချက်ချင်း ထည့် / အမည်ပြောင်း / ဖျက် / အစီအစဉ်ပြောင်း — မီနူး ၄ ခုလုံး တူညီ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">အလုပ်စစ်ဆေးမုဒ်</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'workflow/06-job-check-mode',
+        'alt' => 'အလုပ်စစ်ဆေးမုဒ် — အစတွင် snapshot၊ အဆုံးတွင် ပြောင်းလဲမှု အကျဉ်းချုပ်',
+        'caption' => 'အလုပ်စစ်ဆေးမုဒ် — အစတွင် snapshot၊ အဆုံးတွင် ပြောင်းလဲမှု အကျဉ်းချုပ်',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>အလုပ်စစ်ဆေးမုဒ် → စတင်</strong> မီနူး ၄ ခုရှိ ဝန်ထမ်းအားလုံး၏ snapshot ယူသည်</li>
+            <li>ပုံမှန်အတိုင်း လုပ်ပါ၊ အချိန်မရွေး <strong>Pause</strong> / <strong>Resume</strong></li>
+            <li><strong>Finish</strong> → Excel "ပြောင်းလဲမှုရှိ" နှင့် "ပြောင်းလဲမှုမရှိ" (ဓာတ်ပုံ + မူလ tab)</li>
+            <li>မှတ်တမ်း ၇ ရက်၊ မေ့နေပါက 05:00 တွင် အလိုအလျောက် ပိတ်</li>
+        </ol>
+    </div>
+</section>
 
 <section class="training-slide">
     <div class="slide-number">FAQ</div>

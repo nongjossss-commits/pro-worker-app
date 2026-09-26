@@ -53,6 +53,21 @@
     Scroll down to the bottom of the page — the "Roles & Permissions" section shows every role + the permissions attached to it
 </div>
 
+<h5>6. Per-user permissions</h5>
+<div class="manual-step">
+    The user edit page lists permissions you can grant or revoke per person: <strong>Update progress steps</strong> (tick steps; Admin/Staff by default, not Caretaker) · <strong>Edit employees</strong> (employee data, appointments, logins — separate from ticking steps) · <strong>Manage workflow</strong> (create jobs, configure steps and notifications) · <strong>Manage finance</strong> (pricing, billing, payments) · <strong>Move attachment files</strong> (the Super Admin can delegate it to specific Admin/Staff).
+</div>
+
+<h5>7. Employer accounts and Pro Walker Labour accounts</h5>
+<div class="manual-step">
+    <strong>Employer</strong> accounts see only their own company data and cannot open the work menus (Pre-Production / Workflow / Resolutions). Pro Walker Labour accounts (accounting / shareholder / team lead / team member) can only be created by the Super Admin and only access the Labour module.
+</div>
+
+<h5>8. Login and security</h5>
+<div class="manual-step">
+    Closing the browser or app always requires a new login; if no page of the program is open for more than 5 minutes the user is signed out automatically. "Remember me" remembers the email on that device only (save the password with the browser). Too many wrong passwords in a row temporarily blocks login attempts.
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

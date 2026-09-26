@@ -36,7 +36,7 @@
         </div>
 
         <div class="auth-row">
-            <label for="remember_me" class="auth-check">
+            <label for="remember_me" class="auth-check" title="{{ __('Remembers your email on this device. Save the password with your browser if you want it filled in too.') }}">
                 <input id="remember_me" type="checkbox" name="remember">
                 {{ __('Remember me') }}
             </label>
@@ -61,6 +61,31 @@
         setTimeout(function () {
             window.location.reload();
         }, 20 * 60 * 1000);
+
+        // 3. "Remember me" = remember the email on this device only (never a
+        //    persistent login — see AuthenticatedSessionController::store).
+        //    The password is left to the browser's password manager.
+        (function () {
+            const KEY = 'pw_remembered_email';
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            const remember = document.getElementById('remember_me');
+            if (!email || !remember) return;
+            try {
+                const saved = localStorage.getItem(KEY);
+                if (saved && !email.value) {
+                    email.value = saved;
+                    remember.checked = true;
+                    if (password) password.focus();
+                }
+            } catch (e) { /* storage blocked — nothing to prefill */ }
+            email.form.addEventListener('submit', function () {
+                try {
+                    if (remember.checked) localStorage.setItem(KEY, email.value.trim());
+                    else localStorage.removeItem(KEY);
+                } catch (e) { /* ignore */ }
+            });
+        })();
     </script>
     @endpush
 </x-guest-layout>

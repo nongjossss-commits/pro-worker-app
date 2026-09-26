@@ -34,7 +34,15 @@ return [
 
     'lifetime' => (int) env('SESSION_LIFETIME', 43200), // Default to 30 days
 
-    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+    // Session cookie dies with the browser — nobody stays signed in after
+    // closing it ("remember me" no longer keeps a login either).
+    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', true),
+
+    // Seconds without any open page of the app (no heartbeat / request)
+    // before the next request signs the user out — covers browsers and
+    // phones that keep session cookies after being closed. 0 disables.
+    // See App\Http\Middleware\EnsureBrowserSessionAlive.
+    'alive_grace_seconds' => (int) env('SESSION_ALIVE_GRACE', 300),
 
     /*
     |--------------------------------------------------------------------------

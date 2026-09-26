@@ -30,6 +30,32 @@
     </ol>
 </div>
 
+<h5>Search by name or any number</h5>
+<div class="manual-step">
+    The search box on the first page and on the day page finds <strong>names</strong> and <strong>every ID number</strong> of employees/employers:
+    RA number (outsource), passport, work permit, pink card, request number, ID number, reference number, social security number, tax ID
+    — including the entries from the day that number was <strong>typed in or changed</strong>.
+</div>
+
+<h5>Reading the changes</h5>
+<div class="manual-step">
+    <ul class="mb-0">
+        <li>"Description" is a plain sentence, e.g. <em>Edited employee Somchai (ID 128) — 2 changes</em></li>
+        <li>"Changes" shows the first 3 right away, e.g. <em>Passport No.: from A123 to B456</em>, <em>File attached to slot 1. Passport</em>, <em>File moved from slot 2. Visa to Other document 1</em> — press "View all" for the full list</li>
+        <li>File names open the file (if it still exists) · passwords are never shown, only "password changed"</li>
+        <li>Logged for employees, employers, agents, importers, delegates and user accounts</li>
+    </ul>
+</div>
+
+<h5>Log-in / log-out tracking</h5>
+<div class="manual-step">
+    <ul class="mb-0">
+        <li><strong>Logged in</strong> and <strong>failed log-in</strong> (wrong password — shows the email used; the password is never stored)</li>
+        <li><strong>Logged out</strong> (pressed Logout) or <strong>signed out automatically</strong> (browser/app closed or the program not open for more than 5 minutes)</li>
+        <li>"IP / Device" shows the browser and device, e.g. <em>Chrome · Windows</em>, <em>Safari · iPhone</em></li>
+    </ul>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

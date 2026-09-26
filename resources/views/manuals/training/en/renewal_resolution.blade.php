@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (view only)</span>
+        <span class="role-pill role-readonly">Caretaker (day-to-day work)</span>
     </div>
 </div>
 
@@ -136,6 +136,46 @@
 
     <div class="slide-tip">
         💡 <strong>Click a stat card:</strong> = filters to that category immediately (e.g. click "Finished" → filters to only completed ones)
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Add employees 3 ways + dual-listed employees</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Add Employee</strong>: select existing / create new / import Excel — joins only the open tab</li>
+            <li>Registration employees whose expiry matches the target date appear with a <strong>"From Registration Resolution"</strong> badge</li>
+            <li>Notified-out employees no longer appear in the old employer's renewal tabs</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">Selecting employees + teams</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Completed employees become selectable again after the 24 h Undo window</li>
+            <li>Employer Select All → <strong>All / Completed only / Not completed only</strong></li>
+            <li><strong>Manage Team</strong> on the employee card (teams per tab and per employer)</li>
+            <li>Appointments and request numbers are stored per tab</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">Super Admin tools</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Tab badge switch</strong>: hide the "in resolution group…" badge for a tab prepared in advance</li>
+            <li><strong>Move Attachment Files</strong>: swap / move / merge PDFs for selected employees</li>
+            <li><strong>Deleting a tab</strong>: jobs with bills are kept; bills stay manageable in Finance</li>
+        </ol>
     </div>
 </section>
 

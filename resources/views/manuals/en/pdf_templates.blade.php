@@ -73,6 +73,16 @@
     </ol>
 </div>
 
+<h5>5. Preview while placing fields</h5>
+<div class="manual-step">
+    In the Builder click <strong>Preview</strong> to see the real PDF with the current field positions before saving.
+</div>
+
+<h5>6. Export / import template settings (Super Admin)</h5>
+<div class="manual-step">
+    Tick templates on the list → <strong>Export</strong> a JSON file (field positions + background PDF) → <strong>Import</strong> it into another installation. Image fields need their picture uploaded again; import always creates new templates and skips names that already exist.
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

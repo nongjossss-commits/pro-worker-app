@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker(仅可查看)</span>
+        <span class="role-pill role-readonly">Caretaker(日常工作)</span>
     </div>
 </div>
 
@@ -136,6 +136,46 @@
 
     <div class="slide-tip">
         💡 <strong>点击统计卡片:</strong> = 立即筛选至该类别(例如点击"已完成" → 只筛选出已完成的项目)
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">三种方式添加员工 + 双重显示的员工</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>添加员工</strong>:选择现有 / 新建 / 导入 Excel —— 只加入当前标签页</li>
+            <li>到期日与目标日期相同的注册决议员工会带 <strong>"From Registration Resolution"</strong> 标记显示</li>
+            <li>已通知离职的员工不再出现在原雇主的续签标签页</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">选择员工 + 分组</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>已完成的员工在 24 小时撤销期后可再次选择</li>
+            <li>雇主全选 → <strong>全部 / 仅已完成 / 仅未完成</strong></li>
+            <li>员工卡片上的 <strong>分组</strong>(按标签页和雇主分开)</li>
+            <li>预约和申请编号按标签页保存</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">超级管理员工具</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>标签页提示标记开关</strong>:隐藏提前准备的标签页的"属于决议组…"标记</li>
+            <li><strong>移动附件</strong>:对所选员工交换 / 移动 / 合并 PDF</li>
+            <li><strong>删除标签页</strong>:已开账单的工作会保留,账单仍可在财务中处理</li>
+        </ol>
     </div>
 </section>
 

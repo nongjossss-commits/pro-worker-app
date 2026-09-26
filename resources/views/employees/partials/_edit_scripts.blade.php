@@ -9,7 +9,24 @@
         editedFile: null, // Track manually edited/refined file
         mimeType: null, // Track mime type for transparency support
         targetInputId: null,
-        targetPreviewId: null
+        targetPreviewId: null,
+        // Last Smart Background choice: null | 'original' | 'transparent' | 'white' | 'blue'.
+        // Drives the fill colour of rotated corners and the background the
+        // Refine tool re-applies on save.
+        bgAction: null,
+        // The exact (un-cut) photo the background was removed from — aligned
+        // pixel-for-pixel with the AI cutout, so Refine can show it as a
+        // ghost and restore from it.
+        bgSourceFile: null,
+
+        // Colour that empty areas (corners after rotating) should get, or null
+        // when the photo is meant to stay transparent.
+        fillColor() {
+            if (this.bgAction === 'transparent') return null;
+            const colors = (window.backgroundRemoval && window.backgroundRemoval.colors) || {};
+            if (this.bgAction === 'blue') return colors.blue || '#65a5ff';
+            return colors.white || '#FFFFFF';
+        }
     };
 
     window.openCropperWithUrl = async function(url, targetInputId, targetPreviewId) {
@@ -116,6 +133,10 @@
                     checkCrossOrigin: false,
                     ready: function () {
                         if(cropImageBtn) cropImageBtn.disabled = false;
+                        // Show rotated corners in the background colour the
+                        // export will use (instead of the modal's grey).
+                        const canvasBox = cropperModalEl.querySelector('.cropper-canvas');
+                        if (canvasBox) canvasBox.style.background = window.cropperManager.fillColor() || '';
                     },
                 });
             } catch (err) {
@@ -147,9 +168,12 @@
                     // Explicitly revert to original
                     window.cropperManager.editedFile = null;
                 } else if (window.cropperManager.editedFile) {
-                    // Use the edited version (e.g. manually erased)
+                    // Use the edited version. Only a Refine cut-out already has
+                    // its background removed; a photo changed by Auto-Level /
+                    // Beauty / Face Crop is still a normal photo, so the AI
+                    // must run on it (skipping it left the old background).
                     fileToProcess = window.cropperManager.editedFile;
-                    isEdited = true;
+                    isEdited = !!window.cropperManager.editedIsCutout;
                 }
 
                 if (!fileToProcess) {
@@ -179,6 +203,12 @@
                     if (currentCancellationToken.cancelled) return;
 
                     // Update Mime Type for Saving
+                    // Remember the choice (rotation fill + Refine re-apply) and,
+                    // for a real photo (not an already-refined cutout), the
+                    // exact source the cutout was made from.
+                    window.cropperManager.bgAction = action;
+                    if (!isEdited) window.cropperManager.bgSourceFile = fileToProcess;
+
                     if (action === 'transparent') {
                         window.cropperManager.mimeType = 'image/png';
                     } else {
@@ -357,7 +387,10 @@
                     width: canvasData.width,
                     height: canvasData.height,
                 });
-                return cropper.getCroppedCanvas({ imageSmoothingQuality: 'high' });
+                // Rotated corners: fill with the background colour when the
+                // result will be a JPEG (transparent → black otherwise).
+                const fill = window.cropperManager.mimeType === 'image/png' ? null : window.cropperManager.fillColor();
+                return cropper.getCroppedCanvas({ imageSmoothingQuality: 'high', ...(fill ? { fillColor: fill } : {}) });
             } finally {
                 // Always restore the user's crop selection even if export throws.
                 try { cropper.setCropBoxData(savedCrop); } catch (e) { /* ignore */ }
@@ -404,6 +437,7 @@
                 // Cache the edited file so the next bg action skips the AI
                 // and uses this file as its foreground source.
                 window.cropperManager.editedFile = newFile;
+                window.cropperManager.editedIsCutout = false; // a normal photo, background still in it
                 window.cropperManager.mimeType = newFile.type;
 
                 const newUrl = URL.createObjectURL(newFile);
@@ -505,10 +539,9 @@
 
         if (autoFaceCropBtn) {
             autoFaceCropBtn.addEventListener('click', async function() {
-                if (typeof FaceDetector === 'undefined') {
-                    alert('เบราว์เซอร์นี้ไม่รองรับ FaceDetector — โปรดใช้ Chrome/Edge เวอร์ชั่นล่าสุด');
-                    return;
-                }
+                // Works in every browser: photoEditorTools.detectFace() falls
+                // back to finding the head from the AI cut-out when the
+                // browser has no FaceDetector (most desktop Chrome/Edge).
                 await transformCropperImage(
                     (file) => window.photoEditorTools.faceCenterCrop(file, 150 / 180, window.cropperManager.mimeType || 'image/jpeg'),
                     'ค้นหาใบหน้าและตัดกรอบ...'
@@ -532,6 +565,9 @@
             _resetFineRotationOnReinit();
             return _originalInitCropper.apply(this, arguments);
         };
+        // Refine's save() swaps the image via cropper.replace(), which drops the
+        // rotation — let it reset the slider too.
+        window.cropperManager.resetFineRotation = _resetFineRotationOnReinit;
 
         // --- Event: Modal Shown ---
         cropperModalEl.addEventListener('shown.bs.modal', function () {
@@ -557,6 +593,10 @@
                 window.cropperManager.transformHistory = [];
             }
             refreshUndoBtn();
+
+            // New photo session: forget the previous photo's background choice.
+            window.cropperManager.bgAction = null;
+            window.cropperManager.bgSourceFile = null;
 
             // Destroy existing cropper if any to be safe
             if (window.cropperManager.instance) {
@@ -598,12 +638,17 @@
                 return;
             }
 
+            // Corners exposed by rotating are filled with the chosen background
+            // colour (white by default) instead of turning black in the JPEG.
+            const fill = window.cropperManager.fillColor();
+            const keepTransparent = !fill && window.cropperManager.mimeType === 'image/png';
             const canvas = cropper.getCroppedCanvas({
                 width: 600, // Increased for better PDF print quality
                 height: 720, // Increased for better PDF print quality
                 minWidth: 400,
                 minHeight: 400,
                 imageSmoothingQuality: 'high',
+                ...(keepTransparent ? {} : { fillColor: fill || '#FFFFFF' }),
             });
 
             if (!canvas) {
@@ -612,7 +657,7 @@
             }
 
             // Show Review
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.98);
+            const dataUrl = keepTransparent ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.98);
             if(reviewImage) reviewImage.src = dataUrl;
 
             // Switch UI
@@ -765,45 +810,60 @@
     };
 
     // --- Refine / Mask Editor Manager ---
+    //
+    // Edits the background cutout by hand.
+    //  - Works on the real transparent cutout (not on the white/blue composite),
+    //    so what is erased really becomes background.
+    //  - Shows the un-cut photo as a faint ghost underneath, so a wrongly cut
+    //    arm/shoulder is visible and can be restored exactly where it was.
+    //  - "Smart edge" mode: the brush reads the colour under its centre and only
+    //    erases/restores the connected area of similar colour inside the brush,
+    //    stopping at edges by itself (like a background-eraser with a radar).
+    //  - Save re-applies the last chosen background (white by default), so the
+    //    user never has to press the background buttons again afterwards.
     window.refineManager = {
         initialized: false,
         isActive: false,
 
-        // State
-        originalImage: null,  // The full resolution original
-        workCanvas: null,     // The canvas we are editing (RGBA)
-        displayCanvas: null,  // The visible canvas
-        ctx: null,            // Context of displayCanvas
+        // Layers (all the same size)
+        workCanvas: null,     // the cutout being edited (RGBA)
+        refCanvas: null,      // the un-cut photo (ghost + restore source)
+        refData: null,        // ImageData of refCanvas (smart brush sampling)
+        hasGhost: false,
+        displayCanvas: null,
+        ctx: null,
 
-        // History (Simple Undo)
+        // History (canvas snapshots — fast, no PNG encoding per stroke)
         history: [],
-        maxHistory: 10,
+        maxHistory: 12,
 
         // Tools
-        currentTool: 'eraser', // eraser, restore, smart_erase
-        brushSize: 20,
+        currentTool: 'eraser', // eraser | restore | smart_erase (magic wand)
+        brushSize: 30,
+        smartMode: true,       // edge-aware brush for eraser/restore
+        smartTolerance: 30,
+        showGhost: true,
+        tolerance: 20,         // magic wand tolerance
         isDrawing: false,
         lastPos: { x: 0, y: 0 },
 
-        // Smart Erase State
-        tolerance: 20, // Default tolerance for Magic Wand (reduced for precision)
-
-        // Zoom & Pan State
+        // Zoom & pan
         zoomLevel: 1,
-        panX: 0,
-        panY: 0,
+        spaceDown: false,
         isPanning: false,
-        panStartX: 0,
-        panStartY: 0,
+        panStart: null,
+        MAX_DIM: 2000,         // editing resolution cap (keeps brushes smooth)
+        _renderQueued: false,
 
         init: function() {
             if (this.initialized) return;
             this.initialized = true;
 
-            // DOM Elements
             this.container = document.getElementById('refineEditorContainer');
             this.displayCanvas = document.getElementById('refineCanvas');
-            this.ctx = this.displayCanvas.getContext('2d', { willReadFrequently: true });
+            this.ctx = this.displayCanvas.getContext('2d');
+            this.wrapper = document.getElementById('refineCanvasWrapper');
+            this.brushCursor = document.getElementById('refineBrushCursor');
 
             this.btnStart = document.getElementById('btnStartRefine');
             this.btnSave = document.getElementById('refineBtnSave');
@@ -813,153 +873,158 @@
             this.toolEraser = document.getElementById('refineToolEraser');
             this.toolRestore = document.getElementById('refineToolRestore');
             this.toolSmart = document.getElementById('refineToolSmart');
+            this.toggleSmart = document.getElementById('refineToggleSmartEdge');
+            this.toggleGhost = document.getElementById('refineToggleGhost');
             this.rangeSize = document.getElementById('refineBrushSize');
+            this.rangeLabel = document.getElementById('refineBrushSizeLabel');
 
-            // Attach Listeners
-            if(this.btnStart) this.btnStart.addEventListener('click', () => this.start());
-            if(this.btnSave) this.btnSave.addEventListener('click', () => this.save());
-            if(this.btnCancel) this.btnCancel.addEventListener('click', () => this.cancel());
-            if(this.btnUndo) this.btnUndo.addEventListener('click', () => this.undo());
+            if (this.btnStart) this.btnStart.addEventListener('click', () => this.start());
+            if (this.btnSave) this.btnSave.addEventListener('click', () => this.save());
+            if (this.btnCancel) this.btnCancel.addEventListener('click', () => this.cancel());
+            if (this.btnUndo) this.btnUndo.addEventListener('click', () => this.undo());
 
-            if(this.toolEraser) this.toolEraser.addEventListener('click', () => this.setTool('eraser'));
-            if(this.toolRestore) this.toolRestore.addEventListener('click', () => this.setTool('restore'));
-            if(this.toolSmart) this.toolSmart.addEventListener('click', () => this.setTool('smart_erase'));
+            if (this.toolEraser) this.toolEraser.addEventListener('click', () => this.setTool('eraser'));
+            if (this.toolRestore) this.toolRestore.addEventListener('click', () => this.setTool('restore'));
+            if (this.toolSmart) this.toolSmart.addEventListener('click', () => this.setTool('smart_erase'));
+            if (this.toggleSmart) this.toggleSmart.addEventListener('click', () => this.setSmartMode(!this.smartMode));
+            if (this.toggleGhost) this.toggleGhost.addEventListener('click', () => this.setGhost(!this.showGhost));
 
-            if(this.rangeSize) {
+            if (this.rangeSize) {
                 this.rangeSize.addEventListener('input', (e) => {
-                    if (this.currentTool === 'smart_erase') {
-                        this.tolerance = parseInt(e.target.value); // Use brush size as tolerance (1-100)
-                    } else {
-                        this.brushSize = parseInt(e.target.value);
-                    }
+                    const v = parseInt(e.target.value, 10);
+                    if (this.currentTool === 'smart_erase') this.tolerance = v;
+                    else this.brushSize = v;
+                    this.updateSizeLabel();
                 });
             }
 
-            // Canvas Interaction
-            this.displayCanvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
-            this.displayCanvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
-            window.addEventListener('mouseup', () => this.onMouseUp());
-
-            // Touch Support
-            this.displayCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); this.onMouseDown(e.touches[0]); }, { passive: false });
-            this.displayCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); this.onMouseMove(e.touches[0]); }, { passive: false });
-            this.displayCanvas.addEventListener('touchend', (e) => { e.preventDefault(); this.onMouseUp(); });
-
-            // Set custom orange cursor via JS (avoid broken SVG in HTML attributes)
-            const wrapperEl = document.getElementById('refineCanvasWrapper');
-            if (wrapperEl) {
-                const svgCursor = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cline x1='16' y1='0' x2='16' y2='32' stroke='%23FF6600' stroke-width='2'/%3E%3Cline x1='0' y1='16' x2='32' y2='16' stroke='%23FF6600' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23FF6600'/%3E%3C/svg%3E") 16 16, crosshair`;
-                wrapperEl.style.cursor = svgCursor;
-            }
+            // Drawing (pointer events cover mouse, pen and touch)
+            const c = this.displayCanvas;
+            c.style.touchAction = 'none';
+            c.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+            c.addEventListener('pointermove', (e) => this.onPointerMove(e));
+            window.addEventListener('pointerup', () => this.onPointerUp());
+            c.addEventListener('contextmenu', (e) => { if (this.isActive) e.preventDefault(); });
 
             // Zoom buttons
-            const zoomInBtn = document.getElementById('refineZoomIn');
-            const zoomOutBtn = document.getElementById('refineZoomOut');
-            const zoomResetBtn = document.getElementById('refineZoomReset');
-            if (zoomInBtn) zoomInBtn.addEventListener('click', () => { this.zoomLevel = Math.min(5, Math.round((this.zoomLevel + 0.25) * 100) / 100); this.applyZoom(); });
-            if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { this.zoomLevel = Math.max(0.5, Math.round((this.zoomLevel - 0.25) * 100) / 100); this.applyZoom(); });
-            if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => this.resetZoom());
+            const zoomIn = document.getElementById('refineZoomIn');
+            const zoomOut = document.getElementById('refineZoomOut');
+            const zoomReset = document.getElementById('refineZoomReset');
+            if (zoomIn) zoomIn.addEventListener('click', () => this.zoomBy(1.25));
+            if (zoomOut) zoomOut.addEventListener('click', () => this.zoomBy(0.8));
+            if (zoomReset) zoomReset.addEventListener('click', () => this.resetZoom());
 
-            // Zoom with Ctrl+wheel (normal wheel = scroll/pan)
-            const wrapper = document.getElementById('refineCanvasWrapper');
-            if (wrapper) {
-                wrapper.addEventListener('wheel', (e) => {
+            if (this.wrapper) {
+                // Mouse wheel = zoom towards the cursor (no Ctrl needed)
+                this.wrapper.addEventListener('wheel', (e) => {
                     if (!this.isActive) return;
-                    if (e.ctrlKey) {
-                        // Ctrl+wheel = zoom
-                        e.preventDefault();
-                        const delta = e.deltaY > 0 ? -0.15 : 0.15;
-                        this.zoomLevel = Math.max(0.5, Math.min(5, Math.round((this.zoomLevel + delta) * 100) / 100));
-                        this.applyZoom();
-                    }
-                    // Without Ctrl = normal scroll (native scrollbar handles pan)
+                    e.preventDefault();
+                    this.zoomBy(e.deltaY > 0 ? 0.85 : 1.18, e);
                 }, { passive: false });
 
-                // Update magnifier on mouse move
-                wrapper.addEventListener('mousemove', (e) => {
-                    if (this.isActive) this.updateMagnifier(e);
+                this.wrapper.addEventListener('pointermove', (e) => {
+                    if (!this.isActive) return;
+                    this.updateBrushCursor(e);
+                    this.updateMagnifier(e);
                 });
-                wrapper.addEventListener('mouseleave', () => {
+                this.wrapper.addEventListener('pointerleave', () => {
                     const mag = document.getElementById('refineMagnifier');
                     if (mag) mag.style.display = 'none';
+                    if (this.brushCursor) this.brushCursor.style.display = 'none';
                 });
             }
+
+            // Keyboard shortcuts (only while the editor is open)
+            window.addEventListener('keydown', (e) => this.onKeyDown(e));
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') { this.spaceDown = false; this.updateCursorStyle(); }
+            });
         },
 
+        // ------------------------------------------------------------------
+        // Open / save / cancel
+        // ------------------------------------------------------------------
         async start() {
             if (this.isActive) return;
-
             const imageToCrop = document.getElementById('imageToCrop');
             if (!imageToCrop || !imageToCrop.src) {
                 alert('No image to refine.');
                 return;
             }
+            const cm = window.cropperManager;
 
-            // 1. Prepare UI
             this.isActive = true;
-            document.querySelector('.img-container').style.display = 'none'; // Hide Cropper
-            // Hide Main Modal Footer to prevent confusion
-            const footer = document.querySelector('.modal-footer');
-            if(footer) footer.classList.add('d-none');
-
+            document.querySelector('.img-container').style.display = 'none';
+            const footer = document.querySelector('#cropperModal .modal-footer');
+            if (footer) footer.classList.add('d-none');
             this.container.classList.remove('d-none');
-
-            // Show Loading
             this.toggleLoading(true, 'Preparing Editor...');
 
             try {
-                // 2. Load Images
-                // Current Result (starting point)
-                const currentSrc = imageToCrop.src;
-                const currentImg = await this.loadImage(currentSrc);
-
-                // Original Image (for Restore/Smart logic)
-                // Try to get from global manager, fallback to current if not available
-                let originalSrc = currentSrc;
-                if (window.cropperManager.originalFile) {
-                    originalSrc = URL.createObjectURL(window.cropperManager.originalFile);
+                // 1. The layer to edit: a real cutout whenever one exists.
+                let workBlob = null;
+                const br = window.backgroundRemoval;
+                if (cm.editedFile && cm.editedIsCutout) {
+                    workBlob = cm.editedFile; // result of a previous refine
+                } else if (['transparent', 'white', 'blue'].includes(cm.bgAction) && br && br.cache
+                    && br.cache.transparentBlob && br.cache.originalFile === cm.bgSourceFile) {
+                    try { workBlob = await br.refineTransparent(br.cache.transparentBlob); }
+                    catch (e) { workBlob = br.cache.transparentBlob; }
                 }
-                this.originalImage = await this.loadImage(originalSrc);
+                const workImg = await this.loadImage(workBlob ? URL.createObjectURL(workBlob) : imageToCrop.src);
 
-                // 3. Setup Canvases
-                // We use the dimensions of the Original Image to maintain quality
-                // But if it's huge, performance will suffer. Limit to 2000px?
-                // For now, keep original size for best quality.
+                // 2. The un-cut photo for the ghost + restore, if it lines up.
+                let refImg = workImg;
+                const refFile = cm.bgSourceFile || cm.originalFile;
+                if (refFile && workBlob) {
+                    const candidate = await this.loadImage(URL.createObjectURL(refFile));
+                    const sameShape = Math.abs(candidate.width / candidate.height - workImg.width / workImg.height) < 0.02;
+                    if (sameShape) refImg = candidate;
+                } else if (refFile && !workBlob) {
+                    // Editing the photo itself: restore from the original file.
+                    const candidate = await this.loadImage(URL.createObjectURL(refFile));
+                    const sameShape = Math.abs(candidate.width / candidate.height - workImg.width / workImg.height) < 0.02;
+                    if (sameShape) refImg = candidate;
+                }
+                this.hasGhost = refImg !== workImg;
 
-                const w = this.originalImage.width;
-                const h = this.originalImage.height;
+                // 3. Size (capped for smooth brushing)
+                const scale = Math.min(1, this.MAX_DIM / Math.max(refImg.width, refImg.height));
+                const w = Math.round(refImg.width * scale);
+                const h = Math.round(refImg.height * scale);
 
                 this.displayCanvas.width = w;
                 this.displayCanvas.height = h;
 
-                // Create Offscreen Work Canvas
                 this.workCanvas = document.createElement('canvas');
-                this.workCanvas.width = w;
-                this.workCanvas.height = h;
-                const workCtx = this.workCanvas.getContext('2d');
+                this.workCanvas.width = w; this.workCanvas.height = h;
+                this.workCanvas.getContext('2d', { willReadFrequently: true }).drawImage(workImg, 0, 0, w, h);
 
-                // Initialize Temp Canvas (Used for Restore/Smart Erase)
+                this.refCanvas = document.createElement('canvas');
+                this.refCanvas.width = w; this.refCanvas.height = h;
+                const refCtx = this.refCanvas.getContext('2d', { willReadFrequently: true });
+                refCtx.drawImage(refImg, 0, 0, w, h);
+                this.refData = refCtx.getImageData(0, 0, w, h);
+
                 this.tempCanvas = document.createElement('canvas');
-                this.tempCanvas.width = w;
-                this.tempCanvas.height = h;
+                this.tempCanvas.width = w; this.tempCanvas.height = h;
 
-                // Initialize Work Canvas with Current Result
-                // Note: Current Result might be resized/different aspect if it came from Cropper output?
-                // Ideally we are refining the Pre-Crop image (the one IN the cropper).
-                // Yes, imageToCrop is the source FOR the cropper.
-                // But check if imageToCrop is different size than originalFile due to previous processing?
-                // Usually bg removal replaces imageToCrop with a new blob.
+                // Brush size relative to the image so it feels the same on any photo
+                const base = Math.max(8, Math.round(Math.max(w, h) / 40));
+                this.brushSize = base;
+                if (this.rangeSize) {
+                    this.rangeSize.min = 3;
+                    this.rangeSize.max = Math.max(60, base * 5);
+                }
+                this.history = [];
+                this.setTool('eraser');
+                this.setSmartMode(this.smartMode);
+                this.setGhost(this.hasGhost ? this.showGhost : false);
+                if (this.toggleGhost) this.toggleGhost.disabled = !this.hasGhost;
 
-                // Draw current image (which has transparency) onto work canvas
-                workCtx.drawImage(currentImg, 0, 0, w, h);
-
-                // 4. Initial Render
                 this.render();
                 this.resetZoom();
-
-                // 5. Save Initial State for Undo
-                this.pushHistory();
-
+                this.updateUndoButton();
             } catch (e) {
                 console.error(e);
                 alert('Failed to start refine mode: ' + e.message);
@@ -969,51 +1034,53 @@
             }
         },
 
-        save() {
+        async save() {
             if (!this.workCanvas) return;
-
+            const cm = window.cropperManager;
             this.toggleLoading(true, 'Saving...');
+            try {
+                const toBlob = (canvas, type, q) => new Promise(r => canvas.toBlob(r, type, q));
 
-            this.workCanvas.toBlob((blob) => {
-                if (blob) {
-                    // Update Main Image
-                    const newUrl = URL.createObjectURL(blob);
-                    const imageToCrop = document.getElementById('imageToCrop');
-                    imageToCrop.src = newUrl;
+                // The edited cutout itself — later background buttons composite onto this.
+                const cutoutBlob = await toBlob(this.workCanvas, 'image/png');
+                const baseName = cm.originalFile ? cm.originalFile.name.replace(/\.[^/.]+$/, '') : 'image';
+                cm.editedFile = new File([cutoutBlob], baseName + '.png', { type: 'image/png', lastModified: Date.now() });
+                cm.editedIsCutout = true;
 
-                    // Update MimeType to PNG to support transparency
-                    window.cropperManager.mimeType = 'image/png';
-
-                    // Update Edited File State so Background Tools use this version
-                    // Create a File object
-                    const originalName = window.cropperManager.originalFile ? window.cropperManager.originalFile.name : 'image.png';
-                    const fileName = originalName.replace(/\.[^/.]+$/, "") + ".png"; // Force png extension
-
-                    window.cropperManager.editedFile = new File([blob], fileName, {
-                        type: 'image/png',
-                        lastModified: Date.now()
-                    });
-
-                    // Re-init Cropper
-                    if (window.cropperManager.instance) {
-                        window.cropperManager.instance.replace(newUrl);
-                    } else {
-                        // Or trigger init
-                         const modalEl = document.getElementById('cropperModal');
-                         // Triggering modal show again might work but might loop.
-                         // Better to manually call init if needed, but 'replace' handles it.
-                         // If instance destroyed, we need to rebuild.
-                         // _edit_scripts has initCropperGlobal which handles this logic but it's inside a function.
-                         // Let's assume standard flow:
-                         const triggerBtn = document.getElementById('cropImageBtn');
-                         if(triggerBtn) triggerBtn.disabled = false;
-
-                         // We need to re-create the cropper if it was destroyed or hidden?
-                         // We hid the .img-container.
-                    }
+                // Re-apply the background the user already chose (white if none),
+                // so the result is ready — no extra "White BG" clicks needed.
+                let action = cm.bgAction;
+                if (!action || action === 'original') action = 'white';
+                let resultBlob;
+                if (action === 'transparent') {
+                    resultBlob = cutoutBlob;
+                    cm.mimeType = 'image/png';
+                } else {
+                    const colors = (window.backgroundRemoval && window.backgroundRemoval.colors) || {};
+                    const out = document.createElement('canvas');
+                    out.width = this.workCanvas.width; out.height = this.workCanvas.height;
+                    const octx = out.getContext('2d');
+                    octx.fillStyle = colors[action] || '#FFFFFF';
+                    octx.fillRect(0, 0, out.width, out.height);
+                    octx.drawImage(this.workCanvas, 0, 0);
+                    resultBlob = await toBlob(out, 'image/jpeg', 0.95);
+                    cm.mimeType = 'image/jpeg';
                 }
-                this.exit();
-            }, 'image/png');
+                cm.bgAction = action;
+
+                const newUrl = URL.createObjectURL(resultBlob);
+                const imageToCrop = document.getElementById('imageToCrop');
+                if (cm.instance) {
+                    cm.instance.replace(newUrl);
+                } else {
+                    imageToCrop.src = newUrl;
+                }
+                if (typeof cm.resetFineRotation === 'function') cm.resetFineRotation();
+            } catch (e) {
+                console.error(e);
+                alert('Failed to save: ' + e.message);
+            }
+            this.exit();
         },
 
         cancel() {
@@ -1021,105 +1088,163 @@
         },
 
         exit() {
-            this.toggleLoading(false); // Ensure loading is cleared
+            this.toggleLoading(false);
             this.isActive = false;
+            this.isDrawing = false;
+            this.isPanning = false;
             this.container.classList.add('d-none');
-            document.querySelector('.img-container').style.display = 'block'; // Show Cropper
+            document.querySelector('.img-container').style.display = 'block';
+            const footer = document.querySelector('#cropperModal .modal-footer');
+            if (footer) footer.classList.remove('d-none');
 
-            // Show Main Modal Footer
-            const footer = document.querySelector('.modal-footer');
-            if(footer) footer.classList.remove('d-none');
-
-            // Clean up
             this.history = [];
             this.workCanvas = null;
+            this.refCanvas = null;
+            this.refData = null;
             this.tempCanvas = null;
-            this.originalImage = null;
-            this.smartPoints = [];
-            this.resetZoom();
             const mag = document.getElementById('refineMagnifier');
             if (mag) mag.style.display = 'none';
+            if (this.brushCursor) this.brushCursor.style.display = 'none';
+        },
 
-            // Re-enable/Sync Cropper View
-            if (window.cropperManager.instance) {
-                // If we didn't save, we don't need to do anything to the cropper
-                // It just becomes visible again.
-            } else {
-                 // Re-init if missing
-                 const imageToCrop = document.getElementById('imageToCrop');
-                 if(imageToCrop.complete) {
-                      // We can't easily access initCropperInstance from here as it is scoped.
-                      // But the Modal Shown event handles it usually.
-                      // A trick: fire 'shown.bs.modal' manually?
-                      // Or just rely on the user workflow.
-                      // Ideally we didn't destroy the instance, just hid the container.
-                      // If we destroyed it, we need to recreate.
-                      // Let's verify: In start(), we just hid .img-container.
-                      // Cropper instance is still attached to the image element.
-                 }
-            }
+        // ------------------------------------------------------------------
+        // History
+        // ------------------------------------------------------------------
+        pushHistory() {
+            const snap = document.createElement('canvas');
+            snap.width = this.workCanvas.width; snap.height = this.workCanvas.height;
+            snap.getContext('2d').drawImage(this.workCanvas, 0, 0);
+            this.history.push(snap);
+            if (this.history.length > this.maxHistory) this.history.shift();
+            this.updateUndoButton();
         },
 
         undo() {
-            if (this.history.length === 0) return;
-            const lastState = this.history.pop();
-            const img = new Image();
-            img.onload = () => {
-                const ctx = this.workCanvas.getContext('2d');
-                ctx.clearRect(0, 0, this.workCanvas.width, this.workCanvas.height);
-                ctx.drawImage(img, 0, 0);
-                this.render();
-                this.updateUndoButton();
-            };
-            img.src = lastState;
-        },
-
-        pushHistory() {
-            if (this.history.length >= this.maxHistory) this.history.shift();
-            this.history.push(this.workCanvas.toDataURL());
+            if (!this.history.length || !this.workCanvas) return;
+            const snap = this.history.pop();
+            const ctx = this.workCanvas.getContext('2d');
+            ctx.clearRect(0, 0, this.workCanvas.width, this.workCanvas.height);
+            ctx.drawImage(snap, 0, 0);
+            this.render();
             this.updateUndoButton();
         },
 
         updateUndoButton() {
-            if(this.btnUndo) this.btnUndo.disabled = this.history.length === 0;
+            if (this.btnUndo) this.btnUndo.disabled = this.history.length === 0;
         },
 
+        // ------------------------------------------------------------------
+        // Tool state
+        // ------------------------------------------------------------------
         setTool(tool) {
             this.currentTool = tool;
-
-            if (tool === 'smart_erase') {
-                 // If switching to smart erase, adjust range input to represent tolerance
-                 if (this.rangeSize) this.rangeSize.value = this.tolerance;
-            } else {
-                 if (this.rangeSize) this.rangeSize.value = this.brushSize;
-            }
-
-            // UI Update
-            [this.toolEraser, this.toolRestore, this.toolSmart].forEach(btn => {
-                if(btn) btn.classList.remove('active');
-            });
-
+            if (this.rangeSize) this.rangeSize.value = tool === 'smart_erase' ? this.tolerance : this.brushSize;
+            [this.toolEraser, this.toolRestore, this.toolSmart].forEach(b => b && b.classList.remove('active'));
             if (tool === 'eraser' && this.toolEraser) this.toolEraser.classList.add('active');
             if (tool === 'restore' && this.toolRestore) this.toolRestore.classList.add('active');
             if (tool === 'smart_erase' && this.toolSmart) this.toolSmart.classList.add('active');
+            this.updateSizeLabel();
+            this.updateCursorStyle();
         },
 
-        // --- Drawing Logic ---
+        setSmartMode(on) {
+            this.smartMode = !!on;
+            if (this.toggleSmart) {
+                this.toggleSmart.classList.toggle('active', this.smartMode);
+                this.toggleSmart.setAttribute('aria-pressed', this.smartMode ? 'true' : 'false');
+            }
+        },
+
+        setGhost(on) {
+            this.showGhost = !!on;
+            if (this.toggleGhost) {
+                this.toggleGhost.classList.toggle('active', this.showGhost);
+                this.toggleGhost.setAttribute('aria-pressed', this.showGhost ? 'true' : 'false');
+            }
+            if (this.workCanvas) this.render();
+        },
+
+        updateSizeLabel() {
+            if (!this.rangeLabel) return;
+            this.rangeLabel.textContent = this.currentTool === 'smart_erase' ? ('±' + this.tolerance) : (this.brushSize + 'px');
+        },
+
+        updateCursorStyle() {
+            if (!this.wrapper) return;
+            if (this.spaceDown || this.isPanning) this.wrapper.style.cursor = this.isPanning ? 'grabbing' : 'grab';
+            else this.wrapper.style.cursor = this.currentTool === 'smart_erase' ? 'crosshair' : 'none';
+        },
+
+        onKeyDown(e) {
+            if (!this.isActive) return;
+            const tag = (e.target && e.target.tagName) || '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+            const k = e.key;
+            if (e.code === 'Space') { this.spaceDown = true; this.updateCursorStyle(); e.preventDefault(); return; }
+            if ((e.ctrlKey || e.metaKey) && k.toLowerCase() === 'z') { this.undo(); e.preventDefault(); return; }
+            if (k === '[') { this.changeBrush(-1); e.preventDefault(); }
+            else if (k === ']') { this.changeBrush(1); e.preventDefault(); }
+            else if (k === '+' || k === '=') { this.zoomBy(1.25); e.preventDefault(); }
+            else if (k === '-') { this.zoomBy(0.8); e.preventDefault(); }
+            else if (k === '0') { this.resetZoom(); e.preventDefault(); }
+            else if (k.toLowerCase() === 'e') this.setTool('eraser');
+            else if (k.toLowerCase() === 'r') this.setTool('restore');
+            else if (k.toLowerCase() === 'w') this.setTool('smart_erase');
+            else if (k.toLowerCase() === 's') this.setSmartMode(!this.smartMode);
+            else if (k.toLowerCase() === 'g' && this.hasGhost) this.setGhost(!this.showGhost);
+        },
+
+        changeBrush(dir) {
+            if (this.currentTool === 'smart_erase') {
+                this.tolerance = Math.max(1, Math.min(100, this.tolerance + dir * 5));
+                if (this.rangeSize) this.rangeSize.value = this.tolerance;
+            } else {
+                const step = Math.max(2, Math.round(this.brushSize * 0.15));
+                const max = this.rangeSize ? parseInt(this.rangeSize.max, 10) : 300;
+                this.brushSize = Math.max(3, Math.min(max, this.brushSize + dir * step));
+                if (this.rangeSize) this.rangeSize.value = this.brushSize;
+            }
+            this.updateSizeLabel();
+        },
+
+        // ------------------------------------------------------------------
+        // Rendering: faint grey ghost of the un-cut photo, cutout on top
+        // ------------------------------------------------------------------
+        render() {
+            if (!this.workCanvas) return;
+            const c = this.ctx;
+            c.clearRect(0, 0, this.displayCanvas.width, this.displayCanvas.height);
+            if (this.showGhost && this.hasGhost && this.refCanvas) {
+                c.save();
+                c.globalAlpha = 0.35;
+                try { c.filter = 'grayscale(1)'; } catch (e) { /* older browsers: coloured ghost */ }
+                c.drawImage(this.refCanvas, 0, 0);
+                c.restore();
+            }
+            c.drawImage(this.workCanvas, 0, 0);
+        },
+
+        scheduleRender() {
+            if (this._renderQueued) return;
+            this._renderQueued = true;
+            requestAnimationFrame(() => { this._renderQueued = false; this.render(); });
+        },
+
+        // ------------------------------------------------------------------
+        // Zoom / pan
+        // ------------------------------------------------------------------
+        fitScale() {
+            const w = this.wrapper ? this.wrapper.clientWidth - 16 : this.displayCanvas.width;
+            const h = this.wrapper ? this.wrapper.clientHeight - 16 : this.displayCanvas.height;
+            return Math.min(w / this.displayCanvas.width, h / this.displayCanvas.height);
+        },
 
         applyZoom() {
-            // Use CSS width/height for zoom so native scrollbars work
-            const wrapper = document.getElementById('refineCanvasWrapper');
-            if (this.displayCanvas && wrapper) {
-                const baseW = this.displayCanvas.width;
-                const baseH = this.displayCanvas.height;
-                // Fit to wrapper at zoom=1
-                const wrapperW = wrapper.clientWidth;
-                const fitScale = wrapperW / baseW;
-                const displayW = baseW * fitScale * this.zoomLevel;
-                const displayH = baseH * fitScale * this.zoomLevel;
-                this.displayCanvas.style.width = displayW + 'px';
-                this.displayCanvas.style.height = displayH + 'px';
-            }
+            if (!this.displayCanvas) return;
+            const s = this.fitScale() * this.zoomLevel;
+            this.displayCanvas.style.width = (this.displayCanvas.width * s) + 'px';
+            this.displayCanvas.style.height = (this.displayCanvas.height * s) + 'px';
+            this.displayCanvas.style.margin = '8px auto';
             const pct = Math.round(this.zoomLevel * 100) + '%';
             const indicator = document.getElementById('refineZoomIndicator');
             if (indicator) indicator.textContent = pct;
@@ -1127,379 +1252,292 @@
             if (btnLabel) btnLabel.textContent = pct;
         },
 
+        // Zoom by a factor, keeping the point under the cursor (or the view centre) still.
+        zoomBy(factor, evt) {
+            if (!this.wrapper || !this.displayCanvas) return;
+            const newZoom = Math.max(0.25, Math.min(8, this.zoomLevel * factor));
+            if (newZoom === this.zoomLevel) return;
+            const wr = this.wrapper.getBoundingClientRect();
+            const before = this.displayCanvas.getBoundingClientRect();
+            const px = evt ? evt.clientX : wr.left + wr.width / 2;
+            const py = evt ? evt.clientY : wr.top + wr.height / 2;
+            const fx = (px - before.left) / before.width;
+            const fy = (py - before.top) / before.height;
+            this.zoomLevel = newZoom;
+            this.applyZoom();
+            const after = this.displayCanvas.getBoundingClientRect();
+            this.wrapper.scrollLeft += (after.left + fx * after.width) - px;
+            this.wrapper.scrollTop += (after.top + fy * after.height) - py;
+        },
+
         resetZoom() {
             this.zoomLevel = 1;
-            this.panX = 0;
-            this.panY = 0;
             this.applyZoom();
-            // Scroll to top-left
-            const wrapper = document.getElementById('refineCanvasWrapper');
-            if (wrapper) { wrapper.scrollTop = 0; wrapper.scrollLeft = 0; }
+            if (this.wrapper) { this.wrapper.scrollTop = 0; this.wrapper.scrollLeft = 0; }
         },
 
-        updateMagnifier(evt) {
-            const mag = document.getElementById('refineMagnifier');
-            const magCanvas = document.getElementById('refineMagnifierCanvas');
-            if (!mag || !magCanvas || !this.workCanvas) return;
-
-            const pos = this.getMousePos(evt);
-            const magCtx = magCanvas.getContext('2d');
-            const magSize = 150;
-            const zoomFactor = 3; // 3x magnification
-            const srcSize = magSize / zoomFactor;
-
-            // Draw checkerboard background
-            magCtx.fillStyle = '#fff';
-            magCtx.fillRect(0, 0, magSize, magSize);
-            for (let i = 0; i < magSize; i += 10) {
-                for (let j = 0; j < magSize; j += 10) {
-                    if ((i + j) % 20 === 0) {
-                        magCtx.fillStyle = '#ddd';
-                        magCtx.fillRect(i, j, 10, 10);
-                    }
-                }
-            }
-
-            // Draw magnified area from work canvas
-            magCtx.drawImage(this.workCanvas,
-                pos.x - srcSize / 2, pos.y - srcSize / 2, srcSize, srcSize,
-                0, 0, magSize, magSize
-            );
-
-            // Draw crosshair (orange for visibility)
-            magCtx.strokeStyle = '#FF6600';
-            magCtx.lineWidth = 2;
-            magCtx.beginPath();
-            magCtx.moveTo(magSize / 2, 0);
-            magCtx.lineTo(magSize / 2, magSize);
-            magCtx.moveTo(0, magSize / 2);
-            magCtx.lineTo(magSize, magSize / 2);
-            magCtx.stroke();
-
-            // Draw brush circle (orange)
-            const brushRadius = (this.currentTool === 'smart_erase' ? 3 : this.brushSize / 2) * zoomFactor;
-            magCtx.strokeStyle = '#FF6600';
-            magCtx.lineWidth = 2;
-            magCtx.beginPath();
-            magCtx.arc(magSize / 2, magSize / 2, brushRadius, 0, Math.PI * 2);
-            magCtx.stroke();
-
-            // Position magnifier near cursor (offset to top-right)
-            mag.style.display = 'block';
-            mag.style.left = (evt.clientX + 20) + 'px';
-            mag.style.top = (evt.clientY - 170) + 'px';
-        },
-
+        // ------------------------------------------------------------------
+        // Pointer input
+        // ------------------------------------------------------------------
         getMousePos(evt) {
             const rect = this.displayCanvas.getBoundingClientRect();
-            // Scale accounts for both CSS display size AND zoom level
-            const scaleX = this.displayCanvas.width / rect.width;
-            const scaleY = this.displayCanvas.height / rect.height;
-
             return {
-                x: (evt.clientX - rect.left) * scaleX,
-                y: (evt.clientY - rect.top) * scaleY
+                x: (evt.clientX - rect.left) * (this.displayCanvas.width / rect.width),
+                y: (evt.clientY - rect.top) * (this.displayCanvas.height / rect.height),
             };
         },
 
-        onMouseDown(e) {
-            if (!this.isActive) return;
+        onPointerDown(e) {
+            if (!this.isActive || !this.workCanvas) return;
+            // Pan: Space+drag, middle button, or right button
+            if (this.spaceDown || e.button === 1 || e.button === 2) {
+                this.isPanning = true;
+                this.panStart = { x: e.clientX, y: e.clientY, left: this.wrapper.scrollLeft, top: this.wrapper.scrollTop };
+                this.updateCursorStyle();
+                e.preventDefault();
+                return;
+            }
+            if (e.button !== 0) return;
             this.isDrawing = true;
             this.lastPos = this.getMousePos(e);
-
+            this.pushHistory();
             if (this.currentTool === 'smart_erase') {
-                this.pushHistory(); // Save before applying magic wand
                 this.applyMagicWand(this.lastPos);
             } else {
-                this.pushHistory(); // Save state before stroke
-                this.draw(this.lastPos);
+                this.dab(this.lastPos);
+                this.scheduleRender();
             }
         },
 
-        onMouseMove(e) {
-            if (!this.isActive || !this.isDrawing) return;
+        onPointerMove(e) {
+            if (!this.isActive) return;
+            if (this.isPanning && this.panStart) {
+                this.wrapper.scrollLeft = this.panStart.left - (e.clientX - this.panStart.x);
+                this.wrapper.scrollTop = this.panStart.top - (e.clientY - this.panStart.y);
+                return;
+            }
+            if (!this.isDrawing || this.currentTool === 'smart_erase') return;
             const pos = this.getMousePos(e);
-
-            if (this.currentTool === 'smart_erase') {
-                // Do nothing on mouse move for magic wand
-            } else {
-                // Interpolate for smooth stroke
-                this.drawLine(this.lastPos, pos);
-                this.lastPos = pos;
-            }
+            this.strokeTo(this.lastPos, pos);
+            this.lastPos = pos;
+            this.scheduleRender();
         },
 
-        onMouseUp() {
-            if (!this.isActive || !this.isDrawing) return;
+        onPointerUp() {
+            if (this.isPanning) { this.isPanning = false; this.panStart = null; this.updateCursorStyle(); }
             this.isDrawing = false;
+        },
 
-            if (this.currentTool === 'smart_erase') {
-                // Action already performed on mousedown
+        updateBrushCursor(e) {
+            if (!this.brushCursor) return;
+            if (this.currentTool === 'smart_erase' || this.spaceDown || this.isPanning) {
+                this.brushCursor.style.display = 'none';
+                return;
+            }
+            const rect = this.displayCanvas.getBoundingClientRect();
+            const d = this.brushSize * (rect.width / this.displayCanvas.width);
+            const st = this.brushCursor.style;
+            st.display = 'block';
+            st.width = st.height = d + 'px';
+            st.left = (e.clientX - d / 2) + 'px';
+            st.top = (e.clientY - d / 2) + 'px';
+            st.borderColor = this.currentTool === 'restore' ? '#16a34a' : '#dc2626';
+            st.borderStyle = this.smartMode ? 'dashed' : 'solid';
+        },
+
+        // ------------------------------------------------------------------
+        // Brushes
+        // ------------------------------------------------------------------
+        // Walk from a to b placing dabs close enough to look continuous.
+        strokeTo(a, b) {
+            if (!this.smartMode) { this.drawLine(a, b); return; }
+            const dist = Math.hypot(b.x - a.x, b.y - a.y);
+            const step = Math.max(1.5, this.brushSize * 0.25);
+            const n = Math.max(1, Math.ceil(dist / step));
+            for (let i = 1; i <= n; i++) {
+                this.dab({ x: a.x + (b.x - a.x) * i / n, y: a.y + (b.y - a.y) * i / n });
             }
         },
 
-        draw(pos) {
+        dab(pos) {
+            if (this.smartMode) { this.smartDab(pos); return; }
             const ctx = this.workCanvas.getContext('2d');
-            const dCtx = this.displayCanvas.getContext('2d'); // Display context
-
-            // Common Styles
-            const setupCtx = (c) => {
-                c.lineCap = 'round';
-                c.lineJoin = 'round';
-                c.lineWidth = this.brushSize;
-            };
-            setupCtx(ctx);
-            setupCtx(dCtx);
-
+            const r = this.brushSize / 2;
             if (this.currentTool === 'eraser') {
-                // Update Work Canvas
                 ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2); ctx.fill();
                 ctx.globalCompositeOperation = 'source-over';
-
-                // Update Display Canvas (Visually Sync)
-                dCtx.globalCompositeOperation = 'destination-out';
-                dCtx.beginPath();
-                dCtx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
-                dCtx.fill();
-                dCtx.globalCompositeOperation = 'source-over';
-
             } else if (this.currentTool === 'restore') {
-                // Update Work Canvas
                 ctx.save();
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
-                ctx.clip();
-                ctx.drawImage(this.originalImage, 0, 0, this.workCanvas.width, this.workCanvas.height);
+                ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2); ctx.clip();
+                ctx.drawImage(this.refCanvas, 0, 0);
                 ctx.restore();
-
-                // Update Display Canvas
-                dCtx.save();
-                dCtx.beginPath();
-                dCtx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
-                dCtx.clip();
-                dCtx.drawImage(this.originalImage, 0, 0, this.displayCanvas.width, this.displayCanvas.height);
-                dCtx.restore();
             }
-
-            // Removed this.render() call to improve performance
         },
 
-        drawLine(start, end) {
-             const ctx = this.workCanvas.getContext('2d');
-             const dCtx = this.displayCanvas.getContext('2d');
-
-             const setupCtx = (c) => {
-                 c.lineCap = 'round';
-                 c.lineJoin = 'round';
-                 c.lineWidth = this.brushSize;
-             };
-             setupCtx(ctx);
-             setupCtx(dCtx);
-
-             if (this.currentTool === 'eraser') {
-                 // Work Canvas
-                 ctx.globalCompositeOperation = 'destination-out';
-                 ctx.beginPath();
-                 ctx.moveTo(start.x, start.y);
-                 ctx.lineTo(end.x, end.y);
-                 ctx.stroke();
-                 ctx.globalCompositeOperation = 'source-over';
-
-                 // Display Canvas
-                 dCtx.globalCompositeOperation = 'destination-out';
-                 dCtx.beginPath();
-                 dCtx.moveTo(start.x, start.y);
-                 dCtx.lineTo(end.x, end.y);
-                 dCtx.stroke();
-                 dCtx.globalCompositeOperation = 'source-over';
-
-             } else if (this.currentTool === 'restore') {
-                 // Use shared temp canvas to create the brush mask
-                 if (!this.tempCanvas) {
-                     this.tempCanvas = document.createElement('canvas');
-                     this.tempCanvas.width = this.workCanvas.width;
-                     this.tempCanvas.height = this.workCanvas.height;
-                 }
-
-                 // Note: Drawing lines for Restore efficiently is tricky without render().
-                 // We re-use the logic but apply to both canvases?
-                 // Since Restore copies from OriginalImage, and OriginalImage is static,
-                 // we can just repeat the composite operation on both.
-
-                 const tCtx = this.tempCanvas.getContext('2d');
-                 tCtx.clearRect(0,0, this.tempCanvas.width, this.tempCanvas.height);
-
-                 // Draw Stroke on Temp Mask
-                 tCtx.lineCap = 'round';
-                 tCtx.lineJoin = 'round';
-                 tCtx.lineWidth = this.brushSize;
-                 tCtx.strokeStyle = '#fff';
-                 tCtx.beginPath();
-                 tCtx.moveTo(start.x, start.y);
-                 tCtx.lineTo(end.x, end.y);
-                 tCtx.stroke();
-                 tCtx.globalCompositeOperation = 'source-in';
-                 tCtx.drawImage(this.originalImage, 0, 0, this.workCanvas.width, this.workCanvas.height);
-                 tCtx.globalCompositeOperation = 'source-over'; // Reset
-
-                 // Apply to Work Canvas
-                 ctx.drawImage(this.tempCanvas, 0, 0);
-
-                 // Apply to Display Canvas
-                 dCtx.drawImage(this.tempCanvas, 0, 0);
-             }
-
-             // Removed this.render()
+        drawLine(a, b) {
+            const ctx = this.workCanvas.getContext('2d');
+            if (this.currentTool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = this.brushSize;
+                ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+                ctx.globalCompositeOperation = 'source-over';
+            } else if (this.currentTool === 'restore') {
+                const t = this.tempCanvas.getContext('2d');
+                t.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
+                t.globalCompositeOperation = 'source-over';
+                t.lineCap = 'round'; t.lineJoin = 'round'; t.lineWidth = this.brushSize; t.strokeStyle = '#fff';
+                t.beginPath(); t.moveTo(a.x, a.y); t.lineTo(b.x, b.y); t.stroke();
+                t.globalCompositeOperation = 'source-in';
+                t.drawImage(this.refCanvas, 0, 0);
+                t.globalCompositeOperation = 'source-over';
+                ctx.drawImage(this.tempCanvas, 0, 0);
+            }
         },
 
-        render() {
-            // Simply copy Work Canvas to Display Canvas
-            // Note: Display Canvas has checkerboard CSS background, so transparency shows up.
-            this.ctx.clearRect(0, 0, this.displayCanvas.width, this.displayCanvas.height);
-            this.ctx.drawImage(this.workCanvas, 0, 0);
+        // Edge-aware dab: take the colour under the brush centre (from the
+        // un-cut photo), flood-fill the connected pixels of similar colour that
+        // lie inside the brush circle, and erase/restore only those. Where the
+        // colour changes (the edge of a shoulder, hair, clothes) the fill stops,
+        // so the brush can overlap the person without damaging them.
+        smartDab(pos) {
+            const W = this.workCanvas.width, H = this.workCanvas.height;
+            const r = Math.max(2, this.brushSize / 2);
+            const cx = Math.round(pos.x), cy = Math.round(pos.y);
+            if (cx < 0 || cy < 0 || cx >= W || cy >= H) return;
+            const x0 = Math.max(0, Math.floor(cx - r)), y0 = Math.max(0, Math.floor(cy - r));
+            const x1 = Math.min(W - 1, Math.ceil(cx + r)), y1 = Math.min(H - 1, Math.ceil(cy + r));
+            const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+            const ref = this.refData.data;
+
+            // Sample colour: average of a 3x3 at the centre
+            let sr = 0, sg = 0, sb = 0, sn = 0;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+                const x = cx + dx, y = cy + dy;
+                if (x < 0 || y < 0 || x >= W || y >= H) continue;
+                const i = (y * W + x) * 4;
+                sr += ref[i]; sg += ref[i + 1]; sb += ref[i + 2]; sn++;
+            }
+            sr /= sn; sg /= sn; sb /= sn;
+
+            const T = 12 + this.smartTolerance * 1.3;   // colour distance threshold
+            const hard = T * 0.65;                        // fully affected below this
+            const r2 = r * r;
+
+            const ctx = this.workCanvas.getContext('2d', { willReadFrequently: true });
+            const img = ctx.getImageData(x0, y0, bw, bh);
+            const px = img.data;
+            const visited = new Uint8Array(bw * bh);
+            const stack = [[cx - x0, cy - y0]];
+            let changed = false;
+
+            while (stack.length) {
+                const [lx, ly] = stack.pop();
+                if (lx < 0 || ly < 0 || lx >= bw || ly >= bh) continue;
+                const li = ly * bw + lx;
+                if (visited[li]) continue;
+                visited[li] = 1;
+                const gx = lx + x0, gy = ly + y0;
+                const ddx = gx - cx, ddy = gy - cy;
+                if (ddx * ddx + ddy * ddy > r2) continue;
+                const ri = (gy * W + gx) * 4;
+                const dist = Math.sqrt((ref[ri] - sr) ** 2 + (ref[ri + 1] - sg) ** 2 + (ref[ri + 2] - sb) ** 2);
+                if (dist > T) continue; // edge reached — do not cross it
+
+                // Soft falloff near the colour threshold keeps edges natural
+                const strength = dist <= hard ? 1 : 1 - (dist - hard) / (T - hard);
+                const pi = li * 4;
+                if (this.currentTool === 'eraser') {
+                    const a = px[pi + 3];
+                    const na = Math.round(a * (1 - strength));
+                    if (na !== a) { px[pi + 3] = na; changed = true; }
+                } else if (this.currentTool === 'restore') {
+                    const target = Math.round(255 * strength);
+                    if (target > px[pi + 3]) {
+                        px[pi] = ref[ri]; px[pi + 1] = ref[ri + 1]; px[pi + 2] = ref[ri + 2];
+                        px[pi + 3] = target;
+                        changed = true;
+                    }
+                }
+                stack.push([lx + 1, ly], [lx - 1, ly], [lx, ly + 1], [lx, ly - 1]);
+            }
+            if (changed) ctx.putImageData(img, x0, y0);
         },
 
-        // --- Magic Wand Logic (Flood Fill) ---
+        // --- Magic wand: click an area of similar colour to erase it all ---
         applyMagicWand(pos) {
             this.toggleLoading(true, 'Analyzing image...');
-
             setTimeout(() => {
                 try {
-                    const width = this.workCanvas.width;
-                    const height = this.workCanvas.height;
-                    const ctx = this.workCanvas.getContext('2d');
-
-                    // Scale coordinates if canvas display size differs from resolution
-                    const x = Math.floor(pos.x);
-                    const y = Math.floor(pos.y);
-
-                    if (x < 0 || x >= width || y < 0 || y >= height) {
-                        this.toggleLoading(false);
-                        return;
-                    }
+                    const width = this.workCanvas.width, height = this.workCanvas.height;
+                    const ctx = this.workCanvas.getContext('2d', { willReadFrequently: true });
+                    const x = Math.floor(pos.x), y = Math.floor(pos.y);
+                    if (x < 0 || x >= width || y < 0 || y >= height) return;
 
                     const imageData = ctx.getImageData(0, 0, width, height);
                     const data = imageData.data;
-
-                    const targetPos = (y * width + x) * 4;
-                    const targetR = data[targetPos];
-                    const targetG = data[targetPos + 1];
-                    const targetB = data[targetPos + 2];
-                    const targetA = data[targetPos + 3];
-
-                    // Don't fill if clicking on transparent area
-                    if (targetA === 0) {
-                        this.toggleLoading(false);
-                        return;
-                    }
-
-                    // Improved tolerance: use percentage of max possible distance
-                    // tolerance 1-100 → mapped to tighter range for precision
-                    // At tolerance 20: maxDist = (20/100 * 80)^2 * 3 = 16^2 * 3 = 768 (very precise)
-                    // At tolerance 50: maxDist = (50/100 * 80)^2 * 3 = 40^2 * 3 = 4800 (moderate)
-                    // At tolerance 100: maxDist = (100/100 * 80)^2 * 3 = 80^2 * 3 = 19200 (generous)
+                    const tp = (y * width + x) * 4;
+                    if (data[tp + 3] === 0) return; // already transparent
+                    const tR = data[tp], tG = data[tp + 1], tB = data[tp + 2];
                     const maxDist = Math.pow((this.tolerance / 100) * 80, 2) * 3;
+                    const match = (p) => data[p + 3] !== 0
+                        && ((data[p] - tR) ** 2 + (data[p + 1] - tG) ** 2 + (data[p + 2] - tB) ** 2) <= maxDist;
 
-                    const matchColor = (pos) => {
-                        const a = data[pos + 3];
-                        if (a === 0) return false; // Already transparent
-
-                        const r = data[pos];
-                        const g = data[pos + 1];
-                        const b = data[pos + 2];
-
-                        // Compare against TARGET color (the pixel that was clicked)
-                        const distSq = Math.pow(r - targetR, 2) + Math.pow(g - targetG, 2) + Math.pow(b - targetB, 2);
-                        return distSq <= maxDist;
-                    };
-
-                    // Edge detection: check if neighbor has sharp color change
-                    const isEdge = (pos) => {
-                        const r = data[pos], g = data[pos+1], b = data[pos+2];
-                        // Check 4 neighbors for sharp change
-                        const neighbors = [pos - width*4, pos + width*4, pos - 4, pos + 4];
-                        for (const nPos of neighbors) {
-                            if (nPos < 0 || nPos >= data.length - 3) continue;
-                            if (data[nPos+3] === 0) continue; // Skip transparent
-                            const nr = data[nPos], ng = data[nPos+1], nb = data[nPos+2];
-                            const edgeDist = Math.pow(r-nr,2) + Math.pow(g-ng,2) + Math.pow(b-nb,2);
-                            if (edgeDist > 3000) return true; // Strong edge detected
-                        }
-                        return false;
-                    };
-
-                    // Implement Scanline Flood Fill with edge detection
-                    let stack = [[x, y]];
                     const visited = new Uint8Array(width * height);
-                    const maxPixels = width * height * 0.4; // Safety: max 40% of image
-                    let filledCount = 0;
-
-                    while(stack.length > 0 && filledCount < maxPixels) {
-                        let [cx, cy] = stack.pop();
-                        let currentX = cx;
-
-                        // Move left to find the start of the span
-                        while(currentX > 0) {
-                            const pIdx = (cy * width + (currentX - 1)) * 4;
-                            if (!matchColor(pIdx) || visited[cy * width + (currentX - 1)] || isEdge(pIdx)) break;
-                            currentX--;
-                        }
-
-                        let spanUp = false;
-                        let spanDown = false;
-
-                        // Move right and fill
-                        while(currentX < width && filledCount < maxPixels) {
-                            const p = (cy * width + currentX) * 4;
-                            if (visited[cy * width + currentX]) { currentX++; continue; }
-                            if (!matchColor(p) || isEdge(p)) break;
-
-                            data[p + 3] = 0; // Erase (set alpha to 0)
-                            visited[cy * width + currentX] = 1;
-                            filledCount++;
-
-                            // Check up
-                            if (cy > 0) {
-                                const upPos = ((cy - 1) * width + currentX) * 4;
-                                const upMatch = matchColor(upPos) && !visited[(cy - 1) * width + currentX];
-                                if (!spanUp && upMatch) {
-                                    stack.push([currentX, cy - 1]);
-                                    spanUp = true;
-                                } else if (spanUp && !upMatch) {
-                                    spanUp = false;
-                                }
-                            }
-
-                            // Check down
-                            if (cy < height - 1) {
-                                const downPos = ((cy + 1) * width + currentX) * 4;
-                                const downMatch = matchColor(downPos) && !visited[(cy + 1) * width + currentX];
-                                if (!spanDown && downMatch) {
-                                    stack.push([currentX, cy + 1]);
-                                    spanDown = true;
-                                } else if (spanDown && !downMatch) {
-                                    spanDown = false;
-                                }
-                            }
-
-                            currentX++;
-                        }
+                    const stack = [[x, y]];
+                    const maxPixels = width * height * 0.4;
+                    let filled = 0;
+                    while (stack.length && filled < maxPixels) {
+                        const [px, py] = stack.pop();
+                        if (px < 0 || py < 0 || px >= width || py >= height) continue;
+                        const vi = py * width + px;
+                        if (visited[vi]) continue;
+                        visited[vi] = 1;
+                        const p = vi * 4;
+                        if (!match(p)) continue;
+                        data[p + 3] = 0;
+                        filled++;
+                        stack.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
                     }
-
-                    // Put modified data back
                     ctx.putImageData(imageData, 0, 0);
                     this.render();
-
                 } catch (err) {
-                    console.error("Magic Wand Error:", err);
-                    alert("Magic Wand failed: " + err.message + "\nCheck console for details.");
+                    console.error('Magic Wand Error:', err);
+                    alert('Magic Wand failed: ' + err.message);
                 } finally {
                     this.toggleLoading(false);
                 }
             }, 10);
+        },
+
+        // ------------------------------------------------------------------
+        // Magnifier (shows the result + ghost around the cursor, 3x)
+        // ------------------------------------------------------------------
+        updateMagnifier(evt) {
+            const mag = document.getElementById('refineMagnifier');
+            const magCanvas = document.getElementById('refineMagnifierCanvas');
+            if (!mag || !magCanvas || !this.workCanvas || this.isPanning) return;
+            const rect = this.displayCanvas.getBoundingClientRect();
+            if (evt.clientX < rect.left || evt.clientX > rect.right || evt.clientY < rect.top || evt.clientY > rect.bottom) {
+                mag.style.display = 'none';
+                return;
+            }
+            const pos = this.getMousePos(evt);
+            const m = magCanvas.getContext('2d');
+            const size = 150, zoom = 3, src = size / zoom;
+            m.fillStyle = '#fff'; m.fillRect(0, 0, size, size);
+            for (let i = 0; i < size; i += 10) for (let j = 0; j < size; j += 10) {
+                if ((i + j) % 20 === 0) { m.fillStyle = '#e5e7eb'; m.fillRect(i, j, 10, 10); }
+            }
+            m.drawImage(this.displayCanvas, pos.x - src / 2, pos.y - src / 2, src, src, 0, 0, size, size);
+            m.strokeStyle = '#FF6600'; m.lineWidth = 2;
+            m.beginPath(); m.moveTo(size / 2, 0); m.lineTo(size / 2, size); m.moveTo(0, size / 2); m.lineTo(size, size / 2); m.stroke();
+            if (this.currentTool !== 'smart_erase') {
+                m.beginPath(); m.arc(size / 2, size / 2, (this.brushSize / 2) * zoom, 0, Math.PI * 2); m.stroke();
+            }
+            mag.style.display = 'block';
+            mag.style.left = (evt.clientX + 24) + 'px';
+            mag.style.top = (evt.clientY - 174) + 'px';
         },
 
         loadImage(src) {
@@ -1515,11 +1553,8 @@
         toggleLoading(show, text) {
             const overlay = document.getElementById('cropperLoadingOverlay');
             const txt = document.getElementById('cropperLoadingText');
-            if(overlay) {
-                if(show) overlay.classList.remove('d-none');
-                else overlay.classList.add('d-none');
-            }
-            if(txt && text) txt.textContent = text;
+            if (overlay) overlay.classList.toggle('d-none', !show);
+            if (txt && text) txt.textContent = text;
         }
     };
 

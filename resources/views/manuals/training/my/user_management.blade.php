@@ -85,6 +85,20 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">တစ်ဦးချင်း ခွင့်ပြုချက်များ</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>တိုးတက်မှုအဆင့် အပ်ဒိတ်</strong> — အဆင့်အမှန်ခြစ် (Admin/Staff ရှိ၊ Caretaker မူလ မရှိ)</li>
+            <li><strong>ဝန်ထမ်း ပြင်ဆင်</strong> — အဆင့်အမှန်ခြစ်ခြင်းနှင့် သီးခြား</li>
+            <li><strong>Workflow စီမံ</strong> — အလုပ်/အဆင့် · <strong>ငွေကြေးစီမံ</strong> — ဈေး/ဘေလ်/ငွေလက်ခံ</li>
+            <li><strong>ပူးတွဲဖိုင်ရွှေ့</strong> — အသုံးပြုသူ အချို့ကို ပေးနိုင်</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">မေးလေ့ရှိသော မေးခွန်းများ</h2>
 

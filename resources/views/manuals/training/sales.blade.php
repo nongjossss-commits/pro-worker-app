@@ -146,6 +146,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">ตัวเลือกใบเสนอราคา + ตรวจข้อมูลซ้ำตอนส่งต่อ</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>แสดงยอดรวม (Show Grand Total):</strong> ปิดเพื่อแสดงเฉพาะราคาต่อหน่วย (ไม่มีจำนวน/ยอดเงิน/ช่องลงชื่อผู้รับ)</li>
+            <li>ใบเสนอราคาเก็บประวัติแยกจากบิลจริง — ไม่ถูกนับเป็นรายรับหรือยอดคงค้างในเมนูการเงิน</li>
+            <li>ส่งต่อ (Transition) แล้วพบลูกจ้างซ้ำ → ต้องติ๊กยืนยันก่อนส่งต่อ</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">คำถามที่พบบ่อย</h2>
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ActivityLogHelper;
+use App\Models\FinancialPayment;
 use App\Models\FinancialTransaction;
 use App\Models\ProductionOrder;
 use App\Models\ProductionFinancialGroup;
@@ -61,8 +62,9 @@ class FinancialHubController extends Controller
             };
 
             $stats = [
-                'income_today' => FinancialTransaction::whereDate('paid_at', $today)->where($excludeQuotations)->sum('paid_amount'),
-                'income_month' => FinancialTransaction::whereDate('paid_at', '>=', $startOfMonth)->where($excludeQuotations)->sum('paid_amount'),
+                // Cash received per payment date — see cashReceived().
+                'income_today' => $this->cashReceived($today, $today, $excludeQuotations),
+                'income_month' => $this->cashReceived($startOfMonth, $today->copy()->endOfMonth(), $excludeQuotations),
                 'pending_amount' => FinancialTransaction::whereIn('status', ['pending', 'partial'])->where($excludeQuotations)->sum(DB::raw('amount - paid_amount - credit_amount')),
                 'overdue_amount' => FinancialTransaction::where('status', 'overdue')->where($excludeQuotations)->sum(DB::raw('amount - paid_amount - credit_amount')),
             ];
@@ -115,10 +117,15 @@ class FinancialHubController extends Controller
             // Income cards sort by latest payment first so today's
             // collections sit on top regardless of when the bill was issued.
             $card = $request->input('card');
+            $cardPeriod = null;
             if ($card === 'income_today') {
-                $query->whereDate('paid_at', $today)->reorder()->latest('paid_at');
+                $cardPeriod = [$today, $today];
             } elseif ($card === 'income_month') {
-                $query->whereDate('paid_at', '>=', $startOfMonth)->reorder()->latest('paid_at');
+                $cardPeriod = [$startOfMonth, $today->copy()->endOfMonth()];
+            }
+            if ($cardPeriod) {
+                $this->scopeReceivedBetween($query, $cardPeriod[0], $cardPeriod[1]);
+                $query->reorder()->latest('paid_at');
             } elseif ($card === 'pending') {
                 $query->whereIn('status', ['pending', 'partial']);
             } elseif ($card === 'overdue') {
@@ -190,6 +197,20 @@ class FinancialHubController extends Controller
                     'unpaid_count' => (int) ($agg->unpaid_count ?? 0),
                     'overdue_count' => (int) ($agg->overdue_count ?? 0),
                 ];
+
+                // Income card: "Received" = cash that came in during the card's
+                // period only (not each bill's lifetime paid_amount), so it
+                // equals the card's own number.
+                if ($cardPeriod) {
+                    $filteredIds = (clone $query)->reorder()->select('financial_transactions.id');
+                    $filteredStats['total_paid'] = $this->cashReceived(
+                        $cardPeriod[0],
+                        $cardPeriod[1],
+                        fn ($t) => $t->whereIn('financial_transactions.id', $filteredIds)
+                    );
+                    $filteredStats['period_from'] = $cardPeriod[0]->toDateString();
+                    $filteredStats['period_to'] = $cardPeriod[1]->toDateString();
+                }
             }
 
             $transactions = $query->with([
@@ -514,6 +535,66 @@ class FinancialHubController extends Controller
     }
 
     /**
+     * Cash actually received between $from and $to (inclusive dates), for the
+     * "Income Today / This Month" cards. Cash-basis, as in the ledger: every
+     * payment counts once, on the date it was received
+     * (financial_payments.paid_at) — so a bill part-paid last month and
+     * settled this month splits correctly across the two months instead of
+     * its whole paid_amount jumping to the month of the last payment.
+     *
+     * Legacy bills that carry paid_amount but no payment rows (pre-dating
+     * financial_payments — see RecoverLegacyPayments) are counted on the
+     * bill's own paid_at, so their money is neither lost nor double-counted.
+     *
+     * $txnScope optionally narrows the bills (e.g. exclude quotations).
+     */
+    protected function cashReceived(Carbon $from, Carbon $to, ?\Closure $txnScope = null): float
+    {
+        $fromDate = $from->toDateString();
+        $toDate = $to->toDateString();
+
+        $payments = FinancialPayment::whereDate('paid_at', '>=', $fromDate)
+            ->whereDate('paid_at', '<=', $toDate)
+            ->whereHas('transaction', function ($t) use ($txnScope) {
+                if ($txnScope) {
+                    $txnScope($t);
+                }
+            })
+            ->sum('amount');
+
+        $legacy = FinancialTransaction::whereDoesntHave('payments')
+            ->where('paid_amount', '>', 0)
+            ->whereDate('paid_at', '>=', $fromDate)
+            ->whereDate('paid_at', '<=', $toDate)
+            ->when($txnScope, fn ($q) => $txnScope($q))
+            ->sum('paid_amount');
+
+        return (float) $payments + (float) $legacy;
+    }
+
+    /**
+     * Restrict a FinancialTransaction query to bills that received cash in
+     * [$from, $to] — the same rule as cashReceived(), used by the income
+     * card filters so the listed bills are exactly the ones behind the card.
+     */
+    protected function scopeReceivedBetween($query, Carbon $from, Carbon $to): void
+    {
+        $fromDate = $from->toDateString();
+        $toDate = $to->toDateString();
+
+        $query->where(function ($q) use ($fromDate, $toDate) {
+            $q->whereHas('payments', function ($p) use ($fromDate, $toDate) {
+                $p->whereDate('paid_at', '>=', $fromDate)->whereDate('paid_at', '<=', $toDate);
+            })->orWhere(function ($legacy) use ($fromDate, $toDate) {
+                $legacy->whereDoesntHave('payments')
+                    ->where('paid_amount', '>', 0)
+                    ->whereDate('paid_at', '>=', $fromDate)
+                    ->whereDate('paid_at', '<=', $toDate);
+            });
+        });
+    }
+
+    /**
      * Helper method to calculate stats for a given order query scope.
      */
     protected function getStatsForOrders($orderQuery)
@@ -526,16 +607,17 @@ class FinancialHubController extends Controller
 
         $stats = FinancialTransaction::whereIn('production_order_id', $orderIdsSubQuery)
             ->select([
-                DB::raw("SUM(CASE WHEN DATE(paid_at) = '" . $today->toDateString() . "' THEN paid_amount ELSE 0 END) as income_today"),
-                DB::raw("SUM(CASE WHEN paid_at >= '" . $startOfMonth->toDateTimeString() . "' THEN paid_amount ELSE 0 END) as income_month"),
                 DB::raw("SUM(CASE WHEN status IN ('pending', 'partial') THEN amount - paid_amount - credit_amount ELSE 0 END) as pending_amount"),
                 DB::raw("SUM(CASE WHEN status = 'overdue' THEN amount - paid_amount - credit_amount ELSE 0 END) as overdue_amount"),
             ])
             ->first();
 
+        // Income = cash received per payment date (see cashReceived()).
+        $inOrders = fn ($t) => $t->whereIn('production_order_id', (clone $orderQuery)->select('id'));
+
         return [
-            'income_today' => $stats->income_today ?? 0,
-            'income_month' => $stats->income_month ?? 0,
+            'income_today' => $this->cashReceived($today, $today, $inOrders),
+            'income_month' => $this->cashReceived($startOfMonth, $today->copy()->endOfMonth(), $inOrders),
             'pending_amount' => $stats->pending_amount ?? 0,
             'overdue_amount' => $stats->overdue_amount ?? 0,
         ];
@@ -629,22 +711,45 @@ class FinancialHubController extends Controller
         $startDate = \Carbon\Carbon::parse($month . '-01')->startOfMonth();
         $endDate = $startDate->copy()->endOfMonth();
 
-        // Query Incomes (Transactions that are paid)
-        $incomesQuery = \App\Models\FinancialTransaction::with(['bankAccount', 'productionOrder'])
-            ->whereNotNull('paid_at')
-            ->whereBetween('paid_at', [$startDate, $endDate]);
+        // Incomes — cash basis, one row per payment received in this month
+        // (same rule as the Income cards, see cashReceived()). Previously a
+        // bill's whole cumulative paid_amount was reported in the month of
+        // its LAST payment, so a bill paid across two months vanished from
+        // the earlier month's report and was over-stated in the later one.
+        // 'tax_only' affects expenses only; all incomes are included.
+        $fromDate = $startDate->toDateString();
+        $toDate = $endDate->toDateString();
+        $byBiller = function ($t) use ($billerId) {
+            if ($billerId !== 'all') {
+                $t->where('financial_profile_id', $billerId);
+            }
+            // Quotation-stage bills are never real income — same exclusion as the Overview cards.
+            $t->whereDoesntHave('productionOrder', fn ($po) => $po->where('manual_bill_type', 'quotation'));
+        };
 
-        if ($billerId !== 'all') {
-            $incomesQuery->where('financial_profile_id', $billerId);
+        $incomePayments = FinancialPayment::with(['bankAccount', 'transaction.productionOrder'])
+            ->whereDate('paid_at', '>=', $fromDate)
+            ->whereDate('paid_at', '<=', $toDate)
+            ->whereHas('transaction', $byBiller)
+            ->orderBy('paid_at')
+            ->get();
+
+        // Legacy bills with paid_amount but no payment rows — counted once on the bill's paid_at.
+        $legacyIncomes = FinancialTransaction::with(['bankAccount', 'productionOrder'])
+            ->whereDoesntHave('payments')
+            ->where('paid_amount', '>', 0)
+            ->whereDate('paid_at', '>=', $fromDate)
+            ->whereDate('paid_at', '<=', $toDate)
+            ->where($byBiller)
+            ->get();
+
+        // WHT belongs to the bill, not to each instalment: report it once, on
+        // the row of the bill's final (settling) payment.
+        $lastPaymentIdByTxn = [];
+        foreach ($incomePayments->pluck('financial_transaction_id')->unique() as $txnId) {
+            $lastPaymentIdByTxn[$txnId] = FinancialPayment::where('financial_transaction_id', $txnId)
+                ->orderByDesc('paid_at')->orderByDesc('id')->value('id');
         }
-
-        if ($exportType === 'tax_only') {
-            // Include only if there's WHT or if you define tax rules for income
-            // For now, let's include all paid incomes if tax_only, or filter if requested.
-            // A simple assumption: 'tax_only' might primarily affect expenses. We'll include all income.
-        }
-
-        $incomes = $incomesQuery->get();
 
         // Query Expenses
         $expensesQuery = \App\Models\Expense::with(['category', 'bankAccount'])
@@ -664,11 +769,26 @@ class FinancialHubController extends Controller
         $csvData = [];
         $csvData[] = ['Type', 'Date', 'Description/Order', 'Category', 'Bank Account', 'WHT Status', 'WHT Amount', 'Amount'];
 
-        foreach ($incomes as $inc) {
+        foreach ($incomePayments as $pay) {
+            $txn = $pay->transaction;
+            $isSettling = ($lastPaymentIdByTxn[$pay->financial_transaction_id] ?? null) === $pay->id;
             $csvData[] = [
                 'Income',
-                $inc->paid_at->format('Y-m-d H:i:s'),
-                $inc->productionOrder ? $inc->productionOrder->project_name : 'Income',
+                \Carbon\Carbon::parse($pay->paid_at)->format('Y-m-d'),
+                ($txn && $txn->productionOrder ? $txn->productionOrder->project_name : 'Income') . ' (#' . ($txn->production_order_id ?? '') . '-' . $pay->financial_transaction_id . ')',
+                'Income',
+                $pay->bankAccount ? $pay->bankAccount->bank_name : '',
+                $txn->wht_status ?? '',
+                $isSettling ? ($txn->withholding_tax_amount ?? 0) : 0,
+                $pay->amount,
+            ];
+        }
+
+        foreach ($legacyIncomes as $inc) {
+            $csvData[] = [
+                'Income',
+                $inc->paid_at->format('Y-m-d'),
+                ($inc->productionOrder ? $inc->productionOrder->project_name : 'Income') . ' (#' . $inc->production_order_id . '-' . $inc->id . ')',
                 'Income',
                 $inc->bankAccount ? $inc->bankAccount->bank_name : '',
                 $inc->wht_status,
@@ -708,7 +828,20 @@ class FinancialHubController extends Controller
         $attachmentsDir = $tempDir . '/attachments';
         \Illuminate\Support\Facades\File::makeDirectory($attachmentsDir);
 
-        foreach ($incomes as $inc) {
+        foreach ($incomePayments as $pay) {
+            if ($pay->slip_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($pay->slip_path)) {
+                $ext = pathinfo($pay->slip_path, PATHINFO_EXTENSION);
+                \Illuminate\Support\Facades\File::copy(storage_path('app/public/' . $pay->slip_path), $attachmentsDir . '/income_slip_' . $pay->financial_transaction_id . '_' . $pay->id . '.' . $ext);
+            }
+            $txn = $pay->transaction;
+            $isSettling = ($lastPaymentIdByTxn[$pay->financial_transaction_id] ?? null) === $pay->id;
+            if ($isSettling && $txn && $txn->wht_document_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($txn->wht_document_path)) {
+                $ext = pathinfo($txn->wht_document_path, PATHINFO_EXTENSION);
+                \Illuminate\Support\Facades\File::copy(storage_path('app/public/' . $txn->wht_document_path), $attachmentsDir . '/income_wht_' . $txn->id . '.' . $ext);
+            }
+        }
+
+        foreach ($legacyIncomes as $inc) {
             if ($inc->slip_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($inc->slip_path)) {
                 $ext = pathinfo($inc->slip_path, PATHINFO_EXTENSION);
                 \Illuminate\Support\Facades\File::copy(storage_path('app/public/' . $inc->slip_path), $attachmentsDir . '/income_slip_' . $inc->id . '.' . $ext);

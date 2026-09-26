@@ -13,7 +13,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (view only)</span>
+        <span class="role-pill role-readonly">Caretaker (day-to-day work)</span>
     </div>
 </div>
 
@@ -170,6 +170,58 @@
 </section>
 
 {{-- ═════════════════════════════════════════════════════════════════════ --}}
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Multi-card tabs — finish the whole card</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'workflow/07-multi-card',
+        'alt' => 'Multi-card tab (e.g. MOU Import) — each card is one job',
+        'caption' => 'Multi-card tab (e.g. MOU Import) — each card is one job',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Super Admin picks <strong>single card</strong> (one card per employer) or <strong>multi-card</strong> (a new card per job, e.g. MOU Import) per tab</li>
+            <li>Multi-card: <strong>Finish Job</strong> closes the whole card; undo from <strong>Completed Jobs</strong> within 24 h</li>
+            <li><strong>Cancel</strong> marks the card cancelled · <strong>Delete</strong> removes it (restorable from Trash)</li>
+            <li>Deleting a custom tab only hides it — jobs and finance data stay</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">Teams + managing steps</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Manage Team</strong> on the employee card: pick/create, rename, delete, or "No Team"</li>
+            <li><strong>Steps</strong> button: add / rename / delete / reorder instantly — same window in all 4 menus</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 8</div>
+    <h2 class="slide-title">Job Check Mode</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'workflow/06-job-check-mode',
+        'alt' => 'Job Check Mode — snapshot at start, movement summary at the end',
+        'caption' => 'Job Check Mode — snapshot at start, movement summary at the end',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Job Check Mode → Start</strong> snapshots every employee in the 4 menus</li>
+            <li>Work normally; <strong>Pause</strong> / <strong>Resume</strong> any time</li>
+            <li><strong>Finish</strong> → Excel "with movement" and "no movement" (photos + source tab)</li>
+            <li>History kept 7 days; auto-closed at 05:00 if forgotten</li>
+        </ol>
+    </div>
+</section>
 
 <section class="training-slide">
     <div class="slide-number">FAQ</div>

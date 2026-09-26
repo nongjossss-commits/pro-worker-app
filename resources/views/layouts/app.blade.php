@@ -6,6 +6,8 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    @include('partials._theme_init')
+
     {{-- Alpine's `x-cloak` attribute relies on this rule to actually hide
          anything before Alpine boots (it's loaded via `defer` below, so the
          browser can parse/paint the raw server-rendered HTML first) — several
@@ -836,6 +838,7 @@
         }
     </style>
     @include('partials._ui_theme_styles')
+    <link rel="stylesheet" href="{{ asset('css/theme-dark.css') }}?v={{ @filemtime(public_path('css/theme-dark.css')) }}">
 </head>
 <body>
 
@@ -913,6 +916,8 @@
                             <li><a class="dropdown-item" href="{{ route('lang.switch', 'my') }}">🇲🇲 မြန်မာ (Myanmar)</a></li>
                         </ul>
                     </div>
+
+                    @include('partials._theme_switcher')
 
                     <!-- User Dropdown (Top Right) -->
                     <div class="dropdown">
@@ -1847,6 +1852,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @include('partials._ui_theme_scripts')
+    @include('partials._session_heartbeat')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Flatpickr JS -->

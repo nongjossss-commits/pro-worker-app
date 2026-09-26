@@ -77,6 +77,19 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 4</div>
+    <h2 class="slide-title">Preview + ส่งออก/นำเข้า Template</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ใน Builder กด <strong>Preview</strong> เพื่อดู PDF จริงก่อนบันทึก</li>
+            <li>หน้ารายการ: ติ๊กเลือก template → <strong>Export</strong> ได้ไฟล์ JSON</li>
+            <li>อีกโปรแกรมหนึ่ง → <strong>Import</strong> ไฟล์นั้น — ได้ template ใหม่ (ฟิลด์รูปภาพต้องอัปโหลดรูปใหม่)</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">คำถามที่พบบ่อย</h2>
 

@@ -65,6 +65,15 @@ class SuperAdminSeeder extends Seeder
             'user_management',
             'pdf_templates',
             'central_trash',
+            'finance_books',
+            'wht_inbox',
+            'bank_accounts',
+            'expense_categories',
+            'duplicate_records',
+            'attachment_sizes',
+            'employment_history',
+            'group_team',
+            'pro_walker_labour',
         ];
 
         foreach ($keys as $key) {

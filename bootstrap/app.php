@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            // Sign out once no page of the app has been open for a few
+            // minutes (browser/app closed) — see the class docblock.
+            \App\Http\Middleware\EnsureBrowserSessionAlive::class,
             // Contract lifecycle: block writes system-wide when the license
             // has expired without grace, except for super-admin.
             \App\Http\Middleware\EnforceContractStatus::class,

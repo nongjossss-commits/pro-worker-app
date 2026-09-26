@@ -66,6 +66,41 @@
     Go to Monthly Bundle → select a month → click "Generate" → download a ZIP with all of that month's documents
 </div>
 
+<h5>6. Overview and stat cards (click to filter)</h5>
+<div class="manual-step">
+    The 4 cards: <strong>Income today / this month</strong> = money actually received on that day/month, counted by the date of each payment (a bill part-paid last month and settled this month is split correctly, never double-counted); <strong>Pending amount</strong> = outstanding on unpaid/partly paid bills; <strong>Overdue amount</strong> = outstanding on bills marked overdue. <strong>Click a card</strong> to list exactly the bills behind that number (click again to clear). Income cards show each payment under "Paid" — bold = in the period, faded = another period — and the filtered summary shows "Received in this period", equal to the card. Quotations are never counted.
+</div>
+
+<h5>7. Where a bill came from — source badge and filter</h5>
+<div class="manual-step">
+    Under the employer/project name a badge shows the source, e.g. <code>Workflow › MOU Renewal</code>, <code>Renewal Resolution › Tab X</code>, <code>Manual bill</code>. If the source tab has been deleted the badge is <strong>red</strong> ("tab deleted" + date) — the bill is still real, keep collecting or issue a credit note. The <strong>Source</strong> filter: all / from active tabs / from deleted tabs. A red banner appears when unpaid bills come from deleted tabs.
+</div>
+
+<h5>8. Tabs per work menu</h5>
+<div class="manual-step">
+    <strong>Workflow & Pre-Production</strong>, <strong>Registration</strong>, <strong>Renewal</strong> tabs show total / billed / outstanding per employer; <strong>Manage Finance</strong> opens pricing, billing and payments. <strong>Manual bills</strong> and <strong>Quotations</strong> are separate tabs — quotation history never mixes with real bills.
+</div>
+
+<h5>9. Receiving payments (Payment History)</h5>
+<div class="manual-step">
+    Open the bill → record the <strong>amount</strong>, <strong>date received</strong>, <strong>receiving account</strong> and slip. Several instalments are allowed; the status becomes "partial"/"paid" automatically (credit notes included). With no account selected the system asks for confirmation because the payment will <strong>not</strong> post to any bank balance. Payments with an account are posted to the Ledger on the date received.
+</div>
+
+<h5>10. Credit notes</h5>
+<div class="manual-step">
+    Reduce a bill that has been issued (discount, or writing off the rest): <strong>Credit Notes</strong> → <strong>New</strong> → pick the bill, amount and reason (saved as draft) → <strong>Issue</strong> locks the number and reduces the outstanding amount at once. Issued by mistake → <strong>Void</strong>; drafts can be deleted. Credit notes are included in the monthly bundle.
+</div>
+
+<h5>11. Create a manual bill</h5>
+<div class="manual-step">
+    Choose the <strong>document type</strong> first: <strong>Quotation</strong> (employer optional) or <strong>Invoice</strong> (employer required). You can add <strong>draft employees</strong> (name/nationality/passport/photo without creating a real employee — manual bills only). Quotations can show the <strong>grand total</strong> or unit prices only. Every document carries the configured VAT/WHT note.
+</div>
+
+<h5>12. Monthly report</h5>
+<div class="manual-step">
+    <strong>Monthly Report</strong> → month/biller → ZIP (CSV + slips + WHT documents). Income is <strong>one row per payment</strong> on the date received — a bill paid over several months appears in each month's report. A bill's WHT is shown once, on its final payment row. Quotations are excluded.
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

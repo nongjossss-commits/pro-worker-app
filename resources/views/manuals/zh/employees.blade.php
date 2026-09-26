@@ -82,6 +82,45 @@
     步骤：前往"回收站"标签 → 点击永久删除图标 → 确认两次
 </div>
 
+<h5>6. 员工重复检查</h5>
+<div class="manual-step">
+    所有新建员工的途径(本菜单、Workflow / Pre-Production、注册/续签决议、Excel 导入、销售转移)都会比对 护照 / 工作证 / 粉卡 / 身份证号 / RA 编号,重复时保存前提示(仅提示,不阻止)。Excel 导入和销售转移需勾选"仍然继续"。
+</div>
+
+<h5>7. 搜索可找到所有状态</h5>
+<div class="manual-step">
+    默认列表只显示在职员工,但搜索时也会找到已通知离职 / 已取消注册的员工,并显示 <strong>Terminated</strong> / <strong>Registration Cancelled</strong> 标记 —— 便于核对重复提示。
+</div>
+
+<h5>8. 批量移动附件(超级管理员)</h5>
+<div class="manual-step">
+    勾选员工 → <strong>移动附件</strong> → 选择来源/目标栏位及方式:交换 / 移动并删除来源 / 合并到 B(合并两个 PDF)。只作用于所选员工;超级管理员可将此权限授予特定 Admin/Staff。
+</div>
+
+<h5>9. 工作证类型</h5>
+<div class="manual-step">
+    "工作证类型"列表由超级管理员在设置中管理(新增 / 重命名 / 排序)。重命名会自动更新现有员工;仍在使用的类型不能删除;"其他"可随时手动填写。
+</div>
+
+<h5>10. 编辑员工照片(裁剪窗口)</h5>
+<div class="manual-step">
+    <ol class="mb-0">
+        <li><strong>旋转 / 调整角度</strong> — 旋转后空出的角会填充为所选背景色(默认白色),不再是灰色/黑色</li>
+        <li><strong>Auto Face Center Crop</strong> — 按证件照样式裁剪并使人脸居中;所有浏览器均可使用(首次使用可能需要几秒钟)</li>
+        <li><strong>White BG / Light Blue BG</strong> — 系统自动去除背景并填充颜色</li>
+        <li>如果抠错了(例如手臂或肩膀不见了),点击 <strong>Refine / Edit Mask</strong>:
+            <ul>
+                <li><strong>原图虚影</strong> — 在后面淡淡显示原图,可以看到被裁掉的部分</li>
+                <li><strong>恢复</strong> — 在虚影上涂抹,把误删的部分找回 · <strong>Erase</strong> — 擦除多余部分</li>
+                <li><strong>智能边缘</strong>(默认开启)— 把笔刷中心放在要擦除/恢复的区域,笔刷边缘可以越过,系统会自动停在轮廓线</li>
+                <li><strong>魔术棒</strong> — 单击即可擦除一整片相近颜色的区域</li>
+                <li>鼠标滚轮 = 缩放 · 按住空格键或右键拖动 = 移动画面 · <kbd>[</kbd> <kbd>]</kbd> = 笔刷大小 · <kbd>Ctrl</kbd>+<kbd>Z</kbd> = 撤销</li>
+            </ul>
+        </li>
+        <li>点击 <strong>Apply Changes</strong> — 照片立即使用所选背景色(无需再次点击背景按钮)</li>
+    </ol>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>须知事项 / 使用小贴士</h4>
 
 <div class="manual-tip">

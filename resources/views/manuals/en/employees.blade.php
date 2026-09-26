@@ -82,6 +82,45 @@
     Steps: go to the "Trash" tab → click the permanent delete icon → confirm twice
 </div>
 
+<h5>6. Duplicate employee check</h5>
+<div class="manual-step">
+    Every way of creating an employee (this menu, Workflow / Pre-Production, Registration / Renewal, Excel import, Sales transition) compares passport / work permit / pink card / ID number / RA number with existing employees and warns before saving (warning, not a block). Excel import and Sales transition ask you to tick "continue anyway".
+</div>
+
+<h5>7. Search finds every status</h5>
+<div class="manual-step">
+    The default list shows active employees only, but a search also finds notified-out / registration-cancelled employees, marked with a <strong>Terminated</strong> / <strong>Registration Cancelled</strong> badge — useful when checking a duplicate warning.
+</div>
+
+<h5>8. Move attachment files for many employees (Super Admin)</h5>
+<div class="manual-step">
+    Tick employees → <strong>Move Attachment Files</strong> → choose source/target slots and mode: swap / move & delete source / merge into B (combines both PDFs). Applies only to the selected employees; the Super Admin can delegate this to specific Admin/Staff users.
+</div>
+
+<h5>9. Work permit types</h5>
+<div class="manual-step">
+    The "work permit type" list is managed by the Super Admin in Settings (add / rename / reorder). Renaming updates existing employees automatically; a type still in use cannot be deleted; "Other" with free text is always available.
+</div>
+
+<h5>10. Editing the employee photo (crop window)</h5>
+<div class="manual-step">
+    <ol class="mb-0">
+        <li><strong>Rotate / adjust angle</strong> — the empty corners after rotating are filled with the chosen background colour (white by default), not grey/black</li>
+        <li><strong>Auto Face Center Crop</strong> — frames the photo ID-style with the face centred; works in every browser (the first use may take a few seconds)</li>
+        <li><strong>White BG / Light Blue BG</strong> — the background is removed and filled automatically</li>
+        <li>If the cut is wrong (e.g. an arm or shoulder is missing), press <strong>Refine / Edit Mask</strong>:
+            <ul>
+                <li><strong>Ghost</strong> — shows the original photo faintly behind, so you can see what was cut away</li>
+                <li><strong>Restore</strong> — paint over the ghost to bring wrongly removed parts back · <strong>Erase</strong> — remove leftovers</li>
+                <li><strong>Smart Edge</strong> (on by default) — put the centre of the brush on the area to erase/restore; the brush edge may overlap, it stops at the outline by itself</li>
+                <li><strong>Magic Wand</strong> — one click erases a whole area of similar colour</li>
+                <li>Mouse wheel = zoom · hold Space or right-drag = move · <kbd>[</kbd> <kbd>]</kbd> = brush size · <kbd>Ctrl</kbd>+<kbd>Z</kbd> = undo</li>
+            </ul>
+        </li>
+        <li>Press <strong>Apply Changes</strong> — the photo gets the chosen background colour straight away (no need to press the background button again)</li>
+    </ol>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Things to know / Tips</h4>
 
 <div class="manual-tip">

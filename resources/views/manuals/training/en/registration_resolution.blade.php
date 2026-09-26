@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (view only)</span>
+        <span class="role-pill role-readonly">Caretaker (day-to-day work)</span>
     </div>
 </div>
 
@@ -113,6 +113,33 @@
             <li>Open the employer card → view the employee list</li>
             <li>Tick the checkbox for each completed step</li>
             <li>The system logs the timestamp automatically</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 5</div>
+    <h2 class="slide-title">Selecting employees + teams</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Completed employees become selectable again after the 24 h Undo window</li>
+            <li>Employer Select All → <strong>All / Completed only / Not completed only</strong></li>
+            <li><strong>Manage Team</strong> on the employee card (teams per tab and per employer)</li>
+            <li>Appointments and request numbers are stored per tab</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Super Admin tools</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Tab badge switch</strong>: hide the "in resolution group…" badge for a tab prepared in advance</li>
+            <li><strong>Move Attachment Files</strong>: swap / move / merge PDFs for selected employees</li>
+            <li><strong>Deleting a tab</strong>: jobs with bills are kept; bills stay manageable in Finance</li>
         </ol>
     </div>
 </section>

@@ -18,6 +18,26 @@
 </div>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 0</div>
+    <h2 class="slide-title">Logging in + security</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'dashboard/03-login',
+        'alt' => 'Login page — colours and logo follow the system branding',
+        'caption' => 'Login page — colours and logo follow the system branding',
+    ])
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Closing the browser / app → log in again next time</li>
+            <li>No page open for more than 5 minutes → signed out automatically</li>
+            <li>Refresh or new tab → keeps working</li>
+            <li>"Remember me" remembers the email; "Forgot your password?" sends a reset link (valid 60 minutes)</li>
+        </ol>
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">STEP 1</div>
     <h2 class="slide-title">Open Dashboard + view the overview</h2>
 
@@ -38,6 +58,7 @@
             <li>Log in → automatically go to Dashboard</li>
             <li>Check the summary cards at the top</li>
             <li>Click a card or quick link to go to the menu you need</li>
+            <li>The button after the language button = <strong>Light / Dark / Device default</strong> mode — switches instantly with no refresh, remembered per device</li>
         </ol>
     </div>
 </section>

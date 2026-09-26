@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (view only)</span>
+        <span class="role-pill role-readonly">Caretaker (day-to-day work)</span>
     </div>
 </div>
 
@@ -146,6 +146,20 @@
 
     <div class="slide-warn">
         ⚠️ <strong>Careful:</strong> once a job has been sent to Workflow, it can no longer be edited in Pre-Prod — you must edit it in Workflow instead
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">Teams + preparation steps</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>Manage Team</strong> on the employee card — employees grouped by team</li>
+            <li>Rename/delete teams from the pill; "No Team" removes an employee</li>
+            <li><strong>Steps</strong> button: add / rename / delete / reorder preparation steps without reloading</li>
+            <li>Multi-card tabs send each card to Workflow as a separate job; duplicate employees are flagged when added</li>
+        </ol>
     </div>
 </section>
 

@@ -71,11 +71,23 @@ class ImageEnhanceController extends Controller
             if (file_exists($outputFull)) unlink($outputFull);
 
             $errorMsg = implode("\n", $output);
+            // The full Python traceback (server paths etc.) goes to the log,
+            // not to the user's screen.
+            \Illuminate\Support\Facades\Log::error('Image enhance failed: ' . $errorMsg);
+
+            if (preg_match("/No module named '?([\\w.]+)/", $errorMsg, $m)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('The AI sharpening component is not installed on this server yet (missing Python library: :module). Please ask the system administrator to install it — see SETUP_PYTHON.md.', ['module' => $m[1]]),
+                ], 500);
+            }
+
+            $lines = array_values(array_filter(array_map('trim', $output)));
 
             return response()->json([
                 'success' => false,
-                'message' => 'Enhancement failed.',
-                'details' => $errorMsg,
+                'message' => __('Enhancement failed.'),
+                'details' => $lines ? end($lines) : '',
             ], 500);
         }
 

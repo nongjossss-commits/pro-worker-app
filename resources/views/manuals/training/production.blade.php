@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker (ดูได้)</span>
+        <span class="role-pill role-readonly">Caretaker (งานประจำวัน)</span>
     </div>
 </div>
 
@@ -150,12 +150,33 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">จัดทีม + จัดการขั้นตอนเตรียมงาน</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li><strong>จัดทีม:</strong> ปุ่มจัดทีมบนการ์ดลูกจ้าง → เลือก/สร้างทีม — รายชื่อจะจัดกลุ่มตามทีม</li>
+            <li>แก้ชื่อ/ลบทีมได้จากป้ายทีม (ลบทีม = ล้างชื่อทีม ลูกจ้างไม่หาย) · ปุ่ม "ไม่มีทีม" เอาออกจากทีม</li>
+            <li><strong>ปุ่ม Steps:</strong> เพิ่ม / เปลี่ยนชื่อ / ลบ / ลากเรียงลำดับขั้นตอนเตรียมงาน — ไม่ต้องรีโหลดหน้า</li>
+        </ol>
+    </div>
+
+    <div class="slide-tip">
+        💡 แท็บแบบ <strong>หลายการ์ด</strong> (เช่น MOU นำเข้า): การ์ดแต่ละใบถูกส่งเข้า Workflow เป็นงานแยก ไม่ถูกรวมกัน ·
+        เพิ่มลูกจ้างใหม่แล้วข้อมูลซ้ำ (พาสปอร์ต/ใบอนุญาต/บัตรชมพู/เลข RA) ระบบจะเตือนก่อนบันทึก
+    </div>
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">คำถามที่พบบ่อย</h2>
 
     <dl class="slide-faq">
         <dt>Q: ทำไมไม่เห็นปุ่ม "Send to Workflow"?</dt>
         <dd>A: ตรวจ role ของคุณ — ต้องมีสิทธิ์ <code>approve-production</code> (Admin/Super Admin)</dd>
+
+        <dt>Q: ติ๊กขั้นตอนไม่ได้?</dt>
+        <dd>A: ต้องมีสิทธิ์ "อัปเดตขั้นตอนความคืบหน้า" — Admin เปิดให้ได้ที่เมนูจัดการผู้ใช้</dd>
 
         <dt>Q: ลูกจ้างที่ลาออกระหว่าง Pre-Prod?</dt>
         <dd>A: ลบลูกจ้างคนนั้นจากงาน Pre-Prod หรือ Cancel ทั้งใบหากทุกคนลาออก</dd>

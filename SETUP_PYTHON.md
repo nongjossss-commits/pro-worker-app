@@ -39,7 +39,12 @@ brew install python
 
 ## Step 2: Install Dependencies
 
-Once Python is installed, run the provided script to install required AI libraries (`gfpgan`, `basicsr`, `opencv-python-headless`).
+Once Python is installed, run the provided script to install required AI libraries (everything in `requirements.txt`: `gfpgan`, `basicsr`, `realesrgan`, OpenCV 4.x).
+
+On a server without a graphics card, install the CPU build of PyTorch first (much smaller):
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+```
 
 ### Windows
 
@@ -50,7 +55,7 @@ scripts/install_python_deps.bat
 
 Alternatively, you can manually install the packages:
 ```cmd
-pip install gfpgan basicsr opencv-python-headless
+pip install -r requirements.txt
 ```
 
 ### Linux / macOS
@@ -62,7 +67,7 @@ sh scripts/install_python_deps.sh
 
 Alternatively:
 ```bash
-pip3 install gfpgan basicsr opencv-python-headless
+pip3 install -r requirements.txt
 ```
 
 ---
@@ -78,4 +83,14 @@ pip3 install gfpgan basicsr opencv-python-headless
   - Ensure you are using the correct pip for your Python installation (`pip` vs `pip3`).
 
 - **Slow Processing**
-  - The first time you run the enhancement, it may download a large model file (~300MB). This can take a few minutes depending on your internet connection. Subsequent runs will be faster.
+  - The first time you run the enhancement, it downloads the AI model files (about 500MB in total). This can take a few minutes depending on your internet connection. Subsequent runs will be faster.
+  - On CPU a passport photo takes roughly 30–60 seconds (tested 2026-09-26: ~40s).
+
+- **Error: "module 'cv2' has no attribute 'CascadeClassifier'"**
+  - OpenCV 5 removed it. Install OpenCV 4: `pip install "opencv-python<5" "opencv-python-headless<5"` (already pinned in `requirements.txt`).
+
+- **Error: "No module named 'torchvision.transforms.functional_tensor'"**
+  - `basicsr` still uses an old torchvision name. `scripts/enhance_image.py` maps it automatically — make sure the server has the current version of that script.
+
+- **If `pip install` fails while building `basicsr`**
+  - Install PyTorch first (see above), then run: `pip install --no-build-isolation -r requirements.txt`

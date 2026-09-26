@@ -423,6 +423,7 @@
                         <i class="bi bi-download me-1"></i> {{ __('Open Manual Bundle') }}
                     </a>
                 </div>
+                @include('super-admin.partials._manual_share', ['bundle' => 'main'])
             </div>
 
             {{-- Finance-only Manual Bundle — separately distributable add-on --}}
@@ -440,6 +441,7 @@
                         <i class="bi bi-download me-1"></i> {{ __('Open Finance Manual') }}
                     </a>
                 </div>
+                @include('super-admin.partials._manual_share', ['bundle' => 'finance'])
             </div>
 
             {{-- Training Edition — slide-friendly with annotated screenshots --}}
@@ -463,6 +465,7 @@
                         <i class="bi bi-easel me-1"></i> {{ __('Open Training Bundle') }}
                     </a>
                 </div>
+                @include('super-admin.partials._manual_share', ['bundle' => 'training'])
             </div>
 
             {{-- Training Edition — Finance Bundle (Sales + Finance + Financial Profiles) --}}
@@ -481,6 +484,7 @@
                         <i class="bi bi-cash-coin me-1"></i> {{ __('Open Finance Training Bundle') }}
                     </a>
                 </div>
+                @include('super-admin.partials._manual_share', ['bundle' => 'training_finance'])
             </div>
 
             {{-- App Name --}}

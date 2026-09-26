@@ -53,6 +53,30 @@
     เลื่อนลงไปด้านล่างของหน้า — Section "บทบาท & สิทธิ์" แสดง role ทั้งหมด + permissions ที่ผูกอยู่
 </div>
 
+<h5>6. สิทธิ์ย่อยที่เปิด/ปิดรายคนได้</h5>
+<div class="manual-step">
+    หน้าแก้ไขผู้ใช้มีรายการสิทธิ์ให้ติ๊กเพิ่ม/ถอนเป็นรายคน สิทธิ์ที่ควรรู้:
+    <ul class="mb-0">
+        <li><strong>อัปเดตขั้นตอนความคืบหน้า</strong> — ติ๊กขั้นตอนใน Pre-Production / Workflow / มติ (Admin, Staff มีโดยค่าเริ่มต้น · Caretaker ไม่มี)</li>
+        <li><strong>แก้ไขข้อมูลลูกจ้าง</strong> — แก้ข้อมูลลูกจ้าง นัดหมาย รหัสเข้าระบบของลูกจ้าง ปิด/ยกเลิกรายการ (แยกจากการติ๊กขั้นตอน)</li>
+        <li><strong>จัดการ Workflow</strong> — สร้างงาน ตั้งค่าขั้นตอน ตั้งค่าแจ้งเตือน มอบหมายผู้ดำเนินการ</li>
+        <li><strong>จัดการการเงิน</strong> — ตั้งราคา วางบิล รับชำระ</li>
+        <li><strong>ย้ายไฟล์แนบ</strong> — เครื่องมือย้าย/สลับ/รวมไฟล์แนบของลูกจ้างหลายคน (Super Admin มอบให้ Admin/Staff เฉพาะคนได้)</li>
+    </ul>
+</div>
+
+<h5>7. บัญชีลูกค้า (Employer) และบัญชี Pro Walker Labour</h5>
+<div class="manual-step">
+    บัญชี <strong>Employer</strong> เข้าได้เฉพาะข้อมูลของบริษัทตัวเอง — เข้าเมนูงาน (Pre-Production / Workflow / มติ) ไม่ได้ ·
+    บัญชีของโมดูล Pro Walker Labour (ฝ่ายบัญชี / ผู้ถือหุ้น / หัวหน้าทีม / ลูกทีม) สร้างได้โดย Super Admin เท่านั้น และเข้าได้เฉพาะโมดูล Labour
+</div>
+
+<h5>8. การเข้าสู่ระบบและความปลอดภัย</h5>
+<div class="manual-step">
+    ปิดเบราว์เซอร์หรือแอปแล้วต้องเข้าสู่ระบบใหม่ทุกครั้ง · ถ้าไม่มีหน้าโปรแกรมเปิดอยู่เลยเกิน 5 นาที ระบบจะออกจากระบบให้อัตโนมัติ ·
+    "จดจำฉัน" จำเฉพาะอีเมลไว้ในเครื่องนั้น (รหัสผ่านให้บันทึกกับเบราว์เซอร์) · กรอกรหัสผ่านผิดติดกันหลายครั้งจะถูกพักการเข้าสู่ระบบชั่วคราว
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">
@@ -61,7 +85,7 @@
         <li><span class="manual-role">Super Admin</span> — สิทธิ์ทุกอย่าง</li>
         <li><span class="manual-role">Admin</span> — สิทธิ์ทุกอย่างยกเว้น Super Admin Settings</li>
         <li><span class="manual-role">Staff</span> — งานหลัก (ลูกจ้าง, นายจ้าง, การเงิน)</li>
-        <li><span class="manual-role">Caretaker</span> — ดูแลลูกจ้าง (ไม่ลบ)</li>
+        <li><span class="manual-role">Caretaker</span> — ดูแลลูกจ้างของนายจ้างที่ได้รับมอบหมาย (งานประจำวัน · ไม่แก้โครงสร้างงาน/การเงิน)</li>
         <li><span class="manual-role">Employer</span> — ลูกค้าที่ login ดูข้อมูลตัวเอง</li>
     </ul>
 </div>

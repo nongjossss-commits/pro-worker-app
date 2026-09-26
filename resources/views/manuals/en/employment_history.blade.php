@@ -2,9 +2,7 @@
 
 <h4><i class="bi bi-person-badge me-2"></i>What is this menu?</h4>
 <p>
-    The <strong>"Employment History"</strong> menu gathers <strong>every employee</strong> that has ever been in the system,
-    whether <em>currently active</em>, <em>terminated (Resigned)</em>, <em>contract ended</em>, or <em>already moved to a different employer</em>.
-    Used to <strong>review past history</strong>, <strong>search for old employees</strong>, and <strong>bulk-transfer</strong> former employees to a new employer
+    The <strong>"Notified-Out Employees"</strong> menu (formerly "Employment History") lists employees who have been <strong>notified out</strong> — resigned, dismissed or contract ended — with the date and reason. Active employees are in the "Employees" menu. Use it to find former employees and to <strong>transfer</strong> them to a new employer.
 </p>
 
 <h4><i class="bi bi-person-check me-2"></i>Who can access this menu?</h4>
@@ -55,6 +53,16 @@
 <h5>4. Batch-generate PDFs</h5>
 <div class="manual-step">
     Tick multiple employees → Bulk Action Bar → "Automated PDF" → select a template → the system generates PDFs for everyone at once
+</div>
+
+<h5>5. Notify In / Change Employer via Workflow</h5>
+<div class="manual-step">
+    Besides the transfer button here, you can add an employee from this list to the <strong>Notify In / Change Employer</strong> tab in Workflow — they are moved to the new employer and the notified-out status is cleared immediately.
+</div>
+
+<h5>6. Move attachment files (Super Admin)</h5>
+<div class="manual-step">
+    Tick employees → <strong>Move Attachment Files</strong> → swap / move / merge PDFs between attachment slots, for the selected employees only.
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>

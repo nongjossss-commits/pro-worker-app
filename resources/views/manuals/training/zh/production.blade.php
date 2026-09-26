@@ -12,7 +12,7 @@
         <span class="role-pill role-admin">Super Admin</span>
         <span class="role-pill role-admin">Admin</span>
         <span class="role-pill role-admin">Staff</span>
-        <span class="role-pill role-readonly">Caretaker(仅可查看)</span>
+        <span class="role-pill role-readonly">Caretaker(日常工作)</span>
     </div>
 </div>
 
@@ -146,6 +146,20 @@
 
     <div class="slide-warn">
         ⚠️ <strong>注意:</strong> 已送入 Workflow 的工作无法在 Pre-Prod 中编辑 —— 需在 Workflow 中修改
+    </div>
+</section>
+
+<section class="training-slide">
+    <div class="slide-number">STEP 6</div>
+    <h2 class="slide-title">分组 + 准备步骤</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>员工卡片上的 <strong>分组</strong> —— 员工按分组显示</li>
+            <li>在分组标签上重命名/删除;"无分组"移出员工</li>
+            <li><strong>Steps</strong> 按钮:无需刷新即可新增 / 重命名 / 删除 / 排序准备步骤</li>
+            <li>多卡片标签页的每张卡片分别发送到 Workflow;新增重复员工会提示</li>
+        </ol>
     </div>
 </section>
 
