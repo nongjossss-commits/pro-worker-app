@@ -37,3 +37,6 @@
 <div class="manual-warn">
     This page <strong>never deletes files</strong> — it is a report only. Replace a file from that record's edit page.
 </div>
+<div class="manual-tip">
+    <strong>Generated downloads</strong> (ZIP/PDF from the Download Center) are kept for <strong>24 hours</strong>, then removed automatically together with their Download Center entry — just download again if you need them. The original employee documents are never removed.
+</div>

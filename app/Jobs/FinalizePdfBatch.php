@@ -83,7 +83,7 @@ class FinalizePdfBatch implements ShouldQueue
              // Create a text file for the user to download as the "result"
              $failReportName = 'generation_failed_report_' . date('Ymd_His') . '.txt';
              $failReportPath = 'downloads/' . $failReportName;
-             Storage::disk('public')->put($failReportPath, $errorSummary);
+             Storage::disk('private')->put($failReportPath, $errorSummary);
 
              // Create Task pointing to this text file
              $task = DownloadTask::create([
@@ -101,7 +101,9 @@ class FinalizePdfBatch implements ShouldQueue
         // Scenario 2: Success or Partial Success
         $zipName = 'export_' . date('Ymd_His') . '.zip';
         $zipRelativePath = 'downloads/' . $zipName;
-        $zipFullPath = storage_path('app/public/' . $zipRelativePath);
+        // Private storage: served only through DownloadController (owner check),
+        // never by a direct /storage/... URL.
+        $zipFullPath = storage_path('app/private/' . $zipRelativePath);
 
         // Ensure downloads dir exists
         if (!File::exists(dirname($zipFullPath))) {
@@ -135,7 +137,7 @@ class FinalizePdfBatch implements ShouldQueue
             'user_id' => $user->id,
             'type' => 'zip', // Generic zip type
             'status' => 'completed',
-            'file_path' => $zipRelativePath // DownloadController expects relative to storage/app/public
+            'file_path' => $zipRelativePath // relative to storage/app/private (see DownloadController)
         ]);
 
         // Clean up temp batch folder

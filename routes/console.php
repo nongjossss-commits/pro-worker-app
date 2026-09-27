@@ -32,3 +32,9 @@ Schedule::command('app:update-resolution-data')->hourly();
 // last 7 business days.
 Schedule::command('app:auto-finish-stale-job-check-sessions')->dailyAt('05:00');
 Schedule::command('app:cleanup-job-check-sessions')->dailyAt('05:15');
+
+// Download Center files (ZIP/PDF built from employee documents) are only kept
+// 24 hours — users rebuild them every time. Hourly, so each file goes about
+// 24h after it was made. Also sweep temp_uploads/ and temp/ leftovers.
+Schedule::command('app:prune-download-files')->hourly();
+Schedule::command('app:prune-orphan-files')->dailyAt('03:30');

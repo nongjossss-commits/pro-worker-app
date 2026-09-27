@@ -37,3 +37,6 @@
 <div class="manual-warn">
     此页面<strong>不会删除任何文件</strong> —— 仅供检查的报告。请在该记录的编辑页面更换文件。
 </div>
+<div class="manual-tip">
+    <strong>系统生成的下载文件</strong>（Download Center 的 ZIP/PDF）仅保留 <strong>24 小时</strong>，之后会连同 Download Center 中的记录自动删除——如需要请重新下载。雇员的原始文件不会被删除。
+</div>

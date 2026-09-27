@@ -101,11 +101,14 @@ class DownloadController extends Controller
         }
 
         $path = $task->file_path;
-        // file_path is relative to storage/app/public/ (as returned by job)
-        // We need to serve it.
-        // Job returns 'downloads/filename.zip'.
-
-        $fullPath = storage_path('app/public/' . $path);
+        // Job returns 'downloads/filename.zip', stored under storage/app/private/
+        // so it can only be fetched here (owner check above). Files made before
+        // that change still live under storage/app/public/ until they are pruned
+        // (app:prune-download-files).
+        $fullPath = storage_path('app/private/' . $path);
+        if (!file_exists($fullPath)) {
+            $fullPath = storage_path('app/public/' . $path);
+        }
 
         if (!file_exists($fullPath)) {
             abort(404, 'File not found on server.');

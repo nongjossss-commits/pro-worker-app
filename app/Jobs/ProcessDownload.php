@@ -187,7 +187,7 @@ class ProcessDownload implements ShouldQueue
     protected function createZip($employees, $tempDir, $task, $singleFolder = false)
     {
         $zipFileName = 'download_' . $task->id . '_' . date('YmdHis') . '.zip';
-        $zipPath = storage_path('app/public/downloads/' . $zipFileName);
+        $zipPath = storage_path('app/private/downloads/' . $zipFileName);
 
         // Ensure download directory exists
         if (!file_exists(dirname($zipPath))) {
@@ -296,7 +296,7 @@ class ProcessDownload implements ShouldQueue
         }
 
         $zipFileName = 'download_individual_pdfs_' . $task->id . '_' . date('YmdHis') . '.zip';
-        $zipPath = storage_path('app/public/downloads/' . $zipFileName);
+        $zipPath = storage_path('app/private/downloads/' . $zipFileName);
 
         if (!file_exists(dirname($zipPath))) {
             mkdir(dirname($zipPath), 0755, true);
@@ -398,7 +398,7 @@ class ProcessDownload implements ShouldQueue
             }
 
             $fileName = 'merged_' . $task->id . '_' . date('YmdHis') . '.pdf';
-            $outputPath = storage_path('app/public/downloads/' . $fileName);
+            $outputPath = storage_path('app/private/downloads/' . $fileName);
 
             if (!file_exists(dirname($outputPath))) {
                 mkdir(dirname($outputPath), 0755, true);
