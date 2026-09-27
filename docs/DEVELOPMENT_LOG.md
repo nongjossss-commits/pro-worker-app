@@ -9,6 +9,14 @@
 
 ## 2026-09-27
 
+### การแจ้งเตือน — ปุ่ม "แก้ไขพนักงาน" บนการ์ด/แถวลูกจ้าง
+- **ทำอะไร:** เพิ่มปุ่ม <i>ดินสอ</i> ถัดจากปุ่มต่ออายุ/อัพเดต ทั้งแบบการ์ด (`notifications/_notification_item`) และแบบตาราง (`_notification_table_row`) — เปิดฟอร์มแก้ไขลูกจ้างเป็นหน้าต่างในหน้าเดิม (`<x-edit-employee-modal />` ตัวเดียวกับแดชบอร์ดขึ้นทะเบียน/ต่ออายุ) บันทึกแล้วรีโหลดหน้าเพื่อให้การ์ดแสดงข้อมูลใหม่
+- **สิทธิ์:** แสดงเมื่อเมนู "ลูกจ้าง" เปิดใช้ (`SuperAdmin::isVisible('employees')`) · ถ้าเมนูลูกจ้างตั้งรหัสผ่านและยังไม่ปลดล็อก — `edit-employee-modal` เปลี่ยนไปหน้าแก้ไขเต็มเพื่อให้ขึ้นหน้าใส่รหัส (เดิมขึ้น error 403 ในหน้าต่าง; มีผลกับแดชบอร์ดขึ้นทะเบียน/ต่ออายุด้วย)
+- **ไฟล์:** `notifications/index.blade.php` (include modal + script), `_notification_item`, `_notification_table_row`, `components/edit-employee-modal.blade.php`
+- **คู่มือ:** `manuals/{,en/,my/,zh/}notifications` ข้อ 5 + FAQ ใน `manuals/training/{,en/,my/,zh/}notifications`
+- **ทดสอบ:** `tests/Feature/NotificationEditEmployeeButtonTest.php` · เปิดจริงในเบราว์เซอร์ (สว่าง/มืด): ปุ่มขึ้น, ฟอร์มโหลดในหน้าต่าง, บันทึก (จำลองคำตอบ) แล้วหน้ารีโหลด
+- **ยังไม่ได้ทดสอบ:** บันทึกจริงผ่านหน้าต่างนี้บน production (เครื่อง dev บันทึกจริงไม่ได้ — SQLite ขาดคอลัมน์ production บางตัว), กรณีเมนูลูกจ้างติดรหัสผ่าน
+
 ### ไฟล์ดาวน์โหลด (Download Center) — เก็บ 24 ชม. แล้วลบเอง + ปิดทางเปิดไฟล์โดยไม่ล็อกอิน
 - **ปัญหา:** ZIP/PDF ที่สร้างจาก Download Center ไม่เคยถูกลบ (`DownloadController::cleanup()` เป็นโครงว่าง) — บน production สะสม ~875 ไฟล์ ~48 GB (เห็นจากเมนู "ขนาดไฟล์แนบ")
 - **ความปลอดภัย:** ไฟล์เดิมอยู่ใน `storage/app/public/downloads/` ซึ่งเปิดได้ตรง ๆ ที่ `/storage/downloads/<ชื่อไฟล์>` โดยไม่ต้องล็อกอิน ชื่อไฟล์เดาได้ (เลขงาน + วันเวลา) และมีสำเนาพาสปอร์ต/วีซ่า

@@ -337,10 +337,27 @@
 </div>
 @include('employees.modals.advanced_export')
 @include('employees.modals.select_target_employer_modal')
+@if(\App\Facades\SuperAdmin::isVisible('employees'))
+    <x-edit-employee-modal />
+    <x-cropper-modal />
+    @include('employees.partials._edit_scripts')
+@endif
 @endsection
 
 @push('scripts')
 <script>
+    // Edit Employee button on notification cards/rows: open the shared edit
+    // modal, then reload so the card shows the saved dates/status.
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-notification-edit-employee');
+        if (!btn || typeof window.openEditEmployeeModal !== 'function') return;
+        e.preventDefault();
+        window.openEditEmployeeModal(btn.dataset.editEmployeeId);
+    });
+    window.addEventListener('employee-saved', function () {
+        setTimeout(function () { window.location.reload(); }, 800);
+    });
+
     document.addEventListener('DOMContentLoaded', function () {
         // Advanced Edit
         const bulkEditBtn = document.getElementById('notification-bulk-advanced-edit-btn');

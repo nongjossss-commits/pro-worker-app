@@ -221,6 +221,15 @@
                                <i class="bi {{ $isMissingDataType ? 'bi-pencil-square' : 'bi-calendar-check' }}"></i>
                             </a>
 
+                            {{-- Edit Employee (opens the shared edit modal; plain link if the modal isn't on the page) --}}
+                            @if($employee && \App\Facades\SuperAdmin::isVisible('employees'))
+                                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-secondary btn-notification-edit-employee"
+                                   data-edit-employee-id="{{ $employee->id }}"
+                                   title="{{ __('Edit Employee') }}">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                            @endif
+
                             {{-- Only show the 'Locate' button if there is an employee --}}
                             @if($employee)
                                 <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-sm btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>

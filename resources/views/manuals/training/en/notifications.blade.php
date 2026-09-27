@@ -86,5 +86,8 @@
 
         <dt>Q: Who receives notifications?</dt>
         <dd>A: Depends on role — Admin sees everything, Caretaker/Employer only see their own</dd>
+    
+        <dt>Q: Can I edit the employee from the notification list?</dt>
+        <dd>A: Yes — click <i class="bi bi-pencil-fill"></i> on the employee card; the edit form opens on the same page and the list refreshes after you save.</dd>
     </dl>
 </section>

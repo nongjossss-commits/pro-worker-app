@@ -71,6 +71,17 @@
             credentials: 'same-origin'
         })
         .then(res => {
+            // Employees menu is password-locked: go to the full edit page,
+            // which sends the user to the unlock screen and back.
+            if (res.status === 403) {
+                return res.clone().json().catch(() => ({})).then(data => {
+                    if (data && data.locked) {
+                        window.location.href = `/employees/${employeeId}/edit`;
+                        return new Promise(() => {});
+                    }
+                    throw new Error('Failed to load edit form (' + res.status + ')');
+                });
+            }
             if (!res.ok) throw new Error('Failed to load edit form (' + res.status + ')');
             return res.text();
         })

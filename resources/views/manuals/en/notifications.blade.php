@@ -31,6 +31,11 @@
     Some notifications can be snoozed (e.g. pushing back a visa-expiry reminder) — click the "Snooze" button
 </div>
 
+<h5>5. Edit the employee</h5>
+<div class="manual-step">
+    Click <i class="bi bi-pencil-fill"></i> (Edit Employee) on an employee card or row — the edit form opens in a window on the same page; after saving, the notification list refreshes with the latest data. (Shown while the "Employees" menu is enabled; if that menu has a password, you are asked for it first.)
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

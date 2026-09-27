@@ -149,6 +149,9 @@
             @else
                 <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
                 <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
+                @if($employee && \App\Facades\SuperAdmin::isVisible('employees'))
+                    <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-secondary btn-notification-edit-employee" data-edit-employee-id="{{ $employee->id }}" title="{{ __('Edit Employee') }}"><i class="bi bi-pencil-fill"></i></a>
+                @endif
                 @if($employee)
                     <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                 @endif

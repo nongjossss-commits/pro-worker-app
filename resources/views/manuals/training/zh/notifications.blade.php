@@ -86,5 +86,8 @@
 
         <dt>Q: 谁会收到通知?</dt>
         <dd>A: 取决于角色 —— Admin 可看到全部，Caretaker/Employer 只能看到自己的</dd>
+    
+        <dt>Q: 可以在通知列表中编辑雇员资料吗？</dt>
+        <dd>A: 可以 —— 点击雇员卡片上的 <i class="bi bi-pencil-fill"></i>，编辑表单会在同一页面打开，保存后列表会自动刷新。</dd>
     </dl>
 </section>
