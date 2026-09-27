@@ -2957,7 +2957,7 @@ class RegistrationController extends Controller
 
         $steps = RegistrationStep::registration()->where('resolution_tab_id', $tabId)->orderBy('order')->get();
 
-        $html = view('production.registration.partials.day_appointments_list', compact('employees', 'steps'))->render();
+        $html = view('production.registration.partials.day_appointments_list', compact('employees', 'steps', 'tabId'))->render();
 
         return response()->json(['html' => $html]);
     }

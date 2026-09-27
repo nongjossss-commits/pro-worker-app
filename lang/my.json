@@ -1372,5 +1372,13 @@
     "Per page": "တစ်မျက်နှာလျှင်",
     "Scanning files… the first scan can take a minute.": "ဖိုင်များကို စကင်ဖတ်နေသည်… ပထမအကြိမ် တစ်မိနစ်ခန့် ကြာနိုင်သည်။",
     "Showing :from–:to of :total": ":total ခုအနက် :from–:to ကို ပြသနေသည်",
-    "Try again": "ထပ်ကြိုးစားရန်"
+    "Try again": "ထပ်ကြိုးစားရန်",
+    "Appointment": "ချိန်းဆိုမှု",
+    "Employer-Employee ID": "အလုပ်ရှင်-အလုပ်သမား ID",
+    "Every ticked field is sent — shown as \"-\" when the employee has no value yet.": "အမှန်ခြစ်ထားသော အကွက်တိုင်းကို ပို့ပါသည် — တန်ဖိုး မရှိသေးပါက \"-\" အဖြစ် ပြသည်။",
+    "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.": "\"မီနူးအလိုက်\" အမှတ်အသားပါ အကွက်များ (တောင်းဆိုမှု နံပါတ်၊ ချိန်းဆိုမှု၊ အဖွဲ့၊ မှတ်ချက်) ကို ပို့သော ကတ်မှ ယူသည်: Workflow / Pre-Production လုပ်ငန်း သို့မဟုတ် မှတ်ပုံတင် / သက်တမ်းတိုး တဘ်။",
+    "RA No. (outsource)": "RA နံပါတ် (outsource)",
+    "Remarks": "မှတ်ချက်",
+    "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "ပို့သော မီနူး၏ ကတ်မှ ယူသည် (Workflow, Pre-Production, မှတ်ပုံတင် / သက်တမ်းတိုး တဘ်)။ အလုပ်သမား မီနူးမှ ပို့ပါက အလုပ်သမား မှတ်တမ်း။",
+    "follows the menu": "မီနူးအလိုက်"
 }

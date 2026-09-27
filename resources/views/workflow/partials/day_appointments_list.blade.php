@@ -265,7 +265,7 @@
                         @endcan
                         {{-- Drag into LINE / click to copy or share (partials/_share_card_scripts) --}}
                         @if($item->employee_id)
-                            <x-share-handle type="employee" :id="$item->employee_id" :name="optional($item->employee)->employeeNameEn" />
+                            <x-share-handle type="employee" :id="$item->employee_id" :name="optional($item->employee)->employeeNameEn" :context="'item:' . $item->id" />
                         @endif
                     </div>
 

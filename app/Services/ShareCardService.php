@@ -4,7 +4,12 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\Employer;
+use App\Models\EmployeeAppointment;
+use App\Models\EmployeeRequestNumber;
+use App\Models\EmployeeTeamAssignment;
 use App\Models\Notification;
+use App\Models\ProductionItem;
+use App\Models\ResolutionTab;
 use App\Models\SystemConfig;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -30,20 +35,36 @@ class ShareCardService
         'employer' => ['Employer', '🏢'],
         'job_title' => ['Job Title', '💼'],
         'phone' => ['Phone', '📞'],
+        'email' => ['Email', '✉️'],
         'passport_no' => ['Passport No.', '🛂'],
         'passport_expiry' => ['Passport Expiry', '🛂'],
         'visa_type' => ['Visa Type', '🛃'],
         'visa_expiry' => ['Visa Expiry', '🛃'],
         'work_permit_no' => ['Work Permit No.', '📄'],
         'work_permit_expiry' => ['Work Permit Expiry', '📄'],
+        'mou_group' => ['Work Permit Type', '📄'],
         'ninety_day' => ['90-Day Report', '📅'],
         'pink_card' => ['Pink Card No.', '🪪'],
-        'name_list_number' => ['Name List No.', '📋'],
+        'name_list_number' => ['RA No. (outsource)', '📋'],
         'request_number' => ['Request No.', '📋'],
+        'reference_id' => ['Reference ID', '🔖'],
+        'outsource_code' => ['Outsource Code', '🔑'],
+        'employer_employee_id' => ['Employer-Employee ID', '🔖'],
         'id_number' => ['ID Number', '🆔'],
+        'tax_id_number' => ['Tax ID', '🧾'],
         'social_security' => ['Social Security No.', '🏥'],
+        'insurance_type' => ['Insurance Type', '🏥'],
         'start_date' => ['Start Date', '🗓️'],
+        'appointment' => ['Appointment', '📆'],
+        'team' => ['Team', '👥'],
+        'remarks' => ['Remarks', '📝'],
     ];
+
+    /**
+     * Fields whose value depends on the menu the card was shared from
+     * (request number, appointment, team, remarks) — see contextValues().
+     */
+    public const CONTEXT_FIELDS = ['request_number', 'appointment', 'team', 'remarks'];
 
     public const EMPLOYER_FIELDS = [
         'name_en' => ['Name (EN)', '🏢'],
@@ -84,10 +105,17 @@ class ShareCardService
         ])]);
     }
 
-    public function forEmployee(Employee $employee, ?Notification $notification = null, bool $withPhoto = false): array
+    /**
+     * @param string|null $context where the card was shared from:
+     *   "item:{production_item id}" — Workflow / Pre-Production card (the job's own request no., appointment, team, remarks)
+     *   "tab:{resolution_tab id}"  — Registration / Renewal tab (that tab's request no., appointment, team, remarks)
+     *   null                       — Employees menu etc.: the employee record itself
+     */
+    public function forEmployee(Employee $employee, ?Notification $notification = null, bool $withPhoto = false, ?string $context = null): array
     {
         $allowed = self::allowedFields()['employee'];
         $employee->loadMissing('employer');
+        $ctx = $this->contextValues($employee, $context);
 
         $title = trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->employeeNameEn ?? ''))
             ?: trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? ''))
@@ -100,20 +128,26 @@ class ShareCardService
             'employer' => $employee->employer?->employerNameTh ?: $employee->employer?->employerNameEn,
             'job_title' => $employee->job_title ?: $employee->employeePosition,
             'phone' => $employee->employeePhone,
+            'email' => $employee->email,
             'passport_no' => $employee->employeePassport,
             'passport_expiry' => $this->date($employee->passportExpiryDate),
             'visa_type' => $employee->visaType,
             'visa_expiry' => $this->date($employee->visaExpiryDate),
             'work_permit_no' => $employee->employeeWorkPermit,
             'work_permit_expiry' => $this->date($employee->workPermitExpiryDate),
+            'mou_group' => $employee->workPermitMOUGroup === 'อื่นๆ' && $employee->workPermitMOUGroupOther ? $employee->workPermitMOUGroupOther : $employee->workPermitMOUGroup,
             'ninety_day' => $this->date($employee->ninetyDayReportDate),
             'pink_card' => $employee->pinkCardNo,
             'name_list_number' => $employee->name_list_number,
-            'request_number' => $employee->request_number,
+            'reference_id' => $employee->employee_reference_id,
+            'outsource_code' => $employee->outsource_code,
+            'employer_employee_id' => $employee->employer_employee_id,
             'id_number' => $employee->employee_id_number,
+            'tax_id_number' => $employee->tax_id_number,
             'social_security' => $employee->social_security_number,
+            'insurance_type' => $employee->insurance_type,
             'start_date' => $this->date($employee->startDate),
-        ];
+        ] + $ctx;
 
         $lines = $this->lines(self::EMPLOYEE_FIELDS, $allowed, $values);
 
@@ -177,11 +211,14 @@ class ShareCardService
             if ($key === 'photo' || !in_array($key, $allowed, true)) {
                 continue;
             }
-            $value = trim((string) ($values[$key] ?? ''));
-            if ($value === '') {
+            // Every ticked field is shown, empty ones as "-", so what goes out
+            // always matches the admin's settings. (Menu-only fields are
+            // absent from $values outside that menu — skipped.)
+            if (!array_key_exists($key, $values)) {
                 continue;
             }
-            $lines[] = ['key' => $key, 'icon' => $icon, 'label' => __($label), 'value' => $value];
+            $value = trim((string) ($values[$key] ?? ''));
+            $lines[] = ['key' => $key, 'icon' => $icon, 'label' => __($label), 'value' => $value !== '' ? $value : '-'];
         }
         return $lines;
     }
@@ -210,6 +247,60 @@ class ShareCardService
             'brand' => ['name' => $brand['app_name'], 'color' => $brand['primary_color'], 'accent' => $brand['accent_color']],
             'chat' => $chat,
         ];
+    }
+
+    /**
+     * Request number / appointment / team / remarks as shown on the card the
+     * user shared from. Workflow & Pre-Production keep them on the job
+     * (production_items); Registration & Renewal keep them per tab
+     * (employee_request_numbers, employee_appointments,
+     * employee_team_assignments — see HasResolutionTab). Without a context
+     * (Employees menu, notifications …) the employee record's own values.
+     */
+    protected function contextValues(Employee $employee, ?string $context): array
+    {
+        [$kind, $id] = array_pad(explode(':', (string) $context, 2), 2, null);
+        $id = (int) $id;
+
+        if ($kind === 'item' && $id) {
+            $item = ProductionItem::where('id', $id)->where('employee_id', $employee->id)->first();
+            if ($item) {
+                return [
+                    'request_number' => $item->request_number,
+                    'appointment' => $this->appointment($item->appointment_date, $item->appointment_location),
+                    'team' => $item->group_name,
+                    'remarks' => $item->remarks,
+                ];
+            }
+        }
+
+        if ($kind === 'tab' && $id && ($tab = ResolutionTab::find($id))) {
+            $appointment = EmployeeAppointment::where('employee_id', $employee->id)->where('resolution_tab_id', $tab->id)->first();
+            return [
+                'request_number' => EmployeeRequestNumber::where('employee_id', $employee->id)->where('resolution_tab_id', $tab->id)->value('request_number'),
+                'appointment' => $appointment ? $this->appointment($appointment->appointment_date, $appointment->appointment_location) : null,
+                'team' => EmployeeTeamAssignment::where('employee_id', $employee->id)->where('resolution_tab_id', $tab->id)->value('team_name'),
+                'remarks' => $tab->type === 'renewal' ? $employee->renewal_remarks : $employee->registration_remarks,
+            ];
+        }
+
+        // Appointment / team / remarks only exist inside a menu — left out here
+        // (not shown as "-").
+        return ['request_number' => $employee->request_number];
+    }
+
+    protected function appointment($date, ?string $location): ?string
+    {
+        if (!$date) {
+            return $location ?: null;
+        }
+        try {
+            $d = $date instanceof Carbon ? $date : Carbon::parse($date);
+        } catch (\Throwable $e) {
+            return $location ?: null;
+        }
+        $when = $d->format('H:i') === '00:00' ? $d->format('d/m/Y') : $d->format('d/m/Y H:i');
+        return trim($when . ($location ? ' — ' . $location : ''));
     }
 
     protected function notificationLine(Notification $n): ?array

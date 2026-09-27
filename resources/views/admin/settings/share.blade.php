@@ -18,6 +18,8 @@
         <div>
             {{ __('Data sent to other apps is outside the program\'s control (personal data — PDPA). Share only what the team really needs.') }}
             {{ __('The name is always included. Every share is recorded in the Activity Log.') }}
+            <br>{{ __('Every ticked field is sent — shown as "-" when the employee has no value yet.') }}
+            {{ __('Fields marked "follows the menu" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.') }}
         </div>
     </div>
 
@@ -51,6 +53,9 @@
                                                    {{ in_array($key, $allowed[$type], true) ? 'checked' : '' }}>
                                             <label class="form-check-label" for="share_{{ $type }}_{{ $key }}">
                                                 @if($emoji){{ $emoji }} @else<i class="bi bi-image"></i> @endif{{ __($label) }}
+                                                @if($type === 'employee' && in_array($key, \App\Services\ShareCardService::CONTEXT_FIELDS, true))
+                                                    <span class="badge bg-info-subtle text-info-emphasis fw-normal" title="{{ __('Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.') }}">{{ __('follows the menu') }}</span>
+                                                @endif
                                             </label>
                                         </div>
                                     </div>

@@ -73,6 +73,60 @@ class ShareCardTest extends TestCase
         $this->assertSame(['phone'], $data['fields']);
     }
 
+    public function test_ticked_empty_fields_show_a_dash_and_new_fields_are_sent(): void
+    {
+        $employee = $this->employee();
+        $employee->forceFill(['email' => 'mee@example.com', 'outsource_code' => 'OUT-77', 'name_list_number' => 'RA-555', 'employee_reference_id' => null])->save();
+        ShareCardService::saveAllowedFields(['email', 'outsource_code', 'name_list_number', 'reference_id', 'appointment'], []);
+
+        $data = $this->actingAs($this->user())->getJson(route('share-card.show', ['employee', $employee->id]))->assertOk()->json();
+
+        $this->assertStringContainsString('mee@example.com', $data['text']);
+        $this->assertStringContainsString('OUT-77', $data['text']);
+        $this->assertStringContainsString('RA-555', $data['text']);
+        $keys = array_column($data['lines'], 'value', 'key');
+        $this->assertSame('-', $keys['reference_id'], 'ticked but empty → "-"');
+        $this->assertArrayNotHasKey('appointment', $keys, 'appointment only exists inside a menu');
+    }
+
+    public function test_request_number_follows_the_menu_the_card_is_sent_from(): void
+    {
+        $employee = $this->employee();
+        $employee->forceFill(['request_number' => 'REQ-EMPLOYEE'])->save();
+        ShareCardService::saveAllowedFields(['request_number', 'appointment', 'team', 'remarks'], []);
+        $user = $this->user();
+
+        // Employees menu → the employee record
+        $plain = $this->actingAs($user)->getJson(route('share-card.show', ['employee', $employee->id]))->json();
+        $this->assertStringContainsString('REQ-EMPLOYEE', $plain['text']);
+
+        // Workflow / Pre-Production job
+        $order = \App\Models\ProductionOrder::create(['employer_id' => $employee->employer_id, 'status' => 'active', 'created_by' => $user->id]);
+        $item = \App\Models\ProductionItem::create(['production_order_id' => $order->id, 'employee_id' => $employee->id, 'status' => 'pending']);
+        $item->forceFill(['request_number' => 'REQ-WORKFLOW', 'appointment_date' => '2026-10-05 09:30:00', 'appointment_location' => 'สำนักงานจัดหางาน', 'group_name' => 'ทีม A', 'remarks' => 'รอเอกสาร'])->save();
+        $wf = $this->actingAs($user)->getJson(route('share-card.show', ['employee', $employee->id]) . '?context=item:' . $item->id)->json();
+        $this->assertStringContainsString('REQ-WORKFLOW', $wf['text']);
+        $this->assertStringNotContainsString('REQ-EMPLOYEE', $wf['text']);
+        $this->assertStringContainsString('05/10/2026 09:30 — สำนักงานจัดหางาน', $wf['text']);
+        $this->assertStringContainsString('ทีม A', $wf['text']);
+        $this->assertStringContainsString('รอเอกสาร', $wf['text']);
+
+        // Registration / Renewal tab
+        $tab = \App\Models\ResolutionTab::create(['name' => 'มติทดสอบ', 'type' => 'renewal', 'slug' => 'test-renewal-' . uniqid()]);
+        \App\Models\EmployeeRequestNumber::create(['employee_id' => $employee->id, 'resolution_tab_id' => $tab->id, 'request_number' => 'REQ-RENEWAL-TAB']);
+        $employee->forceFill(['renewal_remarks' => 'หมายเหตุต่ออายุ'])->save();
+        $rn = $this->actingAs($user)->getJson(route('share-card.show', ['employee', $employee->id]) . '?context=tab:' . $tab->id)->json();
+        $this->assertStringContainsString('REQ-RENEWAL-TAB', $rn['text']);
+        $this->assertStringContainsString('หมายเหตุต่ออายุ', $rn['text']);
+        $this->assertStringNotContainsString('REQ-WORKFLOW', $rn['text']);
+
+        // A job of another employee is ignored (falls back to the record)
+        $other = \App\Models\ProductionItem::create(['production_order_id' => $order->id, 'employee_id' => Employee::factory()->create()->id, 'status' => 'pending']);
+        $other->forceFill(['request_number' => 'REQ-OTHER'])->save();
+        $x = $this->actingAs($user)->getJson(route('share-card.show', ['employee', $employee->id]) . '?context=item:' . $other->id)->json();
+        $this->assertStringNotContainsString('REQ-OTHER', $x['text']);
+    }
+
     public function test_notification_context_adds_the_reason_line(): void
     {
         $employee = $this->employee();

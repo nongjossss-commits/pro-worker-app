@@ -129,6 +129,7 @@ class AppointmentReminderController extends Controller
                         'company' => $employee->employer->employerNameTh ?? '-',
                         'appointment_date' => $employee->appointment_date,
                         'appointment_location' => $employee->appointment_location,
+                        'share_context' => 'tab:' . $employee->resolution_tab_id,
                         'link' => route($type === 'registration' ? 'production.registration.index' : 'production.renewal.index', ['resolutionTab' => $employee->resolution_tab_id]),
                     ]);
                 });
@@ -161,6 +162,7 @@ class AppointmentReminderController extends Controller
                     'company' => $item->order->employer->employerNameTh ?? '-',
                     'appointment_date' => $item->appointment_date,
                     'appointment_location' => $item->appointment_location,
+                    'share_context' => 'item:' . $item->id,
                     'link' => route('workflow.index'),
                 ]);
             });

@@ -27,11 +27,13 @@ class ShareCardController extends Controller
     {
         $notification = $this->notification($request);
         $withPhoto = $request->boolean('photo');
+        // "item:{id}" (Workflow / Pre-Production) or "tab:{id}" (Registration / Renewal)
+        $context = preg_match('/^(item|tab):\d+$/', (string) $request->query('context')) ? $request->query('context') : null;
 
         // Model global scopes (employer tenancy) apply — a user only gets
         // cards they could already see.
         $data = match ($type) {
-            'employee' => $service->forEmployee(Employee::findOrFail($id), $notification, $withPhoto),
+            'employee' => $service->forEmployee(Employee::findOrFail($id), $notification, $withPhoto, $context),
             'employer' => $service->forEmployer(Employer::findOrFail($id), $notification),
             default => abort(404),
         };

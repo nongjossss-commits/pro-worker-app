@@ -2484,5 +2484,12 @@
     "No files in this group.": "No files in this group.",
     "Per page": "Per page",
     "Scanning files… the first scan can take a minute.": "Scanning files… the first scan can take a minute.",
-    "Showing :from–:to of :total": "Showing :from–:to of :total"
+    "Showing :from–:to of :total": "Showing :from–:to of :total",
+    "Appointment": "Appointment",
+    "Employer-Employee ID": "Employer-Employee ID",
+    "Every ticked field is sent — shown as \"-\" when the employee has no value yet.": "Every ticked field is sent — shown as \"-\" when the employee has no value yet.",
+    "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.": "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.",
+    "RA No. (outsource)": "RA No. (outsource)",
+    "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.",
+    "follows the menu": "follows the menu"
 }

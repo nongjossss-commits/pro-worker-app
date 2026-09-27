@@ -1372,5 +1372,13 @@
     "Per page": "每页显示",
     "Scanning files… the first scan can take a minute.": "正在扫描文件… 首次扫描可能需要约一分钟。",
     "Showing :from–:to of :total": "显示第 :from–:to 条，共 :total 条",
-    "Try again": "重试"
+    "Try again": "重试",
+    "Appointment": "预约",
+    "Employer-Employee ID": "雇主-员工编号",
+    "Every ticked field is sent — shown as \"-\" when the employee has no value yet.": "所有勾选的栏位都会发送 —— 尚无资料时显示为 \"-\"。",
+    "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.": "标有\"随菜单\"的栏位（申请编号、预约、团队、备注）取自所发送的卡片：Workflow / Pre-Production 工作，或登记 / 续期标签。",
+    "RA No. (outsource)": "RA 编号 (outsource)",
+    "Remarks": "备注",
+    "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "取自发送所在菜单的卡片（Workflow、Pre-Production、登记 / 续期标签）。从雇员菜单发送时：取雇员记录。",
+    "follows the menu": "随菜单"
 }

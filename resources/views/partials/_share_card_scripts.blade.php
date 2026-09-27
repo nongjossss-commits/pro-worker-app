@@ -58,8 +58,11 @@
     function infoFromEl(el) {
         if (!el || !el.dataset.shareType || !el.dataset.shareId) return null;
         const n = el.dataset.shareNotification || '';
-        return { type: el.dataset.shareType, id: el.dataset.shareId, notification: n,
-                 key: el.dataset.shareType + ':' + el.dataset.shareId + ':' + n, name: el.dataset.shareName || '' };
+        // Where the card lives: "item:{id}" (Workflow / Pre-Production) or
+        // "tab:{id}" (Registration / Renewal) — request no. etc. differ per menu.
+        const c = el.dataset.shareContext || '';
+        return { type: el.dataset.shareType, id: el.dataset.shareId, notification: n, context: c,
+                 key: el.dataset.shareType + ':' + el.dataset.shareId + ':' + n + ':' + c, name: el.dataset.shareName || '' };
     }
 
     function infoFromPayload(type, p) {
@@ -72,13 +75,21 @@
             else if (p.employer_id) { t = 'employer'; id = p.employer_id; }
         }
         if (!t || !id) return null;
-        return { type: t, id: String(id), notification: String(n), key: t + ':' + id + ':' + n, name: '' };
+        return { type: t, id: String(id), notification: String(n), context: '', key: t + ':' + id + ':' + n + ':', name: '' };
     }
+
+    // Short-lived: an admin may change the share settings (or someone edits
+    // the card) while this page stays open.
+    const MAX_AGE = 30000;
+    const fetchedAt = new Map();
+    function fresh(k) { return cache.has(k) && Date.now() - (fetchedAt.get(k) || 0) < MAX_AGE; }
 
     function fetchShare(info, withPhoto) {
         const k = info.key + (withPhoto ? ':p' : '');
-        if (!cache.has(k)) {
-            const qs = new URLSearchParams({ notification: info.notification || '', photo: withPhoto ? 1 : 0 });
+        if (!fresh(k)) {
+            // Older data in `ready` stays usable until the new answer arrives.
+            fetchedAt.set(k, Date.now());
+            const qs = new URLSearchParams({ notification: info.notification || '', context: info.context || '', photo: withPhoto ? 1 : 0 });
             const p = fetch('/share-card/' + info.type + '/' + info.id + '?' + qs, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin'
@@ -171,7 +182,7 @@
     document.addEventListener('pointerover', function (e) {
         const el = e.target && e.target.closest ? e.target.closest('[data-share-type][data-share-id]') : null;
         const info = infoFromEl(el);
-        if (info && !cache.has(info.key)) fetchShare(info, false).catch(() => {});
+        if (info && !fresh(info.key)) fetchShare(info, false).catch(() => {});
     }, { passive: true });
 
     // ---- Card image --------------------------------------------------------

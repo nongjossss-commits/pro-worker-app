@@ -136,6 +136,7 @@
         </li>
         <li>从通知菜单发送时，文本会包含原因，例如 "⚠️ 签证到期：28/01/2026（已逾期 242 天）"</li>
         <li><strong>管理员</strong>可选择允许发送的栏位 —— 点击 <i class="bi bi-grid-3x2-gap-fill"></i> → <strong>分享设置</strong>（姓名始终包含）</li>
+        <li><strong>随菜单的资料：</strong>申请编号、预约、团队和备注取自所发送的卡片 —— Workflow / Pre-Production 用该工作的，登记 / 续期用该标签的，从雇员菜单发送时用雇员记录 · 已勾选但尚无资料的栏位显示 "-"</li>
         <li>每次分享都会记录在<strong>操作日志</strong>中：谁以何种方式发送了谁的资料</li>
     </ol>
 </div>

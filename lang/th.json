@@ -2553,5 +2553,12 @@
     "No files in this group.": "ไม่มีไฟล์ในกลุ่มนี้",
     "Per page": "แสดงต่อหน้า",
     "Scanning files… the first scan can take a minute.": "กำลังสแกนไฟล์… ครั้งแรกอาจใช้เวลาประมาณ 1 นาที",
-    "Showing :from–:to of :total": "แสดง :from–:to จาก :total รายการ"
+    "Showing :from–:to of :total": "แสดง :from–:to จาก :total รายการ",
+    "Appointment": "วันนัดหมาย",
+    "Employer-Employee ID": "รหัสคนงาน-นายจ้าง",
+    "Every ticked field is sent — shown as \"-\" when the employee has no value yet.": "ทุกช่องที่ติ๊กจะถูกส่งไปด้วยเสมอ — ถ้ายังไม่มีข้อมูลจะแสดงเป็น \"-\"",
+    "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.": "ช่องที่มีป้าย \"ตามเมนู\" (เลขคำขอ, วันนัดหมาย, ทีม, หมายเหตุ) ดึงจากการ์ดที่ส่ง: งานใน Workflow / Pre-Production หรือแถบมติลงทะเบียน / ต่ออายุ — ส่งจากเมนูลูกจ้างใช้ข้อมูลในฐานข้อมูลลูกจ้าง",
+    "RA No. (outsource)": "เลข RA (outsource)",
+    "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "ดึงจากการ์ดในเมนูที่ส่ง (Workflow, Pre-Production, แถบมติลงทะเบียน / ต่ออายุ) — ส่งจากเมนูลูกจ้างใช้ข้อมูลในฐานข้อมูลลูกจ้าง",
+    "follows the menu": "ตามเมนู"
 }

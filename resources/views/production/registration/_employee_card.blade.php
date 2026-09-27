@@ -1078,8 +1078,14 @@
                 @endif
                 @endcan
 
-                {{-- Drag into LINE / click to copy or share (partials/_share_card_scripts) --}}
-                <x-share-handle type="employee" :id="$employee->id" :name="$employee->employeeNameEn ?: $employee->employeeNameTh" class="btn btn-sm btn-light border rounded-pill px-3" />
+                {{-- Drag into LINE / click to copy or share (partials/_share_card_scripts).
+                     Context = where this card's request no. / appointment / team live. --}}
+                @php
+                    $shareContext = isset($item) && $item instanceof \App\Models\ProductionItem ? 'item:' . $item->id
+                        : (isset($employee->production_item) ? 'item:' . $employee->production_item->id
+                        : (($isRegistration || $isRenewal) && $currentTab ? 'tab:' . $currentTab->id : null));
+                @endphp
+                <x-share-handle type="employee" :id="$employee->id" :name="$employee->employeeNameEn ?: $employee->employeeNameTh" :context="$shareContext" class="btn btn-sm btn-light border rounded-pill px-3" />
             </div>
         </div>
 

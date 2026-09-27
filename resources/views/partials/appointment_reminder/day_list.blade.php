@@ -76,7 +76,7 @@
                                 {{ __('Go to record') }} <i class="bi bi-box-arrow-up-right"></i>
                             </a>
                             @if($item->employee_id)
-                                <x-share-handle type="employee" :id="$item->employee_id" :name="$item->name_en" />
+                                <x-share-handle type="employee" :id="$item->employee_id" :name="$item->name_en" :context="$item->share_context ?? null" />
                             @endif
                         </div>
                     </div>

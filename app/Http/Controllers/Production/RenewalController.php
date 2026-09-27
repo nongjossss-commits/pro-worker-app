@@ -2587,7 +2587,7 @@ class RenewalController extends Controller
 
         $steps = RegistrationStep::renewal()->where('resolution_tab_id', $tabId)->orderBy('order')->get();
 
-        $html = view('production.renewal.partials.day_appointments_list', compact('employees', 'steps'))->render();
+        $html = view('production.renewal.partials.day_appointments_list', compact('employees', 'steps', 'tabId'))->render();
 
         return response()->json(['html' => $html]);
     }

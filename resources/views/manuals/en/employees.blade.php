@@ -136,6 +136,7 @@
         </li>
         <li>From Notifications the text includes the reason, e.g. "⚠️ Visa expiry: 28/01/2026 (overdue 242 days)"</li>
         <li><strong>Admins</strong> choose which fields may be sent — click <i class="bi bi-grid-3x2-gap-fill"></i> → <strong>Share settings</strong> (the name is always included)</li>
+        <li><strong>Per-menu data:</strong> request no., appointment, team and remarks come from the card being sent — a Workflow / Pre-Production job uses its own, a Registration / Renewal tab uses that tab's, the Employees menu uses the employee record · ticked fields with no value yet show "-"</li>
         <li>Every share is recorded in the <strong>Activity Log</strong> (type "share"): who sent whose data, and how</li>
     </ol>
 </div>
