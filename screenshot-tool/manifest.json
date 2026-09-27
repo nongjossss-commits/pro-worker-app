@@ -16,6 +16,7 @@
     {"key": "employees/03-edit-employee", "url": "/employees/1/edit"},
     {"key": "employees/04-preview-popup", "url": "/employees", "actions": [{"type": "click", "selector": ".btn-preview"}, {"type": "wait", "ms": 1500}]},
     {"key": "employees/05-bulk-actions", "url": "/employees", "actions": [{"type": "click", "selector": ".employee-checkbox"}, {"type": "wait", "ms": 800}]},
+    {"key": "employees/07-share-menu", "url": "/notifications", "actions": [{"type": "scrollTo", "selector": ".notification-item [data-share-menu]"}, {"type": "wait", "ms": 600}, {"type": "click", "selector": ".notification-item [data-share-menu]"}, {"type": "wait", "ms": 1500}]},
     {"key": "employment_history/01-search-filter", "url": "/employees/history"},
     {"key": "employment_history/02-bulk-transfer", "url": "/employees/history", "actions": [{"type": "click", "selector": ".history-employee-checkbox"}, {"type": "wait", "ms": 800}]},
     {"key": "employment_history/03-export-pdf", "url": "/employees/history"},

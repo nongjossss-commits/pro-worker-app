@@ -110,6 +110,9 @@
 <div class="manual-tip">
     <strong>WHT 3% vs 5%:</strong> 3% = general service fees, 5% = property/personal rental
 </div>
+<div class="manual-tip">
+    <strong>Receipt for a bill that is not fully paid:</strong> the items and totals follow the bill, plus <strong>Paid</strong> and <strong>Balance Due</strong> lines — the large amount and the amount in words are the money actually received (fully paid bills look the same as before). For a receipt of one payment, issue it from that payment.
+</div>
 
 <div class="manual-warn">
     <strong>An Issued tax invoice cannot be edited:</strong> by law it cannot be changed — it must be voided and a new one issued

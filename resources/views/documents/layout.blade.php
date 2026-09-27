@@ -447,7 +447,8 @@
             $netPayable = $grandTotal - $whtAmount;
 
             // ---- Presentation only (nothing above depends on these) ----
-            $typeLower = strtolower((string) $type);
+            // $type arrives as "receipt", "tax_invoice", "credit_note" or "Receipt" etc.
+            $typeLower = str_replace(['_', '-'], ' ', strtolower((string) $type));
             $isQuotation = str_contains($typeLower, 'quotation');
             if (str_contains($typeLower, 'credit note')) {
                 $amountLabel = 'ยอดลดหนี้ / Credit Amount';
@@ -461,9 +462,30 @@
                 $amountLabel = 'ยอดที่ต้องชำระ / Amount Due';
             }
             $heroAmount = ($showService && $whtEnabled) ? $netPayable : $grandTotal;
-            // $type arrives as "receipt" / "Receipt" etc. — match case-insensitively here
             $isPaidDocument = str_contains($typeLower, 'receipt') || str_contains($typeLower, 'tax invoice');
-            $dueDate = (!$isPaidDocument && !$isQuotation && $hasSpecificTransactions)
+
+            // Receipt opened from a bill that is not fully paid yet: the rows and
+            // totals above stay the bill's; add "paid" and "balance due" and show
+            // the money actually received as the headline. A bill counts as paid
+            // when paid_amount >= amount - discount - credit (same rule as the
+            // bill status). Fully paid bills and per-payment receipts
+            // (showPaymentDocument sets paid_amount = amount) are unchanged.
+            $receivedAmount = null;
+            $balanceDue = null;
+            if (str_contains($typeLower, 'receipt') && $hasSpecificTransactions) {
+                $shownTransactions = collect()
+                    ->merge($showService ? $serviceTransactions : [])
+                    ->merge($showAdvance ? $advanceTransactions : []);
+                $billNotFullyPaid = $shownTransactions->contains(fn($t) =>
+                    (float) ($t->paid_amount ?? 0) + 0.005 < (float) $t->amount - (float) ($t->discount_amount ?? 0) - (float) ($t->credit_amount ?? 0));
+                if ($billNotFullyPaid) {
+                    $receivedAmount = (float) $shownTransactions->sum(fn($t) => (float) ($t->paid_amount ?? 0));
+                    // Same outstanding figure the finance screens show for the bill.
+                    $balanceDue = (float) $shownTransactions->sum(fn($t) => max(0,
+                        (float) $t->amount - (float) ($t->discount_amount ?? 0) - (float) ($t->credit_amount ?? 0) - (float) ($t->paid_amount ?? 0)));
+                }
+            }
+            $dueDate = (!$isPaidDocument && !$isQuotation && !str_contains($typeLower, 'credit note') && $hasSpecificTransactions)
                 ? $transactions->pluck('due_date')->filter()->min()
                 : null;
             $titleParts = array_map('trim', explode(' / ', (string) ($title ?? ucfirst($type)), 2));
@@ -566,9 +588,11 @@
             @if($showTotal)
                 <div class="amount-card">
                     <div class="k">{{ $amountLabel }}</div>
-                    <div class="v">฿{{ number_format($heroAmount, 2) }}</div>
+                    <div class="v">฿{{ number_format($receivedAmount ?? $heroAmount, 2) }}</div>
                     <div class="s">
-                        @if($showService && $whtEnabled)
+                        @if($receivedAmount !== null)
+                            Partial payment — balance ฿{{ number_format($balanceDue, 2) }} / ชำระบางส่วน คงค้าง
+                        @elseif($showService && $whtEnabled)
                             Net after {{ rtrim(rtrim(number_format($whtRate, 2), '0'), '.') }}% WHT / หลังหักภาษี ณ ที่จ่าย
                         @elseif($dueDate)
                             Due {{ \Carbon\Carbon::parse($dueDate)->format('d/m/Y') }} / ครบกำหนดชำระ
@@ -762,7 +786,7 @@
                 @if($showTotal)
                     <div class="words-box">
                         <div class="k">Amount in words <span class="en-label">/ จำนวนเงินตัวอักษร</span></div>
-                        <div class="v">( {{ \App\Helpers\ThaiBaht::convert($grandTotal) }} )</div>
+                        <div class="v">( {{ \App\Helpers\ThaiBaht::convert($receivedAmount ?? $grandTotal) }} )</div>
                     </div>
                 @endif
 
@@ -890,6 +914,17 @@
                     <tr style="font-weight: bold;">
                         <td class="total-label" style="padding-top: 6px; border-top: 1px dashed #cbd5e1; color: var(--ink);">Net Payable <span class="en-label">/ ยอดสุทธิ</span></td>
                         <td class="total-value" style="padding-top: 6px; border-top: 1px dashed #cbd5e1; font-size: 14px;">{{ number_format($netPayable, 2) }}</td>
+                    </tr>
+                    @endif
+
+                    @if($receivedAmount !== null)
+                    <tr style="font-weight: bold; color: #15803d;">
+                        <td class="total-label" style="padding-top: 8px; border-top: 1px dashed #cbd5e1; color: #15803d;">Paid <span class="en-label">/ ชำระแล้ว</span></td>
+                        <td class="total-value" style="padding-top: 8px; border-top: 1px dashed #cbd5e1; color: #15803d;">{{ number_format($receivedAmount, 2) }}</td>
+                    </tr>
+                    <tr style="font-weight: bold;">
+                        <td class="total-label" style="color: #b91c1c;">Balance Due <span class="en-label">/ คงค้าง</span></td>
+                        <td class="total-value" style="color: #b91c1c;">{{ number_format($balanceDue, 2) }}</td>
                     </tr>
                     @endif
                 </table>

@@ -49,6 +49,9 @@
     <td>
         <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
            draggable="true"
+           @if($employee || $employer)
+           data-share-menu data-share-type="{{ $employee ? 'employee' : 'employer' }}" data-share-id="{{ $employee ? $employee->id : $employer->id }}" data-share-notification="{{ $notification->id }}"
+           @endif
            ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(document.getElementById('notification-row-{{ $notification->id }}').dataset.dragPayload))"
            title="Drag"></i>
     </td>

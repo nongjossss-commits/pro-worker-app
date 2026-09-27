@@ -147,6 +147,12 @@
 <div class="manual-tip">
     <strong>业务负责人:</strong> 使用"业务负责人"筛选器，只查看自己负责的工作
 </div>
+<div class="manual-tip">
+    <strong>发送到 LINE 聊天：</strong>将卡片上的 <i class="bi bi-grid-3x2-gap-fill"></i> 按钮拖入聊天，或点击以复制文本 / 卡片图片 / 分享 —— 详见雇员菜单手册第 11 节
+</div>
+<div class="manual-tip">
+    <strong>入职通知 / 更换雇主 —— 自动转移：</strong>此标签中雇员的工作完成 24 小时后，系统会自动将雇员转到该工作的雇主名下（24 小时内仍可恢复工作），并记录在操作日志中 —— 仅适用于最近 7 天内完成的工作
+</div>
 
 <div class="manual-warn">
     <strong>注意:</strong> 移动步骤会影响发送给客户的通知 —— 点击前请务必确认

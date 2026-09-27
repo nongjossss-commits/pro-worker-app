@@ -81,6 +81,9 @@
 <div class="manual-tip">
     <strong>ที่อยู่หลายแห่ง:</strong> นายจ้าง 1 รายมีได้หลายที่อยู่ — ที่อยู่จดทะเบียน + ที่อยู่สถานที่ทำงาน
 </div>
+<div class="manual-tip">
+    <strong>ส่งข้อมูลไปแชท LINE:</strong> ลากปุ่ม <i class="bi bi-grid-3x2-gap-fill"></i> บนการ์ดไปวางในแชท หรือคลิกเพื่อคัดลอกข้อความ / รูปการ์ด / แชร์ — ดูรายละเอียดที่คู่มือเมนูลูกจ้าง ข้อ 11
+</div>
 
 <div class="manual-warn">
     <strong>ระวัง:</strong> ก่อนลบนายจ้าง ตรวจสอบว่าไม่มีงาน <strong>Production</strong> หรือ <strong>Workflow</strong> ที่กำลังดำเนินการอยู่ —

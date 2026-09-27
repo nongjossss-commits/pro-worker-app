@@ -107,6 +107,9 @@
     <strong>Pre-Production vs. Workflow:</strong> ဤမီနူးရှိ အလုပ်များသည် Pre-Production (စာရွက်စာတမ်း ပြင်ဆင်ခြင်း) တွင် ရှိသည်။
     Send to Workflow ကို နှိပ်ပြီးနောက် အလုပ်သည် "Workflow" မီနူးသို့ ရွှေ့သွားပါမည်
 </div>
+<div class="manual-tip">
+    <strong>LINE ချက်သို့ ပို့ရန်:</strong> ကတ်ပေါ်ရှိ <i class="bi bi-grid-3x2-gap-fill"></i> ခလုတ်ကို ချက်ထဲ ဆွဲထည့်ပါ သို့မဟုတ် စာသား / ကတ်ပုံ ကူးယူရန် / မျှဝေရန် နှိပ်ပါ — အလုပ်သမား လက်စွဲ အပိုင်း ၁၁ ကို ကြည့်ပါ
+</div>
 
 <div class="manual-warn">
     <strong>သတိပြုရန်:</strong> Workflow သို့ ပို့ပြီးသော အလုပ်ကို Production တွင် ထပ်မံပြင်ဆင်၍ မရတော့ပါ — Workflow တွင်သာ ပြင်ဆင်ရမည်

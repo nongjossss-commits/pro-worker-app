@@ -24,6 +24,7 @@ class ActivityLogHelper
         'logout'             => 'ออกจากระบบ',
         'login_failed'       => 'เข้าสู่ระบบไม่สำเร็จ',
         'download'           => 'ดาวน์โหลด',
+        'share'              => 'ส่งข้อมูลออก (ลาก/คัดลอก/แชร์)',
         'export'             => 'ส่งออก (Export)',
         'upload'             => 'อัพโหลดไฟล์',
         'print'              => 'พิมพ์เอกสาร',

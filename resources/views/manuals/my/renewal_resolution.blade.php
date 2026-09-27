@@ -142,6 +142,9 @@
 <div class="manual-tip">
     <strong>Registration vs. Renewal Resolution:</strong> Registration = စနစ်ထဲသို့ ဝင်လာသော ဝန်ထမ်းအသစ်များ၊ Renewal = သက်တမ်းကုန်ဆုံးခါနီး ရှိပြီးသား ဝန်ထမ်းများ
 </div>
+<div class="manual-tip">
+    <strong>LINE ချက်သို့ ပို့ရန်:</strong> ကတ်ပေါ်ရှိ <i class="bi bi-grid-3x2-gap-fill"></i> ခလုတ်ကို ချက်ထဲ ဆွဲထည့်ပါ သို့မဟုတ် စာသား / ကတ်ပုံ ကူးယူရန် / မျှဝေရန် နှိပ်ပါ — အလုပ်သမား လက်စွဲ အပိုင်း ၁၁ ကို ကြည့်ပါ
+</div>
 
 <h4><i class="bi bi-question-circle me-2"></i>မေးလေ့ရှိသော မေးခွန်းများ</h4>
 <dl>

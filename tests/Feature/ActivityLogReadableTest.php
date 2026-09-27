@@ -114,8 +114,14 @@ class ActivityLogReadableTest extends TestCase
             $this->assertSame($employee->id, $file['owners'][0]['id']);
             $this->assertSame('ไฟล์ 1. พาสปอร์ต', $file['owners'][0]['field']);
 
+            // The page frame loads at once; the list comes from the list route.
             $this->actingAs($this->admin())
-                ->get(route('admin.attachment-sizes.index', ['min' => 5, 'refresh' => 1]))
+                ->get(route('admin.attachment-sizes.index', ['min' => 5]))
+                ->assertOk()
+                ->assertSee('id="asz-list"', false)
+                ->assertSee('attachment-sizes\/list', false);
+            $this->actingAs($this->admin())
+                ->get(route('admin.attachment-sizes.list', ['min' => 5, 'refresh' => 1]))
                 ->assertOk()
                 ->assertSee('big-passport.jpg')
                 ->assertSee('Big File Person');

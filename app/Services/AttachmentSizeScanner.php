@@ -125,7 +125,7 @@ class AttachmentSizeScanner
                         'size' => $size,
                         'modified' => date('Y-m-d H:i', $file->getMTime()),
                         'extension' => strtolower($file->getExtension()),
-                        'dimensions' => $this->imageDimensions($file->getPathname()),
+                        'dimensions' => null, // filled per page by withDimensions()
                         'owners' => [],
                     ];
                 }
@@ -158,41 +158,97 @@ class AttachmentSizeScanner
         }
     }
 
-    /** Fill $big[path]['owners'] with the records that point at each file. */
+    /**
+     * Fill $big[path]['owners'] with the records that point at each file.
+     *
+     * One pass per table: read only the id + file columns in chunks and match
+     * the values against the big-file list in PHP, then load the full rows of
+     * the few matches. (Asking every table "is any column IN (…all paths…)"
+     * batch by batch meant a full table scan per batch — the slow part of the
+     * first visit.)
+     */
     protected function attachOwners(array &$big): void
     {
-        $paths = array_keys($big);
-        // Some fields store the path with a "storage/" or "/storage/" prefix.
-        $variants = [];
-        foreach ($paths as $p) {
-            $variants[$p] = $p;
-            $variants['storage/' . $p] = $p;
-            $variants['/storage/' . $p] = $p;
-        }
-
         foreach ($this->fileColumns() as $table => $columns) {
-            foreach (array_chunk(array_keys($variants), 300) as $chunk) {
-                $rows = DB::table($table)->where(function ($q) use ($columns, $chunk) {
-                    foreach ($columns as $column) {
-                        $q->orWhereIn($column, $chunk);
-                    }
-                })->limit(2000)->get();
+            $hasId = Schema::hasColumn($table, 'id');
+            $matches = []; // [rowKey => [column, path][]]
 
+            $collect = function ($rows) use ($columns, $big, &$matches) {
                 foreach ($rows as $row) {
                     $row = (array) $row;
                     foreach ($columns as $column) {
-                        $value = $row[$column] ?? null;
-                        if ($value !== null && isset($variants[$value])) {
-                            $big[$variants[$value]]['owners'][] = $this->describeOwner($table, $column, $row);
+                        $path = $this->normalisePath($row[$column] ?? null);
+                        if ($path !== null && isset($big[$path])) {
+                            $matches[$row['id'] ?? spl_object_id((object) $row)][] = [$column, $path, $row];
                         }
                     }
+                }
+            };
+
+            $query = DB::table($table)->where(function ($q) use ($columns) {
+                foreach ($columns as $column) {
+                    $q->orWhere(fn ($w) => $w->whereNotNull($column)->where($column, '!=', ''));
+                }
+            });
+
+            if ($hasId) {
+                $query->select(array_merge(['id'], $columns))->chunkById(2000, $collect);
+            } else {
+                $collect($query->get()); // pivot-style tables without an id are small
+            }
+
+            if (!$matches) {
+                continue;
+            }
+
+            // Full rows (names, deleted_at, descriptions) only for the matches.
+            $fullRows = $hasId
+                ? DB::table($table)->whereIn('id', array_keys($matches))->get()->keyBy('id')
+                : collect();
+
+            foreach ($matches as $key => $hits) {
+                foreach ($hits as [$column, $path, $partial]) {
+                    $row = $hasId && isset($fullRows[$key]) ? (array) $fullRows[$key] : $partial;
+                    $big[$path]['owners'][] = $this->describeOwner($table, $column, $row);
                 }
             }
         }
     }
 
-    /** table => [file-like text columns] for every table that has any. */
+    /** Stored values may carry a "storage/" or "/storage/" prefix. */
+    protected function normalisePath($value): ?string
+    {
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+        $value = str_replace('\\', '/', $value);
+        foreach (['/storage/', 'storage/'] as $prefix) {
+            if (str_starts_with($value, $prefix)) {
+                return substr($value, strlen($prefix));
+            }
+        }
+        return $value;
+    }
+
+    /** Pixel size for the image files on the page being shown (read lazily, not during the scan). */
+    public function withDimensions(array $files): array
+    {
+        $root = storage_path('app/public') . DIRECTORY_SEPARATOR;
+        foreach ($files as &$f) {
+            if ($f['dimensions'] === null && in_array($f['extension'], ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tif', 'tiff'], true)) {
+                $f['dimensions'] = $this->imageDimensions($root . $f['path']);
+            }
+        }
+        return $files;
+    }
+
+    /** table => [file-like text columns] for every table that has any (cached — reading the schema is slow on MySQL). */
     protected function fileColumns(): array
+    {
+        return Cache::remember('attachment_size_scan:file_columns', now()->addHours(6), fn () => $this->readFileColumns());
+    }
+
+    protected function readFileColumns(): array
     {
         $result = [];
         foreach (Schema::getTables() as $t) {

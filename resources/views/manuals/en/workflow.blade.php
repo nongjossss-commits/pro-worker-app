@@ -147,6 +147,12 @@
 <div class="manual-tip">
     <strong>Job owner:</strong> use the "Job Owner" filter to see only the jobs handled by your own staff member
 </div>
+<div class="manual-tip">
+    <strong>Send to a LINE chat:</strong> drag the <i class="bi bi-grid-3x2-gap-fill"></i> button on a card into the chat, or click it to copy text / a card image / share — see the Employees manual, section 11
+</div>
+<div class="manual-tip">
+    <strong>Notify In / change employer — automatic move:</strong> 24 hours after an employee's job in this tab is finished, the system moves the employee to the job's employer (you can still restore the job during those 24 hours) and records it in the Activity Log — only for jobs finished within the last 7 days
+</div>
 
 <div class="manual-warn">
     <strong>Careful:</strong> moving a Step affects the notification sent to the customer — double-check before clicking

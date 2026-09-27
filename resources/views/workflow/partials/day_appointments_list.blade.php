@@ -263,6 +263,10 @@
                             @endif
                         </div>
                         @endcan
+                        {{-- Drag into LINE / click to copy or share (partials/_share_card_scripts) --}}
+                        @if($item->employee_id)
+                            <x-share-handle type="employee" :id="$item->employee_id" :name="optional($item->employee)->employeeNameEn" />
+                        @endif
                     </div>
 
                 </div>

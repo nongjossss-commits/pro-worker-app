@@ -35,6 +35,7 @@
         @foreach($employers as $employer)
         <div class="col-md-4"
              draggable="true"
+             data-share-type="employer" data-share-id="{{ $employer->id }}"
              @dragstart="startDragGlobal($event, 'employer', {
                 id: {{ $employer->id }},
                 title: '{{ $employer->employerNameTh }}',

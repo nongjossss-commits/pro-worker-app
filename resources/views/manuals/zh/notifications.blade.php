@@ -45,3 +45,6 @@
 <div class="manual-tip">
     <strong>到期扫描(Expiry Scanner):</strong> 系统每天早上会自动扫描到期日期(CheckExpiries 定时任务) —— 自动生成新的通知
 </div>
+<div class="manual-tip">
+    <strong>发送到 LINE 聊天：</strong>将卡片上的 <i class="bi bi-grid-3x2-gap-fill"></i> 按钮拖入聊天，或点击以复制文本 / 卡片图片 / 分享 —— 详见雇员菜单手册第 11 节
+</div>

@@ -121,6 +121,28 @@
     </ol>
 </div>
 
+<h5>11. Sending an employee / employer to a chat (LINE etc.)</h5>
+<div class="manual-step">
+    Employee and employer cards have a <i class="bi bi-grid-3x2-gap-fill"></i> button (bottom-right of the card) — in Employees, Employers, Notifications, Pre-Production, Registration/Renewal Resolution, Workflow, the appointment calendars, Incomplete Data and tickets.
+    <ol class="mb-0 mt-2">
+        <li><strong>Drag</strong> the button into a LINE chat (on a computer) or another app — it arrives as readable text: name, nationality, passport, expiry dates… (dropping it on the in-app chat still gives the usual card)</li>
+        <li><strong>Click</strong> the button for a menu:
+            <ul>
+                <li><strong>Copy as text</strong> — then press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the chat</li>
+                <li><strong>Copy as card image</strong> — a brand-coloured card with the photo and data; press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the chat</li>
+                <li><strong>Save card image</strong> — a PNG file to forward</li>
+                <li><strong>Share…</strong> (phone/tablet) — opens the device share sheet; pick LINE</li>
+            </ul>
+        </li>
+        <li>From Notifications the text includes the reason, e.g. "⚠️ Visa expiry: 28/01/2026 (overdue 242 days)"</li>
+        <li><strong>Admins</strong> choose which fields may be sent — click <i class="bi bi-grid-3x2-gap-fill"></i> → <strong>Share settings</strong> (the name is always included)</li>
+        <li>Every share is recorded in the <strong>Activity Log</strong> (type "share"): who sent whose data, and how</li>
+    </ol>
+</div>
+<div class="manual-warn">
+    Once data is in LINE or another app the program can no longer control it (personal data — PDPA). Send it only to people who need it.
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Things to know / Tips</h4>
 
 <div class="manual-tip">

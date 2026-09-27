@@ -227,6 +227,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/restore', [NotificationController::class, 'restore'])->name('notifications.restore');
     Route::delete('/notifications/{notification}/force-delete', [NotificationController::class, 'forceDelete'])->name('notifications.forceDelete');
 
+    // Drag / copy / share employee & employer cards to other apps (LINE …)
+    Route::get('/share-card/{type}/{id}', [\App\Http\Controllers\ShareCardController::class, 'show'])
+        ->where(['type' => 'employee|employer', 'id' => '[0-9]+'])->name('share-card.show');
+    Route::post('/share-card/log', [\App\Http\Controllers\ShareCardController::class, 'log'])->name('share-card.log');
+
     // Web Push Subscriptions
     Route::post('/push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'store'])->name('push.subscribe');
 
@@ -785,6 +790,7 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('ad
 
     Route::get('/duplicate-records', [DuplicateRecordController::class, 'index'])->middleware('menu:duplicate_records')->name('duplicate-records.index');
     Route::get('/attachment-sizes', [\App\Http\Controllers\Admin\AttachmentSizeController::class, 'index'])->middleware('menu:attachment_sizes')->name('attachment-sizes.index');
+    Route::get('/attachment-sizes/list', [\App\Http\Controllers\Admin\AttachmentSizeController::class, 'list'])->middleware('menu:attachment_sizes')->name('attachment-sizes.list');
 
     Route::get('/notification-settings', [NotificationSettingController::class, 'index'])->name('notification_settings.index');
     Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');
@@ -793,6 +799,8 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('ad
 
     Route::get('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'index'])->name('settings.completeness.index');
     Route::post('/settings/completeness', [App\Http\Controllers\Admin\CompletenessSettingsController::class, 'store'])->name('settings.completeness.store');
+    Route::get('/settings/share', [\App\Http\Controllers\ShareCardController::class, 'settings'])->name('settings.share.index');
+    Route::post('/settings/share', [\App\Http\Controllers\ShareCardController::class, 'saveSettings'])->name('settings.share.store');
 
     // Financial Settings
     Route::get('/settings/financial', [FinancialController::class, 'indexSettings'])->name('settings.financial.index');

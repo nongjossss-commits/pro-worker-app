@@ -107,6 +107,9 @@
     <strong>Pre-Production vs. Workflow:</strong> jobs in this menu are in Pre-Production (document preparation).
     After clicking Send to Workflow, the job moves into the "Workflow" menu
 </div>
+<div class="manual-tip">
+    <strong>Send to a LINE chat:</strong> drag the <i class="bi bi-grid-3x2-gap-fill"></i> button on a card into the chat, or click it to copy text / a card image / share — see the Employees manual, section 11
+</div>
 
 <div class="manual-warn">
     <strong>Careful:</strong> once a job has been sent to Workflow, it can no longer be edited in Production — edits must be made in Workflow instead

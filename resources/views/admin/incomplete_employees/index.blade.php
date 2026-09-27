@@ -146,6 +146,7 @@
                                             'employer_name' => optional($employee->employer)->employerNameTh,
                                             'nationality' => $employee->employeeNationality
                                        ]) }}"
+                                       data-share-menu data-share-type="employee" data-share-id="{{ $employee->id }}"
                                        ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
                                        title="{{ __('Drag') }}"></i>
                                 </td>

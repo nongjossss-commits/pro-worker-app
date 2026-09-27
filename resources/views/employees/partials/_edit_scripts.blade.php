@@ -857,6 +857,8 @@
 
         init: function() {
             if (this.initialized) return;
+            // Page without the cropper-modal component — nothing to wire up (and no crash).
+            if (!document.getElementById('refineCanvas')) return;
             this.initialized = true;
 
             this.container = document.getElementById('refineEditorContainer');

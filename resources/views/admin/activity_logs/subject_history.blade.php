@@ -152,6 +152,7 @@
                                             'logout' => 'secondary',
                                             'login_failed' => 'danger',
                                             'download' => 'warning',
+                                            'share' => 'warning',
                                             'export' => 'warning',
                                             'upload' => 'info',
                                             'print', 'generate_document' => 'dark',

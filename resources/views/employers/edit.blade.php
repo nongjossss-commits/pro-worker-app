@@ -764,6 +764,7 @@
                                               'employer_name' => $employer->employerNameTh,
                                               'nationality' => $employee->employeeNationality
                                           ]) }}"
+                                          data-share-menu data-share-type="employee" data-share-id="{{ $employee->id }}"
                                           ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
                                          title="{{ __('Drag') }}">
                                         <i class="bi bi-grid-3x2-gap-fill text-muted"></i>

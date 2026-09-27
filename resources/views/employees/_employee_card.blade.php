@@ -28,6 +28,7 @@
         'employer_name' => $employerName,
         'nationality' => $employee->employeeNationality
      ]) }}"
+     data-share-type="employee" data-share-id="{{ $employee->id }}"
      ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))">
 
     @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())

@@ -15,6 +15,8 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
     <li><strong>Size selector</strong> — show files from 5 / 10 / 20 / 50 MB (default 10 MB) and a "Scan again" button</li>
+    <li><strong>Per page</strong> — show 20 / 30 / 50 / 100 files per page (default 20) · the list is split into two tabs, "Attached to records" / "Not linked to any record" · page numbers are under the table, with which files you are viewing out of the total</li>
+    <li><strong>Faster loading</strong> — the page opens at once and the list follows (the first load after a new scan can take a while — "Scanning files…"); if it fails, press "Try again"</li>
     <li><strong>Summary cards</strong> — number of large files, space they use, all uploaded files, scan time</li>
     <li><strong>Attached to records</strong> — file name, size, image resolution (px), attached to (employee/employer/… and name), slot (e.g. File 1. Passport)</li>
     <li><strong>Not linked to any record</strong> — large files no record points to, e.g. generated downloads</li>

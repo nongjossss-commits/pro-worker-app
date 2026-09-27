@@ -61,3 +61,6 @@
 <div class="manual-tip">
     <strong>审计即证据:</strong> 操作日志可作为法律证据使用 —— 系统不会自动删除
 </div>
+<div class="manual-tip">
+    <strong>分享记录：</strong>每当有人将雇员/雇主卡片拖入其他应用（如 LINE）、复制为文本、复制/保存卡片图片或分享时，都会记录谁以何种方式发送了谁的资料
+</div>

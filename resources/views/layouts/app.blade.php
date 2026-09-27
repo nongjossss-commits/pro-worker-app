@@ -1493,6 +1493,11 @@
         const jsonPayload = JSON.stringify(payload);
         e.dataTransfer.setData('application/json', jsonPayload);
         e.dataTransfer.setData('text/plain', jsonPayload); // Fallback for broader compatibility
+        // Other apps (LINE, e-mail …) read text/plain — give them readable
+        // text instead of JSON. In-app drop targets read application/json.
+        if (window.ShareCard) {
+            try { window.ShareCard.decorateDrag(e, type, data); } catch (err) { console.error(err); }
+        }
     }
 
     // Register PWA Service Worker & Push Subscription
@@ -1853,6 +1858,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @include('partials._ui_theme_scripts')
     @include('partials._session_heartbeat')
+    @auth
+        @include('partials._share_card_scripts')
+    @endauth
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Flatpickr JS -->

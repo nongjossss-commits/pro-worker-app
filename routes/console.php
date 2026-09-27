@@ -37,4 +37,10 @@ Schedule::command('app:cleanup-job-check-sessions')->dailyAt('05:15');
 // 24 hours — users rebuild them every time. Hourly, so each file goes about
 // 24h after it was made. Also sweep temp_uploads/ and temp/ leftovers.
 Schedule::command('app:prune-download-files')->hourly();
+
+// แจ้งเข้า / เปลี่ยนนายจ้าง: 24h after a job is completed, move the employee to
+// the job's employer. Was only in app/Console/Kernel.php, which Laravel 12
+// does not load — so it never ran. Only jobs completed in the last 7 days
+// (see the command).
+Schedule::command('app:process-employee-transfers')->hourly();
 Schedule::command('app:prune-orphan-files')->dailyAt('03:30');

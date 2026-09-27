@@ -121,6 +121,28 @@
     </ol>
 </div>
 
+<h5>11. 将雇员 / 雇主资料发送到聊天（LINE 等）</h5>
+<div class="manual-step">
+    雇员和雇主卡片上有 <i class="bi bi-grid-3x2-gap-fill"></i> 按钮（卡片右下角）——在雇员、雇主、通知、Pre-Production、登记/续期决议、Workflow、预约日历、资料不完整及工单中均可使用。
+    <ol class="mb-0 mt-2">
+        <li>将按钮<strong>拖入</strong> LINE 聊天（电脑版）或其他应用 —— 收到的是易读的文本：姓名、国籍、护照、到期日……（拖到系统内的聊天仍然是原来的卡片）</li>
+        <li><strong>点击</strong>按钮打开菜单：
+            <ul>
+                <li><strong>复制为文本</strong> —— 然后在聊天中按 <kbd>Ctrl</kbd>+<kbd>V</kbd></li>
+                <li><strong>复制为卡片图片</strong> —— 含照片和资料的品牌色卡片，在聊天中按 <kbd>Ctrl</kbd>+<kbd>V</kbd></li>
+                <li><strong>保存卡片图片</strong> —— 保存为 PNG 文件</li>
+                <li><strong>分享…</strong>（手机/平板）—— 打开设备的分享菜单，选择 LINE</li>
+            </ul>
+        </li>
+        <li>从通知菜单发送时，文本会包含原因，例如 "⚠️ 签证到期：28/01/2026（已逾期 242 天）"</li>
+        <li><strong>管理员</strong>可选择允许发送的栏位 —— 点击 <i class="bi bi-grid-3x2-gap-fill"></i> → <strong>分享设置</strong>（姓名始终包含）</li>
+        <li>每次分享都会记录在<strong>操作日志</strong>中：谁以何种方式发送了谁的资料</li>
+    </ol>
+</div>
+<div class="manual-warn">
+    资料一旦进入 LINE 或其他应用，系统便无法再控制（个人资料 —— PDPA）。只发送给需要的人。
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>须知事项 / 使用小贴士</h4>
 
 <div class="manual-tip">

@@ -166,7 +166,14 @@
 {{-- Select2 for employer search --}}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{{-- Select2 is a jQuery plugin; the app does not load jQuery, so loading it
+     unconditionally only threw "jQuery is not defined". The code below already
+     falls back to the plain <select> when jQuery is missing. --}}
+<script>
+    if (window.jQuery) {
+        document.write('<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"><\/script>');
+    }
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Initialize Select2 if jQuery is loaded

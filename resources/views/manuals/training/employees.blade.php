@@ -193,6 +193,23 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">ส่งข้อมูลไปแชท LINE (ลาก / คัดลอก / แชร์)</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'employees/07-share-menu',
+        'alt' => 'เมนูปุ่ม ⋮⋮ บนการ์ดลูกจ้าง',
+        'caption' => 'คลิกปุ่มลากเพื่อคัดลอกข้อความ / รูปการ์ด หรือแชร์',
+        'callouts' => [
+            '<strong>ลาก:</strong> ลากปุ่มไปวางในแชท LINE บนคอมพิวเตอร์ ได้ข้อความอ่านง่าย',
+            '<strong>คัดลอกเป็นรูปการ์ด:</strong> แล้วกด Ctrl+V ในแชท',
+            '<strong>แชร์…:</strong> บนมือถือ เลือก LINE ได้เลย',
+            '<strong>Admin:</strong> ตั้งค่าข้อมูลที่ส่งออกได้ · ทุกครั้งบันทึกใน Activity Log',
+        ],
+    ])
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">คำถามที่พบบ่อย</h2>
 

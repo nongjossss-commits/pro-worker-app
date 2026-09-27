@@ -222,6 +222,7 @@
                         <td>
                             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                                draggable="true"
+                               data-share-menu data-share-type="employee" data-share-id="{{ $employee->id }}"
                                ondragstart="window.startDragGlobal(event, 'employee', {
                                     id: {{ $employee->id }},
                                     name: '{{ addslashes($employee->employeeNameTh) }} ({{ addslashes($employee->employeeNameEn) }})',

@@ -244,6 +244,11 @@
                         </div>
                         @endcan
 
+                        {{-- Drag into LINE / click to copy or share (partials/_share_card_scripts) --}}
+                        <div class="flex-shrink-0 align-self-end">
+                            <x-share-handle type="employee" :id="$employee->id" :name="$employee->employeeNameEn ?: $employee->employeeNameTh" />
+                        </div>
+
                     </div>
                 </div>
             </div>

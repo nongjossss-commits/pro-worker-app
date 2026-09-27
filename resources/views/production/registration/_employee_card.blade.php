@@ -1077,6 +1077,9 @@
                     @endif
                 @endif
                 @endcan
+
+                {{-- Drag into LINE / click to copy or share (partials/_share_card_scripts) --}}
+                <x-share-handle type="employee" :id="$employee->id" :name="$employee->employeeNameEn ?: $employee->employeeNameTh" class="btn btn-sm btn-light border rounded-pill px-3" />
             </div>
         </div>
 

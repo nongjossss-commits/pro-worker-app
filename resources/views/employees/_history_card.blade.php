@@ -36,6 +36,7 @@
                     'subtitle' => 'Terminated: ' . ($employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : ''),
                     'url' => route('employees.history') . '?highlight_employee=' . $employee->id
                ]) }}"
+               data-share-menu data-share-type="employee" data-share-id="{{ $employee->id }}"
                ondragstart="window.startDragGlobal(event, 'employee', JSON.parse(this.dataset.dragPayload))"
                title="{{ __('Drag') }}"></i>
         </div>

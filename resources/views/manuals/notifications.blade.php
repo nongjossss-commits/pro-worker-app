@@ -45,3 +45,6 @@
 <div class="manual-tip">
     <strong>Expiry Scanner:</strong> ระบบสแกนวันหมดอายุทุกวันเช้า (cron CheckExpiries) — สร้าง notification ใหม่อัตโนมัติ
 </div>
+<div class="manual-tip">
+    <strong>ส่งข้อมูลไปแชท LINE:</strong> ลากปุ่ม <i class="bi bi-grid-3x2-gap-fill"></i> บนการ์ดไปวางในแชท หรือคลิกเพื่อคัดลอกข้อความ / รูปการ์ด / แชร์ — ดูรายละเอียดที่คู่มือเมนูลูกจ้าง ข้อ 11
+</div>

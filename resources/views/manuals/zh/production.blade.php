@@ -107,6 +107,9 @@
     <strong>Pre-Production 与 Workflow 的区别:</strong> 本菜单中的工作属于 Pre-Production(文件准备阶段)，
     点击 Send to Workflow 后，工作会移至"Workflow"菜单
 </div>
+<div class="manual-tip">
+    <strong>发送到 LINE 聊天：</strong>将卡片上的 <i class="bi bi-grid-3x2-gap-fill"></i> 按钮拖入聊天，或点击以复制文本 / 卡片图片 / 分享 —— 详见雇员菜单手册第 11 节
+</div>
 
 <div class="manual-warn">
     <strong>注意:</strong> 已送入 Workflow 的工作，无法再在 Production 中编辑 —— 需前往 Workflow 中修改

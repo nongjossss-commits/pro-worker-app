@@ -118,6 +118,9 @@
 <div class="manual-tip">
     <strong>ตัวกรองสถานะแสดงเฉพาะที่ตรง:</strong> ถ้ากรอง "Visa only" จะเห็นเฉพาะนายจ้างที่มีลูกจ้างทำ visa เท่านั้น
 </div>
+<div class="manual-tip">
+    <strong>ส่งข้อมูลไปแชท LINE:</strong> ลากปุ่ม <i class="bi bi-grid-3x2-gap-fill"></i> บนการ์ดไปวางในแชท หรือคลิกเพื่อคัดลอกข้อความ / รูปการ์ด / แชร์ — ดูรายละเอียดที่คู่มือเมนูลูกจ้าง ข้อ 11
+</div>
 
 <h4><i class="bi bi-question-circle me-2"></i>คำถามที่พบบ่อย</h4>
 <dl>

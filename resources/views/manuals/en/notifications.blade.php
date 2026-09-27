@@ -45,3 +45,6 @@
 <div class="manual-tip">
     <strong>Expiry Scanner:</strong> the system scans expiry dates every morning (the CheckExpiries cron job) — new notifications are created automatically
 </div>
+<div class="manual-tip">
+    <strong>Send to a LINE chat:</strong> drag the <i class="bi bi-grid-3x2-gap-fill"></i> button on a card into the chat, or click it to copy text / a card image / share — see the Employees manual, section 11
+</div>

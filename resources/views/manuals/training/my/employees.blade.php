@@ -193,6 +193,23 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">LINE ချက်သို့ ပို့ခြင်း (ဆွဲ / ကူး / မျှဝေ)</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'employees/07-share-menu',
+        'alt' => 'အလုပ်သမား ကတ်ပေါ်ရှိ ⋮⋮ ခလုတ် မီနူး',
+        'caption' => 'စာသား / ကတ်ပုံ ကူးယူရန် သို့မဟုတ် မျှဝေရန် ခလုတ်ကို နှိပ်ပါ',
+        'callouts' => [
+            '<strong>ဆွဲ:</strong> ကွန်ပျူတာရှိ LINE ချက်ထဲသို့ ဆွဲထည့်ပါ — ဖတ်ရလွယ်သော စာသား',
+            '<strong>ကတ်ပုံအဖြစ် ကူးယူ:</strong> ပြီးလျှင် ချက်တွင် Ctrl+V',
+            '<strong>မျှဝေ…:</strong> ဖုန်းတွင် LINE ကို ရွေးပါ',
+            '<strong>Admin:</strong> ပို့နိုင်သော အကွက်များ ရွေးနိုင်သည် · Activity Log တွင် မှတ်တမ်းတင်သည်',
+        ],
+    ])
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">မေးလေ့ရှိသော မေးခွန်းများ</h2>
 

@@ -112,6 +112,9 @@
 <div class="manual-tip">
     <strong>状态筛选只显示匹配项:</strong> 如筛选"Visa only"，将只看到有雇员仅办理签证的雇主
 </div>
+<div class="manual-tip">
+    <strong>发送到 LINE 聊天：</strong>将卡片上的 <i class="bi bi-grid-3x2-gap-fill"></i> 按钮拖入聊天，或点击以复制文本 / 卡片图片 / 分享 —— 详见雇员菜单手册第 11 节
+</div>
 
 <h4><i class="bi bi-question-circle me-2"></i>常见问题</h4>
 <dl>

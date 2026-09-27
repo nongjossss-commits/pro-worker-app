@@ -81,6 +81,9 @@
 <div class="manual-tip">
     <strong>Multiple addresses:</strong> one employer can have several addresses — a registered address and a workplace address
 </div>
+<div class="manual-tip">
+    <strong>Send to a LINE chat:</strong> drag the <i class="bi bi-grid-3x2-gap-fill"></i> button on a card into the chat, or click it to copy text / a card image / share — see the Employees manual, section 11
+</div>
 
 <div class="manual-warn">
     <strong>Careful:</strong> before deleting an employer, make sure there is no ongoing <strong>Production</strong> or <strong>Workflow</strong> job —

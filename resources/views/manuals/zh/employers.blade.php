@@ -81,6 +81,9 @@
 <div class="manual-tip">
     <strong>多个地址:</strong> 一个雇主可以有多个地址 —— 注册地址和工作场所地址
 </div>
+<div class="manual-tip">
+    <strong>发送到 LINE 聊天：</strong>将卡片上的 <i class="bi bi-grid-3x2-gap-fill"></i> 按钮拖入聊天，或点击以复制文本 / 卡片图片 / 分享 —— 详见雇员菜单手册第 11 节
+</div>
 
 <div class="manual-warn">
     <strong>注意:</strong> 删除雇主之前，请确认没有正在进行中的 <strong>Production</strong> 或 <strong>Workflow</strong> 工作 ——

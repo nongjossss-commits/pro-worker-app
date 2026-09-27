@@ -883,6 +883,11 @@
                     <i class="bi bi-trash-fill"></i>
                 </button>
                 @endif
+
+                {{-- Drag into LINE / click to copy or share (partials/_share_card_scripts) --}}
+                @if($empId)
+                <x-share-handle type="employee" :id="$empId" :name="$nameEn" class="btn btn-sm btn-light border rounded-pill px-3" />
+                @endif
             </div>
         </div>
 

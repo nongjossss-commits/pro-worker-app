@@ -142,6 +142,9 @@
 <div class="manual-tip">
     <strong>Registration vs. Renewal Resolution:</strong> Registration = new employees entering the system, Renewal = existing employees about to expire
 </div>
+<div class="manual-tip">
+    <strong>Send to a LINE chat:</strong> drag the <i class="bi bi-grid-3x2-gap-fill"></i> button on a card into the chat, or click it to copy text / a card image / share — see the Employees manual, section 11
+</div>
 
 <h4><i class="bi bi-question-circle me-2"></i>Frequently Asked Questions</h4>
 <dl>

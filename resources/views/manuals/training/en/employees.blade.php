@@ -193,6 +193,23 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">Send to a LINE chat (drag / copy / share)</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'employees/07-share-menu',
+        'alt' => 'The ⋮⋮ button menu on an employee card',
+        'caption' => 'Click the drag button to copy text / a card image, or share',
+        'callouts' => [
+            '<strong>Drag:</strong> drop the button into a LINE chat on a computer — readable text',
+            '<strong>Copy as card image:</strong> then Ctrl+V in the chat',
+            '<strong>Share…:</strong> on a phone, pick LINE',
+            '<strong>Admin:</strong> choose which fields are sent · every share is in the Activity Log',
+        ],
+    ])
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">Frequently Asked Questions</h2>
 

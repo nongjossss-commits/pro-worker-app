@@ -61,3 +61,6 @@
 <div class="manual-tip">
     <strong>Audit is your evidence:</strong> the Activity Log can be used as legal evidence — the system never auto-deletes it
 </div>
+<div class="manual-tip">
+    <strong>Shares:</strong> whenever someone drags an employee/employer card into another app (e.g. LINE), copies it as text, copies/saves the card image or shares it, an entry of type "share" records who sent whose data, and how
+</div>

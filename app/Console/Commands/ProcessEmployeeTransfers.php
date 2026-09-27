@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\ProductionItem;
 use App\Models\WorkType;
+use App\Helpers\ActivityLogHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -44,6 +45,11 @@ class ProcessEmployeeTransfers extends Command
         }
 
         $thresholdDate = Carbon::now()->subHours(24);
+        // Only jobs finished in the last 7 days. This command was never
+        // scheduled until 27/09/2026, so older completed jobs were handled by
+        // hand — moving those employees now could send someone back to an
+        // employer they have since left.
+        $windowStart = Carbon::now()->subDays(7);
 
         // Find completed items older than 24 hours that haven't been processed yet
         $items = ProductionItem::whereHas('order', function ($query) use ($workType) {
@@ -52,6 +58,7 @@ class ProcessEmployeeTransfers extends Command
             ->where('status', 'completed')
             ->whereNotNull('completed_at')
             ->where('completed_at', '<=', $thresholdDate)
+            ->where('completed_at', '>=', $windowStart)
             ->where('is_transfer_processed', false)
             ->with(['order', 'employee'])
             ->get();
@@ -76,6 +83,10 @@ class ProcessEmployeeTransfers extends Command
             // Proceed with transfer (different employer or still marked as terminated)
             if ($employee->employer_id !== $order->employer_id || $employee->terminated_at !== null) {
                 DB::transaction(function () use ($employee, $order, $item) {
+                    $oldEmployerId = $employee->employer_id;
+                    $oldEmployerName = optional($employee->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
+                    $newEmployerName = optional($order->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
+
                     $employee->update([
                         'employer_id' => $order->employer_id,
                         'status' => 'active',
@@ -85,6 +96,15 @@ class ProcessEmployeeTransfers extends Command
                     ]);
 
                     $item->update(['is_transfer_processed' => true]);
+
+                    // Same record the Workflow writes when it moves someone.
+                    ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $employee->getRawOriginal('employeeNameEn') . ' จาก ' . $oldEmployerName . ' ไป ' . $newEmployerName . ' (อัตโนมัติ 24 ชม. หลังงานแจ้งเข้า/เปลี่ยนนายจ้างเสร็จ)', \App\Models\Employee::class, $employee->id, [
+                        'old_employer_id' => $oldEmployerId,
+                        'old_employer_name' => $oldEmployerName,
+                        'new_employer_id' => $order->employer_id,
+                        'new_employer_name' => $newEmployerName,
+                        'production_item_id' => $item->id,
+                    ]);
                 });
 
                 $this->info("Transferred Employee ID {$employee->id} to Employer ID {$order->employer_id}.");

@@ -110,6 +110,9 @@
 <div class="manual-tip">
     <strong>预扣税 3% vs 5%:</strong> 3% = 一般服务费，5% = 财产/人员租赁费
 </div>
+<div class="manual-tip">
+    <strong>未付清账单的收据：</strong>项目和合计按账单显示，并增加<strong>已付</strong>和<strong>未付余额</strong>两行 —— 大字金额和大写金额为实际收到的款项（已付清的账单与以前相同）。如需单次付款的收据，请从该笔付款开具。
+</div>
 
 <div class="manual-warn">
     <strong>已开具(Issued)的税务发票无法修改:</strong> 依法禁止修改 —— 必须作废后重新开具新发票

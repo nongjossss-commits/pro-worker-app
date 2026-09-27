@@ -110,6 +110,9 @@
     <strong>Pre-Production vs Workflow:</strong> งานที่อยู่ในเมนูนี้เป็น Pre-Production (เตรียมเอกสาร)
     หลังกด Send to Workflow แล้วงานจะย้ายไปอยู่ในเมนู "Workflow"
 </div>
+<div class="manual-tip">
+    <strong>ส่งข้อมูลไปแชท LINE:</strong> ลากปุ่ม <i class="bi bi-grid-3x2-gap-fill"></i> บนการ์ดไปวางในแชท หรือคลิกเพื่อคัดลอกข้อความ / รูปการ์ด / แชร์ — ดูรายละเอียดที่คู่มือเมนูลูกจ้าง ข้อ 11
+</div>
 
 <div class="manual-warn">
     <strong>ระวัง:</strong> งานที่ส่งไป Workflow แล้ว แก้ไขใน Production ไม่ได้ — ต้องไปแก้ใน Workflow

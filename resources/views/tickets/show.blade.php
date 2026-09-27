@@ -119,6 +119,7 @@
                                         @endif
                                         <span class="btn btn-sm btn-light border cursor-grab ms-1"
                                               draggable="true"
+                                              data-share-menu data-share-type="employee" data-share-id="{{ $employee->id }}"
                                               ondragstart="startDragGlobal(event, 'employee', {
                                                 id: {{ $employee->id }},
                                                 title: '{{ $employee->employeeNameTh }}',
@@ -174,6 +175,7 @@
                                         @endif
                                         <span class="btn btn-sm btn-light border cursor-grab ms-1"
                                               draggable="true"
+                                              data-share-menu data-share-type="employee" data-share-id="{{ $employee->id }}"
                                               ondragstart="startDragGlobal(event, 'employee', {
                                                 id: {{ $employee->id }},
                                                 title: '{{ $employee->employeeNameTh }}',

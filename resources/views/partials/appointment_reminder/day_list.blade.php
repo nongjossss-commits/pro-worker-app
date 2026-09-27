@@ -75,6 +75,9 @@
                             <a href="{{ $item->link }}" class="btn btn-sm btn-outline-primary" target="_blank">
                                 {{ __('Go to record') }} <i class="bi bi-box-arrow-up-right"></i>
                             </a>
+                            @if($item->employee_id)
+                                <x-share-handle type="employee" :id="$item->employee_id" :name="$item->name_en" />
+                            @endif
                         </div>
                     </div>
                 </div>

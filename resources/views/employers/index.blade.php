@@ -89,6 +89,7 @@
                                  handled quotes but not backticks/tags). --}}
                             <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
                                draggable="true"
+                               data-share-menu data-share-type="employer" data-share-id="{{ $employer->id }}"
                                ondragstart="window.startDragGlobal(event, 'employer', {
                                    id: {{ $employer->id }},
                                    name: {{ Illuminate\Support\Js::from($employer->employerNameTh ?? '') }},

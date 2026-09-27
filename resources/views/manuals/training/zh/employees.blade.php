@@ -193,6 +193,23 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 7</div>
+    <h2 class="slide-title">发送到 LINE 聊天（拖动 / 复制 / 分享）</h2>
+
+    @include('manuals.training._screenshot', [
+        'src' => 'employees/07-share-menu',
+        'alt' => '雇员卡片上的 ⋮⋮ 按钮菜单',
+        'caption' => '点击拖动按钮以复制文本 / 卡片图片，或分享',
+        'callouts' => [
+            '<strong>拖动：</strong>在电脑上把按钮拖入 LINE 聊天 —— 易读的文本',
+            '<strong>复制为卡片图片：</strong>然后在聊天中按 Ctrl+V',
+            '<strong>分享…：</strong>在手机上选择 LINE',
+            '<strong>管理员：</strong>可选择发送的栏位 · 每次分享都记录在操作日志中',
+        ],
+    ])
+</section>
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">常见问题</h2>
 
