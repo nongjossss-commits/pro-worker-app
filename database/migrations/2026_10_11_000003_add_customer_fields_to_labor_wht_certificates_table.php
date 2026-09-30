@@ -23,14 +23,17 @@ return new class extends Migration
             $table->foreignId('labor_team_id')->nullable()->after('labor_tax_invoice_id')
                 ->constrained('labor_teams')->nullOnDelete();
 
-            $table->index(['labor_team_id', 'tax_period_year', 'tax_period_month']);
+            // Explicit short name — the auto-generated one
+            // (labor_wht_certificates_labor_team_id_tax_period_year_tax_period_month_index)
+            // exceeds MySQL's 64-char identifier limit.
+            $table->index(['labor_team_id', 'tax_period_year', 'tax_period_month'], 'labor_wht_certs_team_period_idx');
         });
     }
 
     public function down(): void
     {
         Schema::table('labor_wht_certificates', function (Blueprint $table) {
-            $table->dropIndex(['labor_team_id', 'tax_period_year', 'tax_period_month']);
+            $table->dropIndex('labor_wht_certs_team_period_idx');
             $table->dropConstrainedForeignId('labor_tax_invoice_id');
             $table->dropConstrainedForeignId('labor_team_id');
         });
