@@ -42,5 +42,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (enInput) enInput.value = opt.dataset.en || '';
                 });
             });
-        });
+        })
+        .catch(err => console.error('Failed to load business types:', err));
 });
