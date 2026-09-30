@@ -43,6 +43,7 @@ class User extends Authenticatable
         'is_ticket_hidden', // V2.5.1: For hiding employer job box
         'labor_team_id',
         'labor_access_level',
+        'labor_position',
         'revoked_permissions',
         'staff_code',
     ];
@@ -136,6 +137,35 @@ class User extends Authenticatable
     public function laborTeamMember(): HasOne
     {
         return $this->hasOne(LaborTeamMember::class);
+    }
+
+    /**
+     * True if this user effectively holds the given Pro Walker Labor
+     * "position" (one of ConfineToLaborModule::LABOR_ROLES) — either
+     * natively via the matching Spatie role (assigned through
+     * LaborUserController), or because Super Admin granted an `admin`
+     * account labor_access_level access AND additionally selected that same
+     * position via Admin\UserController (users.labor_position). Centralizes
+     * the "native role OR admin-with-matching-position" check so it isn't
+     * repeated at every Labor-module scope-check call site.
+     */
+    public function hasLaborPosition(string $position): bool
+    {
+        return $this->hasRole($position) || ($this->hasRole('admin') && $this->labor_position === $position);
+    }
+
+    /**
+     * True if this user's Pro Walker Labor position (native or
+     * admin-assigned) sees every team's data rather than being scoped to
+     * one team/themselves — used wherever contract visibility used to
+     * unconditionally include every `admin` account regardless of position.
+     */
+    public function seesAllLaborTeams(): bool
+    {
+        return $this->hasRole('super-admin')
+            || $this->hasRole('labor-accounting')
+            || $this->hasRole('labor-shareholder')
+            || ($this->hasRole('admin') && !in_array($this->labor_position, ['labor-team', 'labor-member'], true));
     }
 
     /**

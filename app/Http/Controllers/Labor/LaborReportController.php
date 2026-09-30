@@ -27,7 +27,7 @@ class LaborReportController extends Controller
 {
     public function index(Request $request, LaborReportService $service)
     {
-        abort_if($request->user()->hasRole('labor-team'), 403);
+        abort_if($request->user()->hasLaborPosition('labor-team'), 403);
 
         [$from, $to] = $this->resolveRange($request);
         $report = $service->summarize($from, $to);
@@ -49,7 +49,7 @@ class LaborReportController extends Controller
 
     public function pdf(Request $request, LaborReportService $service, LaborDailySummaryPdfService $pdfService)
     {
-        abort_if($request->user()->hasRole('labor-team'), 403);
+        abort_if($request->user()->hasLaborPosition('labor-team'), 403);
 
         [$from, $to] = $this->resolveRange($request);
 
@@ -82,7 +82,7 @@ class LaborReportController extends Controller
      */
     public function export(Request $request, LaborReportService $service)
     {
-        abort_if($request->user()->hasRole('labor-team'), 403);
+        abort_if($request->user()->hasLaborPosition('labor-team'), 403);
 
         [$from, $to] = $this->resolveRange($request);
         $report = $service->summarize($from, $to);

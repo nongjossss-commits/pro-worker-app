@@ -32,7 +32,7 @@ class LaborDashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->hasRole('labor-member')) {
+        if ($user->hasLaborPosition('labor-member')) {
             $member = $user->laborTeamMember;
             abort_unless($member, 403, 'บัญชีนี้ยังไม่ได้ถูกจับคู่กับข้อมูลลูกทีมใด กรุณาติดต่อ Super Admin');
 
@@ -45,7 +45,7 @@ class LaborDashboardController extends Controller
             ]);
         }
 
-        if ($user->hasRole('labor-team')) {
+        if ($user->hasLaborPosition('labor-team')) {
             abort_unless($user->labor_team_id, 403, 'บัญชีนี้ยังไม่ได้ผูกกับทีมงานใด กรุณาติดต่อ Super Admin');
 
             return view('labor.dashboard', [
@@ -70,7 +70,7 @@ class LaborDashboardController extends Controller
             'chargeTypeGrandTotal' => $chargeTypeStats->sum('total'),
         ];
 
-        if ($user->hasRole('labor-shareholder') && $user->labor_team_id) {
+        if ($user->hasLaborPosition('labor-shareholder') && $user->labor_team_id) {
             $data['mode'] = 'overview-plus-own-team';
             $data['ownTeam'] = array_merge(
                 $this->teamSummary($user->labor_team_id),

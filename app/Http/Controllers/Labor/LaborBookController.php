@@ -29,7 +29,7 @@ class LaborBookController extends Controller
 {
     protected function ensureCanView(Request $request): void
     {
-        abort_if($request->user()->hasRole('labor-team'), 403);
+        abort_if($request->user()->hasLaborPosition('labor-team'), 403);
     }
 
     protected function ensureCanManage(Request $request): void

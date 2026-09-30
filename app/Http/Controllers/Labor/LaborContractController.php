@@ -88,7 +88,7 @@ class LaborContractController extends Controller
     protected function assertCanAccessContract(ProWorkerContract $contract): void
     {
         $user = Auth::user();
-        $seesAllTeams = $user->hasAnyRole(['super-admin', 'admin', 'labor-accounting', 'labor-shareholder']);
+        $seesAllTeams = $user->seesAllLaborTeams();
 
         abort_if(!$seesAllTeams && $contract->issued_by !== $user->id, 403);
     }
@@ -311,7 +311,7 @@ class LaborContractController extends Controller
         $user = Auth::user();
         $query = ProWorkerContract::with(['issuer', 'team', 'template'])->latest('issued_at');
 
-        $seesAllTeams = $user->hasAnyRole(['super-admin', 'admin', 'labor-accounting', 'labor-shareholder']);
+        $seesAllTeams = $user->seesAllLaborTeams();
         if (!$seesAllTeams) {
             $query->where('issued_by', $user->id);
         }
@@ -378,7 +378,7 @@ class LaborContractController extends Controller
         ]);
 
         $user = Auth::user();
-        $seesAllTeams = $user->hasAnyRole(['super-admin', 'admin', 'labor-accounting', 'labor-shareholder']);
+        $seesAllTeams = $user->seesAllLaborTeams();
 
         $query = ProWorkerContract::whereIn('id', $request->input('ids'));
         if (!$seesAllTeams) {
@@ -507,7 +507,7 @@ class LaborContractController extends Controller
             ];
         }
 
-        if ($user->hasRole('labor-team') && $user->labor_team_id) {
+        if ($user->hasLaborPosition('labor-team') && $user->labor_team_id) {
             $row = $counts(ProWorkerContract::where('labor_team_id', $user->labor_team_id));
 
             return [

@@ -80,7 +80,7 @@ class LaborTeamController extends Controller
     {
         $user = $request->user();
 
-        if ($user->hasRole('labor-team') && $user->labor_team_id !== $team->id) {
+        if ($user->hasLaborPosition('labor-team') && $user->labor_team_id !== $team->id) {
             abort(403, 'คุณดูได้เฉพาะยอดของทีมตัวเองเท่านั้น');
         }
 

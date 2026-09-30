@@ -101,6 +101,19 @@
                     </div>
 
                     <div class="mt-4" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
+                        <label for="labor_position" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labour — Position') }} ({{ __('optional') }})</label>
+                        <select id="labor_position" name="labor_position" :disabled="selectedRole !== 'admin'" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            @php($currentPosition = old('labor_position'))
+                            <option value="" {{ !$currentPosition ? 'selected' : '' }}>{{ __('No position') }} ({{ __('sees all teams, as today') }})</option>
+                            <option value="labor-team" {{ $currentPosition === 'labor-team' ? 'selected' : '' }}>{{ __('Team Lead') }} (หัวหน้าทีม)</option>
+                            <option value="labor-member" {{ $currentPosition === 'labor-member' ? 'selected' : '' }}>{{ __('Team Member') }} (ลูกทีม)</option>
+                            <option value="labor-shareholder" {{ $currentPosition === 'labor-shareholder' ? 'selected' : '' }}>{{ __('Shareholder') }} (ผู้ถือหุ้น)</option>
+                            <option value="labor-accounting" {{ $currentPosition === 'labor-accounting' ? 'selected' : '' }}>{{ __('Accounting') }} (แผนกบัญชี)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('Gives this admin account the same data-scope restrictions a native holder of this position would have. Leave as "No position" to keep this account seeing everything, scoped only by the access level above.') }}</p>
+                    </div>
+
+                    <div class="mt-4" x-show="selectedRole === 'admin'" style="display: none;" x-transition>
                         <label for="labor_team_id_admin" class="block font-medium text-sm text-gray-700">{{ __('Pro Walker Labour — Team') }} ({{ __('optional') }})</label>
                         <select id="labor_team_id_admin" name="labor_team_id" :disabled="selectedRole !== 'admin'" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">-- {{ __('Select Team') }} --</option>

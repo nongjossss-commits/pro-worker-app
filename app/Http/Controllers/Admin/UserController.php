@@ -91,8 +91,9 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'], // <-- Password required on create
             'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
             'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')],
-            'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
+            'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', 'required_if:labor_position,labor-team,labor-member', Rule::exists('labor_teams', 'id')],
             'labor_access_level' => ['nullable', 'in:none,view,edit'],
+            'labor_position' => ['nullable', 'in:labor-team,labor-member,labor-shareholder,labor-accounting'],
             'staff_code' => ['nullable', 'string', 'max:50'],
         ]);
 
@@ -111,6 +112,15 @@ class UserController extends Controller
         $laborAccessLevel = ($request->role_name === 'admin' && Auth::user()->hasRole('super-admin'))
             ? ($request->input('labor_access_level') ?: 'none')
             : 'none';
+
+        // Position is only meaningful/settable for admin, gated identically
+        // to labor_access_level above — gives this admin account the same
+        // data-scope restrictions a native holder of that role would have
+        // (see User::hasLaborPosition()). Null keeps today's behavior
+        // (sees every team, scoped only by labor_access_level).
+        $laborPosition = ($request->role_name === 'admin' && Auth::user()->hasRole('super-admin'))
+            ? ($request->input('labor_position') ?: null)
+            : null;
 
         // labor_team_id is required for role=labor-team (unchanged) and now also
         // optionally assignable to an admin granted Labor access, so their Pro
@@ -131,6 +141,7 @@ class UserController extends Controller
             'status' => 'active',
             'labor_team_id' => $laborTeamId,
             'labor_access_level' => $laborAccessLevel,
+            'labor_position' => $laborPosition,
             'staff_code' => Auth::user()->hasRole('super-admin') ? $request->staff_code : null,
         ]);
 
@@ -234,8 +245,9 @@ class UserController extends Controller
                 'password' => ['nullable', 'string', 'min:8', 'confirmed'], // <-- MUST BE NULLABLE on edit
                 'role_name' => ['required', 'string', Rule::exists('roles', 'name')],
                 'employer_id' => ['nullable', 'required_if:role_name,employer', Rule::exists('employers', 'id')], // <-- ADDED (Bug Fix)
-                'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', Rule::exists('labor_teams', 'id')],
+                'labor_team_id' => ['nullable', 'required_if:role_name,labor-team', 'required_if:labor_position,labor-team,labor-member', Rule::exists('labor_teams', 'id')],
                 'labor_access_level' => ['nullable', 'in:none,view,edit'],
+                'labor_position' => ['nullable', 'in:labor-team,labor-member,labor-shareholder,labor-accounting'],
                 'staff_code' => ['nullable', 'string', 'max:50'],
                 'permissions' => ['nullable', 'array']
             ]);
@@ -252,6 +264,12 @@ class UserController extends Controller
                     ? ($request->input('labor_access_level') ?: 'none')
                     : 'none';
                 $updateData['labor_access_level'] = $laborAccessLevel;
+
+                // Position — see store()'s identical comment. Reset to null
+                // whenever role changes away from admin, same as access level.
+                $updateData['labor_position'] = $request->role_name === 'admin'
+                    ? ($request->input('labor_position') ?: null)
+                    : null;
 
                 // labor_team_id: required for role=labor-team (unchanged), also
                 // optionally assignable to an admin granted Labor access (see store()).

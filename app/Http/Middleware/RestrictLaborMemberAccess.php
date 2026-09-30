@@ -48,7 +48,7 @@ class RestrictLaborMemberAccess
     {
         $user = $request->user();
 
-        if ($user && $user->hasRole('labor-member')) {
+        if ($user && $user->hasLaborPosition('labor-member')) {
             $routeName = $request->route()?->getName();
 
             $allowed = $routeName && (
