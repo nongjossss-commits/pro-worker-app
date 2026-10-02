@@ -1380,5 +1380,11 @@
     "RA No. (outsource)": "RA နံပါတ် (outsource)",
     "Remarks": "မှတ်ချက်",
     "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "ပို့သော မီနူး၏ ကတ်မှ ယူသည် (Workflow, Pre-Production, မှတ်ပုံတင် / သက်တမ်းတိုး တဘ်)။ အလုပ်သမား မီနူးမှ ပို့ပါက အလုပ်သမား မှတ်တမ်း။",
-    "follows the menu": "မီနူးအလိုက်"
+    "follows the menu": "မီနူးအလိုက်",
+    "Same as the main address": "အဓိကလိပ်စာနှင့် အတူတူ",
+    "Same as “:label”": "“:label” နှင့် အတူတူ",
+    "Uses the same address — untick to type a different one.": "လိပ်စာ အတူတူ သုံးထားသည် — မတူပါက အမှန်ခြစ်ကို ဖြုတ်ပြီး ဖြည့်ပါ။",
+    "Document date": "စာရွက်စာတမ်း ရက်စွဲ",
+    "Set the day the money was actually received (can be earlier than today).": "ငွေ အမှန်တကယ် လက်ခံရရှိသည့်နေ့ကို ထည့်ပါ (ယခင်ရက် ဖြစ်နိုင်သည်)။",
+    "Defaults to the payment date": "မူလ = ငွေပေးချေသည့်ရက်"
 }

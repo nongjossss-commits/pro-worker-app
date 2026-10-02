@@ -481,10 +481,15 @@ class="row">
 
                     <!-- Advanced Generation Dropdown -->
                      <div class="btn-group">
-                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                             <i class="bi bi-file-earmark-spreadsheet me-2"></i>{{ __('Tax Invoice (ใบกำกับภาษี)') }}
                         </button>
                         <ul class="dropdown-menu">
+                            <li class="px-3 pt-1 pb-2" @click.stop>
+                                <label class="form-label small text-muted mb-1"><i class="bi bi-calendar-event me-1"></i>{{ __('Document date') }}</label>
+                                <input type="date" data-doc-date-shared class="form-control form-control-sm" :max="todayYmd()" x-init="docDatePicker($el)" :value="documentDate || todayYmd()" @input="documentDate = $event.target.value">
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'combined'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Combined (Service + Advance)') }}</a></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('tax_invoice', null, 'service_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Service Fee Only') }}</a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -493,10 +498,15 @@ class="row">
                     </div>
 
                      <div class="btn-group">
-                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                             <i class="bi bi-receipt me-2"></i>{{ __('Receipt / Invoice') }}
                         </button>
                         <ul class="dropdown-menu">
+                            <li class="px-3 pt-1 pb-2" @click.stop>
+                                <label class="form-label small text-muted mb-1"><i class="bi bi-calendar-event me-1"></i>{{ __('Document date') }}</label>
+                                <input type="date" data-doc-date-shared class="form-control form-control-sm" :max="todayYmd()" x-init="docDatePicker($el)" :value="documentDate || todayYmd()" @input="documentDate = $event.target.value">
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'combined'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Combined (Receipt)') }}</a></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openDocument('receipt', null, 'service_only'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Receipt (Service Fee)') }}</a></li>
                             <li><a class="dropdown-item" href="#" @click.prevent="openSelectionModal('receipt'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }">{{ __('Select Installment(s)...') }}</a></li>
@@ -1156,12 +1166,18 @@ class="row">
                                             <div class="small fst-italic text-muted text-truncate" style="max-width: 40%;" x-text="pay.notes"></div>
                                             <div class="d-flex gap-1">
                                                 <div class="btn-group">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                                         Doc
                                                     </button>
                                                     <ul class="dropdown-menu shadow" style="font-size: 0.8rem;">
-                                                        <li><a class="dropdown-item py-1" href="#" @click.prevent="generatePaymentDocument(pay.id, 'receipt')"><i class="bi bi-receipt me-1"></i> Receipt</a></li>
-                                                        <li><a class="dropdown-item py-1" href="#" @click.prevent="generatePaymentDocument(pay.id, 'tax_invoice')"><i class="bi bi-file-earmark-text me-1"></i> Tax Invoice</a></li>
+                                                        <li class="px-2 pt-1 pb-2" @click.stop>
+                                                            <label class="form-label small text-muted mb-1">{{ __('Document date') }}</label>
+                                                            <input type="date" class="form-control form-control-sm" :max="todayYmd()" x-init="docDatePicker($el)" :value="paymentDocDate(pay)" @input="paymentDocDates[pay.id] = $event.target.value">
+                                                            <div class="text-muted" style="font-size: 0.7rem;">{{ __('Defaults to the payment date') }}</div>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider my-1"></li>
+                                                        <li><a class="dropdown-item py-1" href="#" @click.prevent="generatePaymentDocument(pay.id, 'receipt'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }"><i class="bi bi-receipt me-1"></i> Receipt</a></li>
+                                                        <li><a class="dropdown-item py-1" href="#" @click.prevent="generatePaymentDocument(pay.id, 'tax_invoice'); if(typeof bootstrap !== 'undefined') { bootstrap.Dropdown.getOrCreateInstance($el.closest('.btn-group').querySelector('.dropdown-toggle')).hide(); }"><i class="bi bi-file-earmark-text me-1"></i> Tax Invoice</a></li>
                                                     </ul>
                                                 </div>
                                                 <div class="btn-group">
@@ -1500,6 +1516,12 @@ class="row">
                                 {{ __('Employee List only (no document)') }}
                             </label>
                         </div>
+                    </div>
+
+                    <div class="mb-3" x-show="documentTypeTakesDate(documentTypeToGenerate)" x-cloak>
+                        <label class="form-label small fw-bold mb-1" :for="'docDate-' + productionId"><i class="bi bi-calendar-event me-1"></i>{{ __('Document date') }}</label>
+                        <input type="date" class="form-control form-control-sm" data-doc-date-shared :id="'docDate-' + productionId" :max="todayYmd()" x-init="docDatePicker($el)" x-model="documentDate">
+                        <div class="form-text">{{ __('Set the day the money was actually received (can be earlier than today).') }}</div>
                     </div>
 
                     <div class="form-check form-switch mb-3" x-show="documentTypeToGenerate === 'quotation'" x-cloak>

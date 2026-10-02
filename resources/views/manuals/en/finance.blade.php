@@ -113,6 +113,9 @@
 <div class="manual-tip">
     <strong>Receipt for a bill that is not fully paid:</strong> the items and totals follow the bill, plus <strong>Paid</strong> and <strong>Balance Due</strong> lines — the large amount and the amount in words are the money actually received (fully paid bills look the same as before). For a receipt of one payment, issue it from that payment.
 </div>
+<div class="manual-tip">
+    <strong>Date on receipts / tax invoices / advance receipts:</strong> set it yourself (back-dating allowed, not later than today) in the "Document date" field of the Receipt / Tax Invoice menus and the instalment selection window — for when the customer paid before the receipt is issued, so it matches the slip · per-payment receipts (each payment's Doc button) default to the payment date and can be changed · invoices and quotations always use today's date
+</div>
 
 <div class="manual-warn">
     <strong>An Issued tax invoice cannot be edited:</strong> by law it cannot be changed — it must be voided and a new one issued

@@ -83,6 +83,10 @@ if (typeof window.financialManager === 'undefined') {
 
             selectedTransactionIds: [],
             documentTypeToGenerate: '',
+            // Date printed on receipts / tax invoices / advance receipts
+            // (back-dating to when the money arrived). YYYY-MM-DD.
+            documentDate: '',
+            paymentDocDates: {},
             includeEmployeeList: false,
             // Quotation only — when off, the document shows a per-unit price
             // with no grand total (for when the exact headcount isn't
@@ -1723,7 +1727,53 @@ if (typeof window.financialManager === 'undefined') {
                 this.selectedTransactionIds = [];
                 this.includeEmployeeList = false;
                 this.docVariant = 'invoice'; // reset เริ่มต้นเป็นเอกสารธรรมดา
+                this.documentDate = this.todayYmd();
+                this.$nextTick(() => this.syncDocDatePickers());
                 bootstrap.Modal.getOrCreateInstance(this.$refs.docSelectionModal).show();
+            },
+            todayYmd() {
+                return this.localYmd(new Date());
+            },
+            // Document-date inputs: same picker as the rest of the app, but the
+            // calendar opens inside the dropdown (static) so picking a day
+            // doesn't close the menu, and future dates can't be chosen.
+            docDatePicker(el) {
+                setTimeout(() => {
+                    if (typeof flatpickr !== 'function' || el._docDatePicker) return;
+                    if (el._flatpickr) el._flatpickr.destroy();
+                    el._docDatePicker = flatpickr(el, {
+                        locale: 'th', dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y',
+                        allowInput: true, disableMobile: true, static: true, maxDate: 'today',
+                        onChange: (dates, str, inst) => {
+                            inst.element.dispatchEvent(new Event('input', { bubbles: true }));
+                            inst.element.dispatchEvent(new Event('change', { bubbles: true }));
+                            this.$nextTick(() => this.syncDocDatePickers());
+                        },
+                    });
+                    if (el.value) el._docDatePicker.setDate(el.value, false);
+                }, 0);
+            },
+            // The tax-invoice / receipt menus and the selection window share
+            // documentDate — show the same day in every one of them.
+            syncDocDatePickers() {
+                const v = this.documentDate || this.todayYmd();
+                (this.$root || document).querySelectorAll('[data-doc-date-shared]').forEach(el => {
+                    if (el._docDatePicker && el.value !== v) el._docDatePicker.setDate(v, false);
+                });
+            },
+            localYmd(d) {
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            },
+            // Receipts and other paid-side documents can be back-dated; bills/quotations always use today.
+            documentTypeTakesDate(type) {
+                return !['invoice', 'quotation', 'reminder'].includes(type);
+            },
+            paymentDocDate(pay) {
+                if (this.paymentDocDates[pay.id]) return this.paymentDocDates[pay.id];
+                if (!pay.paid_at) return this.todayYmd();
+                // paid_at arrives as UTC ("…T17:00:00Z" = next day in Thailand) — use the local date.
+                const d = new Date(pay.paid_at);
+                return isNaN(d) ? String(pay.paid_at).slice(0, 10) : this.localYmd(d);
             },
             openCreateInvoiceModal(t) {
                 this.invoiceModalTransactionId = t.id;
@@ -1941,6 +1991,9 @@ if (typeof window.financialManager === 'undefined') {
                 if (listOnly) {
                     url += `&list_only=1`;
                 }
+                if (this.documentTypeTakesDate(type) && /^\d{4}-\d{2}-\d{2}$/.test(this.documentDate || '')) {
+                    url += `&doc_date=${this.documentDate}`;
+                }
                 if (Array.isArray(paymentMethods) && paymentMethods.length > 0) {
                     // Base64-encode the JSON so it survives URL transport even when
                     // bank names contain Thai chars / spaces / punctuation.
@@ -1954,6 +2007,11 @@ if (typeof window.financialManager === 'undefined') {
                 let url = `/production/${this.productionId}/documents/payment/${paymentId}/${type}?profile_id=${this.selectedProfileId}`;
                 if (this.activeGroupId) {
                     url += `&group_id=${this.activeGroupId}`;
+                }
+                const pay = (this.editingTransaction && this.editingTransaction.payments || []).find(p => p.id === paymentId);
+                const docDate = pay ? this.paymentDocDate(pay) : '';
+                if (/^\d{4}-\d{2}-\d{2}$/.test(docDate)) {
+                    url += `&doc_date=${docDate}`;
                 }
                 window.open(url, '_blank');
 

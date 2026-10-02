@@ -2491,5 +2491,11 @@
     "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.": "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.",
     "RA No. (outsource)": "RA No. (outsource)",
     "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.",
-    "follows the menu": "follows the menu"
+    "follows the menu": "follows the menu",
+    "Same as the main address": "Same as the main address",
+    "Same as “:label”": "Same as “:label”",
+    "Uses the same address — untick to type a different one.": "Uses the same address — untick to type a different one.",
+    "Document date": "Document date",
+    "Set the day the money was actually received (can be earlier than today).": "Set the day the money was actually received (can be earlier than today).",
+    "Defaults to the payment date": "Defaults to the payment date"
 }

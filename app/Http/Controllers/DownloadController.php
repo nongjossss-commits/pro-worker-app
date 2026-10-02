@@ -14,10 +14,28 @@ class DownloadController extends Controller
 {
     public function index()
     {
+        // A task still pending/processing long after any real job could run
+        // was cut off (server limit / restart) — show it as failed instead of
+        // "Processing…" forever.
+        DownloadTask::where('user_id', Auth::id())
+            ->whereIn('status', ['pending', 'processing'])
+            ->where('updated_at', '<', now()->subMinutes(45))
+            ->update([
+                'status' => 'failed',
+                'error_message' => 'หมดเวลา — การสร้างไฟล์ถูกหยุดกลางทาง กรุณาลองใหม่ (ถ้าเลือกลูกจ้างจำนวนมาก ลองแบ่งเป็นชุดเล็กลง หรือดาวน์โหลดแบบ ZIP)',
+            ]);
+
         $tasks = DownloadTask::where('user_id', Auth::id())
             ->latest()
             ->limit(20)
-            ->get();
+            ->get()
+            ->map(function ($task) {
+                // "x / y" employees done, written by ProcessDownload::progress()
+                $task->progress = in_array($task->status, ['pending', 'processing'], true)
+                    ? \Illuminate\Support\Facades\Cache::get('download_progress:' . $task->id)
+                    : null;
+                return $task;
+            });
 
         return response()->json($tasks);
     }
@@ -67,9 +85,12 @@ class DownloadController extends Controller
             'download_profile_id' => $request->input('download_profile_id'),
         ];
 
-        // Use dispatchSync to ensure immediate execution, avoiding stuck "pending" tasks
-        // if the queue worker is not running.
-        ProcessDownload::dispatchSync($task->id, $authorizedEmployeeIds, $validated['selected_files'], $options);
+        // Runs right after this response is sent, in this same PHP process —
+        // no queue worker needed (the reason it used to be dispatchSync), but a
+        // big download no longer has to finish inside the browser's request
+        // (web-server timeouts cut large jobs off). The Download Center polls
+        // the task and starts the download when it's ready.
+        ProcessDownload::dispatchAfterResponse($task->id, $authorizedEmployeeIds, $validated['selected_files'], $options);
 
         $task->refresh();
 

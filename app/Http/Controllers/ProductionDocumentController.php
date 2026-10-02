@@ -295,7 +295,10 @@ class ProductionDocumentController extends Controller
             'type' => $type,
             'title' => $title, // Explicitly pass the title
             'page_title' => $pageTitle, // For <title> tag
-            'date' => now(),
+            // Receipts and other paid-side documents can be dated back to when
+            // the money actually arrived; quotations / invoices / reminders
+            // always carry today's date.
+            'date' => in_array($type, ['quotation', 'invoice', 'reminder'], true) ? now() : $this->documentDate($request, now()),
             'transactions' => $transactions,
             'financial' => $financialData,
             'advanceItems' => $advanceItems,
@@ -316,6 +319,29 @@ class ProductionDocumentController extends Controller
         }
 
         return view($view, $data);
+    }
+
+    /**
+     * Date printed on the document — ?doc_date=YYYY-MM-DD from the
+     * "document date" field (financial-tab), not later than today; anything
+     * missing / invalid falls back to $default. Display only: these documents
+     * are generated on the fly and nothing is stored or numbered by date.
+     */
+    protected function documentDate(Request $request, $default): \Carbon\Carbon
+    {
+        $raw = (string) $request->query('doc_date', '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+            try {
+                $date = \Carbon\Carbon::createFromFormat('Y-m-d', $raw)->startOfDay();
+                if ($date->format('Y-m-d') === $raw && $date->lte(now()->endOfDay())) {
+                    return $date;
+                }
+            } catch (\Throwable $e) {
+                // fall through to the default
+            }
+        }
+
+        return \Carbon\Carbon::parse($default);
     }
 
     public function showPaymentDocument($id, $paymentId, $type, Request $request)
@@ -463,7 +489,8 @@ class ProductionDocumentController extends Controller
             'type' => $type,
             'title' => $title,
             'page_title' => $pageTitle,
-            'date' => $payment->paid_at ?? now(), // Use payment date instead of now
+            // Chosen date, else the day the payment was received
+            'date' => $this->documentDate($request, $payment->paid_at ?? now()),
             'transactions' => $transactions,
             'financial' => $financialData,
             'advanceItems' => collect(), // usually no advances in direct payment doc unless specified

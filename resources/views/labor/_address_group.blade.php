@@ -26,7 +26,8 @@
     a previously-issued contract's field_values — used by contracts/edit.blade.php).
 --}}
 @php($prefill = $prefill ?? [])
-<div class="proworker-address-group border rounded p-3 mb-3" data-group="{{ $groupId }}"
+@php($hidden = $hidden ?? false)
+<div class="proworker-address-group border rounded p-3 mb-3 {{ $hidden ? 'd-none' : '' }}" data-group="{{ $groupId }}"
      @if($prefill) data-prefill="{{ json_encode($prefill) }}" @endif>
     <div class="row g-2">
         <div class="col-md-4">

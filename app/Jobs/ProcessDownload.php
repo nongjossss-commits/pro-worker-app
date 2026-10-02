@@ -34,6 +34,20 @@ class ProcessDownload implements ShouldQueue
     // just producing a smaller-than-expected zip with no explanation.
     protected $missingFiles = [];
 
+    // PDFs that exist but couldn't be merged even after conversion (see
+    // openPdfSource()) — reported in the summary; in "one PDF per person"
+    // mode the original file is added to the ZIP instead.
+    protected $unreadablePdfs = [];
+    protected $task;
+
+    // Per-job caches: PDFs already converted (path => converted path) and
+    // names already used in the ZIP being built.
+    protected $normalizedPdfs = [];
+    protected $zipNames = [];
+
+    // "Merge into one PDF" that had to be split to stay within memory (createPdf()).
+    protected $splitIntoParts = 0;
+
     // Thai labels matching the checkboxes in download-modals.blade.php —
     // used only for the missing-files summary message.
     protected $fileTypeLabels = [
@@ -95,14 +109,32 @@ class ProcessDownload implements ShouldQueue
 
     public function handle()
     {
-        // Increase memory limit and execution time for large PDF merges
-        ini_set('memory_limit', '512M');
-        set_time_limit(600); // Increased to 10 minutes
+        // Large downloads (many employees / big files): more memory and time,
+        // and keep going even if the browser tab that started it is closed —
+        // the job runs after the response (DownloadController::initiate()).
+        $this->raiseMemoryLimit('1024M');
+        @set_time_limit(1800);
+        @ignore_user_abort(true);
 
         $task = DownloadTask::find($this->taskId);
         if (!$task) return;
+        $this->task = $task;
 
         $task->update(['status' => 'processing']);
+        $this->progress(0);
+
+        // A fatal error (e.g. out of memory) can't be caught — without this the
+        // task would show "Processing…" forever.
+        register_shutdown_function(function () use ($task) {
+            $err = error_get_last();
+            if ($err && in_array($err['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR], true)
+                && DownloadTask::whereKey($task->id)->where('status', 'processing')->exists()) {
+                DownloadTask::whereKey($task->id)->update([
+                    'status' => 'failed',
+                    'error_message' => 'ระบบหยุดทำงานระหว่างสร้างไฟล์ (หน่วยความจำหรือเวลาไม่พอ) — ลองแบ่งเลือกลูกจ้างเป็นชุดเล็กลง หรือดาวน์โหลดแบบ ZIP: ' . $err['message'],
+                ]);
+            }
+        });
 
         if (!empty($this->options['stamp_company_info']) && !empty($this->options['download_profile_id'])) {
             $this->downloadProfile = \App\Models\DownloadProfile::find($this->options['download_profile_id']);
@@ -140,7 +172,11 @@ class ProcessDownload implements ShouldQueue
                 define('FPDF_FONTPATH', $fontPath);
             }
 
-            $employeesUnsorted = Employee::whereIn('id', $this->employeeIds)->get();
+            // In batches — a single IN (…) with thousands of ids breaks on some databases.
+            $employeesUnsorted = collect();
+            foreach (array_chunk(array_values(array_unique(array_map('intval', $this->employeeIds))), 500) as $chunk) {
+                $employeesUnsorted = $employeesUnsorted->concat(Employee::whereIn('id', $chunk)->get());
+            }
             // Sort employees by the order of IDs passed from frontend (preserves user selection order)
             $idOrder = array_flip(array_map('intval', $this->employeeIds));
             $employees = $employeesUnsorted->sort(function ($a, $b) use ($idOrder) {
@@ -168,6 +204,7 @@ class ProcessDownload implements ShouldQueue
                 'file_path' => $outputFile,
                 'error_message' => $this->buildMissingFilesSummary(),
             ]);
+            \Illuminate\Support\Facades\Cache::forget('download_progress:' . $task->id);
 
             // Cleanup temp dir and normalized images
             $this->deleteDir($tempDir);
@@ -227,6 +264,7 @@ class ProcessDownload implements ShouldQueue
             foreach ($this->selectedFiles as $fileType) {
                 $this->addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix, $hasThaiFont);
             }
+            $this->progress($sequenceNumber);
             $sequenceNumber++;
         }
 
@@ -270,15 +308,15 @@ class ProcessDownload implements ShouldQueue
                             if ($ext !== 'pdf') {
                                 $internalPath = preg_replace('/\.[^.]+$/', '.pdf', $internalPath);
                             }
-                            $zip->addFile($stampedFilePath, $internalPath);
+                            $zip->addFile($stampedFilePath, $this->uniqueZipName($internalPath));
                             // Track for cleanup
                             $this->tempImageFiles[] = $stampedFilePath;
                         } else {
                             // Fallback to original if stamping fails
-                            $zip->addFile($filePath, $internalPath);
+                            $zip->addFile($filePath, $this->uniqueZipName($internalPath));
                         }
                     } else {
-                        $zip->addFile($filePath, $internalPath);
+                        $zip->addFile($filePath, $this->uniqueZipName($internalPath));
                     }
                 }
             }
@@ -325,6 +363,7 @@ class ProcessDownload implements ShouldQueue
                 }
 
                 $hasPages = false;
+                $unreadableBefore = count($this->unreadablePdfs);
 
                 foreach ($this->selectedFiles as $fileType) {
                     try {
@@ -338,23 +377,32 @@ class ProcessDownload implements ShouldQueue
                     }
                 }
 
-                if ($hasPages) {
-                    if (!empty($employee->employeeNameEn)) {
-                        $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
-                        $rawName = $prefix . $employee->employeeNameEn;
-                    } else {
-                        $rawName = $employee->employeeNameTh ?? 'Employee';
-                    }
+                if (!empty($employee->employeeNameEn)) {
+                    $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
+                    $rawName = $prefix . $employee->employeeNameEn;
+                } else {
+                    $rawName = $employee->employeeNameTh ?? 'Employee';
+                }
+                $safeName = $sequenceNumber . '. ' . $this->sanitizeFileName($rawName) . '_' . $employee->id;
 
-                    $safeName = $sequenceNumber . '. ' . $this->sanitizeFileName($rawName) . '_' . $employee->id;
+                if ($hasPages) {
                     $pdfPath = $tempDir . '/' . $safeName . '.pdf';
 
                     $pdf->Output('F', $pdfPath);
-                    $zip->addFile($pdfPath, $safeName . '.pdf');
+                    $zip->addFile($pdfPath, $this->uniqueZipName($safeName . '.pdf'));
+                }
+
+                // PDFs that couldn't be merged: ship the original next to this person's PDF.
+                foreach (array_slice($this->unreadablePdfs, $unreadableBefore) as $entry) {
+                    $zip->addFile($entry['path'], $this->uniqueZipName($safeName . '_' . $entry['fileType'] . '_' . basename($entry['path'])));
                 }
             } catch (Throwable $e) {
                 Log::warning("Failed to create individual PDF for employee {$employee->id}: " . $e->getMessage());
             }
+            // One person's PDF is on disk now — don't keep it in memory while building the next.
+            unset($pdf);
+            gc_collect_cycles();
+            $this->progress($sequenceNumber);
             $sequenceNumber++;
         }
 
@@ -369,47 +417,100 @@ class ProcessDownload implements ShouldQueue
         }
 
         try {
-            $pdf = new Fpdi();
-            $pdf->SetAutoPageBreak(false);
-
-            // Attempt to load Thai font
-            $hasThaiFont = false;
-            // Check for both .php and .z files which are required by FPDF
-            // We assume they are in storage/fonts/ or default font path
-            // Note: FPDF_FONTPATH is defined at start of handle()
-
-            // Try standard names
-            $fontFiles = ['THSarabunNew.php', 'THSarabunNew.z'];
+            // Thai font (FPDF_FONTPATH is defined at the start of handle())
             $fontDir = defined('FPDF_FONTPATH') ? FPDF_FONTPATH : storage_path('fonts/');
+            $hasThaiFont = file_exists($fontDir . 'THSarabunNew.php');
 
-            if (file_exists($fontDir . 'THSarabunNew.php')) {
-                $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
-                $hasThaiFont = true;
-            }
+            $newPdf = function () use ($hasThaiFont) {
+                $pdf = new Fpdi();
+                $pdf->SetAutoPageBreak(false);
+                if ($hasThaiFont) {
+                    $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
+                }
+                return $pdf;
+            };
 
-            foreach ($employees as $employee) {
+            // FPDF keeps the whole document in memory until it is written, and
+            // writing it needs about twice that. If a very large merge gets
+            // close to PHP's memory limit, finish this part and start another
+            // (delivered together in a ZIP) instead of crashing. Normal-sized
+            // downloads never reach this and stay one PDF exactly as before.
+            $partLimit = (int) ($this->memoryLimitBytes() * 0.4);
+            $parts = [];
+            $pdf = $newPdf();
+            $pdfHasPages = false;
+            $total = count($employees);
+
+            foreach ($employees as $index => $employee) {
                 foreach ($this->selectedFiles as $fileType) {
                     try {
+                        $before = $pdf->PageNo();
                         $this->addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont);
+                        $pdfHasPages = $pdfHasPages || $pdf->PageNo() > $before;
                     } catch (Throwable $e) {
                         Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
                     }
                 }
+                $this->progress($index + 1);
+
+                if ($pdfHasPages && $index + 1 < $total && memory_get_usage(true) > $partLimit) {
+                    $partPath = $tempDir . '/part_' . (count($parts) + 1) . '.pdf';
+                    $pdf->Output('F', $partPath);
+                    $parts[] = $partPath;
+                    unset($pdf);
+                    gc_collect_cycles();
+                    $pdf = $newPdf();
+                    $pdfHasPages = false;
+                }
             }
 
-            $fileName = 'merged_' . $task->id . '_' . date('YmdHis') . '.pdf';
-            $outputPath = storage_path('app/private/downloads/' . $fileName);
+            if (!file_exists(storage_path('app/private/downloads'))) {
+                mkdir(storage_path('app/private/downloads'), 0755, true);
+            }
+            $stamp = $task->id . '_' . date('YmdHis');
 
-            if (!file_exists(dirname($outputPath))) {
-                mkdir(dirname($outputPath), 0755, true);
+            if (!$parts) {
+                $fileName = 'merged_' . $stamp . '.pdf';
+                $pdf->Output('F', storage_path('app/private/downloads/' . $fileName));
+                return 'downloads/' . $fileName;
             }
 
-            $pdf->Output('F', $outputPath);
+            if ($pdfHasPages) {
+                $partPath = $tempDir . '/part_' . (count($parts) + 1) . '.pdf';
+                $pdf->Output('F', $partPath);
+                $parts[] = $partPath;
+            }
+            unset($pdf);
+
+            $fileName = 'merged_' . $stamp . '.zip';
+            $zip = new ZipArchive;
+            if ($zip->open(storage_path('app/private/downloads/' . $fileName), ZipArchive::CREATE) !== true) {
+                throw new Exception('Cannot create zip file');
+            }
+            foreach ($parts as $i => $partPath) {
+                $zip->addFile($partPath, sprintf('merged_part_%d_of_%d.pdf', $i + 1, count($parts)));
+            }
+            $zip->close();
+            $this->splitIntoParts = count($parts);
+
             return 'downloads/' . $fileName;
 
         } catch (Throwable $e) {
             throw new Exception("PDF Generation Error: " . $e->getMessage());
         }
+    }
+
+    /** PHP's memory limit in bytes (unlimited → a large number). */
+    protected function memoryLimitBytes(): int
+    {
+        $v = trim((string) ini_get('memory_limit'));
+        if ($v === '' || $v === '-1') {
+            return 8 * 1073741824;
+        }
+        $n = (int) $v;
+        return match (strtolower(substr($v, -1))) {
+            'g' => $n * 1073741824, 'm' => $n * 1048576, 'k' => $n * 1024, default => $n,
+        };
     }
 
     protected function addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont)
@@ -432,7 +533,12 @@ class ProcessDownload implements ShouldQueue
                         $mime = @mime_content_type($originalFilePath);
 
                         if ($mime === 'application/pdf') {
-                            $pageCount = $pdf->setSourceFile($originalFilePath);
+                            $pageCount = $this->openPdfSource($pdf, $originalFilePath);
+                            if ($pageCount === null) {
+                                // Unreadable even after conversion — say so instead of skipping silently.
+                                $this->unreadablePdfs[] = ['employee' => $employee, 'fileType' => $fileType, 'path' => $originalFilePath];
+                                continue;
+                            }
                             for ($i = 1; $i <= $pageCount; $i++) {
                                 try {
                                     $tplIdx = $pdf->importPage($i);
@@ -503,6 +609,87 @@ class ProcessDownload implements ShouldQueue
 
         if (!$added) {
             $this->recordMissing($employee, $fileType, $hadValue);
+        }
+    }
+
+    /** "x / y employees done" for the Download Center (DownloadController::index()). */
+    protected function progress(int $done): void
+    {
+        if (!$this->task) {
+            return;
+        }
+        \Illuminate\Support\Facades\Cache::put('download_progress:' . $this->task->id, [
+            'done' => $done,
+            'total' => count(array_unique($this->employeeIds)),
+        ], now()->addHours(2));
+    }
+
+    /** Raise (never lower) PHP's memory limit. */
+    protected function raiseMemoryLimit(string $limit): void
+    {
+        $toBytes = function ($v) {
+            $v = trim((string) $v);
+            if ($v === '-1') {
+                return PHP_INT_MAX;
+            }
+            $n = (int) $v;
+            return match (strtolower(substr($v, -1))) {
+                'g' => $n * 1073741824, 'm' => $n * 1048576, 'k' => $n * 1024, default => $n,
+            };
+        };
+        if ($toBytes(ini_get('memory_limit')) < $toBytes($limit)) {
+            @ini_set('memory_limit', $limit);
+        }
+    }
+
+    /** Unique name inside a ZIP — two files with the same name in one folder used to overwrite each other. */
+    protected function uniqueZipName(string $name): string
+    {
+        if (!isset($this->zipNames[$name])) {
+            $this->zipNames[$name] = true;
+            return $name;
+        }
+        $info = pathinfo($name);
+        $dir = ($info['dirname'] ?? '.') !== '.' ? $info['dirname'] . '/' : '';
+        $ext = isset($info['extension']) ? '.' . $info['extension'] : '';
+        for ($i = 2; ; $i++) {
+            $candidate = $dir . $info['filename'] . " ({$i})" . $ext;
+            if (!isset($this->zipNames[$candidate])) {
+                $this->zipNames[$candidate] = true;
+                return $candidate;
+            }
+        }
+    }
+
+    /**
+     * setSourceFile() with a fallback. FPDI's free parser can't read PDF 1.5+
+     * files that use compressed object streams — what most scanners and phone
+     * apps produce — so passports / visas / work permits saved that way were
+     * silently left out of the "merge into one PDF" / "one PDF per person"
+     * downloads while photos (images) came through. Retry on a copy rewritten
+     * by PdfGeneratorService::tryNormalizePdf() (Node pdf-lib → Ghostscript →
+     * Python), the same repair PDF templates already use.
+     *
+     * @return int|null page count, or null if the file can't be read at all
+     */
+    protected function openPdfSource($pdf, string $path): ?int
+    {
+        try {
+            return $pdf->setSourceFile($path);
+        } catch (Throwable $e) {
+            Log::info("ProcessDownload: PDF needs conversion ({$path}): " . $e->getMessage());
+        }
+
+        try {
+            // Convert each file once per job, even if it's used again.
+            if (!isset($this->normalizedPdfs[$path])) {
+                $this->normalizedPdfs[$path] = app(\App\Services\PdfGeneratorService::class)->tryNormalizePdf($path);
+                $this->tempImageFiles[] = $this->normalizedPdfs[$path]; // removed by cleanupTempImages()
+            }
+            return $pdf->setSourceFile($this->normalizedPdfs[$path]);
+        } catch (Throwable $e) {
+            Log::warning("ProcessDownload: PDF could not be read even after conversion ({$path}): " . $e->getMessage());
+            return null;
         }
     }
 
@@ -639,25 +826,43 @@ class ProcessDownload implements ShouldQueue
 
             $width = imagesx($srcImg);
             $height = imagesy($srcImg);
+            unset($data);
+
+            // Images only ever fill one A4 page here: 2480 px on the long side
+            // is ~300 dpi on A4 — the same on screen and on paper, but a 12 MP
+            // phone photo no longer makes the PDF (and PHP's memory) huge.
+            // ZIP downloads always keep the original file.
+            $maxSide = 2480;
+            $scale = min(1, $maxSide / max($width, $height));
+            $newW = max(1, (int) round($width * $scale));
+            $newH = max(1, (int) round($height * $scale));
 
             // Create a new true color image
-            $dstImg = imagecreatetruecolor($width, $height);
+            $dstImg = imagecreatetruecolor($newW, $newH);
 
             // Fill with white background (handles transparency)
             $white = imagecolorallocate($dstImg, 255, 255, 255);
-            imagefilledrectangle($dstImg, 0, 0, $width, $height, $white);
+            imagefilledrectangle($dstImg, 0, 0, $newW, $newH, $white);
 
-            // Copy and merge
-            imagecopy($dstImg, $srcImg, 0, 0, 0, 0, $width, $height);
+            // Copy and merge (resampled when shrinking)
+            if ($scale < 1) {
+                imagecopyresampled($dstImg, $srcImg, 0, 0, 0, 0, $newW, $newH, $width, $height);
+            } else {
+                imagecopy($dstImg, $srcImg, 0, 0, 0, 0, $width, $height);
+            }
+            imagedestroy($srcImg);
+            $srcImg = null;
 
-            // Create temp file
-            $tempPath = tempnam(sys_get_temp_dir(), 'img_norm_') . '.jpg';
+            // Create temp file (tempnam() also creates an empty file without
+            // the .jpg suffix — remove it so it isn't left behind)
+            $base = tempnam(sys_get_temp_dir(), 'img_norm_');
+            $tempPath = $base . '.jpg';
+            @unlink($base);
 
             // Save as JPEG with high quality
             imagejpeg($dstImg, $tempPath, 90);
 
-            // Free memory
-            imagedestroy($srcImg);
+            // Free memory (source image already destroyed above)
             imagedestroy($dstImg);
 
             return $tempPath;
@@ -689,7 +894,10 @@ class ProcessDownload implements ShouldQueue
             }
 
             if ($ext === 'pdf') {
-                $pageCount = $pdf->setSourceFile($filePath);
+                $pageCount = $this->openPdfSource($pdf, $filePath);
+                if ($pageCount === null) {
+                    return null; // caller adds the original, unstamped file
+                }
                 for ($i = 1; $i <= $pageCount; $i++) {
                     $tplIdx = $pdf->importPage($i);
                     $size = $pdf->getTemplateSize($tplIdx);
@@ -786,23 +994,39 @@ class ProcessDownload implements ShouldQueue
      */
     protected function buildMissingFilesSummary(): ?string
     {
-        if (empty($this->missingFiles)) {
-            return null;
+        $parts = [];
+
+        if (!empty($this->missingFiles)) {
+            $byEmployee = [];
+            foreach ($this->missingFiles as $entry) {
+                $byEmployee[$entry['employee_id']]['name'] = $entry['employee_name'];
+                $label = $this->fileTypeLabels[$entry['file_type']] ?? $entry['file_type'];
+                $byEmployee[$entry['employee_id']]['items'][] = $label . ($entry['had_value'] ? ' (ไฟล์หาย)' : ' (ไม่เคยอัปโหลด)');
+            }
+
+            $lines = [];
+            foreach ($byEmployee as $empId => $data) {
+                $lines[] = $data['name'] . " (#{$empId}): " . implode(', ', $data['items']);
+            }
+            $parts[] = 'บางไฟล์ที่เลือกไม่มีอยู่จริง จึงถูกข้ามไป — ' . implode(' | ', $lines);
         }
 
-        $byEmployee = [];
-        foreach ($this->missingFiles as $entry) {
-            $byEmployee[$entry['employee_id']]['name'] = $entry['employee_name'];
-            $label = $this->fileTypeLabels[$entry['file_type']] ?? $entry['file_type'];
-            $byEmployee[$entry['employee_id']]['items'][] = $label . ($entry['had_value'] ? ' (ไฟล์หาย)' : ' (ไม่เคยอัปโหลด)');
+        if (!empty($this->unreadablePdfs)) {
+            $lines = [];
+            foreach ($this->unreadablePdfs as $entry) {
+                $emp = $entry['employee'];
+                $lines[] = ($emp->employeeNameEn ?: $emp->employeeNameTh) . " (#{$emp->id}): " . ($this->fileTypeLabels[$entry['fileType']] ?? $entry['fileType']);
+            }
+            $parts[] = ($this->task && $this->task->type === 'pdf_individual')
+                ? 'ไฟล์ PDF บางไฟล์รวมเข้า PDF ไม่ได้ จึงใส่ไฟล์ต้นฉบับไว้ใน ZIP แยกให้แทน — ' . implode(' | ', array_unique($lines))
+                : 'ไฟล์ PDF บางไฟล์รวมเข้า PDF ไม่ได้ (รูปแบบไฟล์ที่ระบบอ่านไม่ได้) — กรุณาดาวน์โหลดแบบ ZIP เพื่อได้ไฟล์ต้นฉบับ: ' . implode(' | ', array_unique($lines));
         }
 
-        $lines = [];
-        foreach ($byEmployee as $empId => $data) {
-            $lines[] = $data['name'] . " (#{$empId}): " . implode(', ', $data['items']);
+        if ($this->splitIntoParts > 1) {
+            $parts[] = "ไฟล์รวมใหญ่มาก ระบบจึงแบ่งเป็น {$this->splitIntoParts} ไฟล์ PDF (ตามลำดับลูกจ้างเดิม) ไว้ใน ZIP";
         }
 
-        return 'บางไฟล์ที่เลือกไม่มีอยู่จริง จึงถูกข้ามไป — ' . implode(' | ', $lines);
+        return $parts ? implode(' || ', $parts) : null;
     }
 
     protected function getFilePath($dbPath)

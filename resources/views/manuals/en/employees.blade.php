@@ -160,6 +160,12 @@
     <strong>Visa/passport nearing expiry:</strong> the system automatically alerts you in <strong>Notifications</strong>
     when something is about to expire — check every morning
 </div>
+<div class="manual-tip">
+    <strong>Advanced download as one PDF / one PDF per person:</strong> PDFs from scanners or phone apps (newer PDF format) are converted automatically before merging · if a file still can't be merged, the Download Center says so, and the per-person option puts the original file in the ZIP — the ZIP option always contains every original file
+</div>
+<div class="manual-tip">
+    <strong>Downloading many employees:</strong> after you press start, the file is built in the background — the Download Center shows progress (e.g. "Processing... 120/500") and starts the download by itself when ready (keep the Download Center open) · if you close it, come back and press Download in the list within 24 hours · a "merge into one PDF" too large for the server's memory is split into several PDFs in a ZIP (same order) instead of failing
+</div>
 
 <div class="manual-warn">
     <strong>Before permanently deleting an employee:</strong> make sure no Production / Workflow job or tax invoice

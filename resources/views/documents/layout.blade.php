@@ -533,7 +533,8 @@
             </div>
             <div class="meta-chip">
                 <div class="k">Date <span class="en-label">/ วันที่</span></div>
-                <div class="v">{{ date('d/m/Y') }}</div>
+                {{-- Was date('d/m/Y') (always today) — the controller's $date (chosen date / payment date) was never shown --}}
+                <div class="v">{{ \Carbon\Carbon::parse($date ?? now())->format('d/m/Y') }}</div>
             </div>
             <div class="meta-chip">
                 <div class="k">Ref <span class="en-label">/ อ้างอิง</span></div>

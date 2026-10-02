@@ -44,7 +44,7 @@ class LaborContractController extends Controller
         abort_unless($user->labor_team_id, 403, __('You have not been assigned to a Pro Walker Labour team yet. Please contact a Super Admin.'));
 
         $template = ProWorkerContractTemplate::findOrFail($request->input('template_id'));
-        $fields = $request->input('fields', []);
+        $fields = $this->applySameAsBaseAddress($template, $request->input('fields', []));
 
         if ($error = $this->validateFields($template, $fields)) {
             return back()->withErrors($error)->withInput();
@@ -69,7 +69,7 @@ class LaborContractController extends Controller
     public function preview(Request $request)
     {
         $template = ProWorkerContractTemplate::findOrFail($request->input('template_id'));
-        $fields = $this->resolveFeeGroupValues($template, $request->input('fields', []));
+        $fields = $this->resolveFeeGroupValues($template, $this->applySameAsBaseAddress($template, $request->input('fields', [])));
 
         $pdfBytes = app(ProWorkerContractPdfService::class)->preview($template, $fields);
 
@@ -139,7 +139,7 @@ class LaborContractController extends Controller
         $this->assertCanEditContract($contract);
 
         $template = $contract->template;
-        $fields = $request->input('fields', []);
+        $fields = $this->applySameAsBaseAddress($template, $request->input('fields', []));
 
         if ($error = $this->validateFields($template, $fields)) {
             return back()->withErrors($error)->withInput();
@@ -200,6 +200,44 @@ class LaborContractController extends Controller
      * CONSISTENCY for whatever was voluntarily filled in (see below), not
      * completeness. Shared by store() and update() so both stay in sync.
      */
+    /**
+     * "ใช้ที่อยู่เดียวกับที่อยู่หลัก" — every address group after the first
+     * (in form order) has a tick box on the issuance form (see
+     * contracts/_fields.blade.php). When ticked ({groupId}_same_as = 1),
+     * copy the first group's parts and composed Thai/English text into it,
+     * so a work-site address that is the same as the registered address is
+     * typed once. The browser copies too (proworker-address-picker.js);
+     * doing it again here makes the saved data/PDF right even if that
+     * script didn't run. Shared by store(), update() and preview().
+     */
+    protected function applySameAsBaseAddress(ProWorkerContractTemplate $template, array $fields): array
+    {
+        $groups = $this->formFields->addressGroups($template);
+        if (count($groups) < 2) {
+            return $fields;
+        }
+        uasort($groups, fn ($a, $b) => ($a['formOrder'] ?? 0) <=> ($b['formOrder'] ?? 0));
+        $baseId = array_key_first($groups);
+        $base = $groups[$baseId];
+
+        foreach ($groups as $groupId => $group) {
+            if ($groupId === $baseId || (string) ($fields["{$groupId}_same_as"] ?? '') !== '1') {
+                continue;
+            }
+            foreach (['province', 'district', 'subdistrict', 'no', 'moo', 'soi', 'road', 'soi_en', 'road_en'] as $part) {
+                $fields["{$groupId}_{$part}"] = $fields["{$baseId}_{$part}"] ?? '';
+            }
+            if (!empty($group['keyTh']) && !empty($base['keyTh'])) {
+                $fields[$group['keyTh']] = $fields[$base['keyTh']] ?? '';
+            }
+            if (!empty($group['keyEn']) && !empty($base['keyEn'])) {
+                $fields[$group['keyEn']] = $fields[$base['keyEn']] ?? '';
+            }
+        }
+
+        return $fields;
+    }
+
     protected function validateFields(ProWorkerContractTemplate $template, array $fields): ?array
     {
         // A Thai Soi/Road with no English counterpart would otherwise
@@ -721,6 +759,7 @@ class LaborContractController extends Controller
                     $labels[$item['key']] = $item['label'] ?? $item['key'];
                     break;
                 case 'address':
+                    $labels[$item['groupId'] . '_same_as'] = ($item['labelTh'] ?? __('Address')) . ' — ' . __('Same as the main address');
                     if (!empty($item['keyTh'])) {
                         $labels[$item['keyTh']] = ($item['labelTh'] ?? __('Address')) . ' (' . __('Thai') . ')';
                     }

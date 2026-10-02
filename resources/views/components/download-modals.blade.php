@@ -224,6 +224,17 @@ document.addEventListener('DOMContentLoaded', function() {
         let downloadModal = new bootstrap.Modal(document.getElementById('downloadOptionsModal'));
         let downloadCenterModal = new bootstrap.Modal(document.getElementById('downloadCenterModal'));
         let downloadCenterInterval = null;
+        // Tasks started from this page that should download by themselves once
+        // ready — the file is now built after the response (big downloads no
+        // longer time out), so it's usually not ready yet when "Start" returns.
+        const autoDownloadTaskIds = new Set();
+        function triggerDownload(url) {
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
+            setTimeout(() => iframe.remove(), 60000);
+        }
 
         // --- 1. Handle Triggering Download Options ---
         // From Single Action
@@ -311,15 +322,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     loadDownloadTasks();
                     downloadCenterModal.show();
 
-                    // Auto download if ready
+                    // Auto download if ready, otherwise as soon as the Download Center sees it finish
                     if (data.download_url) {
                         // Direct Download for all types using iframe method to prevent page reload/navigation
-                        const iframe = document.createElement('iframe');
-                        iframe.style.display = 'none';
-                        iframe.src = data.download_url;
-                        document.body.appendChild(iframe);
-                        // Cleanup iframe after a bit
-                        setTimeout(() => document.body.removeChild(iframe), 60000);
+                        triggerDownload(data.download_url);
+                    } else if (data.task_id) {
+                        autoDownloadTaskIds.add(data.task_id);
                     }
                 } else {
                     showToast('Error starting download.', 'danger');
@@ -360,6 +368,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     let actionBtn = '';
                     if (task.status === 'completed') {
                         const url = '{{ route("admin.downloads.download", ":id") }}'.replace(':id', task.id);
+                        if (autoDownloadTaskIds.has(task.id)) {
+                            autoDownloadTaskIds.delete(task.id);
+                            triggerDownload(url);
+                        }
                         actionBtn = `<a href="${url}" class="btn btn-sm btn-success" download><i class="bi bi-download"></i> Download</a>`;
                         // A 'completed' task can still be missing some requested files
                         // (never uploaded, or the file went missing from storage) —
@@ -370,12 +382,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             actionBtn += ` <i class="bi bi-exclamation-triangle-fill ms-1 text-warning" data-bs-toggle="tooltip" title="${task.error_message}"></i>`;
                         }
                     } else if (task.status === 'failed') {
+                        autoDownloadTaskIds.delete(task.id);
                         actionBtn = `
                             <span class="text-danger fw-bold">Failed</span>
                             <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" title="${task.error_message}"></i>
                         `;
                     } else {
-                        actionBtn = `<span class="text-muted spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span class="text-muted">Processing...</span>`;
+                        const prog = task.progress && task.progress.total ? ` ${task.progress.done}/${task.progress.total}` : '';
+                        actionBtn = `<span class="text-muted spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span class="text-muted">Processing...${prog}</span>`;
                     }
 
                     const date = new Date(task.created_at).toLocaleString('th-TH');

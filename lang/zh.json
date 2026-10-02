@@ -1380,5 +1380,11 @@
     "RA No. (outsource)": "RA 编号 (outsource)",
     "Remarks": "备注",
     "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "取自发送所在菜单的卡片（Workflow、Pre-Production、登记 / 续期标签）。从雇员菜单发送时：取雇员记录。",
-    "follows the menu": "随菜单"
+    "follows the menu": "随菜单",
+    "Same as the main address": "与主地址相同",
+    "Same as “:label”": "与“:label”相同",
+    "Uses the same address — untick to type a different one.": "使用相同地址 —— 如不同，请取消勾选并填写此地址。",
+    "Document date": "单据日期",
+    "Set the day the money was actually received (can be earlier than today).": "填写实际收款日期（可早于今天）。",
+    "Defaults to the payment date": "默认 = 付款日期"
 }

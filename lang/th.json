@@ -2560,5 +2560,11 @@
     "Fields marked \"follows the menu\" (request no., appointment, team, remarks) are taken from the card being sent: Workflow / Pre-Production job, or the Registration / Renewal tab.": "ช่องที่มีป้าย \"ตามเมนู\" (เลขคำขอ, วันนัดหมาย, ทีม, หมายเหตุ) ดึงจากการ์ดที่ส่ง: งานใน Workflow / Pre-Production หรือแถบมติลงทะเบียน / ต่ออายุ — ส่งจากเมนูลูกจ้างใช้ข้อมูลในฐานข้อมูลลูกจ้าง",
     "RA No. (outsource)": "เลข RA (outsource)",
     "Taken from the card of the menu it is sent from (Workflow, Pre-Production, Registration / Renewal tab). From the Employees menu: the employee record.": "ดึงจากการ์ดในเมนูที่ส่ง (Workflow, Pre-Production, แถบมติลงทะเบียน / ต่ออายุ) — ส่งจากเมนูลูกจ้างใช้ข้อมูลในฐานข้อมูลลูกจ้าง",
-    "follows the menu": "ตามเมนู"
+    "follows the menu": "ตามเมนู",
+    "Same as the main address": "ใช้ที่อยู่เดียวกับที่อยู่หลัก",
+    "Same as “:label”": "ใช้ที่อยู่เดียวกับ “:label”",
+    "Uses the same address — untick to type a different one.": "ใช้ที่อยู่เดียวกัน — ถ้าเป็นคนละที่ ให้เอาเครื่องหมายถูกออกแล้วกรอกที่อยู่นี้",
+    "Document date": "วันที่ในเอกสาร",
+    "Set the day the money was actually received (can be earlier than today).": "ใส่วันที่ได้รับเงินจริง (ย้อนหลังได้)",
+    "Defaults to the payment date": "ค่าเริ่มต้น = วันที่รับชำระ"
 }

@@ -160,6 +160,12 @@
     <strong>签证/护照即将到期:</strong> 系统会在<strong>通知(Notifications)</strong>中
     自动提醒即将到期的项目 —— 请每天早上检查
 </div>
+<div class="manual-tip">
+    <strong>高级下载（合并为一个 PDF / 每人一个 PDF）：</strong>来自扫描仪或手机应用的 PDF（较新的 PDF 格式）会在合并前自动转换 · 若仍无法合并，下载中心会提示，而"每人一个 PDF"会将原始文件放入 ZIP —— ZIP 方式始终包含所有原始文件
+</div>
+<div class="manual-tip">
+    <strong>下载大量雇员：</strong>点击开始后，文件在后台生成 —— 下载中心显示进度（如 "Processing... 120/500"），完成后自动开始下载（请保持下载中心打开）· 若已关闭，可在 24 小时内回到列表点击 Download · 超出服务器内存的"合并为一个 PDF"会被拆分为 ZIP 中的多个 PDF（顺序不变），而不会失败
+</div>
 
 <div class="manual-warn">
     <strong>永久删除雇员前:</strong> 请确认没有 Production / Workflow 工作或税务发票

@@ -47,14 +47,38 @@
             @break
 
         @case('address')
+            {{-- The first address in form order is the "main" address; every later one can reuse it
+                 (LaborContractController::applySameAsBaseAddress()). One-line @php() only — this file
+                 already uses that form, and mixing it with a block @php breaks Blade's compiler. --}}
+            @php($isBaseAddress = !isset($baseAddress))
+            @php($baseAddress = $baseAddress ?? $formItem)
+            @php($sameAsKey = $formItem['groupId'] . '_same_as')
+            @php($sameAsChecked = !$isBaseAddress && (string) old('fields.' . $sameAsKey, $values[$sameAsKey] ?? '') === '1')
             <div class="col-md-{{ $formWidth }} mb-3">
                 <label class="form-label fw-bold">{{ $formItem['labelTh'] ?? __('Address') }}</label>
+                @unless($isBaseAddress)
+                    <div class="form-check mb-2">
+                        <input type="hidden" name="fields[{{ $sameAsKey }}]" value="0">
+                        <input class="form-check-input pw-addr-same" type="checkbox" value="1"
+                               name="fields[{{ $sameAsKey }}]" id="sameAs_{{ $formItem['groupId'] }}"
+                               data-group="{{ $formItem['groupId'] }}" data-base-group="{{ $baseAddress['groupId'] }}"
+                               @checked($sameAsChecked)>
+                        <label class="form-check-label" for="sameAs_{{ $formItem['groupId'] }}">
+                            {{ __('Same as “:label”', ['label' => $baseAddress['labelTh'] ?? __('Address')]) }}
+                        </label>
+                    </div>
+                    <div class="alert alert-light border small py-2 mb-2 pw-addr-same-summary {{ $sameAsChecked ? '' : 'd-none' }}" data-group="{{ $formItem['groupId'] }}">
+                        <i class="bi bi-link-45deg me-1"></i>{{ __('Uses the same address — untick to type a different one.') }}
+                        <div class="fw-semibold mt-1" data-same-preview></div>
+                    </div>
+                @endunless
                 @include('labor._address_group', [
                     'groupId' => $formItem['groupId'],
                     'keyTh' => $formItem['keyTh'] ?? null,
                     'keyEn' => $formItem['keyEn'] ?? null,
                     'labelTh' => $formItem['labelTh'] ?? '',
                     'labelEn' => $formItem['labelEn'] ?? '',
+                    'hidden' => $sameAsChecked,
                     'prefill' => empty($values) ? [] : [
                         'province' => $values["{$formItem['groupId']}_province"] ?? '',
                         'district' => $values["{$formItem['groupId']}_district"] ?? '',

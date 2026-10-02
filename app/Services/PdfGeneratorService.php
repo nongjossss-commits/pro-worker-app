@@ -1432,7 +1432,10 @@ class PdfGeneratorService
 
     public function tryNormalizePdf($inputPath)
     {
-        $outputPath = tempnam(sys_get_temp_dir(), 'norm_') . '.pdf';
+        // tempnam() also creates an empty file without the .pdf suffix — remove it.
+        $tempBase = tempnam(sys_get_temp_dir(), 'norm_');
+        $outputPath = $tempBase . '.pdf';
+        @unlink($tempBase);
 
         // Strategy 0: Node.js (pdf-lib) - preferred strategy now
         $nodeScriptPath = base_path('scripts/normalize_pdf.cjs');

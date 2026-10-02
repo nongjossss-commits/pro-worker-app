@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then((r) => r.json())
         .then((data) => {
             groups.forEach((group) => initAddressGroup(group, data));
+            initSameAsBase();
         })
         .catch((err) => console.error('Failed to load Thai address data', err));
 
@@ -213,6 +214,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         prefillFromData();
 
+        // Used by initSameAsBase() ("same as the main address" tick box).
+        group._pwAddr = {
+            getParts: () => ({
+                province: provinceValue.value, district: districtValue.value, subdistrict: subDistrictValue.value,
+                no: noInput.value, moo: mooInput.value, soi: soiInput.value, road: roadInput.value,
+                soi_en: soiEnInput.value, road_en: roadEnInput.value,
+            }),
+            applyParts: applyParts,
+            composedTh: () => composedTh.value,
+        };
+
         /**
          * Restores this group's inputs from a previously-issued contract's
          * stored address parts (see contracts/edit.blade.php +
@@ -230,6 +242,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 data = null;
             }
             if (!data) return;
+            applyParts(data);
+        }
+
+        /** Set every part of this group from known-good values (prefill, or a copy of the main address). */
+        function applyParts(data) {
+            data = data || {};
+            [provinceInput, districtInput, subDistrictInput].forEach((i) => i.setCustomValidity(''));
+            clearField(districtInput, districtValue, districtList, true);
+            clearField(subDistrictInput, subDistrictValue, subDistrictList, true);
+            provinceInput.value = '';
+            provinceValue.value = '';
+            selectedRow = null;
+            zipInput.value = '';
 
             if (data.province) {
                 provinceInput.value = data.province;
@@ -270,5 +295,51 @@ document.addEventListener('DOMContentLoaded', function () {
             roadEnInput.required = !!roadInput.value.trim();
             compose();
         }
+    }
+
+    /**
+     * "ใช้ที่อยู่เดียวกับที่อยู่หลัก" — every address group after the first
+     * has a .pw-addr-same tick box (contracts/_fields.blade.php). While
+     * ticked, that group is hidden and kept an exact copy of the main
+     * (first) address: copied on tick, on every edit of the main address,
+     * and once more right before the form is submitted / previewed. The
+     * server copies again (LaborContractController::applySameAsBaseAddress()).
+     */
+    function initSameAsBase() {
+        const boxes = Array.from(document.querySelectorAll('.pw-addr-same'));
+        if (!boxes.length) return;
+        const groupEl = (id) => document.querySelector('.proworker-address-group[data-group="' + id + '"]');
+        const summaryEl = (id) => document.querySelector('.pw-addr-same-summary[data-group="' + id + '"]');
+
+        function sync(box) {
+            const target = groupEl(box.dataset.group);
+            const base = groupEl(box.dataset.baseGroup);
+            if (!box.checked || !target || !base || !target._pwAddr || !base._pwAddr) return;
+            target._pwAddr.applyParts(base._pwAddr.getParts());
+            const preview = summaryEl(box.dataset.group);
+            if (preview) preview.querySelector('[data-same-preview]').textContent = base._pwAddr.composedTh() || '-';
+        }
+
+        function toggle(box) {
+            const target = groupEl(box.dataset.group);
+            const summary = summaryEl(box.dataset.group);
+            if (target) target.classList.toggle('d-none', box.checked);
+            if (summary) summary.classList.toggle('d-none', !box.checked);
+            // Unticking keeps the copied values as a starting point to edit.
+            sync(box);
+        }
+
+        boxes.forEach((box) => {
+            box.addEventListener('change', () => toggle(box));
+            toggle(box);
+            const base = groupEl(box.dataset.baseGroup);
+            if (base && !base.dataset.sameAsWired) {
+                base.dataset.sameAsWired = '1';
+                // compose() runs inside the base's own input handlers — copy right after.
+                base.addEventListener('input', () => setTimeout(() => boxes.forEach(sync), 0));
+            }
+        });
+
+        document.addEventListener('submit', () => boxes.forEach(sync), true);
     }
 });
