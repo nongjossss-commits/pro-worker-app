@@ -110,6 +110,9 @@
 <div class="manual-tip">
     <strong>Send to a LINE chat:</strong> drag the <i class="bi bi-grid-3x2-gap-fill"></i> button on a card into the chat, or click it to copy text / a card image / share — see the Employees manual, section 11
 </div>
+<div class="manual-tip">
+    <strong>Operator (<i class="bi bi-person-badge-fill"></i> button, bottom-right of the card):</strong> pick a user, or "Outside person (type a name)" and type any name, or "None" to clear — the same in Registration, Renewal (every tab), Pre-Production and Workflow · typed names show "(outside)" · choosing an operator never changes the card's status
+</div>
 
 <div class="manual-warn">
     <strong>Careful:</strong> once a job has been sent to Workflow, it can no longer be edited in Production — edits must be made in Workflow instead

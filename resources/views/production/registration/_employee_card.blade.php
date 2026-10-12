@@ -120,10 +120,13 @@
         ? $employee->production_item->status
         : ($renewalLink ? $renewalLink->status : $employee->status);
 
-    // Operator Logic
-    $operator = $employee->operator;
-    $operatorId = $employee->operator_id;
-    $customOperatorName = $employee->custom_operator_name;
+    // Operator Logic — Pre-Production cards belong to a production item (the
+    // job), so its operator lives on the item, the same as on Workflow cards.
+    $operatorSource = isset($employee->production_item) ? $employee->production_item : $employee;
+    $operator = $operatorSource->operator;
+    $operatorId = $operatorSource->operator_id;
+    $customOperatorName = $operatorSource->custom_operator_name;
+    $rawOperatorId = $operatorId;
     $isMe = $operatorId === auth()->id();
 
     if ($customOperatorName) {
@@ -155,9 +158,11 @@
     {{-- Operator Badge (Bottom Right) --}}
     <div class="position-absolute bottom-0 end-0 m-2 z-index-10">
         @php
-            $toggleUrl = request()->is('production/renewal*')
-                ? route('production.renewal.toggle_operator', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id])
-                : route('production.registration.toggle_operator', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]);
+            $toggleUrl = isset($employee->production_item)
+                ? route('workflow.item.toggle_operator', $employee->production_item->id)
+                : (request()->is('production/renewal*')
+                    ? route('production.renewal.toggle_operator', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id])
+                    : route('production.registration.toggle_operator', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]));
 
             $btnClass = 'btn-outline-secondary';
             if ($customOperatorName) {
@@ -169,7 +174,7 @@
         <button class="btn btn-sm {{ $btnClass }} rounded-pill shadow-sm py-0 px-2"
                 style="font-size: 0.75rem; border-width: 1px;"
                 @hasanyrole('super-admin|admin|staff')
-                onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this, '{{ $employee->operator_id ?? '' }}', '{{ addslashes($customOperatorName ?? '') }}', '{{ $toggleUrl }}') : console.error('toggleOperator not defined')"
+                onclick="window.toggleOperator ? window.toggleOperator({{ $employee->id }}, this, '{{ $rawOperatorId ?? '' }}', {{ \Illuminate\Support\Js::from($customOperatorName ?? '') }}, '{{ $toggleUrl }}') : console.error('toggleOperator not defined')"
                 title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Assign' }}"
                 @else
                 disabled

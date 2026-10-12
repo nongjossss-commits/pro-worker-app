@@ -153,6 +153,9 @@
 <div class="manual-tip">
     <strong>入职通知 / 更换雇主 —— 自动转移：</strong>此标签中雇员的工作完成 24 小时后，系统会自动将雇员转到该工作的雇主名下（24 小时内仍可恢复工作），并记录在操作日志中 —— 仅适用于最近 7 天内完成的工作
 </div>
+<div class="manual-tip">
+    <strong>经办人（卡片右下角的 <i class="bi bi-person-badge-fill"></i> 按钮）：</strong>选择系统用户，或选择"外部人员（自行输入姓名）"并输入姓名，或选择"无"以清除——在登记、续期（所有标签）、Pre-Production 和 Workflow 中操作相同 · 自行输入的姓名显示"(外部)" · 选择经办人不会改变卡片状态
+</div>
 
 <div class="manual-warn">
     <strong>注意:</strong> 移动步骤会影响发送给客户的通知 —— 点击前请务必确认

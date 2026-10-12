@@ -3031,6 +3031,8 @@ class RegistrationController extends Controller
      */
     private function getEmployeeCardHtml(Employee $employee)
     {
+        $this->prepareEmployeeForCard($employee, 'registration');
+
         $steps = RegistrationStep::registration()
             ->where('resolution_tab_id', $this->currentTab->id)
             ->orderBy('order')->get();
@@ -3111,9 +3113,17 @@ class RegistrationController extends Controller
             }
         }
 
+        $employee->load('operator');
+
         return response()->json([
             'success' => true,
             'message' => $message,
+            'operator' => [
+                'id' => $employee->operator_id,
+                'name' => $employee->operator?->name,
+                'custom' => $employee->custom_operator_name,
+                'is_me' => $employee->operator_id === auth()->id(),
+            ],
             'html' => $this->getEmployeeCardHtml($employee)
         ]);
     }

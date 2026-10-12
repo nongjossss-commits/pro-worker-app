@@ -231,6 +231,34 @@ trait HasResolutionTab
     }
 
     /**
+     * Prepare ONE employee for a card re-rendered after a quick action
+     * (operator, remarks, insurance …) exactly like the employer list does
+     * for every card: this tab's appointment / request number / team, and
+     * the payment badge. Without it the returned card silently lost those
+     * (and looked different from the one it replaced).
+     */
+    protected function prepareEmployeeForCard(\App\Models\Employee $employee, string $type): void
+    {
+        $one = collect([$employee]);
+        $this->applyTabAppointments($one, $this->currentTab->id);
+        $this->applyTabRequestNumbers($one, $this->currentTab->id);
+        $this->applyTabTeams($one, $this->currentTab->id);
+
+        try {
+            $statuses = $type === 'renewal'
+                ? ['renewal_resolution', 'renewal_resolution_cancelled']
+                : ['registration_resolution', 'registration_resolution_cancelled'];
+            $financeOrder = \App\Models\ProductionOrder::with('financialGroups.transactions.items', 'financialGroups.transactions.payments')
+                ->where('employer_id', $employee->employer_id)
+                ->whereIn('status', $statuses)
+                ->first();
+            $employee->financialStatus = \App\Services\FinancialStatusService::calculateStatusForEmployees($financeOrder, collect([$employee->id]))[$employee->id] ?? null;
+        } catch (\Throwable $e) {
+            // The badge is cosmetic — never fail the action because of it.
+        }
+    }
+
+    /**
      * Distinct team names already in use within this tab AND this employer,
      * for the "existing teams" chip list in the "จัดทีม" modal — queried
      * straight from the database instead of scraped from rendered HTML (as

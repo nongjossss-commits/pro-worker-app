@@ -2547,16 +2547,23 @@ class WorkflowController extends Controller
     {
         $item = ProductionItem::findOrFail($itemId);
 
-        // Handle explicit operator assignment via dropdown
-        if ($request->has('operator_id')) {
+        // Explicit assignment from the shared operator picker
+        // (partials/_operator_picker): a user, a typed outside name, or none —
+        // same rules as Registration / Renewal Resolution.
+        if ($request->has('operator_id') || $request->has('custom_operator_name')) {
             $userId = $request->input('operator_id');
-            if (empty($userId)) {
-                $item->update(['operator_id' => null]);
+            $customOperatorName = trim((string) $request->input('custom_operator_name', ''));
+
+            if ($customOperatorName !== '') {
+                $item->update(['operator_id' => null, 'custom_operator_name' => mb_substr($customOperatorName, 0, 255)]);
+                $message = 'Operator assigned to external: ' . $customOperatorName;
+            } elseif (empty($userId)) {
+                $item->update(['operator_id' => null, 'custom_operator_name' => null]);
                 $message = 'Operator unassigned.';
             } else {
                 $user = User::find($userId);
                 if ($user) {
-                    $item->update(['operator_id' => $user->id]);
+                    $item->update(['operator_id' => $user->id, 'custom_operator_name' => null]);
                     $message = 'Operator assigned to ' . $user->name;
                 } else {
                      return response()->json(['success' => false, 'message' => 'User not found'], 404);
@@ -2565,16 +2572,27 @@ class WorkflowController extends Controller
         } else {
             // Legacy Toggle Behavior
             $userId = auth()->id();
-            if ($item->operator_id === $userId) {
-                $item->update(['operator_id' => null]);
+            if ($item->operator_id === $userId && empty($item->custom_operator_name)) {
+                $item->update(['operator_id' => null, 'custom_operator_name' => null]);
                 $message = 'Operator unassigned.';
             } else {
-                $item->update(['operator_id' => $userId]);
+                $item->update(['operator_id' => $userId, 'custom_operator_name' => null]);
                 $message = 'Operator assigned to ' . auth()->user()->name;
             }
         }
 
-        return response()->json(['success' => true, 'message' => $message]);
+        $item->load('operator');
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'operator' => [
+                'id' => $item->operator_id,
+                'name' => $item->operator?->name,
+                'custom' => $item->custom_operator_name,
+                'is_me' => $item->operator_id === auth()->id(),
+            ],
+        ]);
     }
 
     /**

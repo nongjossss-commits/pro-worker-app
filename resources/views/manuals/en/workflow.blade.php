@@ -153,6 +153,9 @@
 <div class="manual-tip">
     <strong>Notify In / change employer — automatic move:</strong> 24 hours after an employee's job in this tab is finished, the system moves the employee to the job's employer (you can still restore the job during those 24 hours) and records it in the Activity Log — only for jobs finished within the last 7 days
 </div>
+<div class="manual-tip">
+    <strong>Operator (<i class="bi bi-person-badge-fill"></i> button, bottom-right of the card):</strong> pick a user, or "Outside person (type a name)" and type any name, or "None" to clear — the same in Registration, Renewal (every tab), Pre-Production and Workflow · typed names show "(outside)" · choosing an operator never changes the card's status
+</div>
 
 <div class="manual-warn">
     <strong>Careful:</strong> moving a Step affects the notification sent to the customer — double-check before clicking

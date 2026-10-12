@@ -31,6 +31,9 @@ class LaborBillPdfService
     /** Brand accent as [r, g, b] (Super Admin → Branding). */
     protected array $accent = [249, 115, 22];
 
+    /** Number of entries listed — shown on itemized/monthly bills. */
+    protected int $itemCount = 0;
+
     public function __construct()
     {
         $this->fontDir = public_path('fonts');
@@ -39,12 +42,18 @@ class LaborBillPdfService
     public function generate(LaborBill $bill): string
     {
         $bill->loadMissing('team', 'financialProfile');
-        $entries = $bill->team->ledgerEntries()
+        // Itemized/monthly bills list only their own ticked entries; a
+        // statement lists everything dated in its period.
+        $entriesQuery = $bill->isItemized()
+            ? $bill->entries()
+            : $bill->team->ledgerEntries()
+                ->whereBetween('entry_date', [$bill->period_start->toDateString(), $bill->period_end->toDateString()]);
+        $entries = $entriesQuery
             ->with(['member', 'chargeType'])
-            ->whereBetween('entry_date', [$bill->period_start->toDateString(), $bill->period_end->toDateString()])
             ->orderBy('entry_date')
             ->orderBy('id')
             ->get();
+        $this->itemCount = $entries->count();
 
         try {
             $this->accent = $this->rgb(BrandService::current()['primary_color'] ?? '#F97316');
@@ -220,7 +229,7 @@ class LaborBillPdfService
         $pdf->setBold(false);
         $this->font($pdf, 11);
         $pdf->SetTextColor(...$this->accent);
-        $pdf->Cell($titleW, 5, 'BILLING STATEMENT', 0, 2, 'R');
+        $pdf->Cell($titleW, 5, $bill->bill_type === 'monthly' ? 'MONTHLY CHARGES' : 'BILLING STATEMENT', 0, 2, 'R');
 
         $metaY = $pdf->GetY() + 2;
         $rows = [
@@ -228,6 +237,15 @@ class LaborBillPdfService
             ['วันที่ออก / Date', ($bill->issued_at ?? $bill->created_at)?->format('d/m/Y') ?? '-'],
             ['งวด / Period', $bill->period_start->format('d/m/Y') . ' - ' . $bill->period_end->format('d/m/Y')],
         ];
+        if ($bill->bill_type === 'monthly') {
+            $rows[] = ['ประเภท / Type', 'ค่าใช้จ่ายรายเดือน'];
+        }
+        if ($bill->charge_type_ids) {
+            $typeNames = \App\Models\LaborChargeType::whereIn('id', $bill->charge_type_ids)->orderBy('name')->pluck('name')->implode(', ');
+            if ($typeNames !== '') {
+                $rows[] = ['รายการ / Items', mb_strimwidth($typeNames, 0, 34, '…')];
+            }
+        }
         foreach ($rows as $i => [$label, $value]) {
             $pdf->SetXY($titleX, $metaY + $i * 5.5);
             $this->font($pdf, 11);
@@ -355,14 +373,19 @@ class LaborBillPdfService
     protected function renderSummaryTiles(LaborBillPdfDocument $pdf, LaborBill $bill, float $y): float
     {
         $gap = 4;
-        $w = (self::WIDTH - 2 * $gap) / 3;
         $h = 17;
-        $tiles = [
-            ['ยอดยกมา', 'Brought forward', (float) $bill->previous_balance, false],
-            ['ยอดงวดนี้', 'This period', (float) $bill->period_charges, false],
-            ['ยอดที่ต้องชำระ', 'Total due', (float) $bill->total_due, true],
-        ];
-        foreach ($tiles as $i => [$th, $en, $amount, $main]) {
+        $tiles = $bill->isItemized()
+            ? [
+                ['จำนวนรายการ', 'Items', number_format($this->itemCount), false],
+                ['ยอดที่ต้องชำระ', 'Total due', $this->money((float) $bill->total_due), true],
+            ]
+            : [
+                ['ยอดยกมา', 'Brought forward', $this->money((float) $bill->previous_balance), false],
+                ['ยอดงวดนี้', 'This period', $this->money((float) $bill->period_charges), false],
+                ['ยอดที่ต้องชำระ', 'Total due', $this->money((float) $bill->total_due), true],
+            ];
+        $w = (self::WIDTH - (count($tiles) - 1) * $gap) / count($tiles);
+        foreach ($tiles as $i => [$th, $en, $value, $main]) {
             $x = self::LEFT + $i * ($w + $gap);
             if ($main) {
                 $pdf->SetFillColor(...$this->accent);
@@ -380,7 +403,7 @@ class LaborBillPdfService
             $this->font($pdf, 17);
             $main ? $pdf->ink(255, 255, 255) : $pdf->ink(15, 23, 42);
             $pdf->setBold(true, 0.2);
-            $pdf->Cell($w - 8, 9, $this->money($amount), 0, 0, 'R');
+            $pdf->Cell($w - 8, 9, $value, 0, 0, 'R');
             $pdf->setBold(false);
         }
 
@@ -563,10 +586,12 @@ class LaborBillPdfService
         // Totals (right)
         $tx = 120;
         $tw = self::RIGHT - $tx;
-        $lines = [
-            ['ยอดยกมา / Brought forward', (float) $bill->previous_balance],
-            ['ยอดงวดนี้ / This period', (float) $bill->period_charges],
-        ];
+        $lines = $bill->isItemized()
+            ? [['รวม ' . number_format($this->itemCount) . ' รายการ / Subtotal', (float) $bill->period_charges]]
+            : [
+                ['ยอดยกมา / Brought forward', (float) $bill->previous_balance],
+                ['ยอดงวดนี้ / This period', (float) $bill->period_charges],
+            ];
         foreach ($lines as $i => [$label, $amount]) {
             $pdf->SetXY($tx, $y + $i * 6.5);
             $this->font($pdf, 12);

@@ -2231,83 +2231,17 @@ window.loadBatchStats = function() {
     }
 
     // --- Operator Toggle ---
-    window.toggleOperator = function(itemId, btn, hasOperator) {
-        // Fetch operators first
-        Swal.fire({
-            title: '{{ __("Loading...") }}',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
+    window.toggleOperator = function(itemId, btn, currentOperatorId, customOperatorName, url) {
+        // Shared operator picker — partials/_operator_picker.blade.php (same in every menu).
+        // Workflow item cards pass the item id; the shared employee card used
+        // in order listings passes its own item's URL (first arg = employee id).
+        window.assignOperator({
+            url: url || `/workflow/item/${itemId}/toggle-operator`,
+            currentId: currentOperatorId || '',
+            currentCustom: customOperatorName || '',
+            button: btn,
+            onSaved: () => { if (!url && document.getElementById(`item-card-${itemId}`)) refreshItemCard(itemId); },
         });
-
-        fetch('{{ route("api-web.operators.list") }}')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) throw new Error('Failed to load operators');
-
-                let operators = data.data;
-                let optionsHtml = `<option value="">-- {{ __("None / Clear Operator") }} --</option>`;
-
-                operators.forEach(op => {
-                    optionsHtml += `<option value="${op.id}">${op.name}</option>`;
-                });
-
-                const htmlContent = `
-                    <div class="form-group text-start">
-                        <label class="form-label mb-2">{{ __("Select Operator") }}</label>
-                        <select id="operator-select-${itemId}" class="form-select form-select-lg">
-                            ${optionsHtml}
-                        </select>
-                    </div>
-                `;
-
-                Swal.fire({
-                    title: '{{ __("Assign Operator") }}',
-                    html: htmlContent,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: '{{ __("Save") }}',
-                    confirmButtonColor: '#0d6efd',
-                    cancelButtonText: '{{ __("Cancel") }}',
-                    showLoaderOnConfirm: true,
-                    didOpen: () => {},
-                    preConfirm: () => {
-                        const selectedId = document.getElementById(`operator-select-${itemId}`).value;
-
-                        return fetch(`/workflow/item/${itemId}/toggle-operator`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            body: JSON.stringify({ operator_id: selectedId })
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error(response.statusText);
-                            return response.json();
-                        })
-                        .catch(error => {
-                            Swal.showValidationMessage(`Request failed: ${error}`);
-                        });
-                    },
-                    allowOutsideClick: () => !Swal.isLoading()
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const resData = result.value;
-                        if(resData && resData.success) {
-                            refreshItemCard(itemId);
-                            if(typeof showToast === 'function') {
-                                showToast(resData.message, 'success');
-                            }
-                        } else {
-                            Swal.fire('{{ __("Error") }}', resData ? resData.message : 'Unknown error', 'error');
-                        }
-                    }
-                });
-            })
-            .catch(err => {
-                Swal.fire('Error', '{{ __("Could not load operators list.") }}', 'error');
-                console.error(err);
-            });
     }
 
     // --- Trash Feature ---

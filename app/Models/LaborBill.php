@@ -14,6 +14,8 @@ class LaborBill extends Model
     protected $fillable = [
         'labor_team_id',
         'bill_no',
+        'bill_type',
+        'charge_type_ids',
         'financial_profile_id',
         'period_start',
         'period_end',
@@ -38,6 +40,7 @@ class LaborBill extends Model
             'period_charges' => 'decimal:2',
             'total_due' => 'decimal:2',
             'is_auto_generated' => 'boolean',
+            'charge_type_ids' => 'array',
             'issued_at' => 'datetime',
             'voided_at' => 'datetime',
         ];
@@ -71,6 +74,21 @@ class LaborBill extends Model
     public function payments()
     {
         return $this->hasMany(LaborBillPayment::class);
+    }
+
+    /**
+     * Ledger entries billed on this bill — itemized/monthly bills only
+     * (a statement bill covers its entries by date range instead).
+     */
+    public function entries()
+    {
+        return $this->hasMany(LaborLedgerEntry::class);
+    }
+
+    /** True for bills that list only their own ticked entries (no brought-forward balance). */
+    public function isItemized(): bool
+    {
+        return in_array($this->bill_type, ['itemized', 'monthly'], true);
     }
 
     public function getTotalPaidAttribute(): float

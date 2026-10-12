@@ -67,7 +67,13 @@
                             data-duplicate-label-terminated="{{ __('Terminated') }}">
                             @csrf
 
-                            @include('employees.partials.create_form_partial_content', ['employers' => $renewalModalAllEmployers])
+                            {{-- 'employer' => null on purpose: renewal/index.blade.php includes this
+                                 modal after `@foreach($employers as $employer)`, so the loop's LAST
+                                 employer leaked in — the form then hid the employer picker and
+                                 silently sent that employer's id. The picker must always show;
+                                 openRenewalAddEmployeeModal() pre-selects it when opened from an
+                                 employer's "+ เพิ่ม" button (set-employer-id event). --}}
+                            @include('employees.partials.create_form_partial_content', ['employers' => $renewalModalAllEmployers, 'employer' => null])
 
                             <div class="mt-4 d-flex justify-content-end">
                                 <button type="submit" class="btn btn-primary">{{ __('Save Employee') }}</button>

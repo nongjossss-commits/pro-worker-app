@@ -1619,119 +1619,14 @@
 
     // --- Operator Toggle ---
     window.toggleOperator = function(employeeId, btn, currentOperatorId, customOperatorName, url) {
-        // Fetch operators first
-        Swal.fire({
-            title: '{{ __("Loading...") }}',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
+        // Shared operator picker — partials/_operator_picker.blade.php (same in every menu)
+        window.assignOperator({
+            url: url || `/production/renewal/{{ $currentTab->id }}/${employeeId}/toggle-operator`,
+            currentId: currentOperatorId || '',
+            currentCustom: customOperatorName || '',
+            button: btn,
+            onSaved: (res) => { if (res.html) updateCardHTML(employeeId, res.html); },
         });
-
-        fetch('{{ route("api-web.operators.list") }}')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) throw new Error('Failed to load operators');
-
-                let operators = data.data;
-                let optionsHtml = `<option value="">-- {{ __("None / Clear Operator") }} --</option>`;
-                optionsHtml += `<option value="external" ${customOperatorName ? 'selected' : ''}>-- ผู้ยื่นภายนอก (พิมพ์ชื่อเอง) --</option>`;
-
-                operators.forEach(op => {
-                    let selected = (op.id == currentOperatorId && !customOperatorName) ? 'selected' : '';
-                    optionsHtml += `<option value="${op.id}" ${selected}>${op.name}</option>`;
-                });
-
-                const htmlContent = `
-                    <div class="form-group text-start">
-                        <label class="form-label mb-2">{{ __("Select Operator") }}</label>
-                        <select id="operator-select-${employeeId}" class="form-select form-select-lg mb-3">
-                            ${optionsHtml}
-                        </select>
-
-                        <div id="custom-operator-container-${employeeId}" style="display: ${customOperatorName ? 'block' : 'none'};">
-                            <label class="form-label mb-2">ระบุชื่อผู้ดำเนินการภายนอก</label>
-                            <input type="text" id="custom-operator-input-${employeeId}" class="form-control form-control-lg" placeholder="พิมพ์ชื่อผู้ดำเนินการ...">
-                        </div>
-                    </div>
-                `;
-
-                Swal.fire({
-                    title: '{{ __("Assign Operator") }}',
-                    html: htmlContent,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: '{{ __("Save") }}',
-                    confirmButtonColor: '#0d6efd',
-                    cancelButtonText: '{{ __("Cancel") }}',
-                    showLoaderOnConfirm: true,
-                    didOpen: () => {
-                        const selectEl = document.getElementById(`operator-select-${employeeId}`);
-                        const containerEl = document.getElementById(`custom-operator-container-${employeeId}`);
-                        const input = document.getElementById(`custom-operator-input-${employeeId}`);
-
-                        if (customOperatorName) {
-                            input.value = customOperatorName;
-                        }
-                        selectEl.addEventListener('change', function() {
-                            if (this.value === 'external') {
-                                containerEl.style.display = 'block';
-                                document.getElementById(`custom-operator-input-${employeeId}`).focus();
-                            } else {
-                                containerEl.style.display = 'none';
-                            }
-                        });
-                    },
-                    preConfirm: () => {
-                        const selectedId = document.getElementById(`operator-select-${employeeId}`).value;
-                        let customName = null;
-
-                        if (selectedId === 'external') {
-                            customName = document.getElementById(`custom-operator-input-${employeeId}`).value.trim();
-                            if (!customName) {
-                                Swal.showValidationMessage('กรุณาระบุชื่อผู้ดำเนินการภายนอก');
-                                return false;
-                            }
-                        }
-
-                        const fetchUrl = url || `/production/renewal/{{ $currentTab->id }}/${employeeId}/toggle-operator`;
-
-                        return fetch(fetchUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            body: JSON.stringify({
-                                operator_id: selectedId === 'external' ? null : selectedId,
-                                custom_operator_name: customName
-                            })
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error(response.statusText);
-                            return response.json();
-                        })
-                        .catch(error => {
-                            Swal.showValidationMessage(`Request failed: ${error}`);
-                        });
-                    },
-                    allowOutsideClick: () => !Swal.isLoading()
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const resData = result.value;
-                        if(resData && resData.success) {
-                            if(resData.html) updateCardHTML(employeeId, resData.html);
-                            if(typeof showToast === 'function') {
-                                showToast(resData.message, 'success');
-                            }
-                        } else {
-                            Swal.fire('{{ __("Error") }}', resData ? resData.message : 'Unknown error', 'error');
-                        }
-                    }
-                });
-            })
-            .catch(err => {
-                Swal.fire('Error', '{{ __("Could not load operators list.") }}', 'error');
-                console.error(err);
-            });
     }
 
     // --- Resolution Status & Note Functions ---

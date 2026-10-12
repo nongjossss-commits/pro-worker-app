@@ -32,6 +32,9 @@ class LaborLedgerController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
         abort_unless($entry->labor_team_id === $team->id, 404);
+        if ($locked = $entry->billLockMessage()) {
+            return back()->withErrors(['entry' => $locked]);
+        }
 
         $validated = $request->validate([
             'entry_date' => ['required', 'date'],
@@ -51,6 +54,9 @@ class LaborLedgerController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
         abort_unless($entry->labor_team_id === $team->id, 404);
+        if ($locked = $entry->billLockMessage()) {
+            return back()->withErrors(['entry' => $locked]);
+        }
 
         // Who deleted it is captured on the audit log entry itself (user_id),
         // not on updated_by — no need for an extra "updated" event first.

@@ -3331,6 +3331,18 @@ class RenewalController extends Controller
      */
     private function getEmployeeCardHtml(Employee $employee, ?\App\Models\EmployeeRenewalLink $renewalLink = null)
     {
+        // A Registration employee listed in this Renewal tab ("dual-listed")
+        // gets its status from its link, not from the employee record (which
+        // says registration_completed). Callers like toggleOperator() don't
+        // pass the link, so the returned card fell back to the employee's own
+        // status and showed as "completed" (green) — look the link up here.
+        if (!$renewalLink) {
+            $renewalLink = \App\Models\EmployeeRenewalLink::where('employee_id', $employee->id)
+                ->where('resolution_tab_id', $this->currentTab->id)
+                ->first();
+        }
+        $this->prepareEmployeeForCard($employee, 'renewal');
+
         $steps = RegistrationStep::renewal()
             ->where('resolution_tab_id', $this->currentTab->id)
             ->orderBy('order')->get();
@@ -3410,9 +3422,17 @@ class RenewalController extends Controller
             }
         }
 
+        $employee->load('operator');
+
         return response()->json([
             'success' => true,
             'message' => $message,
+            'operator' => [
+                'id' => $employee->operator_id,
+                'name' => $employee->operator?->name,
+                'custom' => $employee->custom_operator_name,
+                'is_me' => $employee->operator_id === auth()->id(),
+            ],
             'html' => $this->getEmployeeCardHtml($employee)
         ]);
     }

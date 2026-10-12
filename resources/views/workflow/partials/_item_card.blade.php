@@ -86,11 +86,14 @@
         }
     }
 
-    // Operator Logic
+    // Operator Logic — a user, or a typed outside name (custom_operator_name),
+    // same as the Registration / Renewal / Pre-Production cards.
     $operator = $item->operator; // Relation must be loaded or accessible
-    $operatorName = $operator ? $operator->name : null;
+    $customOperatorName = $item->custom_operator_name;
+    $operatorName = $customOperatorName ? $customOperatorName . ' (ภายนอก)' : ($operator ? $operator->name : null);
     $operatorId = $item->operator_id;
     $isMe = $operatorId === auth()->id();
+    $operatorBtnClass = $customOperatorName ? 'btn-info text-dark' : ($operatorId ? ($isMe ? 'btn-primary' : 'btn-secondary') : 'btn-outline-secondary');
 @endphp
 
 <div class="d-flex align-items-center item-card-outer mb-3 {{ $isCancelled ? 'status-cancelled' : '' }}"
@@ -103,10 +106,10 @@
 
     {{-- Operator Badge (Bottom Right) --}}
     <div class="position-absolute bottom-0 end-0 m-2 z-index-10">
-        <button class="btn btn-sm {{ $operatorId ? ($isMe ? 'btn-primary' : 'btn-secondary') : 'btn-outline-secondary' }} rounded-pill shadow-sm py-0 px-2"
+        <button class="btn btn-sm {{ $operatorBtnClass }} rounded-pill shadow-sm py-0 px-2"
                 style="font-size: 0.75rem; border-width: 1px;"
                 @hasanyrole('super-admin|admin|staff')
-                onclick="window.toggleOperator ? window.toggleOperator({{ $item->id }}, this, {{ $operatorId ? 'true' : 'false' }}) : console.error('toggleOperator not defined')"
+                onclick="window.toggleOperator ? window.toggleOperator({{ $item->id }}, this, '{{ $operatorId ?? '' }}', {{ \Illuminate\Support\Js::from($customOperatorName ?? '') }}) : console.error('toggleOperator not defined')"
                 title="{{ $operatorName ? 'Operator: '.$operatorName : 'Click to Assign' }}"
                 @else
                 disabled

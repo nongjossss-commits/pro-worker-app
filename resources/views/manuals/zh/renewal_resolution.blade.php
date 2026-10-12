@@ -145,6 +145,9 @@
 <div class="manual-tip">
     <strong>发送到 LINE 聊天：</strong>将卡片上的 <i class="bi bi-grid-3x2-gap-fill"></i> 按钮拖入聊天，或点击以复制文本 / 卡片图片 / 分享 —— 详见雇员菜单手册第 11 节
 </div>
+<div class="manual-tip">
+    <strong>经办人（卡片右下角的 <i class="bi bi-person-badge-fill"></i> 按钮）：</strong>选择系统用户，或选择"外部人员（自行输入姓名）"并输入姓名，或选择"无"以清除——在登记、续期（所有标签）、Pre-Production 和 Workflow 中操作相同 · 自行输入的姓名显示"(外部)" · 选择经办人不会改变卡片状态
+</div>
 
 <h4><i class="bi bi-question-circle me-2"></i>常见问题</h4>
 <dl>

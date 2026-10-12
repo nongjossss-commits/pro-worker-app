@@ -80,17 +80,37 @@ class LaborContractController extends Controller
     }
 
     /**
-     * The same "sees every team's contracts, or only their own issuances"
-     * split used by index()'s query scope, applied here so a direct-URL
-     * visit to another team's contract can't bypass that list-level
-     * filtering. See index()'s $seesAllTeams for why this exact role list.
+     * The same visibility rule as index()'s list (scopeVisibleContracts()),
+     * applied here so a direct-URL visit to a contract outside it can't
+     * bypass that list-level filtering.
      */
     protected function assertCanAccessContract(ProWorkerContract $contract): void
     {
         $user = Auth::user();
-        $seesAllTeams = $user->seesAllLaborTeams();
 
-        abort_if(!$seesAllTeams && $contract->issued_by !== $user->id, 403);
+        abort_unless($this->scopeVisibleContracts(ProWorkerContract::whereKey($contract->id), $user)->exists(), 403);
+    }
+
+    /**
+     * Who sees which contracts — the one rule shared by index(),
+     * bulkDownload() and assertCanAccessContract():
+     *   - seesAllLaborTeams() roles: every contract;
+     *   - a team lead (labor-team position) with a team: every contract
+     *     issued within their team, whoever issued it;
+     *   - everyone else (e.g. labor-member): only their own issuances.
+     * Editing stays issuer-only (assertCanEditContract()).
+     */
+    protected function scopeVisibleContracts($query, $user)
+    {
+        if ($user->seesAllLaborTeams()) {
+            return $query;
+        }
+
+        if ($user->hasLaborPosition('labor-team') && $user->labor_team_id) {
+            return $query->where('labor_team_id', $user->labor_team_id);
+        }
+
+        return $query->where('issued_by', $user->id);
     }
 
     /**
@@ -350,9 +370,7 @@ class LaborContractController extends Controller
         $query = ProWorkerContract::with(['issuer', 'team', 'template'])->latest('issued_at');
 
         $seesAllTeams = $user->seesAllLaborTeams();
-        if (!$seesAllTeams) {
-            $query->where('issued_by', $user->id);
-        }
+        $this->scopeVisibleContracts($query, $user);
 
         if ($request->filled('q')) {
             $search = '%' . trim($request->input('q')) . '%';
@@ -402,10 +420,9 @@ class LaborContractController extends Controller
      * without touching that Employee-only code at all.
      *
      * Re-runs index()'s own exact visibility scope against the submitted
-     * ids (never trusts the client's checkbox selection alone) — a
-     * $seesAllTeams role may bulk-download any contract, everyone else
-     * only their own issuances, identical to what index() lets them see
-     * and select in the first place.
+     * ids (never trusts the client's checkbox selection alone) — see
+     * scopeVisibleContracts(), identical to what index() lets them see and
+     * select in the first place.
      */
     public function bulkDownload(Request $request)
     {
@@ -416,12 +433,8 @@ class LaborContractController extends Controller
         ]);
 
         $user = Auth::user();
-        $seesAllTeams = $user->seesAllLaborTeams();
 
-        $query = ProWorkerContract::whereIn('id', $request->input('ids'));
-        if (!$seesAllTeams) {
-            $query->where('issued_by', $user->id);
-        }
+        $query = $this->scopeVisibleContracts(ProWorkerContract::whereIn('id', $request->input('ids')), $user);
 
         $variant = $request->input('variant');
         if ($variant === 'signed') {
@@ -510,10 +523,9 @@ class LaborContractController extends Controller
      * ยอดของคนอื่นหรือมากกว่าสิทธิ์ที่ตัวเองได้มอบหมาย"):
      *   - $seesAllTeams roles (super-admin/admin/labor-accounting/
      *     labor-shareholder): one row PER TEAM, every team.
-     *   - labor-team (a team lead): one row for their WHOLE team — wider
-     *     than the individual contract rows the list itself still shows
-     *     them (scoped to issued_by = own id, unchanged) — deliberately,
-     *     per the user's explicit "หัวหน้าทีมเห็นยอดรวมทั้งทีม" instruction.
+     *   - labor-team (a team lead): one row for their WHOLE team, matching
+     *     the list, which shows them every contract issued in their team
+     *     ("หัวหน้าทีมเห็นสัญญาทั้งทีม", 2026-10-12).
      *   - everyone else (e.g. labor-member): their own issuances only,
      *     matching the list's existing issued_by scope exactly.
      */

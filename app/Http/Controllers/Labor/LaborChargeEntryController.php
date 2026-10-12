@@ -184,6 +184,9 @@ class LaborChargeEntryController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
         abort_unless($entry->labor_charge_type_id !== null, 404);
+        if ($locked = $entry->billLockMessage()) {
+            return $this->billLockedResponse($request, $locked);
+        }
 
         if ($duplicate = $this->findDuplicateRequestNumber($request->input('request_number'), $entry->id)) {
             return $this->duplicateResponse($request, $duplicate);
@@ -295,6 +298,16 @@ class LaborChargeEntryController extends Controller
             ->first();
     }
 
+    /** Entry is on an active itemized/monthly bill — see LaborLedgerEntry::billLockMessage(). */
+    protected function billLockedResponse(Request $request, string $message)
+    {
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $message, 'errors' => ['entry' => [$message]]], 422);
+        }
+
+        return back()->withErrors(['entry' => $message]);
+    }
+
     protected function duplicateResponse(Request $request, LaborLedgerEntry $duplicate)
     {
         $existing = [
@@ -327,6 +340,9 @@ class LaborChargeEntryController extends Controller
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
         abort_unless($entry->labor_charge_type_id !== null, 404);
+        if ($locked = $entry->billLockMessage()) {
+            return $this->billLockedResponse($request, $locked);
+        }
 
         $entry->delete();
 

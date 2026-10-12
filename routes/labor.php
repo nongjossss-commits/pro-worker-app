@@ -88,6 +88,12 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         // set on the team's own page). See LaborBillService for what "billed" means.
         Route::get('/bills', [LaborBillController::class, 'index'])->name('bills.index');
         Route::post('/bills', [LaborBillController::class, 'store'])->name('bills.store');
+        // Itemized bills (ticked, not-yet-billed entries) and the monthly
+        // per-member charge bill — declared before /bills/{bill}.
+        Route::get('/bills/unbilled', [LaborBillController::class, 'unbilled'])->name('bills.unbilled');
+        Route::post('/bills/itemized', [LaborBillController::class, 'storeItemized'])->name('bills.itemized.store');
+        Route::get('/bills/monthly-defaults', [LaborBillController::class, 'monthlyDefaults'])->name('bills.monthly.defaults');
+        Route::post('/bills/monthly', [LaborBillController::class, 'storeMonthly'])->name('bills.monthly.store');
         Route::get('/bills/{bill}', [LaborBillController::class, 'show'])->name('bills.show');
         Route::get('/bills/{bill}/download', [LaborBillController::class, 'download'])->name('bills.download');
         Route::post('/bills/{bill}/void', [LaborBillController::class, 'void'])->name('bills.void');
