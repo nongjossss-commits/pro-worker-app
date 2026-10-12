@@ -105,7 +105,8 @@
         'callouts' => [
             '<strong>Preview 🔍 button:</strong> view read-only data',
             '<strong>Stats:</strong> number of active + terminated employees, broken down by nationality',
-            '<strong>Active employee list:</strong> the first 10, paginated',
+            '<strong>Profile header:</strong> employer name, ID, tax ID, worker count + company certificate expiry (red/yellow/green)',
+            '<strong>Tabs:</strong> Employer Information · Contact · Signatories · Attached Documents · Addresses · Employee Summary — the header stays put, no jumping between tabs',
         ],
     ])
 

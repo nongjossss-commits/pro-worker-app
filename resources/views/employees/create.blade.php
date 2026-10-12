@@ -37,7 +37,7 @@
 
         @include('employees.partials.create_form_partial_content')
 
-        <div class="mt-4 d-flex justify-content-end">
+        <div class="mt-4 d-flex justify-content-end rec-savebar">
             <a href="{{ isset($employer) ? route('employers.edit', $employer->id) : route('employees.index') }}" class="btn btn-secondary me-2">{{ __('Cancel') }}</a>
             <button type="submit" class="btn btn-primary">{{ __('Save Employee Data') }}</button>
         </div>

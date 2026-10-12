@@ -2617,5 +2617,6 @@
     "To date": "ถึงวันที่",
     "to": "ถึง",
     "No charges match this filter.": "ไม่มีรายการตามตัวกรองนี้",
-    "Only the ticked items are billed, without a brought-forward balance. Billed items can be viewed but not ticked again unless their bill is voided.": "วางบิลเฉพาะรายการที่ติ๊ก ไม่มียอดยกมา · รายการที่วางบิลแล้วดูได้แต่ติ๊กซ้ำไม่ได้ เว้นแต่บิลนั้นถูกยกเลิก"
+    "Only the ticked items are billed, without a brought-forward balance. Billed items can be viewed but not ticked again unless their bill is voided.": "วางบิลเฉพาะรายการที่ติ๊ก ไม่มียอดยกมา · รายการที่วางบิลแล้วดูได้แต่ติ๊กซ้ำไม่ได้ เว้นแต่บิลนั้นถูกยกเลิก",
+    "Passport, Work Permit & Visa": "พาสปอร์ต ใบอนุญาตทำงาน และวีซ่า"
 }

@@ -128,6 +128,30 @@
     <input type="hidden" name="source_employer_id" value="{{ request('employer_id') }}">
 @endif
 
+{{-- Tabs: one section per tab, no scrolling (see partials/_record_tabs). --}}
+<div class="rec-tabs" data-rec-tabs data-error-fields="{{ json_encode($errors->keys()) }}">
+    <div class="rec-tabs-nav" role="tablist">
+        <button type="button" class="rec-tab active" data-rec-tab="personal" role="tab">
+            <i class="bi bi-person-badge"></i><span>{{ __('Personal Information') }}</span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="passport" role="tab">
+            <i class="bi bi-passport"></i><span>{{ __('Passport & Visa') }}</span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="employment" role="tab">
+            <i class="bi bi-briefcase-fill"></i><span>{{ __('Employment & Work IDs') }}</span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="insurance" role="tab">
+            <i class="bi bi-heart-pulse"></i><span>{{ __('Health Insurance') }}</span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="login" role="tab">
+            <i class="bi bi-lock-fill"></i><span>{{ __('Login Information') }}</span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="files" role="tab">
+            <i class="bi bi-paperclip"></i><span>{{ __('Attached Files') }}</span><span class="rec-tab-alert"></span>
+        </button>
+    </div>
+
+<div class="rec-tab-pane active" data-rec-pane="personal">
 {{-- Category 1: Personal Information --}}
 <h5><i class="bi bi-person-badge"></i> 1. ข้อมูลส่วนตัว (Personal Information)</h5>
 <hr class="mb-4">
@@ -261,6 +285,9 @@
     </div>
 </div>
 
+</div>{{-- /pane --}}
+
+<div class="rec-tab-pane" data-rec-pane="passport">
 {{-- Category 3: Passport & Visa --}}
 <h5 class="mt-4"><i class="bi bi-passport"></i> 3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)</h5>
 <hr class="mb-4">
@@ -309,6 +336,9 @@
     </div>
 </div>
 
+</div>{{-- /pane --}}
+
+<div class="rec-tab-pane" data-rec-pane="employment">
 {{-- Category 4: Employment & Work IDs --}}
 <h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> 4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)</h5>
 <hr class="mb-4">
@@ -377,6 +407,9 @@
 </div>
 
 
+</div>{{-- /pane --}}
+
+<div class="rec-tab-pane" data-rec-pane="insurance">
 {{-- Category 5: Health Insurance --}}
 <h5 class="mt-4"><i class="bi bi-heart-pulse"></i> 5. ข้อมูลประกันสุขภาพ (Health Insurance)</h5>
 <hr class="mb-4">
@@ -476,6 +509,9 @@
 </div>
 
 
+</div>{{-- /pane --}}
+
+<div class="rec-tab-pane" data-rec-pane="login">
 {{-- Category 6: Login Information --}}
 <h5 class="mt-4"><i class="bi bi-lock-fill"></i> 6. ข้อมูลการเข้าสู่ระบบ (Login Information)</h5>
 <hr class="mb-4">
@@ -494,6 +530,9 @@
     </div>
 </div>
 
+</div>{{-- /pane --}}
+
+<div class="rec-tab-pane" data-rec-pane="files">
 {{-- Category 7: File Attachments --}}
 <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
 <hr class="mb-4">
@@ -533,3 +572,5 @@
         </div>
     @endfor
 </div>
+</div>{{-- /pane --}}
+</div>{{-- /rec-tabs --}}

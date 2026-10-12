@@ -61,7 +61,7 @@
         'callouts' => [
             '<strong>Select Employer:</strong> an employee must always be linked to an employer',
             '<strong>Required fields:</strong> name, nationality, passport',
-            '<strong>Tabs:</strong> General Info → Passport/Visa → Documents → Photo',
+            '<strong>Tabs:</strong> Personal Information → Passport & Visa → Employment → Health Insurance → Login → Attached Files · the Save button sits at the bottom on every tab',
             '<strong>Document Scanner:</strong> take a photo directly from the camera into the system',
         ],
     ])
@@ -90,12 +90,12 @@
     @include('manuals.training._screenshot', [
         'src' => 'employees/03-edit-employee',
         'alt' => 'Employee edit page with data and document tabs',
-        'caption' => 'Employee Edit Page — Personal, Documents, History tabs',
+        'caption' => 'Employee Edit Page — profile header + one tab per category, no scrolling',
         'callouts' => [
-            '<strong>Personal:</strong> name, address, nationality, date of birth',
-            '<strong>Documents:</strong> passport, visa, work permit + upload PDF/image',
+            '<strong>Profile header:</strong> photo, name, employer + expiry badges (red = expired · yellow = expiring soon · green = valid)',
+            '<strong>Tabs:</strong> Personal Information · Passport & Visa · Employment · Health Insurance · Login · Attached Files (number = files attached)',
             '<strong>Other Documents:</strong> 10 slots for extra documents (default labels set in Super Admin)',
-            '<strong>History tab:</strong> view the change history + activity log',
+            '<strong>Save:</strong> at the bottom on every tab · a wrong/missing field opens its tab + red dot on the tab',
         ],
     ])
 
@@ -126,7 +126,8 @@
         'callouts' => [
             '<strong>Preview 🔍 button:</strong> on every employee card, on every page',
             '<strong>Read-only:</strong> viewable but not editable',
-            '<strong>Covers:</strong> Personal, passport, visa, documents, photo',
+            '<strong>Profile header + tabs:</strong> Personal · Passport/Work Permit/Visa · Employment · Insurance · Attached Files',
+            '<strong>Expiry badges:</strong> see at a glance which documents have expired or are about to',
         ],
     ])
 

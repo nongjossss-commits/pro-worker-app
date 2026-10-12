@@ -59,6 +59,8 @@
         padding: 6px 0 4px;
         z-index: 2;
     }
+    /* Inside the tabs the tab bar is what sticks, not the section headers. */
+    .empr-preview .rec-tab-pane .preview-section-header { position: static; background: transparent; }
     .empr-preview .empr-address-card {
         border: 1px solid #e5e7eb;
         border-radius: 8px;
@@ -132,10 +134,26 @@
         }
         return '<span class="preview-value">' . e($v) . '</span>';
     };
+    $empDocCount = collect(['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'])
+        ->filter(fn ($f) => !empty($employer->{$f}))->count();
 @endphp
 
-<div class="empr-preview">
+<div class="empr-preview rec-fixed">
 
+    @include('employers.partials._profile_header', ['employer' => $employer, 'stats' => $stats ?? null])
+
+    {{-- Tabs in a fixed frame: header + tab bar stay put, only the content scrolls (see partials/_record_tabs). --}}
+    <div class="rec-tabs" data-rec-tabs>
+    <div class="rec-tabs-nav" role="tablist">
+        <button type="button" class="rec-tab active" data-rec-tab="info" role="tab"><i class="bi bi-building"></i><span>{{ __('Employer Information') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="contact" role="tab"><i class="bi bi-telephone"></i><span>{{ __('Contact & External Systems') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="signers" role="tab"><i class="bi bi-pen"></i><span>{{ __('Authorized Signatories') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="docs" role="tab"><i class="bi bi-paperclip"></i><span>{{ __('Employer Attached Documents') }}</span>@if($empDocCount)<span class="rec-tab-count">{{ $empDocCount }}</span>@endif</button>
+        <button type="button" class="rec-tab" data-rec-tab="addresses" role="tab"><i class="bi bi-geo-alt"></i><span>{{ __('Addresses') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="employees" role="tab"><i class="bi bi-people"></i><span>{{ __('Employee Summary') }}</span></button>
+    </div>
+
+    <div class="rec-tab-pane active" data-rec-pane="info">
     {{-- ================== SECTION 1: Identity ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Employer Information') }}</h6>
@@ -193,8 +211,9 @@
         </div>
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane --}}
 
+    <div class="rec-tab-pane" data-rec-pane="contact">
     {{-- ================== SECTION 2: Contact + Credentials ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Contact & External Systems') }}</h6>
@@ -226,8 +245,9 @@
         </div>
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane --}}
 
+    <div class="rec-tab-pane" data-rec-pane="signers">
     {{-- ================== SECTION 3: Signers ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Authorized Signatories') }}</h6>
@@ -251,8 +271,9 @@
         </div>
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane --}}
 
+    <div class="rec-tab-pane" data-rec-pane="docs">
     {{-- ================== SECTION 4: Documents ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Employer Attached Documents') }}</h6>
@@ -325,8 +346,9 @@
         @endforeach
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane --}}
 
+    <div class="rec-tab-pane" data-rec-pane="addresses">
     {{-- ================== SECTION 5: Addresses ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Addresses') }}</h6>
@@ -364,8 +386,9 @@
         </div>
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane --}}
 
+    <div class="rec-tab-pane" data-rec-pane="employees">
     {{-- ================== SECTION 6: Employee Stats ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Employee Summary') }}</h6>
@@ -414,4 +437,6 @@
             @endif
         </div>
     </div>
+    </div>{{-- /pane --}}
+    </div>{{-- /rec-tabs --}}
 </div>

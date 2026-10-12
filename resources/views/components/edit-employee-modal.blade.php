@@ -143,6 +143,11 @@
         .then(response => {
             if (response.status === 422) {
                 return response.json().then(data => {
+                    // Red dot on the tabs holding the rejected fields; open the first one.
+                    const tabs = form.querySelector('[data-rec-tabs]');
+                    if (tabs && data.errors && window.RecordTabs) {
+                        window.RecordTabs.markErrors(tabs, Object.keys(data.errors));
+                    }
                     const errors = data.errors ? Object.values(data.errors).flat() : [data.message || 'Validation failed'];
                     throw new Error(errors.join('\n'));
                 });

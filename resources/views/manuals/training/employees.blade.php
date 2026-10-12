@@ -61,7 +61,7 @@
         'callouts' => [
             '<strong>เลือก Employer:</strong> ลูกจ้างต้องผูกกับนายจ้างเสมอ',
             '<strong>Required fields:</strong> ชื่อ, สัญชาติ, passport',
-            '<strong>Tabs:</strong> ข้อมูลทั่วไป → Passport/Visa → เอกสาร → รูปถ่าย',
+            '<strong>แท็บ:</strong> ข้อมูลส่วนตัว → พาสปอร์ตและวีซ่า → การจ้างงาน → ประกันสุขภาพ → เข้าสู่ระบบ → ไฟล์แนบ · ปุ่มบันทึกอยู่ล่างจอทุกแท็บ',
             '<strong>Document Scanner:</strong> ถ่ายรูปจากกล้องเข้าระบบได้เลย',
         ],
     ])
@@ -90,12 +90,12 @@
     @include('manuals.training._screenshot', [
         'src' => 'employees/03-edit-employee',
         'alt' => 'หน้าแก้ไขลูกจ้างพร้อมแท็บข้อมูลและเอกสาร',
-        'caption' => 'หน้าแก้ไขลูกจ้าง — แท็บ Personal, Documents, History',
+        'caption' => 'หน้าแก้ไขลูกจ้าง — หัวโปรไฟล์ + แท็บแยกหมวด ไม่ต้องเลื่อนหา',
         'callouts' => [
-            '<strong>Personal:</strong> ชื่อ, ที่อยู่, สัญชาติ, วันเกิด',
-            '<strong>Documents:</strong> passport, visa, work permit + upload PDF/รูป',
+            '<strong>หัวโปรไฟล์:</strong> รูป ชื่อ นายจ้าง + ป้ายวันหมดอายุ (แดง = หมดแล้ว · เหลือง = ใกล้หมด · เขียว = ปกติ)',
+            '<strong>แท็บ:</strong> ข้อมูลส่วนตัว · พาสปอร์ตและวีซ่า · การจ้างงาน · ประกันสุขภาพ · เข้าสู่ระบบ · ไฟล์แนบ (ตัวเลข = จำนวนไฟล์)',
             '<strong>Other Documents:</strong> 10 slots สำหรับเอกสารเสริม (ตั้งชื่อ default ใน Super Admin)',
-            '<strong>History tab:</strong> ดูประวัติการเปลี่ยนแปลง + activity log',
+            '<strong>บันทึก:</strong> ปุ่มอยู่ล่างจอทุกแท็บ · ช่องที่ผิด/ขาด → เปิดแท็บนั้นให้ + จุดแดงที่แท็บ',
         ],
     ])
 
@@ -126,7 +126,8 @@
         'callouts' => [
             '<strong>ปุ่ม Preview 🔍:</strong> อยู่ที่การ์ดลูกจ้างทุกหน้า',
             '<strong>Read-only:</strong> ดูได้แต่แก้ไม่ได้',
-            '<strong>ครอบคลุม:</strong> Personal, passport, visa, เอกสาร, รูป',
+            '<strong>หัวโปรไฟล์ + แท็บ:</strong> ข้อมูลส่วนตัว · พาสปอร์ต/ใบอนุญาต/วีซ่า · การจ้างงาน · ประกัน · ไฟล์แนบ',
+            '<strong>ป้ายวันหมดอายุ:</strong> เห็นทันทีว่าเอกสารไหนหมด/ใกล้หมด',
         ],
     ])
 

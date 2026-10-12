@@ -39,6 +39,20 @@
     </ol>
 </div>
 
+<div class="manual-tip">
+    💡 <strong>新增 / 编辑 / 预览雇员页面已分为标签页</strong> —— 无需向下滚动，直接点击所需标签：
+    <strong>个人信息</strong>(照片、姓名、出生日期、国籍、电话) · <strong>护照和签证</strong> ·
+    <strong>就业与工作ID</strong> · <strong>健康保险</strong> · <strong>登录信息</strong> · <strong>附件</strong>(数字 = 已附文件数)
+    <ul class="mb-0 mt-2">
+        <li>顶部为<strong>资料头</strong> —— 照片、姓名、雇主、国籍、护照号，以及护照 / 签证 / 工作许可 / 90天报告的到期标签：
+            <span class="text-danger">红 = 已过期</span> · <span class="text-warning">黄 = 即将到期(30天；90天报告15天)</span> · <span class="text-success">绿 = 有效</span> · 灰 = 未填写</li>
+        <li><strong>保存</strong>按钮在每个标签页都固定在屏幕底部 —— 一次保存所有标签页</li>
+        <li>如有漏填或填错的字段，系统会自动打开该标签页并显示<strong>红点</strong> · 仍缺少的字段(黄色图标)会在标签上计数</li>
+        <li>在手机上可左右滑动标签栏</li>
+        <li><strong>预览</strong>(🔍 按钮)：资料头和标签栏固定不动，窗口大小不变 —— 切换标签时只有下方内容滑入(内容较长时在框内滚动) · 雇主预览也一样</li>
+    </ul>
+</div>
+
 <h5>2. 批量导入雇员(Excel 批量导入)</h5>
 <div class="manual-step">
     适合雇主一次性引入多名雇员的情况

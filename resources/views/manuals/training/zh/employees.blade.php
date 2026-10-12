@@ -61,7 +61,7 @@
         'callouts' => [
             '<strong>选择雇主:</strong> 雇员必须始终关联一个雇主',
             '<strong>必填字段:</strong> 姓名、国籍、护照',
-            '<strong>标签:</strong> 基本信息 → 护照/签证 → 文件 → 照片',
+            '<strong>标签:</strong> 个人信息 → 护照和签证 → 就业 → 健康保险 → 登录 → 附件 · 每个标签页底部都有保存按钮',
             '<strong>文件扫描:</strong> 可直接用相机拍照上传至系统',
         ],
     ])
@@ -90,12 +90,12 @@
     @include('manuals.training._screenshot', [
         'src' => 'employees/03-edit-employee',
         'alt' => '雇员编辑页面，含信息与文件标签',
-        'caption' => '雇员编辑页面 —— Personal、Documents、History 标签',
+        'caption' => '雇员编辑页面 —— 资料头 + 每类一个标签页，无需滚动',
         'callouts' => [
-            '<strong>Personal:</strong> 姓名、地址、国籍、出生日期',
-            '<strong>Documents:</strong> 护照、签证、工作许可证 + 上传 PDF/图片',
+            '<strong>资料头:</strong> 照片、姓名、雇主 + 到期标签(红 = 已过期 · 黄 = 即将到期 · 绿 = 有效)',
+            '<strong>标签:</strong> 个人信息 · 护照和签证 · 就业 · 健康保险 · 登录 · 附件(数字 = 已附文件数)',
             '<strong>Other Documents:</strong> 10 个插槽用于附加文件(默认名称在 Super Admin 中设置)',
-            '<strong>History 标签:</strong> 查看修改历史 + 操作日志',
+            '<strong>保存:</strong> 每个标签页底部 · 填错/漏填的字段 → 自动打开该标签 + 标签红点',
         ],
     ])
 
@@ -126,7 +126,8 @@
         'callouts' => [
             '<strong>预览 🔍 按钮:</strong> 出现在每个页面的雇员卡片上',
             '<strong>只读:</strong> 只能查看，不能编辑',
-            '<strong>涵盖内容:</strong> Personal、护照、签证、文件、照片',
+            '<strong>资料头 + 标签:</strong> 个人 · 护照/工作许可/签证 · 就业 · 保险 · 附件',
+            '<strong>到期标签:</strong> 一眼看出哪些证件已过期或即将到期',
         ],
     ])
 

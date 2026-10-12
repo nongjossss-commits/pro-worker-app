@@ -117,6 +117,8 @@
         padding: 6px 0 4px;
         z-index: 2;
     }
+    /* Inside the tabs the tab bar is what sticks, not the section headers. */
+    .emp-preview .rec-tab-pane .preview-section-header { position: static; background: transparent; }
     /* Compact attachment buttons on mobile */
     .emp-preview .preview-attach-btn {
         padding: 2px 8px;
@@ -154,24 +156,28 @@
     if ($mouGroupVal === 'อื่นๆ' && $employee->workPermitMOUGroupOther) {
         $mouGroupVal .= ' (' . $employee->workPermitMOUGroupOther . ')';
     }
+
+    $attachedCount = collect(range(1, 18))->filter(fn ($i) => !empty($employee->{'employee_doc_' . $i}))->count();
 @endphp
 
-<div class="emp-preview content-section">
+<div class="emp-preview content-section rec-fixed">
 
-    {{-- ================== SECTION 1: Personal + Photo ================== --}}
+    @include('employees.partials._profile_header', ['employee' => $employee, 'photoLink' => true])
+
+    {{-- Tabs: one section per tab, no scrolling (see partials/_record_tabs). --}}
+    <div class="rec-tabs" data-rec-tabs>
+    <div class="rec-tabs-nav" role="tablist">
+        <button type="button" class="rec-tab active" data-rec-tab="personal" role="tab"><i class="bi bi-person-badge"></i><span>{{ __('Personal Information') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="permits" role="tab"><i class="bi bi-passport"></i><span>{{ __('Passport, Work Permit & Visa') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="employment" role="tab"><i class="bi bi-briefcase-fill"></i><span>{{ __('Employment & Contact') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="insurance" role="tab"><i class="bi bi-heart-pulse"></i><span>{{ __('Insurance') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="files" role="tab"><i class="bi bi-paperclip"></i><span>{{ __('Attached Files') }}</span>@if($attachedCount)<span class="rec-tab-count">{{ $attachedCount }}</span>@endif</button>
+    </div>
+
+    {{-- ================== TAB: Personal ================== --}}
+    <div class="rec-tab-pane active" data-rec-pane="personal">
     <div class="row g-2 mb-1">
-        {{-- Photo column: shrinks on mobile, grows on desktop --}}
-        <div class="col-4 col-sm-3 col-md-3 col-lg-2 preview-photo-wrap">
-            <a href="{{ $employee->photo_url }}" target="_blank" rel="noopener noreferrer">
-                <img src="{{ $employee->photo_url }}" class="preview-photo" alt="Employee Photo">
-            </a>
-        </div>
-
-        {{-- Header info: sits inline with the photo on all screens --}}
-        <div class="col-8 col-sm-9 col-md-9 col-lg-10">
-            <div class="preview-section-header">
-                <h6 class="preview-section-title mb-2">{{ __('Personal Information') }}</h6>
-            </div>
+        <div class="col-12">
             @php
                 // Employer name shows Thai + English when both are recorded so
                 // an English-locale user can still identify the employer even
@@ -251,7 +257,14 @@
         </div>
     </div>
 
+    </div>{{-- /pane personal --}}
+
+    {{-- ================== TAB: Passport, Work Permit & Visa ================== --}}
+    <div class="rec-tab-pane" data-rec-pane="permits">
     {{-- Passport row --}}
+    <div class="preview-section-header">
+        <h6 class="preview-section-title">{{ __('Passport') }}</h6>
+    </div>
     <div class="row g-2 mb-1">
         <div class="col-6 col-sm-4 col-md-3 preview-field">
             <span class="preview-label">{{ __('Passport No. (Preview)') }}</span>
@@ -274,8 +287,6 @@
             {!! $val($employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : null) !!}
         </div>
     </div>
-
-    <hr class="preview-hr">
 
     {{-- ================== SECTION 2: Work Permit & Visa ================== --}}
     <div class="preview-section-header">
@@ -324,8 +335,10 @@
         </div>
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane permits --}}
 
+    {{-- ================== TAB: Employment & Contact (+ official documents) ================== --}}
+    <div class="rec-tab-pane" data-rec-pane="employment">
     {{-- ================== SECTION 3: Job & Contact ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Employment & Contact') }}</h6>
@@ -414,8 +427,10 @@
         </div>
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane employment --}}
 
+    {{-- ================== TAB: Insurance ================== --}}
+    <div class="rec-tab-pane" data-rec-pane="insurance">
     {{-- ================== SECTION 5: Insurance ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Insurance') }}</h6>
@@ -499,8 +514,10 @@
         </div>
     </div>
 
-    <hr class="preview-hr">
+    </div>{{-- /pane insurance --}}
 
+    {{-- ================== TAB: Attachments ================== --}}
+    <div class="rec-tab-pane" data-rec-pane="files">
     {{-- ================== SECTION 6: Attachments ================== --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Attached Files') }}</h6>
@@ -555,4 +572,6 @@
             </div>
         @endforeach
     </div>
+    </div>{{-- /pane files --}}
+    </div>{{-- /rec-tabs --}}
 </div>

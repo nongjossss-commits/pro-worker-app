@@ -34,7 +34,7 @@
 
         @include('employees.partials.create_form_partial_content')
 
-        <div class="mt-4 d-flex justify-content-end">
+        <div class="mt-4 d-flex justify-content-end rec-savebar">
             <a href="{{ route('production.registration.operations', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-secondary me-2">ยกเลิก</a>
             <button type="submit" class="btn btn-primary">บันทึกข้อมูลพนักงาน (Registration)</button>
         </div>

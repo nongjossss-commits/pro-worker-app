@@ -1861,6 +1861,7 @@
     @auth
         @include('partials._share_card_scripts')
         @include('partials._operator_picker')
+        @include('partials._record_tabs')
     @endauth
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

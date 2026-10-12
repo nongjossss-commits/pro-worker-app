@@ -13,6 +13,43 @@
     <input type="hidden" name="_previous" value="{{ old('_previous', $returnUrl ?? url()->previous()) }}">
     <input type="hidden" name="employer_id" value="{{ $employee->employer_id }}">
 
+    @php
+        $attachedCount = collect(range(1, 18))->filter(fn ($i) => !empty($employee->{'employee_doc_' . $i}))->count();
+    @endphp
+    @include('employees.partials._profile_header', ['employee' => $employee, 'mirrorPhotoId' => 'edit_employeePhotoPreview'])
+
+    {{-- Tabs: one section per tab, no scrolling (see partials/_record_tabs). --}}
+    <div class="rec-tabs" data-rec-tabs data-error-fields="{{ json_encode($errors->keys()) }}">
+    <div class="rec-tabs-nav" role="tablist">
+        <button type="button" class="rec-tab active" data-rec-tab="personal" role="tab">
+            <i class="bi bi-person-badge"></i><span>{{ __('Personal Information') }}</span>
+            <span class="rec-tab-missing"></span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="passport" role="tab">
+            <i class="bi bi-passport"></i><span>{{ __('Passport & Visa') }}</span>
+            <span class="rec-tab-missing"></span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="employment" role="tab">
+            <i class="bi bi-briefcase-fill"></i><span>{{ __('Employment & Work IDs') }}</span>
+            <span class="rec-tab-missing"></span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="insurance" role="tab">
+            <i class="bi bi-heart-pulse"></i><span>{{ __('Health Insurance') }}</span>
+            <span class="rec-tab-missing"></span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="login" role="tab">
+            <i class="bi bi-lock-fill"></i><span>{{ __('Login Information') }}</span>
+            <span class="rec-tab-missing"></span><span class="rec-tab-alert"></span>
+        </button>
+        <button type="button" class="rec-tab" data-rec-tab="files" role="tab">
+            <i class="bi bi-paperclip"></i><span>{{ __('Attached Files') }}</span>
+            @if($attachedCount)<span class="rec-tab-count">{{ $attachedCount }}</span>@endif
+            <span class="rec-tab-missing"></span><span class="rec-tab-alert"></span>
+        </button>
+    </div>
+
+    <div class="rec-tab-pane active" data-rec-pane="personal">
+
     {{-- Category 1: Personal Information --}}
     <h5><i class="bi bi-person-badge"></i> 1. ข้อมูลส่วนตัว (Personal Information)</h5>
     <hr class="mb-4">
@@ -184,6 +221,9 @@
         </div>
     </div>
 
+    </div>{{-- /pane --}}
+
+    <div class="rec-tab-pane" data-rec-pane="passport">
     {{-- Category 3: Passport & Visa --}}
     <h5 class="mt-4"><i class="bi bi-passport"></i> 3. ข้อมูลหนังสือเดินทางและวีซ่า (Passport & Visa)</h5>
     <hr class="mb-4">
@@ -252,6 +292,9 @@
         </div>
     </div>
 
+    </div>{{-- /pane --}}
+
+    <div class="rec-tab-pane" data-rec-pane="employment">
     {{-- Category 4: Employment & Work IDs --}}
     <h5 class="mt-4"><i class="bi bi-briefcase-fill"></i> 4. ข้อมูลการจ้างงานและเอกสาร (Employment & Work IDs)</h5>
     <hr class="mb-4">
@@ -356,6 +399,9 @@
     </div>
 
 
+    </div>{{-- /pane --}}
+
+    <div class="rec-tab-pane" data-rec-pane="insurance">
     {{-- Category 5: Health Insurance --}}
     <h5 class="mt-4"><i class="bi bi-heart-pulse"></i> 5. ข้อมูลประกันสุขภาพ (Health Insurance)</h5>
     <hr class="mb-4">
@@ -460,6 +506,9 @@
         </div>
     </div>
 
+    </div>{{-- /pane --}}
+
+    <div class="rec-tab-pane" data-rec-pane="login">
     {{-- Category 6: Login Information --}}
     <h5 class="mt-4"><i class="bi bi-lock-fill"></i> 6. ข้อมูลการเข้าสู่ระบบ (Login Information)</h5>
     <hr class="mb-4">
@@ -486,6 +535,9 @@
         </div>
     </div>
 
+    </div>{{-- /pane --}}
+
+    <div class="rec-tab-pane" data-rec-pane="files">
     {{-- Category 7: File Attachments --}}
     <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
     <hr class="mb-4">
@@ -520,7 +572,10 @@
     </div>
 
 
-    <div class="mt-4 d-flex justify-content-end">
+    </div>{{-- /pane --}}
+    </div>{{-- /rec-tabs --}}
+
+    <div class="mt-4 d-flex justify-content-end rec-savebar">
         <button type="button" class="btn btn-secondary me-2 btn-cancel-edit">{{ __('Cancel') }}</button>
         <button type="submit" class="btn btn-primary">{{ __('Save Employee Data') }}</button>
     </div>

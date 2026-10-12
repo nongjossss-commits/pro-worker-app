@@ -39,6 +39,20 @@
     </ol>
 </div>
 
+<div class="manual-tip">
+    💡 <strong>The add / edit / preview employee pages are split into tabs</strong> — no scrolling, just click the tab you need:
+    <strong>Personal Information</strong> (photo, names, date of birth, nationality, phone) · <strong>Passport &amp; Visa</strong> ·
+    <strong>Employment &amp; Work IDs</strong> · <strong>Health Insurance</strong> · <strong>Login Information</strong> · <strong>Attached Files</strong> (the number = files attached)
+    <ul class="mb-0 mt-2">
+        <li>At the top is a <strong>profile header</strong> — photo, name, employer, nationality, passport number and expiry badges for passport / visa / work permit / 90-day report:
+            <span class="text-danger">red = expired</span> · <span class="text-warning">yellow = expiring soon (30 days; 90-day report 15 days)</span> · <span class="text-success">green = valid</span> · grey = not filled in</li>
+        <li>The <strong>Save</strong> button stays at the bottom of the screen on every tab — it saves all tabs at once</li>
+        <li>If a field is missing or wrong, its tab opens automatically and shows a <strong>red dot</strong> · fields still missing (yellow icon) are counted on the tab</li>
+        <li>On a phone, swipe the tab bar left/right</li>
+        <li><strong>Preview</strong> (🔍 button): the profile header and tab bar stay in place and the window keeps its size — switching tabs only slides in the content below (long content scrolls inside the frame) · the employer preview works the same way</li>
+    </ul>
+</div>
+
 <h5>2. Import employees in bulk (Excel Bulk Import)</h5>
 <div class="manual-step">
     Best for employers bringing in many employees at once

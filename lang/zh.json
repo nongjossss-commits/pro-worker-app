@@ -1442,5 +1442,6 @@
     "To date": "结束日期",
     "to": "至",
     "No charges match this filter.": "没有符合此筛选条件的费用",
-    "Only the ticked items are billed, without a brought-forward balance. Billed items can be viewed but not ticked again unless their bill is voided.": "仅对勾选的项目开账单，不含结转余额。已开账单的项目可查看但不能再勾选，除非其账单被作废。"
+    "Only the ticked items are billed, without a brought-forward balance. Billed items can be viewed but not ticked again unless their bill is voided.": "仅对勾选的项目开账单，不含结转余额。已开账单的项目可查看但不能再勾选，除非其账单被作废。",
+    "Passport, Work Permit & Visa": "护照、工作许可和签证"
 }
