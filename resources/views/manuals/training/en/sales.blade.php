@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Sales</strong></li>
+            <li>Sidebar → <strong>Finance &amp; Sales</strong> → <strong>Sales</strong></li>
             <li>View the Kanban board — each column is a customer stage</li>
             <li>Filter by Owner or Search at the top</li>
         </ol>

@@ -30,6 +30,30 @@
 {{-- Employer Info Form --}}
 <div class="content-section">
     <h2 class="mb-4">{{ __('Edit Employer') }}</h2>
+    @php
+        // Filter / pagination / view links reload the page on the employee list.
+        $empListParams = ['search', 'nationality', 'mou_group', 'insurance_type', 'pink_card', 'passport_status', 'visa_status',
+            'passport_type_myanmar', 'passport_type_cambodia', 'work_permit_expiry_date', 'page', 'view', 'per_page'];
+        $initialTab = request()->hasAny($empListParams) ? 'employees' : 'info';
+        $activeEmployeeCount = $employer->employees()->whereNull('terminated_at')->count();
+        $emprAttachedCount = collect(['employer_doc_company', 'employer_doc_lease', 'employer_doc_construction', 'employer_doc_other_1', 'employer_doc_other_2', 'employer_doc_other_3'])
+            ->filter(fn ($f) => !empty($employer->{$f}))->count();
+    @endphp
+    @include('employers.partials._profile_header', ['employer' => $employer, 'stats' => (object) ['total' => $activeEmployeeCount]])
+
+    {{-- Tabs (partials/_record_tabs): the form covers the first four; addresses,
+         employees and history are separate lists with their own actions. --}}
+    <div class="rec-tabs" data-rec-tabs data-rec-initial="{{ $initialTab }}" data-error-fields="{{ json_encode($errors->keys()) }}">
+    <div class="rec-tabs-nav" role="tablist">
+        <button type="button" class="rec-tab active" data-rec-tab="info" role="tab"><i class="bi bi-building"></i><span>{{ __('Employer Info') }}</span><span class="rec-tab-alert"></span></button>
+        <button type="button" class="rec-tab" data-rec-tab="access" role="tab"><i class="bi bi-key"></i><span>{{ __('System Access & Outsource') }}</span><span class="rec-tab-alert"></span></button>
+        <button type="button" class="rec-tab" data-rec-tab="signers" role="tab"><i class="bi bi-pen"></i><span>{{ __('Authorized Signatories & Stamp') }}</span><span class="rec-tab-alert"></span></button>
+        <button type="button" class="rec-tab" data-rec-tab="docs" role="tab"><i class="bi bi-paperclip"></i><span>{{ __('Employer Attachments') }}</span>@if($emprAttachedCount)<span class="rec-tab-count">{{ $emprAttachedCount }}</span>@endif<span class="rec-tab-alert"></span></button>
+        <button type="button" class="rec-tab" data-rec-tab="addresses" role="tab"><i class="bi bi-geo-alt"></i><span>{{ __('Addresses') }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="employees" role="tab"><i class="bi bi-people"></i><span>{{ __('Employees') }}</span><span class="rec-tab-count">{{ $activeEmployeeCount }}</span></button>
+        <button type="button" class="rec-tab" data-rec-tab="history" role="tab"><i class="bi bi-clock-history"></i><span>{{ __('Employment History') }}</span></button>
+    </div>
+
     <form id="employerForm" action="{{ route('employers.update', $employer->id) }}" method="POST" enctype="multipart/form-data"
         data-duplicate-check-url="{{ route('employers.check_duplicate') }}"
         data-duplicate-model-type="employer"
@@ -54,6 +78,7 @@
             </div>
         @endif
 
+        <div class="rec-tab-pane active" data-rec-pane="info">
         <h5>{{ __('Employer Info') }}</h5>
         <hr>
         <div class="row mb-3">
@@ -178,6 +203,27 @@
  </div>
  </div>
 
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="regCapital" class="form-label">{{ __('Registered Capital') }}</label>
+                <input type="text" class="form-control" id="regCapital" name="regCapital" value="{{ old('regCapital', $employer->regCapital) }}">
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label for="regDate" class="form-label">{{ __('Registration Date') }}</label>
+                <input type="date" class="form-control" id="regDate" name="regDate" value="{{ old('regDate', $employer->regDate) }}">
+            </div>
+            <div class="col-md-6">
+                <label for="minimum_wage" class="form-label">{{ __('Minimum Wage') }}</label>
+                <input type="text" class="form-control" id="minimum_wage" name="minimum_wage" value="{{ old('minimum_wage', $employer->minimum_wage) }}">
+            </div>
+        </div>
+
+        </div>{{-- /pane info --}}
+
+        <div class="rec-tab-pane" data-rec-pane="access">
  <!-- System Access Group -->
  <h5 class="mb-3 text-primary mt-4">System Access & Outsource</h5>
         <div class="row mb-3">
@@ -213,6 +259,9 @@
  </div>
  </div>
 
+        </div>{{-- /pane access --}}
+
+        <div class="rec-tab-pane" data-rec-pane="signers">
         <h5 class="mb-3 text-primary mt-4">{{ __('Authorized Signatories & Stamp') }}</h5>
         <!-- Signer 1 -->
         <div class="card bg-light mb-3" x-data="signatureField('signature_1', '{{ $employer->signature_1_path ? Storage::url($employer->signature_1_path) : '' }}')">
@@ -395,112 +444,71 @@
             </div>
         </div>
         @endunless
+        </div>{{-- /pane signers --}}
 
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="regCapital" class="form-label">{{ __('Registered Capital') }}</label>
-                <input type="text" class="form-control" id="regCapital" name="regCapital" value="{{ old('regCapital', $employer->regCapital) }}">
-            </div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="regDate" class="form-label">{{ __('Registration Date') }}</label>
-                <input type="date" class="form-control" id="regDate" name="regDate" value="{{ old('regDate', $employer->regDate) }}">
-            </div>
-            <div class="col-md-6">
-                <label for="minimum_wage" class="form-label">{{ __('Minimum Wage') }}</label>
-                <input type="text" class="form-control" id="minimum_wage" name="minimum_wage" value="{{ old('minimum_wage', $employer->minimum_wage) }}">
-            </div>
-        </div>
-
-        <hr>
+        <div class="rec-tab-pane" data-rec-pane="docs">
         <h5>{{ __('Employer Attachments') }}</h5>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <x-file-input-group
-                    id="employer_doc_company"
-                    name="employer_doc_company"
-                    label="1. {{ __('Company Certificate / ID Card') }}"
-                    :value="$employer->employer_doc_company"
-                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_company'])"
-                />
-            </div>
-            <div class="col-md-6">
-                <label for="employer_doc_company_expiry" class="form-label">{{ __('Expiry Date') }}</label>
-                <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry', $employer->employer_doc_company_expiry) }}">
-                @error('employer_doc_company_expiry')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
+        @php
+            $emprDocs = [
+                ['employer_doc_company', __('Company Certificate / ID Card'), null],
+                ['employer_doc_lease', __('Lease Agreement / House Registration'), null],
+                ['employer_doc_construction', __('Construction Contract / Map'), null],
+                ['employer_doc_other_1', __('Other Document') . ' 1', 'employer_doc_other_1_desc'],
+                ['employer_doc_other_2', __('Other Document') . ' 2', 'employer_doc_other_2_desc'],
+                ['employer_doc_other_3', __('Other Document') . ' 3', 'employer_doc_other_3_desc'],
+            ];
+            $emprAttached = collect($emprDocs)->filter(fn ($d) => !empty($employer->{$d[0]}))->count();
+        @endphp
+        <div class="att-section-title">
+            <i class="bi bi-paperclip"></i>{{ __('Employer Attachments') }}
+            <span class="att-section-count">{{ __('Attached :done/:total', ['done' => $emprAttached, 'total' => count($emprDocs)]) }}</span>
         </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
+        <div class="att-grid att-grid-wide">
+            @foreach($emprDocs as $n => [$field, $docLabel, $descField])
                 <x-file-input-group
-                    id="employer_doc_lease"
-                    name="employer_doc_lease"
-                    label="2. {{ __('Lease Agreement / House Registration') }}"
-                    :value="$employer->employer_doc_lease"
-                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_lease'])"
-                />
-            </div>
-            <div class="col-md-6">
-                <x-file-input-group
-                    id="employer_doc_construction"
-                    name="employer_doc_construction"
-                    label="3. {{ __('Construction Contract / Map') }}"
-                    :value="$employer->employer_doc_construction"
-                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_construction'])"
-                />
-            </div>
+                    variant="card"
+                    :number="$n + 1"
+                    :id="$field"
+                    :name="$field"
+                    :label="$docLabel"
+                    :value="$employer->{$field}"
+                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => $field])"
+                    :description="$descField"
+                    :descriptionValue="$descField ? $employer->{$descField} : null"
+                >
+                    @if($field === 'employer_doc_company')
+                        <div class="att-extra">
+                            <label for="employer_doc_company_expiry" class="text-nowrap mb-0">{{ __('Expiry Date') }}</label>
+                            <input type="date" class="form-control form-control-sm @error('employer_doc_company_expiry') is-invalid @enderror" id="employer_doc_company_expiry" name="employer_doc_company_expiry" value="{{ old('employer_doc_company_expiry', $employer->employer_doc_company_expiry) }}">
+                        </div>
+                        @error('employer_doc_company_expiry')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    @endif
+                </x-file-input-group>
+            @endforeach
         </div>
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <x-file-input-group
-                    id="employer_doc_other_1"
-                    name="employer_doc_other_1"
-                    label="4. {{ __('Other Document') }} 1"
-                    :value="$employer->employer_doc_other_1"
-                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_1'])"
-                    description="employer_doc_other_1_desc"
-                    :descriptionValue="$employer->employer_doc_other_1_desc"
-                />
-            </div>
-            <div class="col-md-4">
-                <x-file-input-group
-                    id="employer_doc_other_2"
-                    name="employer_doc_other_2"
-                    label="5. {{ __('Other Document') }} 2"
-                    :value="$employer->employer_doc_other_2"
-                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_2'])"
-                    description="employer_doc_other_2_desc"
-                    :descriptionValue="$employer->employer_doc_other_2_desc"
-                />
-            </div>
-            <div class="col-md-4">
-                <x-file-input-group
-                    id="employer_doc_other_3"
-                    name="employer_doc_other_3"
-                    label="6. {{ __('Other Document') }} 3"
-                    :value="$employer->employer_doc_other_3"
-                    :pdfRoute="route('employers.documents.pdf', ['employer' => $employer->id, 'field' => 'employer_doc_other_3'])"
-                    description="employer_doc_other_3_desc"
-                    :descriptionValue="$employer->employer_doc_other_3_desc"
-                />
-            </div>
-        </div>
-        <div class="mt-4">
+        </div>{{-- /pane docs --}}
+
+        <div class="d-flex justify-content-end gap-2 rec-savebar" data-rec-only="info access signers docs">
+            {{-- Back to where the edit was opened from (e.g. a preview, which then reopens) — this site's URLs only. --}}
+            @php
+                $cancelUrl = (string) request('return_url');
+                if (!(str_starts_with($cancelUrl, url('/') . '/') || (str_starts_with($cancelUrl, '/') && !str_starts_with($cancelUrl, '//')))) {
+                    $cancelUrl = route('employers.index');
+                }
+            @endphp
+            <a href="{{ $cancelUrl }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
             @can('edit-employers')
             <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> {{ __('Save Employer Info') }}</button>
             @endcan
-            <a href="{{ route('employers.index') }}" class="btn btn-secondary">{{ __('Cancel') }}</a>
         </div>
     </form>
-</div>
 
-<!-- ... Address Lists ... -->
+<div class="rec-tab-pane" data-rec-pane="addresses">
 <div id="addressListsContainer" data-url="{{ route('addresses.thai_data') }}">
     {{-- Registered Address Section --}}
-    <div class="content-section mt-4">
+    <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">{{ __('Registered Address') }}</h5>
             <button type="button" class="btn btn-sm btn-primary add-address-btn"
@@ -551,7 +559,7 @@
     </div>
 
     {{-- Workplace Address Section --}}
-    <div class="content-section mt-4">
+    <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">{{ __('Workplace Address') }}</h5>
             <button type="button" class="btn btn-sm btn-primary add-address-btn"
@@ -603,8 +611,9 @@
 </div>
 
 
-<hr class="my-4">
+</div>{{-- /pane addresses --}}
 
+<div class="rec-tab-pane" data-rec-pane="employees">
 <div id="employee-list-container">
     @php
         $totalEmployees = $employees->total();
@@ -816,6 +825,9 @@
     </div>
 </div>
 
+</div>{{-- /pane employees --}}
+
+<div class="rec-tab-pane" data-rec-pane="history">
 {{-- Employment History Section --}}
 <div class="d-flex justify-content-between align-items-center mt-5">
     <div>
@@ -829,6 +841,10 @@
         <i class="bi bi-clock-history me-2"></i>{{ __('View Employment History') }}
     </button>
 </div>
+
+</div>{{-- /pane history --}}
+    </div>{{-- /rec-tabs --}}
+</div>{{-- /content-section --}}
 
     @include('partials._address_management')
     @include('partials._employee_action_modals')
@@ -1210,6 +1226,12 @@
                             }
                         }
                         errorMsg += '</ul></div>';
+                        // Open the first tab holding a rejected field (red dot on each such tab).
+                        const recTabs = document.querySelector('#employerForm')?.closest('[data-rec-tabs]');
+                        if (recTabs && window.RecordTabs) {
+                            const firstTab = window.RecordTabs.refresh(recTabs);
+                            if (firstTab) window.RecordTabs.activate(recTabs, firstTab);
+                        }
 
                         Swal.fire({
                             icon: 'error',

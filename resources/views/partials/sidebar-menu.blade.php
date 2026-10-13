@@ -1,17 +1,13 @@
+{{-- Main sidebar, grouped into collapsible sections (components/sidebar-group).
+     Each item keeps its own visibility / permission checks; empty groups are hidden. --}}
+
 @if(\App\Facades\SuperAdmin::isVisible('dashboard'))
 @can('view-dashboard')
 <a href="{{ route('dashboard') }}" class="list-group-item list-group-item-action"><i class="bi bi-pie-chart-fill me-2"></i>{{ __('Dashboard') }}</a>
 @endcan
 @endif
 
-@if(\App\Facades\SuperAdmin::isVisible('activity_logs'))
-@hasanyrole('admin|super-admin')
-<a href="{{ route('admin.activity-logs.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
-    <i class="bi bi-activity me-2"></i>{{ __('Activity Logs') }}
-</a>
-@endhasanyrole
-@endif
-
+<x-sidebar-group id="alerts" icon="bi-bell-fill" :label="__('Alerts & Checks')">
 @if(\App\Facades\SuperAdmin::isVisible('notifications'))
 @can('view-notifications')
     <a href="{{ route('notifications.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
@@ -25,7 +21,7 @@
     @endif {{-- End check for notifications --}}
     @if(\App\Facades\SuperAdmin::isVisible('incomplete_data'))
     @can('manage-tickets')
-    <a href="{{ route('admin.incomplete_employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.incomplete_employees.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+    <a href="{{ route('admin.incomplete_employees.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.incomplete_employees.*') ? 'active' : '' }}">
         <div class="d-flex justify-content-between align-items-center">
             <span><i class="bi bi-exclamation-octagon-fill me-2"></i>{{ __('Incomplete Data') }}</span>
             @if(isset($incompleteCount) && $incompleteCount > 0)
@@ -39,7 +35,7 @@
 
 @if(\App\Facades\SuperAdmin::isVisible('duplicate_records'))
 @can('manage-tickets')
-<a href="{{ route('admin.duplicate-records.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.duplicate-records.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+<a href="{{ route('admin.duplicate-records.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.duplicate-records.*') ? 'active' : '' }}">
     <div class="d-flex justify-content-between align-items-center">
         <span><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ __('Duplicate Records') }}</span>
         @if(isset($duplicateRecordCount) && $duplicateRecordCount > 0)
@@ -52,12 +48,22 @@
 
 @if(\App\Facades\SuperAdmin::isVisible('attachment_sizes'))
 @hasanyrole('admin|super-admin')
-<a href="{{ route('admin.attachment-sizes.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.attachment-sizes.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+<a href="{{ route('admin.attachment-sizes.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.attachment-sizes.*') ? 'active' : '' }}">
     <i class="bi bi-hdd-stack-fill me-2"></i>{{ __('Attachment File Sizes') }}
 </a>
 @endhasanyrole
 @endif
 
+@if(\App\Facades\SuperAdmin::isVisible('activity_logs'))
+@hasanyrole('admin|super-admin')
+<a href="{{ route('admin.activity-logs.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.activity-logs.*') ? 'active' : '' }}">
+    <i class="bi bi-activity me-2"></i>{{ __('Activity Logs') }}
+</a>
+@endhasanyrole
+@endif
+</x-sidebar-group>
+
+<x-sidebar-group id="tickets" icon="bi-inbox-fill" :label="__('Tickets')">
 {{-- START V2.4: Smart Ticket Links --}}
 {{-- V2.4: Admin/Staff Ticket Inbox --}}
 {{-- Visible if the user has 'manage-tickets' permission. This takes precedence. --}}
@@ -71,7 +77,7 @@
         @endif
     </div>
 </a>
-<a href="{{ route('admin.tickets.create') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.create') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+<a href="{{ route('admin.tickets.create') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.tickets.create') ? 'active' : '' }}">
     <i class="bi bi-plus-circle me-2"></i>{{ __('Create New Ticket (Admin)') }}
 </a>
 @endif
@@ -92,7 +98,9 @@
 @endif
 @endcan
 {{-- END V2.4: Smart Ticket Links --}}
-<hr>
+</x-sidebar-group>
+
+<x-sidebar-group id="data" icon="bi-database-fill" :label="__('Records')">
 @if(\App\Facades\SuperAdmin::isVisible('employers'))
 @can('view-employers')
 <a href="{{ route('employers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employers.*') ? 'active' : '' }}"><i class="bi bi-person-vcard-fill me-2"></i>{{ __('Employers') }}</a>
@@ -105,18 +113,66 @@
     <i class="bi bi-people-fill me-2"></i>{{ __('Employees') }}
 </a>
 @if(\App\Facades\SuperAdmin::isVisible('employment_history'))
-<a href="{{ route('employees.history') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.history') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+<a href="{{ route('employees.history') }}" class="list-group-item list-group-item-action {{ request()->routeIs('employees.history') ? 'active' : '' }}">
     <i class="bi bi-person-badge me-2"></i>{{ __('Employment History') }}
 </a>
 @endif
 @if(\App\Facades\SuperAdmin::isVisible('group_team'))
-<a href="{{ route('groups.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('groups.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
+<a href="{{ route('groups.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('groups.*') ? 'active' : '' }}">
     <i class="bi bi-people-fill me-2"></i>{{ __('Group & Team') }}
 </a>
 @endif
 @endcan
 @endif
 
+@if(auth()->user()->hasAnyRole(['super-admin', 'admin', 'staff']))
+@if(\App\Facades\SuperAdmin::isVisible('importers'))
+@can('view-importers')
+<a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>{{ __('Importers') }}</a>
+@endcan
+@endif
+@if(\App\Facades\SuperAdmin::isVisible('agents'))
+@can('view-agents')
+<a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>{{ __('Agents') }}</a>
+@endcan
+@endif
+@if(\App\Facades\SuperAdmin::isVisible('delegates'))
+@can('view-delegates')
+<a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>{{ __('Delegates') }}</a>
+@endcan
+@endif
+@endif
+</x-sidebar-group>
+
+<x-sidebar-group id="production" icon="bi-clipboard-data-fill" :label="__('P Production')">
+{{-- V2.4-S14: Production & Workflow Menus --}}
+@hasanyrole('admin|super-admin|staff|caretaker')
+@if(Route::has('production.index'))
+    @if(\App\Facades\SuperAdmin::isVisible('production'))
+    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.*') ? 'active' : '' }}">
+        <i class="bi bi-clipboard-data-fill me-2"></i>{{ __('P Production') }}
+    </a>
+    @endif
+    @if(\App\Facades\SuperAdmin::isVisible('workflow'))
+    <a href="{{ route('workflow.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('workflow.*') ? 'active' : '' }}">
+        <i class="bi bi-diagram-3-fill me-2"></i>{{ __('Workflow') }}
+    </a>
+    @endif
+    @if(\App\Facades\SuperAdmin::isVisible('registration_resolution'))
+    <a href="{{ route('production.registration.redirect') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.registration.*') ? 'active' : '' }}">
+        <i class="bi bi-person-lines-fill me-2"></i>{{ __('Registration Resolution') }}
+    </a>
+    @endif
+    @if(\App\Facades\SuperAdmin::isVisible('renewal_resolution'))
+    <a href="{{ route('production.renewal.redirect') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.renewal.*') ? 'active' : '' }}">
+        <i class="bi bi-arrow-repeat me-2"></i>{{ __('Renewal Resolution') }}
+    </a>
+    @endif
+@endif
+@endhasanyrole
+</x-sidebar-group>
+
+<x-sidebar-group id="finance" icon="bi-cash-stack" :label="__('Finance & Sales')">
 @if(\App\Facades\SuperAdmin::isVisible('finance'))
 @hasanyrole('admin|super-admin')
 @php
@@ -185,51 +241,9 @@
 </a>
 @endif
 @endhasanyrole
+</x-sidebar-group>
 
-{{-- V2.4-S14: Production & Workflow Menus --}}
-@hasanyrole('admin|super-admin|staff|caretaker')
-@if(Route::has('production.index'))
-    @if(\App\Facades\SuperAdmin::isVisible('production'))
-    <a href="{{ route('production.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.*') ? 'active' : '' }}">
-        <i class="bi bi-clipboard-data-fill me-2"></i>{{ __('P Production') }}
-    </a>
-    @endif
-    @if(\App\Facades\SuperAdmin::isVisible('workflow'))
-    <a href="{{ route('workflow.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('workflow.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-        <i class="bi bi-diagram-3-fill me-2"></i>{{ __('Workflow') }}
-    </a>
-    @endif
-    @if(\App\Facades\SuperAdmin::isVisible('registration_resolution'))
-    <a href="{{ route('production.registration.redirect') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.registration.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-        <i class="bi bi-person-lines-fill me-2"></i>{{ __('Registration Resolution') }}
-    </a>
-    @endif
-    @if(\App\Facades\SuperAdmin::isVisible('renewal_resolution'))
-    <a href="{{ route('production.renewal.redirect') }}" class="list-group-item list-group-item-action {{ request()->routeIs('production.renewal.*') ? 'active' : '' }}" style="padding-left: 2.5rem;">
-        <i class="bi bi-arrow-repeat me-2"></i>{{ __('Renewal Resolution') }}
-    </a>
-    @endif
-@endif
-@endhasanyrole
-
-@if(auth()->user()->hasAnyRole(['super-admin', 'admin', 'staff']))
-@if(\App\Facades\SuperAdmin::isVisible('importers'))
-@can('view-importers')
-<a href="{{ route('importers.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('importers.*') ? 'active' : '' }}"><i class="bi bi-box-arrow-in-down-left me-2"></i>{{ __('Importers') }}</a>
-@endcan
-@endif
-@if(\App\Facades\SuperAdmin::isVisible('agents'))
-@can('view-agents')
-<a href="{{ route('agents.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('agents.*') ? 'active' : '' }}"><i class="bi bi-person-square me-2"></i>{{ __('Agents') }}</a>
-@endcan
-@endif
-@if(\App\Facades\SuperAdmin::isVisible('delegates'))
-@can('view-delegates')
-<a href="{{ route('delegates.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('delegates.*') ? 'active' : '' }}"><i class="bi bi-people-fill me-2"></i>{{ __('Delegates') }}</a>
-@endcan
-@endif
-@endif
-
+<x-sidebar-group id="system" icon="bi-gear-wide-connected" :label="__('Settings & System')">
 @if(\App\Facades\SuperAdmin::isVisible('user_management'))
 @can('manage-users')
 <a href="{{ route('admin.users.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"><i class="bi bi-person-fill-gear me-2"></i>{{ __('User Management') }}</a>
@@ -239,10 +253,6 @@
 {{-- "Roles & Permissions" menu removed — merged into User Management page
      bottom section (still reachable via /admin/roles-permissions direct link
      for any existing bookmarks). --}}
-
-@canany(['manage-roles', 'manage-settings', 'view-pdf-templates'])
-<hr>
-@endcanany
 
 @if(\App\Facades\SuperAdmin::isVisible('pdf_templates'))
 @can('view-pdf-templates')
@@ -260,18 +270,18 @@
 @endcan
 @endif
 
+@role('super-admin')
+<a class="list-group-item list-group-item-action {{ request()->routeIs('super-admin.settings.index') ? 'active' : '' }}" href="{{ route('super-admin.settings.index') }}">
+    <i class="bi bi-gear-fill me-2"></i>
+    {{ __('Super Admin Settings') }}
+</a>
+@endrole
+</x-sidebar-group>
+
 @if(\App\Facades\SuperAdmin::isVisible('pro_walker_labour') && (auth()->user()->hasRole('super-admin') || (auth()->user()->hasRole('admin') && auth()->user()->labor_access_level !== 'none')))
-<hr>
 <a class="list-group-item list-group-item-action {{ request()->routeIs('labor.*') ? 'active' : '' }}" href="{{ route('labor.dashboard') }}">
     <i class="bi bi-briefcase-fill me-2"></i>
     {{ __('Pro Walker Labour') }}
 </a>
 @endif
 
-@role('super-admin')
-<hr>
-<a class="list-group-item list-group-item-action {{ request()->routeIs('super-admin.settings.index') ? 'active' : '' }}" href="{{ route('super-admin.settings.index') }}">
-    <i class="bi bi-gear-fill me-2"></i>
-    {{ __('Super Admin Settings') }}
-</a>
-@endrole

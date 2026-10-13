@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar (Employer) → <strong>Employer Ticket</strong> or "+ New Ticket"</li>
+            <li>Sidebar (Employer) → <strong>Tickets</strong> → <strong>Employer Ticket</strong> or "+ New Ticket"</li>
             <li>Select the type + the employee</li>
             <li>Fill in the details + attach documents</li>
             <li>Click Submit → the office receives a notification immediately</li>

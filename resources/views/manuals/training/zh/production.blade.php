@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>Pre-Production</strong></li>
+            <li>侧边栏 → <strong>P Production (生产)</strong> → <strong>Pre-Production</strong></li>
             <li>查看顶部的统计摘要卡片</li>
             <li>使用筛选器按雇主或负责人缩小范围</li>
         </ol>

@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Incomplete Data</strong></li>
+            <li>Sidebar → <strong>Alerts &amp; Checks</strong> → <strong>Incomplete Data</strong></li>
             <li>See which employees have missing data + which fields</li>
             <li>Click Edit → go to the employee's page → fill in the data</li>
             <li>Come back and check again — the entry disappears once the data is complete</li>

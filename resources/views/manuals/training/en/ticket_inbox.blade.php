@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Ticket Inbox</strong></li>
+            <li>Sidebar → <strong>Tickets</strong> → <strong>Ticket Inbox</strong></li>
             <li>Click a ticket to open it</li>
             <li>Click "Assign to..." → select the responsible staff member</li>
             <li>Update the status as work progresses</li>

@@ -422,6 +422,7 @@
     <div class="row">
         <div class="col-md-6 mb-3">
             <x-file-input-group
+                variant="card"
                 id="edit_medical_certificate_path"
                 name="medical_certificate_path"
                 :label="__('Medical Certificate')"
@@ -495,8 +496,9 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-4 mb-3">
+        <div class="col-md-6 mb-3">
             <x-file-input-group
+                variant="card"
                 id="edit_insurance_document_path_private"
                 name="insurance_document_path_private"
                 :label="__('Attach Insurance Document')"
@@ -551,25 +553,35 @@
         ];
         $descSlots = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
     @endphp
-    <div class="row">
-        @foreach($docSlots as $i => $label)
-            @php
-                $docField = 'employee_doc_' . $i;
-                $descField = 'other_doc_' . ($i - 8) . '_desc';
-            @endphp
-            <div class="{{ in_array($i, $descSlots) ? 'col-md-6' : 'col-md-4' }} mb-3">
+    @php
+        $mainAttached = collect(range(1, 8))->filter(fn ($i) => !empty($employee->{'employee_doc_' . $i}))->count();
+        $otherAttached = collect(range(9, 18))->filter(fn ($i) => !empty($employee->{'employee_doc_' . $i}))->count();
+    @endphp
+    @foreach([[__('Main Documents'), 'bi-file-earmark-text', range(1, 8), $mainAttached, false], [__('Other Documents'), 'bi-folder2-open', range(9, 18), $otherAttached, true]] as [$groupTitle, $groupIcon, $slots, $groupAttached, $wide])
+        <div class="att-section-title">
+            <i class="bi {{ $groupIcon }}"></i>{{ $groupTitle }}
+            <span class="att-section-count">{{ __('Attached :done/:total', ['done' => $groupAttached, 'total' => count($slots)]) }}</span>
+        </div>
+        <div class="att-grid {{ $wide ? 'att-grid-wide' : '' }}">
+            @foreach($slots as $i)
+                @php
+                    $docField = 'employee_doc_' . $i;
+                    $descField = 'other_doc_' . ($i - 8) . '_desc';
+                @endphp
                 <x-file-input-group
+                    variant="card"
+                    :number="$i"
                     :id="'edit_' . $docField"
                     :name="$docField"
-                    :label="$i . '. ' . $label"
+                    :label="$docSlots[$i]"
                     :value="$employee->{$docField}"
                     :pdfRoute="route('employees.documents.pdf', ['employee' => $employee->id, 'field' => $docField])"
                     :description="in_array($i, $descSlots) ? $descField : null"
                     :descriptionValue="in_array($i, $descSlots) ? $employee->{$descField} : null"
                 />
-            </div>
-        @endforeach
-    </div>
+            @endforeach
+        </div>
+    @endforeach
 
 
     </div>{{-- /pane --}}

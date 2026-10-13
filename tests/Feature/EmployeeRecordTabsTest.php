@@ -55,6 +55,15 @@ class EmployeeRecordTabsTest extends TestCase
         $this->assertStringContainsString('rec-savebar', $html);
         $this->assertStringContainsString('<span class="rec-tab-count">2</span>', $html);
 
+        // Attachment cards: 18 slots, same input ids/names, 2 marked as attached, per-group counters.
+        // 18 attachment slots + 2 insurance slots (medical certificate, insurance document).
+        $this->assertSame(20, substr_count($html, 'data-att-card>'));
+        $this->assertSame(2, substr_count($html, 'att-card has-file'));
+        $this->assertStringContainsString('id="edit_employee_doc_18"', $html);
+        $this->assertStringContainsString('name="other_doc_10_desc"', $html);
+        $this->assertStringContainsString(__('Attached :done/:total', ['done' => 1, 'total' => 8]), $html);
+        $this->assertStringContainsString(__('Attached :done/:total', ['done' => 1, 'total' => 10]), $html);
+
         // Header badges: expired / soon / ok / none.
         $this->assertStringContainsString('rec-expiry is-expired', $html);
         $this->assertStringContainsString('rec-expiry is-soon', $html);
@@ -107,5 +116,73 @@ class EmployeeRecordTabsTest extends TestCase
         }
         $this->assertStringContainsString('<span class="rec-tab-count">1</span>', $html);
         $this->assertStringContainsString('rec-expiry is-soon', $html); // certificate expires in 5 days
+    }
+
+    public function test_employer_edit_page_is_tabbed(): void
+    {
+        $admin = $this->admin();
+        foreach (['admin', 'staff', 'caretaker'] as $r) { Role::findOrCreate($r); }
+        $employer = Employer::factory()->create();
+
+        $html = $this->actingAs($admin)->get(route('employers.edit', $employer))->assertOk()->getContent();
+        foreach (['info', 'access', 'signers', 'docs', 'addresses', 'employees', 'history'] as $tab) {
+            $this->assertStringContainsString('data-rec-pane="' . $tab . '"', $html);
+        }
+        $this->assertStringContainsString('data-rec-initial="info"', $html);
+        // Save bar belongs to the form tabs only.
+        $this->assertStringContainsString('rec-savebar" data-rec-only="info access signers docs"', $html);
+        // Fields still in the one form.
+        foreach (['employerNameTh', 'outsource_password', 'signerNameTh', 'regCapital', 'minimum_wage', 'employer_doc_other_3'] as $field) {
+            $this->assertStringContainsString('name="' . $field . '"', $html);
+        }
+
+        // Employee-list filters / pagination reload onto the employees tab.
+        $this->actingAs($admin)->get(route('employers.edit', [$employer, 'search' => 'x']))
+            ->assertSee('data-rec-initial="employees"', false);
+
+        // Cancel only goes back to this site's URLs.
+        $this->actingAs($admin)->get(route('employers.edit', [$employer, 'return_url' => 'javascript:alert(1)']))
+            ->assertDontSee('href="javascript:alert(1)"', false);
+        $this->actingAs($admin)->get(route('employers.edit', [$employer, 'return_url' => url('/employees?page=2')]))
+            ->assertSee('href="' . e(url('/employees?page=2')) . '"', false);
+    }
+
+    public function test_previews_offer_an_edit_button_to_editors_only(): void
+    {
+        $employee = $this->employee();
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->get(route('global.preview', ['type' => 'employee', 'id' => $employee->id]))
+            ->assertSee('data-preview-edit data-type="employee" data-id="' . $employee->id . '"', false)
+            ->assertSee(route('employees.edit', $employee->id), false);
+        $this->actingAs($admin)->get(route('global.preview', ['type' => 'employer', 'id' => $employee->employer_id]))
+            ->assertSee('data-preview-edit data-type="employer" data-id="' . $employee->employer_id . '"', false);
+
+        // Someone who may view but not edit gets no button.
+        $viewer = User::factory()->create();
+        $this->assertFalse($viewer->can('edit-employees'));
+        $view = view('employees.partials._profile_header', ['employee' => $employee, 'editUrl' => $viewer->can('edit-employees') ? route('employees.edit', $employee->id) : null])->render();
+        $this->assertStringNotContainsString('data-preview-edit', $view);
+    }
+
+    public function test_employer_edit_and_create_use_attachment_cards(): void
+    {
+        $admin = $this->admin();
+        foreach (['admin', 'staff', 'caretaker'] as $r) { Role::findOrCreate($r); } // the employer edit page lists these accounts
+        $employer = Employer::factory()->create(['employer_doc_company' => 'employers/docs/cert.pdf']);
+
+        $edit = $this->actingAs($admin)->get(route('employers.edit', $employer))->assertOk()->getContent();
+        $this->assertSame(6, substr_count($edit, 'data-att-card>'));
+        $this->assertSame(1, substr_count($edit, 'att-card has-file'));
+        $this->assertStringContainsString('name="employer_doc_company_expiry"', $edit);
+        $this->assertStringContainsString('name="employer_doc_other_3_desc"', $edit);
+
+        $create = $this->actingAs($admin)->get(route('employers.create'))->assertOk()->getContent();
+        $this->assertSame(6, substr_count($create, 'data-att-card>'));
+        $this->assertStringContainsString('name="employer_doc_company_expiry"', $create);
+        // This page never restricted file types; the card keeps that.
+        $this->assertStringNotContainsString('id="employer_doc_company"
+           name="employer_doc_company"
+           accept=', $create);
     }
 }

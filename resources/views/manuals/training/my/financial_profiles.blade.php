@@ -35,7 +35,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → Finance → <strong>Financial Profiles</strong></li>
+            <li>Sidebar → <strong>ငွေကြေး နှင့် အရောင်း</strong> → Finance → <strong>Financial Profiles</strong></li>
             <li>Biller သို့မဟုတ် Customer အမျိုးအစား ရွေးပါ</li>
             <li>ရှိပြီးသား profile များ စာရင်းကို ကြည့်ပါ</li>
         </ol>

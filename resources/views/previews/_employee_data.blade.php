@@ -162,7 +162,7 @@
 
 <div class="emp-preview content-section rec-fixed">
 
-    @include('employees.partials._profile_header', ['employee' => $employee, 'photoLink' => true])
+    @include('employees.partials._profile_header', ['employee' => $employee, 'photoLink' => true, 'editUrl' => auth()->user()?->can('edit-employees') ? route('employees.edit', $employee->id) : null])
 
     {{-- Tabs: one section per tab, no scrolling (see partials/_record_tabs). --}}
     <div class="rec-tabs" data-rec-tabs>

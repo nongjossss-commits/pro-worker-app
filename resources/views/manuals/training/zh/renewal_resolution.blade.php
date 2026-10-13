@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>续签决议</strong></li>
+            <li>侧边栏 → <strong>P Production (生产)</strong> → <strong>续签决议</strong></li>
             <li>点击所需续签决议的标签</li>
             <li>查看顶部摘要卡片的整体情况</li>
         </ol>

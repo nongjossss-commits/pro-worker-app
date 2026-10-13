@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>Sales</strong></li>
+            <li>侧边栏 → <strong>财务与销售</strong> → <strong>Sales</strong></li>
             <li>查看看板 —— 每列代表客户所处的阶段</li>
             <li>使用顶部的 Owner 筛选器或搜索</li>
         </ol>

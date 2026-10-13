@@ -78,6 +78,89 @@
     /* Section headings inside a pane: the tab already names the section. */
     .rec-tab-pane > h5:first-child { margin-top: 0 !important; }
 
+    /* Attachment grid (x-file-input-group variant="card"). */
+    .att-section-title {
+        display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+        font-weight: 700; font-size: .95rem; padding: .5rem .8rem; margin: .25rem 0 .75rem;
+        border-radius: .55rem; border-left: 4px solid var(--bs-primary);
+        background: var(--bs-primary-bg-subtle); color: var(--bs-primary-text-emphasis);
+    }
+    .att-section-title .att-section-count {
+        margin-left: auto; font-size: .78rem; font-weight: 600; padding: .15rem .55rem; border-radius: 1rem;
+        background: var(--bs-body-bg); color: var(--bs-body-color);
+    }
+    .att-grid {
+        display: grid; gap: .65rem; margin-bottom: 1.25rem;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+    .att-grid.att-grid-wide { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .att-card {
+        display: flex; flex-direction: column; gap: .45rem; min-width: 0;
+        padding: .6rem .7rem; border-radius: .65rem;
+        border: 1px solid var(--bs-border-color); background: var(--bs-body-bg);
+        transition: border-color .15s, box-shadow .15s;
+    }
+    .att-card:hover { box-shadow: 0 2px 10px rgba(0, 0, 0, .08); }
+    .att-card.has-file { border-color: var(--bs-success-border-subtle); box-shadow: inset 3px 0 0 var(--bs-success); }
+    .att-card.is-pending { border-color: var(--bs-primary-border-subtle); box-shadow: inset 3px 0 0 var(--bs-primary); }
+    .att-card:has(.is-invalid) { border-color: var(--bs-danger); box-shadow: inset 3px 0 0 var(--bs-danger); }
+    .att-card-head { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+    .att-num {
+        flex: none; width: 1.55rem; height: 1.55rem; border-radius: 50%;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: .72rem; font-weight: 700; background: var(--bs-secondary-bg); color: var(--bs-secondary-color);
+    }
+    .att-card.has-file .att-num { background: var(--bs-success); color: #fff; }
+    .att-card.is-pending .att-num { background: var(--bs-primary); color: #fff; }
+    .att-title {
+        flex: 1 1 auto; min-width: 0; margin: 0; cursor: pointer;
+        font-weight: 600; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .att-status { flex: none; font-size: .68rem; font-weight: 600; padding: .12rem .45rem; border-radius: 1rem; white-space: nowrap; }
+    .att-status.ok { background: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
+    .att-status.none { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
+    .att-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+    .att-spacer { flex: 1 1 auto; }
+    .att-btn {
+        --bs-btn-padding-y: .2rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .78rem;
+        display: inline-flex; align-items: center; gap: .3rem; margin: 0;
+        border: 1px solid var(--bs-border-color); background: var(--bs-tertiary-bg); color: var(--bs-body-color);
+    }
+    .att-btn:hover { background: var(--bs-secondary-bg); color: var(--bs-body-color); }
+    .att-btn-view { background: var(--bs-success-bg-subtle); border-color: var(--bs-success-border-subtle); color: var(--bs-success-text-emphasis); }
+    .att-btn-pdf { background: var(--bs-danger-bg-subtle); border-color: var(--bs-danger-border-subtle); color: var(--bs-danger-text-emphasis); }
+    .att-btn-edit { background: var(--bs-warning-bg-subtle); border-color: var(--bs-warning-border-subtle); color: var(--bs-warning-text-emphasis); }
+    .att-btn-pick { background: var(--bs-primary-bg-subtle); border-color: var(--bs-primary-border-subtle); color: var(--bs-primary-text-emphasis); cursor: pointer; }
+    /* Keyboard focus on the hidden input shows on its "choose file" button. */
+    .att-card:has(.att-input:focus-visible) .att-btn-pick { outline: 2px solid var(--bs-primary); outline-offset: 2px; }
+    .att-pending {
+        display: flex; gap: .4rem; align-items: flex-start; font-size: .75rem; line-height: 1.3;
+        padding: .3rem .5rem; border-radius: .4rem; word-break: break-all;
+        background: var(--bs-primary-bg-subtle); color: var(--bs-primary-text-emphasis);
+    }
+    .att-pending[hidden] { display: none; }
+    .att-desc { font-size: .8rem; }
+    .att-card .invalid-feedback { font-size: .75rem; margin-top: 0; }
+    .att-card .att-extra { display: flex; align-items: center; gap: .4rem; font-size: .8rem; }
+    .att-card .att-extra .form-control { font-size: .8rem; }
+    /* Narrow cards: icon-only buttons so a card's actions stay on one line. */
+    .att-card { container-type: inline-size; }
+    .att-btn-view span { display: none; }
+    @container (max-width: 270px) {
+        .att-card.has-file .att-btn-pick span { display: none; }
+    }
+    /* Phones: one compact row per empty card — name on the left, buttons on the right. */
+    @media (max-width: 575.98px) {
+        .att-grid, .att-grid.att-grid-wide { grid-template-columns: 1fr; gap: .4rem; }
+        .att-card { flex-direction: row; flex-wrap: wrap; align-items: center; padding: .45rem .55rem; gap: .35rem .5rem; }
+        .att-card-head { flex: 1 1 140px; }
+        .att-card-actions { flex: 0 0 auto; margin-left: auto; }
+        .att-card .att-spacer { display: none; }
+        .att-status.none { display: none; }
+        .att-card > .att-pending, .att-card > .att-desc, .att-card > .att-extra,
+        .att-card > .invalid-feedback { flex: 1 1 100%; }
+    }
+
     /* Save bar stays in view on every tab. */
     .rec-savebar {
         position: sticky; bottom: 0; z-index: 5;
@@ -107,6 +190,7 @@
     .rec-profile-meta { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin-top: .35rem; font-size: .88rem; }
     .rec-profile-meta i { color: var(--bs-secondary-color); }
     .rec-profile-badges { display: flex; flex-wrap: wrap; gap: .4rem; flex: 1 1 100%; }
+    .rec-profile-actions { flex: 1 1 100%; grid-column: 1 / -1; display: flex; justify-content: flex-end; }
     .rec-expiry {
         display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; font-weight: 600;
         padding: .3rem .6rem; border-radius: 2rem; border: 1px solid transparent;
@@ -137,7 +221,13 @@
     if (window.RecordTabs) return;
 
     function navOf(root) { return root.querySelector(':scope > .rec-tabs-nav'); }
-    function panesOf(root) { return root.querySelectorAll(':scope > .rec-tab-pane'); }
+    // Panes may sit directly under the root or inside a <form> within it
+    // (employer edit: the form spans some tabs, lists outside it others).
+    function panesOf(root) {
+        return Array.prototype.filter.call(root.querySelectorAll('.rec-tab-pane'), function (p) {
+            return p.closest('[data-rec-tabs]') === root;
+        });
+    }
 
     function activate(root, key) {
         const nav = navOf(root);
@@ -154,6 +244,12 @@
             const on = pane.dataset.recPane === key;
             pane.classList.toggle('active', on);
             if (on) pane.scrollTop = 0; // fixed frame: each tab starts at its top
+        });
+        // Elements shown only on some tabs, e.g. the save bar of a form that
+        // covers only part of the tabs: data-rec-only="info access".
+        root.querySelectorAll('[data-rec-only]').forEach(function (el) {
+            if (el.closest('[data-rec-tabs]') !== root) return;
+            el.hidden = el.dataset.recOnly.split(/\s+/).indexOf(key) === -1;
         });
         root.dispatchEvent(new CustomEvent('rec-tab-shown', { detail: { tab: key }, bubbles: true }));
     }
@@ -204,6 +300,23 @@
         root.dataset.recTabsReady = '1';
         let errors = [];
         try { errors = JSON.parse(root.dataset.errorFields || '[]'); } catch (e) { errors = []; }
+        // Starting tab: server hint (data-rec-initial), or the pane holding the
+        // element the URL hash points at (e.g. #employee-card-12 after saving
+        // an employee from the employer page).
+        let start = root.dataset.recInitial || null;
+        let hashTarget = null;
+        if (location.hash.length > 1) {
+            try { hashTarget = root.querySelector(location.hash); } catch (e) { hashTarget = null; }
+            if (hashTarget && paneKey(hashTarget)) start = paneKey(hashTarget);
+        }
+        const active = root.querySelector('.rec-tab-pane.active');
+        if (start && (!active || active.dataset.recPane !== start)) {
+            activate(root, start);
+        } else if (active) {
+            activate(root, active.dataset.recPane); // applies data-rec-only
+        }
+        if (hashTarget) setTimeout(function () { hashTarget.scrollIntoView({ block: 'center' }); }, 50);
+
         if (errors.length) {
             markErrors(root, errors);
         } else {
@@ -245,6 +358,68 @@
             setTimeout(function () { if (e.target.reportValidity) e.target.reportValidity(); }, 30);
         }
     }, true);
+
+    // Attachment cards: show the newly chosen file(s) — from the picker or the
+    // scanner, which writes into the same input and fires "change".
+    function showPending(input) {
+        const card = input.closest('[data-att-card]');
+        if (!card) return;
+        const box = card.querySelector('.att-pending');
+        const files = input.files ? Array.from(input.files) : [];
+        card.classList.toggle('is-pending', files.length > 0);
+        if (!box) return;
+        box.hidden = files.length === 0;
+        const names = box.querySelector('.att-pending-names');
+        if (names) names.textContent = files.map(function (f) { return f.name; }).join(', ');
+    }
+    document.addEventListener('change', function (e) {
+        if (e.target.matches && e.target.matches('[data-att-card] input[type="file"]')) showPending(e.target);
+    });
+    document.addEventListener('reset', function (e) {
+        setTimeout(function () {
+            e.target.querySelectorAll && e.target.querySelectorAll('[data-att-card] input[type="file"]').forEach(showPending);
+        }, 0);
+    });
+
+    // Preview → Edit → back: the Edit button in a preview header remembers
+    // "reopen this preview on this page", goes to the edit page with
+    // return_url = this page, and after saving (or cancelling back) the
+    // preview opens again with the fresh data.
+    const REOPEN_KEY = 'recReopenPreview';
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest && e.target.closest('[data-preview-edit]');
+        if (!btn) return;
+        e.preventDefault();
+        const here = location.href.split('#')[0];
+        try {
+            sessionStorage.setItem(REOPEN_KEY, JSON.stringify({
+                type: btn.dataset.type, id: btn.dataset.id,
+                page: location.pathname + location.search, at: Date.now(),
+            }));
+        } catch (err) { /* storage unavailable: just go to the edit page */ }
+        const url = btn.getAttribute('href');
+        location.href = url + (url.indexOf('?') === -1 ? '?' : '&') + 'return_url=' + encodeURIComponent(here);
+    });
+    // pageshow (not load): also fires when Back restores the page from the browser cache.
+    window.addEventListener('pageshow', function () {
+        let saved = null;
+        try { saved = JSON.parse(sessionStorage.getItem(REOPEN_KEY) || 'null'); } catch (err) { saved = null; }
+        if (!saved) return;
+        if (Date.now() - saved.at > 30 * 60 * 1000) { sessionStorage.removeItem(REOPEN_KEY); return; }
+        if (saved.page !== location.pathname + location.search) return; // not back yet (e.g. still on the edit page)
+        sessionStorage.removeItem(REOPEN_KEY);
+        // Reuse the normal preview opener (.btn-preview handler in resources/js/app.js).
+        setTimeout(function () {
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = 'btn-preview d-none';
+            trigger.dataset.modelType = saved.type;
+            trigger.dataset.modelId = saved.id;
+            document.body.appendChild(trigger);
+            trigger.click();
+            trigger.remove();
+        }, 300);
+    });
 
     window.RecordTabs = { init: initAll, activate: activate, markErrors: markErrors, refresh: refreshMarks };
 

@@ -36,7 +36,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>点击<strong>侧边栏 → Workflow</strong></li>
+            <li>点击<strong>侧边栏 → <strong>P Production (生产)</strong> → Workflow</strong></li>
             <li>选择要处理的 Work Type <strong>标签</strong></li>
             <li>各雇主的卡片会连同其雇员名单一起显示</li>
         </ol>

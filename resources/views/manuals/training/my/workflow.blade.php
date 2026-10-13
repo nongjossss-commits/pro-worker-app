@@ -36,7 +36,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li><strong>Sidebar → Workflow</strong> ကို နှိပ်ပါ</li>
+            <li><strong>Sidebar → <strong>P Production</strong> → Workflow</strong> ကို နှိပ်ပါ</li>
             <li>လုပ်ဆောင်နေသော Work Type ၏ <strong>Tab</strong> ကို ရွေးပါ</li>
             <li>အလုပ်ရှင်တစ်ဦးစီ၏ ကတ်သည် ၎င်း၏ ဝန်ထမ်းစာရင်းနှင့်အတူ ပေါ်လာသည်</li>
         </ol>

@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Central Trash</strong></li>
+            <li>Sidebar → <strong>ဆက်တင် နှင့် စနစ်</strong> → <strong>Central Trash</strong></li>
             <li>ဖျက်လိုက်သော ဒေတာအမျိုးအစားအတွက် tab ရွေးပါ</li>
             <li>ပြန်လည်ရယူလိုသော item ကို ရှာပါ</li>
         </ol>

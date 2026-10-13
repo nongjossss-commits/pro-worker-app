@@ -42,6 +42,42 @@ class Address extends Model
         return $this->morphTo();
     }
 
+    /**
+     * Display names for Thai place names in the current language — used by the
+     * address filter (components/address-filter): the filter keeps submitting
+     * the Thai value, but shows the English name (addrProvinceEn etc.) when the
+     * interface isn't Thai and an English name has been recorded.
+     *
+     * @param  string  $column  addrProvince | addrDistrict | addrSubDistrict
+     * @return array<string, string>  [thai value => label]
+     */
+    public static function localizedNames(string $column, iterable $values): array
+    {
+        $values = collect($values)->filter()->values();
+        $labels = $values->mapWithKeys(fn ($v) => [$v => $v])->all();
+        if ($values->isEmpty() || app()->getLocale() === 'th'
+            || !in_array($column, ['addrProvince', 'addrDistrict', 'addrSubDistrict'], true)) {
+            return $labels;
+        }
+
+        $english = static::query()
+            ->whereIn($column, $values->all())
+            ->whereNotNull($column . 'En')->where($column . 'En', '!=', '')
+            ->select([$column, $column . 'En'])
+            ->distinct()
+            ->get()
+            ->groupBy($column)
+            ->map(fn ($rows) => trim((string) $rows->first()->{$column . 'En'}));
+
+        foreach ($english as $thai => $en) {
+            if ($en !== '') {
+                $labels[$thai] = $en;
+            }
+        }
+
+        return $labels;
+    }
+
     public function getFullAddressAttribute()
     {
         if (app()->getLocale() === 'th') {

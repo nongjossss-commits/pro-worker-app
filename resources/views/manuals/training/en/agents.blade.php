@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Agents</strong></li>
+            <li>Sidebar → <strong>Records</strong> → <strong>Agents</strong></li>
             <li>Click "+ Add Agent"</li>
             <li>Fill in the details → click Save</li>
         </ol>

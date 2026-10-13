@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>雇主</strong></li>
+            <li>侧边栏 → <strong>资料库</strong> → <strong>雇主</strong></li>
             <li>筛选或搜索所需雇主</li>
             <li>点击卡片进入编辑页面</li>
         </ol>
@@ -75,13 +75,13 @@
     @include('manuals.training._screenshot', [
         'src' => 'employers/03-edit-detail',
         'alt' => '雇主编辑页面 —— 信息、地址、签名、授权代表标签',
-        'caption' => '编辑雇主 —— 多个标签：信息 / 地址 / 签名 / 授权代表',
+        'caption' => '编辑雇主 —— 资料头 + 每类一个标签页，无需滚动',
         'callouts' => [
-            '<strong>基本信息标签:</strong> 名称 + 纳税人识别号 + 联系方式',
-            '<strong>地址标签:</strong> 可添加多个地址',
-            '<strong>签名/印章标签:</strong> 上传签名 + 公司印章',
-            '<strong>授权代表标签:</strong> 添加代表雇主签署文件的 Delegate',
-            '<strong>其他文件标签:</strong> 3 个插槽(默认名称由 Super Admin 设置)',
+            '<strong>表单标签:</strong> 雇主信息 · 系统登录与外包 · 授权签字人与印章 · 雇主附件 —— 底部保存栏一次保存全部',
+            '<strong>地址标签:</strong> 可添加多个地址并选择文件使用的地址',
+            '<strong>雇员标签:</strong> 雇员名单 + 筛选(筛选后仍停留在此标签)',
+            '<strong>离职雇员标签:</strong> 查看过往雇佣记录',
+            '<strong>附件:</strong> 6 张卡片(证明到期日在第 1 张卡片内)',
         ],
     ])
 

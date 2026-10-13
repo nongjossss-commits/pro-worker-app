@@ -32,7 +32,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>用户管理</strong></li>
+            <li>侧边栏 → <strong>设置与系统</strong> → <strong>用户管理</strong></li>
             <li>点击"+ 新增用户"</li>
             <li>填写姓名 + 邮箱 + 密码</li>
             <li>选择角色 + 关联雇主(如为 employer)</li>

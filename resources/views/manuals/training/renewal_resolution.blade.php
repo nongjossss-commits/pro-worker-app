@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>มติต่ออายุ</strong></li>
+            <li>Sidebar → <strong>P Production (ฝ่ายผลิต)</strong> → <strong>มติต่ออายุ</strong></li>
             <li>คลิกที่ tab ของมติต่ออายุที่ต้องการ</li>
             <li>ดูภาพรวมในการ์ดสรุปด้านบน</li>
         </ol>

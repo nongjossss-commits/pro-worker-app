@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Renewal Resolution</strong></li>
+            <li>Sidebar → <strong>P Production</strong> → <strong>Renewal Resolution</strong></li>
             <li>Click the tab for the resolution you want</li>
             <li>Check the overview in the summary cards at the top</li>
         </ol>

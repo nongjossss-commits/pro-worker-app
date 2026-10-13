@@ -428,6 +428,7 @@
 <div class="row">
     <div class="col-md-6 mb-3">
         <x-file-input-group
+            variant="card"
             id="medical_certificate_path"
             name="medical_certificate_path"
             label="ใบรับรองแพทย์ (Medical Certificate)"
@@ -498,8 +499,9 @@
             <label for="insurance_expiry_date_private" class="form-label">วันหมดอายุประกัน</label>
             <input type="date" class="form-control" name="insurance_expiry_date_private" value="{{ old('insurance_expiry_date_private') }}">
         </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-6 mb-3">
             <x-file-input-group
+                variant="card"
                 id="insurance_document_path_private"
                 name="insurance_document_path_private"
                 label="แนบไฟล์เอกสารประกัน"
@@ -536,40 +538,43 @@
 {{-- Category 7: File Attachments --}}
 <h5 class="mt-4"><i class="bi bi-file-earmark-arrow-up-fill"></i> 7. ส่วนแนบไฟล์เอกสาร (File Attachments)</h5>
 <hr class="mb-4">
-<div class="row">
-    @php
-        $docs = [
-            1 => '1. พาสปอร์ต', 2 => '2. วีซ่า', 3 => '3. ใบเสร็จ Work Permit', 4 => '4. บัตรชมพู',
-            5 => '5. ทร. 38', 6 => '6. รายงานตัว 90 วัน', 7 => '7. ใบแจ้งที่พักอาศัย', 8 => '8. เอกสารบ้านเกิด'
-        ];
-    @endphp
-
+@php
+    // Same labels as before; the number moves into the card's badge.
+    $docs = [
+        1 => 'พาสปอร์ต', 2 => 'วีซ่า', 3 => 'ใบเสร็จ Work Permit', 4 => 'บัตรชมพู',
+        5 => 'ทร. 38', 6 => 'รายงานตัว 90 วัน', 7 => 'ใบแจ้งที่พักอาศัย', 8 => 'เอกสารบ้านเกิด'
+    ];
+@endphp
+<div class="att-section-title"><i class="bi bi-file-earmark-text"></i>{{ __('Main Documents') }}</div>
+<div class="att-grid">
     @foreach($docs as $i => $label)
-        <div class="col-md-4 mb-3">
-            <x-file-input-group
-                :id="'employee_doc_' . $i"
-                :name="'employee_doc_' . $i"
-                :label="$label"
-            />
-        </div>
+        <x-file-input-group
+            variant="card"
+            :number="$i"
+            :id="'employee_doc_' . $i"
+            :name="'employee_doc_' . $i"
+            :label="$label"
+        />
     @endforeach
+</div>
 
+<div class="att-section-title"><i class="bi bi-folder2-open"></i>{{ __('Other Documents') }}</div>
+<div class="att-grid att-grid-wide">
     @for($i = 1; $i <= 10; $i++)
         @php
             $docIndex = $i + 8;
             $fieldName = "employee_doc_" . $docIndex;
             $descName = "other_doc_" . $i . "_desc";
-            $label = "เอกสารอื่นๆ " . $i;
         @endphp
-        <div class="col-md-6 mb-3">
-            <x-file-input-group
-                :id="$fieldName"
-                :name="$fieldName"
-                :label="$docIndex . '. ' . $label"
-                :description="$descName"
-                :descriptionValue="old($descName)"
-            />
-        </div>
+        <x-file-input-group
+            variant="card"
+            :number="$docIndex"
+            :id="$fieldName"
+            :name="$fieldName"
+            :label="'เอกสารอื่นๆ ' . $i"
+            :description="$descName"
+            :descriptionValue="old($descName)"
+        />
     @endfor
 </div>
 </div>{{-- /pane --}}

@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Group & Team</strong></li>
+            <li>Sidebar → <strong>Records</strong> → <strong>Group & Team</strong></li>
             <li>Select Affiliated or Independent</li>
             <li>If Affiliated → select an employer first</li>
         </ol>

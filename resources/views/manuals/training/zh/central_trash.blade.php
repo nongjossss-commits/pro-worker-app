@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>回收站</strong></li>
+            <li>侧边栏 → <strong>设置与系统</strong> → <strong>回收站</strong></li>
             <li>选择被删除数据的类型标签</li>
             <li>查找要恢复的项目</li>
         </ol>

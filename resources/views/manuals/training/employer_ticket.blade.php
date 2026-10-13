@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar (Employer) → <strong>ส่งคำขอ</strong> หรือ "+ New Ticket"</li>
+            <li>Sidebar (Employer) → <strong>ตั๋วงาน</strong> → <strong>ส่งคำขอ</strong> หรือ "+ New Ticket"</li>
             <li>เลือกประเภท + ลูกจ้าง</li>
             <li>กรอกรายละเอียด + แนบเอกสาร</li>
             <li>กด Submit → ออฟฟิศจะได้รับ notification ทันที</li>

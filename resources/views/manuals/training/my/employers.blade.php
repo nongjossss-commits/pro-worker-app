@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Employers</strong></li>
+            <li>Sidebar → <strong>မှတ်တမ်းများ</strong> → <strong>Employers</strong></li>
             <li>လိုချင်သော အလုပ်ရှင်ကို စစ်ထုတ် သို့မဟုတ် ရှာဖွေပါ</li>
             <li>ကတ်ကို နှိပ်၍ ပြင်ဆင်ရေးစာမျက်နှာသို့ သွားပါ</li>
         </ol>
@@ -75,13 +75,13 @@
     @include('manuals.training._screenshot', [
         'src' => 'employers/03-edit-detail',
         'alt' => 'အလုပ်ရှင် ပြင်ဆင်ရေးစာမျက်နှာ — အသေးစိတ်၊ လိပ်စာ၊ လက်မှတ်၊ ကိုယ်စားလှယ် တဘ်များ',
-        'caption' => 'Edit Employer — တဘ်များစွာ: အသေးစိတ် / လိပ်စာများ / လက်မှတ် / ကိုယ်စားလှယ်များ',
+        'caption' => 'Edit Employer — profile header + အမျိုးအစားတစ်ခုလျှင် tab တစ်ခု၊ ဆွဲချစရာမလို',
         'callouts' => [
-            '<strong>General Info တဘ်:</strong> အမည် + အခွန် ID + ဆက်သွယ်ရေးအချက်အလက်',
-            '<strong>Addresses တဘ်:</strong> လိပ်စာများစွာ ထည့်ရန်',
-            '<strong>Signature/Stamp တဘ်:</strong> လက်မှတ် + ကုမ္ပဏီတံဆိပ် တင်ရန်',
-            '<strong>Delegates တဘ်:</strong> အလုပ်ရှင်ကိုယ်စား လက်မှတ်ရေးထိုးမည့် ကိုယ်စားလှယ်များ ထည့်ရန်',
-            '<strong>Other Documents တဘ်:</strong> နေရာ ၃ ခု (Super Admin သတ်မှတ်ထားသော မူလအမည်များ)',
+            '<strong>ဖောင် tab များ:</strong> အလုပ်ရှင်အချက်အလက် · စနစ်ဝင်ရောက်မှု နှင့် Outsource · လက်မှတ်ထိုးပိုင်ခွင့်ရှိသူ နှင့် တံဆိပ် · ပူးတွဲဖိုင်များ — အောက်ခြေရှိ သိမ်းရန်ဖြင့် အားလုံးသိမ်း',
+            '<strong>လိပ်စာ tab:</strong> လိပ်စာများစွာ ထည့် + စာရွက်စာတမ်းသုံး လိပ်စာ ရွေး',
+            '<strong>ဝန်ထမ်း tab:</strong> ဝန်ထမ်းစာရင်း + စစ်ထုတ်ရန် (စစ်ထုတ်ပြီးလည်း ဤ tab တွင် ရှိနေ)',
+            '<strong>အလုပ်ထွက်သူ tab:</strong> ယခင် အလုပ်မှတ်တမ်းများ',
+            '<strong>ပူးတွဲဖိုင်:</strong> ကတ် ၆ ခု (လက်မှတ် သက်တမ်းကုန်ရက်သည် ကတ် ၁ တွင်)',
         ],
     ])
 

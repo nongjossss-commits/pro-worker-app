@@ -35,7 +35,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → Finance → <strong>โปรไฟล์การเงิน (Financial Profiles)</strong></li>
+            <li>Sidebar → <strong>การเงินและการขาย</strong> → Finance → <strong>โปรไฟล์การเงิน (Financial Profiles)</strong></li>
             <li>เลือกประเภท Biller หรือ Customer</li>
             <li>ดูรายการ profile ที่มีอยู่</li>
         </ol>

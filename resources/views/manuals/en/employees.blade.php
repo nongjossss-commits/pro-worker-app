@@ -21,6 +21,7 @@
 <ol>
     <li><strong>Filter bar</strong> at the top — filter by nationality, visa status, employer, search by name/passport number</li>
     <li><strong>Status tabs</strong> — Active / Terminated / Contract Ended / Trash</li>
+    <li><strong>Filter by Address</strong> — choose province → district → sub-district from the employers' addresses (only addresses present in the current list are offered) · changing the province clears the old district/sub-district · searching or using other filters keeps the address filter · in English (or another non-Thai language) place names show in English when an English name was recorded · the same filter works in Employers, Incomplete Data, Notifications, Workflow, Pre-Production, Registration/Renewal Resolutions and Groups/Teams</li>
     <li><strong>Employee cards</strong> — each card shows a photo, name, nationality, visa status, employer</li>
     <li><strong>"+ Add New Employee"</strong> and <strong>"Import from Excel"</strong> buttons in the top-right corner</li>
 </ol>
@@ -49,7 +50,9 @@
         <li>The <strong>Save</strong> button stays at the bottom of the screen on every tab — it saves all tabs at once</li>
         <li>If a field is missing or wrong, its tab opens automatically and shows a <strong>red dot</strong> · fields still missing (yellow icon) are counted on the tab</li>
         <li>On a phone, swipe the tab bar left/right</li>
+        <li>The <strong>Attached Files</strong> tab is split into <strong>Main Documents</strong> (1–8) and <strong>Other Documents</strong> (9–18) with an "Attached x/y" counter — each slot is a small card: green edge + "Attached" = has a file (👁 view · PDF · ✏️ edit) · <strong>Choose file / Replace file</strong> and 📷 scan/take photo · after picking a new file the card turns blue and shows its name (uploaded when you press Save)</li>
         <li><strong>Preview</strong> (🔍 button): the profile header and tab bar stay in place and the window keeps its size — switching tabs only slides in the content below (long content scrolls inside the frame) · the employer preview works the same way</li>
+        <li>The preview has an <strong>"Edit"</strong> button at the top right (for users allowed to edit) — it opens the edit page; after saving or cancelling you return to the same page and the preview reopens with the latest data</li>
     </ul>
 </div>
 

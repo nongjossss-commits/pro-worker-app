@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏(Employer) → <strong>提交请求</strong> 或 "+ New Ticket"</li>
+            <li>侧边栏(Employer) → <strong>工单</strong> → <strong>提交请求</strong> 或 "+ New Ticket"</li>
             <li>选择类型 + 雇员</li>
             <li>填写详情 + 附上文件</li>
             <li>点击提交 → 办公室会立即收到通知</li>

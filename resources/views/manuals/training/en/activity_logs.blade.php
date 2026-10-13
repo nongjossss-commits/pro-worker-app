@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Activity Logs</strong></li>
+            <li>Sidebar → <strong>Alerts &amp; Checks</strong> → <strong>Activity Logs</strong></li>
             <li>Use the filters to search</li>
             <li>Click a row to see the before/after details</li>
             <li>Search by name or any number (RA, passport, work permit, request number …) · entries read as plain sentences, e.g. "File attached to slot 1. Passport" · log-ins, log-outs and wrong passwords are recorded</li>

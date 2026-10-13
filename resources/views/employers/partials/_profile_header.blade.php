@@ -5,6 +5,7 @@
     valid, grey = no date).
 
     @include('employers.partials._profile_header', ['employer' => $employer, 'stats' => $stats ?? null])
+    'editUrl' => edit page link → shows an Edit button (previews).
 --}}
 @php
     $certExpiry = $employer->employer_doc_company_expiry ? \Carbon\Carbon::parse($employer->employer_doc_company_expiry)->startOfDay() : null;
@@ -44,6 +45,14 @@
         </div>
     </div>
     <div class="rec-profile-badges">
+        @if(!empty($editUrl))
+            {{-- Preview → edit → back to this preview, refreshed (partials/_record_tabs: data-preview-edit). --}}
+            <div class="rec-profile-actions">
+                <a href="{{ $editUrl }}" class="btn btn-sm btn-primary" data-preview-edit data-type="employer" data-id="{{ $employer->id }}">
+                    <i class="bi bi-pencil-square me-1"></i>{{ __('Edit') }}
+                </a>
+            </div>
+        @endif
         @if($stats)
             <span class="rec-expiry is-none"><i class="bi bi-people"></i>{{ __('Total Workers') }} <span>{{ $stats->total ?? 0 }}</span></span>
         @endif

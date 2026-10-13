@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>တောင်းဆိုချက် စာပုံး</strong></li>
+            <li>Sidebar → <strong>လက်မှတ်များ</strong> → <strong>တောင်းဆိုချက် စာပုံး</strong></li>
             <li>တောင်းဆိုချက်ကို ဖွင့်ရန် နှိပ်ပါ</li>
             <li>"Assign to..." ကို နှိပ်ပါ → တာဝန်ယူမည့် ဝန်ထမ်းကို ရွေးပါ</li>
             <li>လုပ်ငန်း တိုးတက်မှုအလိုက် အခြေအနေကို update လုပ်ပါ</li>

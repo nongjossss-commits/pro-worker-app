@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Pre-Production</strong></li>
+            <li>Sidebar → <strong>P Production</strong> → <strong>Pre-Production</strong></li>
             <li>Check the summary stat cards at the top</li>
             <li>Use the filters to narrow down by employer or owner</li>
         </ol>

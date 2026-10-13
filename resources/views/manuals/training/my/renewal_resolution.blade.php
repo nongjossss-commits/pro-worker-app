@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Renewal Resolution</strong></li>
+            <li>Sidebar → <strong>P Production</strong> → <strong>Renewal Resolution</strong></li>
             <li>လိုချင်သော ဆုံးဖြတ်ချက်၏ tab ကို နှိပ်ပါ</li>
             <li>အပေါ်ပိုင်းရှိ အကျဉ်းချုပ်ကတ်များတွင် ခြုံငုံသုံးသပ်ချက် ကြည့်ပါ</li>
         </ol>

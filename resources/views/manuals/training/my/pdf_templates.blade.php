@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>PDF Templates</strong> → "+ Create New Template"</li>
+            <li>Sidebar → <strong>ဆက်တင် နှင့် စနစ်</strong> → <strong>PDF Templates</strong> → "+ Create New Template"</li>
             <li>နည်းလမ်း ရွေးပါ: PDF အသစ် တင်ရန်၊ သို့မဟုတ် ရှိပြီးသားကို Clone ရန်</li>
             <li>အမည်ပေးပြီး အမျိုးအစား ရွေးပါ (Global / Employer)</li>
             <li>"Upload & Go to Builder" ကို နှိပ်ပါ</li>

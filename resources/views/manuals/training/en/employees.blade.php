@@ -37,7 +37,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Click <strong>Sidebar → Employees</strong></li>
+            <li>Click <strong>Sidebar → <strong>Records</strong> → Employees</strong></li>
             <li>Select the view type (<strong>Card</strong> or <strong>Table</strong>)</li>
             <li>Use the filters at the top to find the employee you need</li>
         </ol>

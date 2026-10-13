@@ -37,7 +37,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>点击<strong>侧边栏 → 雇员</strong></li>
+            <li>点击<strong>侧边栏 → <strong>资料库</strong> → 雇员</strong></li>
             <li>选择视图类型(<strong>卡片</strong> 或 <strong>表格</strong>)</li>
             <li>使用顶部筛选器查找所需雇员</li>
         </ol>

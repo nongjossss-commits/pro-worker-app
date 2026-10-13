@@ -37,7 +37,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li><strong>Sidebar → Employees</strong> ကို နှိပ်ပါ</li>
+            <li><strong>Sidebar → <strong>မှတ်တမ်းများ</strong> → Employees</strong> ကို နှိပ်ပါ</li>
             <li>မြင်ကွင်းအမျိုးအစား ရွေးပါ (<strong>ကတ်</strong> သို့မဟုတ် <strong>ဇယား</strong>)</li>
             <li>လိုချင်သော ဝန်ထမ်းကို ရှာရန် အပေါ်ရှိ စစ်ထုတ်ချက်များကို အသုံးပြုပါ</li>
         </ol>

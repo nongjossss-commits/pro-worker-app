@@ -32,7 +32,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>User Management</strong></li>
+            <li>Sidebar → <strong>Settings &amp; System</strong> → <strong>User Management</strong></li>
             <li>Click "+ Add User"</li>
             <li>Fill in the name + email + password</li>
             <li>Select the Role + Linked Employer (if it's an employer)</li>

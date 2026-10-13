@@ -35,7 +35,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Registration Resolution</strong></li>
+            <li>Sidebar → <strong>P Production</strong> → <strong>Registration Resolution</strong></li>
             <li>လိုချင်သော ဆုံးဖြတ်ချက်၏ tab ကို နှိပ်ပါ</li>
             <li>စာမျက်နှာသည် ထိုဆုံးဖြတ်ချက်၏ ဒေတာကို ပြသရန် refresh ဖြစ်သည်</li>
         </ol>

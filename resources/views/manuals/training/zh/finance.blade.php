@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>Finance</strong></li>
+            <li>侧边栏 → <strong>财务与销售</strong> → <strong>Finance</strong></li>
             <li>查看摘要卡片以了解整体状况</li>
             <li>根据所需操作选择子菜单</li>
         </ol>

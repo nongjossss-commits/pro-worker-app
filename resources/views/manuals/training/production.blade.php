@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Pre-Production</strong></li>
+            <li>Sidebar → <strong>P Production (ฝ่ายผลิต)</strong> → <strong>Pre-Production</strong></li>
             <li>ดูการ์ดสรุปสถิติด้านบน</li>
             <li>ใช้ filter เพื่อกรองตามนายจ้างหรือ owner</li>
         </ol>

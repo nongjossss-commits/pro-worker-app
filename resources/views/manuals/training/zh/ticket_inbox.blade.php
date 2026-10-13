@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>工单收件箱</strong></li>
+            <li>侧边栏 → <strong>工单</strong> → <strong>工单收件箱</strong></li>
             <li>点击工单以打开查看</li>
             <li>点击"Assign to..." → 选择负责的员工</li>
             <li>根据处理进度更新状态</li>

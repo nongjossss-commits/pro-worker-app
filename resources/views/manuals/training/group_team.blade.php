@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>กลุ่มและทีม</strong></li>
+            <li>Sidebar → <strong>ฐานข้อมูล</strong> → <strong>กลุ่มและทีม</strong></li>
             <li>เลือก Affiliated หรือ Independent</li>
             <li>ถ้า Affiliated → เลือกนายจ้างก่อน</li>
         </ol>

@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>PDF Templates</strong> → "+ Create New Template"</li>
+            <li>侧边栏 → <strong>设置与系统</strong> → <strong>PDF Templates</strong> → "+ Create New Template"</li>
             <li>选择模式：上传新 PDF，或克隆现有模板</li>
             <li>命名 + 选择类型(Global / Employer)</li>
             <li>点击"Upload & Go to Builder"</li>

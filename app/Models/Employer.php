@@ -199,7 +199,7 @@ class Employer extends Model
             if ($address->addrProvince === $province) {
                 if ($district && $address->addrDistrict !== $district) continue;
                 if ($subDistrict && $address->addrSubDistrict !== $subDistrict) continue;
-                $labels[] = ($address->type === 'registered') ? '(ที่อยู่ตามทะเบียนบ้าน)' : '(ที่อยู่สถานที่ทำงาน)';
+                $labels[] = ($address->type === 'registered') ? __('(Registered address)') : __('(Workplace address)');
             }
         }
         return array_unique($labels);

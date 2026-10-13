@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Notified-Out Employees</strong></li>
+            <li>Sidebar → <strong>Records</strong> → <strong>Notified-Out Employees</strong></li>
             <li>Type a search or use the filters at the top</li>
             <li>Click "Filter" — results include both active + inactive employees</li>
         </ol>

@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>ตัวแทน (Agents)</strong></li>
+            <li>Sidebar → <strong>ฐานข้อมูล</strong> → <strong>ตัวแทน (Agents)</strong></li>
             <li>กด "+ เพิ่มตัวแทน"</li>
             <li>กรอกข้อมูล → กด Save</li>
         </ol>

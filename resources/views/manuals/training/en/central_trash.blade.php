@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Central Trash</strong></li>
+            <li>Sidebar → <strong>Settings &amp; System</strong> → <strong>Central Trash</strong></li>
             <li>Select the tab for the type of data that was deleted</li>
             <li>Find the item you want to restore</li>
         </ol>

@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Sales</strong></li>
+            <li>Sidebar → <strong>ငွေကြေး နှင့် အရောင်း</strong> → <strong>Sales</strong></li>
             <li>Kanban board ကို ကြည့်ပါ — ကော်လံတစ်ခုစီသည် ဖောက်သည်၏ အဆင့် ဖြစ်သည်</li>
             <li>အပေါ်ပိုင်းရှိ Owner ဖြင့် စစ်ထုတ်ခြင်း သို့မဟုတ် ရှာဖွေခြင်း</li>
         </ol>

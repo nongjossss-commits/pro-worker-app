@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>PDF Templates</strong> → "+ Create New Template"</li>
+            <li>Sidebar → <strong>Settings &amp; System</strong> → <strong>PDF Templates</strong> → "+ Create New Template"</li>
             <li>Select a mode: Upload a new PDF, or Clone an existing one</li>
             <li>Name it + select the type (Global / Employer)</li>
             <li>Click "Upload & Go to Builder"</li>

@@ -35,7 +35,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → Finance → <strong>财务档案(Financial Profiles)</strong></li>
+            <li>侧边栏 → <strong>财务与销售</strong> → Finance → <strong>财务档案(Financial Profiles)</strong></li>
             <li>选择 Biller 或 Customer 类型</li>
             <li>查看现有档案列表</li>
         </ol>

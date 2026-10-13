@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>分组与团队</strong></li>
+            <li>侧边栏 → <strong>资料库</strong> → <strong>分组与团队</strong></li>
             <li>选择 Affiliated 或 Independent</li>
             <li>如为 Affiliated → 先选择雇主</li>
         </ol>

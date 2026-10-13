@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Group & Team</strong></li>
+            <li>Sidebar → <strong>မှတ်တမ်းများ</strong> → <strong>Group & Team</strong></li>
             <li>Affiliated သို့မဟုတ် Independent ရွေးပါ</li>
             <li>Affiliated ဖြစ်ပါက → အလုပ်ရှင်ကို အရင်ရွေးပါ</li>
         </ol>

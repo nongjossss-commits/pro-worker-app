@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>การเงิน (Finance)</strong></li>
+            <li>Sidebar → <strong>การเงินและการขาย</strong> → <strong>การเงิน (Finance)</strong></li>
             <li>ดู summary cards เพื่อเข้าใจสถานะรวม</li>
             <li>เลือก sub-menu ตามงานที่ต้องการ</li>
         </ol>

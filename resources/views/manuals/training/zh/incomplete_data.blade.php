@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>数据不完整</strong></li>
+            <li>侧边栏 → <strong>提醒与检查</strong> → <strong>数据不完整</strong></li>
             <li>查看哪些雇员数据缺失，以及缺少哪些字段</li>
             <li>点击"编辑" → 进入雇员页面 → 填写数据</li>
             <li>回来再次检查 —— 数据完整后该条目会自动消失</li>

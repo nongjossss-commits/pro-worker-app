@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Finance</strong></li>
+            <li>Sidebar → <strong>ငွေကြေး နှင့် အရောင်း</strong> → <strong>Finance</strong></li>
             <li>ခြုံငုံ အခြေအနေကို နားလည်ရန် အကျဉ်းချုပ်ကတ်များ စစ်ဆေးပါ</li>
             <li>လိုအပ်သော လုပ်ငန်းအတွက် sub-menu ရွေးပါ</li>
         </ol>

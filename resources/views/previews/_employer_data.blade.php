@@ -140,7 +140,7 @@
 
 <div class="empr-preview rec-fixed">
 
-    @include('employers.partials._profile_header', ['employer' => $employer, 'stats' => $stats ?? null])
+    @include('employers.partials._profile_header', ['employer' => $employer, 'stats' => $stats ?? null, 'editUrl' => auth()->user()?->can('edit-employers') ? route('employers.edit', $employer->id) : null])
 
     {{-- Tabs in a fixed frame: header + tab bar stay put, only the content scrolls (see partials/_record_tabs). --}}
     <div class="rec-tabs" data-rec-tabs>

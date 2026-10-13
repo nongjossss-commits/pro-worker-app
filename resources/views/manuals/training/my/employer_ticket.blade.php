@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar (Employer) → <strong>Employer Ticket</strong> သို့မဟုတ် "+ New Ticket"</li>
+            <li>Sidebar (Employer) → <strong>လက်မှတ်များ</strong> → <strong>Employer Ticket</strong> သို့မဟုတ် "+ New Ticket"</li>
             <li>အမျိုးအစား + ဝန်ထမ်း ရွေးပါ</li>
             <li>အသေးစိတ် ဖြည့်ပြီး စာရွက်စာတမ်း ပူးတွဲပါ</li>
             <li>Submit ကို နှိပ်ပါ → ရုံးက ချက်ချင်း အကြောင်းကြားခံရပါမည်</li>

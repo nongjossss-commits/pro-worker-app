@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>การขาย (Sales)</strong></li>
+            <li>Sidebar → <strong>การเงินและการขาย</strong> → <strong>การขาย (Sales)</strong></li>
             <li>ดู Kanban board — แต่ละคอลัมน์คือ stage ของลูกค้า</li>
             <li>กรองด้วย Owner หรือ Search ที่ด้านบน</li>
         </ol>

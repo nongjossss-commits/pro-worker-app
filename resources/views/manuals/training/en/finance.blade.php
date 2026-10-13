@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Finance</strong></li>
+            <li>Sidebar → <strong>Finance &amp; Sales</strong> → <strong>Finance</strong></li>
             <li>Check the summary cards to understand the overall status</li>
             <li>Select a sub-menu for the task you need</li>
         </ol>

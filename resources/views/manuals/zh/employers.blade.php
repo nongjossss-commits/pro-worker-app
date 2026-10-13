@@ -34,7 +34,7 @@
         <li>点击右上角的 <strong>"+ 新增雇主"</strong> 按钮</li>
         <li>填写基本信息 —— 公司名称(泰文/英文)、13 位纳税人识别号、地址</li>
         <li>如有需要，选择 <strong>"业务负责人"</strong>(负责跟进该客户的员工)</li>
-        <li>如有，上传相关证件文件(增值税登记证复印件、商业登记证等)</li>
+        <li>如有，上传相关证件文件(增值税登记证复印件、商业登记证等) —— 附件为 6 张卡片：点击<strong>选择文件</strong>或 📷 扫描/拍照 · 公司证明到期日在第 1 张卡片内</li>
         <li>点击 <strong>"保存"</strong> —— 系统会立即创建该雇主</li>
     </ol>
 </div>
@@ -50,12 +50,14 @@
         <li>点击要编辑的雇主卡片</li>
         <li>点击 <i class="bi bi-pencil"></i> <strong>"编辑"</strong> 图标</li>
         <li>修改所需信息，然后点击 <strong>"保存"</strong></li>
+        <li>编辑页面分为标签页：<strong>雇主信息</strong> · <strong>系统登录与外包</strong> · <strong>授权签字人与印章</strong> · <strong>雇主附件</strong>(这 4 个标签页底部有保存栏，一次保存全部) · <strong>地址</strong> · <strong>雇员</strong> · <strong>离职雇员</strong></li>
+        <li>快捷方式：在<strong>预览</strong>窗口(🔍 按钮)点击右上角的 <strong>"编辑"</strong> → 修改并保存(或取消) → 系统会回到原页面并重新打开预览，显示最新数据</li>
     </ol>
 </div>
 
 <h5>4. 查看该雇主的雇员</h5>
 <div class="manual-step">
-    点击雇主卡片 → 即可看到在该雇主处工作的所有雇员名单，以及每个人的状态
+    打开雇主编辑页面 → <strong>雇员</strong>标签(数字 = 在职雇员数) → 查看该雇主的全部雇员及各自状态 · 筛选或翻页后仍停留在此标签
 </div>
 
 <h5>5. 删除雇主</h5>

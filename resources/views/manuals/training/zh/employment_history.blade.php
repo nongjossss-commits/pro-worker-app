@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>已通知离职的员工</strong></li>
+            <li>侧边栏 → <strong>资料库</strong> → <strong>已通知离职的员工</strong></li>
             <li>输入搜索内容或使用顶部筛选器</li>
             <li>点击"筛选" —— 结果同时包含在职与非在职雇员</li>
         </ol>

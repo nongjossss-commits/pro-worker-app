@@ -32,7 +32,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>User Management</strong></li>
+            <li>Sidebar → <strong>ဆက်တင် နှင့် စနစ်</strong> → <strong>User Management</strong></li>
             <li>"+ Add User" ကို နှိပ်ပါ</li>
             <li>အမည် + အီးမေးလ် + စကားဝှက် ဖြည့်ပါ</li>
             <li>Role + ချိတ်ဆက်ထားသော Employer (employer ဖြစ်ပါက) ရွေးပါ</li>

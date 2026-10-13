@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Agents</strong></li>
+            <li>Sidebar → <strong>မှတ်တမ်းများ</strong> → <strong>Agents</strong></li>
             <li>"+ Add Agent" ကို နှိပ်ပါ</li>
             <li>အသေးစိတ် ဖြည့်ပါ → Save ကို နှိပ်ပါ</li>
         </ol>

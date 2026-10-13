@@ -5,6 +5,7 @@
 
     @include('employees.partials._profile_header', ['employee' => $employee, 'mirrorPhotoId' => 'edit_employeePhotoPreview'])
     'photoLink' => true makes the photo open full size (preview).
+    'editUrl' => edit page link → shows an Edit button (previews).
 --}}
 @php
     $today = now()->startOfDay();
@@ -58,6 +59,14 @@
         </div>
     </div>
     <div class="rec-profile-badges">
+        @if(!empty($editUrl))
+            {{-- Preview → edit → back to this preview, refreshed (partials/_record_tabs: data-preview-edit). --}}
+            <div class="rec-profile-actions">
+                <a href="{{ $editUrl }}" class="btn btn-sm btn-primary" data-preview-edit data-type="employee" data-id="{{ $employee->id }}">
+                    <i class="bi bi-pencil-square me-1"></i>{{ __('Edit') }}
+                </a>
+            </div>
+        @endif
         @foreach($expiryBadges as $b)
             <span class="rec-expiry {{ $b['state'] }}" title="{{ $b['label'] }}{{ $b['note'] ? ' — ' . $b['note'] : '' }}">
                 <i class="bi {{ $b['icon'] }}"></i>{{ $b['label'] }}

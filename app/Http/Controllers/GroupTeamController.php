@@ -41,12 +41,17 @@ class GroupTeamController extends Controller
                 });
             }
 
-            // Address options only when filtering (computed from current search results)
+            // Address options when filtering (computed from current search results)
             $addressOptions = $this->getAddressOptions($query);
 
             // Apply address filters and fetch
             $query = $this->applyAddressFilters($query, $request);
             $employers = $query->limit(20)->get();
+        } else {
+            // First load: no employer list (perf, as above), but the province
+            // list must be there — otherwise filtering by address could only
+            // start after a text search. One distinct query over addresses.
+            $addressOptions = $this->getAddressOptions(Employer::query());
         }
 
         return view('groups.affiliated.index', compact('employers', 'search', 'addressOptions'));

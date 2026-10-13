@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>登记决议</strong></li>
+            <li>侧边栏 → <strong>P Production (生产)</strong> → <strong>登记决议</strong></li>
             <li>点击所需决议的标签</li>
             <li>页面会刷新并显示该决议的数据</li>
         </ol>

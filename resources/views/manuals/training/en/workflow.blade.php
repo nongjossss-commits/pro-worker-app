@@ -36,7 +36,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Click <strong>Sidebar → Workflow</strong></li>
+            <li>Click <strong>Sidebar → <strong>P Production</strong> → Workflow</strong></li>
             <li>Select the <strong>Tab</strong> for the Work Type you're working on</li>
             <li>Each employer's card shows with its list of employees</li>
         </ol>

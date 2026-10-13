@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Pre-Production</strong></li>
+            <li>Sidebar → <strong>P Production</strong> → <strong>Pre-Production</strong></li>
             <li>အပေါ်ပိုင်းရှိ အနှစ်ချုပ်ကတ်များကို စစ်ဆေးပါ</li>
             <li>အလုပ်ရှင် သို့မဟုတ် ပိုင်ရှင်ဖြင့် ကျဉ်းမြောင်းစေရန် စစ်ထုတ်ချက်များကို အသုံးပြုပါ</li>
         </ol>

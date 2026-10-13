@@ -68,9 +68,13 @@ trait AddressFilterTrait
             $joinColumn = str_contains($employerIdField, '.') ? last(explode('.', $employerIdField)) : $employerIdField;
         }
 
-        // Get the correct morph class for the model to ensure matching regardless of MorphMap
-        $model = $query->getModel();
-        $morphClass = $model->getMorphClass();
+        // Every caller passes EMPLOYER ids (employers.id, *.employer_id, or
+        // employees.employer_id via $joinEmployees), and the addresses being
+        // filtered on are the employer's — so match the Employer morph type.
+        // (This used the query's own model before, e.g. Employee or
+        // ProductionOrder, which never owns addresses: the province list was
+        // always empty on every page except Employers / Groups / Resolutions.)
+        $morphClass = (new Employer())->getMorphClass();
         // Also include the short class name to handle legacy data or direct saves
         $possibleMorphs = array_unique([$morphClass, class_basename($morphClass)]);
 

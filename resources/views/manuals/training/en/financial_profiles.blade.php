@@ -35,7 +35,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → Finance → <strong>Financial Profiles</strong></li>
+            <li>Sidebar → <strong>Finance &amp; Sales</strong> → Finance → <strong>Financial Profiles</strong></li>
             <li>Select the Biller or Customer type</li>
             <li>View the list of existing profiles</li>
         </ol>

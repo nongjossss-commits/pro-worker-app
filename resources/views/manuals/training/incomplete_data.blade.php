@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>ข้อมูลไม่ครบ</strong></li>
+            <li>Sidebar → <strong>แจ้งเตือนและตรวจสอบ</strong> → <strong>ข้อมูลไม่ครบ</strong></li>
             <li>ดูลูกจ้างที่ขาดข้อมูล + ฟิลด์ใดบ้าง</li>
             <li>กดปุ่ม Edit → ไปหน้าลูกจ้าง → กรอกข้อมูล</li>
             <li>กลับมาเช็คอีกครั้ง — รายการจะหายไปเมื่อข้อมูลครบ</li>

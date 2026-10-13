@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>侧边栏 → <strong>Agents</strong></li>
+            <li>侧边栏 → <strong>资料库</strong> → <strong>Agents</strong></li>
             <li>点击"+ 新增中介"</li>
             <li>填写信息 → 点击 Save</li>
         </ol>

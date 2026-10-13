@@ -41,7 +41,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>คลิกที่ <strong>Sidebar → Workflow</strong></li>
+            <li>คลิกที่ <strong>Sidebar → <strong>P Production (ฝ่ายผลิต)</strong> → Workflow</strong></li>
             <li>เลือก <strong>Tab</strong> ของ Work Type ที่ต้องการทำงาน</li>
             <li>การ์ดของแต่ละนายจ้างจะแสดงพร้อมรายชื่อลูกจ้าง</li>
         </ol>

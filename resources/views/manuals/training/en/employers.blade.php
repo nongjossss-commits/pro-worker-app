@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Employers</strong></li>
+            <li>Sidebar → <strong>Records</strong> → <strong>Employers</strong></li>
             <li>Filter or search for the employer you need</li>
             <li>Click a card to go to its edit page</li>
         </ol>
@@ -75,13 +75,13 @@
     @include('manuals.training._screenshot', [
         'src' => 'employers/03-edit-detail',
         'alt' => 'Employer edit page — tabs for details, addresses, signatures, delegates',
-        'caption' => 'Edit Employer — multiple tabs: Details / Addresses / Signature / Delegates',
+        'caption' => 'Edit Employer — profile header + one tab per category, no scrolling',
         'callouts' => [
-            '<strong>General Info tab:</strong> name + tax ID + contact info',
-            '<strong>Addresses tab:</strong> add multiple addresses',
-            '<strong>Signature/Stamp tab:</strong> upload a signature + company stamp',
-            '<strong>Delegates tab:</strong> add Delegates who sign on the employer\'s behalf',
-            '<strong>Other Documents tab:</strong> 3 slots (default labels set by Super Admin)',
+            '<strong>Form tabs:</strong> Employer Info · System Access & Outsource · Authorized Signatories & Stamp · Employer Attachments — one Save bar at the bottom saves them all',
+            '<strong>Addresses tab:</strong> add multiple addresses + choose the one used on documents',
+            '<strong>Employees tab:</strong> the employee list + filters (filtering keeps you on this tab)',
+            '<strong>Employment History tab:</strong> past employment records',
+            '<strong>Attachments:</strong> 6 cards (the certificate expiry date is inside card 1)',
         ],
     ])
 

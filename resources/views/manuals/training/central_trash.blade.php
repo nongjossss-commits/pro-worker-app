@@ -33,7 +33,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>ถังขยะกลาง</strong></li>
+            <li>Sidebar → <strong>ตั้งค่าและระบบ</strong> → <strong>ถังขยะกลาง</strong></li>
             <li>เลือก tab ของประเภทข้อมูลที่ลบ</li>
             <li>ค้นหารายการที่ต้องการกู้</li>
         </ol>

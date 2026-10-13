@@ -34,7 +34,7 @@
         <li>Click <strong>"+ Add New Employer"</strong> in the top-right corner</li>
         <li>Fill in the basic info — company name (Thai/English), 13-digit tax ID, address</li>
         <li>Select a <strong>"Job Owner"</strong> if applicable (the staff member who manages this client)</li>
-        <li>Upload documents (VAT registration copy, commercial registration, etc.) if available</li>
+        <li>Upload documents (VAT registration copy, commercial registration, etc.) if available — the attachments are 6 cards: press <strong>Choose file</strong> or 📷 scan/take photo · the company certificate expiry date is inside card 1</li>
         <li>Click <strong>"Save"</strong> — the system creates the employer immediately</li>
     </ol>
 </div>
@@ -50,12 +50,14 @@
         <li>Click the card of the employer you want to edit</li>
         <li>Click the <i class="bi bi-pencil"></i> <strong>"Edit"</strong> icon</li>
         <li>Change the information you need, then click <strong>"Save"</strong></li>
+        <li>The edit page is split into tabs: <strong>Employer Info</strong> · <strong>System Access &amp; Outsource</strong> · <strong>Authorized Signatories &amp; Stamp</strong> · <strong>Employer Attachments</strong> (the Save bar sits at the bottom on these 4 tabs and saves them all at once) · <strong>Addresses</strong> · <strong>Employees</strong> · <strong>Employment History</strong></li>
+        <li>Shortcut: in the <strong>preview</strong> window (🔍 button) press <strong>"Edit"</strong> at the top right → edit and save (or cancel) → you come back to the same page with the preview reopened, showing the new data</li>
     </ol>
 </div>
 
 <h5>4. View this employer's employees</h5>
 <div class="manual-step">
-    Click the employer card → you'll see the full list of employees working for this employer, along with each one's status
+    Open the employer's edit page → <strong>Employees</strong> tab (the number = active employees) → the full list of this employer's employees with each one's status · filtering or changing page keeps you on this tab
 </div>
 
 <h5>5. Delete an employer</h5>

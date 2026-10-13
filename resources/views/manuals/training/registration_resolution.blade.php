@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>มติลงทะเบียน</strong></li>
+            <li>Sidebar → <strong>P Production (ฝ่ายผลิต)</strong> → <strong>มติลงทะเบียน</strong></li>
             <li>คลิกที่แถบ tab ของมติที่ต้องการ</li>
             <li>หน้าจะ refresh แสดงข้อมูลของมตินั้น</li>
         </ol>

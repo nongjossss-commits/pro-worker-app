@@ -32,7 +32,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>จัดการผู้ใช้งาน</strong></li>
+            <li>Sidebar → <strong>ตั้งค่าและระบบ</strong> → <strong>จัดการผู้ใช้งาน</strong></li>
             <li>กด "+ เพิ่มผู้ใช้"</li>
             <li>กรอกชื่อ + email + password</li>
             <li>เลือก Role + Linked Employer (ถ้าเป็น employer)</li>

@@ -36,7 +36,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>ลูกจ้างที่ถูกแจ้งออก</strong></li>
+            <li>Sidebar → <strong>ฐานข้อมูล</strong> → <strong>ลูกจ้างที่ถูกแจ้งออก</strong></li>
             <li>พิมพ์ค้นหาหรือใช้ filter ที่ด้านบน</li>
             <li>กด "กรอง" — ผลลัพธ์รวมทั้ง active + ไม่ active</li>
         </ol>

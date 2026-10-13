@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>กล่องรับเรื่อง</strong></li>
+            <li>Sidebar → <strong>ตั๋วงาน</strong> → <strong>กล่องรับเรื่อง</strong></li>
             <li>คลิก ticket เพื่อเปิดดู</li>
             <li>กด "Assign to..." → เลือก Staff รับผิดชอบ</li>
             <li>เปลี่ยนสถานะตามการดำเนินงาน</li>

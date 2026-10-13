@@ -37,7 +37,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>คลิกที่ <strong>Sidebar → ข้อมูลลูกจ้าง</strong></li>
+            <li>คลิกที่ <strong>Sidebar → <strong>ฐานข้อมูล</strong> → ข้อมูลลูกจ้าง</strong></li>
             <li>เลือกประเภทมุมมอง (<strong>Card</strong> หรือ <strong>Table</strong>)</li>
             <li>ใช้ filter ด้านบนเพื่อค้นหาลูกจ้างที่ต้องการ</li>
         </ol>

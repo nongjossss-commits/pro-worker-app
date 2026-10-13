@@ -34,7 +34,7 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Sidebar → <strong>Registration Resolution</strong></li>
+            <li>Sidebar → <strong>P Production</strong> → <strong>Registration Resolution</strong></li>
             <li>Click the tab of the resolution you want</li>
             <li>The page refreshes to show that resolution's data</li>
         </ol>
