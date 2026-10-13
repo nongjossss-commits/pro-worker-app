@@ -384,6 +384,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @include('partials._ui_theme_scripts')
+    {{-- Attachment-card styles + chosen-file display (x-file-input-group variant="card"), same as the main app. --}}
+    @include('partials._record_tabs')
     @include('partials._session_heartbeat')
     <!-- Flatpickr — only initialized on inputs opted in via .js-flatpickr, so
          every other plain <input type="date"> in the Labor module keeps its

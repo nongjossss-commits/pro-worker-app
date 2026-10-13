@@ -140,6 +140,9 @@
     }
     .att-pending[hidden] { display: none; }
     .att-desc { font-size: .8rem; }
+    /* Slot content that only makes sense once a file is chosen (e.g. an Upload button). */
+    .att-card .att-when-pending { display: none; }
+    .att-card.is-pending .att-when-pending { display: flex; }
     .att-card .invalid-feedback { font-size: .75rem; margin-top: 0; }
     .att-card .att-extra { display: flex; align-items: center; gap: .4rem; font-size: .8rem; }
     .att-card .att-extra .form-control { font-size: .8rem; }
@@ -374,6 +377,16 @@
     }
     document.addEventListener('change', function (e) {
         if (e.target.matches && e.target.matches('[data-att-card] input[type="file"]')) showPending(e.target);
+    });
+    // "Cancel" on a card: drop the chosen file and go back to the card's previous state.
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest && e.target.closest('[data-att-clear]');
+        if (!btn) return;
+        const input = btn.closest('[data-att-card]') && btn.closest('[data-att-card]').querySelector('input[type="file"]');
+        if (!input) return;
+        e.preventDefault();
+        input.value = '';
+        showPending(input);
     });
     document.addEventListener('reset', function (e) {
         setTimeout(function () {

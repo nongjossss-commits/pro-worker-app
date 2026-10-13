@@ -12,6 +12,14 @@
     'variant' => 'default',
     'number' => null, // card: number badge shown before the label
     'accept' => 'image/*,application/pdf',
+    // card: false = plain file picker only (no camera/scan/edit buttons and no
+    // scanner interception) — e.g. the quick per-row attach on the Pro Worker
+    // contract list, where the scan flow's extra steps caused lost files.
+    'scanner' => true,
+    // card: note shown next to a newly chosen file (default: saved on Save).
+    'pendingHint' => null,
+    // card: show a "Cancel" in the new-file notice (off when the slot has its own Cancel).
+    'clearInPending' => true,
 ])
 
 @php
@@ -40,19 +48,23 @@
             @if($pdfRoute)
                 <a href="{{ $pdfRoute }}" download class="btn att-btn att-btn-pdf" title="PDF"><i class="bi bi-file-earmark-pdf-fill"></i></a>
             @endif
+            @if($scanner)
             <button type="button" class="btn att-btn att-btn-edit" title="{{ __('Edit') }}"
                     onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $id }}', initialUrl: '{{ asset('storage/' . $value) }}' } }))">
                 <i class="bi bi-pencil-square"></i>
             </button>
+            @endif
         @endif
         <span class="att-spacer"></span>
         <label for="{{ $id }}" class="btn att-btn att-btn-pick" title="{{ $value ? __('Replace file') : __('Choose file') }}">
             <i class="bi bi-paperclip"></i><span>{{ $value ? __('Replace file') : __('Choose file') }}</span>
         </label>
+        @if($scanner)
         <button type="button" class="btn att-btn" title="{{ __('Scan / take photo') }}"
                 onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: '{{ $id }}' } }))">
             <i class="bi bi-camera"></i>
         </button>
+        @endif
     </div>
 
     {{-- The real input (same id/name as before) — hidden visually, opened by the label above. --}}
@@ -61,14 +73,19 @@
            id="{{ $id }}"
            name="{{ $name }}"
            @if($accept) accept="{{ $accept }}" @endif
+           @if($scanner)
            multiple
            onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)"
+           @endif
            {{ $attributes }}>
 
     <div class="att-pending" hidden>
         <i class="bi bi-cloud-arrow-up-fill"></i>
         <span><strong>{{ __('New file') }}:</strong> <span class="att-pending-names"></span>
-            <small>({{ __('uploaded when you press Save') }})</small></span>
+            <small>({{ $pendingHint ?? __('uploaded when you press Save') }})</small></span>
+        @if($clearInPending)
+            <button type="button" class="btn btn-link btn-sm p-0 ms-auto text-nowrap att-clear" data-att-clear>{{ __('Cancel') }}</button>
+        @endif
     </div>
 
     @error($name)

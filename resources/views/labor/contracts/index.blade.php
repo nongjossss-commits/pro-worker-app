@@ -137,25 +137,31 @@
                                  (show.blade.php), for whoever genuinely needs to
                                  photograph a document rather than upload one they
                                  already have as a file. --}}
+                            {{-- Same attachment card as the main app, in its plain-picker
+                                 form (:scanner="false" — no scan interception, see above).
+                                 The Upload button appears once a file is chosen. --}}
                             <form method="POST" action="{{ route('labor.contracts.signed-copy.update', $contract) }}" enctype="multipart/form-data" class="mb-0">
                                 @csrf
                                 @method('PUT')
-                                @if($contract->signed_copy_path)
-                                    <div class="mb-1">
-                                        <a href="#" onclick="event.preventDefault(); viewPDF('{{ asset('storage/' . $contract->signed_copy_path) }}', '{{ __('Signed Copy') }}')" class="btn btn-success btn-sm text-white">
-                                            <i class="bi bi-eye-fill"></i> {{ __('View') }}
-                                        </a>
+                                <x-file-input-group
+                                    variant="card"
+                                    :scanner="false"
+                                    :id="'signed_copy_' . $contract->id"
+                                    name="signed_copy"
+                                    :label="__('Signed Copy')"
+                                    :value="$contract->signed_copy_path"
+                                    :pendingHint="__('press Upload to attach it')"
+                                    :clearInPending="false"
+                                >
+                                    <div class="att-when-pending gap-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" data-att-clear>
+                                            <i class="bi bi-x-lg me-1"></i>{{ __('Cancel') }}
+                                        </button>
+                                        <button type="submit" class="btn btn-success btn-sm flex-fill d-inline-flex justify-content-center align-items-center gap-1">
+                                            <i class="bi bi-upload"></i>{{ $contract->signed_copy_path ? __('Replace') : __('Attach') }}
+                                        </button>
                                     </div>
-                                @endif
-                                <div class="input-group input-group-sm">
-                                    <input type="file" name="signed_copy" class="form-control form-control-sm @error('signed_copy') is-invalid @enderror" accept="image/*,application/pdf">
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        <i class="bi bi-upload me-1"></i>{{ $contract->signed_copy_path ? __('Replace') : __('Attach') }}
-                                    </button>
-                                </div>
-                                @error('signed_copy')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
+                                </x-file-input-group>
                             </form>
                         </td>
                         <td class="text-end">

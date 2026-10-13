@@ -2648,5 +2648,17 @@
     "Tickets": "ตั๋วงาน",
     "Records": "ฐานข้อมูล",
     "Finance & Sales": "การเงินและการขาย",
-    "Settings & System": "ตั้งค่าและระบบ"
+    "Settings & System": "ตั้งค่าและระบบ",
+    "press Upload to attach it": "กดปุ่มแนบไฟล์เพื่ออัปโหลด",
+    "Signed Copy": "สำเนาที่ลงนามแล้ว",
+    "Replace": "แทนที่",
+    "Attach": "แนบ",
+    "Attach Signed Copy": "แนบสำเนาที่ลงนามแล้ว",
+    "Replace Signed Copy": "เปลี่ยนสำเนาที่ลงนามแล้ว",
+    "Signed Copy Attachment": "แนบสำเนาสัญญาที่ลงนามแล้ว",
+    "Attach the fully signed contract the employer returned — a photo, scan, or PDF.": "แนบสัญญาที่นายจ้างลงนามครบแล้วส่งกลับมา — รูปถ่าย ไฟล์สแกน หรือ PDF",
+    "Complete Contract": "สัญญาสมบูรณ์",
+    "Awaiting signed copy": "รอสำเนาที่ลงนาม",
+    "signed copy attached": "แนบสำเนาที่ลงนามแล้ว",
+    "Edit History": "ประวัติการแก้ไข"
 }

@@ -1474,5 +1474,17 @@
     "Tickets": "工单",
     "Records": "资料库",
     "Finance & Sales": "财务与销售",
-    "Settings & System": "设置与系统"
+    "Settings & System": "设置与系统",
+    "press Upload to attach it": "点击上传按钮以附加",
+    "Signed Copy": "已签署副本",
+    "Replace": "替换",
+    "Attach": "附加",
+    "Attach Signed Copy": "附加已签署副本",
+    "Replace Signed Copy": "替换已签署副本",
+    "Signed Copy Attachment": "已签署副本附件",
+    "Attach the fully signed contract the employer returned — a photo, scan, or PDF.": "附加雇主签署完毕后退回的合同 —— 照片、扫描件或 PDF",
+    "Complete Contract": "合同已完成",
+    "Awaiting signed copy": "等待已签署副本",
+    "signed copy attached": "已附签署副本",
+    "Edit History": "编辑历史"
 }

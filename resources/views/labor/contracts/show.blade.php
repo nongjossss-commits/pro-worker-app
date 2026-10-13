@@ -64,13 +64,23 @@
                         @csrf
                         @method('PUT')
                         <x-file-input-group
+                            variant="card"
                             id="signed_copy"
                             name="signed_copy"
+                            :label="__('Signed Copy')"
                             :value="$contract->signed_copy_path"
-                        />
-                        <button type="submit" class="btn btn-success btn-sm">
-                            <i class="bi bi-upload me-1"></i>{{ $contract->signed_copy_path ? __('Replace Signed Copy') : __('Attach Signed Copy') }}
-                        </button>
+                            :pendingHint="__('press Upload to attach it')"
+                            :clearInPending="false"
+                        >
+                            <div class="att-when-pending gap-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" data-att-clear>
+                                    <i class="bi bi-x-lg me-1"></i>{{ __('Cancel') }}
+                                </button>
+                                <button type="submit" class="btn btn-success btn-sm flex-fill d-inline-flex justify-content-center align-items-center gap-1">
+                                    <i class="bi bi-upload"></i>{{ $contract->signed_copy_path ? __('Replace Signed Copy') : __('Attach Signed Copy') }}
+                                </button>
+                            </div>
+                        </x-file-input-group>
                     </form>
                 </div>
             </div>

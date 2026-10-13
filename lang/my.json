@@ -1474,5 +1474,17 @@
     "Tickets": "လက်မှတ်များ",
     "Records": "မှတ်တမ်းများ",
     "Finance & Sales": "ငွေကြေး နှင့် အရောင်း",
-    "Settings & System": "ဆက်တင် နှင့် စနစ်"
+    "Settings & System": "ဆက်တင် နှင့် စနစ်",
+    "press Upload to attach it": "တင်ရန် ခလုတ်ကို နှိပ်ပါ",
+    "Signed Copy": "လက်မှတ်ထိုးပြီးမိတ္တူ",
+    "Replace": "အစားထိုးရန်",
+    "Attach": "ပူးတွဲရန်",
+    "Attach Signed Copy": "လက်မှတ်ထိုးပြီးမိတ္တူ ပူးတွဲရန်",
+    "Replace Signed Copy": "လက်မှတ်ထိုးပြီးမိတ္တူ အစားထိုးရန်",
+    "Signed Copy Attachment": "လက်မှတ်ထိုးပြီးမိတ္တူ ပူးတွဲခြင်း",
+    "Attach the fully signed contract the employer returned — a photo, scan, or PDF.": "အလုပ်ရှင် ပြန်ပို့သော လက်မှတ်အပြည့်ထိုးပြီး စာချုပ်ကို ပူးတွဲပါ — ဓာတ်ပုံ၊ စကင်န် သို့မဟုတ် PDF",
+    "Complete Contract": "စာချုပ် ပြည့်စုံ",
+    "Awaiting signed copy": "လက်မှတ်ထိုးမိတ္တူ စောင့်ဆိုင်းနေ",
+    "signed copy attached": "လက်မှတ်ထိုးမိတ္တူ ပူးတွဲပြီး",
+    "Edit History": "ပြင်ဆင်မှု မှတ်တမ်း"
 }
