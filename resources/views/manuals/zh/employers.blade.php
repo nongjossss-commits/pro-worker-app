@@ -22,6 +22,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
     <li><strong>筛选栏</strong> 位于顶部 —— 按状态筛选、是否有雇员、按名称/纳税人识别号搜索</li>
+    <li><strong>搜索框</strong> —— 输入雇主姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表</li>
     <li><strong>雇主卡片</strong> —— 每张卡片显示 1 家公司：名称、雇员人数、状态</li>
     <li>右上角的 <strong>"+ 新增雇主"</strong> 按钮 —— 用于创建新雇主</li>
 </ol>

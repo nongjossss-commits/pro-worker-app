@@ -54,7 +54,31 @@
 <div class="card p-3 mb-3">
     <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
         <form method="GET" action="{{ route('employees.index') }}" class="d-flex flex-wrap align-items-center gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}" style="width: 200px;">
+            {{-- Stage 1 — full-power search (employer name/number/RE code OR
+                 employee name/passport/ID, same as the single box before this
+                 two-stage filter existed). Picking an EMPLOYER result locks
+                 onto that one exact employer and unlocks stage 2 below to
+                 narrow further; picking anything else just filters straight
+                 to that record. --}}
+            <x-live-search-filter
+                endpoint="{{ route('employees.preview_search_combined') }}"
+                name="employer_filter_name"
+                id-target="employer_filter_id"
+                id-value="{{ request('employer_filter_id') }}"
+                placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                value="{{ request('employer_filter_name') }}"
+                class="form-control form-control-sm"
+                style="width: 340px;"
+            />
+            <x-live-search-filter
+                endpoint="{{ route('employees.preview_search') }}"
+                name="search"
+                placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                value="{{ request('search') }}"
+                class="form-control form-control-sm"
+                style="width: 340px;"
+                :disabled="!request('employer_filter_id')"
+            />
             <select name="nationality" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- {{ __('All Nationalities') }} --</option>
                 <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>{{ __('Myanmar') }}</option>

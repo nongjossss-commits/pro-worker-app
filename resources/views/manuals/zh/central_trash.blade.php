@@ -15,6 +15,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
+    <li><strong>搜索框</strong> —— 输入姓名的一部分,系统会立即显示匹配的建议(同时搜索回收站中的所有数据类型,无需先切换标签);点击建议即可立即筛选列表</li>
     <li><strong>标签栏</strong> —— 按数据类型区分(Employers、Employees、Delegates 等)</li>
     <li><strong>表格</strong> —— 显示已删除的项目 + 删除日期 + 删除人</li>
     <li>每行都有<strong>恢复按钮和永久删除按钮</strong></li>

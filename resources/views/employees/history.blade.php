@@ -13,7 +13,25 @@
 <div class="card p-3 mb-3">
     <div class="d-flex flex-column flex-md-row flex-wrap justify-content-md-between align-items-center gap-3">
         <form method="GET" action="{{ route('employees.history') }}" class="d-flex flex-wrap align-items-center gap-2">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="ค้นหา..." value="{{ request('search') }}" style="width: 200px;">
+            <x-live-search-filter
+                endpoint="{{ route('employees.history.preview_search_combined') }}"
+                name="employer_filter_name"
+                id-target="employer_filter_id"
+                id-value="{{ request('employer_filter_id') }}"
+                placeholder="ค้นหานายจ้างหรือลูกจ้าง (ชื่อ/เลข/พาสปอร์ต)..."
+                value="{{ request('employer_filter_name') }}"
+                class="form-control form-control-sm"
+                style="width: 340px;"
+            />
+            <x-live-search-filter
+                endpoint="{{ route('employees.history.preview_search') }}"
+                name="search"
+                placeholder="{{ request('employer_filter_id') ? 'ค้นหาภายในนายจ้างนี้...' : 'เลือกนายจ้างด้านบนก่อนเพื่อค้นแคบลง' }}"
+                value="{{ request('search') }}"
+                class="form-control form-control-sm"
+                style="width: 340px;"
+                :disabled="!request('employer_filter_id')"
+            />
             <select name="nationality" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- ทุกสัญชาติ --</option>
                 <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>

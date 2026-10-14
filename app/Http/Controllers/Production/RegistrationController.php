@@ -108,6 +108,19 @@ class RegistrationController extends Controller
             $statsQuery->withoutGlobalScope('employerTenancy');
         }
 
+        // Two-stage filter — box 1 locks one exact employer; applied as a
+        // hard filter on top of the existing search logic (not touching
+        // applySearchToQuery()/applyEmployerLevelSearch() themselves), so a
+        // suggestion from box 2 can never land outside that one employer.
+        $employerFilterId = $request->input('employer_filter_id');
+        if ($employerFilterId) {
+            $statsQuery->where('employer_id', $employerFilterId);
+        } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
+            // Box 1 hasn't locked onto one exact employer yet — let its
+            // typed text search with the same full power as box 2 below.
+            $request->merge(['search' => $request->input('employer_filter_name')]);
+        }
+
         if ($request->has('search') && $request->search) {
             $this->applySearchToQuery($statsQuery, $request->search);
         }
@@ -140,57 +153,12 @@ class RegistrationController extends Controller
             'cancelled' => 'registration_cancelled',
         ];
 
-        // Apply additional filter for total employees if present
-        $totalEmployeesQuery = clone $statsQuery;
-        if ($request->has('filter') && $request->filter) {
-            $filter = $request->filter;
-            if ($filter === 'not_started') {
-                 $totalEmployeesQuery->whereIn('status', ['registration_pending', 'registration_completed'])
-                       ->whereDoesntHave('registrationSteps', function($q) use ($stepOneId) {
-                           $q->where('registration_steps.id', $stepOneId);
-                       });
-            } elseif ($filter === 'saved') {
-                 $totalEmployeesQuery->where('status', 'registration_completed');
-            } elseif ($filter === 'cancelled') {
-                 $totalEmployeesQuery->where('status', 'registration_cancelled');
-            } elseif ($filter === 'biometrics_collected') {
-                 $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
-                       ->whereNotNull('biometrics_collected_at');
-            } elseif ($filter === 'biometrics_not_collected') {
-                 $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
-                       ->whereNull('biometrics_collected_at');
-            } elseif ($filter === 'total_appointments') {
-                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
-                     $aq->where('resolution_tab_id', $this->currentTab->id)->whereNotNull('appointment_date');
-                 });
-            } elseif ($filter === 'appointment_not_scheduled') {
-                 $totalEmployeesQuery->whereIn('status', ['registration_pending', 'registration_completed'])
-                       ->whereDoesntHave('appointments', function ($aq) {
-                           $aq->where('resolution_tab_id', $this->currentTab->id)->whereNotNull('appointment_date');
-                       });
-            } elseif ($filter === 'appointment_pending') {
-                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
-                     $aq->where('resolution_tab_id', $this->currentTab->id)
-                        ->whereNotNull('appointment_date')
-                        ->whereNull('appointment_completed_at');
-                 });
-            } elseif ($filter === 'appointment_completed') {
-                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
-                     $aq->where('resolution_tab_id', $this->currentTab->id)
-                        ->whereNotNull('appointment_date')
-                        ->whereNotNull('appointment_completed_at');
-                 });
-            } elseif (is_numeric($filter)) {
-                // Approximate filtering for count: must have this step
-                 $totalEmployeesQuery->where('status', '!=', 'registration_cancelled')
-                    ->whereHas('registrationSteps', function($s) use ($filter) {
-                        $s->where('registration_steps.id', $filter);
-                    });
-            }
-        }
-
-        // Clone for different counts
-        $totalEmployees = $totalEmployeesQuery->count();
+        // total_employees must stay the TRUE total (reflecting only
+        // search/operator via $statsQuery, same as every other stat here)
+        // — it must NOT also apply the active state/step filter, or it
+        // just ends up equal to whichever pill is selected instead of the
+        // real total.
+        $totalEmployees = (clone $statsQuery)->count();
         $totalCancelled = (clone $statsQuery)->where('status', 'registration_cancelled')->count();
         $totalSaved = (clone $statsQuery)->where('status', 'registration_completed')->count();
         $totalBiometricsCollected = (clone $statsQuery)
@@ -271,6 +239,10 @@ class RegistrationController extends Controller
              $q->where('resolution_tab_id', $this->currentTab->id)
                ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
         });
+
+        if ($employerFilterId) {
+            $employerQuery->where('id', $employerFilterId);
+        }
 
         // Apply Search to Employer Query
         if ($request->has('search') && $request->search) {
@@ -421,7 +393,21 @@ class RegistrationController extends Controller
         // OPTIMIZATION: Removed heavy hydration and PHP loops.
         // We now load stats via AJAX (batchStats) and financial tab via lazy loading.
 
+        // Team names per employer (for the team-filter "flaps" hanging off
+        // the bottom of each employer card) — one batched query for the
+        // whole page instead of one query per employer, since team names
+        // are a per-employer vocabulary (see getTabTeamNames()'s docblock).
+        $employerTeamNamesMap = \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $this->currentTab->id)
+            ->whereIn('employer_id', $employers->pluck('id'))
+            ->select('employer_id', 'team_name')
+            ->distinct()
+            ->orderBy('team_name')
+            ->get()
+            ->groupBy('employer_id')
+            ->map(fn($rows) => $rows->pluck('team_name')->all());
+
         foreach ($employers as $employer) {
+            $employer->teamNames = $employerTeamNamesMap->get($employer->id, []);
             // Eager load just the finance order relation to check status for visual grey-out
             // But we don't create it if missing, nor load items.
             $financeOrder = $employer->productionOrders->first();
@@ -502,6 +488,105 @@ class RegistrationController extends Controller
         return $stats;
     }
 
+    /**
+     * Live-search preview for the index() search box — reuses the exact same
+     * applySearchToQuery()/applyEmployerLevelSearch() filters as the real
+     * search, so a suggestion clicked here always yields the same results
+     * the main filter would.
+     */
+    public function previewSearch(Request $request, $resolutionTab)
+    {
+        $this->resolveTab($resolutionTab, 'registration');
+
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $results = [];
+        $tabId = $this->currentTab->id;
+        $employerFilterId = $request->input('employer_filter_id');
+
+        if (!$employerFilterId) {
+            // No existence pre-filter on purpose — box 1 must find an
+            // employer by name/number/RE code even with zero employees in
+            // this tab; applyEmployerLevelSearch()'s own nested employee
+            // match stays scoped to this tab internally.
+            $employerQuery = Employer::query();
+            $this->applyEmployerLevelSearch($employerQuery, $q);
+            $employers = $employerQuery->limit(5)->get(['id', 'employerNameTh', 'employerNameEn']);
+
+            foreach ($employers as $er) {
+                $results[] = [
+                    'id' => $er->id,
+                    'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+                    'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                    'group' => 'นายจ้าง',
+                ];
+            }
+        }
+
+        $employeeQuery = Employee::where('resolution_tab_id', $tabId)
+            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+            ->with('employer:id,employerNameTh,employerNameEn');
+        if ($employerFilterId) {
+            $employeeQuery->where('employer_id', $employerFilterId);
+        }
+        $this->applySearchToQuery($employeeQuery, $q);
+        $employees = $employeeQuery->limit(8)->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
+
+        foreach ($employees as $emp) {
+            $results[] = [
+                'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+                'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+                'sub_label' => trim(implode(' | ', array_filter([
+                    $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                    $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                    $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                    $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
+                ]))),
+                'photo' => $emp->photo_url,
+                'group' => 'ลูกจ้าง',
+            ];
+        }
+
+        return response()->json(array_slice($results, 0, 10));
+    }
+
+    /**
+     * Live-search preview for box 1 (pick one exact employer) — scoped to
+     * employers who actually have an employee in this resolution tab.
+     */
+    public function previewSearchEmployer(Request $request, $resolutionTab)
+    {
+        $this->resolveTab($resolutionTab, 'registration');
+
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $tabId = $this->currentTab->id;
+        $employerQuery = Employer::whereHas('employees', function ($eq) use ($tabId) {
+            $eq->where('resolution_tab_id', $tabId)
+               ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled']);
+        });
+        $this->applyEmployerLevelSearch($employerQuery, $q);
+        $employers = $employerQuery->limit(10)->get(['id', 'employerNameTh', 'employerNameEn']);
+
+        $results = [];
+        foreach ($employers as $er) {
+            $results[] = [
+                'id' => $er->id,
+                'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+                'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                'group' => 'นายจ้าง',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     private function applyEmployerLevelSearch($query, $search)
     {
         $search = trim($search);
@@ -527,6 +612,9 @@ class RegistrationController extends Controller
             // Employer Fields
             $q->where('employerNameTh', 'like', "%{$search}%")
               ->orWhere('employerNameEn', 'like', "%{$search}%")
+              ->orWhere('employerId', 'like', "%{$search}%")
+              ->orWhere('employerTaxId', 'like', "%{$search}%")
+              ->orWhere('outsource_re_code', 'like', "%{$search}%")
               ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               // Job Owner
@@ -1077,6 +1165,18 @@ class RegistrationController extends Controller
                 'completed' => 'registration_completed',
                 'cancelled' => 'registration_cancelled',
             ]);
+        }
+
+        // Team filter (the "flaps" hanging off the employer card) —
+        // multi-select OR: show employees in ANY of the selected teams.
+        if ($request->has('team_filter') && is_array($request->team_filter) && count($request->team_filter)) {
+            $teamFilter = $request->team_filter;
+            $tabId = $this->currentTab->id;
+            $query->whereIn('id', function ($sub) use ($teamFilter, $tabId) {
+                $sub->select('employee_id')->from('employee_team_assignments')
+                    ->where('resolution_tab_id', $tabId)
+                    ->whereIn('team_name', $teamFilter);
+            });
         }
 
         $employees = $query->get();
@@ -2534,6 +2634,9 @@ class RegistrationController extends Controller
               ->orWhereHas('employer', function($q2) use ($search, $cleanedSearch) {
                   $q2->where('employerNameTh', 'like', "%{$search}%")
                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                     ->orWhere('employerId', 'like', "%{$search}%")
+                     ->orWhere('employerTaxId', 'like', "%{$search}%")
+                     ->orWhere('outsource_re_code', 'like', "%{$search}%")
                      ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                      ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                      ->orWhereHas('jobOwner', function($q3) use ($search, $cleanedSearch) {

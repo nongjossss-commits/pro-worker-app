@@ -14,6 +14,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
+    <li><strong>Search box</strong> — type part of an employee or employer name and matching suggestions appear instantly; click a suggestion to filter the list right away</li>
     <li><strong>Type tabs</strong> — Employers / Employees</li>
     <li><strong>Table</strong> — shows records missing data + what exactly is missing</li>
     <li><strong>Edit button</strong> — click through to fill in the missing data</li>

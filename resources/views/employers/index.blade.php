@@ -20,7 +20,14 @@
                     <option value="50" @selected(request('per_page') == 50)>50</option>
                     <option value="100" @selected(request('per_page') == 100)>100</option>
                 </select>
-                <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('employers.preview_search') }}"
+                    name="search"
+                    placeholder="{{ __('Search') }}..."
+                    value="{{ request('search') }}"
+                    class="form-control form-control-sm"
+                    style="width: 340px;"
+                />
                 <button type="submit" class="btn btn-primary btn-sm">{{ __('Search') }}</button>
                 @if(request('search'))
                     <a href="{{ route('employers.index') }}" class="btn btn-outline-secondary btn-sm">{{ __('Clear') }}</a>

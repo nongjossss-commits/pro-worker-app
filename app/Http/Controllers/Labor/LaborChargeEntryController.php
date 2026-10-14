@@ -131,6 +131,47 @@ class LaborChargeEntryController extends Controller
         ));
     }
 
+    /**
+     * Live-search preview for the index() quick-search box — same
+     * request_number field index() matches on.
+     */
+    public function previewSearch(Request $request)
+    {
+        abort_unless($request->user()->can('manage-labor-ledger'), 403);
+
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $entries = LaborLedgerEntry::whereNotNull('labor_charge_type_id')
+            ->where('request_number', 'like', $like)
+            ->with(['team', 'chargeType'])
+            ->orderByDesc('entry_date')
+            ->limit(10)
+            ->get(['id', 'request_number', 'labor_team_id', 'labor_charge_type_id', 'entry_date']);
+
+        $results = [];
+        $seen = [];
+        foreach ($entries as $e) {
+            if (isset($seen[$e->request_number])) {
+                continue;
+            }
+            $seen[$e->request_number] = true;
+            $results[] = [
+                'label' => $e->request_number,
+                'sub_label' => trim(implode(' | ', array_filter([
+                    optional($e->team)->name,
+                    optional($e->chargeType)->name,
+                ]))),
+                'group' => 'ค่าใช้จ่าย',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function store(Request $request)
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);

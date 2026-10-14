@@ -15,6 +15,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
+    <li><strong>Search box</strong> — type part of an agent's name and matching suggestions appear instantly; click a suggestion to filter the list right away</li>
     <li><strong>Agent table</strong> — name, phone number, email, number of employers managed</li>
     <li><strong>"+ Add New Agent"</strong> button</li>
 </ol>

@@ -145,7 +145,13 @@
         <div class="row g-2 align-items-end">
             <div class="col-12 col-md-3">
                 <label class="form-label small">{{ __('Quick search (Request No.)') }}</label>
-                <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ __('e.g. RE12345') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('labor.charges.preview_search') }}"
+                    name="search"
+                    placeholder="{{ __('e.g. RE12345') }}"
+                    value="{{ $filters['search'] ?? '' }}"
+                    class="form-control"
+                />
             </div>
             <div class="col-6 col-md-2">
                 <label class="form-label small">{{ __('Team') }}</label>

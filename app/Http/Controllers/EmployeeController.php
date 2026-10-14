@@ -182,6 +182,21 @@ public function reinstate(Employee $employee)
     }
 
     // --- START: ADDED FILTERING LOGIC ---
+    // Two-stage filter: "employer_filter_id" (box 1 — pick one exact
+    // employer) scopes everything below it, including box 2's own free-text
+    // search — which then only needs to match the employee's own fields,
+    // not re-match the employer by name (already locked to one exact row).
+    $employerAlreadyFiltered = $request->filled('employer_filter_id');
+    if ($employerAlreadyFiltered) {
+        $query->where('employer_id', $request->input('employer_filter_id'));
+    } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
+        // Box 1 hasn't locked onto one exact employer yet — let its typed
+        // text search with the same full power as box 2 below (so an urgent
+        // single-employee lookup by passport/ID works without knowing the
+        // employer first), by feeding it into the same 'search' handling.
+        $request->merge(['search' => $request->input('employer_filter_name')]);
+    }
+
     if ($request->filled('search')) {
         $rawSearch = trim($request->input('search'));
 
@@ -190,7 +205,7 @@ public function reinstate(Employee $employee)
             $query->where('id', (int) $matches[1]);
         } else {
             $searchTerm = '%' . $rawSearch . '%';
-            $query->where(function ($q) use ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm, $employerAlreadyFiltered) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
                   ->orWhere('name_suffix', 'like', $searchTerm)
@@ -200,15 +215,20 @@ public function reinstate(Employee $employee)
                   ->orWhere('employee_id_number', 'like', $searchTerm)
                   ->orWhere('name_list_number', 'like', $searchTerm)
                   ->orWhere('request_number', 'like', $searchTerm)
-                  ->orWhere('employer_employee_id', 'like', $searchTerm)
-                  ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
-                      $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                    ->orWhere('employerNameEn', 'like', $searchTerm)
-                                    ->orWhere('name_suffix', 'like', $searchTerm)
-                                    ->orWhere(function($addrQ) use ($searchTerm) {
-                                        $addrQ->filterByAddress($searchTerm);
-                                    });
-                  });
+                  ->orWhere('employer_employee_id', 'like', $searchTerm);
+                if (!$employerAlreadyFiltered) {
+                    $q->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
+                        $employerQuery->where('employerNameTh', 'like', $searchTerm)
+                                      ->orWhere('employerNameEn', 'like', $searchTerm)
+                                      ->orWhere('name_suffix', 'like', $searchTerm)
+                                      ->orWhere('employerId', 'like', $searchTerm)
+                                      ->orWhere('employerTaxId', 'like', $searchTerm)
+                                      ->orWhere('outsource_re_code', 'like', $searchTerm)
+                                      ->orWhere(function($addrQ) use ($searchTerm) {
+                                          $addrQ->filterByAddress($searchTerm);
+                                      });
+                    });
+                }
             });
         }
     }
@@ -319,6 +339,292 @@ public function reinstate(Employee $employee)
         'currentPerPage',
         'addressOptions'
     ))->with('currentView', $request->input('view', 'card'));
+}
+
+/**
+ * Live-search preview for the index() search box — same core name/ID
+ * fields index() matches on, independent lightweight query (not scoped
+ * to the terminated/cancelled exclusion, matching how index() itself
+ * drops that exclusion once a search term is present).
+ */
+public function previewSearch(Request $request)
+{
+    $q = trim($request->input('q', ''));
+    if (mb_strlen($q) < 2) {
+        return response()->json([]);
+    }
+    $like = "%{$q}%";
+
+    // Two-stage filter: once box 1 has locked an exact employer, box 2's
+    // suggestions must only ever come from inside that employer — otherwise
+    // a click here could show an employee the real list filter then hides.
+    $employerFilterId = $request->input('employer_filter_id');
+
+    $employeeQuery = Employee::query();
+    if ($employerFilterId) {
+        $employeeQuery->where('employer_id', $employerFilterId);
+    }
+    $employeeQuery->where(function ($eq) use ($like, $employerFilterId) {
+            $eq->where('employeeNameTh', 'like', $like)
+               ->orWhere('employeeNameEn', 'like', $like)
+               ->orWhere('name_suffix', 'like', $like)
+               ->orWhere('employeePassport', 'like', $like)
+               ->orWhere('pinkCardNo', 'like', $like)
+               ->orWhere('employeeWorkPermit', 'like', $like)
+               ->orWhere('employee_id_number', 'like', $like)
+               ->orWhere('name_list_number', 'like', $like)
+               ->orWhere('request_number', 'like', $like)
+               ->orWhere('employer_employee_id', 'like', $like);
+            if (!$employerFilterId) {
+                $eq->orWhereHas('employer', function ($eqq) use ($like) {
+                    $eqq->where('employerNameTh', 'like', $like)
+                        ->orWhere('employerNameEn', 'like', $like);
+                });
+            }
+        });
+
+    $employees = $employeeQuery
+        ->with('employer:id,employerNameTh,employerNameEn')
+        ->limit(10)
+        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
+
+    $results = [];
+    foreach ($employees as $emp) {
+        $results[] = [
+            // English name shown/searched first — this program uses the
+            // English name as primary; Thai name is the secondary line.
+            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+            // Raw name (no title prefix) — what actually gets typed into the
+            // box and submitted on selection, since the title prefix above
+            // is display-only and won't LIKE-match the employeeNameEn column.
+            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+            'sub_label' => trim(implode(' | ', array_filter([
+                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
+            ]))),
+            'photo' => $emp->photo_url,
+            'group' => 'ลูกจ้าง',
+        ];
+    }
+
+    return response()->json($results);
+}
+
+/**
+ * Live-search preview for box 1 of index() — full power, same as
+ * previewSearch() above, PLUS employer matches (tagged with 'id') so
+ * picking one locks box 1 to that exact employer and unlocks box 2.
+ * Picking a non-employer result just filters straight to that record,
+ * same as the single search box before this two-stage filter existed.
+ */
+public function previewSearchCombined(Request $request)
+{
+    $q = trim($request->input('q', ''));
+    if (mb_strlen($q) < 2) {
+        return response()->json([]);
+    }
+    $like = "%{$q}%";
+    $results = [];
+
+    $employers = Employer::where(function ($eq) use ($like) {
+            $eq->where('employerNameTh', 'like', $like)
+               ->orWhere('employerNameEn', 'like', $like)
+               ->orWhere('name_suffix', 'like', $like)
+               ->orWhere('businessType', 'like', $like)
+               ->orWhere('employerId', 'like', $like)
+               ->orWhere('employerTaxId', 'like', $like)
+               ->orWhere('outsource_re_code', 'like', $like);
+        })
+        ->limit(5)
+        ->get(['id', 'employerNameTh', 'employerNameEn']);
+
+    foreach ($employers as $er) {
+        $results[] = [
+            'id' => $er->id,
+            'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+            'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+            'group' => 'นายจ้าง',
+        ];
+    }
+
+    $employees = Employee::where(function ($eq) use ($like) {
+            $eq->where('employeeNameTh', 'like', $like)
+               ->orWhere('employeeNameEn', 'like', $like)
+               ->orWhere('name_suffix', 'like', $like)
+               ->orWhere('employeePassport', 'like', $like)
+               ->orWhere('pinkCardNo', 'like', $like)
+               ->orWhere('employeeWorkPermit', 'like', $like)
+               ->orWhere('employee_id_number', 'like', $like)
+               ->orWhere('name_list_number', 'like', $like)
+               ->orWhere('request_number', 'like', $like)
+               ->orWhere('employer_employee_id', 'like', $like);
+        })
+        ->with('employer:id,employerNameTh,employerNameEn')
+        ->limit(5)
+        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
+
+    foreach ($employees as $emp) {
+        $results[] = [
+            // English name shown/searched first — this program uses the
+            // English name as primary; Thai name is the secondary line.
+            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+            // Raw name (no title prefix) — what actually gets typed into the
+            // box and submitted on selection, since the title prefix above
+            // is display-only and won't LIKE-match the employeeNameEn column.
+            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+            'sub_label' => trim(implode(' | ', array_filter([
+                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
+            ]))),
+            'photo' => $emp->photo_url,
+            'group' => 'ลูกจ้าง',
+        ];
+    }
+
+    return response()->json($results);
+}
+
+/**
+ * Live-search preview for historyIndex()'s search box — same scope
+ * (terminated employees only) as that page's own base query.
+ */
+public function previewHistorySearch(Request $request)
+{
+    $q = trim($request->input('q', ''));
+    if (mb_strlen($q) < 2) {
+        return response()->json([]);
+    }
+    $like = "%{$q}%";
+    $employerFilterId = $request->input('employer_filter_id');
+
+    $employeeQuery = Employee::whereNotNull('terminated_at');
+    if ($employerFilterId) {
+        $employeeQuery->where('employer_id', $employerFilterId);
+    }
+    $employeeQuery->where(function ($eq) use ($like, $employerFilterId) {
+            $eq->where('employeeNameTh', 'like', $like)
+               ->orWhere('employeeNameEn', 'like', $like)
+               ->orWhere('name_suffix', 'like', $like)
+               ->orWhere('employeePassport', 'like', $like)
+               ->orWhere('pinkCardNo', 'like', $like)
+               ->orWhere('employeeWorkPermit', 'like', $like)
+               ->orWhere('employee_id_number', 'like', $like)
+               ->orWhere('name_list_number', 'like', $like)
+               ->orWhere('request_number', 'like', $like)
+               ->orWhere('employer_employee_id', 'like', $like);
+            if (!$employerFilterId) {
+                $eq->orWhereHas('employer', function ($eqq) use ($like) {
+                    $eqq->where('employerNameTh', 'like', $like)
+                        ->orWhere('employerNameEn', 'like', $like);
+                });
+            }
+        });
+
+    $employees = $employeeQuery
+        ->with('employer:id,employerNameTh,employerNameEn')
+        ->limit(10)
+        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
+
+    $results = [];
+    foreach ($employees as $emp) {
+        $results[] = [
+            // English name shown/searched first — this program uses the
+            // English name as primary; Thai name is the secondary line.
+            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+            // Raw name (no title prefix) — what actually gets typed into the
+            // box and submitted on selection, since the title prefix above
+            // is display-only and won't LIKE-match the employeeNameEn column.
+            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+            'sub_label' => trim(implode(' | ', array_filter([
+                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
+            ]))),
+            'photo' => $emp->photo_url,
+            'group' => 'ลูกจ้าง',
+        ];
+    }
+
+    return response()->json($results);
+}
+
+/**
+ * Live-search preview for box 1 of historyIndex() — same combined
+ * (employer + terminated-employee) pattern as previewSearchCombined().
+ */
+public function previewHistorySearchCombined(Request $request)
+{
+    $q = trim($request->input('q', ''));
+    if (mb_strlen($q) < 2) {
+        return response()->json([]);
+    }
+    $like = "%{$q}%";
+    $results = [];
+
+    $employers = Employer::where(function ($eq) use ($like) {
+            $eq->where('employerNameTh', 'like', $like)
+               ->orWhere('employerNameEn', 'like', $like)
+               ->orWhere('name_suffix', 'like', $like)
+               ->orWhere('businessType', 'like', $like)
+               ->orWhere('employerId', 'like', $like)
+               ->orWhere('employerTaxId', 'like', $like)
+               ->orWhere('outsource_re_code', 'like', $like);
+        })
+        ->limit(5)
+        ->get(['id', 'employerNameTh', 'employerNameEn']);
+
+    foreach ($employers as $er) {
+        $results[] = [
+            'id' => $er->id,
+            'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+            'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+            'group' => 'นายจ้าง',
+        ];
+    }
+
+    $employees = Employee::whereNotNull('terminated_at')
+        ->where(function ($eq) use ($like) {
+            $eq->where('employeeNameTh', 'like', $like)
+               ->orWhere('employeeNameEn', 'like', $like)
+               ->orWhere('name_suffix', 'like', $like)
+               ->orWhere('employeePassport', 'like', $like)
+               ->orWhere('pinkCardNo', 'like', $like)
+               ->orWhere('employeeWorkPermit', 'like', $like)
+               ->orWhere('employee_id_number', 'like', $like)
+               ->orWhere('name_list_number', 'like', $like)
+               ->orWhere('request_number', 'like', $like)
+               ->orWhere('employer_employee_id', 'like', $like);
+        })
+        ->with('employer:id,employerNameTh,employerNameEn')
+        ->limit(5)
+        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
+
+    foreach ($employees as $emp) {
+        $results[] = [
+            // English name shown/searched first — this program uses the
+            // English name as primary; Thai name is the secondary line.
+            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+            // Raw name (no title prefix) — what actually gets typed into the
+            // box and submitted on selection, since the title prefix above
+            // is display-only and won't LIKE-match the employeeNameEn column.
+            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+            'sub_label' => trim(implode(' | ', array_filter([
+                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
+            ]))),
+            'photo' => $emp->photo_url,
+            'group' => 'ลูกจ้าง',
+        ];
+    }
+
+    return response()->json($results);
 }
 
 public function create(Request $request) // เพิ่ม Request $request เข้ามา
@@ -1243,9 +1549,17 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $query = Employee::query()->whereNotNull('terminated_at');
 
+        // Two-stage filter — see EmployeeController::index() for the same pattern.
+        $employerAlreadyFiltered = $request->filled('employer_filter_id');
+        if ($employerAlreadyFiltered) {
+            $query->where('employer_id', $request->input('employer_filter_id'));
+        } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
+            $request->merge(['search' => $request->input('employer_filter_name')]);
+        }
+
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
-            $query->where(function ($q) use ($searchTerm) {
+            $query->where(function ($q) use ($searchTerm, $employerAlreadyFiltered) {
                 $q->where('employeeNameTh', 'like', $searchTerm)
                   ->orWhere('employeeNameEn', 'like', $searchTerm)
                   ->orWhere('name_suffix', 'like', $searchTerm)
@@ -1255,15 +1569,20 @@ public function create(Request $request) // เพิ่ม Request $request เ
                   ->orWhere('employee_id_number', 'like', $searchTerm)
                   ->orWhere('name_list_number', 'like', $searchTerm)
               ->orWhere('request_number', 'like', $searchTerm)
-              ->orWhere('employer_employee_id', 'like', $searchTerm)
-                  ->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
-                      $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                    ->orWhere('employerNameEn', 'like', $searchTerm)
-                                    ->orWhere('name_suffix', 'like', $searchTerm)
-                                    ->orWhere(function($addrQ) use ($searchTerm) {
-                                        $addrQ->filterByAddress($searchTerm);
-                                    });
-                  });
+              ->orWhere('employer_employee_id', 'like', $searchTerm);
+                if (!$employerAlreadyFiltered) {
+                    $q->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
+                        $employerQuery->where('employerNameTh', 'like', $searchTerm)
+                                      ->orWhere('employerNameEn', 'like', $searchTerm)
+                                      ->orWhere('name_suffix', 'like', $searchTerm)
+                                      ->orWhere('employerId', 'like', $searchTerm)
+                                      ->orWhere('employerTaxId', 'like', $searchTerm)
+                                      ->orWhere('outsource_re_code', 'like', $searchTerm)
+                                      ->orWhere(function($addrQ) use ($searchTerm) {
+                                          $addrQ->filterByAddress($searchTerm);
+                                      });
+                    });
+                }
             });
         }
 

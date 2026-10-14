@@ -110,15 +110,32 @@
     {{-- Search & Actions (Moved Above Filter) --}}
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-center gap-3 mb-4">
         {{-- Search Bar --}}
-        <form action="{{ route('production.index') }}" method="GET" class="d-flex flex-grow-1 justify-content-center w-100">
+        <form action="{{ route('production.index') }}" method="GET" class="d-flex flex-grow-1 justify-content-center w-100 gap-2 flex-wrap">
             @if(isset($activeTab))
                 <input type="hidden" name="tab" value="{{ $activeTab->slug }}">
             @endif
+            <x-live-search-filter
+                endpoint="{{ route('production.preview_search', ['tab' => $activeTab->slug ?? null]) }}"
+                name="employer_filter_name"
+                id-target="employer_filter_id"
+                id-value="{{ request('employer_filter_id') }}"
+                placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                value="{{ request('employer_filter_name') }}"
+                class="form-control form-control-lg bg-white shadow-sm"
+                style="max-width: 340px;"
+            />
             <div class="input-group input-group-lg" style="max-width: 500px;">
                 <span class="input-group-text bg-white border-end-0 shadow-sm"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" name="search" class="form-control bg-white border-start-0 shadow-sm" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('production.preview_search', ['tab' => $activeTab->slug ?? null]) }}"
+                    name="search"
+                    placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                    value="{{ request('search') }}"
+                    class="form-control bg-white border-start-0 shadow-sm"
+                    :disabled="!request('employer_filter_id')"
+                />
                 <button class="btn btn-primary shadow-sm" type="submit">{{ __('Search') }}</button>
-                @if(request('search'))
+                @if(request('search') || request('employer_filter_id'))
                     <a href="{{ route('production.index', ['tab' => $activeTab->slug ?? null]) }}" class="btn btn-outline-secondary shadow-sm bg-white">{{ __('Clear') }}</a>
                 @endif
             </div>
@@ -556,6 +573,32 @@
                              @endforeach
                          </div>
                     </div>
+
+                    {{-- Team filter row — directly under the step row (not
+                         hanging off the whole card's bottom edge, which
+                         could be far below once the item list is
+                         expanded). One pill per team (group_name) this
+                         order has, plus a gear button to manage the team
+                         list. Hidden entirely when the order has no teams
+                         yet. --}}
+                    <div class="w-100 overflow-auto custom-scrollbar pb-1 mt-2" id="team-filter-flaps-{{ $order->id }}" style="scrollbar-width: thin; {{ empty($order->teamNames) ? 'display:none;' : '' }}">
+                         <div class="d-flex flex-nowrap align-items-center gap-2">
+                             <span class="d-inline-flex align-items-center text-muted flex-shrink-0" style="font-size: 0.78rem;"><i class="bi bi-people-fill me-1"></i>{{ __('Team') }}:</span>
+                             @foreach($order->teamNames ?? [] as $teamName)
+                                 <button type="button"
+                                     class="btn d-inline-flex align-items-center rounded-pill px-3 py-1 gap-1 flex-shrink-0 team-filter-flap"
+                                     style="min-width: max-content; font-size: 0.85rem; font-weight: 600; background:#f3e8ff; border:1px solid #c084fc; color:#6b21a8;"
+                                     data-team-name="{{ $teamName }}"
+                                     onclick="window.toggleOrderTeamFilter({{ $order->id }}, {{ json_encode($teamName) }}, this)">
+                                     <i class="bi bi-people-fill"></i>{{ $teamName }}
+                                 </button>
+                             @endforeach
+                             <button type="button"
+                                 class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 flex-shrink-0"
+                                 title="{{ __('Manage Teams') }}"
+                                 onclick="window.openManageTeamsForOrder({{ $order->id }})"><i class="bi bi-gear-fill"></i></button>
+                         </div>
+                    </div>
                 </div>
 
                     <div id="collapse-{{ $order->id }}" class="accordion-collapse collapse" data-employer-id="{{ $order->employer_id }}" aria-labelledby="heading-{{ $order->id }}" data-bs-parent="#productionAccordion">
@@ -572,6 +615,7 @@
                             </x-card-scroll-frame>
                         </div>
                     </div>
+
                 </div>
 
                 {{-- Finance Modal (lazy load — โหลดข้อมูลเมื่อเปิดครั้งแรก ไม่โหลดทุก order พร้อมกันตอนเปิดหน้า) --}}
@@ -664,7 +708,7 @@
             <div class="modal-body p-4">
                 <input type="hidden" id="team_item_id">
 
-                <div class="mb-4">
+                <div class="mb-4" id="team-assign-section">
                     <label for="workflow_team_name" class="form-label fw-bold text-dark">{{ __('Team Name / Batch') }}</label>
                     <input type="text" class="form-control form-control-lg" id="workflow_team_name" placeholder="{{ __('e.g., Batch 1, Arrived 25/10') }}">
                     <div class="form-text text-muted">{{ __('Assign a group name to organize employees in this job.') }}</div>
@@ -679,12 +723,14 @@
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-outline-secondary" onclick="clearItemTeam()" title="{{ __('Remove this employee from their team') }}">
-                    <i class="bi bi-x-circle me-1"></i> {{ __('No Team') }}
-                </button>
-                <button type="button" class="btn btn-primary px-4" onclick="saveItemTeam()">
-                    <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
-                </button>
+                <div id="team-assign-footer-buttons" class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearItemTeam()" title="{{ __('Remove this employee from their team') }}">
+                        <i class="bi bi-x-circle me-1"></i> {{ __('No Team') }}
+                    </button>
+                    <button type="button" class="btn btn-primary px-4" onclick="saveItemTeam()">
+                        <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>

@@ -14,6 +14,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
+    <li><strong>搜索框</strong> —— 输入公司名称的一部分,系统会立即显示匹配的建议;点击建议即可立即筛选列表</li>
     <li><strong>Importer 表格</strong> —— 公司名称、国家、地址、联系人</li>
     <li><strong>"+ 新增 Importer"</strong> 按钮</li>
 </ol>

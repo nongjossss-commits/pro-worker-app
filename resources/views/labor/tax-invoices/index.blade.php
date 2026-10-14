@@ -15,7 +15,13 @@
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-3">
                 <label class="form-label small">{{ __('Search') }}</label>
-                <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="{{ __('Invoice no. or customer...') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('labor.tax-invoices.preview_search') }}"
+                    name="search"
+                    placeholder="{{ __('Invoice no. or customer...') }}"
+                    value="{{ request('search') }}"
+                    class="form-control"
+                />
             </div>
             <div class="col-md-2">
                 <label class="form-label small">{{ __('Team') }}</label>

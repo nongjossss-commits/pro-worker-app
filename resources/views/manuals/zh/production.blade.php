@@ -17,6 +17,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
     <li>顶部的<strong>统计摘要卡片</strong> —— 即将到期、进行中、待审核的工作数量</li>
+    <li><strong>搜索框</strong> —— 输入雇主或雇员姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表</li>
     <li><strong>筛选栏</strong> —— 按雇主、业务负责人、工作类型(MOU/签证)筛选</li>
     <li><strong>工作卡片</strong> —— 每张卡片显示销售人员照片 + 雇主名称 + 雇员人数 + 各步骤状态</li>
     <li><strong>"Send to Workflow" 按钮</strong> —— 将工作送入 Workflow 流程(仅限拥有 approve-production 权限的角色)</li>

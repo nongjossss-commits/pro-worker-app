@@ -10,7 +10,15 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h1>Delegates</h1>
                 <div class="d-flex gap-2">
-                    <input type="text" id="delegate-search-input" class="form-control form-control-sm" placeholder="Search...">
+                    <form method="GET" action="{{ route('delegates.index') }}" class="d-flex gap-2">
+                        <x-live-search-filter
+                            endpoint="{{ route('delegates.preview_search') }}"
+                            name="search"
+                            placeholder="Search..."
+                            value="{{ $search }}"
+                            class="form-control form-control-sm"
+                        />
+                    </form>
                     <a href="{{ route('delegates.create') }}" class="btn btn-primary">Add Delegate</a>
                 </div>
             </div>
@@ -65,18 +73,6 @@
 
 @push('scripts')
 <script>
-    // Live Search for Delegates Table
-    const searchInput_delegate = document.getElementById('delegate-search-input');
-    const tableBody_delegate = document.getElementById('delegate-table-body');
-    const tableRows_delegate = tableBody_delegate.getElementsByTagName('tr');
-
-    searchInput_delegate.addEventListener('keyup', function() {
-        const searchTerm = searchInput_delegate.value.toLowerCase();
-        for (let row of tableRows_delegate) {
-            row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
-        }
-    });
-
     document.querySelectorAll('.delete-form').forEach(form => {
         form.addEventListener('submit', function(event) {
             event.preventDefault();

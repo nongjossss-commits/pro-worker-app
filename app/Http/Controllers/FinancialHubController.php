@@ -72,22 +72,40 @@ class FinancialHubController extends Controller
             // 2. Query Transactions
             $query = FinancialTransaction::query()->where($excludeQuotations)->latest('created_at');
 
+            // Two-stage filter — box 1 locks one exact employer; box 2's
+            // free-text search then skips re-matching the employer by name.
+            $employerFilterId = $request->input('employer_filter_id');
+            if ($employerFilterId) {
+                $query->whereHas('productionOrder', function ($po) use ($employerFilterId) {
+                    $po->where('employer_id', $employerFilterId);
+                });
+            } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
+                // Box 1 hasn't locked onto one exact employer yet — let its
+                // typed text search with the same full power as box 2 below.
+                $request->merge(['search' => $request->input('employer_filter_name')]);
+            }
+
             // Search — id, notes, project, employer (Th/En/suffix), job owner
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->where(function($q) use ($search) {
+                $query->where(function($q) use ($search, $employerFilterId) {
                     $q->where('id', 'like', "%{$search}%")
                       ->orWhere('notes', 'like', "%{$search}%")
-                      ->orWhereHas('productionOrder', function($po) use ($search) {
-                          $po->where('project_name', 'like', "%{$search}%")
-                             ->orWhereHas('employer', function($e) use ($search) {
-                                 $e->where('employerNameTh', 'like', "%{$search}%")
-                                   ->orWhere('employerNameEn', 'like', "%{$search}%")
-                                   ->orWhere('name_suffix', 'like', "%{$search}%")
-                                   ->orWhereHas('jobOwner', function($jo) use ($search) {
-                                       $jo->where('name', 'like', "%{$search}%");
-                                   });
-                             });
+                      ->orWhereHas('productionOrder', function($po) use ($search, $employerFilterId) {
+                          $po->where('project_name', 'like', "%{$search}%");
+                          if (!$employerFilterId) {
+                              $po->orWhereHas('employer', function($e) use ($search) {
+                                  $e->where('employerNameTh', 'like', "%{$search}%")
+                                    ->orWhere('employerNameEn', 'like', "%{$search}%")
+                                    ->orWhere('name_suffix', 'like', "%{$search}%")
+                                    ->orWhere('employerId', 'like', "%{$search}%")
+                                    ->orWhere('employerTaxId', 'like', "%{$search}%")
+                                    ->orWhere('outsource_re_code', 'like', "%{$search}%")
+                                    ->orWhereHas('jobOwner', function($jo) use ($search) {
+                                        $jo->where('name', 'like', "%{$search}%");
+                                    });
+                              });
+                          }
                       });
                 });
             }
@@ -227,13 +245,20 @@ class FinancialHubController extends Controller
             $baseQuery = ProductionOrder::whereNotIn('status', ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'])
                 ->whereNotNull('work_type_id');
 
+            // Search box doubles as an employer picker — picking a suggestion
+            // submits its exact id (precise), typing free text and pressing
+            // Enter still does the old fuzzy project/employer-name match.
+            if ($request->filled('employer_filter_id')) {
+                $baseQuery->where('employer_id', $request->input('employer_filter_id'));
+            }
+
             $stats = $this->getStatsForOrders($baseQuery);
 
             $query = (clone $baseQuery)->with(['employer', 'workType' => fn ($q) => $q->withTrashed(), 'financialGroups.transactions', 'financialGroups.transactions.payments'])
                 ->latest('created_at')
                 ->withCount('items');
 
-            if ($request->filled('search')) {
+            if (!$request->filled('employer_filter_id') && $request->filled('search')) {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
                     $q->where('project_name', 'like', "%{$search}%")
@@ -260,12 +285,17 @@ class FinancialHubController extends Controller
         elseif ($tab === 'registration') {
             $baseQuery = ProductionOrder::where('status', 'registration_resolution');
 
+            // Search box doubles as an employer picker — see the workflow tab above.
+            if ($request->filled('employer_filter_id')) {
+                $baseQuery->where('employer_id', $request->input('employer_filter_id'));
+            }
+
             $stats = $this->getStatsForOrders($baseQuery);
 
             $query = (clone $baseQuery)->with(['employer', 'resolutionTab'])
                 ->latest('created_at');
 
-            if ($request->filled('search')) {
+            if (!$request->filled('employer_filter_id') && $request->filled('search')) {
                 $search = $request->search;
                 $query->whereHas('employer', function($e) use ($search) {
                     $e->where('employerNameTh', 'like', "%{$search}%")
@@ -355,12 +385,17 @@ class FinancialHubController extends Controller
         elseif ($tab === 'renewal') {
             $baseQuery = ProductionOrder::where('status', 'renewal_resolution');
 
+            // Search box doubles as an employer picker — see the workflow tab above.
+            if ($request->filled('employer_filter_id')) {
+                $baseQuery->where('employer_id', $request->input('employer_filter_id'));
+            }
+
             $stats = $this->getStatsForOrders($baseQuery);
 
             $query = (clone $baseQuery)->with(['employer', 'resolutionTab'])
                 ->latest('created_at');
 
-            if ($request->filled('search')) {
+            if (!$request->filled('employer_filter_id') && $request->filled('search')) {
                 $search = $request->search;
                 $query->whereHas('employer', function($e) use ($search) {
                     $e->where('employerNameTh', 'like', "%{$search}%")
@@ -452,13 +487,18 @@ class FinancialHubController extends Controller
             $manualBillType = $tab === 'quotations' ? 'quotation' : 'invoice';
             $baseQuery = ProductionOrder::whereNull('work_type_id')->where('manual_bill_type', $manualBillType);
 
+            // Search box doubles as an employer picker — see the workflow tab above.
+            if ($request->filled('employer_filter_id')) {
+                $baseQuery->where('employer_id', $request->input('employer_filter_id'));
+            }
+
             $stats = $this->getStatsForOrders($baseQuery);
 
             $query = (clone $baseQuery)->with(['employer', 'financialGroups.transactions', 'financialGroups.transactions.payments'])
                 ->latest('created_at')
                 ->withCount('items');
 
-            if ($request->filled('search')) {
+            if (!$request->filled('employer_filter_id') && $request->filled('search')) {
                 $search = $request->search;
                 $query->where(function($q) use ($search) {
                     $q->where('project_name', 'like', "%{$search}%")
@@ -532,6 +572,193 @@ class FinancialHubController extends Controller
         }
 
         return view('financial.index', compact('tab', 'stats', 'transactions', 'orders', 'expenses', 'filteredStats'));
+    }
+
+    /**
+     * Live-search preview for each tab's search box. "overview" searches
+     * FinancialTransaction directly (bill #, employer); every ProductionOrder
+     * tab (workflow/registration/renewal/manual/quotations) reuses that same
+     * tab's base query from index() so suggestions never drift from what the
+     * real search would actually find, then collapses the matching orders
+     * down to their distinct employers for display. "expenses" has no search
+     * box in its view, so it isn't handled here.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $tab = $request->input('tab', 'overview');
+        $like = "%{$q}%";
+
+        if ($tab === 'overview') {
+            $excludeQuotations = function ($qq) {
+                $qq->whereDoesntHave('productionOrder', function ($po) {
+                    $po->where('manual_bill_type', 'quotation');
+                });
+            };
+
+            $transactions = FinancialTransaction::where($excludeQuotations)
+                ->where(function ($tq) use ($like) {
+                    $tq->where('id', 'like', $like)
+                       ->orWhere('notes', 'like', $like)
+                       ->orWhereHas('productionOrder', function ($po) use ($like) {
+                           $po->where('project_name', 'like', $like)
+                              ->orWhereHas('employer', function ($e) use ($like) {
+                                  $e->where('employerNameTh', 'like', $like)
+                                    ->orWhere('employerNameEn', 'like', $like)
+                                    ->orWhere('name_suffix', 'like', $like)
+                                    ->orWhereHas('jobOwner', function ($jo) use ($like) {
+                                        $jo->where('name', 'like', $like);
+                                    });
+                              });
+                       });
+                })
+                ->with('productionOrder.employer:id,employerNameTh,employerNameEn')
+                ->limit(10)
+                ->get(['id', 'notes', 'production_order_id']);
+
+            $results = [];
+            foreach ($transactions as $t) {
+                $employer = optional(optional($t->productionOrder)->employer);
+                $results[] = [
+                    'label' => $employer->employerNameTh ?? $employer->employerNameEn ?? ('บิล #' . $t->id),
+                    'sub_label' => trim(implode(' | ', array_filter([
+                        optional($t->productionOrder)->project_name,
+                        "เลขที่บิล: {$t->id}",
+                    ]))),
+                    'group' => 'บิล',
+                ];
+            }
+            return response()->json($results);
+        }
+
+        $baseQuery = ProductionOrder::query();
+        if ($tab === 'workflow') {
+            $baseQuery->whereNotIn('status', ['registration_resolution', 'registration_resolution_cancelled', 'renewal_resolution', 'renewal_resolution_cancelled'])
+                ->whereNotNull('work_type_id');
+        } elseif ($tab === 'registration') {
+            $baseQuery->where('status', 'registration_resolution');
+        } elseif ($tab === 'renewal') {
+            $baseQuery->where('status', 'renewal_resolution');
+        } elseif ($tab === 'manual' || $tab === 'quotations') {
+            $manualBillType = $tab === 'quotations' ? 'quotation' : 'invoice';
+            $baseQuery->whereNull('work_type_id')->where('manual_bill_type', $manualBillType);
+        } else {
+            // Unknown tab (e.g. "wht"/"expenses" have no search box) — no suggestions.
+            return response()->json([]);
+        }
+
+        $orders = $baseQuery->with('employer:id,employerNameTh,employerNameEn')
+            ->where(function ($oq) use ($like) {
+                $oq->where('project_name', 'like', $like)
+                   ->orWhereHas('employer', function ($e) use ($like) {
+                       $e->where('employerNameTh', 'like', $like)
+                         ->orWhere('employerNameEn', 'like', $like)
+                         ->orWhere('name_suffix', 'like', $like);
+                   });
+            })
+            ->limit(20)
+            ->get(['id', 'project_name', 'employer_id']);
+
+        $results = [];
+        $seenEmployerIds = [];
+        foreach ($orders as $order) {
+            if (!$order->employer || isset($seenEmployerIds[$order->employer->id])) {
+                continue;
+            }
+            $seenEmployerIds[$order->employer->id] = true;
+            $results[] = [
+                'id' => $order->employer->id,
+                'label' => $order->employer->employerNameTh ?: $order->employer->employerNameEn ?: '-',
+                'sub_label' => ($order->employer->employerNameEn && $order->employer->employerNameEn !== $order->employer->employerNameTh) ? $order->employer->employerNameEn : '',
+                'group' => 'นายจ้าง',
+            ];
+            if (count($results) >= 10) {
+                break;
+            }
+        }
+
+        return response()->json($results);
+    }
+
+    /**
+     * Live-search preview for box 1 of the Overview tab — employer matches
+     * (tagged with 'id', so picking one locks box 1 to that exact employer
+     * and unlocks box 2) merged with bill matches (picking one filters
+     * straight to that record, same as the single search box before this
+     * two-stage filter existed).
+     */
+    public function previewSearchCombined(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+        $results = [];
+
+        $employers = Employer::where(function ($eq) use ($like) {
+                $eq->where('employerNameTh', 'like', $like)
+                   ->orWhere('employerNameEn', 'like', $like)
+                   ->orWhere('name_suffix', 'like', $like)
+                   ->orWhere('businessType', 'like', $like)
+                   ->orWhere('employerId', 'like', $like)
+                   ->orWhere('employerTaxId', 'like', $like)
+                   ->orWhere('outsource_re_code', 'like', $like);
+            })
+            ->limit(5)
+            ->get(['id', 'employerNameTh', 'employerNameEn']);
+
+        foreach ($employers as $er) {
+            $results[] = [
+                'id' => $er->id,
+                'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+                'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                'group' => 'นายจ้าง',
+            ];
+        }
+
+        $excludeQuotations = function ($qq) {
+            $qq->whereDoesntHave('productionOrder', function ($po) {
+                $po->where('manual_bill_type', 'quotation');
+            });
+        };
+
+        $transactions = FinancialTransaction::where($excludeQuotations)
+            ->where(function ($tq) use ($like) {
+                $tq->where('id', 'like', $like)
+                   ->orWhere('notes', 'like', $like)
+                   ->orWhereHas('productionOrder', function ($po) use ($like) {
+                       $po->where('project_name', 'like', $like)
+                          ->orWhereHas('employer', function ($e) use ($like) {
+                              $e->where('employerNameTh', 'like', $like)
+                                ->orWhere('employerNameEn', 'like', $like)
+                                ->orWhere('name_suffix', 'like', $like)
+                                ->orWhereHas('jobOwner', function ($jo) use ($like) {
+                                    $jo->where('name', 'like', $like);
+                                });
+                          });
+                   });
+            })
+            ->with('productionOrder.employer:id,employerNameTh,employerNameEn')
+            ->limit(5)
+            ->get(['id', 'notes', 'production_order_id']);
+
+        foreach ($transactions as $t) {
+            $employer = optional(optional($t->productionOrder)->employer);
+            $results[] = [
+                'label' => $employer->employerNameTh ?? $employer->employerNameEn ?? ('บิล #' . $t->id),
+                'sub_label' => trim(implode(' | ', array_filter([
+                    optional($t->productionOrder)->project_name,
+                    "เลขที่บิล: {$t->id}",
+                ]))),
+                'group' => 'บิล',
+            ];
+        }
+
+        return response()->json($results);
     }
 
     /**

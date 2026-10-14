@@ -20,6 +20,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
     <li><strong>续签决议标签栏</strong> —— 每个标签代表一轮续签决议(例如"2024 年续签第 1 轮")</li>
+    <li><strong>搜索框</strong> —— 输入雇主或雇员姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表</li>
     <li><strong>雇主 + 雇员卡片</strong> —— 与登记决议使用相同机制</li>
     <li><strong>进度筛选</strong> —— visa-only、work-permit-only、both</li>
 </ol>

@@ -64,6 +64,44 @@ class UserController extends Controller
     }
 
     /**
+     * Live-search preview for the index() search box — same name/email
+     * fields and super-admin visibility rule index() uses.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $query = User::query();
+        if (!Auth::user()->hasRole('super-admin')) {
+            $query->whereDoesntHave('roles', fn ($q2) => $q2->where('name', 'super-admin'));
+        }
+        $query->where(function ($uq) use ($like) {
+            $uq->where('name', 'like', $like)
+               ->orWhere('email', 'like', $like);
+        });
+
+        $users = $query->with('roles')->limit(10)->get(['id', 'name', 'email']);
+
+        $results = [];
+        foreach ($users as $u) {
+            $results[] = [
+                'label' => $u->name,
+                'sub_label' => trim(implode(' | ', array_filter([
+                    $u->email,
+                    $u->roles->pluck('name')->first(),
+                ]))),
+                'group' => 'ผู้ใช้งาน',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

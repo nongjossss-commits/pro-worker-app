@@ -44,7 +44,13 @@
             <form method="GET" action="{{ route('labor.contracts.index') }}" class="row g-2 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label small">{{ __('Search') }}</label>
-                    <input type="text" name="q" class="form-control" value="{{ request('q') }}" placeholder="{{ __('Employer name or contract number...') }}">
+                    <x-live-search-filter
+                        endpoint="{{ route('labor.contracts.preview_search') }}"
+                        name="q"
+                        placeholder="{{ __('Employer name or contract number...') }}"
+                        value="{{ request('q') }}"
+                        class="form-control"
+                    />
                 </div>
                 @if($seesAllTeams)
                     <div class="col-md-3">

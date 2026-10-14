@@ -14,16 +14,9 @@
     $allSubDistricts = $isBkk ? __('All khwaeng') : __('All sub-districts');
 @endphp
 
-<div class="card mb-4 shadow-sm border-0 bg-light">
-    <div class="card-body p-3">
-        <div class="d-flex align-items-center mb-3">
-            <div class="bg-primary bg-opacity-10 p-2 rounded me-2">
-                <i class="bi bi-geo-alt-fill text-primary"></i>
-            </div>
-            <h6 class="mb-0 fw-bold">{{ __('Filter by Address') }}</h6>
-            <span class="ms-2 badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 small fw-normal">{{ __('Dynamic Filter') }}</span>
-        </div>
-        <form action="{{ url()->current() }}" method="GET" id="address-filter-form" class="row g-3">
+<div class="card mb-3 shadow-sm border-0 bg-light">
+    <div class="card-body p-2 px-3">
+        <form action="{{ url()->current() }}" method="GET" id="address-filter-form" class="d-flex flex-wrap align-items-center gap-2">
             {{-- Keep existing query params except address filters and page --}}
             @foreach(request()->except(['addrProvince', 'addrDistrict', 'addrSubDistrict', 'page']) as $key => $value)
                 @if(is_array($value))
@@ -35,56 +28,46 @@
                 @endif
             @endforeach
 
+            <span class="text-secondary small fw-bold text-nowrap d-flex align-items-center">
+                <i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ __('Filter by Address') }}
+            </span>
+
             {{-- Changing a level clears the levels under it: the old district
                  doesn't exist in a new province, so keeping it always gave an
                  empty result. --}}
-            <div class="col-md-4">
-                <label class="form-label small fw-bold text-secondary mb-1">{{ __('Province') }}</label>
-                <select name="addrProvince" class="form-select form-select-sm border-0 shadow-sm"
-                        onchange="this.form.addrDistrict.value=''; this.form.addrSubDistrict.value=''; this.form.submit()">
-                    <option value="">-- {{ __('All provinces') }} --</option>
-                    @foreach($provinceLabels as $value => $label)
-                        <option value="{{ $value }}" @selected(request('addrProvince') == $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <select name="addrProvince" class="form-select form-select-sm border-0 shadow-sm flex-grow-1" style="min-width: 160px; width: auto;"
+                    onchange="this.form.addrDistrict.value=''; this.form.addrSubDistrict.value=''; this.form.submit()">
+                <option value="">-- {{ __('All provinces') }} --</option>
+                @foreach($provinceLabels as $value => $label)
+                    <option value="{{ $value }}" @selected(request('addrProvince') == $value)>{{ $label }}</option>
+                @endforeach
+            </select>
 
-            <div class="col-md-4">
-                <label class="form-label small fw-bold text-secondary mb-1">{{ $districtLabel }}</label>
-                <select name="addrDistrict" class="form-select form-select-sm border-0 shadow-sm"
-                        onchange="this.form.addrSubDistrict.value=''; this.form.submit()" @disabled(count($districtLabels) == 0)>
-                    <option value="">-- {{ $allDistricts }} --</option>
-                    @foreach($districtLabels as $value => $label)
-                        <option value="{{ $value }}" @selected(request('addrDistrict') == $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <select name="addrDistrict" class="form-select form-select-sm border-0 shadow-sm flex-grow-1" style="min-width: 160px; width: auto;" title="{{ $districtLabel }}"
+                    onchange="this.form.addrSubDistrict.value=''; this.form.submit()" @disabled(count($districtLabels) == 0)>
+                <option value="">-- {{ $allDistricts }} --</option>
+                @foreach($districtLabels as $value => $label)
+                    <option value="{{ $value }}" @selected(request('addrDistrict') == $value)>{{ $label }}</option>
+                @endforeach
+            </select>
 
-            <div class="col-md-4">
-                <label class="form-label small fw-bold text-secondary mb-1">{{ $subDistrictLabel }}</label>
-                <select name="addrSubDistrict" class="form-select form-select-sm border-0 shadow-sm" onchange="this.form.submit()" @disabled(count($subDistrictLabels) == 0)>
-                    <option value="">-- {{ $allSubDistricts }} --</option>
-                    @foreach($subDistrictLabels as $value => $label)
-                        <option value="{{ $value }}" @selected(request('addrSubDistrict') == $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <select name="addrSubDistrict" class="form-select form-select-sm border-0 shadow-sm flex-grow-1" style="min-width: 160px; width: auto;" title="{{ $subDistrictLabel }}" onchange="this.form.submit()" @disabled(count($subDistrictLabels) == 0)>
+                <option value="">-- {{ $allSubDistricts }} --</option>
+                @foreach($subDistrictLabels as $value => $label)
+                    <option value="{{ $value }}" @selected(request('addrSubDistrict') == $value)>{{ $label }}</option>
+                @endforeach
+            </select>
 
             @if(request('addrProvince') || request('addrDistrict') || request('addrSubDistrict'))
-                <div class="col-12 mt-2">
-                    <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded shadow-sm">
-                        <div class="small text-muted">
-                            <i class="bi bi-info-circle me-1"></i>
-                            {{ __('Showing results for address:') }}
-                            <strong>{{ $provinceLabels[request('addrProvince')] ?? request('addrProvince') }}</strong>
-                            @if(request('addrDistrict')) > <strong>{{ $districtLabels[request('addrDistrict')] ?? request('addrDistrict') }}</strong> @endif
-                            @if(request('addrSubDistrict')) > <strong>{{ $subDistrictLabels[request('addrSubDistrict')] ?? request('addrSubDistrict') }}</strong> @endif
-                        </div>
-                        <a href="{{ url()->current() . '?' . http_build_query(request()->except(['addrProvince', 'addrDistrict', 'addrSubDistrict', 'page'])) }}" class="btn btn-outline-danger btn-sm border-0">
-                            <i class="bi bi-x-lg me-1"></i> {{ __('Clear address filter') }}
-                        </a>
-                    </div>
-                </div>
+                <span class="small text-muted text-nowrap">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <strong>{{ $provinceLabels[request('addrProvince')] ?? request('addrProvince') }}</strong>
+                    @if(request('addrDistrict')) > <strong>{{ $districtLabels[request('addrDistrict')] ?? request('addrDistrict') }}</strong> @endif
+                    @if(request('addrSubDistrict')) > <strong>{{ $subDistrictLabels[request('addrSubDistrict')] ?? request('addrSubDistrict') }}</strong> @endif
+                </span>
+                <a href="{{ url()->current() . '?' . http_build_query(request()->except(['addrProvince', 'addrDistrict', 'addrSubDistrict', 'page'])) }}" class="btn btn-outline-danger btn-sm border-0 py-0">
+                    <i class="bi bi-x-lg me-1"></i> {{ __('Clear address filter') }}
+                </a>
             @endif
         </form>
     </div>

@@ -34,16 +34,57 @@ class AgentController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('permission:view-agents')->only(['index', 'show']);
+        $this->middleware('permission:view-agents')->only(['index', 'show', 'previewSearch']);
         $this->middleware('permission:create-agents')->only(['create', 'store']);
         $this->middleware('permission:edit-agents')->only(['edit', 'update']);
         $this->middleware('permission:delete-agents')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $agents = Agent::all();
-        return view('agents.index', compact('agents'));
+        $search = $request->input('search');
+        $query = Agent::query();
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('agentNameEn', 'like', "%{$search}%")
+                  ->orWhere('agentLicense', 'like', "%{$search}%")
+                  ->orWhere('agentPhone', 'like', "%{$search}%");
+            });
+        }
+        $agents = $query->get();
+        return view('agents.index', compact('agents', 'search'));
+    }
+
+    /**
+     * Live-search preview for the index() search box — same fields index()
+     * matches on.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $agents = Agent::where(function ($aq) use ($like) {
+                $aq->where('agentNameEn', 'like', $like)
+                   ->orWhere('agentLicense', 'like', $like)
+                   ->orWhere('agentPhone', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'agentNameEn', 'agentLicense']);
+
+        $results = [];
+        foreach ($agents as $a) {
+            $results[] = [
+                'label' => $a->agentNameEn ?: '-',
+                'sub_label' => $a->agentLicense ?: '',
+                'group' => 'เอเจนซี่',
+            ];
+        }
+
+        return response()->json($results);
     }
 
     public function create()

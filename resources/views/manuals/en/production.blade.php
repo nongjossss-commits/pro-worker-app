@@ -17,6 +17,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
     <li><strong>Summary stat cards</strong> at the top — jobs nearing deadline, in progress, awaiting review</li>
+    <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
     <li><strong>Filter bar</strong> — filter by employer, job owner, job type (MOU/Visa)</li>
     <li><strong>Job cards</strong> — each card shows the sales rep's photo + employer name + number of employees + each step's status</li>
     <li><strong>"Send to Workflow" button</strong> — sends the job into the Workflow process (only for roles with the approve-production permission)</li>

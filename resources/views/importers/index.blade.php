@@ -13,7 +13,15 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
          <h2 class="mb-3 mb-md-0">{{ __('Importer List') }}</h2>
          <div class="d-flex flex-column flex-md-row gap-2">
-            <input type="text" id="importer-search-input" class="form-control form-control-sm" placeholder="{{ __('Search...') }}">
+            <form method="GET" action="{{ route('importers.index') }}" class="d-flex gap-2">
+                <x-live-search-filter
+                    endpoint="{{ route('importers.preview_search') }}"
+                    name="search"
+                    placeholder="{{ __('Search...') }}"
+                    value="{{ $search }}"
+                    class="form-control form-control-sm"
+                />
+            </form>
             <a href="{{ route('importers.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i> {{ __('Add New') }}</a>
          </div>
     </div>
@@ -66,18 +74,6 @@
 
 @push('scripts')
 <script>
-    // Live Search for Importers Table
-    const searchInput_importer = document.getElementById('importer-search-input');
-    const tableBody_importer = document.getElementById('importer-table-body');
-    const tableRows_importer = tableBody_importer.getElementsByTagName('tr');
-
-    searchInput_importer.addEventListener('keyup', function() {
-        const searchTerm = searchInput_importer.value.toLowerCase();
-        for (let row of tableRows_importer) {
-            row.style.display = row.textContent.toLowerCase().includes(searchTerm) ? "" : "none";
-        }
-    });
-
     document.querySelectorAll('.delete-form').forEach(form => {
         form.addEventListener('submit', function(event) {
             event.preventDefault();

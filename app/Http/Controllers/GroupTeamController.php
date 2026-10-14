@@ -57,6 +57,38 @@ class GroupTeamController extends Controller
         return view('groups.affiliated.index', compact('employers', 'search', 'addressOptions'));
     }
 
+    /**
+     * Live-search preview for indexAffiliated()'s search box — same
+     * employer name fields index() matches on.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $employers = Employer::where(function ($eq) use ($like) {
+                $eq->where('employerNameTh', 'like', $like)
+                   ->orWhere('employerNameEn', 'like', $like)
+                   ->orWhere('name_suffix', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'employerNameTh', 'employerNameEn']);
+
+        $results = [];
+        foreach ($employers as $er) {
+            $results[] = [
+                'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+                'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                'group' => 'นายจ้าง',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function manageAffiliated(Request $request, Employer $employer)
     {
         $search = $request->input('search');

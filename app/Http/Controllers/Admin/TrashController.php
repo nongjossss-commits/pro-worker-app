@@ -83,6 +83,64 @@ class TrashController extends Controller
     }
 
     /**
+     * Live-search preview for the index() search box — reuses the exact
+     * same applySearchFilter() logic as the real search, across every
+     * trashed model type, so suggestions always match what index() would
+     * actually find.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $typeLabels = [
+            'employees' => 'ลูกจ้าง',
+            'employers' => 'นายจ้าง',
+            'agents' => 'เอเจนซี่',
+            'importers' => 'บริษัทนำเข้า',
+            'delegates' => 'ผู้รับมอบอำนาจ',
+            'tickets' => 'ตั๋วงาน',
+        ];
+
+        $results = [];
+        foreach ($this->getPrunableModels() as $modelName => $modelClass) {
+            if (!isset($typeLabels[$modelName])) {
+                continue; // addresses has no natural "name" to show as a suggestion
+            }
+
+            $query = $modelClass::onlyTrashed();
+            if ($modelName === 'employees' || $modelName === 'employers') {
+                $query->withoutGlobalScopes();
+            }
+            $query->where(function ($sq) use ($modelName, $q) {
+                $this->applySearchFilter($sq, $modelName, $q);
+            });
+
+            $items = $query->limit(3)->get();
+            foreach ($items as $item) {
+                $label = match ($modelName) {
+                    'employees' => $item->employeeNameTh ?: $item->employeeNameEn ?: "#{$item->id}",
+                    'employers' => $item->employerNameTh ?: $item->employerNameEn ?: "#{$item->id}",
+                    'agents' => $item->agentNameEn ?: "#{$item->id}",
+                    'importers' => $item->importerNameTh ?: $item->importerNameEn ?: "#{$item->id}",
+                    'delegates' => $item->delegateNameTh ?: $item->delegateNameEn ?: "#{$item->id}",
+                    'tickets' => $item->subject ?: "#{$item->id}",
+                    default => "#{$item->id}",
+                };
+                $results[] = [
+                    'label' => $label,
+                    'sub_label' => optional($item->deleted_at)->format('d/m/Y H:i') ?? '',
+                    'group' => $typeLabels[$modelName],
+                ];
+            }
+        }
+
+        return response()->json(array_slice($results, 0, 10));
+    }
+
+    /**
      * Update the retention settings for trash.
      */
     public function updateSettings(Request $request)

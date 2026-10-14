@@ -32,7 +32,25 @@
 
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-3">
-                        <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search name or email...') }}" value="{{ request('search') }}">
+                        <x-live-search-filter
+                            endpoint="{{ route('notifications.preview_search_combined') }}"
+                            name="employer_filter_name"
+                            id-target="employer_filter_id"
+                            id-value="{{ request('employer_filter_id') }}"
+                            placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                            value="{{ request('employer_filter_name') }}"
+                            class="form-control form-control-sm"
+                        />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <x-live-search-filter
+                            endpoint="{{ route('notifications.preview_search') }}"
+                            name="search"
+                            placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                            value="{{ request('search') }}"
+                            class="form-control form-control-sm"
+                            :disabled="!request('employer_filter_id')"
+                        />
                     </div>
                     <div class="col-6 col-md-2">
                         <select name="month" class="form-select form-select-sm">

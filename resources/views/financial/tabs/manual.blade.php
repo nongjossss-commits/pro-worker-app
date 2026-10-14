@@ -5,7 +5,15 @@
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">
             <input type="hidden" name="tab" value="manual">
             <div class="col-md-8">
-                <input type="text" name="search" class="form-control" placeholder="{{ __('Search Employer, Bill Name...') }}" value="{{ request('search') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('finance.preview_search', ['tab' => 'manual']) }}"
+                    name="search"
+                    id-target="employer_filter_id"
+                    id-value="{{ request('employer_filter_id') }}"
+                    placeholder="{{ __('Search Employer, Bill Name...') }}"
+                    value="{{ request('search') }}"
+                    class="form-control"
+                />
             </div>
             <div class="col-md-4 d-grid">
                 <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> {{ __('Search') }}</button>

@@ -26,7 +26,13 @@
         <div class="card-body">
             <form action="{{ route('finance.wht-certificates.index') }}" method="GET" class="row g-2">
                 <div class="col-md-3">
-                    <input type="text" name="search" class="form-control" placeholder="{{ __('Search cert no, payer, payee…') }}" value="{{ request('search') }}">
+                    <x-live-search-filter
+                        endpoint="{{ route('finance.wht-certificates.preview_search') }}"
+                        name="search"
+                        placeholder="{{ __('Search cert no, payer, payee…') }}"
+                        value="{{ request('search') }}"
+                        class="form-control"
+                    />
                 </div>
                 <div class="col-md-2">
                     <select name="type" class="form-select">

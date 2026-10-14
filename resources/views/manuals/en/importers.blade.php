@@ -14,6 +14,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
+    <li><strong>Search box</strong> — type part of a company name and matching suggestions appear instantly; click a suggestion to filter the list right away</li>
     <li><strong>Importer table</strong> — company name, country, address, contact person</li>
     <li><strong>"+ Add New Importer"</strong> button</li>
 </ol>

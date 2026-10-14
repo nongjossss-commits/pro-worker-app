@@ -105,30 +105,116 @@
 
     // --- Lazy Load ---
     const loadedOrders = {};
+
+    // Extracted from the show.bs.collapse listener below so the team-filter
+    // flaps can also trigger a (re)load without waiting for the accordion's
+    // own event — same URL-building logic either way.
+    window.loadOrderEmployees = function(orderId, teamFilter) {
+        const container = document.getElementById(`order-content-${orderId}`);
+        if (!container) return;
+
+        const baseUrl = `{{ url('production/order') }}/${orderId}/employees`;
+        const url = new URL(baseUrl, window.location.origin);
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.forEach((value, key) => url.searchParams.append(key, value));
+
+        const teams = teamFilter !== undefined ? teamFilter : ((window.orderTeamFilters && window.orderTeamFilters[orderId]) || []);
+        teams.forEach(name => url.searchParams.append('team_filter[]', name));
+
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+            container.innerHTML = html;
+            loadedOrders[orderId] = true;
+            if(window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
+        });
+    };
+
     document.getElementById('productionAccordion')?.addEventListener('show.bs.collapse', function (e) {
         if (e.target.classList.contains('accordion-collapse')) {
             const orderId = e.target.id.replace('collapse-', '');
             if (!loadedOrders[orderId]) {
-                const container = document.getElementById(`order-content-${orderId}`);
-
-                // Construct URL with current params (filter, search)
-                const baseUrl = `{{ url('production/order') }}/${orderId}/employees`;
-                const url = new URL(baseUrl, window.location.origin);
-                const currentParams = new URLSearchParams(window.location.search);
-                currentParams.forEach((value, key) => url.searchParams.append(key, value));
-
-                fetch(url)
-                .then(res => res.text())
-                .then(html => {
-                    container.innerHTML = html;
-                    loadedOrders[orderId] = true;
-                    if(window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
-                });
+                window.loadOrderEmployees(orderId);
             } else {
                  if(window.refreshGlobalSelectionUI) setTimeout(window.refreshGlobalSelectionUI, 100);
             }
         }
     });
+
+    // --- Team filter "flaps" (per-order, multi-select OR) ---
+    window.orderTeamFilters = window.orderTeamFilters || {};
+
+    const TEAM_PILL_BASE = 'min-width:max-content;font-size:0.85rem;font-weight:600;';
+    const TEAM_PILL_INACTIVE = TEAM_PILL_BASE + 'background:#f3e8ff;border:1px solid #c084fc;color:#6b21a8;';
+    const TEAM_PILL_ACTIVE = TEAM_PILL_BASE + 'background:#9333ea;border:1px solid #7e22ce;color:#fff;';
+
+    window.toggleOrderTeamFilter = function(orderId, teamName, btn) {
+        const list = window.orderTeamFilters[orderId] = window.orderTeamFilters[orderId] || [];
+        const idx = list.indexOf(teamName);
+        if (idx === -1) {
+            list.push(teamName);
+            btn.style.cssText = TEAM_PILL_ACTIVE;
+        } else {
+            list.splice(idx, 1);
+            btn.style.cssText = TEAM_PILL_INACTIVE;
+        }
+
+        window.loadOrderEmployees(orderId, list);
+
+        const collapseEl = document.getElementById(`collapse-${orderId}`);
+        if (collapseEl && !collapseEl.classList.contains('show')) {
+            bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
+        }
+    };
+
+    // Rebuilds one order's flap row from a fresh team-name list — called
+    // after the "manage teams" modal renames/deletes a team, so the flaps
+    // never go stale without a full page reload.
+    window.renderOrderTeamFlaps = function(orderId, names) {
+        const container = document.getElementById(`team-filter-flaps-${orderId}`);
+        if (!container) return;
+
+        if (window.orderTeamFilters[orderId]) {
+            window.orderTeamFilters[orderId] = window.orderTeamFilters[orderId].filter(n => names.includes(n));
+        }
+        const activeNames = window.orderTeamFilters[orderId] || [];
+
+        container.innerHTML = '';
+        container.style.display = names.length ? '' : 'none';
+
+        const row = document.createElement('div');
+        row.className = 'd-flex flex-nowrap align-items-center gap-2';
+
+        const label = document.createElement('span');
+        label.className = 'd-inline-flex align-items-center text-muted flex-shrink-0';
+        label.style.fontSize = '0.78rem';
+        label.innerHTML = '<i class="bi bi-people-fill me-1"></i>{{ __('Team') }}:';
+        row.appendChild(label);
+
+        names.forEach(name => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn d-inline-flex align-items-center rounded-pill px-3 py-1 gap-1 flex-shrink-0 team-filter-flap';
+            btn.style.cssText = activeNames.includes(name) ? TEAM_PILL_ACTIVE : TEAM_PILL_INACTIVE;
+            btn.dataset.teamName = name;
+            btn.innerHTML = '<i class="bi bi-people-fill"></i>' + name;
+            btn.onclick = () => window.toggleOrderTeamFilter(orderId, name, btn);
+            row.appendChild(btn);
+        });
+        const gearBtn = document.createElement('button');
+        gearBtn.type = 'button';
+        gearBtn.className = 'btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 flex-shrink-0';
+        gearBtn.title = '{{ __('Manage Teams') }}';
+        gearBtn.innerHTML = '<i class="bi bi-gear-fill"></i>';
+        gearBtn.onclick = () => window.openManageTeamsForOrder(orderId);
+        row.appendChild(gearBtn);
+
+        container.appendChild(row);
+
+        if (loadedOrders[orderId]) {
+            window.loadOrderEmployees(orderId);
+        }
+    };
 
     // After expansion completes (and the previous card has fully collapsed,
     // shifting the layout), focus the heading of the just-opened card so
@@ -452,7 +538,11 @@
             container.style.minHeight = container.offsetHeight + 'px';
             container.style.opacity = '0.5';
 
-            fetch(`{{ route('workflow.index') }}/${orderId}/items`)
+            // Returned so callers that need to re-scan this container's DOM
+            // afterward (e.g. the "Manage Team" modal reopening to rescan
+            // group headers post-rename/-delete) can wait for it instead of
+            // racing ahead and reading the pre-refresh content.
+            return fetch(`{{ route('workflow.index') }}/${orderId}/items`)
             .then(res => res.text())
             .then(html => {
                 container.innerHTML = html;
@@ -460,6 +550,7 @@
                 container.style.minHeight = '';
             });
         }
+        return Promise.resolve();
     };
 
     // --- Helper to Refresh Card ---
@@ -788,6 +879,40 @@
     }
 
     // --- Manage Team JS (Copied from Workflow) ---
+    // Builds one rename/delete chip for the "Existing Teams" list — shared
+    // by openManageTeamModal() (per-employee assign flow) and
+    // openManageTeamsForOrder() (the flap row's gear button, manage-only).
+    function buildWorkflowTeamChip(orderId, name, nameInput) {
+        const group = document.createElement('div');
+        group.className = 'btn-group';
+
+        const badge = document.createElement('button');
+        badge.className = 'btn btn-sm btn-outline-secondary rounded-start-pill px-3';
+        badge.type = 'button';
+        badge.innerText = name;
+        badge.title = '{{ __('Click to select this team') }}';
+        badge.onclick = () => { if (nameInput) nameInput.value = name; };
+        group.appendChild(badge);
+
+        const renameBtn = document.createElement('button');
+        renameBtn.className = 'btn btn-sm btn-outline-secondary px-2';
+        renameBtn.type = 'button';
+        renameBtn.title = '{{ __('Rename team') }}';
+        renameBtn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+        renameBtn.onclick = () => window.renameTeamPill(orderId, name);
+        group.appendChild(renameBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-sm btn-outline-danger rounded-end-pill px-2';
+        deleteBtn.type = 'button';
+        deleteBtn.title = '{{ __('Delete team') }}';
+        deleteBtn.innerHTML = '<i class="bi bi-trash-fill"></i>';
+        deleteBtn.onclick = () => window.deleteTeamPill(orderId, name);
+        group.appendChild(deleteBtn);
+
+        return group;
+    }
+
     window.openManageTeamModal = function(itemId, btn) {
         const groupName = btn.dataset.groupName || '';
         const orderId = btn.dataset.orderId;
@@ -795,6 +920,8 @@
         document.getElementById('team_item_id').value = itemId;
         const nameInput = document.getElementById('workflow_team_name');
         nameInput.value = groupName;
+        document.getElementById('team-assign-section').classList.remove('d-none');
+        document.getElementById('team-assign-footer-buttons').classList.remove('d-none');
 
         // Existing Teams (Scan DOM)
         const wrapper = document.getElementById('existing-teams-wrapper');
@@ -812,39 +939,49 @@
 
                 if(uniqueGroups.size > 0) {
                     wrapper.classList.remove('d-none');
-                    uniqueGroups.forEach(name => {
-                        const group = document.createElement('div');
-                        group.className = 'btn-group';
-
-                        const badge = document.createElement('button');
-                        badge.className = 'btn btn-sm btn-outline-secondary rounded-start-pill px-3';
-                        badge.type = 'button';
-                        badge.innerText = name;
-                        badge.title = '{{ __('Click to select this team') }}';
-                        badge.onclick = () => { nameInput.value = name; };
-                        group.appendChild(badge);
-
-                        const renameBtn = document.createElement('button');
-                        renameBtn.className = 'btn btn-sm btn-outline-secondary px-2';
-                        renameBtn.type = 'button';
-                        renameBtn.title = '{{ __('Rename team') }}';
-                        renameBtn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
-                        renameBtn.onclick = () => window.renameTeamPill(orderId, name);
-                        group.appendChild(renameBtn);
-
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'btn btn-sm btn-outline-danger rounded-end-pill px-2';
-                        deleteBtn.type = 'button';
-                        deleteBtn.title = '{{ __('Delete team') }}';
-                        deleteBtn.innerHTML = '<i class="bi bi-trash-fill"></i>';
-                        deleteBtn.onclick = () => window.deleteTeamPill(orderId, name);
-                        group.appendChild(deleteBtn);
-
-                        list.appendChild(group);
-                    });
+                    uniqueGroups.forEach(name => list.appendChild(buildWorkflowTeamChip(orderId, name, nameInput)));
                 }
             }
         }
+
+        const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
+        modal.show();
+    }
+
+    // Opened from the team-filter "flaps" row's gear button — manages the
+    // order's team list (rename/delete) without assigning any specific
+    // item, so the assign section is hidden. Uses the already-known
+    // teamNames for this order (from the flap row itself) rather than the
+    // DOM-scan openManageTeamModal() relies on, since the order's content
+    // may not be loaded into the DOM yet if its accordion panel is
+    // collapsed — loadOrderEmployees() ensures it is before scanning.
+    // Rebuilds the "Existing Teams" chip list from an already-known names
+    // array — used instead of DOM-scanning order-content-{orderId} (which
+    // needs a slow network refetch to reflect a just-made change) whenever
+    // the names are already available from elsewhere (the flap row).
+    function rebuildTeamChipsFromNames(orderId, names, nameInput) {
+        const wrapper = document.getElementById('existing-teams-wrapper');
+        const list = document.getElementById('existing-teams-list');
+        list.innerHTML = '';
+        if (names.length > 0) {
+            wrapper.classList.remove('d-none');
+            names.forEach(name => list.appendChild(buildWorkflowTeamChip(orderId, name, nameInput)));
+        } else {
+            wrapper.classList.add('d-none');
+        }
+    }
+
+    window.openManageTeamsForOrder = function(orderId) {
+        document.getElementById('team_item_id').value = '';
+        document.getElementById('workflow_team_name').value = '';
+        document.getElementById('team-assign-section').classList.add('d-none');
+        document.getElementById('team-assign-footer-buttons').classList.add('d-none');
+
+        const flapContainer = document.getElementById(`team-filter-flaps-${orderId}`);
+        const names = flapContainer
+            ? Array.from(flapContainer.querySelectorAll('.team-filter-flap')).map(b => b.dataset.teamName)
+            : [];
+        rebuildTeamChipsFromNames(orderId, names, null);
 
         const modal = new bootstrap.Modal(document.getElementById('manageTeamModal'));
         modal.show();
@@ -875,10 +1012,29 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    const newName = result.value.trim();
+                    const flapContainer = document.getElementById(`team-filter-flaps-${orderId}`);
+                    const updatedNames = flapContainer
+                        ? Array.from(flapContainer.querySelectorAll('.team-filter-flap')).map(b => b.dataset.teamName).map(n => n === oldName ? newName : n)
+                        : [];
+                    if (flapContainer) {
+                        window.renderOrderTeamFlaps(orderId, updatedNames);
+                    }
+
+                    // Rebuilt from the names we already know (same source
+                    // as the flap row) instead of DOM-scanning
+                    // order-content-{orderId} — that scan only reflects
+                    // the rename once the background refresh below
+                    // finishes, which on a slow connection can take far
+                    // longer than this modal should ever wait.
+                    const nameInput = document.getElementById('workflow_team_name');
+                    if (nameInput.value === oldName) nameInput.value = newName;
+                    rebuildTeamChipsFromNames(orderId, updatedNames, nameInput);
+
+                    // Keeps the item list's own group headers in sync —
+                    // not awaited, nothing here depends on it finishing.
                     refreshOrderContent(orderId);
-                    const itemId = document.getElementById('team_item_id').value;
-                    const btn = { dataset: { groupName: result.value.trim(), orderId: orderId } };
-                    window.openManageTeamModal(itemId, btn);
+
                     Swal.fire({ icon: 'success', title: '{{ __('Saved') }}', timer: 1200, showConfirmButton: false });
                 } else {
                     Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to rename team.') }}', 'error');
@@ -909,10 +1065,20 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    const flapContainer = document.getElementById(`team-filter-flaps-${orderId}`);
+                    const updatedNames = flapContainer
+                        ? Array.from(flapContainer.querySelectorAll('.team-filter-flap')).map(b => b.dataset.teamName).filter(n => n !== groupName)
+                        : [];
+                    if (flapContainer) {
+                        window.renderOrderTeamFlaps(orderId, updatedNames);
+                    }
+
+                    const nameInput = document.getElementById('workflow_team_name');
+                    if (nameInput.value === groupName) nameInput.value = '';
+                    rebuildTeamChipsFromNames(orderId, updatedNames, nameInput);
+
                     refreshOrderContent(orderId);
-                    const itemId = document.getElementById('team_item_id').value;
-                    const btn = { dataset: { groupName: '', orderId: orderId } };
-                    window.openManageTeamModal(itemId, btn);
+
                     Swal.fire({ icon: 'success', title: '{{ __('Deleted') }}', timer: 1200, showConfirmButton: false });
                 } else {
                     Swal.fire('{{ __('Error') }}', data.message || '{{ __('Failed to delete team.') }}', 'error');
@@ -959,6 +1125,18 @@
                     if (wrapper) {
                         const orderId = wrapper.id.replace('order-content-', '');
                         refreshOrderContent(orderId);
+
+                        // A brand-new team name changes which flaps this
+                        // order should show — append it if not already there.
+                        if (groupName) {
+                            const flapContainer = document.getElementById(`team-filter-flaps-${orderId}`);
+                            if (flapContainer) {
+                                const currentNames = Array.from(flapContainer.querySelectorAll('.team-filter-flap')).map(b => b.dataset.teamName);
+                                if (!currentNames.includes(groupName)) {
+                                    window.renderOrderTeamFlaps(orderId, [...currentNames, groupName].sort());
+                                }
+                            }
+                        }
                     }
                 }
             } else {

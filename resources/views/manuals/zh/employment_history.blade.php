@@ -13,6 +13,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
+    <li><strong>搜索框</strong> —— 输入雇员或雇主姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表</li>
     <li><strong>筛选栏</strong> 位于顶部 —— 搜索，按国籍/MOU 类型/粉卡/护照类型筛选</li>
     <li><strong>右上角</strong> —— 导出 CSV 按钮、切换视图(卡片/表格)、每页显示数量选择</li>
     <li><strong>雇员列表</strong> —— 显示所有人，包括在职和非在职(含离职/合同到期)</li>

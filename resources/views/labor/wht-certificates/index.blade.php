@@ -15,7 +15,13 @@
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label small">{{ __('Search') }}</label>
-                <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="{{ __('Cert no., payer, or payee...') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('labor.wht-certificates.preview_search') }}"
+                    name="search"
+                    placeholder="{{ __('Cert no., payer, or payee...') }}"
+                    value="{{ request('search') }}"
+                    class="form-control"
+                />
             </div>
             <div class="col-md-3">
                 <label class="form-label small">{{ __('Team') }}</label>

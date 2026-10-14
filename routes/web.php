@@ -153,6 +153,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/employers/{employer}/export-employees', [EmployerController::class, 'exportEmployees'])->name('employers.exportEmployees');
     Route::get('/employers/{employer}/export-history', [EmployerController::class, 'exportHistory'])->name('employers.exportHistory');
     Route::post('/employers/check-duplicate', [EmployerController::class, 'checkDuplicate'])->name('employers.check_duplicate');
+    // Must come BEFORE the resource route below — its GET employers/{employer}
+    // (show) is a single-segment wildcard that would otherwise swallow this
+    // path first and treat "preview-search" as the {employer} id.
+    Route::get('/employers/preview-search', [EmployerController::class, 'previewSearch'])->name('employers.preview_search');
     Route::resource('employers', EmployerController::class)->middleware('menu:employers');
     Route::get('/employers/{employer}/locate', [EmployerController::class, 'locate'])->name('employers.locate');
     Route::get('/employers/{employer}/employees/filter', [EmployerController::class, 'filterEmployees'])->name('employers.employees.filter');
@@ -169,6 +173,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
     Route::post('/employees/advanced-export', [EmployeeController::class, 'advancedExport'])->name('employees.advanced_export');
     Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->middleware('menu:employment_history')->name('employees.history');
+    Route::get('/employees/history/preview-search', [EmployeeController::class, 'previewHistorySearch'])->name('employees.history.preview_search');
+    Route::get('/employees/history/preview-search-combined', [EmployeeController::class, 'previewHistorySearchCombined'])->name('employees.history.preview_search_combined');
     Route::get('/employees/{employee}/documents/{field}', [EmployeeController::class, 'serveDocument'])->name('employees.documents.serve');
     Route::get('/employees/{employee}/documents/{field}/pdf', [EmployeeController::class, 'downloadDocumentAsPdf'])->name('employees.documents.pdf');
     Route::get('custom-fields/{id}/pdf', [App\Http\Controllers\CustomFieldController::class, 'downloadCustomFieldPdf'])->name('custom-fields.pdf');
@@ -197,13 +203,22 @@ Route::middleware('auth')->group(function () {
         return response('<!doctype html><html><body><script>/* Edit Modal Save Signal */</script></body></html>');
     })->name('employees.edit-modal-saved');
     Route::post('/employees/check-duplicate', [EmployeeController::class, 'checkDuplicate'])->name('employees.check_duplicate');
+    // Must come BEFORE the resource route below — same single-segment
+    // wildcard collision as employers.preview_search above.
+    Route::get('/employees/preview-search', [EmployeeController::class, 'previewSearch'])->name('employees.preview_search');
+    Route::get('/employees/preview-search-combined', [EmployeeController::class, 'previewSearchCombined'])->name('employees.preview_search_combined');
     Route::resource('employees', EmployeeController::class)->middleware('menu:employees');
     Route::get('/importers/{importer}/documents/{field}/pdf', [ImporterController::class, 'downloadDocumentAsPdf'])->name('importers.documents.pdf');
+    // Must come BEFORE the resource route below — same single-segment
+    // wildcard collision as employees.preview_search above.
+    Route::get('/importers/preview-search', [ImporterController::class, 'previewSearch'])->middleware('menu:importers')->name('importers.preview_search');
     Route::resource('importers', ImporterController::class)->middleware('menu:importers');
 
+    Route::get('/agents/preview-search', [AgentController::class, 'previewSearch'])->middleware('menu:agents')->name('agents.preview_search');
     Route::resource('agents', AgentController::class)->middleware('menu:agents');
 
     Route::get('/delegates/{delegate}/documents/{field}/pdf', [DelegateController::class, 'downloadDocumentAsPdf'])->name('delegates.documents.pdf');
+    Route::get('/delegates/preview-search', [DelegateController::class, 'previewSearch'])->middleware('menu:delegates')->name('delegates.preview_search');
     Route::resource('delegates', DelegateController::class)->middleware('menu:delegates');
 
     Route::get('/notifications/export', [NotificationController::class, 'export'])->name('notifications.export');
@@ -220,6 +235,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/notifications/popup-summary', [NotificationController::class, 'popupSummary'])->middleware('menu:notifications')->name('notifications.popup-summary');
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('menu:notifications')->name('notifications.index');
+    Route::get('/notifications/preview-search', [NotificationController::class, 'previewSearch'])->middleware('menu:notifications')->name('notifications.preview_search');
+    Route::get('/notifications/preview-search-combined', [NotificationController::class, 'previewSearchCombined'])->middleware('menu:notifications')->name('notifications.preview_search_combined');
     Route::post('/notifications/check-expiries', [NotificationController::class, 'checkExpiries'])->name('notifications.check-expiries');
     Route::get('/notifications/{notification}/view-employee', [NotificationController::class, 'viewEmployee'])->name('notifications.view-employee');
     Route::post('/notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('notifications.cancel');
@@ -261,6 +278,7 @@ Route::middleware('auth')->group(function () {
     // === Group & Team Routes ===
     Route::get('/groups', [App\Http\Controllers\GroupTeamController::class, 'index'])->middleware('menu:group_team')->name('groups.index');
     Route::get('/groups/affiliated', [App\Http\Controllers\GroupTeamController::class, 'indexAffiliated'])->middleware('menu:group_team')->name('groups.affiliated.index');
+    Route::get('/groups/affiliated/preview-search', [App\Http\Controllers\GroupTeamController::class, 'previewSearch'])->middleware('menu:group_team')->name('groups.affiliated.preview_search');
     Route::get('/groups/affiliated/{employer}/manage', [App\Http\Controllers\GroupTeamController::class, 'manageAffiliated'])->middleware('menu:group_team')->name('groups.affiliated.manage');
     Route::get('/groups/independent/manage', [App\Http\Controllers\GroupTeamController::class, 'manageIndependent'])->middleware('menu:group_team')->name('groups.independent.manage');
     Route::post('/groups', [App\Http\Controllers\GroupTeamController::class, 'storeGroup'])->name('groups.store');
@@ -282,6 +300,9 @@ Route::middleware(['auth', 'permission:manage-tickets', 'menu:ticket_inbox'])->p
     Route::post('tickets', [AdminJobTicketController::class, 'store'])->name('tickets.store');
 
     Route::get('tickets', [AdminTicketController::class, 'index'])->name('tickets.index');
+    // Must come BEFORE GET tickets/{ticket} (show) below — both are
+    // single-segment patterns, so registration order decides which wins.
+    Route::get('tickets/preview-search', [AdminTicketController::class, 'previewSearch'])->name('tickets.preview_search');
     Route::get('tickets/{ticket}', [AdminTicketController::class, 'show'])->name('tickets.show');
     Route::post('tickets/{ticket}/replies', [TicketReplyController::class, 'store'])->name('tickets.replies.store');
 
@@ -426,6 +447,10 @@ Route::middleware(['auth'])->group(function () {
         // Trash Routes
         Route::get('/trash', [App\Http\Controllers\Production\RegistrationController::class, 'fetchTrash'])->name('trash');
         Route::post('/trash/{id}/restore', [App\Http\Controllers\Production\RegistrationController::class, 'restoreTrash'])->name('trash.restore');
+
+        // Live-search preview (autocomplete dropdown for the search box)
+        Route::get('/preview-search', [App\Http\Controllers\Production\RegistrationController::class, 'previewSearch'])->name('preview_search');
+        Route::get('/preview-search-employer', [App\Http\Controllers\Production\RegistrationController::class, 'previewSearchEmployer'])->name('preview_search_employer');
     });
 
     // Renewal Resolution — Redirect base URL to default tab
@@ -509,8 +534,18 @@ Route::middleware(['auth'])->group(function () {
         // Trash Routes
         Route::get('/trash', [App\Http\Controllers\Production\RenewalController::class, 'fetchTrash'])->name('trash');
         Route::post('/trash/{id}/restore', [App\Http\Controllers\Production\RenewalController::class, 'restoreTrash'])->name('trash.restore');
+
+        // Live-search preview (autocomplete dropdown for the search box)
+        Route::get('/preview-search', [App\Http\Controllers\Production\RenewalController::class, 'previewSearch'])->name('preview_search');
+        Route::get('/preview-search-employer', [App\Http\Controllers\Production\RenewalController::class, 'previewSearchEmployer'])->name('preview_search_employer');
     });
 
+    // Must be registered BEFORE Route::resource('production', ...) below —
+    // the resource's GET production/{production} (show) is a single-segment
+    // wildcard that would otherwise swallow this path first and treat
+    // "preview-search" as the {production} id.
+    Route::get('production/preview-search', [\App\Http\Controllers\ProductionController::class, 'previewSearch'])->middleware('menu:production')->name('production.preview_search');
+    Route::get('production/preview-search-employer', [\App\Http\Controllers\ProductionController::class, 'previewSearchEmployer'])->middleware('menu:production')->name('production.preview_search_employer');
     Route::resource('production', \App\Http\Controllers\ProductionController::class)->middleware('menu:production');
     Route::post('production/stats-batch', [\App\Http\Controllers\ProductionController::class, 'batchStats'])->name('production.stats.batch');
     Route::get('production/order/{order}/employees', [\App\Http\Controllers\ProductionController::class, 'fetchEmployees'])->name('production.order.employees');
@@ -595,6 +630,8 @@ Route::middleware(['auth'])->group(function () {
         // Quick Capture (Phase 3 — AI extraction, manual fallback)
         // Must come before /ledger/{ledger} so 'capture' isn't captured as an ID.
         Route::get('/ledger/capture', [App\Http\Controllers\Finance\QuickCaptureController::class, 'show'])->name('ledger.capture');
+        // Live-search preview — same reason, must come before /ledger/{ledger}.
+        Route::get('/ledger/preview-search', [App\Http\Controllers\Finance\LedgerEntryController::class, 'previewSearch'])->name('ledger.preview_search');
         Route::post('/ledger/capture/extract', [App\Http\Controllers\Finance\QuickCaptureController::class, 'extract'])->name('ledger.capture.extract');
         Route::post('/ledger/capture', [App\Http\Controllers\Finance\QuickCaptureController::class, 'save'])->name('ledger.capture.save');
 
@@ -618,6 +655,10 @@ Route::middleware(['auth'])->group(function () {
 
         // Tax Invoices (Phase 2.1 — ใบกำกับภาษีขาย)
         Route::get('tax-invoices/{taxInvoice}/pdf', [App\Http\Controllers\Finance\TaxInvoiceController::class, 'pdf'])->name('tax-invoices.pdf');
+        // Must come BEFORE the resource route below — its GET tax-invoices/{taxInvoice}
+        // (show) is a single-segment wildcard that would otherwise swallow this
+        // path first and treat "preview-search" as the id.
+        Route::get('tax-invoices/preview-search', [App\Http\Controllers\Finance\TaxInvoiceController::class, 'previewSearch'])->name('tax-invoices.preview_search');
         Route::resource('tax-invoices', App\Http\Controllers\Finance\TaxInvoiceController::class)->except(['edit']);
 
         // Credit Notes (ใบลดหนี้) — reduces a specific FinancialTransaction's
@@ -625,10 +666,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('credit-notes/{creditNote}/pdf', [App\Http\Controllers\Finance\CreditNoteController::class, 'pdf'])->name('credit-notes.pdf');
         Route::post('credit-notes/{creditNote}/issue', [App\Http\Controllers\Finance\CreditNoteController::class, 'issue'])->name('credit-notes.issue');
         Route::post('credit-notes/{creditNote}/void', [App\Http\Controllers\Finance\CreditNoteController::class, 'void'])->name('credit-notes.void');
+        // Must come BEFORE the resource route below — same single-segment wildcard collision as tax-invoices above.
+        Route::get('credit-notes/preview-search', [App\Http\Controllers\Finance\CreditNoteController::class, 'previewSearch'])->name('credit-notes.preview_search');
         Route::resource('credit-notes', App\Http\Controllers\Finance\CreditNoteController::class)->except(['edit', 'update']);
 
         // WHT Certificates (Phase 2.1 — ใบหัก ณ ที่จ่าย ทั้ง issued+received)
         Route::get('wht-certificates/{whtCertificate}/pdf', [App\Http\Controllers\Finance\WhtCertificateController::class, 'pdf'])->name('wht-certificates.pdf');
+        // Must come BEFORE the resource route below — same single-segment wildcard collision as above.
+        Route::get('wht-certificates/preview-search', [App\Http\Controllers\Finance\WhtCertificateController::class, 'previewSearch'])->name('wht-certificates.preview_search');
         Route::resource('wht-certificates', App\Http\Controllers\Finance\WhtCertificateController::class)->except(['edit']);
 
         // Tax Reports (Phase 2.3 — ภ.พ.30 + ภ.ง.ด.3/53)
@@ -646,6 +691,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('reconciliation/{bankAccount}', [App\Http\Controllers\Finance\ReconciliationController::class, 'account'])->name('reconciliation.account');
         Route::post('reconciliation/{bankAccount}/repair', [App\Http\Controllers\Finance\ReconciliationController::class, 'repair'])->name('reconciliation.repair');
         Route::get('audit', [App\Http\Controllers\Finance\FinanceAuditController::class, 'index'])->name('audit.index');
+        Route::get('audit/preview-search', [App\Http\Controllers\Finance\FinanceAuditController::class, 'previewSearch'])->name('audit.preview_search');
 
         // WHT (ใบหัก ณ ที่จ่าย) Inbox — รับรายได้แล้วแต่ยังขาดใบ ณ ที่จ่าย
         Route::get('/wht-inbox', [\App\Http\Controllers\FinancialController::class, 'whtInbox'])->middleware('menu:wht_inbox')->name('wht_inbox');
@@ -653,6 +699,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/wht-inbox/{transaction}/no-certificate', [\App\Http\Controllers\FinancialController::class, 'markWhtNoCertificate'])->name('wht_no_certificate');
 
         Route::get('/', [App\Http\Controllers\FinancialHubController::class, 'index'])->name('index');
+        Route::get('/preview-search', [App\Http\Controllers\FinancialHubController::class, 'previewSearch'])->name('preview_search');
+        Route::get('/preview-search-combined', [App\Http\Controllers\FinancialHubController::class, 'previewSearchCombined'])->name('preview_search_combined');
         Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
         Route::post('/store', [App\Http\Controllers\FinancialHubController::class, 'storeManual'])->name('store');
         Route::get('/export-monthly', [App\Http\Controllers\FinancialHubController::class, 'exportMonthly'])->name('export_monthly');
@@ -698,6 +746,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Workflow Routes
     Route::get('workflow', [\App\Http\Controllers\WorkflowController::class, 'index'])->middleware('menu:workflow')->name('workflow.index');
+    Route::get('workflow/preview-search', [\App\Http\Controllers\WorkflowController::class, 'previewSearch'])->middleware('menu:workflow')->name('workflow.preview_search');
+    Route::get('workflow/preview-search-employer', [\App\Http\Controllers\WorkflowController::class, 'previewSearchEmployer'])->middleware('menu:workflow')->name('workflow.preview_search_employer');
     Route::post('workflow/stats-batch', [\App\Http\Controllers\WorkflowController::class, 'batchStats'])->name('workflow.stats.batch');
     Route::get('workflow/order/{order}/employees', [\App\Http\Controllers\WorkflowController::class, 'fetchEmployees'])->name('workflow.order.employees');
     Route::get('workflow/order/{order}/select-all-ids', [\App\Http\Controllers\WorkflowController::class, 'selectAllOrderEmployeeIds'])->name('workflow.order.select_all_ids');
@@ -794,6 +844,10 @@ Route::middleware(['auth', 'role:admin|super-admin'])->prefix('admin')->name('ad
 
     Route::get('/notification-settings', [NotificationSettingController::class, 'index'])->name('notification_settings.index');
     Route::post('/notification-settings', [NotificationSettingController::class, 'update'])->name('notification_settings.update');
+    // Must come BEFORE the resource route below — its GET users/{user}
+    // (show) is a single-segment wildcard that would otherwise swallow this
+    // path first and treat "preview-search" as the id.
+    Route::get('/users/preview-search', [UserController::class, 'previewSearch'])->middleware('menu:user_management')->name('users.preview_search');
     Route::resource('users', UserController::class)->middleware('menu:user_management');
     Route::get('/roles-permissions', [App\Http\Controllers\Admin\AdminController::class, 'indexRolesAndPermissions'])->middleware('menu:roles_permissions')->name('roles_permissions.index');
 
@@ -822,6 +876,8 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 // === Incomplete Employees ===
 Route::middleware(['auth', 'permission:manage-tickets', 'menu:incomplete_data'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/incomplete-employees', [App\Http\Controllers\Admin\IncompleteEmployeeController::class, 'index'])->name('incomplete_employees.index');
+    Route::get('/incomplete-employees/preview-search', [App\Http\Controllers\Admin\IncompleteEmployeeController::class, 'previewSearch'])->name('incomplete_employees.preview_search');
+    Route::get('/incomplete-employees/preview-search-combined', [App\Http\Controllers\Admin\IncompleteEmployeeController::class, 'previewSearchCombined'])->name('incomplete_employees.preview_search_combined');
 });
 
 // --- Central Trash System ---
@@ -829,6 +885,8 @@ Route::middleware(['auth', 'permission:view-trash', 'menu:central_trash'])->pref
 
     Route::get('/trash', [\App\Http\Controllers\Admin\TrashController::class, 'index'])
          ->name('trash.index');
+
+    Route::get('/trash/preview-search', [\App\Http\Controllers\Admin\TrashController::class, 'previewSearch'])->name('trash.preview_search');
 
     Route::get('/trash/export', [\App\Http\Controllers\Admin\TrashController::class, 'exportTrash'])->name('trash.export');
 

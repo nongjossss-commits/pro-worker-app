@@ -5,7 +5,15 @@
         <form action="{{ route('finance.index') }}" method="GET" class="row g-3">
             <input type="hidden" name="tab" value="workflow">
             <div class="col-md-5">
-                <input type="text" name="search" class="form-control" placeholder="{{ __('Search Employer, Project...') }}" value="{{ request('search') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('finance.preview_search', ['tab' => 'workflow']) }}"
+                    name="search"
+                    id-target="employer_filter_id"
+                    id-value="{{ request('employer_filter_id') }}"
+                    placeholder="{{ __('Search Employer, Project...') }}"
+                    value="{{ request('search') }}"
+                    class="form-control"
+                />
             </div>
             <div class="col-md-4">
                 <select name="billing_status" class="form-select">

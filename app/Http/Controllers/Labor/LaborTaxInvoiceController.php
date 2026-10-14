@@ -61,6 +61,38 @@ class LaborTaxInvoiceController extends Controller
         return view('labor.tax-invoices.index', compact('invoices', 'fiscalYears', 'teams'));
     }
 
+    /**
+     * Live-search preview for the index() search box.
+     */
+    public function previewSearch(Request $request)
+    {
+        abort_unless($request->user()->can('manage-labor-ledger'), 403);
+
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $invoices = LaborTaxInvoice::where(function ($query) use ($like) {
+                $query->where('invoice_no', 'like', $like)
+                      ->orWhere('customer_name', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'invoice_no', 'customer_name']);
+
+        $results = [];
+        foreach ($invoices as $inv) {
+            $results[] = [
+                'label' => $inv->customer_name ?: $inv->invoice_no,
+                'sub_label' => $inv->invoice_no,
+                'group' => 'ใบกำกับภาษี',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function create(Request $request)
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);

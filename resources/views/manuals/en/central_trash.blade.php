@@ -15,6 +15,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
+    <li><strong>Search box</strong> — type part of a name and matching suggestions appear instantly (searches across every trashed data type at once, no need to switch tabs first); click a suggestion to filter the list right away</li>
     <li><strong>Tabs</strong> — split by data type (Employers, Employees, Delegates, etc.)</li>
     <li><strong>Table</strong> — shows deleted items + date deleted + who deleted them</li>
     <li><strong>Restore button + Permanent Delete button</strong> on each row</li>

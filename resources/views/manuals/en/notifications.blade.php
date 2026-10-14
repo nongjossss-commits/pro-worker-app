@@ -39,6 +39,10 @@
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">
+    <strong>Search box:</strong> type part of an employee or employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away — only searches within the currently open tab
+</div>
+
+<div class="manual-tip">
     <strong>Web Push:</strong> enable notification permissions in your browser to receive real-time alerts
 </div>
 

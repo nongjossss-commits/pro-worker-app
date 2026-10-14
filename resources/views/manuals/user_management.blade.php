@@ -15,7 +15,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>หน้าตาของหน้านี้</h4>
 <ol>
-    <li><strong>แถบค้นหา</strong> + ตัวกรองตาม role</li>
+    <li><strong>แถบค้นหา</strong> + ตัวกรองตาม role — พิมพ์ชื่อหรืออีเมลบางส่วน ระบบจะโชว์รายชื่อที่ตรงให้เลือกทันที (ไม่ต้องพิมพ์ให้ครบ) คลิกเลือกเพื่อกรองรายการทันที</li>
     <li><strong>แถบ Tabs ตาม role</strong> — Super Admin, Admin, Caretaker, Staff, Employer</li>
     <li><strong>ตารางผู้ใช้</strong> — ชื่อ, อีเมล, สถานะ, การกระทำ</li>
     <li><strong>Section "บทบาท & สิทธิ์"</strong> ที่ด้านล่าง (เฉพาะคนที่มีสิทธิ์ manage-roles) — ดู role ทั้งหมด + สิทธิ์ที่ผูก</li>

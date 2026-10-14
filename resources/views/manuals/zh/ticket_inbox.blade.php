@@ -14,6 +14,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
+    <li><strong>雇主搜索框</strong> —— 输入雇主姓名的一部分,系统会立即显示匹配的建议;点击建议即可立即筛选列表</li>
     <li><strong>工单列表</strong> —— 显示所有工单，按最新排序</li>
     <li><strong>状态筛选</strong> —— 待回复 / 处理中 / 已关闭</li>
     <li><strong>对话(Messages)</strong> —— 打开工单后可查看往来消息</li>

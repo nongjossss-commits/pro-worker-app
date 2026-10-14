@@ -10,10 +10,53 @@ class ImporterController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $importers = Importer::all();
-        return view('importers.index', compact('importers'));
+        $search = $request->input('search');
+        $query = Importer::query();
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('importerNameTh', 'like', "%{$search}%")
+                  ->orWhere('importerNameEn', 'like', "%{$search}%")
+                  ->orWhere('importerId', 'like', "%{$search}%")
+                  ->orWhere('importerLicenseNo', 'like', "%{$search}%");
+            });
+        }
+        $importers = $query->get();
+        return view('importers.index', compact('importers', 'search'));
+    }
+
+    /**
+     * Live-search preview for the index() search box — same fields index()
+     * matches on.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $importers = Importer::where(function ($iq) use ($like) {
+                $iq->where('importerNameTh', 'like', $like)
+                   ->orWhere('importerNameEn', 'like', $like)
+                   ->orWhere('importerId', 'like', $like)
+                   ->orWhere('importerLicenseNo', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'importerNameTh', 'importerNameEn', 'importerId']);
+
+        $results = [];
+        foreach ($importers as $i) {
+            $results[] = [
+                'label' => $i->importerNameTh ?: $i->importerNameEn ?: '-',
+                'sub_label' => $i->importerId ?: '',
+                'group' => 'บริษัทนำเข้า',
+            ];
+        }
+
+        return response()->json($results);
     }
 
     /**

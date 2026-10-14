@@ -65,6 +65,42 @@ class LaborWhtCertificateController extends Controller
         return view('labor.wht-certificates.index', compact('certificates', 'teams'));
     }
 
+    /**
+     * Live-search preview for the index() search box.
+     */
+    public function previewSearch(Request $request)
+    {
+        abort_unless($request->user()->can('manage-labor-ledger'), 403);
+
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $certificates = LaborWhtCertificate::where(function ($query) use ($like) {
+                $query->where('cert_no', 'like', $like)
+                      ->orWhere('payer_name', 'like', $like)
+                      ->orWhere('payee_name', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'cert_no', 'payer_name', 'payee_name']);
+
+        $results = [];
+        foreach ($certificates as $c) {
+            $results[] = [
+                'label' => $c->payee_name ?: $c->payer_name ?: $c->cert_no,
+                'sub_label' => trim(implode(' | ', array_filter([
+                    $c->cert_no,
+                    ($c->payer_name && $c->payer_name !== $c->payee_name) ? "ผู้จ่าย: {$c->payer_name}" : null,
+                ]))),
+                'group' => 'หนังสือรับรองหัก ณ ที่จ่าย',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function create(Request $request)
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);

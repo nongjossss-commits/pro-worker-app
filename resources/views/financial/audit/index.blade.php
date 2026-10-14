@@ -16,7 +16,13 @@
         <div class="card-body">
             <form action="{{ route('finance.audit.index') }}" method="GET" class="row g-2">
                 <div class="col-md-3">
-                    <input type="text" name="search" class="form-control" placeholder="{{ __('Search description…') }}" value="{{ request('search') }}">
+                    <x-live-search-filter
+                        endpoint="{{ route('finance.audit.preview_search') }}"
+                        name="search"
+                        placeholder="{{ __('Search description…') }}"
+                        value="{{ request('search') }}"
+                        class="form-control"
+                    />
                 </div>
                 <div class="col-md-2">
                     <select name="entity" class="form-select">

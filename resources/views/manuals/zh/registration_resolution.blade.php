@@ -17,6 +17,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
     <li><strong>决议标签栏(Tabs)</strong> —— 每个标签代表 1 项内阁决议(例如 2023 年 11 月决议、2024 年 3 月决议)</li>
+    <li><strong>搜索框</strong> —— 输入雇主或雇员姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表</li>
     <li><strong>雇主卡片</strong> —— 显示在该决议中拥有雇员的雇主</li>
     <li><strong>状态筛选</strong> —— 按步骤筛选(待处理、进行中、已完成)</li>
     <li><strong>进度筛选</strong> —— 按 visa-only / both / renewal 筛选</li>

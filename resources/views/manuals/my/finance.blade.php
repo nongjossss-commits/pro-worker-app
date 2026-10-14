@@ -104,6 +104,10 @@
 <h4><i class="bi bi-lightbulb me-2"></i>အကြံပြုချက်များ</h4>
 
 <div class="manual-tip">
+    <strong>ရှာဖွေရေးဘောက်စ်များ:</strong> ငွေကြေးမီနူးရှိ စာမျက်နှာအားလုံး (ခြုံငုံသုံးသပ်ချက်၊ Workflow၊ Registration/Renewal Resolution၊ Manual Bills၊ Credit Notes၊ Tax Invoices၊ WHT Certificates၊ Ledger၊ Audit Log) တွင် အမည်၏ အစိတ်အပိုင်းကို ရိုက်ထည့်ပါက ကိုက်ညီသည့်အမည်များ ချက်ချင်းပေါ်လာသည် (အမည်အပြည့်အစုံ ရိုက်ရန် မလိုပါ) အကြံပြုထားသော အမည်ကို နှိပ်၍ စာရင်းကို ချက်ချင်းစစ်ထုတ်နိုင်သည်
+</div>
+
+<div class="manual-tip">
     <strong>VAT 7%:</strong> ထိုင်းနိုင်ငံ၏ မူလနှုန်း ဖြစ်ပြီး ဒဿမနေရာ ၂ နေရာသို့ ရေတိုင်းသည်
 </div>
 

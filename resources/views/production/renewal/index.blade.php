@@ -374,12 +374,29 @@
                     <h4 class="mb-0 text-primary fw-bold text-nowrap"><i class="bi bi-arrow-repeat me-2"></i>{{ __('Renewal Resolution') }}</h4>
                 </div>
 
-                <form action="{{ route('production.renewal.operations', ['resolutionTab' => $currentTab->id]) }}" method="GET" class="d-flex flex-grow-1 w-100" style="max-width: 600px;">
-                    <div class="input-group input-group-lg">
+                <form action="{{ route('production.renewal.operations', ['resolutionTab' => $currentTab->id]) }}" method="GET" class="d-flex flex-grow-1 w-100 gap-2 flex-wrap" style="max-width: 820px;">
+                    <x-live-search-filter
+                        endpoint="{{ route('production.renewal.preview_search', ['resolutionTab' => $currentTab->id]) }}"
+                        name="employer_filter_name"
+                        id-target="employer_filter_id"
+                        id-value="{{ request('employer_filter_id') }}"
+                        placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                        value="{{ request('employer_filter_name') }}"
+                        class="form-control bg-light"
+                        style="max-width: 340px;"
+                    />
+                    <div class="input-group input-group-lg flex-grow-1">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="{{ __('Search employee or employer...') }}" value="{{ request('search') }}">
+                        <x-live-search-filter
+                            endpoint="{{ route('production.renewal.preview_search', ['resolutionTab' => $currentTab->id]) }}"
+                            name="search"
+                            placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                            value="{{ request('search') }}"
+                            class="form-control bg-light border-start-0"
+                            :disabled="!request('employer_filter_id')"
+                        />
                         <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
-                        @if(request('search'))
+                        @if(request('search') || request('employer_filter_id'))
                             <a href="{{ route('production.renewal.operations', ['resolutionTab' => $currentTab->id]) }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>
                         @endif
                     </div>
@@ -787,6 +804,31 @@
                              @endforeach
                          </div>
                     </div>
+
+                    {{-- Team filter row — directly under the step row (not
+                         hanging off the whole card's bottom edge, which
+                         could be far below once the employee list is
+                         expanded). One pill per team this employer has,
+                         plus a gear button to manage the team list. Hidden
+                         entirely when the employer has no teams yet. --}}
+                    <div class="w-100 overflow-auto custom-scrollbar pb-1 mt-2" id="team-filter-flaps-{{ $employer->id }}" style="scrollbar-width: thin; {{ empty($employer->teamNames) ? 'display:none;' : '' }}">
+                         <div class="d-flex flex-nowrap align-items-center gap-2">
+                             <span class="d-inline-flex align-items-center text-muted flex-shrink-0" style="font-size: 0.78rem;"><i class="bi bi-people-fill me-1"></i>{{ __('Team') }}:</span>
+                             @foreach($employer->teamNames as $teamName)
+                                 <button type="button"
+                                     class="btn d-inline-flex align-items-center rounded-pill px-3 py-1 gap-1 flex-shrink-0 team-filter-flap"
+                                     style="min-width: max-content; font-size: 0.85rem; font-weight: 600; background:#f3e8ff; border:1px solid #c084fc; color:#6b21a8;"
+                                     data-team-name="{{ $teamName }}"
+                                     onclick="window.toggleEmployerTeamFilter({{ $employer->id }}, {{ json_encode($teamName) }}, this)">
+                                     <i class="bi bi-people-fill"></i>{{ $teamName }}
+                                 </button>
+                             @endforeach
+                             <button type="button"
+                                 class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 flex-shrink-0"
+                                 title="{{ __('Manage Teams') }}"
+                                 onclick="window.openManageTeamsForEmployer({{ $employer->id }})"><i class="bi bi-gear-fill"></i></button>
+                         </div>
+                    </div>
                 </div>
 
                 <div id="collapse{{ $employer->id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ $employer->id }}">
@@ -804,6 +846,7 @@
                          </x-card-scroll-frame>
                     </div>
                 </div>
+
             </div> {{-- End card --}}
 
             {{-- Finance Modal for this Employer --}}
@@ -1461,6 +1504,96 @@
             console.error(err);
         });
     }
+
+    // --- Team filter "flaps" (per-employer, multi-select OR) ---
+    window.employerTeamFilters = window.employerTeamFilters || {};
+
+    function buildEmployerEmployeesUrl(employerId) {
+        const baseUrl = `/production/renewal/{{ $currentTab->id }}/employer/${employerId}/employees`;
+        const url = new URL(baseUrl, window.location.origin);
+        const currentParams = new URLSearchParams(window.location.search);
+        currentParams.forEach((value, key) => {
+            if (key !== 'page') url.searchParams.append(key, value);
+        });
+        (window.employerTeamFilters[employerId] || []).forEach(name => url.searchParams.append('team_filter[]', name));
+        url.searchParams.set('page', 1);
+        return url.toString();
+    }
+
+    const TEAM_PILL_BASE = 'min-width:max-content;font-size:0.85rem;font-weight:600;';
+    const TEAM_PILL_INACTIVE = TEAM_PILL_BASE + 'background:#f3e8ff;border:1px solid #c084fc;color:#6b21a8;';
+    const TEAM_PILL_ACTIVE = TEAM_PILL_BASE + 'background:#9333ea;border:1px solid #7e22ce;color:#fff;';
+
+    window.toggleEmployerTeamFilter = function(employerId, teamName, btn) {
+        const list = window.employerTeamFilters[employerId] = window.employerTeamFilters[employerId] || [];
+        const idx = list.indexOf(teamName);
+        if (idx === -1) {
+            list.push(teamName);
+            btn.style.cssText = TEAM_PILL_ACTIVE;
+        } else {
+            list.splice(idx, 1);
+            btn.style.cssText = TEAM_PILL_INACTIVE;
+        }
+
+        const url = buildEmployerEmployeesUrl(employerId);
+        const collapseEl = document.getElementById(`collapse${employerId}`);
+        if (collapseEl && collapseEl.classList.contains('show')) {
+            window.loadEmployees(employerId, url);
+        } else {
+            window.employerCurrentPages[employerId] = url;
+            window.loadedEmployers[employerId] = false; // force a fresh fetch once opened
+            bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
+        }
+    };
+
+    // Rebuilds one employer's flap row from a fresh team-name list — called
+    // after the "manage teams" modal renames/deletes a team, so the flaps
+    // never go stale without a full page reload. See manage_team_modal.blade.php.
+    window.renderEmployerTeamFlaps = function(employerId, names) {
+        const container = document.getElementById(`team-filter-flaps-${employerId}`);
+        if (!container) return;
+
+        if (window.employerTeamFilters[employerId]) {
+            window.employerTeamFilters[employerId] = window.employerTeamFilters[employerId].filter(n => names.includes(n));
+        }
+        const activeNames = window.employerTeamFilters[employerId] || [];
+
+        container.innerHTML = '';
+        container.style.display = names.length ? '' : 'none';
+
+        const row = document.createElement('div');
+        row.className = 'd-flex flex-nowrap align-items-center gap-2';
+
+        const label = document.createElement('span');
+        label.className = 'd-inline-flex align-items-center text-muted flex-shrink-0';
+        label.style.fontSize = '0.78rem';
+        label.innerHTML = '<i class="bi bi-people-fill me-1"></i>{{ __('Team') }}:';
+        row.appendChild(label);
+
+        names.forEach(name => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn d-inline-flex align-items-center rounded-pill px-3 py-1 gap-1 flex-shrink-0 team-filter-flap';
+            btn.style.cssText = activeNames.includes(name) ? TEAM_PILL_ACTIVE : TEAM_PILL_INACTIVE;
+            btn.dataset.teamName = name;
+            btn.innerHTML = '<i class="bi bi-people-fill"></i>' + name;
+            btn.onclick = () => window.toggleEmployerTeamFilter(employerId, name, btn);
+            row.appendChild(btn);
+        });
+        const gearBtn = document.createElement('button');
+        gearBtn.type = 'button';
+        gearBtn.className = 'btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 flex-shrink-0';
+        gearBtn.title = '{{ __('Manage Teams') }}';
+        gearBtn.innerHTML = '<i class="bi bi-gear-fill"></i>';
+        gearBtn.onclick = () => window.openManageTeamsForEmployer(employerId);
+        row.appendChild(gearBtn);
+
+        container.appendChild(row);
+
+        if (window.loadedEmployers[employerId]) {
+            window.loadEmployees(employerId, buildEmployerEmployeesUrl(employerId));
+        }
+    };
 
     // Handle internal pagination clicks for employees
     document.addEventListener('click', function(e) {

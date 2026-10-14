@@ -383,6 +383,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- Live-search dropdown for search boxes (components.live-search-filter) —
+         same plain vanilla-JS module the main app uses, no Vite/Tailwind dependency. --}}
+    <script src="{{ asset('js/live-search-filter.js') }}?v={{ @filemtime(public_path('js/live-search-filter.js')) }}"></script>
     @include('partials._ui_theme_scripts')
     {{-- Attachment-card styles + chosen-file display (x-file-input-group variant="card"), same as the main app. --}}
     @include('partials._record_tabs')

@@ -103,7 +103,25 @@
                 <input type="hidden" name="card" value="{{ request('card') }}">
             @endif
             <div class="col-md-3">
-                <input type="text" name="search" class="form-control" placeholder="{{ __('Search Bill #, Employer, Project, Job Owner...') }}" value="{{ request('search') }}">
+                <x-live-search-filter
+                    endpoint="{{ route('finance.preview_search_combined') }}"
+                    name="employer_filter_name"
+                    id-target="employer_filter_id"
+                    id-value="{{ request('employer_filter_id') }}"
+                    placeholder="{{ __('Search employer or bill (name, ID, bill #...)') }}"
+                    value="{{ request('employer_filter_name') }}"
+                    class="form-control"
+                />
+            </div>
+            <div class="col-md-3">
+                <x-live-search-filter
+                    endpoint="{{ route('finance.preview_search', ['tab' => 'overview']) }}"
+                    name="search"
+                    placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                    value="{{ request('search') }}"
+                    class="form-control"
+                    :disabled="!request('employer_filter_id')"
+                />
             </div>
             <div class="col-md-2">
                 <select name="status" class="form-select">

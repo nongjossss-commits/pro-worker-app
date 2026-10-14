@@ -14,6 +14,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
+    <li><strong>Employer search box</strong> — type part of an employer name and matching suggestions appear instantly; click a suggestion to filter the list right away</li>
     <li><strong>Ticket list</strong> — shows all tickets, newest first</li>
     <li><strong>Status filter</strong> — Awaiting Reply / In Progress / Closed</li>
     <li><strong>Conversation (Messages)</strong> — opening a ticket shows the back-and-forth messages</li>

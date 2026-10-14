@@ -20,6 +20,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
     <li><strong>Filter bar</strong> at the top — filter by nationality, visa status, employer, search by name/passport number</li>
+    <li><strong>Search box</strong> — type part of an employee or employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
     <li><strong>Status tabs</strong> — Active / Terminated / Contract Ended / Trash</li>
     <li><strong>Filter by Address</strong> — choose province → district → sub-district from the employers' addresses (only addresses present in the current list are offered) · changing the province clears the old district/sub-district · searching or using other filters keeps the address filter · in English (or another non-Thai language) place names show in English when an English name was recorded · the same filter works in Employers, Incomplete Data, Notifications, Workflow, Pre-Production, Registration/Renewal Resolutions and Groups/Teams</li>
     <li><strong>Employee cards</strong> — each card shows a photo, name, nationality, visa status, employer</li>

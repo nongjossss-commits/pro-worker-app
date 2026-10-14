@@ -34,7 +34,13 @@
                         }
                     @endphp
                     <input type="hidden" name="tab" id="active-tab-input" value="{{ $initActiveTab }}">
-                    <input type="text" name="search" class="form-control" placeholder="Search in trash..." value="{{ $search ?? '' }}">
+                    <x-live-search-filter
+                        endpoint="{{ route('admin.trash.preview_search') }}"
+                        name="search"
+                        placeholder="Search in trash..."
+                        value="{{ $search ?? '' }}"
+                        class="form-control"
+                    />
                     <button type="submit" class="btn btn-primary">Search</button>
 
                     <select name="per_page" class="form-select w-auto" onchange="this.form.submit()">

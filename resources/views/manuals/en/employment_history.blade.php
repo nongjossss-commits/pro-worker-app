@@ -13,6 +13,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
+    <li><strong>Search box</strong> — type part of an employee or employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
     <li><strong>Filter bar</strong> at the top — search, filter by nationality/MOU type/pink card/passport type</li>
     <li><strong>Top-right corner</strong> — Export CSV button, view toggle (card/table), items-per-page selector</li>
     <li><strong>Employee list</strong> — shows everyone, both active and inactive (including terminated/contract-ended)</li>

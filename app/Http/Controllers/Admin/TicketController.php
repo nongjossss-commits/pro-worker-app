@@ -122,6 +122,50 @@ class TicketController extends Controller
     }
 
     /**
+     * Live-search preview for the index() search box (employer ticket boxes)
+     * — same fields and caretaker visibility scope index() uses.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $currentUser = Auth::user();
+        $canViewAllTickets = $currentUser->hasRole(['super-admin', 'admin', 'staff']);
+
+        $query = User::whereHas('submittedTickets')->with('employer');
+        if (!$canViewAllTickets) {
+            $query->whereHas('employer', function ($eq) use ($currentUser) {
+                $eq->where('assigned_staff_id', $currentUser->id);
+            });
+        }
+        $query->where(function ($uq) use ($like) {
+            $uq->where('name', 'like', $like)
+               ->orWhereHas('employer', function ($eq) use ($like) {
+                   $eq->where('employerNameTh', 'like', $like)
+                      ->orWhere('employerNameEn', 'like', $like)
+                      ->orWhere('name_suffix', 'like', $like);
+               });
+        });
+
+        $users = $query->limit(10)->get(['id', 'name']);
+
+        $results = [];
+        foreach ($users as $u) {
+            $results[] = [
+                'label' => $u->employer->employerNameTh ?? $u->employer->employerNameEn ?? $u->name,
+                'sub_label' => $u->name,
+                'group' => 'นายจ้าง',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
+    /**
      * Display the specified ticket (Admin View).
      */
     public function show(JobTicket $ticket): View

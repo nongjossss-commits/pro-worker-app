@@ -15,6 +15,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
+    <li><strong>搜索框</strong> —— 输入 Agent 姓名的一部分,系统会立即显示匹配的建议;点击建议即可立即筛选列表</li>
     <li><strong>Agent 表格</strong> —— 姓名、电话、邮箱、所管理的雇主数量</li>
     <li><strong>"+ 新增 Agent"</strong> 按钮</li>
 </ol>

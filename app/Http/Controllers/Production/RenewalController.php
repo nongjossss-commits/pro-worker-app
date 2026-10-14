@@ -105,6 +105,17 @@ class RenewalController extends Controller
             $statsQuery->withoutGlobalScope('employerTenancy');
         }
 
+        // Two-stage filter — box 1 locks one exact employer; applied as a
+        // hard filter on top of the existing search logic.
+        $employerFilterId = $request->input('employer_filter_id');
+        if ($employerFilterId) {
+            $statsQuery->where('employer_id', $employerFilterId);
+        } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
+            // Box 1 hasn't locked onto one exact employer yet — let its
+            // typed text search with the same full power as box 2 below.
+            $request->merge(['search' => $request->input('employer_filter_name')]);
+        }
+
         if ($request->has('search') && $request->search) {
             $this->applySearchToQuery($statsQuery, $request->search);
         }
@@ -184,31 +195,6 @@ class RenewalController extends Controller
         $dualAppointmentsCompleted = $dualLinked->filter(fn($e) => !is_null($e->appointment_date) && !is_null($e->appointment_completed_at))->count();
         $dualEmployerIds = $dualLinked->pluck('employer_id')->unique();
 
-        $dualFilteredForTotal = $dualLinked;
-        if ($request->has('filter') && $request->filter) {
-            $filterVal = $request->filter;
-            $dualFilteredForTotal = $dualLinked->filter(function ($e) use ($filterVal, $stepOneId) {
-                $link = $e->activeRenewalLink;
-                if ($filterVal === 'not_started') {
-                    if (!in_array($link->status, ['renewal_pending', 'renewal_completed'], true)) return false;
-                    return !$e->registrationSteps->contains('id', $stepOneId);
-                }
-                if ($filterVal === 'saved') return $link->status === 'renewal_completed';
-                if ($filterVal === 'cancelled') return $link->status === 'renewal_cancelled';
-                if ($filterVal === 'total_appointments') return !is_null($e->appointment_date);
-                if ($filterVal === 'appointment_not_scheduled') {
-                    return in_array($link->status, ['renewal_pending', 'renewal_completed'], true) && is_null($e->appointment_date);
-                }
-                if ($filterVal === 'appointment_pending') return !is_null($e->appointment_date) && is_null($e->appointment_completed_at);
-                if ($filterVal === 'appointment_completed') return !is_null($e->appointment_date) && !is_null($e->appointment_completed_at);
-                if (is_numeric($filterVal)) {
-                    if ($link->status === 'renewal_cancelled') return false;
-                    return $e->registrationSteps->contains('id', (int) $filterVal);
-                }
-                return true;
-            });
-        }
-
         // Load resolution settings + targets up front so the filter cases
         // below (and the count subqueries / view) can reuse them.
         // Per-tab keys ({key}__tab_{id}) take precedence over legacy global keys.
@@ -224,51 +210,14 @@ class RenewalController extends Controller
             'cancelled' => 'renewal_cancelled',
         ];
 
-        // Apply additional filter for total employees if present
-        $totalEmployeesQuery = clone $statsQuery;
-        if ($request->has('filter') && $request->filter) {
-            $filter = $request->filter;
-            if ($filter === 'not_started') {
-                 $totalEmployeesQuery->whereIn('status', ['renewal_pending', 'renewal_completed'])
-                   ->whereDoesntHave('registrationSteps', function($sq) use ($stepOneId) {
-                       $sq->where('registration_steps.id', $stepOneId);
-                   });
-            } elseif ($filter === 'saved') {
-                 $totalEmployeesQuery->where('status', 'renewal_completed');
-            } elseif ($filter === 'cancelled') {
-                 $totalEmployeesQuery->where('status', 'renewal_cancelled');
-            } elseif ($filter === 'total_appointments') {
-                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
-                     $aq->where('resolution_tab_id', $this->currentTab->id)->whereNotNull('appointment_date');
-                 });
-            } elseif ($filter === 'appointment_not_scheduled') {
-                 $totalEmployeesQuery->whereIn('status', ['renewal_pending', 'renewal_completed'])
-                       ->whereDoesntHave('appointments', function ($aq) {
-                           $aq->where('resolution_tab_id', $this->currentTab->id)->whereNotNull('appointment_date');
-                       });
-            } elseif ($filter === 'appointment_pending') {
-                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
-                     $aq->where('resolution_tab_id', $this->currentTab->id)
-                        ->whereNotNull('appointment_date')
-                        ->whereNull('appointment_completed_at');
-                 });
-            } elseif ($filter === 'appointment_completed') {
-                 $totalEmployeesQuery->whereHas('appointments', function ($aq) {
-                     $aq->where('resolution_tab_id', $this->currentTab->id)
-                        ->whereNotNull('appointment_date')
-                        ->whereNotNull('appointment_completed_at');
-                 });
-            } elseif (is_numeric($filter)) {
-                 $totalEmployeesQuery->where('status', '!=', 'renewal_cancelled')
-                    ->whereHas('registrationSteps', function($s) use ($filter) {
-                        $s->where('registration_steps.id', $filter);
-                    });
-            }
-        }
-
-        // Clone for different counts — each folds in the dual-listed
-        // contribution computed above (see $dualLinked and friends).
-        $totalEmployees = $totalEmployeesQuery->count() + $dualFilteredForTotal->count();
+        // total_employees must stay the TRUE total (reflecting only
+        // search/operator/insurance via $statsQuery, same as every other
+        // stat here) — it must NOT also apply the active state/step
+        // filter, or it just ends up equal to whichever pill is selected
+        // instead of the real total. Folds in the dual-listed contribution
+        // computed above (see $dualLinked and friends), same as the other
+        // counts below.
+        $totalEmployees = (clone $statsQuery)->count() + $dualLinked->count();
         $totalCancelled = (clone $statsQuery)->where('status', 'renewal_cancelled')->count() + $dualTotalCancelled;
         $totalSaved = (clone $statsQuery)->where('status', 'renewal_completed')->count() + $dualTotalSaved;
 
@@ -372,6 +321,10 @@ class RenewalController extends Controller
                 $qq->where('resolution_tab_id', $tabIdForScope);
             });
         });
+
+        if ($employerFilterId) {
+            $employerQuery->where('id', $employerFilterId);
+        }
 
         // Apply Search to Employer Query
         if ($request->has('search') && $request->search) {
@@ -572,6 +525,19 @@ class RenewalController extends Controller
         // All Users for Assignment
         $allUsers = User::orderBy('name')->get(['id', 'name']);
 
+        // Team names per employer (for the team-filter "flaps" hanging off
+        // the bottom of each employer card) — one batched query for the
+        // whole page instead of one query per employer, since team names
+        // are a per-employer vocabulary (see getTabTeamNames()'s docblock).
+        $employerTeamNamesMap = \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $this->currentTab->id)
+            ->whereIn('employer_id', $employers->pluck('id'))
+            ->select('employer_id', 'team_name')
+            ->distinct()
+            ->orderBy('team_name')
+            ->get()
+            ->groupBy('employer_id')
+            ->map(fn($rows) => $rows->pluck('team_name')->all());
+
         foreach ($employers as $employer) {
             $financeOrder = $employer->productionOrders->first();
             $employer->financeOrder = $financeOrder;
@@ -582,6 +548,7 @@ class RenewalController extends Controller
             $employer->activeEmployeesCount = 0;
             $employer->cancelledCount = 0;
             $employer->savedCount = 0;
+            $employer->teamNames = $employerTeamNamesMap->get($employer->id, []);
         }
 
         // Per-tab target expiry config (fallback to legacy global key)
@@ -648,6 +615,112 @@ class RenewalController extends Controller
         return $stats;
     }
 
+    /**
+     * Live-search preview for the index() search box — reuses the exact same
+     * applySearchToQuery()/applyEmployerLevelSearch() filters as the real
+     * search, so a suggestion clicked here always yields the same results
+     * the main filter would. Dual-listed employees (via EmployeeRenewalLink)
+     * are left to the real filter on submit, not surfaced as a separate
+     * preview suggestion — kept simple since this is just a typing aid.
+     */
+    public function previewSearch(Request $request, $resolutionTab)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $results = [];
+        $tabId = $this->currentTab->id;
+        $employerFilterId = $request->input('employer_filter_id');
+
+        if (!$employerFilterId) {
+            // No existence pre-filter on purpose — box 1 must find an
+            // employer by name/number/RE code even with zero employees in
+            // this tab; applyEmployerLevelSearch()'s own nested employee
+            // match stays scoped to this tab internally.
+            $employerQuery = Employer::query();
+            $this->applyEmployerLevelSearch($employerQuery, $q);
+            $employers = $employerQuery->limit(5)->get(['id', 'employerNameTh', 'employerNameEn']);
+
+            foreach ($employers as $er) {
+                $results[] = [
+                    'id' => $er->id,
+                    'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+                    'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                    'group' => 'นายจ้าง',
+                ];
+            }
+        }
+
+        $employeeQuery = Employee::where('resolution_tab_id', $tabId)
+            ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled'])
+            ->with('employer:id,employerNameTh,employerNameEn');
+        if ($employerFilterId) {
+            $employeeQuery->where('employer_id', $employerFilterId);
+        }
+        $this->applySearchToQuery($employeeQuery, $q);
+        $employees = $employeeQuery->limit(8)->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
+
+        foreach ($employees as $emp) {
+            $results[] = [
+                'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+                'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+                'sub_label' => trim(implode(' | ', array_filter([
+                    $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                    $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                    $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                    $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
+                ]))),
+                'photo' => $emp->photo_url,
+                'group' => 'ลูกจ้าง',
+            ];
+        }
+
+        return response()->json(array_slice($results, 0, 10));
+    }
+
+    /**
+     * Live-search preview for box 1 (pick one exact employer) — scoped to
+     * employers who actually have an employee (direct or dual-listed via
+     * EmployeeRenewalLink) in this renewal tab.
+     */
+    public function previewSearchEmployer(Request $request, $resolutionTab)
+    {
+        $this->resolveTab($resolutionTab, 'renewal');
+
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $tabId = $this->currentTab->id;
+        $employerQuery = Employer::where(function ($eq) use ($tabId) {
+            $eq->whereHas('employees', function ($qq) use ($tabId) {
+                $qq->where('resolution_tab_id', $tabId)
+                   ->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
+            })->orWhereHas('employees.renewalLinks', function ($qq) use ($tabId) {
+                $qq->where('resolution_tab_id', $tabId);
+            });
+        });
+        $this->applyEmployerLevelSearch($employerQuery, $q);
+        $employers = $employerQuery->limit(10)->get(['id', 'employerNameTh', 'employerNameEn']);
+
+        $results = [];
+        foreach ($employers as $er) {
+            $results[] = [
+                'id' => $er->id,
+                'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+                'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                'group' => 'นายจ้าง',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     private function applyEmployerLevelSearch($query, $search)
     {
         $search = trim($search);
@@ -705,6 +778,9 @@ class RenewalController extends Controller
             // Employer Fields
             $q->where('employerNameTh', 'like', "%{$search}%")
               ->orWhere('employerNameEn', 'like', "%{$search}%")
+              ->orWhere('employerId', 'like', "%{$search}%")
+              ->orWhere('employerTaxId', 'like', "%{$search}%")
+              ->orWhere('outsource_re_code', 'like', "%{$search}%")
               ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               // Job Owner
@@ -1292,6 +1368,24 @@ class RenewalController extends Controller
             ]);
         }
 
+        // Team filter (the "flaps" hanging off the employer card) —
+        // multi-select OR: show employees in ANY of the selected teams.
+        // Team assignment is keyed by (employee_id, resolution_tab_id)
+        // regardless of real-vs-dual-listed status, so the exact same
+        // subquery applies to $linkedQuery below too.
+        if ($request->has('team_filter') && is_array($request->team_filter) && count($request->team_filter)) {
+            $teamFilterScope = function ($q) use ($request) {
+                $tabId = $this->currentTab->id;
+                $teamFilter = $request->team_filter;
+                $q->whereIn('id', function ($sub) use ($teamFilter, $tabId) {
+                    $sub->select('employee_id')->from('employee_team_assignments')
+                        ->where('resolution_tab_id', $tabId)
+                        ->whereIn('team_name', $teamFilter);
+                });
+            };
+            $teamFilterScope($query);
+        }
+
         $primaryEmployees = $query->get();
 
         // Dual-listed employees — Registration-Resolution employees also
@@ -1342,6 +1436,9 @@ class RenewalController extends Controller
             } else {
                 $linkedQuery->where('insurance_type', $request->insurance_filter);
             }
+        }
+        if (isset($teamFilterScope)) {
+            $teamFilterScope($linkedQuery);
         }
         // The renewal-progress multi-select filter is status-column SQL —
         // deferred for dual rows (Phase 2, same as the aggregate counters);
@@ -3201,6 +3298,9 @@ class RenewalController extends Controller
               ->orWhereHas('employer', function($q2) use ($search, $cleanedSearch) {
                   $q2->where('employerNameTh', 'like', "%{$search}%")
                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                     ->orWhere('employerId', 'like', "%{$search}%")
+                     ->orWhere('employerTaxId', 'like', "%{$search}%")
+                     ->orWhere('outsource_re_code', 'like', "%{$search}%")
                      ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                      ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                      ->orWhereHas('jobOwner', function($q3) use ($search, $cleanedSearch) {

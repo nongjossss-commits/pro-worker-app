@@ -86,6 +86,40 @@ class TaxInvoiceController extends Controller
         return view('financial.tax_invoices.index', compact('invoices', 'profiles', 'fiscalYears'));
     }
 
+    /**
+     * Live-search preview for the index() search box.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $invoices = TaxInvoice::where(function ($query) use ($like) {
+                $query->where('invoice_no', 'like', $like)
+                      ->orWhere('customer_name', 'like', $like)
+                      ->orWhere('customer_tax_id', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'invoice_no', 'customer_name', 'customer_tax_id']);
+
+        $results = [];
+        foreach ($invoices as $inv) {
+            $results[] = [
+                'label' => $inv->customer_name ?: $inv->invoice_no,
+                'sub_label' => trim(implode(' | ', array_filter([
+                    $inv->invoice_no,
+                    $inv->customer_tax_id ? "ผู้เสียภาษี: {$inv->customer_tax_id}" : null,
+                ]))),
+                'group' => 'ใบกำกับภาษี',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function create()
     {
         $profiles = FinancialProfile::with('bankAccounts')->orderBy('name')->get();

@@ -69,6 +69,42 @@ class LedgerEntryController extends Controller
         return view('financial.ledger.index', compact('entries', 'accounts', 'incomeCategories', 'expenseCategories'));
     }
 
+    /**
+     * Live-search preview for the index() search box.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $entries = LedgerEntry::where(function ($query) use ($like) {
+                $query->where('entry_no', 'like', $like)
+                      ->orWhere('counterparty_name', 'like', $like)
+                      ->orWhere('counterparty_tax_id', 'like', $like)
+                      ->orWhere('tax_invoice_no', 'like', $like)
+                      ->orWhere('description', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'entry_no', 'counterparty_name', 'description']);
+
+        $results = [];
+        foreach ($entries as $e) {
+            $results[] = [
+                'label' => $e->counterparty_name ?: ($e->description ?: $e->entry_no),
+                'sub_label' => trim(implode(' | ', array_filter([
+                    $e->entry_no,
+                    $e->counterparty_name ? $e->description : null,
+                ]))),
+                'group' => 'บัญชีแยกประเภท',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validatePayload($request);

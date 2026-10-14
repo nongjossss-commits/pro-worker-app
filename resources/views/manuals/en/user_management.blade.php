@@ -15,7 +15,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
-    <li><strong>Search bar</strong> + filter by role</li>
+    <li><strong>Search bar</strong> + filter by role — type part of a name or email and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
     <li><strong>Role tabs</strong> — Super Admin, Admin, Caretaker, Staff, Employer</li>
     <li><strong>User table</strong> — name, email, status, actions</li>
     <li><strong>"Roles & Permissions" section</strong> at the bottom (only visible to those with the manage-roles permission) — view all roles + their assigned permissions</li>

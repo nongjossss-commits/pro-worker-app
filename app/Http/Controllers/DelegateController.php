@@ -34,16 +34,57 @@ class DelegateController extends Controller
     /** Authorization: ต้องมี permission ตามแต่ละ action */
     public function __construct()
     {
-        $this->middleware('permission:view-delegates')->only(['index', 'show']);
+        $this->middleware('permission:view-delegates')->only(['index', 'show', 'previewSearch']);
         $this->middleware('permission:create-delegates')->only(['create', 'store']);
         $this->middleware('permission:edit-delegates')->only(['edit', 'update']);
         $this->middleware('permission:delete-delegates')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $delegates = Delegate::all();
-        return view('delegates.index', compact('delegates'));
+        $search = $request->input('search');
+        $query = Delegate::query();
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('delegateNameTh', 'like', "%{$search}%")
+                  ->orWhere('delegateNameEn', 'like', "%{$search}%")
+                  ->orWhere('delegateId', 'like', "%{$search}%");
+            });
+        }
+        $delegates = $query->get();
+        return view('delegates.index', compact('delegates', 'search'));
+    }
+
+    /**
+     * Live-search preview for the index() search box — same fields index()
+     * matches on.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $delegates = Delegate::where(function ($dq) use ($like) {
+                $dq->where('delegateNameTh', 'like', $like)
+                   ->orWhere('delegateNameEn', 'like', $like)
+                   ->orWhere('delegateId', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'delegateNameTh', 'delegateNameEn', 'delegateId']);
+
+        $results = [];
+        foreach ($delegates as $d) {
+            $results[] = [
+                'label' => $d->delegateNameTh ?: $d->delegateNameEn ?: '-',
+                'sub_label' => $d->delegateId ?: '',
+                'group' => 'ผู้รับมอบอำนาจ',
+            ];
+        }
+
+        return response()->json($results);
     }
 
     /**

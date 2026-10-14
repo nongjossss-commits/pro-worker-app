@@ -1477,6 +1477,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js', 'resources/js/duplicate-check.js'])
     <script src="{{ asset('js/financial-security.js') }}"></script>
+    <script src="{{ asset('js/live-search-filter.js') }}?v={{ @filemtime(public_path('js/live-search-filter.js')) }}"></script>
 
     <script>
     // Global Drag Helper

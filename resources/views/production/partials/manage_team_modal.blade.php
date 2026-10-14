@@ -21,7 +21,7 @@
                 <input type="hidden" id="team_employee_id">
                 <input type="hidden" id="team_employer_id">
 
-                <div class="mb-4">
+                <div class="mb-4" id="team-assign-section">
                     <label for="employee_team_name" class="form-label fw-bold text-dark">{{ __('Team Name / Batch') }}</label>
                     <input type="text" class="form-control form-control-lg" id="employee_team_name" placeholder="{{ __('e.g., Batch 1, Arrived 25/10') }}">
                     <div class="form-text text-muted">{{ __('Assign a team name to organize employees in this tab.') }}</div>
@@ -36,12 +36,14 @@
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-link text-secondary text-decoration-none" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                <button type="button" class="btn btn-outline-secondary" onclick="clearEmployeeTeam()" title="{{ __('Remove this employee from their team') }}">
-                    <i class="bi bi-x-circle me-1"></i> {{ __('No Team') }}
-                </button>
-                <button type="button" class="btn btn-primary px-4" onclick="saveEmployeeTeam()">
-                    <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
-                </button>
+                <div id="team-assign-footer-buttons" class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearEmployeeTeam()" title="{{ __('Remove this employee from their team') }}">
+                        <i class="bi bi-x-circle me-1"></i> {{ __('No Team') }}
+                    </button>
+                    <button type="button" class="btn btn-primary px-4" onclick="saveEmployeeTeam()">
+                        <i class="bi bi-check-lg me-1"></i> {{ __('Save') }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -133,6 +135,13 @@
                     wrapper.classList.remove('d-none');
                     names.forEach(name => list.appendChild(buildTeamChip(name)));
                 }
+                // Keep the team-filter "flaps" row on the employer card (if
+                // the including page defines one) in sync with rename/delete
+                // — defined per-page since the flap markup/toggle route
+                // differ per menu (see registration/renewal index.blade.php).
+                if (typeof window.renderEmployerTeamFlaps === 'function') {
+                    window.renderEmployerTeamFlaps(employerId, names);
+                }
             });
     }
 
@@ -140,6 +149,25 @@
         document.getElementById('team_employee_id').value = employeeId;
         document.getElementById('team_employer_id').value = btn.dataset.employerId || '';
         document.getElementById('employee_team_name').value = btn.dataset.teamName || '';
+        document.getElementById('team-assign-section').classList.remove('d-none');
+        document.getElementById('team-assign-footer-buttons').classList.remove('d-none');
+
+        reloadChips();
+
+        const modal = new bootstrap.Modal(document.getElementById('manageEmployeeTeamModal'));
+        modal.show();
+    };
+
+    // Opened from the team-filter "flaps" row's gear button — manages the
+    // employer's team list (rename/delete) without assigning any specific
+    // employee, so the assign-to-employee section is hidden rather than
+    // building a second modal for the same chip-management UI.
+    window.openManageTeamsForEmployer = function (employerId) {
+        document.getElementById('team_employee_id').value = '';
+        document.getElementById('team_employer_id').value = employerId;
+        document.getElementById('employee_team_name').value = '';
+        document.getElementById('team-assign-section').classList.add('d-none');
+        document.getElementById('team-assign-footer-buttons').classList.add('d-none');
 
         reloadChips();
 
@@ -160,6 +188,10 @@
             .then(data => {
                 if (data.success) {
                     updateTeamButtonUI(employeeId, teamName);
+                    // A brand-new team name (or clearing the last employee
+                    // off a team) changes which flaps this employer should
+                    // show — keep the flap row in sync without a reload.
+                    reloadChips();
                     bootstrap.Modal.getInstance(document.getElementById('manageEmployeeTeamModal')).hide();
                     Swal.fire({ icon: 'success', title: '{{ __('Saved') }}', timer: 1200, showConfirmButton: false });
                 } else {

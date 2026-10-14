@@ -14,6 +14,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
+    <li><strong>搜索框</strong> —— 输入雇员或雇主姓名的一部分,系统会立即显示匹配的建议;点击建议即可立即筛选列表</li>
     <li><strong>类型标签</strong> —— Employers / Employees</li>
     <li><strong>表格</strong> —— 显示数据缺失的记录，并注明具体缺少什么</li>
     <li><strong>编辑按钮</strong> —— 点击前往补全数据</li>

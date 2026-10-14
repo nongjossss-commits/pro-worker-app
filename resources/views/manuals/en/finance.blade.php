@@ -104,6 +104,10 @@
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">
+    <strong>Search boxes:</strong> every page in the Finance menu (Overview, Workflow, Registration/Renewal Resolution, Manual Bills, Credit Notes, Tax Invoices, WHT Certificates, Ledger, Audit Log) shows matching suggestions instantly as you type part of a name (no need to type the full name) — click a suggestion to filter the list right away
+</div>
+
+<div class="manual-tip">
     <strong>VAT 7%:</strong> is Thailand's default rate, rounded to 2 decimal places
 </div>
 

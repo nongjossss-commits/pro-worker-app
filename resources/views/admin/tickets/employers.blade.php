@@ -14,7 +14,13 @@
                 {{-- Search Input --}}
                 <div class="input-group input-group-sm" style="width: 250px;">
                     <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                    <input type="text" name="search" class="form-control border-start-0" placeholder="ค้นหานายจ้าง..." value="{{ $search }}">
+                    <x-live-search-filter
+                        endpoint="{{ route('admin.tickets.preview_search') }}"
+                        name="search"
+                        placeholder="ค้นหานายจ้าง..."
+                        value="{{ $search }}"
+                        class="form-control border-start-0"
+                    />
                 </div>
 
                 {{-- Hidden Toggle Button (New) --}}

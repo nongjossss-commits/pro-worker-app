@@ -22,7 +22,13 @@
                     </a>
 
                     <form action="{{ route('admin.users.index') }}" method="GET" class="d-flex gap-2 w-100 w-md-auto" style="max-width: 400px;">
-                        <input type="text" name="search" class="form-control" placeholder="{{ __('Search name or email...') }}" value="{{ request('search') }}">
+                        <x-live-search-filter
+                            endpoint="{{ route('admin.users.preview_search') }}"
+                            name="search"
+                            placeholder="{{ __('Search name or email...') }}"
+                            value="{{ request('search') }}"
+                            class="form-control"
+                        />
                         <button type="submit" class="btn btn-secondary">{{ __('Search') }}</button>
                         @if(request('search'))
                             <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">{{ __('Clear') }}</a>

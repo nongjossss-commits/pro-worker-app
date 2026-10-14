@@ -405,6 +405,40 @@ class LaborContractController extends Controller
     }
 
     /**
+     * Live-search preview for the index() search box — reuses the exact
+     * same scopeVisibleContracts() team-visibility scope as index(), so a
+     * suggestion never leaks a contract the user couldn't otherwise see.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $query = ProWorkerContract::query();
+        $this->scopeVisibleContracts($query, Auth::user());
+        $query->where(function ($cq) use ($like) {
+            $cq->where('employer_name_snapshot', 'like', $like)
+               ->orWhere('contract_no', 'like', $like);
+        });
+
+        $contracts = $query->limit(10)->get(['id', 'employer_name_snapshot', 'contract_no']);
+
+        $results = [];
+        foreach ($contracts as $c) {
+            $results[] = [
+                'label' => $c->employer_name_snapshot ?: $c->contract_no,
+                'sub_label' => $c->contract_no,
+                'group' => 'สัญญา',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
+    /**
      * Bulk-download the tick-selected contracts from the list page as one
      * .zip — `variant=original` zips each contract's own generated PDF
      * (`file_path`, always present since issue()); `variant=signed` zips

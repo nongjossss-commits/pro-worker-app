@@ -39,6 +39,10 @@
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>
 
 <div class="manual-tip">
+    <strong>搜索框:</strong> 输入雇员或雇主姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表 —— 只在当前打开的标签页内搜索
+</div>
+
+<div class="manual-tip">
     <strong>Web Push:</strong> 在浏览器中开启通知权限，即可实时接收提醒
 </div>
 

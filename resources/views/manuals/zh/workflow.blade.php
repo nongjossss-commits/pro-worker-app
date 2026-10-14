@@ -17,6 +17,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
     <li><strong>步骤栏</strong> 位于顶部 —— 显示工作需经过的各个步骤 + 每个步骤中的工作数量</li>
+    <li><strong>搜索框</strong> —— 输入雇主或雇员姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表</li>
     <li><strong>筛选栏</strong> —— 按步骤、雇主、工作类型筛选</li>
     <li><strong>工作卡片</strong> —— 显示当前所选步骤中的所有工作</li>
     <li><strong>"Auto-apply MOU" 按钮</strong> —— 用于系统自动处理的 MOU 续签工作</li>

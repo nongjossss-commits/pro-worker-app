@@ -16,7 +16,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <p>When you enter the menu, you'll see <strong>2 options</strong>:</p>
 <ol>
-    <li><strong>Affiliated with Employer</strong> — a group tied to a specific employer; employees in the group must belong to that employer</li>
+    <li><strong>Affiliated with Employer</strong> — a group tied to a specific employer; employees in the group must belong to that employer · the employer-picker page has a <strong>search box</strong> — type part of an employer name and matching suggestions appear instantly; click a suggestion to filter the list right away</li>
     <li><strong>Independent / No Employer</strong> — a group not tied to any employer; employees from any employer can be added</li>
 </ol>
 <p>Both types have a <strong>Manage</strong> page showing an <strong>accordion of each group</strong> + the <strong>sub-teams</strong> within it</p>

@@ -62,6 +62,7 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         // Central Billing — Accounting Staff logs a charge by request number + qty,
         // priced from the Super Admin-managed catalog. See LaborChargeEntryController.
         Route::get('/charges', [LaborChargeEntryController::class, 'index'])->name('charges.index');
+        Route::get('/charges/preview-search', [LaborChargeEntryController::class, 'previewSearch'])->name('charges.preview_search');
         Route::post('/charges', [LaborChargeEntryController::class, 'store'])->name('charges.store');
         Route::put('/charges/{entry}', [LaborChargeEntryController::class, 'update'])->name('charges.update');
         Route::delete('/charges/{entry}', [LaborChargeEntryController::class, 'destroy'])->name('charges.destroy');
@@ -107,6 +108,9 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         // ใบกำกับภาษี (VAT tax invoices), usually issued from a bill.
         Route::get('/tax-invoices', [LaborTaxInvoiceController::class, 'index'])->name('tax-invoices.index');
         Route::get('/tax-invoices/create', [LaborTaxInvoiceController::class, 'create'])->name('tax-invoices.create');
+        // Must come BEFORE GET /tax-invoices/{taxInvoice} (show) below — same
+        // single-segment wildcard collision risk as /contracts/preview-search above.
+        Route::get('/tax-invoices/preview-search', [LaborTaxInvoiceController::class, 'previewSearch'])->name('tax-invoices.preview_search');
         Route::post('/tax-invoices', [LaborTaxInvoiceController::class, 'store'])->name('tax-invoices.store');
         Route::get('/tax-invoices/{taxInvoice}', [LaborTaxInvoiceController::class, 'show'])->name('tax-invoices.show');
         Route::put('/tax-invoices/{taxInvoice}', [LaborTaxInvoiceController::class, 'update'])->name('tax-invoices.update');
@@ -116,6 +120,9 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         // ใบหัก ณ ที่จ่าย (WHT certificates) — usually received from the team/customer paying a bill.
         Route::get('/wht-certificates', [LaborWhtCertificateController::class, 'index'])->name('wht-certificates.index');
         Route::get('/wht-certificates/create', [LaborWhtCertificateController::class, 'create'])->name('wht-certificates.create');
+        // Must come BEFORE GET /wht-certificates/{whtCertificate} (show) below —
+        // same single-segment wildcard collision risk as above.
+        Route::get('/wht-certificates/preview-search', [LaborWhtCertificateController::class, 'previewSearch'])->name('wht-certificates.preview_search');
         Route::post('/wht-certificates', [LaborWhtCertificateController::class, 'store'])->name('wht-certificates.store');
         Route::get('/wht-certificates/{whtCertificate}', [LaborWhtCertificateController::class, 'show'])->name('wht-certificates.show');
         Route::put('/wht-certificates/{whtCertificate}', [LaborWhtCertificateController::class, 'update'])->name('wht-certificates.update');
@@ -193,6 +200,10 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
         // — see LaborContractController::bulkDownload()'s docblock.
         Route::post('/contracts/bulk-download', [LaborContractController::class, 'bulkDownload'])->name('contracts.bulk-download');
         Route::get('/contracts', [LaborContractController::class, 'index'])->name('contracts.index');
+        // Must come BEFORE GET /contracts/{contract} (show) below — both are
+        // single-segment patterns, so registration order decides which wins;
+        // "preview-search" would otherwise be swallowed as the {contract} id.
+        Route::get('/contracts/preview-search', [LaborContractController::class, 'previewSearch'])->name('contracts.preview_search');
         Route::get('/contracts/{contract}/edit', [LaborContractController::class, 'edit'])->name('contracts.edit');
         Route::put('/contracts/{contract}', [LaborContractController::class, 'update'])->name('contracts.update');
         Route::get('/contracts/{contract}', [LaborContractController::class, 'show'])->name('contracts.show');

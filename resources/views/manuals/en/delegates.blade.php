@@ -22,7 +22,7 @@
 <ol>
     <li><strong>Delegate table</strong> — name, linked employer, position, phone number, email</li>
     <li><strong>"+ Add New Delegate"</strong> button — creates a delegate</li>
-    <li><strong>Filter</strong> — filter by employer, search by name/phone number</li>
+    <li><strong>Search box</strong> — type part of a delegate's name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
 </ol>
 
 <h4><i class="bi bi-list-check me-2"></i>How to use it</h4>

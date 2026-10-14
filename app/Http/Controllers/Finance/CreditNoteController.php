@@ -71,6 +71,40 @@ class CreditNoteController extends Controller
         return view('financial.credit_notes.index', compact('creditNotes', 'fiscalYears'));
     }
 
+    /**
+     * Live-search preview for the index() search box.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $creditNotes = CreditNote::where(function ($query) use ($like) {
+                $query->where('credit_note_no', 'like', $like)
+                      ->orWhere('customer_name', 'like', $like)
+                      ->orWhere('customer_tax_id', 'like', $like);
+            })
+            ->limit(10)
+            ->get(['id', 'credit_note_no', 'customer_name', 'customer_tax_id']);
+
+        $results = [];
+        foreach ($creditNotes as $cn) {
+            $results[] = [
+                'label' => $cn->customer_name ?: $cn->credit_note_no,
+                'sub_label' => trim(implode(' | ', array_filter([
+                    $cn->credit_note_no,
+                    $cn->customer_tax_id ? "ผู้เสียภาษี: {$cn->customer_tax_id}" : null,
+                ]))),
+                'group' => 'ใบลดหนี้',
+            ];
+        }
+
+        return response()->json($results);
+    }
+
     public function create(Request $request)
     {
         $profiles = FinancialProfile::orderBy('name')->get();

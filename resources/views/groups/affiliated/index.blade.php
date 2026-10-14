@@ -17,9 +17,13 @@
         <div class="card-body">
             <form action="{{ route('groups.affiliated.index') }}" method="GET" class="row g-3">
                 <div class="col-md-10">
-                    <input type="text" name="search" class="form-control form-control-lg"
-                           placeholder="{{ __('Search by Employer Name or Company Name...') }}"
-                           value="{{ $search }}">
+                    <x-live-search-filter
+                        endpoint="{{ route('groups.affiliated.preview_search') }}"
+                        name="search"
+                        placeholder="{{ __('Search by Employer Name or Company Name...') }}"
+                        value="{{ $search }}"
+                        class="form-control form-control-lg"
+                    />
                 </div>
                 <div class="col-md-2 d-grid">
                     <button type="submit" class="btn btn-primary btn-lg">

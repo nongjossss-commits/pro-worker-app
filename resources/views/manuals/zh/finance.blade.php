@@ -104,6 +104,10 @@
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>
 
 <div class="manual-tip">
+    <strong>搜索框:</strong> 财务菜单的每个页面(概览、Workflow、注册/续期决议、手动开单、贷项通知单、税务发票、预扣税凭证、总账、审计日志)输入姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表
+</div>
+
+<div class="manual-tip">
     <strong>增值税 7%:</strong> 泰国的默认税率，四舍五入保留 2 位小数
 </div>
 

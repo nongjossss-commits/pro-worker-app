@@ -22,7 +22,7 @@
 <ol>
     <li><strong>授权代表表格</strong> —— 姓名、所属雇主、职位、电话、邮箱</li>
     <li><strong>"+ 新增授权代表"</strong> 按钮 —— 创建 delegate</li>
-    <li><strong>筛选器</strong> —— 按雇主筛选，按姓名/电话搜索</li>
+    <li><strong>搜索框</strong> —— 输入授权代表姓名的一部分,系统会立即显示匹配的建议(无需输入完整姓名);点击建议即可立即筛选列表</li>
 </ol>
 
 <h4><i class="bi bi-list-check me-2"></i>使用步骤</h4>

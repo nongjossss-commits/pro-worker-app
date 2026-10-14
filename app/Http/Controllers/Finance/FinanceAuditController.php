@@ -78,4 +78,39 @@ class FinanceAuditController extends Controller
 
         return view('financial.audit.index', compact('logs', 'users', 'actions'));
     }
+
+    /**
+     * Live-search preview for the index() search box — matches the same
+     * description field index() searches, scoped to the same Ledger v2
+     * subject types.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+
+        $logs = ActivityLog::with('user')
+            ->whereIn('subject_type', self::SUBJECT_TYPES)
+            ->where('description', 'like', $like)
+            ->latest()
+            ->limit(10)
+            ->get(['id', 'description', 'action', 'created_at', 'user_id']);
+
+        $results = [];
+        foreach ($logs as $log) {
+            $results[] = [
+                'label' => $log->description,
+                'sub_label' => trim(implode(' | ', array_filter([
+                    optional($log->user)->name,
+                    optional($log->created_at)->format('d/m/Y H:i'),
+                ]))),
+                'group' => 'บันทึกตรวจสอบ',
+            ];
+        }
+
+        return response()->json($results);
+    }
 }

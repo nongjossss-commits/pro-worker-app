@@ -26,7 +26,13 @@
         <div class="card-body">
             <form action="{{ route('finance.credit-notes.index') }}" method="GET" class="row g-2">
                 <div class="col-md-4">
-                    <input type="text" name="search" class="form-control" placeholder="{{ __('Search credit note no, customer, tax ID…') }}" value="{{ request('search') }}">
+                    <x-live-search-filter
+                        endpoint="{{ route('finance.credit-notes.preview_search') }}"
+                        name="search"
+                        placeholder="{{ __('Search credit note no, customer, tax ID…') }}"
+                        value="{{ request('search') }}"
+                        class="form-control"
+                    />
                 </div>
                 <div class="col-md-2">
                     <select name="fiscal_year" class="form-select">

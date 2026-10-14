@@ -15,7 +15,7 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <ol>
-    <li><strong>搜索栏</strong> + 按角色筛选</li>
+    <li><strong>搜索栏</strong> + 按角色筛选 —— 输入姓名或邮箱的一部分,系统会立即显示匹配的建议(无需输入完整内容);点击建议即可立即筛选列表</li>
     <li><strong>角色标签栏</strong> —— Super Admin、Admin、Caretaker、Staff、Employer</li>
     <li><strong>用户表格</strong> —— 姓名、邮箱、状态、操作</li>
     <li>页面底部的<strong>"角色与权限"区块</strong>(仅拥有 manage-roles 权限者可见) —— 查看所有角色及其关联的权限</li>

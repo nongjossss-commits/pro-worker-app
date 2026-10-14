@@ -238,6 +238,9 @@ html[data-bs-theme="dark"] .manual-body dt { color: var(--dk-text-strong); }
 html[data-bs-theme="dark"] .manual-body dd { color: var(--dk-text-soft); }
 /* admin/activity_logs */
 html[data-bs-theme="dark"] .subject-result-item:hover { background-color: var(--dk-surface-3) !important; }
+/* components/live-search-filter */
+html[data-bs-theme="dark"] .live-search-result-item:hover,
+html[data-bs-theme="dark"] .live-search-result-item.active-result { background-color: var(--dk-surface-3) !important; }
 /* financial/tax_invoices/create */
 html[data-bs-theme="dark"] .bank-pick:hover { background: var(--dk-surface-3); }
 /* production/registration + production/renewal progress colours */

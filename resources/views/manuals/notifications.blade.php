@@ -39,6 +39,10 @@
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">
+    <strong>ช่องค้นหา:</strong> พิมพ์ชื่อลูกจ้าง/นายจ้างบางส่วน ระบบจะโชว์รายชื่อที่ตรงให้เลือกทันที (ไม่ต้องพิมพ์ให้ครบ) คลิกเลือกเพื่อกรองรายการทันที — ค้นเฉพาะในแท็บที่เปิดอยู่
+</div>
+
+<div class="manual-tip">
     <strong>Web Push:</strong> เปิด notification permission ใน browser เพื่อรับแจ้งเตือน real-time
 </div>
 

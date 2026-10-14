@@ -16,7 +16,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>页面外观</h4>
 <p>进入菜单后，会看到 <strong>2 个选项</strong>：</p>
 <ol>
-    <li><strong>Affiliated with Employer(隶属雇主的分组)</strong> —— 与特定雇主绑定的分组，组内雇员必须属于该雇主</li>
+    <li><strong>Affiliated with Employer(隶属雇主的分组)</strong> —— 与特定雇主绑定的分组，组内雇员必须属于该雇主 · 雇主选择页面有<strong>搜索框</strong> —— 输入雇主姓名的一部分,系统会立即显示匹配的建议;点击建议即可立即筛选列表</li>
     <li><strong>Independent / No Employer(独立分组)</strong> —— 不绑定任何雇主的分组，可加入任何雇主的雇员</li>
 </ol>
 <p>两种类型都有 <strong>Manage(管理)</strong> 页面，显示<strong>每个分组的手风琴列表</strong> + 组内的<strong>子团队</strong></p>

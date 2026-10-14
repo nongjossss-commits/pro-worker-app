@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use App\Models\Employee;
+use App\Models\Employer;
 use App\Models\NotificationSetting;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -120,6 +121,116 @@ class NotificationController extends Controller
         return view('notifications.index', compact('notificationsData', 'counts', 'tabs', 'currentView', 'perPageOptions', 'addressOptions'));
     }
 
+    /**
+     * Live-search preview for the index() search box — reuses
+     * getFilteredQuery() for whichever tab (active_tab) is currently open,
+     * so a suggestion always matches what that tab's real search would find.
+     */
+    public function previewSearch(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $type = $request->input('active_tab', 'ninety_day_report');
+        $previewRequest = Request::create('', 'GET', ['search' => $q] + $request->except(['q', 'active_tab']));
+
+        $notifications = $this->getFilteredQuery($previewRequest, $type, true)
+            ->with(['employee', 'employer'])
+            ->limit(10)
+            ->get();
+
+        $results = [];
+        foreach ($notifications as $n) {
+            if ($type === 'employer_document_expiry') {
+                $results[] = [
+                    'label' => $n->employer->employerNameTh ?? $n->employer->employerNameEn ?? '-',
+                    'sub_label' => '',
+                    'group' => 'นายจ้าง',
+                ];
+            } else {
+                $emp = $n->employee;
+                $results[] = [
+                    'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+                    'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+                    'sub_label' => trim(implode(' | ', array_filter([
+                        $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                        $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                        $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                    ]))),
+                    'photo' => $emp->photo_url,
+                    'group' => 'ลูกจ้าง',
+                ];
+            }
+        }
+
+        return response()->json($results);
+    }
+
+    /**
+     * Live-search preview for box 1 of index() — generic employer matches
+     * (tagged with 'id', so picking one locks box 1 to that exact employer
+     * and unlocks box 2) merged with employee matches for the currently
+     * active tab (picking one filters straight to that record).
+     */
+    public function previewSearchCombined(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $like = "%{$q}%";
+        $results = [];
+
+        $employers = Employer::where(function ($eq) use ($like) {
+                $eq->where('employerNameTh', 'like', $like)
+                   ->orWhere('employerNameEn', 'like', $like)
+                   ->orWhere('name_suffix', 'like', $like)
+                   ->orWhere('businessType', 'like', $like)
+                   ->orWhere('employerId', 'like', $like)
+                   ->orWhere('employerTaxId', 'like', $like)
+                   ->orWhere('outsource_re_code', 'like', $like);
+            })
+            ->limit(5)
+            ->get(['id', 'employerNameTh', 'employerNameEn']);
+
+        foreach ($employers as $er) {
+            $results[] = [
+                'id' => $er->id,
+                'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
+                'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                'group' => 'นายจ้าง',
+            ];
+        }
+
+        $type = $request->input('active_tab', 'ninety_day_report');
+        if ($type !== 'employer_document_expiry') {
+            $previewRequest = Request::create('', 'GET', ['search' => $q] + $request->except(['q', 'active_tab']));
+            $notifications = $this->getFilteredQuery($previewRequest, $type, true)
+                ->with(['employee.employer'])
+                ->limit(5)
+                ->get();
+
+            foreach ($notifications as $n) {
+                $emp = $n->employee;
+                $results[] = [
+                    'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
+                    'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
+                    'sub_label' => trim(implode(' | ', array_filter([
+                        $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
+                        $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
+                        $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
+                    ]))),
+                    'photo' => $emp->photo_url,
+                    'group' => 'ลูกจ้าง',
+                ];
+            }
+        }
+
+        return response()->json($results);
+    }
+
     private function getFilteredQuery(Request $request, string $type, $skipAddressFilters = false)
     {
         $query = Notification::with(['employee.employer.addresses', 'employer.addresses']);
@@ -129,6 +240,24 @@ class NotificationController extends Controller
             $query->whereHas('employer');
         } else {
             $query->whereHas('employee');
+        }
+
+        // Two-stage filter — box 1 locks one exact employer; box 2's free-text
+        // search (below) then only needs to match the employee's own fields.
+        $employerFilterId = $request->input('employer_filter_id');
+        if (!$employerFilterId && $request->filled('employer_filter_name') && !$request->filled('search')) {
+            // Box 1 hasn't locked onto one exact employer yet — let its
+            // typed text search with the same full power as box 2 below.
+            $request->merge(['search' => $request->input('employer_filter_name')]);
+        }
+        if ($employerFilterId) {
+            if ($type === 'employer_document_expiry') {
+                $query->where('employer_id', $employerFilterId);
+            } else {
+                $query->whereHas('employee', function ($q) use ($employerFilterId) {
+                    $q->where('employer_id', $employerFilterId);
+                });
+            }
         }
 
         // Apply tenancy scope for Employer role to prevent data leakage
@@ -163,18 +292,21 @@ class NotificationController extends Controller
         // --- NEW: Enhanced Search Logic ---
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function ($q) use ($search, $type) {
+            $query->where(function ($q) use ($search, $type, $employerFilterId) {
                 if ($type === 'employer_document_expiry') {
                     $q->whereHas('employer', function ($q_employer) use ($search) {
                         $q_employer->where('employerNameTh', 'like', "%{$search}%")
                                    ->orWhere('employerNameEn', 'like', "%{$search}%")
                                    ->orWhere('name_suffix', 'like', "%{$search}%")
+                                   ->orWhere('employerId', 'like', "%{$search}%")
+                                   ->orWhere('employerTaxId', 'like', "%{$search}%")
+                                   ->orWhere('outsource_re_code', 'like', "%{$search}%")
                                    ->orWhere(function($addrQ) use ($search) {
                                        $addrQ->filterByAddress($search);
                                    });
                     });
                 } else {
-                    $q->whereHas('employee', function ($q_employee) use ($search) {
+                    $q->whereHas('employee', function ($q_employee) use ($search, $employerFilterId) {
                         $q_employee->where('employeeNameTh', 'like', "%{$search}%")
                                    ->orWhere('employeeNameEn', 'like', "%{$search}%")
                                    ->orWhere('name_suffix', 'like', "%{$search}%")
@@ -183,15 +315,20 @@ class NotificationController extends Controller
                                    ->orWhere('employee_id_number', 'like', "%{$search}%")
                                    ->orWhere('name_list_number', 'like', "%{$search}%")
                                    ->orWhere('pinkCardNo', 'like', "%{$search}%")
-                                   ->orWhere('employer_employee_id', 'like', "%{$search}%") // Replaced companyWorkerId
-                                   ->orWhereHas('employer', function ($q_employer) use ($search) {
-                                       $q_employer->where('employerNameTh', 'like', "%{$search}%")
-                                                  ->orWhere('employerNameEn', 'like', "%{$search}%") // Added employerNameEn
-                                                  ->orWhere('name_suffix', 'like', "%{$search}%")
-                                                  ->orWhere(function($addrQ) use ($search) {
-                                                      $addrQ->filterByAddress($search);
-                                                  });
-                                   });
+                                   ->orWhere('employer_employee_id', 'like', "%{$search}%"); // Replaced companyWorkerId
+                        if (!$employerFilterId) {
+                            $q_employee->orWhereHas('employer', function ($q_employer) use ($search) {
+                                $q_employer->where('employerNameTh', 'like', "%{$search}%")
+                                           ->orWhere('employerNameEn', 'like', "%{$search}%") // Added employerNameEn
+                                           ->orWhere('name_suffix', 'like', "%{$search}%")
+                                           ->orWhere('employerId', 'like', "%{$search}%")
+                                           ->orWhere('employerTaxId', 'like', "%{$search}%")
+                                           ->orWhere('outsource_re_code', 'like', "%{$search}%")
+                                           ->orWhere(function($addrQ) use ($search) {
+                                               $addrQ->filterByAddress($search);
+                                           });
+                            });
+                        }
                     });
                 }
             });
