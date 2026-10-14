@@ -96,12 +96,12 @@ class TrashController extends Controller
         }
 
         $typeLabels = [
-            'employees' => 'ลูกจ้าง',
-            'employers' => 'นายจ้าง',
-            'agents' => 'เอเจนซี่',
-            'importers' => 'บริษัทนำเข้า',
-            'delegates' => 'ผู้รับมอบอำนาจ',
-            'tickets' => 'ตั๋วงาน',
+            'employees' => __('ลูกจ้าง'),
+            'employers' => __('นายจ้าง'),
+            'agents' => __('เอเจนซี่'),
+            'importers' => __('บริษัทนำเข้า'),
+            'delegates' => __('ผู้รับมอบอำนาจ'),
+            'tickets' => __('ตั๋วงาน'),
         ];
 
         $results = [];

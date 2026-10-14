@@ -42,13 +42,7 @@
                     style="width: 340px;"
                     :disabled="!request('employer_filter_id')"
                 />
-                <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                    <option value="">-- {{ __('All Nationalities') }} --</option>
-                    <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>{{ __('Myanmar') }}</option>
-                    <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>{{ __('Laos') }}</option>
-                    <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>{{ __('Cambodia') }}</option>
-                    <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>{{ __('Vietnam') }}</option>
-                </select>
+                <x-nationality-select name="nationality" class="form-select form-select-sm" style="width: auto;" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
                 <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('All MOU Types') }} --</option>
                     @foreach(\App\Models\WorkPermitType::ordered()->get() as $wpType)
@@ -71,7 +65,10 @@
                     <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>{{ __('TD Book') }}</option>
                     <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('Inter Book') }}</option>
                 </select>
-                <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
+                <div class="flex-shrink-0" style="width: 23.5rem; max-width: 100%;">
+                    {{-- Matches employees whose work permit OR visa expires on this date. --}}
+                    <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" placeholder="{{ __('Filter by work permit and visa expiry date') }}" title="{{ __('Filter by work permit and visa expiry date') }}">
+                </div>
                 <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
                 <a href="{{ route('admin.incomplete_employees.index') }}" class="btn btn-sm btn-secondary">{{ __('Clear') }}</a>
             </form>
@@ -116,15 +113,17 @@
         </x-bulk-action-bar>
 
         @if($currentView === 'card')
-            <div class="row g-3">
+            {{-- Same tile cards as the Employees menu (partials/_employee_tiles), plus a "missing N fields" badge. --}}
+            <div class="list-group emp-tile-grid">
                 @foreach($employees as $employee)
-                    <div class="col-12 col-md-6 col-xl-4 position-relative">
-                        @include('employees._employee_card', [
-                            'employee' => $employee,
-                            'is_incomplete_view' => true,
-                            'source_menu' => __('Incomplete Data')
-                        ])
-                    </div>
+                    @include('partials._employee_card', [
+                        'employee' => $employee,
+                        'loop' => $loop,
+                        'pagination' => $employees,
+                        'is_incomplete_view' => true,
+                        'mandatoryFields' => $mandatoryFields,
+                        'source_menu' => __('Incomplete Data')
+                    ])
                 @endforeach
             </div>
         @else

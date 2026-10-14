@@ -915,7 +915,7 @@ class WorkflowController extends Controller
                     'id' => $er->id,
                     'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
                     'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                    'group' => 'นายจ้าง',
+                    'group' => __('นายจ้าง'),
                 ];
             }
         }
@@ -959,7 +959,7 @@ class WorkflowController extends Controller
                     $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
                 ]))),
                 'photo' => $emp->photo_url,
-                'group' => 'ลูกจ้าง',
+                'group' => __('ลูกจ้าง'),
             ];
         }
 
@@ -1002,7 +1002,7 @@ class WorkflowController extends Controller
                 'id' => $er->id,
                 'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
                 'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
         }
 

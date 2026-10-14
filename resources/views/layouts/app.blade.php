@@ -839,6 +839,11 @@
     </style>
     @include('partials._ui_theme_styles')
     <link rel="stylesheet" href="{{ asset('css/theme-dark.css') }}?v={{ @filemtime(public_path('css/theme-dark.css')) }}">
+    @auth
+        {{-- Card / record-tab CSS before the content, so lists don't first draw in the old row layout. --}}
+        @include('partials._record_tabs', ['part' => 'styles'])
+        @include('partials._employee_tiles', ['part' => 'styles'])
+    @endauth
 </head>
 <body>
 
@@ -1478,6 +1483,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js', 'resources/js/duplicate-check.js'])
     <script src="{{ asset('js/financial-security.js') }}"></script>
     <script src="{{ asset('js/live-search-filter.js') }}?v={{ @filemtime(public_path('js/live-search-filter.js')) }}"></script>
+    <script>window.NAT_I18N = {!! json_encode(['Recent' => __('Recently selected'), 'Main' => __('Main nationalities'), 'All' => __('All nationalities'), 'None' => __('No matching nationality'), 'Placeholder' => __('Type to search nationality...')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!};</script>
+    <script src="{{ asset('js/nationality-select.js') }}?v={{ @filemtime(public_path('js/nationality-select.js')) }}"></script>
 
     <script>
     // Global Drag Helper
@@ -1862,7 +1869,8 @@
     @auth
         @include('partials._share_card_scripts')
         @include('partials._operator_picker')
-        @include('partials._record_tabs')
+        @include('partials._record_tabs', ['part' => 'scripts'])
+        @include('partials._employee_tiles', ['part' => 'scripts'])
     @endauth
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 

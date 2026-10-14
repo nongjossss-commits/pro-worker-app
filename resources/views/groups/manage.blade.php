@@ -88,12 +88,7 @@
                     <input type="text" name="search" class="form-control" placeholder="{{ __('Search...') }}" value="{{ request('search') }}">
                 </div>
                 <div class="col-md-2">
-                    <select name="nationality" class="form-select">
-                        <option value="">-- {{ __('All Nationalities') }} --</option>
-                        @foreach($nationalities as $nat)
-                            <option value="{{ $nat }}" {{ request('nationality') == $nat ? 'selected' : '' }}>{{ $nat }}</option>
-                        @endforeach
-                    </select>
+                    <x-nationality-select name="nationality" class="form-select" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
                 </div>
                 <div class="col-md-2">
                     <select name="pink_card" class="form-select">
@@ -286,7 +281,7 @@
                                                         @endforeach
                                                     @endif
                                                 </h5>
-                                                <div class="list-group employer-employees-container" data-team-id="{{ $team->id }}" data-employer-id="{{ $employerId }}">
+                                                <div class="list-group emp-tile-grid employer-employees-container" data-team-id="{{ $team->id }}" data-employer-id="{{ $employerId }}">
                                                     @foreach($members as $member)
                                                         @php
                                                             $currentUrl = request()->fullUrlWithQuery([
@@ -315,7 +310,7 @@
                                         @endforelse
                                     @else
                                         {{-- No Grouping --}}
-                                        <div class="list-group team-employees-container" data-team-id="{{ $team->id }}">
+                                        <div class="list-group emp-tile-grid team-employees-container" data-team-id="{{ $team->id }}">
                                             @forelse($team->employees as $member)
                                                 @php
                                                     $currentUrl = request()->fullUrlWithQuery([

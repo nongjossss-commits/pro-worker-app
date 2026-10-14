@@ -98,7 +98,7 @@ class CreditNoteController extends Controller
                     $cn->credit_note_no,
                     $cn->customer_tax_id ? "ผู้เสียภาษี: {$cn->customer_tax_id}" : null,
                 ]))),
-                'group' => 'ใบลดหนี้',
+                'group' => __('ใบลดหนี้'),
             ];
         }
 

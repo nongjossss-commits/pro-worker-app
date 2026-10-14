@@ -98,7 +98,7 @@ class LedgerEntryController extends Controller
                     $e->entry_no,
                     $e->counterparty_name ? $e->description : null,
                 ]))),
-                'group' => 'บัญชีแยกประเภท',
+                'group' => __('บัญชีแยกประเภท'),
             ];
         }
 

@@ -80,7 +80,7 @@ class DelegateController extends Controller
             $results[] = [
                 'label' => $d->delegateNameTh ?: $d->delegateNameEn ?: '-',
                 'sub_label' => $d->delegateId ?: '',
-                'group' => 'ผู้รับมอบอำนาจ',
+                'group' => __('ผู้รับมอบอำนาจ'),
             ];
         }
 

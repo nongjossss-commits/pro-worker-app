@@ -122,7 +122,7 @@
                                         <input type="date" class="form-control master-input" data-field="{{ $field }}">
                                     @elseif(isset($options[$field]))
                                         {{-- Select Dropdown --}}
-                                        <select class="form-select master-input" data-field="{{ $field }}">
+                                        <select class="form-select {{ $field === 'employeeNationality' ? 'js-nationality-select' : '' }} master-input" data-field="{{ $field }}">
                                             <option value="">-- {{ __('Select to Apply All') }} --</option>
                                             @foreach($options[$field] as $val => $label)
                                                 <option value="{{ $val }}">{{ $label }}</option>
@@ -276,7 +276,7 @@
                                             <input type="date" class="form-control individual-input" name="data[{{ $employee->id }}][{{ $field }}]" value="{{ $employee->$field ? \Carbon\Carbon::parse($employee->$field)->format('Y-m-d') : '' }}" data-field="{{ $field }}">
                                         @elseif(isset($options[$field]))
                                             {{-- Select Dropdown --}}
-                                            <select class="form-select individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}">
+                                            <select class="form-select {{ $field === 'employeeNationality' ? 'js-nationality-select' : '' }} individual-input" name="data[{{ $employee->id }}][{{ $field }}]" data-field="{{ $field }}">
                                                 <option value="">-- {{ __('Select') }} --</option>
                                                 @foreach($options[$field] as $val => $label)
                                                     <option value="{{ $val }}" {{ $employee->$field == $val ? 'selected' : '' }}>{{ $label }}</option>

@@ -130,13 +130,14 @@
         {{-- Use employee photo or a placeholder --}}
         <img src="{{ $employee->photo_url ?? 'https://placehold.co/48x48/e2e8f0/6c757d?text=PIC' }}"
              alt="Photo"
-             class="w-12 h-12 object-cover rounded-full bg-light flex-shrink-0"
+             class="w-12 h-12 object-cover rounded-full bg-light flex-shrink-0 notif-photo"
              style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
 
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start w-100">
             <div class="flex-grow-1">
                 <h5 class="alert-heading mb-1">
-                    {{ $itemNumber }}.
+                    {{-- Running number: plain "1." here, a badge in the corner when shown as tiles (partials/_employee_tiles). --}}
+                    <span class="emp-card-no">{{ $itemNumber }}<span class="emp-card-no-dot">.</span></span>
                     {{-- Display Employee Name or Employer Document Type --}}
                     @if($employee)
                         <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
@@ -147,12 +148,12 @@
                             @php
                                 $flagCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
                             @endphp
-                            @if($flagCode)
-                            <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
-                                <img src="{{ asset('images/flags/' . strtolower($flagCode) . '.png') }}" alt="{{ $employee->employeeNationality }}" title="{{ $employee->employeeNationality }}" style="width: 16px; height: 12px; margin-right: 5px;">
-                                <span>{{ $employee->employeeNationality }}</span>
+                            <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center emp-card-nat">
+                                @if($flagCode)
+                                    <img src="{{ asset('images/flags/' . strtolower($flagCode) . '.png') }}" alt="{{ $employee->employeeNationality }}" title="{{ $employee->employeeNationality }}" style="width: 16px; height: 12px; margin-right: 5px;">
+                                @endif
+                                <span>{{ \App\Helpers\NationalityList::label($employee->employeeNationality) }}</span>
                             </span>
-                            @endif
                         @endif
                     @else
                         เอกสารนายจ้าง

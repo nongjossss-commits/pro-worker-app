@@ -87,13 +87,7 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label for="modal_employeeNationality" class="form-label">สัญชาติ</label>
-                        <select class="form-select" id="modal_employeeNationality" x-model="newEmployeeForm.employeeNationality">
-                            <option value="">-- เลือกสัญชาติ --</option>
-                            <option value="เมียนมา">เมียนมา</option>
-                            <option value="ลาว">ลาว</option>
-                            <option value="กัมพูชา">กัมพูชา</option>
-                            <option value="เวียดนาม">เวียดนาม</option>
-                        </select>
+                        <x-nationality-select class="form-select" id="modal_employeeNationality" x-model="newEmployeeForm.employeeNationality" :empty="__('-- Select Nationality --')" />
                     </div>
                     <div class="col-md-4 mb-3" :class="{'d-none': newEmployeeForm.employeeNationality !== 'เมียนมา'}">
                         <label for="modal_passportType" class="form-label">ประเภทหนังสือเดินทาง (เมียนมา)</label>

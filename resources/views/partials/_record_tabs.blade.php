@@ -19,6 +19,8 @@
     A pane holding a field the browser rejects (required, etc.) opens
     automatically on submit. Sticky save bar: wrap the buttons in .rec-savebar.
 --}}
+{{-- layouts/app includes this twice: part=styles in <head> (no flash of the old layout before the CSS arrives), part=scripts at the end of <body>. --}}
+@if(($part ?? 'all') !== 'scripts')
 <style>
     .rec-tabs-nav {
         display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none;
@@ -219,6 +221,8 @@
         .rec-tab { padding: .55rem .7rem; font-size: .92rem; }
     }
 </style>
+@endif
+@if(($part ?? 'all') !== 'styles')
 <script>
 (function () {
     if (window.RecordTabs) return;
@@ -452,3 +456,4 @@
     }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 </script>
+@endif

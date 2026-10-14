@@ -43,6 +43,11 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link {{ $activeTab === 'card-fields' ? 'active' : '' }}" id="card-fields-tab" data-bs-toggle="tab" data-bs-target="#card-fields" type="button" role="tab" aria-controls="card-fields" aria-selected="{{ $activeTab === 'card-fields' ? 'true' : 'false' }}">
+                <i class="bi bi-person-vcard"></i> {{ __('Employee Card Details') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link {{ $activeTab === 'branding' ? 'active' : '' }}" id="branding-tab" data-bs-toggle="tab" data-bs-target="#branding" type="button" role="tab" aria-controls="branding" aria-selected="{{ $activeTab === 'branding' ? 'true' : 'false' }}">
                 <i class="bi bi-palette-fill"></i> {{ __('Branding') }}
             </button>
@@ -398,6 +403,11 @@
                     @endif
                 </div>
             </div>
+        </div>
+
+        {{-- Employee Card Details: which employee fields show on the employee tiles --}}
+        <div class="tab-pane fade {{ $activeTab === 'card-fields' ? 'show active' : '' }}" id="card-fields" role="tabpanel" aria-labelledby="card-fields-tab">
+            @include('super-admin.partials._employee_card_fields')
         </div>
 
         {{-- Tab 5: Branding (app name + logo + theme colors + manual export) --}}

@@ -158,7 +158,7 @@ class TicketController extends Controller
             $results[] = [
                 'label' => $u->employer->employerNameTh ?? $u->employer->employerNameEn ?? $u->name,
                 'sub_label' => $u->name,
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
         }
 

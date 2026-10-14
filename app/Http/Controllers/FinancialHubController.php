@@ -628,7 +628,7 @@ class FinancialHubController extends Controller
                         optional($t->productionOrder)->project_name,
                         "เลขที่บิล: {$t->id}",
                     ]))),
-                    'group' => 'บิล',
+                    'group' => __('บิล'),
                 ];
             }
             return response()->json($results);
@@ -673,7 +673,7 @@ class FinancialHubController extends Controller
                 'id' => $order->employer->id,
                 'label' => $order->employer->employerNameTh ?: $order->employer->employerNameEn ?: '-',
                 'sub_label' => ($order->employer->employerNameEn && $order->employer->employerNameEn !== $order->employer->employerNameTh) ? $order->employer->employerNameEn : '',
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
             if (count($results) >= 10) {
                 break;
@@ -716,7 +716,7 @@ class FinancialHubController extends Controller
                 'id' => $er->id,
                 'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
                 'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
         }
 
@@ -754,7 +754,7 @@ class FinancialHubController extends Controller
                     optional($t->productionOrder)->project_name,
                     "เลขที่บิล: {$t->id}",
                 ]))),
-                'group' => 'บิล',
+                'group' => __('บิล'),
             ];
         }
 

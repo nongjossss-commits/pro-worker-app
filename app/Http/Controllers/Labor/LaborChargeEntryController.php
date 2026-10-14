@@ -165,7 +165,7 @@ class LaborChargeEntryController extends Controller
                     optional($e->team)->name,
                     optional($e->chargeType)->name,
                 ]))),
-                'group' => 'ค่าใช้จ่าย',
+                'group' => __('ค่าใช้จ่าย'),
             ];
         }
 

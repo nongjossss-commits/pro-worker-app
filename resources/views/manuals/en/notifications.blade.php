@@ -13,7 +13,7 @@
 
 <h5>1. View notifications</h5>
 <div class="manual-step">
-    Click the bell icon on the navbar, or open the Notifications menu — items are shown newest first
+    Click the bell icon on the navbar, or open the Notifications menu — items are shown newest first · the "card" view shows same-size tiles like the Employees menu (filling each row to the screen width, number top-left, tick box top-right, flag/nationality beside the photo) — the card colour still shows urgency (red ≤ 30 days, yellow ≤ 60 days, grey = already expired) · the due date, days left and the buttons are at the bottom of the tile · the "table" view is unchanged
 </div>
 
 <h5>2. Mark as read</h5>

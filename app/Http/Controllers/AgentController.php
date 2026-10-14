@@ -80,7 +80,7 @@ class AgentController extends Controller
             $results[] = [
                 'label' => $a->agentNameEn ?: '-',
                 'sub_label' => $a->agentLicense ?: '',
-                'group' => 'เอเจนซี่',
+                'group' => __('เอเจนซี่'),
             ];
         }
 

@@ -108,7 +108,7 @@ class EmployerController extends Controller
                 'id' => $er->id,
                 'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
                 'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
         }
 
@@ -305,7 +305,11 @@ class EmployerController extends Controller
         }
 
         if ($request->filled('work_permit_expiry_date')) {
-            $employeeQuery->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
+            // Work permit OR visa expiring on that date.
+            $employeeQuery->where(function ($q) use ($request) {
+                $q->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'))
+                  ->orWhereDate('visaExpiryDate', $request->input('work_permit_expiry_date'));
+            });
         }
 
         if ($request->filled('passport_type_myanmar')) {
@@ -316,8 +320,10 @@ class EmployerController extends Controller
             $employeeQuery->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
         }
 
-        $perPageOptions = [10, 25, 50];
-        $currentPerPage = $request->input('per_page', 10);
+        // Employees tab: fixed at 100 (tile grid) — the old 10/25/50 choice was dropped.
+        // EmployeeController@locate uses the same page size to find an employee's page.
+        $perPageOptions = [100];
+        $currentPerPage = 100;
         $employees = $employeeQuery->paginate($currentPerPage)->withQueryString();
         $currentView = $request->input('view', 'card');
         $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();

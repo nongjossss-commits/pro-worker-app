@@ -148,11 +148,8 @@
             @endif
 
             <span class="employee-name-en">
-                @if(isset($pagination) && $pagination instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                    {{ ($pagination->currentPage() - 1) * $pagination->perPage() + $loop->iteration }}.
-                @else
-                    {{ $loop->iteration }}.
-                @endif
+                {{-- Running number: plain "1." in the row layout, a badge in the card's top-left corner in tiles (partials/_employee_tiles). --}}
+                <span class="emp-card-no">@if(isset($pagination) && $pagination instanceof \Illuminate\Pagination\LengthAwarePaginator){{ ($pagination->currentPage() - 1) * $pagination->perPage() + $loop->iteration }}@else{{ $loop->iteration }}@endif<span class="emp-card-no-dot">.</span></span>
                 {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? __('No English Name') }}
             </span>
 
@@ -174,11 +171,20 @@
                 @php
                     $countryCode = \App\Helpers\CountryHelper::getCountryCode($employee->employeeNationality);
                 @endphp
-                @if($countryCode)
-                    <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
+                {{-- Name in the user's language (NationalityList); flag only where an image exists. --}}
+                <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center emp-card-nat">
+                    @if($countryCode)
                         <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" style="width: 16px; height: 12px; margin-right: 5px;">
-                        <span>{{ $employee->employeeNationality }}</span>
-                    </span>
+                    @endif
+                    <span>{{ \App\Helpers\NationalityList::label($employee->employeeNationality) }}</span>
+                </span>
+            @endif
+
+            {{-- Incomplete Data menu: how many mandatory fields are still empty. --}}
+            @if(!empty($is_incomplete_view))
+                @php $missingCount = count(\App\Helpers\CompletenessHelper::getMissingFields($employee, $mandatoryFields ?? null)); @endphp
+                @if($missingCount > 0)
+                    <span class="badge bg-warning text-dark ms-1 emp-card-missing"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ __('Missing :n fields', ['n' => $missingCount]) }}</span>
                 @endif
             @endif
 
@@ -200,11 +206,15 @@
                 @endif
             </span>
 
+            {{-- Detail lines chosen by Super Admin → Settings → Employee Card Details (EmployeeCardFieldsService). --}}
+            @php $cardFields = \App\Services\EmployeeCardFieldsService::selected(); @endphp
+            @if(count($cardFields))
             <div class="document-details small mt-2">
-                Passport: {{ $employee->employeePassport ?? '-' }} ({{ __('Expires:') }} {{ $employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : '-' }})
-                <br>
-                Visa ({{ $employee->workPermitMOUGroup ?? '-' }}) | 90-Day: {{ $employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : '-' }}
+                @foreach($cardFields as $fieldIndex => $field)
+                    <span class="emp-card-field">{{ \App\Services\EmployeeCardFieldsService::label($field) }}: {{ \App\Services\EmployeeCardFieldsService::value($employee, $field) }}</span>@if($fieldIndex < count($cardFields) - 1)<span class="emp-card-field-sep"> | </span>@endif
+                @endforeach
             </div>
+            @endif
         </div>
 
         {{-- Single unified actions section: right on ≥576px, below on <576px --}}

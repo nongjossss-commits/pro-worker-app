@@ -18,7 +18,7 @@
                 name="employer_filter_name"
                 id-target="employer_filter_id"
                 id-value="{{ request('employer_filter_id') }}"
-                placeholder="ค้นหานายจ้างหรือลูกจ้าง (ชื่อ/เลข/พาสปอร์ต)..."
+                placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
                 value="{{ request('employer_filter_name') }}"
                 class="form-control form-control-sm"
                 style="width: 340px;"
@@ -26,19 +26,13 @@
             <x-live-search-filter
                 endpoint="{{ route('employees.history.preview_search') }}"
                 name="search"
-                placeholder="{{ request('employer_filter_id') ? 'ค้นหาภายในนายจ้างนี้...' : 'เลือกนายจ้างด้านบนก่อนเพื่อค้นแคบลง' }}"
+                placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
                 value="{{ request('search') }}"
                 class="form-control form-control-sm"
                 style="width: 340px;"
                 :disabled="!request('employer_filter_id')"
             />
-            <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- ทุกสัญชาติ --</option>
-                <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
-                <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
-                <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
-                <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
-            </select>
+            <x-nationality-select name="nationality" class="form-select form-select-sm" style="width: auto;" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
             <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- ทุกประเภท มติ. --</option>
                 @foreach(\App\Models\WorkPermitType::ordered()->get() as $wpType)
@@ -69,11 +63,6 @@
                 <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
                 <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
             </div>
-            <div class="btn-group btn-group-sm">
-                @foreach($perPageOptions as $option)
-                    <a href="{{ route('employees.history', array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
-                @endforeach
-            </div>
         </div>
     </div>
 </div>
@@ -96,7 +85,7 @@
 
 <div id="employeeListContainer">
     @if($currentView === 'card')
-        <div class="list-group">
+        <div class="list-group emp-tile-grid">
             @forelse($employees as $employee)
                 <div class="position-relative">
                     @include('employees._history_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees])

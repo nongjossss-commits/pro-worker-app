@@ -827,129 +827,30 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // 2.5 ═══ Selection Mode — Click empty card surface to toggle checkbox ═══
-    // After user manually checks the FIRST checkbox, clicking on an empty
-    // (non-interactive) part of another employee card toggles its selection.
-    // Clicks on buttons, links, inputs, badges, drag handles, Alpine @click
-    // bindings, etc. are explicitly excluded so they perform their own action
-    // without ALSO selecting the row.
+    // 2.5 ═══ Selection Mode — bigger checkboxes, no card-surface toggling ═══
+    // Once at least one employee checkbox is ticked, <body> gets
+    // .selection-mode and every employee checkbox grows into a large,
+    // highlighted target (see partials/_employee_tiles) so the next one is
+    // easy to hit. Clicking the card surface itself no longer toggles the
+    // selection: that used to select/deselect by accident whenever a click
+    // landed anywhere on a card (owner feedback, 2026-10-14).
     (function() {
-        let mouseDownPos = null;
-        const DRAG_THRESHOLD = 6; // px — anything beyond this is treated as a drag, not a click
-
-        // CSS selectors for elements that should NEVER trigger a card toggle.
-        const INTERACTIVE_SELECTOR = [
-            'a', 'button', 'input', 'textarea', 'select', 'label',
-            '[contenteditable]', '[role="button"]', '[role="link"]',
-            '[onclick]', '[draggable="true"]',
-            '[data-bs-toggle]', '[data-bs-dismiss]', '[data-bs-target]',
-            '.form-check-input',
-            '.btn', '.btn-group',
-            '.dropdown', '.dropdown-toggle', '.dropdown-menu', '.dropdown-item',
-            '.swal2-container', '.modal',
-            '.accordion-button',
-            '.cursor-pointer', '.cursor-grab',
-            '.btn-preview',
-            'img', '.badge'
-        ].join(', ');
-
-        // Alpine.js (and similar libraries) attach click handlers via attributes
-        // such as @click, @click.stop, x-on:click, x-on:click.away, etc.
-        // CSS attribute selectors can't match attribute-name prefixes so we
-        // walk the ancestor chain and inspect attribute names manually.
-        function hasAlpineClickHandler(el) {
-            let n = el;
-            while (n && n.nodeType === 1 && n !== document.body) {
-                const attrs = n.attributes;
-                for (let i = 0; i < attrs.length; i++) {
-                    const name = attrs[i].name;
-                    if (name.startsWith('@click') || name.startsWith('x-on:click')) {
-                        return true;
-                    }
-                }
-                n = n.parentElement;
+        const SELECTOR = '.employee-checkbox, .history-employee-checkbox';
+        function refreshSelectionMode() {
+            const any = (window.getGlobalSelectedData?.() || []).length > 0
+                || document.querySelector(SELECTOR.split(', ').map(s => s + ':checked').join(', ')) !== null;
+            document.body.classList.toggle('selection-mode', any);
+        }
+        document.addEventListener('change', function (e) {
+            if (e.target.matches && (e.target.matches(SELECTOR) || e.target.matches('[type="checkbox"]'))) {
+                setTimeout(refreshSelectionMode, 0);
             }
-            return false;
-        }
-
-        function isInSelectionMode() {
-            return (window.getGlobalSelectedData?.() || []).length > 0;
-        }
-
-        // Walk up from click target to find the smallest containing element
-        // that has exactly one .employee-checkbox descendant — that's the card.
-        function findCard(target) {
-            let el = target;
-            let safety = 0;
-            while (el && el !== document.body && safety++ < 20) {
-                // Looking for the immediate ancestor that contains an .employee-checkbox
-                const cb = el.querySelector('.employee-checkbox');
-                if (cb) {
-                    // Make sure this is the only checkbox under this element
-                    // (otherwise we'd be matching the page-level container)
-                    const allCbs = el.querySelectorAll('.employee-checkbox');
-                    if (allCbs.length === 1) {
-                        return { card: el, checkbox: cb };
-                    }
-                    // If multiple, we've gone too far up — return null
-                    return null;
-                }
-                el = el.parentElement;
-            }
-            return null;
-        }
-
-        function recordMouseDown(e) {
-            if (e.button !== 0) return;
-            mouseDownPos = { x: e.clientX, y: e.clientY };
-        }
-
-        function handleCardClick(e) {
-            if (!isInSelectionMode()) return;
-
-            // Skip if the click was on (or inside) any interactive element.
-            if (e.target.closest(INTERACTIVE_SELECTOR)) return;
-
-            // Skip if any ancestor has an Alpine @click / x-on:click handler.
-            if (hasAlpineClickHandler(e.target)) return;
-
-            // Skip if some inner handler already handled this click
-            // (e.g. preventDefault'd or stopPropagation'd at a deeper level).
-            if (e.defaultPrevented) return;
-
-            // Find the card by walking up from the click target
-            const result = findCard(e.target);
-            if (!result) return;
-            const { checkbox } = result;
-
-            // Skip cancelled cards (employees in cancelled state shouldn't be selectable here)
-            if (checkbox.disabled || checkbox.closest('.d-none, [style*="display: none"], [style*="display:none"]')) return;
-
-            // Skip if user was dragging (text selection)
-            if (mouseDownPos) {
-                const dx = e.clientX - mouseDownPos.x;
-                const dy = e.clientY - mouseDownPos.y;
-                if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) return;
-            }
-
-            // Skip if user has selected text (don't break copy)
-            const selection = window.getSelection();
-            if (selection && selection.toString().trim().length > 0) return;
-
-            // Toggle the checkbox
-            e.preventDefault();
-            checkbox.checked = !checkbox.checked;
-            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-
-        document.body.addEventListener('mousedown', recordMouseDown, true);
-        document.body.addEventListener('touchstart', function(e) {
-            if (e.touches && e.touches[0]) {
-                mouseDownPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-        }, { passive: true });
-
-        document.body.addEventListener('click', handleCardClick);
+        });
+        document.addEventListener('click', function (e) {
+            // "clear selection" style buttons don't always fire change events
+            if (e.target.closest && e.target.closest('button, a')) setTimeout(refreshSelectionMode, 50);
+        });
+        refreshSelectionMode();
     })();
 
     // 3. Handle "Select All" Checkbox

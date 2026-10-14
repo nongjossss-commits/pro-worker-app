@@ -12,7 +12,7 @@
     {{-- Left Column --}}
     <div class="col-lg-6">
         <h4 class="mb-3 border-bottom pb-2">ขอต่อ ({{ $forRenewal->count() }} รายการ)</h4>
-        <div class="vstack gap-3">
+        <div class="emp-tile-grid">
             @forelse($forRenewal as $notification)
                 @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $loop->iteration])
             @empty
@@ -24,7 +24,7 @@
     {{-- Right Column --}}
     <div class="col-lg-6">
         <h4 class="mb-3 border-bottom pb-2">ขอรับใหม่ ({{ $forNewApplication->count() }} รายการ)</h4>
-        <div class="vstack gap-3">
+        <div class="emp-tile-grid">
             @forelse($forNewApplication as $notification)
                  @include('notifications._notification_item', ['notification' => $notification, 'itemNumber' => $loop->iteration])
             @empty

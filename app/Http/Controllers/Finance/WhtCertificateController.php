@@ -115,7 +115,7 @@ class WhtCertificateController extends Controller
                     $c->cert_no,
                     ($c->payer_name && $c->payer_name !== $c->payee_name) ? "ผู้จ่าย: {$c->payer_name}" : null,
                 ]))),
-                'group' => 'หนังสือรับรองหัก ณ ที่จ่าย',
+                'group' => __('หนังสือรับรองหัก ณ ที่จ่าย'),
             ];
         }
 

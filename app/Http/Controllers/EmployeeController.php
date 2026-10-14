@@ -233,7 +233,11 @@ public function reinstate(Employee $employee)
         }
     }
     if ($request->filled('work_permit_expiry_date')) {
-        $query->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
+        // Work permit OR visa expiring on that date.
+        $query->where(function ($q) use ($request) {
+            $q->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'))
+              ->orWhereDate('visaExpiryDate', $request->input('work_permit_expiry_date'));
+        });
     }
 
     if ($request->filled('nationality')) {
@@ -327,8 +331,9 @@ public function reinstate(Employee $employee)
 
     $totalEmployees = (clone $query)->count();
 
-    $perPageOptions = [25, 50, 100]; // Defined options here
-    $currentPerPage = $request->input('per_page', 25);
+    // Fixed at 100 — the tile grid shows many cards per screen, so the old 25/50/100 choice was dropped.
+    $perPageOptions = [100];
+    $currentPerPage = 100;
 
     $employees = $query->with(['employer.addresses', 'teams.group'])->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
 
@@ -405,7 +410,7 @@ public function previewSearch(Request $request)
                 $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
             ]))),
             'photo' => $emp->photo_url,
-            'group' => 'ลูกจ้าง',
+            'group' => __('ลูกจ้าง'),
         ];
     }
 
@@ -445,7 +450,7 @@ public function previewSearchCombined(Request $request)
             'id' => $er->id,
             'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
             'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-            'group' => 'นายจ้าง',
+            'group' => __('นายจ้าง'),
         ];
     }
 
@@ -481,7 +486,7 @@ public function previewSearchCombined(Request $request)
                 $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
             ]))),
             'photo' => $emp->photo_url,
-            'group' => 'ลูกจ้าง',
+            'group' => __('ลูกจ้าง'),
         ];
     }
 
@@ -546,7 +551,7 @@ public function previewHistorySearch(Request $request)
                 $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
             ]))),
             'photo' => $emp->photo_url,
-            'group' => 'ลูกจ้าง',
+            'group' => __('ลูกจ้าง'),
         ];
     }
 
@@ -583,7 +588,7 @@ public function previewHistorySearchCombined(Request $request)
             'id' => $er->id,
             'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
             'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-            'group' => 'นายจ้าง',
+            'group' => __('นายจ้าง'),
         ];
     }
 
@@ -620,7 +625,7 @@ public function previewHistorySearchCombined(Request $request)
                 $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
             ]))),
             'photo' => $emp->photo_url,
-            'group' => 'ลูกจ้าง',
+            'group' => __('ลูกจ้าง'),
         ];
     }
 
@@ -1294,7 +1299,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
     {
         // GPS Logic: Always go to Employer Edit page and locate the employee card
 
-        $perPage = 10; // Default pagination size in EmployerController
+        $perPage = 100; // Employees-tab page size in EmployerController@edit (fixed)
 
         // Base query matching EmployerController@edit default view
         $query = $employee->employer->employees()
@@ -1385,7 +1390,11 @@ public function create(Request $request) // เพิ่ม Request $request เ
         }
 
         if ($request->filled('work_permit_expiry_date')) {
-            $query->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
+            // Work permit OR visa expiring on that date.
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'))
+                  ->orWhereDate('visaExpiryDate', $request->input('work_permit_expiry_date'));
+            });
         }
 
         if ($request->filled('nationality')) {
@@ -1653,8 +1662,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $totalEmployees = (clone $query)->count();
 
-        $perPageOptions = [25, 50, 100];
-        $currentPerPage = $request->input('per_page', 25);
+        // Fixed at 100 (tile grid) — the old 25/50/100 choice was dropped.
+        $perPageOptions = [100];
+        $currentPerPage = 100;
 
         $employees = $query->with('employer')->latest('terminated_at')->paginate($currentPerPage)->withQueryString();
 
@@ -2097,7 +2107,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         ];
 
         $options = [
-            'employeeNationality' => ['เมียนมา' => 'เมียนมา', 'ลาว' => 'ลาว', 'กัมพูชา' => 'กัมพูชา', 'เวียดนาม' => 'เวียดนาม'],
+            // Every nationality (stored as the Thai name), shown in the user's language.
+            'employeeNationality' => array_column(\App\Helpers\NationalityList::options(), 'label', 'value'),
             'employeeGender' => ['ชาย' => 'ชาย', 'หญิง' => 'หญิง'],
             'employeeTitleTh' => ['นาย' => 'นาย', 'นางสาว' => 'นางสาว', 'นาง' => 'นาง'],
             'employeeTitleEn' => ['Mr.' => 'Mr.', 'Miss' => 'Miss', 'Mrs.' => 'Mrs.'],

@@ -50,10 +50,12 @@
         <div class="flex-grow-1">
             <h5 class="mb-1">
                 <span class="text-dark">{{ $employeeFullNameEn }}</span>
-                @if($countryCode)
-                    <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center">
-                        <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" class="me-1" style="width: 16px;">
-                        {{ $employee->employeeNationality }}
+                @if($employee->employeeNationality)
+                    <span class="badge bg-light text-dark ms-2 d-inline-flex align-items-center emp-card-nat">
+                        @if($countryCode)
+                            <img src="{{ asset('images/flags/' . strtolower($countryCode) . '.png') }}" alt="{{ $countryCode }}" class="me-1" style="width: 16px;">
+                        @endif
+                        <span>{{ \App\Helpers\NationalityList::label($employee->employeeNationality) }}</span>
                     </span>
                 @endif
             </h5>
@@ -62,8 +64,10 @@
 
             <div class="row gx-3 mt-2">
                 <div class="col-md-6">
-                    <small class="text-muted d-block">Passport: <strong>{{ $employee->employeePassport ?? '-' }}</strong></small>
-                    <small class="text-muted d-block">Work Permit: <strong>{{ $employee->employeeWorkPermit ?? '-' }}</strong> ({{ $employee->workPermitType ?? '-' }})</small>
+                    {{-- Detail lines chosen by Super Admin → Settings → Employee Card Details (EmployeeCardFieldsService). --}}
+                    @foreach(\App\Services\EmployeeCardFieldsService::selected() as $field)
+                        <small class="text-muted d-block emp-card-field">{{ \App\Services\EmployeeCardFieldsService::label($field) }}: <strong>{{ \App\Services\EmployeeCardFieldsService::value($employee, $field) }}</strong></small>
+                    @endforeach
                 </div>
                 <div class="col-md-6 d-flex flex-column justify-content-center">
                     <small class="text-muted d-block">{{ __('Terminated') }}: <strong>{{ $employee->terminated_at ? $employee->terminated_at->format('d/m/Y') : '-' }}</strong> <span class="badge bg-secondary">{{ $employee->days_since_termination }} {{ __('Days unit') }}</span></small>

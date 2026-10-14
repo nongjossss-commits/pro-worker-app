@@ -191,13 +191,7 @@
             <label for="edit_employeeNationality" class="form-label">{{ __('Nationality') }}
                 @if(isset($missingFields) && in_array('employeeNationality', $missingFields)) <i class="bi bi-exclamation-circle-fill text-warning ms-1" title="Required"></i> @endif
             </label>
-            <select class="form-select" id="edit_employeeNationality" name="employeeNationality">
-                <option value="">{{ __('-- Select Nationality --') }}</option>
-                <option value="เมียนมา" @selected(old('employeeNationality', $employee->employeeNationality) == 'เมียนมา')>เมียนมา</option>
-                <option value="ลาว" @selected(old('employeeNationality', $employee->employeeNationality) == 'ลาว')>ลาว</option>
-                <option value="กัมพูชา" @selected(old('employeeNationality', $employee->employeeNationality) == 'กัมพูชา')>กัมพูชา</option>
-                <option value="เวียดนาม" @selected(old('employeeNationality', $employee->employeeNationality) == 'เวียดนาม')>เวียดนาม</option>
-            </select>
+            <x-nationality-select class="form-select" id="edit_employeeNationality" name="employeeNationality" :selected="old('employeeNationality', $employee->employeeNationality)" :empty="__('-- Select Nationality --')" />
         </div>
             <div class="col-md-4 mb-3 d-none" id="edit_passportTypeContainer">
             <label for="edit_passportType" class="form-label">{{ __('Passport Type (for Myanmar)') }}

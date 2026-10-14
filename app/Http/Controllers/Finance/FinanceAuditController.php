@@ -107,7 +107,7 @@ class FinanceAuditController extends Controller
                     optional($log->user)->name,
                     optional($log->created_at)->format('d/m/Y H:i'),
                 ]))),
-                'group' => 'บันทึกตรวจสอบ',
+                'group' => __('บันทึกตรวจสอบ'),
             ];
         }
 

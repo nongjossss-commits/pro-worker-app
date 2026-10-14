@@ -82,7 +82,7 @@ class GroupTeamController extends Controller
             $results[] = [
                 'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
                 'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
         }
 

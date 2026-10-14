@@ -637,13 +637,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <form method="GET" action="{{ route('employers.edit', $employer->id) }}" class="d-flex flex-wrap align-items-center gap-2">
                 <input type="text" name="search" class="form-control form-control-sm" placeholder="{{ __('Search') }}..." value="{{ request('search') }}" style="width: 200px;">
-                <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                     <option value="">-- {{ __('All Nationalities') }} --</option>
-                    <option value="เมียนมา" @if(request('nationality') == 'เมียนมา') selected @endif>เมียนมา</option>
-                    <option value="ลาว" @if(request('nationality') == 'ลาว') selected @endif>ลาว</option>
-                    <option value="กัมพูชา" @if(request('nationality') == 'กัมพูชา') selected @endif>กัมพูชา</option>
-                    <option value="เวียดนาม" @if(request('nationality') == 'เวียดนาม') selected @endif>เวียดนาม</option>
-                </select>
+                <x-nationality-select name="nationality" class="form-select form-select-sm" style="width: auto;" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
                 <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
                     <option value="">-- {{ __('All MOU Types') }} --</option>
                     @foreach(\App\Models\WorkPermitType::ordered()->get() as $wpType)
@@ -683,7 +677,10 @@
                     <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>เล่ม TD</option>
                     <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>เล่มอินเตอร์</option>
                 </select>
-                <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
+                <div class="flex-shrink-0" style="width: 23.5rem; max-width: 100%;">
+                    {{-- Matches employees whose work permit OR visa expires on this date. --}}
+                    <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" placeholder="{{ __('Filter by work permit and visa expiry date') }}" title="{{ __('Filter by work permit and visa expiry date') }}">
+                </div>
                 <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
                 <a href="{{ route('employers.edit', $employer->id) }}" class="btn btn-sm btn-secondary">{{ __('Clear') }}</a>
             </form>
@@ -694,11 +691,6 @@
                 <div class="btn-group btn-group-sm">
                     <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
                     <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
-                </div>
-                <div class="btn-group btn-group-sm">
-                    @foreach($perPageOptions as $option)
-                        <a href="{{ route('employers.edit', ['employer' => $employer->id] + array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
-                    @endforeach
                 </div>
             </div>
         </div>
@@ -722,7 +714,7 @@
 
     <div id="employeeList">
         @if($currentView === 'card')
-            <div class="list-group">
+            <div class="list-group emp-tile-grid">
             @forelse($employees as $employee)
                 <div class="position-relative">
                     @include('partials._employee_card', [

@@ -69,7 +69,11 @@ class IncompleteEmployeeController extends Controller
         }
 
         if ($request->filled('work_permit_expiry_date')) {
-            $query->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'));
+            // Work permit OR visa expiring on that date.
+            $query->where(function ($q) use ($request) {
+                $q->whereDate('workPermitExpiryDate', $request->input('work_permit_expiry_date'))
+                  ->orWhereDate('visaExpiryDate', $request->input('work_permit_expiry_date'));
+            });
         }
 
         if ($request->filled('nationality')) {
@@ -219,7 +223,7 @@ class IncompleteEmployeeController extends Controller
                     $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
                 ]))),
                 'photo' => $emp->photo_url,
-                'group' => 'ลูกจ้าง',
+                'group' => __('ลูกจ้าง'),
             ];
         }
 
@@ -276,7 +280,7 @@ class IncompleteEmployeeController extends Controller
                 'id' => $er->id,
                 'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
                 'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
         }
 
@@ -312,7 +316,7 @@ class IncompleteEmployeeController extends Controller
                     $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
                 ]))),
                 'photo' => $emp->photo_url,
-                'group' => 'ลูกจ้าง',
+                'group' => __('ลูกจ้าง'),
             ];
         }
 

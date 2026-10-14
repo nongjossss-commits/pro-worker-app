@@ -86,7 +86,7 @@ class LaborTaxInvoiceController extends Controller
             $results[] = [
                 'label' => $inv->customer_name ?: $inv->invoice_no,
                 'sub_label' => $inv->invoice_no,
-                'group' => 'ใบกำกับภาษี',
+                'group' => __('ใบกำกับภาษี'),
             ];
         }
 

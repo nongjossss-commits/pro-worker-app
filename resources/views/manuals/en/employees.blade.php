@@ -19,11 +19,11 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
-    <li><strong>Filter bar</strong> at the top — filter by nationality, visa status, employer, search by name/passport number</li>
+    <li><strong>Filter bar</strong> at the top — filter by nationality, visa status, employer, search by name/passport number · the <strong>nationality box</strong> lists every nationality in the world (4 languages) — type part of a name to narrow the choices (Thai/English/Myanmar/Chinese all work, e.g. "camb", "japan") or press the ▾ arrow to scroll the full list · clicking the empty box shows "Recently selected" (the last 4 this browser picked), then the main nationalities (Myanmar, Lao, Cambodian, Vietnamese) · the <strong>expiry date box</strong> (end of the filter bar) finds employees whose work permit <em>or</em> visa expires on the chosen date</li>
     <li><strong>Search box</strong> — type part of an employee or employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
     <li><strong>Status tabs</strong> — Active / Terminated / Contract Ended / Trash</li>
     <li><strong>Filter by Address</strong> — choose province → district → sub-district from the employers' addresses (only addresses present in the current list are offered) · changing the province clears the old district/sub-district · searching or using other filters keeps the address filter · in English (or another non-Thai language) place names show in English when an English name was recorded · the same filter works in Employers, Incomplete Data, Notifications, Workflow, Pre-Production, Registration/Renewal Resolutions and Groups/Teams</li>
-    <li><strong>Employee cards</strong> — each card shows a photo, name, nationality, visa status, employer</li>
+    <li><strong>Employee cards</strong> — shown as a grid of same-size tiles that fill each row to the screen width (a bigger screen or zooming out shows more per row, zooming in fewer, one on phones); each tile has the photo (flag at the card's left edge, nationality right of the photo in the selected language), the name with the 🔍 preview button right after it, the employer, up to 6 detail lines (by default passport no., passport expiry, work permit type and 90-day report — Super Admin can change them under Super Admin Settings → "Employee Card Details": up to 6, in any order), a box with any work in progress (room for 3 status labels; long text is shortened with … — hover for the full text; the tile never grows), and the buttons at the bottom · the select tick box is in the top-right corner · always 100 per page (the 25/50/100 buttons were removed) · the same layout is used in Employment History, the employer page's Employees tab and Groups &amp; Teams (Workflow / Resolution menus keep their cards)</li>
     <li><strong>"+ Add New Employee"</strong> and <strong>"Import from Excel"</strong> buttons in the top-right corner</li>
 </ol>
 
@@ -33,7 +33,7 @@
 <div class="manual-step">
     <ol class="mb-0">
         <li>Click <strong>"+ Add New Employee"</strong> in the top-right corner</li>
-        <li>Fill in the basic info — full name (Thai/English), gender, nationality, date of birth</li>
+        <li>Fill in the basic info — full name (Thai/English), gender, nationality (type to search or pick from the full list — same as the filter), date of birth</li>
         <li>Fill in the <strong>passport</strong> number + expiry date</li>
         <li>Select the <strong>employer</strong> this employee works for</li>
         <li>Upload a photo + documents (passport copy, visa, work permit) as available</li>

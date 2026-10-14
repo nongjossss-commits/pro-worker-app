@@ -61,13 +61,7 @@
                         </select>
                     </div>
                     <div class="col-6 col-md-2">
-                        <select name="nationality" class="form-select form-select-sm">
-                            <option value="">-- {{ __('All Nationalities') }} --</option>
-                            <option value="เมียนมา" @selected(request('nationality') == 'เมียนมา')>{{ __('Myanmar') }}</option>
-                            <option value="ลาว" @selected(request('nationality') == 'ลาว')>{{ __('Laos') }}</option>
-                            <option value="กัมพูชา" @selected(request('nationality') == 'กัมพูชา')>{{ __('Cambodia') }}</option>
-                            <option value="เวียดนาม" @selected(request('nationality') == 'เวียดนาม')>{{ __('Vietnam') }}</option>
-                        </select>
+                        <x-nationality-select name="nationality" class="form-select form-select-sm" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
                     </div>
                     <div class="col-12 col-md-2">
                         <select name="mou_type" class="form-select form-select-sm">
@@ -287,6 +281,7 @@
                          </div>
                      @else
                         {{-- Reusing Card View logic but might need tweaking if it expects Employee data --}}
+                        <div class="emp-tile-grid">
                         @forelse($notifications as $notification)
                             @php
                                 $itemNumber = $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1));
@@ -295,6 +290,7 @@
                         @empty
                             <p class="text-center text-muted py-4">{{ __('No data found') }}</p>
                         @endforelse
+                        </div>
                      @endif
                      <div class="mt-4">
                         @if($notifications->hasPages())
@@ -332,7 +328,8 @@
                                 </tbody>
                             </table>
                         </div>
-                    @else {{-- Card View --}}
+                    @else {{-- Card View: tiles like the Employees menu (partials/_employee_tiles) --}}
+                        <div class="emp-tile-grid">
                         @forelse($notifications as $notification)
                             @php
                                 $itemNumber = $loop->iteration + ($notifications->perPage() * ($notifications->currentPage() - 1));
@@ -341,6 +338,7 @@
                         @empty
                             <p class="text-center text-muted py-4">{{ __('No data found') }}</p>
                         @endforelse
+                        </div>
                     @endif
 
                     <div class="mt-4">

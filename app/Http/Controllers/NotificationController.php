@@ -147,7 +147,7 @@ class NotificationController extends Controller
                 $results[] = [
                     'label' => $n->employer->employerNameTh ?? $n->employer->employerNameEn ?? '-',
                     'sub_label' => '',
-                    'group' => 'นายจ้าง',
+                    'group' => __('นายจ้าง'),
                 ];
             } else {
                 $emp = $n->employee;
@@ -160,7 +160,7 @@ class NotificationController extends Controller
                         $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
                     ]))),
                     'photo' => $emp->photo_url,
-                    'group' => 'ลูกจ้าง',
+                    'group' => __('ลูกจ้าง'),
                 ];
             }
         }
@@ -200,7 +200,7 @@ class NotificationController extends Controller
                 'id' => $er->id,
                 'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
                 'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                'group' => 'นายจ้าง',
+                'group' => __('นายจ้าง'),
             ];
         }
 
@@ -223,7 +223,7 @@ class NotificationController extends Controller
                         $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
                     ]))),
                     'photo' => $emp->photo_url,
-                    'group' => 'ลูกจ้าง',
+                    'group' => __('ลูกจ้าง'),
                 ];
             }
         }

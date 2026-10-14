@@ -113,7 +113,7 @@ class TaxInvoiceController extends Controller
                     $inv->invoice_no,
                     $inv->customer_tax_id ? "ผู้เสียภาษี: {$inv->customer_tax_id}" : null,
                 ]))),
-                'group' => 'ใบกำกับภาษี',
+                'group' => __('ใบกำกับภาษี'),
             ];
         }
 

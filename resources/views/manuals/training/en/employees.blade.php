@@ -155,7 +155,7 @@
         'alt' => 'Floating bulk action bar when multiple people are ticked',
         'caption' => 'Bulk Action Bar — pops up when you tick multiple employees',
         'callouts' => [
-            '<strong>Tick checkbox:</strong> every card has a checkbox in the top-left corner',
+            '<strong>Tick checkbox:</strong> every card has a checkbox in the top-right corner · after the first tick every checkbox grows bigger so it is easy to hit · clicking the card itself does not select/deselect (prevents mistakes)',
             '<strong>Action menu:</strong> Export, transfer employer, generate PDF, send to Production',
             '<strong>Counter:</strong> shows how many are selected',
         ],

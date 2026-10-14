@@ -431,7 +431,7 @@ class LaborContractController extends Controller
             $results[] = [
                 'label' => $c->employer_name_snapshot ?: $c->contract_no,
                 'sub_label' => $c->contract_no,
-                'group' => 'สัญญา',
+                'group' => __('สัญญา'),
             ];
         }
 

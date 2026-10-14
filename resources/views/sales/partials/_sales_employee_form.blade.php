@@ -116,13 +116,7 @@
     </div>
     <div class="col-md-4 mb-2">
         <label class="form-label small">สัญชาติ</label>
-        <select class="form-select form-select-sm" id="employeeNationality-sl{{ $sid }}" name="employeeNationality">
-            <option value="">-- เลือกสัญชาติ --</option>
-            <option value="เมียนมา" {{ old('employeeNationality', $emp->employeeNationality ?? '') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
-            <option value="ลาว" {{ old('employeeNationality', $emp->employeeNationality ?? '') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
-            <option value="กัมพูชา" {{ old('employeeNationality', $emp->employeeNationality ?? '') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
-            <option value="เวียดนาม" {{ old('employeeNationality', $emp->employeeNationality ?? '') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
-        </select>
+        <x-nationality-select class="form-select form-select-sm" id="employeeNationality-sl{{ $sid }}" name="employeeNationality" :selected="old('employeeNationality', $emp->employeeNationality ?? '')" :empty="__('-- Select Nationality --')" />
     </div>
     <div class="col-md-4 mb-2 d-none" id="passportTypeContainer-sl{{ $sid }}">
         <label class="form-label small">ประเภทหนังสือเดินทาง (เมียนมา)</label>

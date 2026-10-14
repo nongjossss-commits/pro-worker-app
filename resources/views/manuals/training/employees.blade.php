@@ -155,7 +155,7 @@
         'alt' => 'Bulk action bar ลอยด้านล่างเมื่อ tick หลายคน',
         'caption' => 'Bulk Action Bar — ลอยขึ้นมาเมื่อ tick checkbox ลูกจ้างหลายคน',
         'callouts' => [
-            '<strong>Tick checkbox:</strong> ทุกการ์ดมี checkbox มุมซ้ายบน',
+            '<strong>Tick checkbox:</strong> ทุกการ์ดมี checkbox มุมขวาบน · ติ๊กคนแรกแล้ว checkbox ของทุกการ์ดจะใหญ่ขึ้นให้กดง่าย · คลิกที่ตัวการ์ดจะไม่เลือก/ยกเลิกเอง (กันกดพลาด)',
             '<strong>Action menu:</strong> Export, ย้ายนายจ้าง, สร้าง PDF, ส่งเข้า Production',
             '<strong>Counter:</strong> แสดงจำนวนที่เลือก',
         ],

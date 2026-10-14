@@ -26,6 +26,7 @@
     autocomplete="off"
     data-live-search-endpoint="{{ $endpoint }}"
     data-live-search-min-chars="{{ $minChars }}"
+    data-live-search-empty="{{ __('ไม่พบข้อมูลที่ตรงกัน') }}"
     @if($idTarget) data-live-search-id-input="{{ $inputId }}-id" @endif
     @disabled($disabled)
     {{ $attributes->merge(['class' => 'live-search-input']) }}

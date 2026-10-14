@@ -79,13 +79,7 @@
                 style="width: 340px;"
                 :disabled="!request('employer_filter_id')"
             />
-            <select name="nationality" class="form-select form-select-sm" style="width: auto;">
-                <option value="">-- {{ __('All Nationalities') }} --</option>
-                <option value="เมียนมา" {{ request('nationality') == 'เมียนมา' ? 'selected' : '' }}>{{ __('Myanmar') }}</option>
-                <option value="ลาว" {{ request('nationality') == 'ลาว' ? 'selected' : '' }}>{{ __('Laos') }}</option>
-                <option value="กัมพูชา" {{ request('nationality') == 'กัมพูชา' ? 'selected' : '' }}>{{ __('Cambodia') }}</option>
-                <option value="เวียดนาม" {{ request('nationality') == 'เวียดนาม' ? 'selected' : '' }}>{{ __('Vietnam') }}</option>
-            </select>
+            <x-nationality-select name="nationality" class="form-select form-select-sm" style="width: auto;" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
             <select name="mou_group" class="form-select form-select-sm" style="width: auto;">
                 <option value="">-- {{ __('All MOU Types') }} --</option>
                 @foreach(\App\Models\WorkPermitType::ordered()->get() as $wpType)
@@ -130,7 +124,10 @@
                 <option value="opened" {{ request('bank_account_status') == 'opened' ? 'selected' : '' }}>{{ __('Account Opened') }}</option>
                 <option value="not_opened" {{ request('bank_account_status') == 'not_opened' ? 'selected' : '' }}>{{ __('Account Not Opened') }}</option>
             </select>
-            <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" title="{{ __('Search by work permit expiry date') }}">
+            <div class="flex-shrink-0" style="width: 23.5rem; max-width: 100%;">
+                    {{-- Matches employees whose work permit OR visa expires on this date. --}}
+                    <input type="date" name="work_permit_expiry_date" class="form-control form-control-sm" value="{{ request('work_permit_expiry_date') }}" placeholder="{{ __('Filter by work permit and visa expiry date') }}" title="{{ __('Filter by work permit and visa expiry date') }}">
+                </div>
             <button type="submit" class="btn btn-sm btn-primary">{{ __('Filter') }}</button>
             <a href="{{ route('employees.index') }}" class="btn btn-sm btn-secondary">{{ __('Clear') }}</a>
         </form>
@@ -141,11 +138,6 @@
             <div class="btn-group btn-group-sm">
                 <a href="{{ route('employees.index', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
                 <a href="{{ route('employees.index', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
-            </div>
-            <div class="btn-group btn-group-sm">
-                @foreach($perPageOptions as $option)
-                    <a href="{{ route('employees.index', array_merge(request()->query(), ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
-                @endforeach
             </div>
         </div>
     </div>
@@ -199,7 +191,7 @@
 <div id="employeeListContainer">
     <x-card-scroll-frame :topOffset="300">
     @if($currentView === 'card')
-        <div class="list-group">
+        <div class="list-group emp-tile-grid">
             @forelse($employees as $employee)
                 <div>
                 @include('partials._employee_card', ['employee' => $employee, 'loop' => $loop, 'pagination' => $employees, 'showLocateButton' => true])

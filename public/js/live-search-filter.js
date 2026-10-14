@@ -90,7 +90,7 @@
             activeIndex = -1;
 
             if (!items.length) {
-                dropdown.innerHTML = '<div class="p-3 text-center text-muted small"><i class="bi bi-search me-1"></i>ไม่พบข้อมูลที่ตรงกัน</div>';
+                dropdown.innerHTML = '<div class="p-3 text-center text-muted small"><i class="bi bi-search me-1"></i>' + escapeHtml(input.dataset.liveSearchEmpty || 'ไม่พบข้อมูลที่ตรงกัน') + '</div>';
                 positionDropdown();
                 dropdown.classList.remove('d-none');
                 return;

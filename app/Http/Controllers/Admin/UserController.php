@@ -94,7 +94,7 @@ class UserController extends Controller
                     $u->email,
                     $u->roles->pluck('name')->first(),
                 ]))),
-                'group' => 'ผู้ใช้งาน',
+                'group' => __('ผู้ใช้งาน'),
             ];
         }
 

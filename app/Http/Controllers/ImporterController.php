@@ -52,7 +52,7 @@ class ImporterController extends Controller
             $results[] = [
                 'label' => $i->importerNameTh ?: $i->importerNameEn ?: '-',
                 'sub_label' => $i->importerId ?: '',
-                'group' => 'บริษัทนำเข้า',
+                'group' => __('บริษัทนำเข้า'),
             ];
         }
 

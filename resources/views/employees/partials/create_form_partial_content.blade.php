@@ -259,13 +259,7 @@
     </div>
     <div class="col-md-4 mb-3">
         <label for="employeeNationality" class="form-label">สัญชาติ</label>
-        <select class="form-select" id="employeeNationality" name="employeeNationality">
-            <option value="">-- เลือกสัญชาติ --</option>
-            <option value="เมียนมา" {{ old('employeeNationality') == 'เมียนมา' ? 'selected' : '' }}>เมียนมา</option>
-            <option value="ลาว" {{ old('employeeNationality') == 'ลาว' ? 'selected' : '' }}>ลาว</option>
-            <option value="กัมพูชา" {{ old('employeeNationality') == 'กัมพูชา' ? 'selected' : '' }}>กัมพูชา</option>
-            <option value="เวียดนาม" {{ old('employeeNationality') == 'เวียดนาม' ? 'selected' : '' }}>เวียดนาม</option>
-        </select>
+        <x-nationality-select class="form-select" id="employeeNationality" name="employeeNationality" :selected="old('employeeNationality')" :empty="__('-- Select Nationality --')" />
     </div>
         <div class="col-md-4 mb-3 d-none" id="passportTypeContainer">
         <label for="passportType" class="form-label">ประเภทหนังสือเดินทาง (สำหรับเมียนมา)</label>

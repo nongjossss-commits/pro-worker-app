@@ -299,6 +299,23 @@ class SettingsController extends Controller
     }
 
     /**
+     * Save which employee details show on the employee tiles
+     * (Settings → Employee Card Details).
+     */
+    public function updateCardFields(Request $request)
+    {
+        $request->validate([
+            'fields' => 'nullable|array|max:' . \App\Services\EmployeeCardFieldsService::MAX_FIELDS,
+            'fields.*' => 'string|in:' . implode(',', array_keys(\App\Services\EmployeeCardFieldsService::labels())),
+        ]);
+
+        \App\Services\EmployeeCardFieldsService::save($request->input('fields', []));
+
+        return redirect()->route('super-admin.settings.index', ['tab' => 'card-fields'])
+            ->with('success', __('Employee card details updated.'));
+    }
+
+    /**
      * Update a specific menu setting.
      */
     public function update(Request $request)

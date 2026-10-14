@@ -33,6 +33,7 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('super-admin')->name('su
     Route::post('/attachments/descriptions', [SuperAdminSettingsController::class, 'updateAttachmentDescriptions'])->name('attachments.descriptions');
     Route::post('/attachments/descriptions/single', [SuperAdminSettingsController::class, 'updateSingleAttachmentDescription'])->name('attachments.descriptions.single');
     Route::post('/settings/max-employees', [SuperAdminSettingsController::class, 'updateMaxEmployees'])->name('settings.max-employees');
+    Route::post('/settings/card-fields', [SuperAdminSettingsController::class, 'updateCardFields'])->name('settings.card-fields');
 
     // Program Pricelist (SaaS pricing — for selling Pro-Worker to other clients)
     Route::post('/program-pricelist', [SuperAdminSettingsController::class, 'saveProgramPricelist'])->name('program-pricelist.save');
