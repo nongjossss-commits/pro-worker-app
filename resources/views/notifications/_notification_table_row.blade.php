@@ -3,6 +3,11 @@
     $employer = $employee->employer ?? $notification->employer;
     $days_remaining = $notification->days_remaining;
     $is_overdue = $days_remaining < 0;
+    // Month filter: employees whose date is in the chosen month but who are not inside the
+    // alert window yet come as unsaved Notification models (no id) — no renew/cancel for them.
+    $isUpcoming = ! $notification->exists;
+    $nKey = $notification->id ?? ('u' . optional($employee)->id . '-' . $notification->type);
+    $viewUrl = $isUpcoming ? ($employee ? route('employees.locate', $employee) : '#') : route('notifications.view-employee', $notification->id);
     $text_class = 'text-dark';
     if ($is_overdue) {
         $text_class = 'text-danger fw-bold';
@@ -20,15 +25,15 @@
         'title' => $notification->type,
         'employee_name' => $employee ? ($employee->employeeNameTh ?? $employee->employeeNameEn) : null,
         'employee_id' => $employee ? $employee->id : null,
-        'url' => route('notifications.view-employee', $notification->id),
+        'url' => $viewUrl,
     ];
 @endphp
 
-<tr id="notification-row-{{ $notification->id }}" data-drag-payload="{{ json_encode($payload) }}">
+<tr id="notification-row-{{ $nKey }}" data-drag-payload="{{ json_encode($payload) }}">
     <td>
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)
-            <input class="form-check-input bulk-action-checkbox employee-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_table_checkbox_{{ $notification->id }}"
+            <input class="form-check-input bulk-action-checkbox employee-checkbox" type="checkbox" value="{{ $employee->id }}" id="notification_table_checkbox_{{ $nKey }}"
                    data-employee-id="{{ $employee->id }}"
                    data-employer-id="{{ $employee->employer_id }}"
                    data-name-th="{{ $employee->employeeNameTh }}"
@@ -50,9 +55,9 @@
         <i class="bi bi-grid-3x2-gap-fill text-muted cursor-grab"
            draggable="true"
            @if($employee || $employer)
-           data-share-menu data-share-type="{{ $employee ? 'employee' : 'employer' }}" data-share-id="{{ $employee ? $employee->id : $employer->id }}" data-share-notification="{{ $notification->id }}"
+           data-share-menu data-share-type="{{ $employee ? 'employee' : 'employer' }}" data-share-id="{{ $employee ? $employee->id : $employer->id }}" data-share-notification="{{ $isUpcoming ? '' : $notification->id }}"
            @endif
-           ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(document.getElementById('notification-row-{{ $notification->id }}').dataset.dragPayload))"
+           ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(document.getElementById('notification-row-{{ $nKey }}').dataset.dragPayload))"
            title="Drag"></i>
     </td>
     <td>
@@ -61,7 +66,7 @@
                 <img src="{{ $employee->photo_url }}" alt="Photo" class="employee-photo-thumb" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; margin-right: 1rem;">
                 <div>
                     <div>
-                        <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
+                        <a href="{{ $viewUrl }}" class="text-decoration-none text-dark fw-bold">
                             {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
@@ -149,6 +154,14 @@
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger btn-sm" title="ลบถาวร"><i class="bi bi-trash3-fill"></i></button>
                 </form>
+            @elseif($isUpcoming)
+                <span class="badge bg-secondary-subtle text-secondary-emphasis border align-self-center notif-upcoming"><i class="bi bi-hourglass me-1"></i>{{ __('Not alerted yet') }}</span>
+                @if($employee && \App\Facades\SuperAdmin::isVisible('employees'))
+                    <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-secondary btn-notification-edit-employee" data-edit-employee-id="{{ $employee->id }}" title="{{ __('Edit Employee') }}"><i class="bi bi-pencil-fill"></i></a>
+                @endif
+                @if($employee)
+                    <a href="{{ $viewUrl }}" class="btn btn-primary" title="{{ __('Locate Employer') }}"><i class="bi bi-geo-alt-fill"></i></a>
+                @endif
             @else
                 <a href="#" class="btn btn-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
                 <a href="#" class="btn btn-success" title="ต่ออายุ" data-bs-toggle="modal" data-bs-target="#renewNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-calendar-check"></i></a>
@@ -156,7 +169,7 @@
                     <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-secondary btn-notification-edit-employee" data-edit-employee-id="{{ $employee->id }}" title="{{ __('Edit Employee') }}"><i class="bi bi-pencil-fill"></i></a>
                 @endif
                 @if($employee)
-                    <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+                    <a href="{{ $viewUrl }}" class="btn btn-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                 @endif
                 <a href="#" class="btn btn-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
             @endif

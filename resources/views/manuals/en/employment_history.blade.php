@@ -15,7 +15,7 @@
 <ol>
     <li><strong>Search box</strong> — type part of an employee or employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
     <li><strong>Filter bar</strong> at the top — search, filter by nationality/MOU type/pink card/passport type</li>
-    <li><strong>Top-right corner</strong> — Export CSV button, view toggle (card/table) · always 100 per page · the detail lines on the cards follow the Super Admin setting ("Employee Card Details" tab)</li>
+    <li><strong>Top-right corner</strong> — Export CSV button, view toggle (card/table) · choose 25 / 50 / 100 per page with the buttons on the right — the last choice is remembered in that browser (it stays after refreshing or reopening; each menu remembers its own; first time = 100) · the detail lines on the cards follow the Super Admin setting ("Employee Card Details" tab)</li>
     <li><strong>Employee list</strong> — shows everyone, both active and inactive (including terminated/contract-ended)</li>
     <li><strong>Bulk Action Bar</strong> (floating at the bottom) — after ticking multiple employees → transfer employer / Export / Generate PDF</li>
 </ol>

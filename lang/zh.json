@@ -1528,5 +1528,7 @@
     "No matching nationality": "未找到匹配的国籍",
     "Type to search nationality...": "输入以搜索国籍...",
     "Filter by work permit and visa expiry date": "按工作许可和签证到期日筛选",
-    "Missing :n fields": "缺少 :n 项"
+    "Missing :n fields": "缺少 :n 项",
+    "Not alerted yet": "尚未到提醒时间",
+    "Shows everyone whose date falls in this month, including those not alerted yet": "显示日期在本月的所有人，包括尚未到提醒时间的"
 }

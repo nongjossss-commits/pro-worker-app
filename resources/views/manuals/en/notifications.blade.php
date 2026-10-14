@@ -13,7 +13,7 @@
 
 <h5>1. View notifications</h5>
 <div class="manual-step">
-    Click the bell icon on the navbar, or open the Notifications menu — items are shown newest first · the "card" view shows same-size tiles like the Employees menu (filling each row to the screen width, number top-left, tick box top-right, flag/nationality beside the photo) — the card colour still shows urgency (red ≤ 30 days, yellow ≤ 60 days, grey = already expired) · the due date, days left and the buttons are at the bottom of the tile · the "table" view is unchanged
+    Click the bell icon on the navbar, or open the Notifications menu — items are shown newest first · the "card" view shows same-size tiles like the Employees menu (filling each row to the screen width, number top-left, tick box top-right, flag/nationality beside the photo) — the card colour still shows urgency (red ≤ 30 days, yellow ≤ 60 days, grey = already expired) · the due date, days left and the buttons are at the bottom of the tile · the "table" view is unchanged · <strong>Filter by month</strong>: pick a month and year (e.g. December 2026) → each tab lists <strong>everyone whose document for that tab expires in that month</strong>, including people not alerted yet (alerts are only created inside each type's "days before expiry" window, e.g. 30 days for visas) — those show a "Not alerted yet" label and only the edit / locate buttons (renew and cancel become available once the alert exists)
 </div>
 
 <h5>2. Mark as read</h5>

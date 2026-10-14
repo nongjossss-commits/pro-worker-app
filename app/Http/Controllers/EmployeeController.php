@@ -22,6 +22,7 @@ use Symfony\Component\Process\Process;
 class EmployeeController extends Controller
 {
     use AddressFilterTrait;
+    use \App\Traits\RemembersPerPage;
 
     /**
      * Apply permission middleware to the controller.
@@ -331,9 +332,9 @@ public function reinstate(Employee $employee)
 
     $totalEmployees = (clone $query)->count();
 
-    // Fixed at 100 — the tile grid shows many cards per screen, so the old 25/50/100 choice was dropped.
-    $perPageOptions = [100];
-    $currentPerPage = 100;
+    // 25 / 50 / 100 per page; the last pick is remembered for this browser (RemembersPerPage).
+    $perPageOptions = [25, 50, 100];
+    $currentPerPage = $this->rememberedPerPage($request, 'employees', $perPageOptions, 100);
 
     $employees = $query->with(['employer.addresses', 'teams.group'])->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
 
@@ -1299,7 +1300,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
     {
         // GPS Logic: Always go to Employer Edit page and locate the employee card
 
-        $perPage = 100; // Employees-tab page size in EmployerController@edit (fixed)
+        // Same page size the employer page's Employees tab will use for this browser.
+        $perPage = $this->rememberedPerPage(request(), 'employer_employees', [25, 50, 100], 100);
 
         // Base query matching EmployerController@edit default view
         $query = $employee->employer->employees()
@@ -1662,9 +1664,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
 
         $totalEmployees = (clone $query)->count();
 
-        // Fixed at 100 (tile grid) — the old 25/50/100 choice was dropped.
-        $perPageOptions = [100];
-        $currentPerPage = 100;
+        // 25 / 50 / 100 per page; the last pick is remembered for this browser (RemembersPerPage).
+        $perPageOptions = [25, 50, 100];
+        $currentPerPage = $this->rememberedPerPage($request, 'employment_history', $perPageOptions, 100);
 
         $employees = $query->with('employer')->latest('terminated_at')->paginate($currentPerPage)->withQueryString();
 

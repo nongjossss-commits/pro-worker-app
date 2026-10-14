@@ -63,6 +63,12 @@
                 <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'card'])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">การ์ด</a>
                 <a href="{{ route('employees.history', array_merge(request()->query(), ['view' => 'table'])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">ตาราง</a>
             </div>
+            {{-- Items per page — the last pick is remembered for this browser (RemembersPerPage). --}}
+            <div class="btn-group btn-group-sm" title="{{ __('Items per page:') }}">
+                @foreach($perPageOptions as $option)
+                    <a href="{{ route('employees.history', array_merge(request()->query(), ['per_page' => $option, 'page' => null])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
+                @endforeach
+            </div>
         </div>
     </div>
 </div>

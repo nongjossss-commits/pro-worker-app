@@ -41,9 +41,9 @@ class EmployeeCardFieldsTest extends TestCase
         $this->assertStringContainsString('emp-card-field', $html);
         $this->assertStringContainsString('PX123456', $html);
         $this->assertStringNotContainsString('0899999999', $html);
-        // Fixed 100 per page — the 25/50/100 buttons are gone.
-        $this->assertStringNotContainsString('per_page=25', $html);
-        $this->assertStringNotContainsString('per_page=50', $html);
+        // 25 / 50 / 100 buttons are back (the pick is remembered — see EmployeePerPageTest).
+        $this->assertTrue(str_contains($html, 'per_page=25'), 'per-page buttons missing');
+        $this->assertTrue(str_contains($html, 'per_page=50'), 'per-page buttons missing');
     }
 
     public function test_saved_choice_changes_the_cards_in_order(): void

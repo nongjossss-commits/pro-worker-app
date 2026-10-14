@@ -1528,5 +1528,7 @@
     "No matching nationality": "ကိုက်ညီသော နိုင်ငံသား မတွေ့ပါ",
     "Type to search nationality...": "နိုင်ငံသား ရှာရန် ရိုက်ထည့်ပါ...",
     "Filter by work permit and visa expiry date": "အလုပ်လုပ်ခွင့်နှင့် ဗီဇာ သက်တမ်းကုန်ရက်ဖြင့် စစ်ထုတ်ရန်",
-    "Missing :n fields": ":n ခု မပြည့်စုံ"
+    "Missing :n fields": ":n ခု မပြည့်စုံ",
+    "Not alerted yet": "အသိပေးချိန် မရောက်သေး",
+    "Shows everyone whose date falls in this month, including those not alerted yet": "ဤလအတွင်း ရက်စွဲကျရောက်သူ အားလုံးကို ပြသည် (အသိပေးချိန် မရောက်သေးသူများ အပါအဝင်)"
 }

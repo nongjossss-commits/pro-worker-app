@@ -68,7 +68,32 @@ class NotificationController extends Controller
         $notificationsData = [];
         $counts = [];
 
+        $monthRange = $this->monthFilterRange($request);
+
         foreach ($tabs as $type => $title) {
+            // Month filter on a date-based tab: everyone whose date is in that
+            // month, including employees not inside the alert window yet.
+            if ($monthRange && isset(self::MONTH_FILTER_FIELDS[$type])) {
+                $items = $this->monthFilteredItems($request, $type, $monthRange);
+                $employeeIds = $items->pluck('employee_id')->filter();
+                $counts[$type] = [
+                    'total' => $items->count(),
+                    'male' => $employeeIds->isEmpty() ? 0 : Employee::whereIn('id', $employeeIds)->where('employeeTitleTh', 'นาย')->count(),
+                    'female' => $employeeIds->isEmpty() ? 0 : Employee::whereIn('id', $employeeIds)->whereIn('employeeTitleTh', ['นางสาว', 'นาง'])->count(),
+                ];
+                if ($type === 'work_permit_mou') {
+                    $notificationsData[$type] = $items;
+                } else {
+                    $pageName = $type . '_page';
+                    $page = \Illuminate\Pagination\Paginator::resolveCurrentPage($pageName);
+                    $notificationsData[$type] = (new \Illuminate\Pagination\LengthAwarePaginator(
+                        $items->forPage($page, $perPage)->values(), $items->count(), $perPage, $page,
+                        ['path' => $request->url(), 'pageName' => $pageName]
+                    ))->appends(array_merge($request->query(), ['active_tab' => $type]));
+                }
+                continue;
+            }
+
             $query = $this->getFilteredQuery($request, $type);
 
             // --- NEW: Gender Counting Logic ---
@@ -284,9 +309,10 @@ class NotificationController extends Controller
             $query->where('notifications.status', '!=', 'cancelled')->where('notifications.type', $type)->orderBy('due_date', 'asc');
         }
 
-        // Filter by month if provided
-        if ($request->filled('month')) {
-            $query->whereMonth('due_date', $request->input('month'));
+        // Filter by month + year if provided (year defaults to the current one).
+        if ($range = $this->monthFilterRange($request)) {
+            $query->where('due_date', '>=', $range[0]->toDateString())
+                  ->where('due_date', '<', $range[1]->toDateString());
         }
 
         // --- NEW: Enhanced Search Logic ---
@@ -307,28 +333,7 @@ class NotificationController extends Controller
                     });
                 } else {
                     $q->whereHas('employee', function ($q_employee) use ($search, $employerFilterId) {
-                        $q_employee->where('employeeNameTh', 'like', "%{$search}%")
-                                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                                   ->orWhere('name_suffix', 'like', "%{$search}%")
-                                   ->orWhere('employeePassport', 'like', "%{$search}%")
-                                   ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
-                                   ->orWhere('employee_id_number', 'like', "%{$search}%")
-                                   ->orWhere('name_list_number', 'like', "%{$search}%")
-                                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
-                                   ->orWhere('employer_employee_id', 'like', "%{$search}%"); // Replaced companyWorkerId
-                        if (!$employerFilterId) {
-                            $q_employee->orWhereHas('employer', function ($q_employer) use ($search) {
-                                $q_employer->where('employerNameTh', 'like', "%{$search}%")
-                                           ->orWhere('employerNameEn', 'like', "%{$search}%") // Added employerNameEn
-                                           ->orWhere('name_suffix', 'like', "%{$search}%")
-                                           ->orWhere('employerId', 'like', "%{$search}%")
-                                           ->orWhere('employerTaxId', 'like', "%{$search}%")
-                                           ->orWhere('outsource_re_code', 'like', "%{$search}%")
-                                           ->orWhere(function($addrQ) use ($search) {
-                                               $addrQ->filterByAddress($search);
-                                           });
-                            });
-                        }
+                        $this->applyEmployeeSearch($q_employee, $search, $employerFilterId);
                     });
                 }
             });
@@ -364,6 +369,166 @@ class NotificationController extends Controller
         }
 
         return $query;
+    }
+
+    /**
+     * Employee part of the free-text search (shared by the notification
+     * query above and the month filter's "not alerted yet" employees).
+     */
+    protected function applyEmployeeSearch($q_employee, string $search, $employerFilterId): void
+    {
+                        $q_employee->where('employeeNameTh', 'like', "%{$search}%")
+                                   ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                                   ->orWhere('name_suffix', 'like', "%{$search}%")
+                                   ->orWhere('employeePassport', 'like', "%{$search}%")
+                                   ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
+                                   ->orWhere('employee_id_number', 'like', "%{$search}%")
+                                   ->orWhere('name_list_number', 'like', "%{$search}%")
+                                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
+                                   ->orWhere('employer_employee_id', 'like', "%{$search}%"); // Replaced companyWorkerId
+                        if (!$employerFilterId) {
+                            $q_employee->orWhereHas('employer', function ($q_employer) use ($search) {
+                                $q_employer->where('employerNameTh', 'like', "%{$search}%")
+                                           ->orWhere('employerNameEn', 'like', "%{$search}%") // Added employerNameEn
+                                           ->orWhere('name_suffix', 'like', "%{$search}%")
+                                           ->orWhere('employerId', 'like', "%{$search}%")
+                                           ->orWhere('employerTaxId', 'like', "%{$search}%")
+                                           ->orWhere('outsource_re_code', 'like', "%{$search}%")
+                                           ->orWhere(function($addrQ) use ($search) {
+                                               $addrQ->filterByAddress($search);
+                                           });
+                            });
+                        }
+    }
+
+    /**
+     * Month filter: [first day of the month, first day of the next month)
+     * from ?month=1..12 and ?year= (defaults to the current year); null when unset.
+     */
+    protected function monthFilterRange(Request $request): ?array
+    {
+        $month = (int) $request->input('month');
+        if ($month < 1 || $month > 12) {
+            return null;
+        }
+        $year = (int) $request->input('year') ?: (int) now()->year;
+        $start = Carbon::create($year, $month, 1)->startOfDay();
+
+        return [$start, $start->copy()->addMonth()];
+    }
+
+    /** Employee date column behind each date-based tab (the month filter searches it directly). */
+    protected const MONTH_FILTER_FIELDS = [
+        'ninety_day_report' => 'ninetyDayReportDate',
+        'passport_expiry' => 'passportExpiryDate',
+        'ci_renewal' => 'passportExpiryDate',
+        'visa_expiry' => 'visaExpiryDate',
+        'work_permit_mou' => 'workPermitExpiryDate',
+        'resolution_renewal' => 'workPermitExpiryDate',
+        'new_registration_renewal' => 'workPermitExpiryDate',
+        'employee_insurance_expiry' => 'insurance',
+    ];
+
+    /**
+     * With a month filter on a date-based tab: the notifications due that month
+     * plus every other employee whose own date falls in that month but who is
+     * not inside the alert window yet ("not alerted yet" — unsaved Notification
+     * models, nothing is written). Same filters as getFilteredQuery(); the tab's
+     * employees are split the same way as app:check-expiries (CI passports,
+     * work-permit type slugs, insurance field by insurance type).
+     *
+     * @return \Illuminate\Support\Collection<Notification> sorted by due date
+     */
+    protected function monthFilteredItems(Request $request, string $type, array $range)
+    {
+        $existing = $this->getFilteredQuery($request, $type)->get();
+
+        $field = self::MONTH_FILTER_FIELDS[$type];
+        $from = $range[0]->toDateString();
+        $to = $range[1]->toDateString();
+        $inMonth = fn ($q, $col) => $q->whereNotNull($col)->where($col, '>=', $from)->where($col, '<', $to);
+
+        $employees = Employee::query()
+            ->with('employer.addresses')
+            ->whereNull('terminated_at')
+            ->where(fn ($q) => $q->whereNull('status')->orWhere('status', '!=', 'registration_cancelled'))
+            // anyone already alerted (or whose alert was cancelled) for this tab comes from the notifications side
+            ->whereNotIn('id', Notification::where('type', $type)->whereNotNull('employee_id')->select('employee_id'));
+
+        if ($field === 'insurance') {
+            $employees->where(function ($q) use ($inMonth) {
+                $q->where(fn ($s) => $inMonth($s->where('insurance_type', 'ประกันสังคม'), 'sso_expiry_date'))
+                  ->orWhere(function ($o) use ($inMonth) {
+                      $o->where(fn ($t) => $t->whereNull('insurance_type')->orWhere('insurance_type', '!=', 'ประกันสังคม'))
+                        ->where(function ($any) use ($inMonth) {
+                            foreach (['insurance_expiry_date', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'] as $col) {
+                                $any->orWhere(fn ($one) => $inMonth($one, $col));
+                            }
+                        });
+                  });
+            });
+        } else {
+            $inMonth($employees, $field);
+        }
+
+        if ($type === 'passport_expiry') {
+            $employees->where(fn ($q) => $q->whereNull('passportType')->orWhere('passportType', '!=', 'CI'));
+        } elseif ($type === 'ci_renewal') {
+            $employees->where('passportType', 'CI');
+        } elseif (in_array($type, ['work_permit_mou', 'resolution_renewal', 'new_registration_renewal'], true)) {
+            $slugs = [
+                'work_permit_mou' => ['mou', 'mou-2-years-later'],
+                'resolution_renewal' => ['resolution-renewal-domestic'],
+                'new_registration_renewal' => ['resolution-registration'],
+            ][$type];
+            $employees->whereIn('workPermitMOUGroup', \App\Models\WorkPermitType::whereIn('slug', $slugs)->select('name'));
+        }
+
+        // Same filters as the notification list.
+        $employerFilterId = $request->input('employer_filter_id');
+        if ($employerFilterId) {
+            $employees->where('employer_id', $employerFilterId);
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $employees->where(fn ($q) => $this->applyEmployeeSearch($q, $search, $employerFilterId));
+        }
+        if ($request->filled('nationality')) {
+            $employees->where('employeeNationality', $request->input('nationality'));
+        }
+        if ($request->filled('mou_type')) {
+            $employees->where('workPermitMOUGroup', $request->input('mou_type'));
+        }
+        if ($request->filled('insurance_type')) {
+            $insuranceType = $request->input('insurance_type');
+            $employees->where(function ($q) use ($insuranceType) {
+                if ($insuranceType === 'none') {
+                    $q->whereNull('insurance_type')->orWhere('insurance_type', '=', '');
+                } else {
+                    $q->where('insurance_type', $insuranceType);
+                }
+            });
+        }
+        $employees = $this->applyAddressFilters($employees, $request, 'employer');
+
+        $upcoming = $employees->get()->map(function (Employee $employee) use ($type, $field, $from, $to) {
+            if ($field === 'insurance') {
+                $cols = $employee->insurance_type === 'ประกันสังคม'
+                    ? ['sso_expiry_date']
+                    : ['insurance_expiry_date', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private'];
+                $due = collect($cols)->map(fn ($c) => $employee->getRawOriginal($c))
+                    ->first(fn ($d) => $d && substr($d, 0, 10) >= $from && substr($d, 0, 10) < $to);
+            } else {
+                $due = $employee->getRawOriginal($field);
+            }
+            $n = new Notification(['type' => $type, 'employee_id' => $employee->id, 'due_date' => substr((string) $due, 0, 10), 'status' => 'upcoming']);
+            $n->setRelation('employee', $employee);
+            $n->setRelation('employer', null);
+
+            return $n;
+        });
+
+        return $existing->concat($upcoming)->sortBy(fn ($n) => optional($n->due_date)->format('Y-m-d'))->values();
     }
 
     /**

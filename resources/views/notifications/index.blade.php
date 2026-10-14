@@ -53,12 +53,20 @@
                         />
                     </div>
                     <div class="col-6 col-md-2">
-                        <select name="month" class="form-select form-select-sm">
-                            <option value="">-- {{ __('Filter') }} {{ __('Month') }} --</option>
-                            @foreach(range(1, 12) as $m)
-                                <option value="{{ $m }}" @selected(request('month') == $m)>{{ __('Month') }} {{ $m }}</option>
-                            @endforeach
-                        </select>
+                        {{-- Month + year of the actual expiry date: on date-based tabs this also lists employees not inside the alert window yet. --}}
+                        <div class="input-group input-group-sm" title="{{ __('Shows everyone whose date falls in this month, including those not alerted yet') }}">
+                            <select name="month" class="form-select form-select-sm">
+                                <option value="">-- {{ __('Filter') }} {{ __('Month') }} --</option>
+                                @foreach(range(1, 12) as $m)
+                                    <option value="{{ $m }}" @selected(request('month') == $m)>{{ \Carbon\Carbon::create(2000, $m, 1)->locale(app()->getLocale())->translatedFormat('F') }}</option>
+                                @endforeach
+                            </select>
+                            <select name="year" class="form-select form-select-sm" style="max-width: 5.5rem;">
+                                @foreach(range(now()->year - 2, now()->year + 3) as $y)
+                                    <option value="{{ $y }}" @selected((int) request('year', now()->year) === $y)>{{ $y }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                     <div class="col-6 col-md-2">
                         <x-nationality-select name="nationality" class="form-select form-select-sm" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />

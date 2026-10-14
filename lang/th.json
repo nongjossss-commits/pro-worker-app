@@ -2686,5 +2686,7 @@
     "No matching nationality": "ไม่พบสัญชาติที่ตรงกัน",
     "Type to search nationality...": "พิมพ์เพื่อค้นหาสัญชาติ...",
     "Filter by work permit and visa expiry date": "กรองข้อมูลตามวันหมดอายุใบอนุญาตทำงานและวีซ่า",
-    "Missing :n fields": "ขาด :n รายการ"
+    "Missing :n fields": "ขาด :n รายการ",
+    "Not alerted yet": "ยังไม่ถึงรอบแจ้งเตือน",
+    "Shows everyone whose date falls in this month, including those not alerted yet": "แสดงทุกคนที่วันหมดอายุอยู่ในเดือนนี้ รวมคนที่ยังไม่ถึงรอบแจ้งเตือน"
 }

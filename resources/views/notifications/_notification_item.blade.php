@@ -4,6 +4,11 @@
     $employer = $employee->employer ?? $notification->employer;
     $days_remaining = $notification->days_remaining;
     $is_overdue = $days_remaining < 0;
+    // Month filter: employees whose date is in the chosen month but who are not inside the
+    // alert window yet come as unsaved Notification models (no id) — no renew/cancel for them.
+    $isUpcoming = ! $notification->exists;
+    $nKey = $notification->id ?? ('u' . optional($employee)->id . '-' . $notification->type);
+    $viewUrl = $isUpcoming ? ($employee ? route('employees.locate', $employee) : '#') : route('notifications.view-employee', $notification->id);
 
     // For missing data types, days_remaining is 0/irrelevant, so handle badge
     $isMissingDataType = in_array($notification->type, ['pink_card_missing', 'residence_permit_missing']);
@@ -51,11 +56,11 @@
         'employee_photo_url' => optional($employee)->photo_url,
         'employee_nationality' => optional($employee)->employeeNationality,
         'employer_name_th' => optional($employer)->employerNameTh,
-        'url' => request()->fullUrl() . '#notification-item-' . $notification->id,
+        'url' => request()->fullUrl() . '#notification-item-' . $nKey,
     ];
 @endphp
 
-<div id="notification-item-{{ $notification->id }}" class="alert {{ $card_class }} notification-item position-relative" data-drag-payload="{{ json_encode($payload) }}">
+<div id="notification-item-{{ $nKey }}" class="alert {{ $card_class }} notification-item position-relative" data-drag-payload="{{ json_encode($payload) }}">
     @if($employee && isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
         @php
             $isRegistration = $employee->active_workflows->contains('is_registration', true);
@@ -110,7 +115,7 @@
     <div class="d-flex align-items-start gap-3">
         {{-- Conditionally show checkbox. Disabled for employer notifications. --}}
         @if($employee)
-            <input class="form-check-input bulk-action-checkbox employee-checkbox mt-1" type="checkbox" value="{{ $employee->id }}" id="notification_checkbox_{{ $notification->id }}"
+            <input class="form-check-input bulk-action-checkbox employee-checkbox mt-1" type="checkbox" value="{{ $employee->id }}" id="notification_checkbox_{{ $nKey }}"
                    data-employee-id="{{ $employee->id }}"
                    data-employer-id="{{ $employee->employer_id }}"
                    data-name-th="{{ $employee->employeeNameTh }}"
@@ -140,7 +145,7 @@
                     <span class="emp-card-no">{{ $itemNumber }}<span class="emp-card-no-dot">.</span></span>
                     {{-- Display Employee Name or Employer Document Type --}}
                     @if($employee)
-                        <a href="{{ route('notifications.view-employee', $notification->id) }}" class="text-decoration-none text-dark fw-bold">
+                        <a href="{{ $viewUrl }}" class="text-decoration-none text-dark fw-bold">
                             {{ $employee->employeeTitleEn ?? '' }} {{ $employee->employeeNameEn ?? 'N/A' }}
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-info btn-preview" data-model-type="employee" data-model-id="{{ $employee->id }}" title="พรีวิวข้อมูล"> <i class="bi bi-search"></i> </button>
@@ -209,6 +214,16 @@
                             <button type="submit" form="force-delete-form-{{ $notification->id }}" class="btn btn-sm btn-outline-danger" title="ลบถาวร">
                                 <i class="bi bi-trash3-fill"></i>
                             </button>
+                        @elseif($isUpcoming)
+                            {{-- Not inside the alert window yet (month filter) — nothing to renew or cancel. --}}
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis border mb-1 notif-upcoming"><i class="bi bi-hourglass me-1"></i>{{ __('Not alerted yet') }}</span>
+                            @if($employee && \App\Facades\SuperAdmin::isVisible('employees'))
+                                <a href="{{ route('employees.edit', $employee->id) }}" class="btn btn-sm btn-outline-secondary btn-notification-edit-employee"
+                                   data-edit-employee-id="{{ $employee->id }}" title="{{ __('Edit Employee') }}"><i class="bi bi-pencil-fill"></i></a>
+                            @endif
+                            @if($employee)
+                                <a href="{{ $viewUrl }}" class="btn btn-sm btn-outline-primary" title="{{ __('Locate Employer') }}"><i class="bi bi-geo-alt-fill"></i></a>
+                            @endif
                         @else
                             <a href="#" class="btn btn-sm btn-outline-info" title="สร้างงาน"><i class="bi bi-rocket-takeoff-fill"></i></a>
 
@@ -233,7 +248,7 @@
 
                             {{-- Only show the 'Locate' button if there is an employee --}}
                             @if($employee)
-                                <a href="{{ route('notifications.view-employee', $notification->id) }}" class="btn btn-sm btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
+                                <a href="{{ $viewUrl }}" class="btn btn-sm btn-outline-primary" title="ค้นหาตำแหน่ง"><i class="bi bi-geo-alt-fill"></i></a>
                             @endif
                             <a href="#" class="btn btn-sm btn-outline-warning" title="ยกเลิก" data-bs-toggle="modal" data-bs-target="#cancelNotificationModal" data-notification-id="{{ $notification->id }}"><i class="bi bi-x-circle"></i></a>
 
@@ -241,9 +256,9 @@
                             <a href="#" class="btn btn-sm btn-light border cursor-grab"
                                draggable="true"
                                @if($employee || $employer)
-                               data-share-menu data-share-type="{{ $employee ? 'employee' : 'employer' }}" data-share-id="{{ $employee ? $employee->id : $employer->id }}" data-share-notification="{{ $notification->id }}"
+                               data-share-menu data-share-type="{{ $employee ? 'employee' : 'employer' }}" data-share-id="{{ $employee ? $employee->id : $employer->id }}" data-share-notification="{{ $isUpcoming ? '' : $notification->id }}"
                                @endif
-                               ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(document.getElementById('notification-item-{{ $notification->id }}').dataset.dragPayload))"
+                               ondragstart="window.startDragGlobal(event, 'notification', JSON.parse(document.getElementById('notification-item-{{ $nKey }}').dataset.dragPayload))"
                                title="Drag">
                                 <i class="bi bi-grid-3x2-gap-fill text-muted"></i>
                             </a>

@@ -22,6 +22,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class EmployerController extends Controller
 {
     use AddressFilterTrait;
+    use \App\Traits\RemembersPerPage;
 
     /**
      * Apply permission middleware to the controller.
@@ -320,10 +321,10 @@ class EmployerController extends Controller
             $employeeQuery->where('passport_type_cambodia', $request->input('passport_type_cambodia'));
         }
 
-        // Employees tab: fixed at 100 (tile grid) — the old 10/25/50 choice was dropped.
-        // EmployeeController@locate uses the same page size to find an employee's page.
-        $perPageOptions = [100];
-        $currentPerPage = 100;
+        // Employees tab: 25 / 50 / 100 per page, last pick remembered for this browser
+        // (RemembersPerPage). EmployeeController@locate reads the same setting to find an employee's page.
+        $perPageOptions = [25, 50, 100];
+        $currentPerPage = $this->rememberedPerPage($request, 'employer_employees', $perPageOptions, 100);
         $employees = $employeeQuery->paginate($currentPerPage)->withQueryString();
         $currentView = $request->input('view', 'card');
         $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();

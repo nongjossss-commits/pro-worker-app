@@ -2633,5 +2633,7 @@
     "No matching nationality": "No matching nationality",
     "Type to search nationality...": "Type to search nationality...",
     "Filter by work permit and visa expiry date": "Filter by work permit and visa expiry date",
-    "Missing :n fields": "Missing :n fields"
+    "Missing :n fields": "Missing :n fields",
+    "Not alerted yet": "Not alerted yet",
+    "Shows everyone whose date falls in this month, including those not alerted yet": "Shows everyone whose date falls in this month, including those not alerted yet"
 }
