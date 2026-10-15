@@ -2688,5 +2688,14 @@
     "Filter by work permit and visa expiry date": "กรองข้อมูลตามวันหมดอายุใบอนุญาตทำงานและวีซ่า",
     "Missing :n fields": "ขาด :n รายการ",
     "Not alerted yet": "ยังไม่ถึงรอบแจ้งเตือน",
-    "Shows everyone whose date falls in this month, including those not alerted yet": "แสดงทุกคนที่วันหมดอายุอยู่ในเดือนนี้ รวมคนที่ยังไม่ถึงรอบแจ้งเตือน"
+    "Shows everyone whose date falls in this month, including those not alerted yet": "แสดงทุกคนที่วันหมดอายุอยู่ในเดือนนี้ รวมคนที่ยังไม่ถึงรอบแจ้งเตือน",
+    "Search employee, employer or job owner (name, ID, passport...)": "ค้นหาลูกจ้าง นายจ้าง หรือเจ้าของงาน (ชื่อ/เลข/พาสปอร์ต)...",
+    "Narrow these results (employee, employer, job owner...)": "ค้นหาให้แคบลงในผลลัพธ์นี้ (ลูกจ้าง/นายจ้าง/เจ้าของงาน...)",
+    ":n employers": ":n นายจ้าง",
+    "Employment": "การจ้างงาน",
+    "Contact & Login": "การติดต่อและการเข้าสู่ระบบ",
+    "Other Document :n": "เอกสารอื่นๆ :n",
+    "Rename document": "เปลี่ยนชื่อเอกสาร",
+    "Passport, Visa & Work Permit": "พาสปอร์ต วีซ่า และใบอนุญาตทำงาน",
+    "Employment & Insurance": "การจ้างงานและประกันสุขภาพ"
 }

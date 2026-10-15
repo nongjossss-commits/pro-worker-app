@@ -74,6 +74,16 @@ class ProcessDownload implements ShouldQueue
         'other_doc_10' => 'เอกสารอื่นๆ 10',
     ];
 
+    /** Label of a file type; "Other Document N" uses the name Super Admin set (OtherDocumentNames). */
+    protected function fileTypeLabel(string $type): string
+    {
+        if (preg_match('/^other_doc_(\d+)$/', $type, $m)) {
+            return \App\Support\OtherDocumentNames::employee((int) $m[1]);
+        }
+
+        return $this->fileTypeLabels[$type] ?? $type;
+    }
+
     // Map frontend checkbox values to model attributes
     protected $fileMap = [
         'photo' => 'employeePhoto',
@@ -1000,7 +1010,7 @@ class ProcessDownload implements ShouldQueue
             $byEmployee = [];
             foreach ($this->missingFiles as $entry) {
                 $byEmployee[$entry['employee_id']]['name'] = $entry['employee_name'];
-                $label = $this->fileTypeLabels[$entry['file_type']] ?? $entry['file_type'];
+                $label = $this->fileTypeLabel($entry['file_type']);
                 $byEmployee[$entry['employee_id']]['items'][] = $label . ($entry['had_value'] ? ' (ไฟล์หาย)' : ' (ไม่เคยอัปโหลด)');
             }
 
@@ -1015,7 +1025,7 @@ class ProcessDownload implements ShouldQueue
             $lines = [];
             foreach ($this->unreadablePdfs as $entry) {
                 $emp = $entry['employee'];
-                $lines[] = ($emp->employeeNameEn ?: $emp->employeeNameTh) . " (#{$emp->id}): " . ($this->fileTypeLabels[$entry['fileType']] ?? $entry['fileType']);
+                $lines[] = ($emp->employeeNameEn ?: $emp->employeeNameTh) . " (#{$emp->id}): " . $this->fileTypeLabel($entry['fileType']);
             }
             $parts[] = ($this->task && $this->task->type === 'pdf_individual')
                 ? 'ไฟล์ PDF บางไฟล์รวมเข้า PDF ไม่ได้ จึงใส่ไฟล์ต้นฉบับไว้ใน ZIP แยกให้แทน — ' . implode(' | ', array_unique($lines))

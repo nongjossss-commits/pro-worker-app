@@ -112,15 +112,20 @@ class WorkflowController extends Controller
         $employerAlreadyFiltered = $request->filled('employer_filter_id');
         if ($employerAlreadyFiltered) {
             $query->where('employer_id', $request->input('employer_filter_id'));
-        } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
-            // Box 1 hasn't locked onto one exact employer yet — let its
-            // typed text search with the same full power as box 2 below.
-            $request->merge(['search' => $request->input('employer_filter_name')]);
+        }
+        // Exact picks from box 1 / box 2 suggestions (TwoStageSearch).
+        if ($request->filled('employee_pick_id')) {
+            $pickedEmployee = (int) $request->input('employee_pick_id');
+            $query->whereHas('items', fn ($i) => $i->where('employee_id', $pickedEmployee));
+        }
+        if ($request->filled('job_owner_pick_id')) {
+            $pickedOwner = (int) $request->input('job_owner_pick_id');
+            $query->whereHas('employer', fn ($e) => $e->where('job_owner_id', $pickedOwner));
         }
 
-        // Search
-        if ($request->has('search') && $request->search) {
-            $search = trim($request->search);
+        // Search — box 1's typed text (when it isn't a pick) and box 2's text;
+        // every term must match (TwoStageSearch::terms).
+        foreach (\App\Services\TwoStageSearch::terms($request) as $search) {
 
             // Support ID:123 format for direct employee ID lookup
             if (preg_match('/^ID:\s*(\d+)$/i', $search, $matches)) {
@@ -312,9 +317,14 @@ class WorkflowController extends Controller
             if ($employerAlreadyFiltered) {
                 $statsQuery->where('employer_id', $request->input('employer_filter_id'));
             }
+            if ($request->filled('employee_pick_id')) {
+                $statsQuery->whereHas('items', fn ($i) => $i->where('employee_id', (int) $request->input('employee_pick_id')));
+            }
+            if ($request->filled('job_owner_pick_id')) {
+                $statsQuery->whereHas('employer', fn ($e) => $e->where('job_owner_id', (int) $request->input('job_owner_pick_id')));
+            }
 
-            if ($request->has('search') && $request->search) {
-                $search = trim($request->search);
+            foreach (\App\Services\TwoStageSearch::terms($request) as $search) {
                 $cleanedSearch = str_replace(' ', '', $search);
                 $statsQuery->where(function($q) use ($search, $cleanedSearch, $employerAlreadyFiltered) {
                     $q->where('project_name', 'like', "%{$search}%")
@@ -891,36 +901,12 @@ class WorkflowController extends Controller
 
         $activeTabSlug = $request->query('tab');
         $workTypeId = $activeTabSlug ? WorkType::where('slug', $activeTabSlug)->value('id') : null;
-        $like = "%{$q}%";
-        $results = [];
-        $employerFilterId = $request->input('employer_filter_id');
 
-        if (!$employerFilterId) {
-            // No tab scoping on purpose — box 1 must find an employer by
-            // name/number/RE code even if the match sits in another tab.
-            $employers = Employer::where(function ($eq) use ($like) {
-                    $eq->where('employerNameTh', 'like', $like)
-                       ->orWhere('employerNameEn', 'like', $like)
-                       ->orWhere('name_suffix', 'like', $like)
-                       ->orWhere('businessType', 'like', $like)
-                       ->orWhere('employerId', 'like', $like)
-                       ->orWhere('employerTaxId', 'like', $like)
-                       ->orWhere('outsource_re_code', 'like', $like);
-                })
-                ->limit(5)
-                ->get(['id', 'employerNameTh', 'employerNameEn']);
-
-            foreach ($employers as $er) {
-                $results[] = [
-                    'id' => $er->id,
-                    'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
-                    'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                    'group' => __('นายจ้าง'),
-                ];
-            }
-        }
-
-        $employeeQuery = Employee::whereHas('productionItems', function ($iq) use ($workTypeId) {
+        // Box 1: employers / job owners / employees; box 2: employees inside box 1's
+        // result (App\Services\TwoStageSearch). Employees = those with a workflow item
+        // (not pre-production) in this tab.
+        return response()->json(\App\Services\TwoStageSearch::preview($request, $q, function () use ($workTypeId) {
+            return Employee::whereHas('productionItems', function ($iq) use ($workTypeId) {
                 $iq->whereHas('order', function ($oq) use ($workTypeId) {
                     $oq->where('status', '!=', 'pre_production');
                     if ($workTypeId) {
@@ -928,42 +914,7 @@ class WorkflowController extends Controller
                     }
                 });
             });
-        if ($employerFilterId) {
-            $employeeQuery->where('employer_id', $employerFilterId);
-        }
-        $employeeQuery->where(function ($eq) use ($like) {
-                $eq->where('employeeNameTh', 'like', $like)
-                   ->orWhere('employeeNameEn', 'like', $like)
-                   ->orWhere('name_suffix', 'like', $like)
-                   ->orWhere('employeePassport', 'like', $like)
-                   ->orWhere('employeeWorkPermit', 'like', $like)
-                   ->orWhere('employee_id_number', 'like', $like)
-                   ->orWhere('name_list_number', 'like', $like)
-                   ->orWhere('pinkCardNo', 'like', $like)
-                   ->orWhere('employer_employee_id', 'like', $like);
-            });
-
-        $employees = $employeeQuery
-            ->with('employer:id,employerNameTh,employerNameEn')
-            ->limit(8)
-            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
-
-        foreach ($employees as $emp) {
-            $results[] = [
-                'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-                'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-                'sub_label' => trim(implode(' | ', array_filter([
-                    $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                    $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                    $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                    $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
-                ]))),
-                'photo' => $emp->photo_url,
-                'group' => __('ลูกจ้าง'),
-            ];
-        }
-
-        return response()->json(array_slice($results, 0, 10));
+        }));
     }
 
     /**
@@ -1066,54 +1017,16 @@ class WorkflowController extends Controller
             $query->where('operator_id', $request->operator_filter);
         }
 
-        // 3. Apply Search Filter
-        if ($request->has('search') && $request->search) {
-            $search = trim($request->search);
-            $cleanedSearch = str_replace(' ', '', $search);
-
-            // Check if Order matches the search criteria (Project, Employer, etc.)
-            // If it DOES match, we show ALL items (user found the order).
-            // If it DOES NOT match, we assume the user found the order via a specific item/employee, so we show ONLY matching items.
-            $orderMatches = ProductionOrder::where('id', $orderId)
-                ->where(function($q) use ($search, $cleanedSearch) {
-                    $q->where('project_name', 'like', "%{$search}%")
-                      ->orWhereRaw("REPLACE(project_name, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                      ->orWhereHas('employer', function($e) use ($search, $cleanedSearch) {
-                          $e->where('employerNameTh', 'like', "%{$search}%")
-                            ->orWhere('employerNameEn', 'like', "%{$search}%")
-                            ->orWhere('name_suffix', 'like', "%{$search}%")
-                            ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                            ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                            ->orWhere(function($addrQ) use ($search) {
-                                $addrQ->filterByAddress($search);
-                            });
-                      })
-                      ->orWhereHas('employer.jobOwner', function($owner) use ($search) {
-                          $owner->where('name', 'like', "%{$search}%");
-                      });
-                })
-                ->exists();
-
-            if (!$orderMatches) {
-                 $query->where(function($q) use ($search, $cleanedSearch) {
-                     $q->where('request_number', 'like', "%{$search}%")
-                       ->orWhereHas('employee', function($emp) use ($search, $cleanedSearch) {
-                           $emp->where('employeeNameTh', 'like', "%{$search}%")
-                               ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                               ->orWhere('name_suffix', 'like', "%{$search}%")
-                               ->orWhere('employeePassport', 'like', "%{$search}%")
-                               ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
-                               ->orWhere('employee_id_number', 'like', "%{$search}%")
-                               ->orWhere('name_list_number', 'like', "%{$search}%")
-                               ->orWhere('pinkCardNo', 'like', "%{$search}%")
-                               ->orWhere('request_number', 'like', "%{$search}%")
-                               ->orWhere('employer_employee_id', 'like', "%{$search}%")
-                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
-                       });
-                 });
-            }
-        }
+        // 3. Two-stage search (box 1 + box 2 — TwoStageSearch): a term that matches
+        // the order itself (project, employer, job owner, address) keeps all its
+        // items; otherwise only the items whose employee matches the term.
+        $orderEmployerId = ProductionOrder::whereKey($orderId)->value('employer_id');
+        \App\Services\TwoStageSearch::applyInsideEmployer($query, $orderEmployerId, $request, 'employee', function ($q, $term) use ($orderId) {
+            $clean = str_replace(' ', '', $term);
+            $q->where('request_number', 'like', "%{$term}%")
+              ->orWhereExists(fn ($o) => $o->selectRaw('1')->from('production_orders')->where('production_orders.id', $orderId)
+                  ->where(fn ($p) => $p->where('project_name', 'like', "%{$term}%")->orWhereRaw("REPLACE(project_name, ' ', '') LIKE ?", ["%{$clean}%"])));
+        });
 
         // Team filter (the "flaps" hanging off the order card) —
         // multi-select OR: show items in ANY of the selected teams.
@@ -2766,28 +2679,9 @@ class WorkflowController extends Controller
         }
 
         // Search Filter
-        if ($request->has('search') && $request->search) {
-            $search = trim($request->search);
-            $cleanedSearch = str_replace(' ', '', $search);
-
-            $query->where(function($q) use ($search, $cleanedSearch) {
-                $q->where('request_number', 'like', "%{$search}%")
-                  ->orWhereHas('employee', function($emp) use ($search, $cleanedSearch) {
-                      $emp->where('employeeNameTh', 'like', "%{$search}%")
-                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                          ->orWhere('name_suffix', 'like', "%{$search}%")
-                          ->orWhere('employeePassport', 'like', "%{$search}%")
-                          ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
-                          ->orWhere('employee_id_number', 'like', "%{$search}%")
-                          ->orWhere('name_list_number', 'like', "%{$search}%")
-                          ->orWhere('pinkCardNo', 'like', "%{$search}%")
-                          ->orWhere('request_number', 'like', "%{$search}%")
-                          ->orWhere('employer_employee_id', 'like', "%{$search}%")
-                          ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                          ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
-                  });
-            });
-        }
+        // Two-stage search (box 1 + box 2): see fetchOrderItems().
+        \App\Services\TwoStageSearch::applyInsideEmployer($query, ProductionOrder::whereKey($orderId)->value('employer_id'), $request, 'employee',
+            fn ($q, $term) => $q->where('request_number', 'like', "%{$term}%"));
 
         // Operator Filter
         if ($request->has('operator_filter') && $request->operator_filter) {
@@ -2905,28 +2799,9 @@ class WorkflowController extends Controller
             // since this query is always scoped to status = 'pending'.
         }
 
-        if ($request->has('search') && $request->search) {
-            $search = trim($request->search);
-            $cleanedSearch = str_replace(' ', '', $search);
-
-            $query->where(function ($q) use ($search, $cleanedSearch) {
-                $q->where('request_number', 'like', "%{$search}%")
-                  ->orWhereHas('employee', function ($emp) use ($search, $cleanedSearch) {
-                      $emp->where('employeeNameTh', 'like', "%{$search}%")
-                          ->orWhere('employeeNameEn', 'like', "%{$search}%")
-                          ->orWhere('name_suffix', 'like', "%{$search}%")
-                          ->orWhere('employeePassport', 'like', "%{$search}%")
-                          ->orWhere('employeeWorkPermit', 'like', "%{$search}%")
-                          ->orWhere('employee_id_number', 'like', "%{$search}%")
-                          ->orWhere('name_list_number', 'like', "%{$search}%")
-                          ->orWhere('pinkCardNo', 'like', "%{$search}%")
-                          ->orWhere('request_number', 'like', "%{$search}%")
-                          ->orWhere('employer_employee_id', 'like', "%{$search}%")
-                          ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                          ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
-                  });
-            });
-        }
+        // Two-stage search (box 1 + box 2): see fetchOrderItems().
+        \App\Services\TwoStageSearch::applyInsideEmployer($query, ProductionOrder::whereKey($orderId)->value('employer_id'), $request, 'employee',
+            fn ($q, $term) => $q->where('request_number', 'like', "%{$term}%"));
 
         if ($request->has('operator_filter') && $request->operator_filter) {
             $query->where('operator_id', $request->operator_filter);

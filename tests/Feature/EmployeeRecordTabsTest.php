@@ -44,7 +44,7 @@ class EmployeeRecordTabsTest extends TestCase
         $employee = $this->employee();
         $html = $this->actingAs($this->admin())->get(route('employees.edit', $employee))->assertOk()->getContent();
 
-        foreach (['personal', 'passport', 'employment', 'insurance', 'login', 'files'] as $tab) {
+        foreach (['personal', 'passport', 'employment', 'files'] as $tab) {
             $this->assertStringContainsString('data-rec-tab="' . $tab . '"', $html);
             $this->assertStringContainsString('data-rec-pane="' . $tab . '"', $html);
         }
@@ -91,12 +91,16 @@ class EmployeeRecordTabsTest extends TestCase
 
         $employee = $this->employee();
         $preview = $this->actingAs($admin)->get(route('global.preview', ['type' => 'employee', 'id' => $employee->id]))->assertOk()->getContent();
-        foreach (['personal', 'permits', 'employment', 'insurance', 'files'] as $tab) {
+        foreach (['personal', 'passport', 'employment', 'files'] as $tab) {
             $this->assertStringContainsString('data-rec-pane="' . $tab . '"', $preview);
         }
         $this->assertStringContainsString('rec-profile', $preview);
         // Fixed frame: header + tab bar stay put, only the tab content scrolls.
         $this->assertStringContainsString('emp-preview content-section rec-fixed', $preview);
+        // Compact layout: fields flow in a grid, attachments are chips (one per slot).
+        $this->assertStringContainsString('class="pv-grid"', $preview);
+        $this->assertStringNotContainsString('col-md-3 preview-field', $preview);
+        $this->assertSame(18, substr_count($preview, 'class="pv-file '));
     }
 
     public function test_employer_preview_is_tabbed_in_a_fixed_frame(): void

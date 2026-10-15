@@ -23,6 +23,7 @@
 <ol>
     <li><strong>Filter bar</strong> at the top — filter by status, has/doesn't have employees, search by name/tax ID</li>
     <li><strong>Search box</strong> — type part of an employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
+    <li><strong>Search by job owner</strong> — job owner names work too; picking a job owner from the list shows every employer under them</li>
     <li><strong>Employer cards</strong> — each card shows 1 company: name, number of employees, status</li>
     <li><strong>"+ Add New Employer"</strong> button in the top-right corner — for creating a new employer</li>
 </ol>

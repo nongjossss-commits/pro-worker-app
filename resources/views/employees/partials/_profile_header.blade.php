@@ -50,8 +50,12 @@
             @if($employerName)
                 <span><i class="bi bi-building me-1"></i>{{ $employerName }}</span>
             @endif
+            @if($employee->employeeDob)
+                {{-- Date of birth + age right under the name (edit form + preview). --}}
+                <span title="{{ __('Date of Birth') }}"><i class="bi bi-cake2 me-1"></i>{{ $employee->employeeDob->format('d/m/Y') }}@if($employee->age !== null) ({{ __('Age') }} {{ $employee->age }})@endif</span>
+            @endif
             @if($employee->employeeNationality)
-                <span><i class="bi bi-flag me-1"></i>{{ $employee->employeeNationality }}</span>
+                <span><i class="bi bi-flag me-1"></i>{{ \App\Helpers\NationalityList::label($employee->employeeNationality) }}</span>
             @endif
             @if($employee->employeePassport)
                 <span><i class="bi bi-passport me-1"></i>{{ $employee->employeePassport }}</span>

@@ -87,11 +87,11 @@ class EmployeeCardFieldsTest extends TestCase
         session(['locale' => 'en']);
         $html = $this->get(route('employees.index'))->assertOk()->getContent();
         $this->assertStringContainsString('<span>Vietnamese</span>', $html);
-        $this->assertStringContainsString('Search employer or employee (name, ID, passport...)', $html);
+        $this->assertTrue(str_contains($html, 'Search employee, employer or job owner (name, ID, passport...)'), 'box 1 placeholder (en) missing');
 
         session(['locale' => 'th']);
         $history = $this->get(route('employees.history'))->assertOk()->getContent();
-        $this->assertStringContainsString('ค้นหานายจ้างหรือลูกจ้าง (ชื่อ/เลข/พาสปอร์ต)...', $history);
+        $this->assertTrue(str_contains($history, 'ค้นหาลูกจ้าง นายจ้าง หรือเจ้าของงาน (ชื่อ/เลข/พาสปอร์ต)...'), 'box 1 placeholder (th) missing');
     }
 
     public function test_only_super_admin_can_save(): void

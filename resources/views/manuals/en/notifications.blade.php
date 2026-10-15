@@ -40,6 +40,7 @@
 
 <div class="manual-tip">
     <strong>Search box:</strong> type part of an employee or employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away — only searches within the currently open tab
+    <br><strong>Two search boxes</strong> — box 1 takes an employee (name / passport / any number), an employer or a job owner; pick from the list: an employee = only that person, an employer = only that employer, a job owner = every employer under them (typing and pressing Enter searches the typed text) · box 2 opens once box 1 has a value and narrows box 1's result further, with the same kinds of text
 </div>
 
 <div class="manual-tip">

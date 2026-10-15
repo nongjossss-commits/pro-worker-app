@@ -126,7 +126,8 @@
         'callouts' => [
             '<strong>Preview 🔍 button:</strong> on every employee card, on every page',
             '<strong>Read-only:</strong> viewable but not editable',
-            '<strong>Profile header + tabs:</strong> Personal · Passport/Work Permit/Visa · Employment · Insurance · Attached Files',
+            '<strong>Profile header + tabs:</strong> Personal · Passport, Visa & Work Permit · Employment & Insurance · Attached Files — fields flow to fill each row, the window is almost full screen',
+            '<strong>Attached files:</strong> small boxes side by side; slots with a file are green with View / PDF',
             '<strong>Expiry badges:</strong> see at a glance which documents have expired or are about to',
         ],
     ])

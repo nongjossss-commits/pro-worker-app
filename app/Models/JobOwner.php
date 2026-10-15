@@ -12,4 +12,10 @@ class JobOwner extends Model
     protected $fillable = [
         'name',
     ];
+
+    /** Employers under this job owner (two-stage search: pick an owner → all their employers). */
+    public function employers()
+    {
+        return $this->hasMany(Employer::class, 'job_owner_id');
+    }
 }

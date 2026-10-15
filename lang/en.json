@@ -2635,5 +2635,14 @@
     "Filter by work permit and visa expiry date": "Filter by work permit and visa expiry date",
     "Missing :n fields": "Missing :n fields",
     "Not alerted yet": "Not alerted yet",
-    "Shows everyone whose date falls in this month, including those not alerted yet": "Shows everyone whose date falls in this month, including those not alerted yet"
+    "Shows everyone whose date falls in this month, including those not alerted yet": "Shows everyone whose date falls in this month, including those not alerted yet",
+    "Search employee, employer or job owner (name, ID, passport...)": "Search employee, employer or job owner (name, ID, passport...)",
+    "Narrow these results (employee, employer, job owner...)": "Narrow these results (employee, employer, job owner...)",
+    ":n employers": ":n employers",
+    "Employment": "Employment",
+    "Contact & Login": "Contact & Login",
+    "Other Document :n": "Other Document :n",
+    "Rename document": "Rename document",
+    "Passport, Visa & Work Permit": "Passport, Visa & Work Permit",
+    "Employment & Insurance": "Employment & Insurance"
 }

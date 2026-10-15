@@ -124,43 +124,43 @@
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_1" id="chkOther1">
-                                    <label class="form-check-label" for="chkOther1">9. เอกสารอื่นๆ 1</label>
+                                    <label class="form-check-label" for="chkOther1">9. {{ \App\Support\OtherDocumentNames::employee(1) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_2" id="chkOther2">
-                                    <label class="form-check-label" for="chkOther2">10. เอกสารอื่นๆ 2</label>
+                                    <label class="form-check-label" for="chkOther2">10. {{ \App\Support\OtherDocumentNames::employee(2) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_3" id="chkOther3">
-                                    <label class="form-check-label" for="chkOther3">11. เอกสารอื่นๆ 3</label>
+                                    <label class="form-check-label" for="chkOther3">11. {{ \App\Support\OtherDocumentNames::employee(3) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_4" id="chkOther4">
-                                    <label class="form-check-label" for="chkOther4">12. เอกสารอื่นๆ 4</label>
+                                    <label class="form-check-label" for="chkOther4">12. {{ \App\Support\OtherDocumentNames::employee(4) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_5" id="chkOther5">
-                                    <label class="form-check-label" for="chkOther5">13. เอกสารอื่นๆ 5</label>
+                                    <label class="form-check-label" for="chkOther5">13. {{ \App\Support\OtherDocumentNames::employee(5) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_6" id="chkOther6">
-                                    <label class="form-check-label" for="chkOther6">14. เอกสารอื่นๆ 6</label>
+                                    <label class="form-check-label" for="chkOther6">14. {{ \App\Support\OtherDocumentNames::employee(6) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_7" id="chkOther7">
-                                    <label class="form-check-label" for="chkOther7">15. เอกสารอื่นๆ 7</label>
+                                    <label class="form-check-label" for="chkOther7">15. {{ \App\Support\OtherDocumentNames::employee(7) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_8" id="chkOther8">
-                                    <label class="form-check-label" for="chkOther8">16. เอกสารอื่นๆ 8</label>
+                                    <label class="form-check-label" for="chkOther8">16. {{ \App\Support\OtherDocumentNames::employee(8) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_9" id="chkOther9">
-                                    <label class="form-check-label" for="chkOther9">17. เอกสารอื่นๆ 9</label>
+                                    <label class="form-check-label" for="chkOther9">17. {{ \App\Support\OtherDocumentNames::employee(9) }}</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="files[]" value="other_doc_10" id="chkOther10">
-                                    <label class="form-check-label" for="chkOther10">18. เอกสารอื่นๆ 10</label>
+                                    <label class="form-check-label" for="chkOther10">18. {{ \App\Support\OtherDocumentNames::employee(10) }}</label>
                                 </div>
                             </div>
                         </div>

@@ -506,6 +506,47 @@ class Employee extends Model
     }
 
     /**
+     * Load what the employee cards (partials/_employee_card, _history_card)
+     * read for a whole page at once: the open production items behind
+     * `active_workflows` (otherwise one query per access — a card reads it
+     * several times) and the "last edited" activity + user for
+     * <x-last-edited-badge> (one query per card otherwise).
+     * Accepts a paginator or any collection of employees.
+     */
+    public static function preloadForCards($employees): void
+    {
+        $models = $employees instanceof \Illuminate\Pagination\AbstractPaginator
+            ? $employees->getCollection()
+            : collect($employees);
+        if ($models->isEmpty()) {
+            return;
+        }
+        $models = new \Illuminate\Database\Eloquent\Collection($models->all());
+
+        $models->loadMissing([
+            'productionItems' => fn ($q) => $q->whereNotIn('status', ['completed', 'cancelled']),
+            'productionItems.order.workType',
+        ]);
+
+        // Latest create/update log per employee in two queries (eager-loading the
+        // morphOne itself would pull every log row of every employee).
+        $missing = $models->reject(fn ($e) => $e->relationLoaded('lastEditedActivity'));
+        if ($missing->isNotEmpty()) {
+            $latestIds = \App\Models\ActivityLog::query()
+                ->where('subject_type', (new static)->getMorphClass())
+                ->whereIn('subject_id', $missing->modelKeys())
+                ->whereIn('action', ['create', 'update'])
+                ->selectRaw('max(id) as id')
+                ->groupBy('subject_id')
+                ->pluck('id');
+            $logs = \App\Models\ActivityLog::with('user')->whereIn('id', $latestIds)->get()->keyBy('subject_id');
+            foreach ($missing as $employee) {
+                $employee->setRelation('lastEditedActivity', $logs->get($employee->id));
+            }
+        }
+    }
+
+    /**
      * Request-level cache of ResolutionTab lookups — avoids repeated DB queries
      * when `active_workflows` is called for many employees in the same request.
      */

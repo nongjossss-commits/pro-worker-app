@@ -174,13 +174,9 @@ public function reinstate(Employee $employee)
     // RA number, etc.) with an active one is invisible here even though the
     // duplicate-data warning flags it, leaving staff with no way to find
     // and compare the two records to decide which to fix/remove.
-    if (!$request->filled('search')) {
-        $query->whereNull('terminated_at')
-            ->where(function($q) {
-                $q->whereNotIn('status', ['registration_cancelled'])
-                  ->orWhereNull('status');
-            });
-    }
+    // (Applied below, AFTER box 1's text has been folded into 'search' — checking
+    // it here first hid terminated/cancelled employees that the search
+    // suggestions had just offered, so picking one showed "no records".)
 
     // --- START: ADDED FILTERING LOGIC ---
     // Two-stage filter: "employer_filter_id" (box 1 — pick one exact
@@ -190,49 +186,29 @@ public function reinstate(Employee $employee)
     $employerAlreadyFiltered = $request->filled('employer_filter_id');
     if ($employerAlreadyFiltered) {
         $query->where('employer_id', $request->input('employer_filter_id'));
-    } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
-        // Box 1 hasn't locked onto one exact employer yet — let its typed
-        // text search with the same full power as box 2 below (so an urgent
-        // single-employee lookup by passport/ID works without knowing the
-        // employer first), by feeding it into the same 'search' handling.
-        $request->merge(['search' => $request->input('employer_filter_name')]);
     }
 
-    if ($request->filled('search')) {
-        $rawSearch = trim($request->input('search'));
-
-        // Support ID:123 format for direct ID lookup
-        if (preg_match('/^ID:\s*(\d+)$/i', $rawSearch, $matches)) {
-            $query->where('id', (int) $matches[1]);
-        } else {
-            $searchTerm = '%' . $rawSearch . '%';
-            $query->where(function ($q) use ($searchTerm, $employerAlreadyFiltered) {
-                $q->where('employeeNameTh', 'like', $searchTerm)
-                  ->orWhere('employeeNameEn', 'like', $searchTerm)
-                  ->orWhere('name_suffix', 'like', $searchTerm)
-                  ->orWhere('employeePassport', 'like', $searchTerm)
-                  ->orWhere('pinkCardNo', 'like', $searchTerm)
-                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
-                  ->orWhere('employee_id_number', 'like', $searchTerm)
-                  ->orWhere('name_list_number', 'like', $searchTerm)
-                  ->orWhere('request_number', 'like', $searchTerm)
-                  ->orWhere('employer_employee_id', 'like', $searchTerm);
-                if (!$employerAlreadyFiltered) {
-                    $q->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
-                        $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                      ->orWhere('employerNameEn', 'like', $searchTerm)
-                                      ->orWhere('name_suffix', 'like', $searchTerm)
-                                      ->orWhere('employerId', 'like', $searchTerm)
-                                      ->orWhere('employerTaxId', 'like', $searchTerm)
-                                      ->orWhere('outsource_re_code', 'like', $searchTerm)
-                                      ->orWhere(function($addrQ) use ($searchTerm) {
-                                          $addrQ->filterByAddress($searchTerm);
-                                      });
-                    });
-                }
+    // Default browse view hides terminated / cancelled employees; any search
+    // (box 1 or box 2) or an exact pick shows them, matching the suggestions.
+    if (!\App\Services\TwoStageSearch::terms($request) && !\App\Services\TwoStageSearch::hasPick($request)) {
+        $query->whereNull('terminated_at')
+            ->where(function($q) {
+                $q->whereNotIn('status', ['registration_cancelled'])
+                  ->orWhereNull('status');
             });
-        }
     }
+
+    // Every term must match (TwoStageSearch): box 1's typed text (when it isn't a
+    // pick) and box 2's — an employee field, or (unless one employer is locked)
+    // the employer / job owner / address.
+    foreach (\App\Services\TwoStageSearch::terms($request) as $rawSearch) {
+        if (preg_match('/^ID:\s*(\d+)$/i', $rawSearch, $idMatch)) {
+            $query->where('id', (int) $idMatch[1]);
+            continue;
+        }
+        \App\Services\TwoStageSearch::whereEmployeeOrEmployer($query, $rawSearch, !$employerAlreadyFiltered);
+    }
+    \App\Services\TwoStageSearch::applyEmployeePicks($query, $request);
     if ($request->filled('work_permit_expiry_date')) {
         // Work permit OR visa expiring on that date.
         $query->where(function ($q) use ($request) {
@@ -337,6 +313,7 @@ public function reinstate(Employee $employee)
     $currentPerPage = $this->rememberedPerPage($request, 'employees', $perPageOptions, 100);
 
     $employees = $query->with(['employer.addresses', 'teams.group'])->latest()->paginate($currentPerPage)->withQueryString(); // Added withQueryString() to preserve filters on pagination
+    Employee::preloadForCards($employees); // work-status badges + last-edited label: a few queries for the page, not several per card
 
     return view('employees.index', compact(
         'employees',
@@ -359,64 +336,11 @@ public function previewSearch(Request $request)
     if (mb_strlen($q) < 2) {
         return response()->json([]);
     }
-    $like = "%{$q}%";
 
-    // Two-stage filter: once box 1 has locked an exact employer, box 2's
-    // suggestions must only ever come from inside that employer — otherwise
-    // a click here could show an employee the real list filter then hides.
-    $employerFilterId = $request->input('employer_filter_id');
-
-    $employeeQuery = Employee::query();
-    if ($employerFilterId) {
-        $employeeQuery->where('employer_id', $employerFilterId);
+    // Box 1: employers / job owners / employees; box 2: employees inside box 1's
+    // result (App\Services\TwoStageSearch).
+    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::query()));
     }
-    $employeeQuery->where(function ($eq) use ($like, $employerFilterId) {
-            $eq->where('employeeNameTh', 'like', $like)
-               ->orWhere('employeeNameEn', 'like', $like)
-               ->orWhere('name_suffix', 'like', $like)
-               ->orWhere('employeePassport', 'like', $like)
-               ->orWhere('pinkCardNo', 'like', $like)
-               ->orWhere('employeeWorkPermit', 'like', $like)
-               ->orWhere('employee_id_number', 'like', $like)
-               ->orWhere('name_list_number', 'like', $like)
-               ->orWhere('request_number', 'like', $like)
-               ->orWhere('employer_employee_id', 'like', $like);
-            if (!$employerFilterId) {
-                $eq->orWhereHas('employer', function ($eqq) use ($like) {
-                    $eqq->where('employerNameTh', 'like', $like)
-                        ->orWhere('employerNameEn', 'like', $like);
-                });
-            }
-        });
-
-    $employees = $employeeQuery
-        ->with('employer:id,employerNameTh,employerNameEn')
-        ->limit(10)
-        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
-
-    $results = [];
-    foreach ($employees as $emp) {
-        $results[] = [
-            // English name shown/searched first — this program uses the
-            // English name as primary; Thai name is the secondary line.
-            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-            // Raw name (no title prefix) — what actually gets typed into the
-            // box and submitted on selection, since the title prefix above
-            // is display-only and won't LIKE-match the employeeNameEn column.
-            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-            'sub_label' => trim(implode(' | ', array_filter([
-                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
-            ]))),
-            'photo' => $emp->photo_url,
-            'group' => __('ลูกจ้าง'),
-        ];
-    }
-
-    return response()->json($results);
-}
 
 /**
  * Live-search preview for box 1 of index() — full power, same as
@@ -431,68 +355,11 @@ public function previewSearchCombined(Request $request)
     if (mb_strlen($q) < 2) {
         return response()->json([]);
     }
-    $like = "%{$q}%";
-    $results = [];
 
-    $employers = Employer::where(function ($eq) use ($like) {
-            $eq->where('employerNameTh', 'like', $like)
-               ->orWhere('employerNameEn', 'like', $like)
-               ->orWhere('name_suffix', 'like', $like)
-               ->orWhere('businessType', 'like', $like)
-               ->orWhere('employerId', 'like', $like)
-               ->orWhere('employerTaxId', 'like', $like)
-               ->orWhere('outsource_re_code', 'like', $like);
-        })
-        ->limit(5)
-        ->get(['id', 'employerNameTh', 'employerNameEn']);
-
-    foreach ($employers as $er) {
-        $results[] = [
-            'id' => $er->id,
-            'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
-            'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-            'group' => __('นายจ้าง'),
-        ];
+    // Box 1: employers / job owners / employees; box 2: employees inside box 1's
+    // result (App\Services\TwoStageSearch).
+    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::query()));
     }
-
-    $employees = Employee::where(function ($eq) use ($like) {
-            $eq->where('employeeNameTh', 'like', $like)
-               ->orWhere('employeeNameEn', 'like', $like)
-               ->orWhere('name_suffix', 'like', $like)
-               ->orWhere('employeePassport', 'like', $like)
-               ->orWhere('pinkCardNo', 'like', $like)
-               ->orWhere('employeeWorkPermit', 'like', $like)
-               ->orWhere('employee_id_number', 'like', $like)
-               ->orWhere('name_list_number', 'like', $like)
-               ->orWhere('request_number', 'like', $like)
-               ->orWhere('employer_employee_id', 'like', $like);
-        })
-        ->with('employer:id,employerNameTh,employerNameEn')
-        ->limit(5)
-        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
-
-    foreach ($employees as $emp) {
-        $results[] = [
-            // English name shown/searched first — this program uses the
-            // English name as primary; Thai name is the secondary line.
-            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-            // Raw name (no title prefix) — what actually gets typed into the
-            // box and submitted on selection, since the title prefix above
-            // is display-only and won't LIKE-match the employeeNameEn column.
-            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-            'sub_label' => trim(implode(' | ', array_filter([
-                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
-            ]))),
-            'photo' => $emp->photo_url,
-            'group' => __('ลูกจ้าง'),
-        ];
-    }
-
-    return response()->json($results);
-}
 
 /**
  * Live-search preview for historyIndex()'s search box — same scope
@@ -500,64 +367,14 @@ public function previewSearchCombined(Request $request)
  */
 public function previewHistorySearch(Request $request)
 {
-    $q = trim($request->input('q', ''));
-    if (mb_strlen($q) < 2) {
-        return response()->json([]);
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        // Same as the Employees menu, limited to notified-out employees (TwoStageSearch).
+        return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNotNull('terminated_at')));
     }
-    $like = "%{$q}%";
-    $employerFilterId = $request->input('employer_filter_id');
-
-    $employeeQuery = Employee::whereNotNull('terminated_at');
-    if ($employerFilterId) {
-        $employeeQuery->where('employer_id', $employerFilterId);
-    }
-    $employeeQuery->where(function ($eq) use ($like, $employerFilterId) {
-            $eq->where('employeeNameTh', 'like', $like)
-               ->orWhere('employeeNameEn', 'like', $like)
-               ->orWhere('name_suffix', 'like', $like)
-               ->orWhere('employeePassport', 'like', $like)
-               ->orWhere('pinkCardNo', 'like', $like)
-               ->orWhere('employeeWorkPermit', 'like', $like)
-               ->orWhere('employee_id_number', 'like', $like)
-               ->orWhere('name_list_number', 'like', $like)
-               ->orWhere('request_number', 'like', $like)
-               ->orWhere('employer_employee_id', 'like', $like);
-            if (!$employerFilterId) {
-                $eq->orWhereHas('employer', function ($eqq) use ($like) {
-                    $eqq->where('employerNameTh', 'like', $like)
-                        ->orWhere('employerNameEn', 'like', $like);
-                });
-            }
-        });
-
-    $employees = $employeeQuery
-        ->with('employer:id,employerNameTh,employerNameEn')
-        ->limit(10)
-        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
-
-    $results = [];
-    foreach ($employees as $emp) {
-        $results[] = [
-            // English name shown/searched first — this program uses the
-            // English name as primary; Thai name is the secondary line.
-            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-            // Raw name (no title prefix) — what actually gets typed into the
-            // box and submitted on selection, since the title prefix above
-            // is display-only and won't LIKE-match the employeeNameEn column.
-            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-            'sub_label' => trim(implode(' | ', array_filter([
-                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
-            ]))),
-            'photo' => $emp->photo_url,
-            'group' => __('ลูกจ้าง'),
-        ];
-    }
-
-    return response()->json($results);
-}
 
 /**
  * Live-search preview for box 1 of historyIndex() — same combined
@@ -565,73 +382,14 @@ public function previewHistorySearch(Request $request)
  */
 public function previewHistorySearchCombined(Request $request)
 {
-    $q = trim($request->input('q', ''));
-    if (mb_strlen($q) < 2) {
-        return response()->json([]);
+        $q = trim($request->input('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        // Same as the Employees menu, limited to notified-out employees (TwoStageSearch).
+        return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNotNull('terminated_at')));
     }
-    $like = "%{$q}%";
-    $results = [];
-
-    $employers = Employer::where(function ($eq) use ($like) {
-            $eq->where('employerNameTh', 'like', $like)
-               ->orWhere('employerNameEn', 'like', $like)
-               ->orWhere('name_suffix', 'like', $like)
-               ->orWhere('businessType', 'like', $like)
-               ->orWhere('employerId', 'like', $like)
-               ->orWhere('employerTaxId', 'like', $like)
-               ->orWhere('outsource_re_code', 'like', $like);
-        })
-        ->limit(5)
-        ->get(['id', 'employerNameTh', 'employerNameEn']);
-
-    foreach ($employers as $er) {
-        $results[] = [
-            'id' => $er->id,
-            'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
-            'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-            'group' => __('นายจ้าง'),
-        ];
-    }
-
-    $employees = Employee::whereNotNull('terminated_at')
-        ->where(function ($eq) use ($like) {
-            $eq->where('employeeNameTh', 'like', $like)
-               ->orWhere('employeeNameEn', 'like', $like)
-               ->orWhere('name_suffix', 'like', $like)
-               ->orWhere('employeePassport', 'like', $like)
-               ->orWhere('pinkCardNo', 'like', $like)
-               ->orWhere('employeeWorkPermit', 'like', $like)
-               ->orWhere('employee_id_number', 'like', $like)
-               ->orWhere('name_list_number', 'like', $like)
-               ->orWhere('request_number', 'like', $like)
-               ->orWhere('employer_employee_id', 'like', $like);
-        })
-        ->with('employer:id,employerNameTh,employerNameEn')
-        ->limit(5)
-        ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
-
-    foreach ($employees as $emp) {
-        $results[] = [
-            // English name shown/searched first — this program uses the
-            // English name as primary; Thai name is the secondary line.
-            'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-            // Raw name (no title prefix) — what actually gets typed into the
-            // box and submitted on selection, since the title prefix above
-            // is display-only and won't LIKE-match the employeeNameEn column.
-            'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-            'sub_label' => trim(implode(' | ', array_filter([
-                $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
-            ]))),
-            'photo' => $emp->photo_url,
-            'group' => __('ลูกจ้าง'),
-        ];
-    }
-
-    return response()->json($results);
-}
 
 public function create(Request $request) // เพิ่ม Request $request เข้ามา
 {
@@ -1564,38 +1322,20 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $employerAlreadyFiltered = $request->filled('employer_filter_id');
         if ($employerAlreadyFiltered) {
             $query->where('employer_id', $request->input('employer_filter_id'));
-        } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
-            $request->merge(['search' => $request->input('employer_filter_name')]);
         }
 
-        if ($request->filled('search')) {
-            $searchTerm = '%' . $request->input('search') . '%';
-            $query->where(function ($q) use ($searchTerm, $employerAlreadyFiltered) {
-                $q->where('employeeNameTh', 'like', $searchTerm)
-                  ->orWhere('employeeNameEn', 'like', $searchTerm)
-                  ->orWhere('name_suffix', 'like', $searchTerm)
-                  ->orWhere('employeePassport', 'like', $searchTerm)
-                  ->orWhere('pinkCardNo', 'like', $searchTerm)
-                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
-                  ->orWhere('employee_id_number', 'like', $searchTerm)
-                  ->orWhere('name_list_number', 'like', $searchTerm)
-              ->orWhere('request_number', 'like', $searchTerm)
-              ->orWhere('employer_employee_id', 'like', $searchTerm);
-                if (!$employerAlreadyFiltered) {
-                    $q->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
-                        $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                      ->orWhere('employerNameEn', 'like', $searchTerm)
-                                      ->orWhere('name_suffix', 'like', $searchTerm)
-                                      ->orWhere('employerId', 'like', $searchTerm)
-                                      ->orWhere('employerTaxId', 'like', $searchTerm)
-                                      ->orWhere('outsource_re_code', 'like', $searchTerm)
-                                      ->orWhere(function($addrQ) use ($searchTerm) {
-                                          $addrQ->filterByAddress($searchTerm);
-                                      });
-                    });
-                }
-            });
+
+        // Every term must match (TwoStageSearch): box 1's typed text (when it isn't a
+        // pick) and box 2's — an employee field, or (unless one employer is locked)
+        // the employer / job owner / address.
+        foreach (\App\Services\TwoStageSearch::terms($request) as $rawSearch) {
+            if (preg_match('/^ID:\s*(\d+)$/i', $rawSearch, $idMatch)) {
+                $query->where('id', (int) $idMatch[1]);
+                continue;
+            }
+            \App\Services\TwoStageSearch::whereEmployeeOrEmployer($query, $rawSearch, !$employerAlreadyFiltered);
         }
+        \App\Services\TwoStageSearch::applyEmployeePicks($query, $request);
 
         if ($request->filled('nationality')) {
             $query->where('employeeNationality', $request->input('nationality'));
@@ -1669,6 +1409,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $currentPerPage = $this->rememberedPerPage($request, 'employment_history', $perPageOptions, 100);
 
         $employees = $query->with('employer')->latest('terminated_at')->paginate($currentPerPage)->withQueryString();
+        Employee::preloadForCards($employees);
 
         return view('employees.history', compact(
             'employees',
@@ -2059,16 +1800,16 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 'employee_doc_8' => 'Hometown Document (เอกสารบ้านเกิด)',
             ],
              'Other Documents' => [
-                'employee_doc_9' => 'Document 1',
-                'employee_doc_10' => 'Document 2',
-                'employee_doc_11' => 'Document 3',
-                'employee_doc_12' => 'Document 4',
-                'employee_doc_13' => 'Document 5',
-                'employee_doc_14' => 'Document 6',
-                'employee_doc_15' => 'Document 7',
-                'employee_doc_16' => 'Document 8',
-                'employee_doc_17' => 'Document 9',
-                'employee_doc_18' => 'Document 10',
+                'employee_doc_9' => \App\Support\OtherDocumentNames::employee(1),
+                'employee_doc_10' => \App\Support\OtherDocumentNames::employee(2),
+                'employee_doc_11' => \App\Support\OtherDocumentNames::employee(3),
+                'employee_doc_12' => \App\Support\OtherDocumentNames::employee(4),
+                'employee_doc_13' => \App\Support\OtherDocumentNames::employee(5),
+                'employee_doc_14' => \App\Support\OtherDocumentNames::employee(6),
+                'employee_doc_15' => \App\Support\OtherDocumentNames::employee(7),
+                'employee_doc_16' => \App\Support\OtherDocumentNames::employee(8),
+                'employee_doc_17' => \App\Support\OtherDocumentNames::employee(9),
+                'employee_doc_18' => \App\Support\OtherDocumentNames::employee(10),
             ],
         ];
 
@@ -2189,16 +1930,16 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'ninetyDayReportDate' => '90-Day Report Date',
             'employee_doc_7' => 'Residence Notification (แจ้งที่พักอาศัย)',
             'employee_doc_8' => 'Hometown Document (เอกสารบ้านเกิด)',
-            'employee_doc_9' => 'Document 1',
-            'employee_doc_10' => 'Document 2',
-            'employee_doc_11' => 'Document 3',
-            'employee_doc_12' => 'Document 4',
-            'employee_doc_13' => 'Document 5',
-            'employee_doc_14' => 'Document 6',
-            'employee_doc_15' => 'Document 7',
-            'employee_doc_16' => 'Document 8',
-            'employee_doc_17' => 'Document 9',
-            'employee_doc_18' => 'Document 10',
+            'employee_doc_9' => \App\Support\OtherDocumentNames::employee(1),
+            'employee_doc_10' => \App\Support\OtherDocumentNames::employee(2),
+            'employee_doc_11' => \App\Support\OtherDocumentNames::employee(3),
+            'employee_doc_12' => \App\Support\OtherDocumentNames::employee(4),
+            'employee_doc_13' => \App\Support\OtherDocumentNames::employee(5),
+            'employee_doc_14' => \App\Support\OtherDocumentNames::employee(6),
+            'employee_doc_15' => \App\Support\OtherDocumentNames::employee(7),
+            'employee_doc_16' => \App\Support\OtherDocumentNames::employee(8),
+            'employee_doc_17' => \App\Support\OtherDocumentNames::employee(9),
+            'employee_doc_18' => \App\Support\OtherDocumentNames::employee(10),
         ];
 
         return view('employees.bulk_edit_form', compact('employees', 'selectedFields', 'fileFields', 'dateFields', 'options', 'fieldLabels', 'redirectTo'));

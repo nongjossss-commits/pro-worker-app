@@ -118,6 +118,13 @@
         flex: 1 1 auto; min-width: 0; margin: 0; cursor: pointer;
         font-weight: 600; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    /* Renamable "Other Document" slot: the title is the document's name; pencil → edit in place. */
+    .att-title-editable { display: flex; align-items: center; }
+    .att-title-editable .att-title-text { min-width: 0; margin: 0; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .att-title-editable .att-title-input { font-weight: 600; padding: .1rem .4rem; height: auto; }
+    .att-rename { flex: none; padding: .05rem .3rem; font-size: .8rem; line-height: 1; color: var(--bs-secondary-color); border: 0; background: transparent; }
+    .att-rename:hover { color: var(--bs-primary); }
+    .att-card.is-renaming .att-rename { display: none; }
     .att-status { flex: none; font-size: .68rem; font-weight: 600; padding: .12rem .45rem; border-radius: 1rem; white-space: nowrap; }
     .att-status.ok { background: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
     .att-status.none { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
@@ -219,6 +226,45 @@
         .rec-expiry { font-size: .72rem; padding: .25rem .45rem; flex-wrap: wrap; gap: .15rem .3rem; border-radius: .6rem; }
         .rec-expiry small { flex-basis: 100%; }
         .rec-tab { padding: .55rem .7rem; font-size: .92rem; }
+    }
+
+    /* ── Smart field layout (employee edit / create: .rec-fields) ──
+       A grid of small fixed columns (5.5rem): every field spans a fixed number
+       of them by what goes in it — tiny 1 (age, height…) · short 2 (dates,
+       titles, gender) · normal 3 (numbers, codes) · long 4 (names,
+       descriptions). The grid fits as many columns as the screen holds and
+       fields keep their order, each one continuing on the same row while it
+       fits — wide screens / zooming out show more per row and nothing is ever
+       stretched; zooming in / narrow screens wrap to fewer. The photo is pinned to the top right of
+       the personal section and fields flow around it. */
+    .row.rec-fields {
+        display: grid; grid-template-columns: repeat(auto-fill, 5.5rem); grid-auto-flow: row;
+        column-gap: .9rem; margin-left: 0; margin-right: 0;
+    }
+    .row.rec-fields > * { grid-column: span 3; width: auto; max-width: none; padding-left: 0; padding-right: 0; margin-top: 0; }
+    /* labels that wrap to 2 lines don't push their box down: boxes line up at the bottom */
+    .row.rec-fields > [class*="col-"]:not(.d-none):not(.rf-photo) { display: flex; flex-direction: column; justify-content: flex-end; }
+    .row.rec-fields > :has(input[type="date"], input.flatpickr-input) { grid-column: span 2; }
+    .row.rec-fields > :has(#edit_employeeAge, #employeeAge, #edit_height, #height, #edit_weight, #weight) { grid-column: span 1; }
+    .row.rec-fields > :has(#edit_employeeTitleTh, #employeeTitleTh, #edit_employeeTitleEn, #employeeTitleEn, #edit_employeeGender, #employeeGender, #edit_passportType, #passportType, #edit_passport_type_cambodia, #passport_type_cambodia) { grid-column: span 2; }
+    .row.rec-fields > :has(#edit_employeeNameTh, #employeeNameTh, #edit_employeeNameEn, #employeeNameEn, #edit_name_suffix, #name_suffix, #edit_father_name, #father_name, #edit_mother_name, #mother_name, #edit_job_description, #job_description, #edit_workPermitMOUGroup, #workPermitType, #edit_workPermitMOUGroupOther, #workPermitMOUGroupOther, #edit_employeeEmail, #employeeEmail, #edit_insurance_detail_hospital, #insurance_detail_hospital, #edit_insurance_detail_private, #insurance_detail_private, #edit_medical_hospital_name, #medical_hospital_name, #edit_bank_name, #bank_name) { grid-column: span 4; }
+    .row.rec-fields > :has(#edit_workAge, #workAge) { grid-column: span 2; }   /* "20 ปี 4 วัน" */
+    .row.rec-fields > :has(.att-card) { grid-column: span 4; }                /* attachment cards (insurance) */
+    .row.rec-fields > .rf-photo { grid-column: -4 / -1; grid-row: 1 / span 5; align-self: start; justify-content: flex-start !important; padding-top: .25rem; }
+    .row.rec-fields > .d-none { display: none !important; }
+    /* Personal tab: the photo floats top-right and every section (headings, lines,
+       field grids) flows beside it, narrowed only while next to it — no empty band
+       under section 1. */
+    .rec-tab-pane > .rf-photo-float { float: right; width: 15rem; max-width: 40%; margin: 0 0 1rem 1.5rem; }
+    .rec-tab-pane:has(> .rf-photo-float) > h5,
+    .rec-tab-pane:has(> .rf-photo-float) > hr { display: flow-root; overflow: hidden; }
+    .rec-tab-pane.active:has(> .rf-photo-float) { display: flow-root; }
+    @media (max-width: 575.98px) {
+        .rec-tab-pane > .rf-photo-float { float: none; width: auto; max-width: none; margin: 0 0 1rem; }
+    }
+    @media (max-width: 575.98px) {
+        .row.rec-fields { grid-template-columns: 1fr; }
+        .row.rec-fields > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
     }
 </style>
 @endif
@@ -379,6 +425,36 @@
         const names = box.querySelector('.att-pending-names');
         if (names) names.textContent = files.map(function (f) { return f.name; }).join(', ');
     }
+    // Rename an "Other Document" slot in place (components/file-input-group, card + description).
+    // The input is the same description field as before, so Save stores it as usual.
+    function attRenameOpen(card) {
+        const wrap = card.querySelector('[data-att-title]');
+        if (!wrap) return;
+        const text = wrap.querySelector('[data-att-title-text]'), input = wrap.querySelector('[data-att-title-input]');
+        input.dataset.before = input.value;
+        text.hidden = true; input.hidden = false; card.classList.add('is-renaming');
+        input.focus(); input.select();
+    }
+    function attRenameClose(input, keep) {
+        const card = input.closest('[data-att-card]'), text = card.querySelector('[data-att-title-text]');
+        if (!keep) input.value = input.dataset.before || '';
+        const shown = input.value.trim() || text.dataset.default;
+        text.textContent = shown; text.title = shown;
+        input.hidden = true; text.hidden = false; card.classList.remove('is-renaming');
+    }
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest && e.target.closest('[data-att-rename]');
+        if (btn) { e.preventDefault(); attRenameOpen(btn.closest('[data-att-card]')); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (!e.target.matches || !e.target.matches('[data-att-title-input]')) return;
+        if (e.key === 'Enter') { e.preventDefault(); attRenameClose(e.target, true); }
+        else if (e.key === 'Escape') { e.preventDefault(); attRenameClose(e.target, false); }
+    });
+    document.addEventListener('focusout', function (e) {
+        if (e.target.matches && e.target.matches('[data-att-title-input]') && !e.target.hidden) attRenameClose(e.target, true);
+    });
+
     document.addEventListener('change', function (e) {
         if (e.target.matches && e.target.matches('[data-att-card] input[type="file"]')) showPending(e.target);
     });

@@ -14,6 +14,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
     <li><strong>Search box</strong> — type part of an employee or employer name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
+    <li><strong>Two search boxes</strong> — box 1 takes an employee (name / passport / any number), an employer or a job owner; pick from the list: an employee = only that person, an employer = only that employer, a job owner = every employer under them (typing and pressing Enter searches the typed text) · box 2 opens once box 1 has a value and narrows box 1's result further, with the same kinds of text</li>
     <li><strong>Filter bar</strong> at the top — search, filter by nationality/MOU type/pink card/passport type</li>
     <li><strong>Top-right corner</strong> — Export CSV button, view toggle (card/table) · choose 25 / 50 / 100 per page with the buttons on the right — the last choice is remembered in that browser (it stays after refreshing or reopening; each menu remembers its own; first time = 100) · the detail lines on the cards follow the Super Admin setting ("Employee Card Details" tab)</li>
     <li><strong>Employee list</strong> — shows everyone, both active and inactive (including terminated/contract-ended)</li>

@@ -39,7 +39,10 @@ class EmployerController extends Controller
     {
         $query = Employer::with(['jobOwner', 'caretakers', 'addresses'])->latest();
 
-        if ($request->filled('search')) {
+        // Picked job owner from the search suggestions → every employer under them.
+        if ($request->filled('job_owner_pick_id')) {
+            $query->where('job_owner_id', (int) $request->input('job_owner_pick_id'));
+        } elseif ($request->filled('search')) {
             $rawSearch = trim($request->input('search'));
 
             // Support ID:123 format for direct employer ID lookup
@@ -98,7 +101,10 @@ class EmployerController extends Controller
                    ->orWhere('name_suffix', 'like', $like)
                    ->orWhere('businessType', 'like', $like)
                    ->orWhere('employerId', 'like', $like)
-                   ->orWhere('employerTaxId', 'like', $like);
+                   ->orWhere('employerTaxId', 'like', $like)
+                   // same as index(): job owner / caretaker names find the employer too
+                   ->orWhereHas('jobOwner', fn ($o) => $o->where('name', 'like', $like))
+                   ->orWhereHas('caretakers', fn ($c) => $c->where('name', 'like', $like));
             })
             ->limit(10)
             ->get(['id', 'employerNameTh', 'employerNameEn']);
@@ -112,6 +118,9 @@ class EmployerController extends Controller
                 'group' => __('นายจ้าง'),
             ];
         }
+
+        // Job owners as their own rows — picking one lists every employer under them.
+        array_push($results, ...\App\Services\TwoStageSearch::jobOwnerSuggestions($q, 3));
 
         return response()->json($results);
     }
@@ -326,6 +335,7 @@ class EmployerController extends Controller
         $perPageOptions = [25, 50, 100];
         $currentPerPage = $this->rememberedPerPage($request, 'employer_employees', $perPageOptions, 100);
         $employees = $employeeQuery->paginate($currentPerPage)->withQueryString();
+        Employee::preloadForCards($employees); // work-status badges + last-edited label for the whole page at once
         $currentView = $request->input('view', 'card');
         $terminatedEmployees = $employer->employees()->whereNotNull('terminated_at')->get();
 

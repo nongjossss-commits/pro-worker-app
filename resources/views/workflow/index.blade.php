@@ -210,11 +210,12 @@
                 <input type="hidden" name="tab" value="{{ $activeTab->slug }}">
             @endif
             <x-live-search-filter
+                pick-field="employee_pick_id,job_owner_pick_id"
                 endpoint="{{ route('workflow.preview_search', ['tab' => $activeTab->slug ?? null]) }}"
                 name="employer_filter_name"
                 id-target="employer_filter_id"
                 id-value="{{ request('employer_filter_id') }}"
-                placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                placeholder="{{ __('Search employee, employer or job owner (name, ID, passport...)') }}"
                 value="{{ request('employer_filter_name') }}"
                 class="form-control form-control-lg bg-white shadow-sm"
                 style="max-width: 340px;"
@@ -224,10 +225,10 @@
                 <x-live-search-filter
                     endpoint="{{ route('workflow.preview_search', ['tab' => $activeTab->slug ?? null]) }}"
                     name="search"
-                    placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                    placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : (request('employer_filter_name') ? __('Narrow these results (employee, employer, job owner...)') : __('Pick an employer above to narrow further')) }}"
                     value="{{ request('search') }}"
                     class="form-control bg-white border-start-0 shadow-sm"
-                    :disabled="!request('employer_filter_id')"
+                    :disabled="!request('employer_filter_id') && !request('employer_filter_name')"
                 />
                 <button class="btn btn-primary shadow-sm" type="submit">{{ __('Search') }}</button>
                 @if(request('search') || request('employer_filter_id'))

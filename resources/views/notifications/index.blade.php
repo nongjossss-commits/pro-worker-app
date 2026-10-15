@@ -33,11 +33,12 @@
                 <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-3">
                         <x-live-search-filter
+                            pick-field="employee_pick_id,job_owner_pick_id"
                             endpoint="{{ route('notifications.preview_search_combined') }}"
                             name="employer_filter_name"
                             id-target="employer_filter_id"
                             id-value="{{ request('employer_filter_id') }}"
-                            placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                            placeholder="{{ __('Search employee, employer or job owner (name, ID, passport...)') }}"
                             value="{{ request('employer_filter_name') }}"
                             class="form-control form-control-sm"
                         />
@@ -46,10 +47,10 @@
                         <x-live-search-filter
                             endpoint="{{ route('notifications.preview_search') }}"
                             name="search"
-                            placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                            placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : (request('employer_filter_name') ? __('Narrow these results (employee, employer, job owner...)') : __('Pick an employer above to narrow further')) }}"
                             value="{{ request('search') }}"
                             class="form-control form-control-sm"
-                            :disabled="!request('employer_filter_id')"
+                            :disabled="!request('employer_filter_id') && !request('employer_filter_name')"
                         />
                     </div>
                     <div class="col-6 col-md-2">

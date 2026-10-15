@@ -186,6 +186,8 @@ class NotificationController extends Controller
                     ]))),
                     'photo' => $emp->photo_url,
                     'group' => __('ลูกจ้าง'),
+                    // Exact pick: show this one employee, not everyone with the same name.
+                    'pick' => ['employee_pick_id' => $emp->id],
                 ];
             }
         }
@@ -229,6 +231,9 @@ class NotificationController extends Controller
             ];
         }
 
+        // Job owners too — picking one shows every employer under them (TwoStageSearch).
+        array_push($results, ...\App\Services\TwoStageSearch::jobOwnerSuggestions($q, 3));
+
         $type = $request->input('active_tab', 'ninety_day_report');
         if ($type !== 'employer_document_expiry') {
             $previewRequest = Request::create('', 'GET', ['search' => $q] + $request->except(['q', 'active_tab']));
@@ -249,6 +254,8 @@ class NotificationController extends Controller
                     ]))),
                     'photo' => $emp->photo_url,
                     'group' => __('ลูกจ้าง'),
+                    // Exact pick: show this one employee, not everyone with the same name.
+                    'pick' => ['employee_pick_id' => $emp->id],
                 ];
             }
         }
@@ -270,11 +277,6 @@ class NotificationController extends Controller
         // Two-stage filter — box 1 locks one exact employer; box 2's free-text
         // search (below) then only needs to match the employee's own fields.
         $employerFilterId = $request->input('employer_filter_id');
-        if (!$employerFilterId && $request->filled('employer_filter_name') && !$request->filled('search')) {
-            // Box 1 hasn't locked onto one exact employer yet — let its
-            // typed text search with the same full power as box 2 below.
-            $request->merge(['search' => $request->input('employer_filter_name')]);
-        }
         if ($employerFilterId) {
             if ($type === 'employer_document_expiry') {
                 $query->where('employer_id', $employerFilterId);
@@ -282,6 +284,20 @@ class NotificationController extends Controller
                 $query->whereHas('employee', function ($q) use ($employerFilterId) {
                     $q->where('employer_id', $employerFilterId);
                 });
+            }
+        }
+
+        // Exact pick from a search suggestion — that one employee's notifications
+        // only / every employer under the picked job owner.
+        if ($request->filled('employee_pick_id') && $type !== 'employer_document_expiry') {
+            $query->where('employee_id', (int) $request->input('employee_pick_id'));
+        }
+        if ($request->filled('job_owner_pick_id')) {
+            $ownerId = (int) $request->input('job_owner_pick_id');
+            if ($type === 'employer_document_expiry') {
+                $query->whereHas('employer', fn ($e) => $e->where('job_owner_id', $ownerId));
+            } else {
+                $query->whereHas('employee.employer', fn ($e) => $e->where('job_owner_id', $ownerId));
             }
         }
 
@@ -316,8 +332,8 @@ class NotificationController extends Controller
         }
 
         // --- NEW: Enhanced Search Logic ---
-        if ($request->filled('search')) {
-            $search = $request->input('search');
+        // Every term must match: box 1's typed text (when it isn't a pick) and box 2's.
+        foreach (\App\Services\TwoStageSearch::terms($request) as $search) {
             $query->where(function ($q) use ($search, $type, $employerFilterId) {
                 if ($type === 'employer_document_expiry') {
                     $q->whereHas('employer', function ($q_employer) use ($search) {
@@ -394,6 +410,7 @@ class NotificationController extends Controller
                                            ->orWhere('employerId', 'like', "%{$search}%")
                                            ->orWhere('employerTaxId', 'like', "%{$search}%")
                                            ->orWhere('outsource_re_code', 'like', "%{$search}%")
+                                           ->orWhereHas('jobOwner', fn ($o) => $o->where('name', 'like', "%{$search}%"))
                                            ->orWhere(function($addrQ) use ($search) {
                                                $addrQ->filterByAddress($search);
                                            });
@@ -485,12 +502,12 @@ class NotificationController extends Controller
         }
 
         // Same filters as the notification list.
+        \App\Services\TwoStageSearch::applyEmployeePicks($employees, $request);
         $employerFilterId = $request->input('employer_filter_id');
         if ($employerFilterId) {
             $employees->where('employer_id', $employerFilterId);
         }
-        if ($request->filled('search')) {
-            $search = $request->input('search');
+        foreach (\App\Services\TwoStageSearch::terms($request) as $search) {
             $employees->where(fn ($q) => $this->applyEmployeeSearch($q, $search, $employerFilterId));
         }
         if ($request->filled('nationality')) {

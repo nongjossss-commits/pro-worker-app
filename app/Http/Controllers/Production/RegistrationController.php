@@ -115,15 +115,12 @@ class RegistrationController extends Controller
         $employerFilterId = $request->input('employer_filter_id');
         if ($employerFilterId) {
             $statsQuery->where('employer_id', $employerFilterId);
-        } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
-            // Box 1 hasn't locked onto one exact employer yet — let its
-            // typed text search with the same full power as box 2 below.
-            $request->merge(['search' => $request->input('employer_filter_name')]);
         }
 
-        if ($request->has('search') && $request->search) {
-            $this->applySearchToQuery($statsQuery, $request->search);
+        foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+            $this->applySearchToQuery($statsQuery, $searchTerm);
         }
+        \App\Services\TwoStageSearch::applyEmployeePicks($statsQuery, $request);
 
         // Apply operator filter if present
         if ($request->has('operator_filter') && $request->operator_filter) {
@@ -245,9 +242,10 @@ class RegistrationController extends Controller
         }
 
         // Apply Search to Employer Query
-        if ($request->has('search') && $request->search) {
-            $this->applyEmployerLevelSearch($employerQuery, $request->search);
+        foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+            $this->applyEmployerLevelSearch($employerQuery, $searchTerm);
         }
+        \App\Services\TwoStageSearch::applyEmployerPicks($employerQuery, $request);
 
         // Apply Address Filters
         $addressOptions = $this->getAddressOptions($employerQuery);
@@ -372,9 +370,10 @@ class RegistrationController extends Controller
         if (auth()->user()->can('manage-tickets')) {
             $cancelledEmployersQuery->withoutGlobalScope('employerTenancy');
         }
-        if ($request->has('search') && $request->search) {
-            $this->applyEmployerLevelSearch($cancelledEmployersQuery, $request->search);
+        foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+            $this->applyEmployerLevelSearch($cancelledEmployersQuery, $searchTerm);
         }
+        \App\Services\TwoStageSearch::applyEmployerPicks($cancelledEmployersQuery, $request);
         $cancelledEmployersCount = $cancelledEmployersQuery->count();
 
         // Active Operators for Filter
@@ -503,54 +502,11 @@ class RegistrationController extends Controller
             return response()->json([]);
         }
 
-        $results = [];
+        // Box 1: employers / job owners / employees; box 2: employees inside box 1's
+        // result (App\Services\TwoStageSearch). Employees = this resolution tab's.
         $tabId = $this->currentTab->id;
-        $employerFilterId = $request->input('employer_filter_id');
-
-        if (!$employerFilterId) {
-            // No existence pre-filter on purpose — box 1 must find an
-            // employer by name/number/RE code even with zero employees in
-            // this tab; applyEmployerLevelSearch()'s own nested employee
-            // match stays scoped to this tab internally.
-            $employerQuery = Employer::query();
-            $this->applyEmployerLevelSearch($employerQuery, $q);
-            $employers = $employerQuery->limit(5)->get(['id', 'employerNameTh', 'employerNameEn']);
-
-            foreach ($employers as $er) {
-                $results[] = [
-                    'id' => $er->id,
-                    'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
-                    'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                    'group' => __('นายจ้าง'),
-                ];
-            }
-        }
-
-        $employeeQuery = Employee::where('resolution_tab_id', $tabId)
-            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
-            ->with('employer:id,employerNameTh,employerNameEn');
-        if ($employerFilterId) {
-            $employeeQuery->where('employer_id', $employerFilterId);
-        }
-        $this->applySearchToQuery($employeeQuery, $q);
-        $employees = $employeeQuery->limit(8)->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employer_id']);
-
-        foreach ($employees as $emp) {
-            $results[] = [
-                'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-                'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-                'sub_label' => trim(implode(' | ', array_filter([
-                    $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                    $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                    $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                    $emp->employeeWorkPermit ? "WP: {$emp->employeeWorkPermit}" : null,
-                ]))),
-                'photo' => $emp->photo_url,
-                'group' => __('ลูกจ้าง'),
-            ];
-        }
-
-        return response()->json(array_slice($results, 0, 10));
+        return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::where('resolution_tab_id', $tabId)
+            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])));
     }
 
     /**
@@ -926,26 +882,8 @@ class RegistrationController extends Controller
                 }
             }
 
-            if (!$employerMatches && $search) {
-                // Filter employees by name/passport
-                 $trimmedSearch = trim($search);
-                 $cleanedSearch = str_replace(' ', '', $trimmedSearch);
-                 $query->where(function($q) use ($trimmedSearch, $cleanedSearch) {
-                        $q->where('employeeNameTh', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('employeeNameEn', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('name_suffix', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('employeePassport', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('employeeWorkPermit', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('employee_id_number', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('name_list_number', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('pinkCardNo', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('request_number', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('registration_request_number', 'like', "%{$trimmedSearch}%")
-                               ->orWhere('employer_employee_id', 'like', "%{$trimmedSearch}%")
-                               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
-                               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
-                 });
-            }
+            // Same two-stage rule as the employer card's list (box 1 + box 2 + picks).
+            \App\Services\TwoStageSearch::applyInsideEmployer($query, $employer->id, $request);
 
             // Fetch necessary columns efficiently
             // We include biometrics fields
@@ -1112,8 +1050,11 @@ class RegistrationController extends Controller
             ->with(['registrationSteps', 'customFields']); // Load everything needed for the card
 
         // Apply Search (if global search is active)
-        if ($request->has('search') && $request->search) {
-            $this->applyEmployerSearchToQuery($query, $employer, $request->search);
+        foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+            $this->applyEmployerSearchToQuery($query, $employer, $searchTerm);
+        }
+        if ($request->filled('employee_pick_id')) {
+            $query->where('id', (int) $request->input('employee_pick_id'));
         }
 
         // Operator Filter
@@ -1270,8 +1211,11 @@ class RegistrationController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        if ($request->has('search') && $request->search) {
-            $this->applyEmployerSearchToQuery($query, $employer, $request->search);
+        foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+            $this->applyEmployerSearchToQuery($query, $employer, $searchTerm);
+        }
+        if ($request->filled('employee_pick_id')) {
+            $query->where('id', (int) $request->input('employee_pick_id'));
         }
 
         if ($request->has('operator_filter') && $request->operator_filter) {
@@ -2020,9 +1964,10 @@ class RegistrationController extends Controller
             }
             $allQuery->whereNull('deleted_at')->where('resolution_tab_id', $this->currentTab->id);
 
-            if ($request->has('search') && $request->search) {
-                $this->applySearchToQuery($allQuery, $request->search);
+            foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+                $this->applySearchToQuery($allQuery, $searchTerm);
             }
+            \App\Services\TwoStageSearch::applyEmployeePicks($allQuery, $request);
 
             $allEmployees = $allQuery
                                     ->with('registrationSteps')
@@ -2057,9 +2002,10 @@ class RegistrationController extends Controller
                 $globalQuery->withoutGlobalScope('employerTenancy');
             }
             $globalQuery->whereNull('deleted_at');
-            if ($request->has('search') && $request->search) {
-                $this->applySearchToQuery($globalQuery, $request->search);
+            foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+                $this->applySearchToQuery($globalQuery, $searchTerm);
             }
+            \App\Services\TwoStageSearch::applyEmployeePicks($globalQuery, $request);
             $activeStatuses = ['registration_pending', 'registration_completed'];
 
             // NOTE: intentionally not scoped to $this->currentTab->id here —
@@ -2092,7 +2038,7 @@ class RegistrationController extends Controller
                                         ->where('resolution_tab_id', $this->currentTab->id)
                                         ->with('registrationSteps');
 
-            if ($request->has('search') && $request->search) {
+            if ((\App\Services\TwoStageSearch::terms($request) || $request->filled('employee_pick_id'))) {
                  $employer = $employee->employer;
                  // If the employee relation is not loaded or null, fetch it
                  if (!$employer) {
@@ -2103,7 +2049,8 @@ class RegistrationController extends Controller
                      $employer = $employerQuery->find($employee->employer_id);
                  }
                  if ($employer) {
-                     $this->applyEmployerSearchToQuery($employerEmployeesQuery, $employer, $request->search);
+                     foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) { $this->applyEmployerSearchToQuery($employerEmployeesQuery, $employer, $searchTerm); }
+                     if ($request->filled('employee_pick_id')) { $employerEmployeesQuery->where('id', (int) $request->input('employee_pick_id')); }
                  }
             }
 
@@ -2417,8 +2364,11 @@ class RegistrationController extends Controller
             $globalQuery->withoutGlobalScope('employerTenancy');
         }
 
-        if ($request && $request->has('search') && $request->search) {
-            $this->applySearchToQuery($globalQuery, $request->search);
+        if ($request) {
+            foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
+                $this->applySearchToQuery($globalQuery, $searchTerm);
+            }
+            \App\Services\TwoStageSearch::applyEmployeePicks($globalQuery, $request);
         }
 
         // 1. Total Employees (Active)
@@ -2489,14 +2439,15 @@ class RegistrationController extends Controller
             // tab this employer has ever had employees in.
             $empQuery->where('employer_id', $employerId)->where('resolution_tab_id', $this->currentTab->id);
 
-            if ($request && $request->has('search') && $request->search) {
+            if ($request && (\App\Services\TwoStageSearch::terms($request) || $request->filled('employee_pick_id'))) {
                  $employerQuery = Employer::query();
                  if (auth()->user()->can('manage-tickets')) {
                      $employerQuery->withoutGlobalScope('employerTenancy');
                  }
                  $employer = $employerQuery->find($employerId);
                  if ($employer) {
-                     $this->applyEmployerSearchToQuery($empQuery, $employer, $request->search);
+                     foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) { $this->applyEmployerSearchToQuery($empQuery, $employer, $searchTerm); }
+                     if ($request->filled('employee_pick_id')) { $empQuery->where('id', (int) $request->input('employee_pick_id')); }
                  }
             }
 

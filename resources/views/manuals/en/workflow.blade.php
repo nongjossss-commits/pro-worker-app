@@ -18,6 +18,7 @@
 <ol>
     <li><strong>Step bar</strong> at the top — shows each Step a job must pass through + the number of jobs in each Step</li>
     <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
+    <li><strong>Two search boxes</strong> — box 1 takes an employee (name / passport / any number), an employer or a job owner; pick from the list: an employee = only that person, an employer = only that employer, a job owner = every employer under them (typing and pressing Enter searches the typed text) · box 2 opens once box 1 has a value and narrows box 1's result further, with the same kinds of text · inside an employer card, a term that matches the employer / job owner shows all of its employees; a term that matches an employee shows only the matching ones</li>
     <li><strong>Filter bar</strong> — filter by step, employer, job type</li>
     <li><strong>Job cards</strong> — shows all jobs currently in the selected step</li>
     <li><strong>"Auto-apply MOU" button</strong> — for MOU renewal jobs the system handles automatically</li>

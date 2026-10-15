@@ -376,11 +376,12 @@
 
                 <form action="{{ route('production.renewal.operations', ['resolutionTab' => $currentTab->id]) }}" method="GET" class="d-flex flex-grow-1 w-100 gap-2 flex-wrap" style="max-width: 820px;">
                     <x-live-search-filter
+                        pick-field="employee_pick_id,job_owner_pick_id"
                         endpoint="{{ route('production.renewal.preview_search', ['resolutionTab' => $currentTab->id]) }}"
                         name="employer_filter_name"
                         id-target="employer_filter_id"
                         id-value="{{ request('employer_filter_id') }}"
-                        placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                        placeholder="{{ __('Search employee, employer or job owner (name, ID, passport...)') }}"
                         value="{{ request('employer_filter_name') }}"
                         class="form-control bg-light"
                         style="max-width: 340px;"
@@ -390,10 +391,10 @@
                         <x-live-search-filter
                             endpoint="{{ route('production.renewal.preview_search', ['resolutionTab' => $currentTab->id]) }}"
                             name="search"
-                            placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                            placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : (request('employer_filter_name') ? __('Narrow these results (employee, employer, job owner...)') : __('Pick an employer above to narrow further')) }}"
                             value="{{ request('search') }}"
                             class="form-control bg-light border-start-0"
-                            :disabled="!request('employer_filter_id')"
+                            :disabled="!request('employer_filter_id') && !request('employer_filter_name')"
                         />
                         <button class="btn btn-primary" type="submit">{{ __('Search') }}</button>
                         @if(request('search') || request('employer_filter_id'))
@@ -1659,7 +1660,12 @@
             },
             body: JSON.stringify({
                 employer_ids: employerIds,
-                search: search
+                search: search,
+                // two-stage search: box 1 text / picks (TwoStageSearch)
+                employer_filter_name: urlParams.get('employer_filter_name'),
+                employer_filter_id: urlParams.get('employer_filter_id'),
+                employee_pick_id: urlParams.get('employee_pick_id'),
+                job_owner_pick_id: urlParams.get('job_owner_pick_id')
             })
         })
         .then(res => res.json())

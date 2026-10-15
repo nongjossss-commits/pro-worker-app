@@ -1530,5 +1530,14 @@
     "Filter by work permit and visa expiry date": "အလုပ်လုပ်ခွင့်နှင့် ဗီဇာ သက်တမ်းကုန်ရက်ဖြင့် စစ်ထုတ်ရန်",
     "Missing :n fields": ":n ခု မပြည့်စုံ",
     "Not alerted yet": "အသိပေးချိန် မရောက်သေး",
-    "Shows everyone whose date falls in this month, including those not alerted yet": "ဤလအတွင်း ရက်စွဲကျရောက်သူ အားလုံးကို ပြသည် (အသိပေးချိန် မရောက်သေးသူများ အပါအဝင်)"
+    "Shows everyone whose date falls in this month, including those not alerted yet": "ဤလအတွင်း ရက်စွဲကျရောက်သူ အားလုံးကို ပြသည် (အသိပေးချိန် မရောက်သေးသူများ အပါအဝင်)",
+    "Search employee, employer or job owner (name, ID, passport...)": "ဝန်ထမ်း၊ အလုပ်ရှင် သို့မဟုတ် အလုပ်ပိုင်ရှင် ရှာရန် (အမည်၊ ID၊ passport...)",
+    "Narrow these results (employee, employer, job owner...)": "ဤရလဒ်အတွင်း ထပ်ရှာရန် (ဝန်ထမ်း/အလုပ်ရှင်/ပိုင်ရှင်...)",
+    ":n employers": "အလုပ်ရှင် :n ဦး",
+    "Employment": "အလုပ်အကိုင်",
+    "Contact & Login": "ဆက်သွယ်ရန်နှင့် ဝင်ရောက်ခြင်း",
+    "Other Document :n": "အခြားစာရွက်စာတမ်း :n",
+    "Rename document": "စာရွက်စာတမ်း အမည်ပြောင်းရန်",
+    "Passport, Visa & Work Permit": "Passport၊ ဗီဇာ နှင့် အလုပ်လုပ်ခွင့်",
+    "Employment & Insurance": "အလုပ်အကိုင် နှင့် အာမခံ"
 }

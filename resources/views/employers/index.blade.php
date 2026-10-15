@@ -21,6 +21,7 @@
                     <option value="100" @selected(request('per_page') == 100)>100</option>
                 </select>
                 <x-live-search-filter
+                    pick-field="job_owner_pick_id"
                     endpoint="{{ route('employers.preview_search') }}"
                     name="search"
                     placeholder="{{ __('Search') }}..."

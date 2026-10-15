@@ -1530,5 +1530,14 @@
     "Filter by work permit and visa expiry date": "按工作许可和签证到期日筛选",
     "Missing :n fields": "缺少 :n 项",
     "Not alerted yet": "尚未到提醒时间",
-    "Shows everyone whose date falls in this month, including those not alerted yet": "显示日期在本月的所有人，包括尚未到提醒时间的"
+    "Shows everyone whose date falls in this month, including those not alerted yet": "显示日期在本月的所有人，包括尚未到提醒时间的",
+    "Search employee, employer or job owner (name, ID, passport...)": "搜索雇员、雇主或项目负责人(姓名、编号、护照...)",
+    "Narrow these results (employee, employer, job owner...)": "在这些结果中进一步筛选(雇员/雇主/负责人...)",
+    ":n employers": ":n 个雇主",
+    "Employment": "雇佣",
+    "Contact & Login": "联系方式与登录",
+    "Other Document :n": "其他文件 :n",
+    "Rename document": "重命名文件",
+    "Passport, Visa & Work Permit": "护照、签证与工作许可",
+    "Employment & Insurance": "雇佣与保险"
 }

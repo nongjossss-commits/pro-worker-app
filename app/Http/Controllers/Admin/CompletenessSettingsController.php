@@ -89,10 +89,10 @@ class CompletenessSettingsController extends Controller
                 'employee_doc_6' => '6. รายงานตัว 90 วัน / 90 Day Report',
                 'employee_doc_7' => '7. ใบแจ้งที่พักอาศัย / Residence Notification',
                 'employee_doc_8' => '8. เอกสารบ้านเกิด / Home Country Doc',
-                'employee_doc_9' => '9. เอกสารอื่นๆ 1 / Other 1',
-                'employee_doc_10' => '10. เอกสารอื่นๆ 2 / Other 2',
-                'employee_doc_11' => '11. เอกสารอื่นๆ 3 / Other 3',
-                'employee_doc_12' => '12. เอกสารอื่นๆ 4 / Other 4',
+                'employee_doc_9' => '9. ' . \App\Support\OtherDocumentNames::employee(1),
+                'employee_doc_10' => '10. ' . \App\Support\OtherDocumentNames::employee(2),
+                'employee_doc_11' => '11. ' . \App\Support\OtherDocumentNames::employee(3),
+                'employee_doc_12' => '12. ' . \App\Support\OtherDocumentNames::employee(4),
             ],
         ];
 

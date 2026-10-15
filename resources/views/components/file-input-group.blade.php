@@ -31,9 +31,22 @@
 <div class="att-card {{ $value ? 'has-file' : '' }}" data-att-card>
     <div class="att-card-head">
         @if($number !== null)<span class="att-num">{{ $number }}</span>@endif
+        @if($description)
+            {{-- Renamable slot ("Other Document N"): the title IS the document name.
+                 Pencil → type a new name; it is saved in the same description field as before. --}}
+            @php $titleValue = trim((string) old($description, $descriptionValue ?? '')); @endphp
+            <span class="att-title att-title-editable" data-att-title>
+                <label for="{{ $id }}" class="att-title-text" data-att-title-text data-default="{{ strip_tags($label ?? '') }}" title="{{ $titleValue !== '' ? $titleValue : strip_tags($label ?? '') }}">{{ $titleValue !== '' ? $titleValue : strip_tags($label ?? '') }}</label>
+                <input type="text" class="form-control form-control-sm att-title-input @error($description) is-invalid @enderror" hidden
+                       id="{{ $description }}" name="{{ $description }}" value="{{ $titleValue }}" maxlength="255"
+                       placeholder="{{ strip_tags($label ?? '') }}" data-att-title-input>
+            </span>
+            <button type="button" class="btn att-rename" data-att-rename title="{{ __('Rename document') }}"><i class="bi bi-pencil"></i></button>
+        @else
         <label for="{{ $id }}" class="att-title" title="{{ strip_tags($label ?? '') }}">
             {!! $label !!} @if($required)<span class="text-danger">*</span>@endif
         </label>
+        @endif
         @if($value)
             <span class="att-status ok"><i class="bi bi-check-circle-fill"></i> {{ __('Attached') }}</span>
         @else
@@ -93,14 +106,8 @@
     @enderror
 
     @if($description)
-        <input type="text"
-               class="form-control form-control-sm att-desc @error($description) is-invalid @enderror"
-               id="{{ $description }}"
-               name="{{ $description }}"
-               value="{{ old($description, $descriptionValue ?? '') }}"
-               placeholder="{{ __('Specify description...') }}">
         @error($description)
-            <div class="invalid-feedback">{{ $message }}</div>
+            <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     @endif
 

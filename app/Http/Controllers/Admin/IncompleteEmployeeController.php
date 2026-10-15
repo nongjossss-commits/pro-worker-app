@@ -36,37 +36,21 @@ class IncompleteEmployeeController extends Controller
         $employerAlreadyFiltered = $request->filled('employer_filter_id');
         if ($employerAlreadyFiltered) {
             $query->where('employer_id', $request->input('employer_filter_id'));
-        } elseif ($request->filled('employer_filter_name') && !$request->filled('search')) {
-            $request->merge(['search' => $request->input('employer_filter_name')]);
         }
 
+
         // --- ADDED FILTERING LOGIC ---
-        if ($request->filled('search')) {
-            $searchTerm = '%' . $request->input('search') . '%';
-            $query->where(function ($q) use ($searchTerm, $employerAlreadyFiltered) {
-                $q->where('employeeNameTh', 'like', $searchTerm)
-                  ->orWhere('employeeNameEn', 'like', $searchTerm)
-                  ->orWhere('name_suffix', 'like', $searchTerm)
-                  ->orWhere('employeePassport', 'like', $searchTerm)
-                  ->orWhere('pinkCardNo', 'like', $searchTerm)
-                  ->orWhere('employeeWorkPermit', 'like', $searchTerm)
-                  ->orWhere('employee_id_number', 'like', $searchTerm)
-                  ->orWhere('name_list_number', 'like', $searchTerm);
-                if (!$employerAlreadyFiltered) {
-                    $q->orWhereHas('employer', function ($employerQuery) use ($searchTerm) {
-                        $employerQuery->where('employerNameTh', 'like', $searchTerm)
-                                      ->orWhere('employerNameEn', 'like', $searchTerm)
-                                      ->orWhere('name_suffix', 'like', $searchTerm)
-                                      ->orWhere('employerId', 'like', $searchTerm)
-                                      ->orWhere('employerTaxId', 'like', $searchTerm)
-                                      ->orWhere('outsource_re_code', 'like', $searchTerm)
-                                      ->orWhere(function($addrQ) use ($searchTerm) {
-                                          $addrQ->filterByAddress($searchTerm);
-                                      });
-                    });
-                }
-            });
+        // Every term must match (TwoStageSearch): box 1's typed text (when it isn't a
+        // pick) and box 2's — an employee field, or (unless one employer is locked)
+        // the employer / job owner / address.
+        foreach (\App\Services\TwoStageSearch::terms($request) as $rawSearch) {
+            if (preg_match('/^ID:\s*(\d+)$/i', $rawSearch, $idMatch)) {
+                $query->where('id', (int) $idMatch[1]);
+                continue;
+            }
+            \App\Services\TwoStageSearch::whereEmployeeOrEmployer($query, $rawSearch, !$employerAlreadyFiltered);
         }
+        \App\Services\TwoStageSearch::applyEmployeePicks($query, $request);
 
         if ($request->filled('work_permit_expiry_date')) {
             // Work permit OR visa expiring on that date.
@@ -143,6 +127,7 @@ class IncompleteEmployeeController extends Controller
         $perPageOptions = [12, 25, 50, 100];
         $currentPerPage = $request->input('per_page', 12);
         $employees = $query->with('employer')->latest()->paginate($currentPerPage)->withQueryString();
+        \App\Models\Employee::preloadForCards($employees);
 
         return view('admin.incomplete_employees.index', [
             'employees' => $employees,
@@ -178,56 +163,14 @@ class IncompleteEmployeeController extends Controller
             return response()->json([]);
         }
 
-        $like = "%{$q}%";
-        $employerFilterId = $request->input('employer_filter_id');
-
-        $employeeQuery = Employee::whereNull('terminated_at');
-        if ($employerFilterId) {
-            $employeeQuery->where('employer_id', $employerFilterId);
-        }
-        $employeeQuery->where(function ($eq) use ($like, $employerFilterId) {
-                $eq->where('employeeNameTh', 'like', $like)
-                   ->orWhere('employeeNameEn', 'like', $like)
-                   ->orWhere('name_suffix', 'like', $like)
-                   ->orWhere('employeePassport', 'like', $like)
-                   ->orWhere('pinkCardNo', 'like', $like)
-                   ->orWhere('employeeWorkPermit', 'like', $like)
-                   ->orWhere('employee_id_number', 'like', $like)
-                   ->orWhere('name_list_number', 'like', $like);
-                if (!$employerFilterId) {
-                    $eq->orWhereHas('employer', function ($eqq) use ($like) {
-                        $eqq->where('employerNameTh', 'like', $like)
-                            ->orWhere('employerNameEn', 'like', $like);
-                    });
-                }
-            })
+        // Same as the Employees menu, limited to active employees with an empty
+        // mandatory field (TwoStageSearch).
+        return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at')
             ->where(function (Builder $mq) use ($mandatoryFields) {
                 foreach ($mandatoryFields as $field) {
                     $mq->orWhereNull($field)->orWhere($field, '');
                 }
-            });
-
-        $employees = $employeeQuery
-            ->with('employer:id,employerNameTh,employerNameEn')
-            ->limit(10)
-            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employer_id']);
-
-        $results = [];
-        foreach ($employees as $emp) {
-            $results[] = [
-                'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-                'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-                'sub_label' => trim(implode(' | ', array_filter([
-                    $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                    $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                    $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                ]))),
-                'photo' => $emp->photo_url,
-                'group' => __('ลูกจ้าง'),
-            ];
-        }
-
-        return response()->json($results);
+            })));
     }
 
     /**
@@ -252,74 +195,13 @@ class IncompleteEmployeeController extends Controller
             return response()->json([]);
         }
 
-        $like = "%{$q}%";
-        $results = [];
-
-        $employers = Employer::where(function ($eq) use ($like) {
-                $eq->where('employerNameTh', 'like', $like)
-                   ->orWhere('employerNameEn', 'like', $like)
-                   ->orWhere('name_suffix', 'like', $like)
-                   ->orWhere('businessType', 'like', $like)
-                   ->orWhere('employerId', 'like', $like)
-                   ->orWhere('employerTaxId', 'like', $like)
-                   ->orWhere('outsource_re_code', 'like', $like);
-            })
-            ->whereHas('employees', function ($eq) use ($mandatoryFields) {
-                $eq->whereNull('terminated_at')
-                   ->where(function (Builder $mq) use ($mandatoryFields) {
-                       foreach ($mandatoryFields as $field) {
-                           $mq->orWhereNull($field)->orWhere($field, '');
-                       }
-                   });
-            })
-            ->limit(5)
-            ->get(['id', 'employerNameTh', 'employerNameEn']);
-
-        foreach ($employers as $er) {
-            $results[] = [
-                'id' => $er->id,
-                'label' => $er->employerNameTh ?: $er->employerNameEn ?: '-',
-                'sub_label' => ($er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
-                'group' => __('นายจ้าง'),
-            ];
-        }
-
-        $employeeQuery = Employee::whereNull('terminated_at')
-            ->where(function ($eq) use ($like) {
-                $eq->where('employeeNameTh', 'like', $like)
-                   ->orWhere('employeeNameEn', 'like', $like)
-                   ->orWhere('name_suffix', 'like', $like)
-                   ->orWhere('employeePassport', 'like', $like)
-                   ->orWhere('pinkCardNo', 'like', $like)
-                   ->orWhere('employeeWorkPermit', 'like', $like)
-                   ->orWhere('employee_id_number', 'like', $like)
-                   ->orWhere('name_list_number', 'like', $like);
-            })
+        // Same as the Employees menu, limited to active employees with an empty
+        // mandatory field (TwoStageSearch).
+        return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at')
             ->where(function (Builder $mq) use ($mandatoryFields) {
                 foreach ($mandatoryFields as $field) {
                     $mq->orWhereNull($field)->orWhere($field, '');
                 }
-            });
-
-        $employees = $employeeQuery
-            ->with('employer:id,employerNameTh,employerNameEn')
-            ->limit(5)
-            ->get(['id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleTh', 'employeeTitleEn', 'employeePhoto', 'employeePassport', 'employer_id']);
-
-        foreach ($employees as $emp) {
-            $results[] = [
-                'label' => trim(($emp->employeeTitleEn ? $emp->employeeTitleEn . ' ' : '') . ($emp->employeeNameEn ?: $emp->employeeNameTh ?: '-')),
-                'value' => $emp->employeeNameEn ?: $emp->employeeNameTh ?: '-',
-                'sub_label' => trim(implode(' | ', array_filter([
-                    $emp->employeeNameTh ? trim(($emp->employeeTitleTh ? $emp->employeeTitleTh . ' ' : '') . $emp->employeeNameTh) : null,
-                    $emp->employer->employerNameTh ?? $emp->employer->employerNameEn ?? null,
-                    $emp->employeePassport ? "PP: {$emp->employeePassport}" : null,
-                ]))),
-                'photo' => $emp->photo_url,
-                'group' => __('ลูกจ้าง'),
-            ];
-        }
-
-        return response()->json($results);
+            })));
     }
 }

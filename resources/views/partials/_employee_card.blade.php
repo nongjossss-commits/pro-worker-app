@@ -188,17 +188,19 @@
                 @endif
             @endif
 
-            <span class="employee-name-th d-block">
+            <span class="employee-name-th d-block" title="{{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})">
                 {{ $employee->employeeTitleTh ?? '' }} {{ $employee->employeeNameTh ?? 'N/A' }} ({{ $employee->job_title ?? 'N/A' }})
             </span>
 
             <span class="employer-name d-block text-muted">
-                {{ __('Employer:') }} {{ $employerName }}
+                {{-- Text part shortens with "…" in tiles; the preview button after it always stays visible. --}}
+                <span class="emp-employer-text" title="{{ __('Employer:') }} {{ $employerName }}">{{ __('Employer:') }} {{ $employerName }}
                 @if(request('addrProvince') && $employee->employer)
                     @foreach($employee->employer->getMatchedAddressLabels(request('addrProvince'), request('addrDistrict'), request('addrSubDistrict')) as $label)
                         <span class="text-primary small fw-bold">{{ $label }}</span>
                     @endforeach
                 @endif
+                </span>
                 @if($employee->employer)
                 <button type="button" class="btn btn-sm btn-outline-info btn-preview p-0 border-0 bg-transparent ms-2" data-model-type="employer" data-model-id="{{ $employee->employer->id }}" title="{{ __('Preview Data') }}">
                     <i class="bi bi-search"></i>
@@ -211,7 +213,8 @@
             @if(count($cardFields))
             <div class="document-details small mt-2">
                 @foreach($cardFields as $fieldIndex => $field)
-                    <span class="emp-card-field">{{ \App\Services\EmployeeCardFieldsService::label($field) }}: {{ \App\Services\EmployeeCardFieldsService::value($employee, $field) }}</span>@if($fieldIndex < count($cardFields) - 1)<span class="emp-card-field-sep"> | </span>@endif
+                    @php $cardFieldText = \App\Services\EmployeeCardFieldsService::label($field) . ': ' . \App\Services\EmployeeCardFieldsService::value($employee, $field); @endphp
+                    <span class="emp-card-field" title="{{ $cardFieldText }}">{{ $cardFieldText }}</span>@if($fieldIndex < count($cardFields) - 1)<span class="emp-card-field-sep"> | </span>@endif
                 @endforeach
             </div>
             @endif

@@ -7,6 +7,9 @@
     'idTarget' => null,
     'idValue' => '',
     'disabled' => false,
+    // Name of a hidden "exact pick" field (e.g. employee_pick_id) that a picked
+    // result's `pick` fills — kept across re-submits, cleared when typing again.
+    'pickField' => null,
 ])
 
 @php
@@ -15,6 +18,11 @@
 
 @if($idTarget)
     <input type="hidden" name="{{ $idTarget }}" id="{{ $inputId }}-id" value="{{ $idValue }}">
+@endif
+@if($pickField)
+    @foreach(array_filter(array_map('trim', explode(',', $pickField))) as $pickName)
+        <input type="hidden" name="{{ $pickName }}" value="{{ request($pickName) }}" data-live-search-pick>
+    @endforeach
 @endif
 
 <input

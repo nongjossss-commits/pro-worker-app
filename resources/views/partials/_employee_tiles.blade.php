@@ -120,7 +120,17 @@
         font-size: .7rem !important; line-height: 1.45; background: var(--bs-tertiary-bg); color: var(--bs-secondary-color);
     }
     /* One detail per line (Super Admin picks up to 6 — EmployeeCardFieldsService); long values end with … */
-    .emp-tile-grid .emp-card-field { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .emp-tile-grid .emp-card-field {
+        /* Long values wrap to a 2nd line (then "…"); the full text is in the tooltip. */
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        white-space: normal; overflow: hidden; overflow-wrap: anywhere;
+    }
+    /* Many wrapped lines scroll inside the box instead of pushing the buttons out of the tile. */
+    .emp-tile-grid .employee-card .document-details { max-height: calc(9 * 1.45em + .6rem); overflow-y: auto; }
+    /* Employer line: name shortens with "…", the preview magnifier always stays visible. */
+    .emp-tile-grid .employee-card .employer-name { display: flex !important; align-items: center; min-width: 0; }
+    .emp-tile-grid .employee-card .employer-name .emp-employer-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .emp-tile-grid .employee-card .employer-name .btn-preview { flex: none; margin-left: .3rem !important; }
     .emp-tile-grid .emp-card-field-sep { display: none; }
 
     .emp-tile-grid .employee-card .employee-actions-unified { width: 100%; margin-top: auto; }

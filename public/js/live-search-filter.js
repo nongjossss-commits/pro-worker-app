@@ -75,6 +75,10 @@
                 const idField = document.getElementById(input.dataset.liveSearchIdInput);
                 if (idField) idField.value = (item.id !== undefined && item.id !== null) ? item.id : '';
             }
+            // Exact pick (e.g. one employee among several with the same name):
+            // the result may carry { field: value } — put it in hidden fields of
+            // the form so the list shows that one record, not every name match.
+            setPick(item.pick || null);
             closeDropdown();
             if (input.form) {
                 if (typeof input.form.requestSubmit === 'function') {
@@ -130,6 +134,26 @@
             });
         }
 
+        // Exact-pick hidden fields (data-live-search-pick) — set from a picked
+        // result's `pick`, cleared as soon as the user types again in any box.
+        function setPick(pick) {
+            if (!input.form) return;
+            input.form.querySelectorAll('input[data-live-search-pick]').forEach(function (f) { f.value = ''; });
+            if (!pick) return;
+            Object.keys(pick).forEach(function (name) {
+                let field = input.form.querySelector('input[type="hidden"][name="' + CSS.escape(name) + '"]');
+                if (!field) {
+                    field = document.createElement('input');
+                    field.type = 'hidden';
+                    field.name = name;
+                    field.setAttribute('data-live-search-pick', '');
+                    input.form.appendChild(field);
+                }
+                field.value = pick[name];
+            });
+        }
+        input.addEventListener('input', function () { setPick(null); });
+
         const doSearch = debounce(function () {
             const q = input.value.trim();
             if (q.length < minChars) {
@@ -154,6 +178,9 @@
                 });
             }
             params.set('q', q);
+            // Which box is asking — box 2's suggestions stay inside box 1's result,
+            // box 1's are never narrowed by box 2 (App\Services\TwoStageSearch).
+            params.set('_box', input.name);
 
             fetch(base + '?' + params.toString(), { signal: currentController.signal })
                 .then((r) => r.json())

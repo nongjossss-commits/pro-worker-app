@@ -61,11 +61,12 @@
                  narrow further; picking anything else just filters straight
                  to that record. --}}
             <x-live-search-filter
+                pick-field="employee_pick_id,job_owner_pick_id"
                 endpoint="{{ route('employees.preview_search_combined') }}"
                 name="employer_filter_name"
                 id-target="employer_filter_id"
                 id-value="{{ request('employer_filter_id') }}"
-                placeholder="{{ __('Search employer or employee (name, ID, passport...)') }}"
+                placeholder="{{ __('Search employee, employer or job owner (name, ID, passport...)') }}"
                 value="{{ request('employer_filter_name') }}"
                 class="form-control form-control-sm"
                 style="width: 340px;"
@@ -73,11 +74,11 @@
             <x-live-search-filter
                 endpoint="{{ route('employees.preview_search') }}"
                 name="search"
-                placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : __('Pick an employer above to narrow further') }}"
+                placeholder="{{ request('employer_filter_id') ? __('Search within this employer...') : (request('employer_filter_name') ? __('Narrow these results (employee, employer, job owner...)') : __('Pick an employer above to narrow further')) }}"
                 value="{{ request('search') }}"
                 class="form-control form-control-sm"
                 style="width: 340px;"
-                :disabled="!request('employer_filter_id')"
+                :disabled="!request('employer_filter_id') && !request('employer_filter_name')"
             />
             <x-nationality-select name="nationality" class="form-select form-select-sm" style="width: auto;" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
             <select name="mou_group" class="form-select form-select-sm" style="width: auto;">

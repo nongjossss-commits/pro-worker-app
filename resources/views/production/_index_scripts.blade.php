@@ -65,6 +65,11 @@
             body: JSON.stringify({
                 order_ids: orderIds,
                 search: urlParams.get('search'),
+                // two-stage search: box 1 text / picks (App\Services\TwoStageSearch)
+                employer_filter_name: urlParams.get('employer_filter_name'),
+                employer_filter_id: urlParams.get('employer_filter_id'),
+                employee_pick_id: urlParams.get('employee_pick_id'),
+                job_owner_pick_id: urlParams.get('job_owner_pick_id'),
                 filter: urlParams.get('filter'),
                 operator_filter: urlParams.get('operator_filter')
             })
