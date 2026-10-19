@@ -19,25 +19,90 @@
          viewer's own access tier (own issuances only / whole own team /
          every team broken out) — see
          LaborContractController::buildCompletionSummary(). --}}
-    <div class="row g-2 mb-3">
+    @php
+        // All-teams view: each card toggles that team in the filter (several
+        // can be on at once; click again = off). The grid keeps at most
+        // $maxRows rows — more teams make the cards narrower (down to a
+        // minimum width, then it wraps) and the text inside scales with the
+        // card width (container query units) and wraps instead of overflowing.
+        $teamFilter = $summary['scope'] === 'all_teams';
+        $selectedTeamIds = $selectedTeamIds ?? [];
+        $maxRows = 2;
+        $summaryCols = $teamFilter ? max(4, (int) ceil(count($summary['rows']) / $maxRows)) : max(1, min(3, count($summary['rows'])));
+        $keepQuery = request()->except(['team_id', 'team_ids', 'page']);
+        $teamToggleUrl = function ($id) use ($selectedTeamIds, $keepQuery) {
+            $ids = in_array($id, $selectedTeamIds, true)
+                ? array_values(array_diff($selectedTeamIds, [$id]))
+                : array_merge($selectedTeamIds, [$id]);
+            return route('labor.contracts.index', $keepQuery + ($ids ? ['team_ids' => $ids] : []));
+        };
+    @endphp
+    @push('styles')
+    <style>
+        .ct-summary {
+            display: grid; gap: .5rem; margin-bottom: .5rem;
+            grid-template-columns: repeat(auto-fill, minmax(max(8.5rem, calc((100% - (var(--ct-cols) - 1) * .5rem) / var(--ct-cols))), 1fr));
+        }
+        .ct-team {
+            container-type: inline-size; display: block; min-width: 0; height: 100%;
+            color: inherit; text-decoration: none;
+            border: 1px solid transparent; border-radius: .5rem;
+            transition: border-color .12s, box-shadow .12s, background-color .12s;
+        }
+        .ct-team .card-body { padding: clamp(.35rem, 4cqi, .6rem) clamp(.5rem, 5cqi, 1rem); }
+        .ct-team-name { font-size: clamp(.72rem, 5.5cqi, .9rem); color: var(--bs-secondary-color); line-height: 1.2; overflow-wrap: anywhere; display: flex; align-items: flex-start; gap: .3rem; }
+        .ct-team-total { font-size: clamp(1rem, 10cqi, 1.3rem); font-weight: 700; line-height: 1.2; }
+        .ct-team-unit { font-size: clamp(.68rem, 5cqi, .85rem); color: var(--bs-secondary-color); }
+        .ct-team-stats { display: flex; flex-wrap: wrap; gap: 0 .6rem; font-size: clamp(.66rem, 5cqi, .85rem); line-height: 1.35; }
+        .ct-team-stats > span { white-space: nowrap; }
+        a.ct-team { cursor: pointer; }
+        a.ct-team:hover { color: inherit; border-color: rgba(var(--bs-primary-rgb), .45); }
+        a.ct-team:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: 2px; }
+        .ct-team.is-on { border-color: var(--bs-primary); box-shadow: 0 0 0 1px var(--bs-primary) inset; background-color: rgba(var(--bs-primary-rgb), .08); }
+        .ct-team-check { margin-left: auto; color: var(--bs-primary); visibility: hidden; flex: none; }
+        .ct-team.is-on .ct-team-check { visibility: visible; }
+        .ct-team-hint { font-size: .8rem; color: var(--bs-secondary-color); }
+    </style>
+    @endpush
+    <div class="ct-summary" style="--ct-cols: {{ $summaryCols }}">
         @foreach($summary['rows'] as $row)
-            <div class="col-md-{{ $summary['scope'] === 'all_teams' ? '3' : '4' }}">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-body py-2 px-3">
-                        <div class="small text-muted text-truncate">{{ $row['label'] }}</div>
-                        <div class="d-flex align-items-baseline gap-2">
-                            <span class="fs-5 fw-bold">{{ $row['total'] }}</span>
-                            <span class="text-muted small">{{ __('issued') }}</span>
-                        </div>
-                        <div class="small">
-                            <span class="text-success"><i class="bi bi-patch-check-fill"></i> {{ $row['complete'] }} {{ __('complete') }}</span>
-                            <span class="text-muted ms-2"><i class="bi bi-hourglass-split"></i> {{ $row['total'] - $row['complete'] }} {{ __('awaiting signature') }}</span>
-                        </div>
+            @php $isOn = $teamFilter && isset($row['id']) && in_array($row['id'], $selectedTeamIds, true); @endphp
+            @if($teamFilter && isset($row['id']))
+                <a href="{{ $teamToggleUrl($row['id']) }}" class="ct-team card shadow-sm {{ $isOn ? 'is-on' : '' }}" aria-pressed="{{ $isOn ? 'true' : 'false' }}" data-team-card="{{ $row['id'] }}"
+                   title="{{ $isOn ? __('Click again to remove this team from the filter') : __('Click to filter by this team') }}">
+            @else
+                <div class="ct-team card shadow-sm">
+            @endif
+                <div class="card-body">
+                    <div class="ct-team-name"><span>{{ $row['label'] }}</span>@if($teamFilter)<i class="bi bi-check-circle-fill ct-team-check"></i>@endif</div>
+                    <div class="d-flex align-items-baseline flex-wrap column-gap-2">
+                        <span class="ct-team-total">{{ $row['total'] }}</span>
+                        <span class="ct-team-unit">{{ __('issued') }}</span>
+                    </div>
+                    <div class="ct-team-stats">
+                        <span class="text-success"><i class="bi bi-patch-check-fill"></i> {{ $row['complete'] }} {{ __('complete') }}</span>
+                        <span class="text-muted"><i class="bi bi-hourglass-split"></i> {{ $row['total'] - $row['complete'] }} {{ __('awaiting signature') }}</span>
                     </div>
                 </div>
-            </div>
+            @if($teamFilter && isset($row['id']))
+                </a>
+            @else
+                </div>
+            @endif
         @endforeach
     </div>
+    @if($teamFilter)
+        <div class="ct-team-hint mb-3 d-flex flex-wrap align-items-center gap-2">
+            <span><i class="bi bi-hand-index-thumb me-1"></i>{{ __('Click a team card to filter (several allowed) — click it again to remove') }}</span>
+            @if($selectedTeamIds)
+                <a href="{{ route('labor.contracts.index', $keepQuery) }}" class="btn btn-sm btn-outline-secondary py-0">
+                    <i class="bi bi-x-lg me-1"></i>{{ __('Clear team filter') }} ({{ count($selectedTeamIds) }})
+                </a>
+            @endif
+        </div>
+    @else
+        <div class="mb-3"></div>
+    @endif
 
     <div class="card shadow-sm border-0 mb-3">
         <div class="card-body">
@@ -55,12 +120,23 @@
                 @if($seesAllTeams)
                     <div class="col-md-3">
                         <label class="form-label small">{{ __('Team') }}</label>
-                        <select name="team_id" class="form-select">
+                        {{-- Same filter as the team cards above: one team here, or the
+                             cards' multi-team pick (kept in hidden team_ids[] fields;
+                             picking here replaces it). --}}
+                        <select name="team_id" class="form-select" data-team-select>
                             <option value="">{{ __('All Teams') }}</option>
+                            @if(count($selectedTeamIds) > 1)
+                                <option value="__multi" selected>{{ __('Several teams (:count)', ['count' => count($selectedTeamIds)]) }}</option>
+                            @endif
                             @foreach($teams as $team)
-                                <option value="{{ $team->id }}" @selected((string) request('team_id') === (string) $team->id)>{{ $team->name }}</option>
+                                <option value="{{ $team->id }}" @selected(count($selectedTeamIds) === 1 && $selectedTeamIds[0] === $team->id)>{{ $team->name }}</option>
                             @endforeach
                         </select>
+                        @if(count($selectedTeamIds) > 1)
+                            @foreach($selectedTeamIds as $tid)
+                                <input type="hidden" name="team_ids[]" value="{{ $tid }}" data-team-ids>
+                            @endforeach
+                        @endif
                     </div>
                 @endif
                 <div class="col-md-3">
@@ -262,6 +338,16 @@
         }
 
         refresh();
+
+        // Picking a team in the dropdown replaces the cards' multi-team pick.
+        const teamSelect = document.querySelector('[data-team-select]');
+        if (teamSelect) {
+            teamSelect.addEventListener('change', function () {
+                if (teamSelect.value !== '__multi') {
+                    document.querySelectorAll('[data-team-ids]').forEach(el => el.remove());
+                }
+            });
+        }
     });
 </script>
 @endpush

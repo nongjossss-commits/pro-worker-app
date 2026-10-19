@@ -201,6 +201,18 @@
     .rec-profile-sub { color: var(--bs-secondary-color); font-size: .92rem; margin-top: .15rem; }
     .rec-profile-meta { display: flex; flex-wrap: wrap; gap: .35rem .9rem; margin-top: .35rem; font-size: .88rem; }
     .rec-profile-meta i { color: var(--bs-secondary-color); }
+    /* Preview header: personal details with a copy button each (employees/partials/_profile_header 'details'). */
+    .rec-profile-facts { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; margin-top: .45rem; font-size: .9rem; }
+    .rec-fact { display: inline-flex; align-items: center; gap: .3rem; min-width: 0; }
+    .rec-fact > i { color: var(--bs-secondary-color); }
+    .rec-fact-label { color: var(--bs-secondary-color); font-size: .78rem; white-space: nowrap; }
+    .rec-fact-value { font-weight: 600; overflow-wrap: anywhere; }
+    @media (max-width: 575.98px) {
+        .rec-profile-facts { gap: .3rem .8rem; font-size: .85rem; }
+        .rec-fact { flex-wrap: wrap; }
+    }
+    .rec-fact-value.text-muted-empty { color: var(--bs-secondary-color); font-weight: 400; }
+    .rec-fact .pv-copy, .rec-profile-name .pv-copy, .rec-profile-sub .pv-copy { margin-left: .1rem; }
     .rec-profile-badges { display: flex; flex-wrap: wrap; gap: .4rem; flex: 1 1 100%; }
     .rec-profile-actions { flex: 1 1 100%; grid-column: 1 / -1; display: flex; justify-content: flex-end; }
     .rec-expiry {

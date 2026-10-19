@@ -1539,5 +1539,11 @@
     "Other Document :n": "其他文件 :n",
     "Rename document": "重命名文件",
     "Passport, Visa & Work Permit": "护照、签证与工作许可",
-    "Employment & Insurance": "雇佣与保险"
+    "Employment & Insurance": "雇佣与保险",
+    "Copy failed": "复制失败",
+    "Click to filter by this team": "点击按此团队筛选",
+    "Click again to remove this team from the filter": "再次点击可将此团队移出筛选",
+    "Click a team card to filter (several allowed) — click it again to remove": "点击团队卡片进行筛选(可多选)——再次点击取消",
+    "Clear team filter": "清除团队筛选",
+    "Several teams (:count)": "多个团队(:count)"
 }

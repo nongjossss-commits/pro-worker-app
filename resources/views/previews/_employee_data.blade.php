@@ -1,142 +1,27 @@
 {{--
     This view is loaded via AJAX into the universal preview modal.
 
-    Layout goals (redesign):
-      * Fields flow into as many columns as the window holds (.pv-grid),
-        sized by content: short / normal / long / full row. Phones: 2 columns.
-      * Attached files are compact chips (.pv-files).
-      * The modal is widened and nearly full height for this preview.
-
-    All CSS is scoped under .emp-preview so it doesn't leak to other modals.
+    All data on one tab (personal, contact, passport, visa, work permit,
+    employment, insurance), attached files on their own tab. Shared look
+    (flowing fields, highlighted key numbers, copy buttons, file chips,
+    bigger window) lives in previews/_preview_compact.
 --}}
-<style>
-    /* --- Scoped preview styles (compact, flowing like the edit page) --- */
-    .emp-preview .preview-section-title {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: #f97316;
-        border-left: 4px solid #f97316;
-        padding-left: 8px;
-        margin: 0 0 .5rem;
-        letter-spacing: 0.2px;
-    }
-    .emp-preview .preview-hr {
-        border-top: 1px dashed #e5e7eb;
-        margin: .65rem 0 .7rem;
-    }
-    /* Fields flow into as many columns as the window holds (no fixed
-       4-per-row): every field takes 2 small columns, short ones (age,
-       height…) 1, long ones (names, hospital…) 3, and a few the full row.
-       Columns stretch so each row is filled edge to edge. */
-    .emp-preview .pv-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
-        gap: .55rem .9rem;
-    }
-    .emp-preview .pv-grid > .preview-field { grid-column: span 2; }
-    .emp-preview .pv-grid > .pv-s { grid-column: span 1; }
-    .emp-preview .pv-grid > .pv-l { grid-column: span 3; }
-    .emp-preview .pv-grid > .pv-full { grid-column: 1 / -1; }
-    .emp-preview .preview-field {
-        min-width: 0; /* let long values wrap instead of blowing the column */
-    }
-    .emp-preview .preview-label {
-        display: block;
-        font-size: 0.75rem;
-        color: #6b7280;
-        line-height: 1.2;
-        margin-bottom: 1px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .emp-preview .preview-value {
-        display: block;
-        font-size: 0.95rem;
-        font-weight: 600;
-        line-height: 1.3;
-        color: #111827;
-        word-break: break-word;
-        min-height: 1.25rem;
-    }
-    .emp-preview .preview-value.text-muted-empty {
-        color: #9ca3af;
-        font-weight: 400;
-    }
-    @media (min-width: 992px) {
-        .emp-preview .preview-label { font-size: 0.82rem; color: #4b5563; }
-        .emp-preview .preview-value { font-size: 1.02rem; }
-        .emp-preview .pv-grid { grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: .7rem 1.1rem; }
-    }
-    /* Phones: two even columns; long fields take the whole row. */
-    @media (max-width: 575.98px) {
-        .emp-preview .pv-grid { grid-template-columns: 1fr 1fr; }
-        .emp-preview .pv-grid > .preview-field { grid-column: span 1; }
-        .emp-preview .pv-grid > .pv-l, .emp-preview .pv-grid > .pv-full { grid-column: 1 / -1; }
-    }
-    .emp-preview .preview-section-header { padding: 0; }
-    /* Small View / PDF buttons */
-    .emp-preview .preview-attach-btn {
-        padding: 1px 8px;
-        font-size: 0.78rem;
-        line-height: 1.5;
-    }
-    /* Attached files: compact chips in a flowing grid — name on the left,
-       View / PDF on the right. Empty slots are faded. */
-    .emp-preview .pv-files {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-        gap: .45rem .6rem;
-    }
-    .emp-preview .pv-file {
-        display: flex; align-items: center; gap: .5rem; min-width: 0;
-        padding: .4rem .55rem;
-        border: 1px solid var(--bs-border-color);
-        border-radius: .5rem;
-        background: var(--bs-body-bg);
-    }
-    .emp-preview .pv-file.has-file { border-color: rgba(var(--bs-success-rgb), .45); background: rgba(var(--bs-success-rgb), .06); }
-    .emp-preview .pv-file.is-empty { border-style: dashed; opacity: .7; }
-    .emp-preview .pv-file-icon { flex: none; font-size: 1.1rem; color: var(--bs-secondary-color); }
-    .emp-preview .pv-file.has-file .pv-file-icon { color: var(--bs-success); }
-    .emp-preview .pv-file-name {
-        flex: 1 1 auto; min-width: 0; font-size: .86rem; font-weight: 600; line-height: 1.25;
-        overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
-    }
-    .emp-preview .pv-file.is-empty .pv-file-name { font-weight: 400; }
-    .emp-preview .pv-file-actions { flex: none; display: flex; gap: .25rem; }
-    .emp-preview .pv-file-empty { flex: none; font-size: .75rem; color: var(--bs-secondary-color); }
-    @media (max-width: 575.98px) {
-        .emp-preview .pv-files { grid-template-columns: 1fr; }
-    }
-    /* Less frame padding around the record inside the modal (was 2rem). */
-    #universalPreviewModal .modal-body:has(> .emp-preview) { padding: .75rem; }
-    .emp-preview.content-section { padding: 1rem 1.25rem; }
-    @media (max-width: 575.98px) {
-        #universalPreviewModal .modal-body:has(> .emp-preview) { padding: .5rem; }
-        .emp-preview.content-section { padding: .75rem; }
-    }
-    /* Bigger window for the employee preview: wider, and nearly the full
-       screen height so there's little empty space above and below. Only
-       when this partial is shown — other previews keep their size. */
-    @media (min-width: 576px) {
-        #universalPreviewModal .modal-dialog:has(.emp-preview) { max-width: min(96vw, 1600px); margin-top: .75rem; margin-bottom: .75rem; }
-        #universalPreviewModal .modal-content:has(.emp-preview) { height: calc(100vh - 1.5rem); }
-    }
-    @media (min-width: 576px) and (max-width: 991.98px) {
-        #universalPreviewModal .modal-dialog:has(.emp-preview) { max-width: 96vw; }
-    }
-</style>
+@include('previews._preview_compact')
 
 @php
     // Helper: render a "N/A" fallback with softer styling so real data
     // pops visually against unfilled fields. Callers use it via short
     // inline @if or the small closure below.
-    $val = function ($v) {
+    // Filled values get a copy button that copies exactly what is shown
+    // (one click instead of selecting the text — see previews/_preview_compact).
+    $copyLabel = e(__('Copy'));
+    $val = function ($v) use ($copyLabel) {
         if ($v === null || $v === '' || $v === 'N/A') {
             return '<span class="preview-value text-muted-empty">-</span>';
         }
-        return '<span class="preview-value">' . e($v) . '</span>';
+        $text = e($v);
+        return '<span class="preview-value">' . $text
+            . '<button type="button" class="pv-copy" data-copy="' . $text . '" title="' . $copyLabel . '" aria-label="' . $copyLabel . '"><i class="bi bi-copy"></i></button></span>';
     };
 
     // Passport type resolves per-nationality
@@ -154,88 +39,18 @@
 
 <div class="emp-preview content-section rec-fixed">
 
-    @include('employees.partials._profile_header', ['employee' => $employee, 'photoLink' => true, 'editUrl' => auth()->user()?->can('edit-employees') ? route('employees.edit', $employee->id) : null])
+    @include('employees.partials._profile_header', ['employee' => $employee, 'photoLink' => true, 'details' => true, 'editUrl' => auth()->user()?->can('edit-employees') ? route('employees.edit', $employee->id) : null])
 
-    {{-- Tabs: one section per tab, no scrolling (see partials/_record_tabs). --}}
+    {{-- Tabs (see partials/_record_tabs): all data on one tab, files on the other. --}}
     <div class="rec-tabs" data-rec-tabs>
     <div class="rec-tabs-nav" role="tablist">
-        <button type="button" class="rec-tab active" data-rec-tab="personal" role="tab"><i class="bi bi-person-badge"></i><span>{{ __('Personal Information') }}</span></button>
-        <button type="button" class="rec-tab" data-rec-tab="passport" role="tab"><i class="bi bi-passport"></i><span>{{ __('Passport, Visa & Work Permit') }}</span></button>
-        <button type="button" class="rec-tab" data-rec-tab="employment" role="tab"><i class="bi bi-briefcase-fill"></i><span>{{ __('Employment & Insurance') }}</span></button>
+        <button type="button" class="rec-tab active" data-rec-tab="personal" role="tab"><i class="bi bi-person-badge"></i><span>{{ __('Employee Data') }}</span></button>
         <button type="button" class="rec-tab" data-rec-tab="files" role="tab"><i class="bi bi-paperclip"></i><span>{{ __('Attached Files') }}</span>@if($attachedCount)<span class="rec-tab-count">{{ $attachedCount }}</span>@endif</button>
     </div>
 
-    {{-- ================== TAB: Personal ================== --}}
+        {{-- ================== TAB: all data on one page (files have their own tab) ================== --}}
     <div class="rec-tab-pane active" data-rec-pane="personal">
-    @php
-        // Employer name shows Thai + English when both are recorded so
-        // an English-locale user can still identify the employer even
-        // though the surrounding labels aren't translated.
-        $employerTh = $employee->employer->employerNameTh ?? null;
-        $employerEn = $employee->employer->employerNameEn ?? null;
-        if ($employerTh && $employerEn && trim($employerEn) !== '') {
-            $employerDisplay = $employerTh . ' (' . $employerEn . ')';
-        } else {
-            $employerDisplay = $employerTh ?: $employerEn;
-        }
-    @endphp
-    <div class="pv-grid">
-        <div class="preview-field pv-full">
-            <span class="preview-label">{{ __('Employer (Affiliation)') }}</span>
-            {!! $val($employerDisplay) !!}
-        </div>
-        {{-- English name first (left) so language-independent readers
-             can spot the employee identity without needing to parse Thai.
-             Thai name follows on the right. --}}
-        <div class="preview-field pv-l">
-            <span class="preview-label">{{ __('Name (English)') }}</span>
-            {!! $val(trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->employeeNameEn ?? '')) ?: null) !!}
-        </div>
-        <div class="preview-field pv-l">
-            <span class="preview-label">{{ __('Name (Thai)') }}</span>
-            {!! $val(trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? '')) ?: null) !!}
-        </div>
-        @if($employee->name_suffix)
-        <div class="preview-field pv-l">
-            <span class="preview-label">{{ __('Name Suffix (EN)') }}</span>
-            {!! $val($employee->name_suffix) !!}
-        </div>
-        @endif
-        <div class="preview-field">
-            <span class="preview-label">{{ __('Date of Birth (Full)') }}</span>
-            {!! $val($employee->employeeDob ? $employee->employeeDob->format('d/m/Y') : null) !!}
-        </div>
-        <div class="preview-field pv-s">
-            <span class="preview-label">{{ __('Age') }}</span>
-            {!! $val($employee->age ?? null) !!}
-        </div>
-        <div class="preview-field pv-s">
-            <span class="preview-label">{{ __('Gender') }}</span>
-            {!! $val($employee->gender ?? null) !!}
-        </div>
-        <div class="preview-field">
-            <span class="preview-label">{{ __('Nationality') }}</span>
-            {!! $val($employee->employeeNationality ?? null) !!}
-        </div>
-        <div class="preview-field pv-s">
-            <span class="preview-label">{{ __('Height') }}</span>
-            {!! $val($employee->height ? $employee->height . ' cm' : null) !!}
-        </div>
-        <div class="preview-field pv-s">
-            <span class="preview-label">{{ __('Weight') }}</span>
-            {!! $val($employee->weight ? $employee->weight . ' kg' : null) !!}
-        </div>
-        <div class="preview-field pv-l">
-            <span class="preview-label">{{ __('Father Name') }}</span>
-            {!! $val($employee->father_name ?? null) !!}
-        </div>
-        <div class="preview-field pv-l">
-            <span class="preview-label">{{ __('Mother Name') }}</span>
-            {!! $val($employee->mother_name ?? null) !!}
-        </div>
-    </div>
-
-    <hr class="preview-hr">
+    {{-- Personal details (names, employer, date of birth, age, gender, nationality…) are in the profile header above, each with a copy button. --}}
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Contact & Login') }}</h6>
     </div>
@@ -258,15 +73,12 @@
         </div>
     </div>
 
-    </div>{{-- /pane personal --}}
-
-    {{-- ================== TAB: Passport & Visa ================== --}}
-    <div class="rec-tab-pane" data-rec-pane="passport">
+    <hr class="preview-hr">
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Passport') }}</h6>
     </div>
     <div class="pv-grid">
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('Passport No. (Preview)') }}</span>
             {!! $val($employee->employeePassport ?? null) !!}
         </div>
@@ -282,7 +94,7 @@
             <span class="preview-label">{{ __('Passport Type (Preview)') }}</span>
             {!! $val($passportTypeVal) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('Passport Expiry (Preview)') }}</span>
             {!! $val($employee->passportExpiryDate ? $employee->passportExpiryDate->format('d/m/Y') : null) !!}
         </div>
@@ -300,15 +112,15 @@
             <span class="preview-label">{{ __('Visa Issue Place') }}</span>
             {!! $val($employee->visa_issue_place ?? null) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('Visa Endorsement Date') }}</span>
             {!! $val($employee->visaEndorsementDate ? $employee->visaEndorsementDate->format('d/m/Y') : null) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('Visa Endorsement Number') }}</span>
             {!! $val($employee->visaEndorsementNo ?? null) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('Visa Expiry Date') }}</span>
             {!! $val($employee->visaExpiryDate ? $employee->visaExpiryDate->format('d/m/Y') : null) !!}
         </div>
@@ -324,15 +136,15 @@
             <span class="preview-label">{{ __('Work Permit Type (Resolution Group)') }}</span>
             {!! $val($mouGroupVal) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">Work Permit No.</span>
             {!! $val($employee->employeeWorkPermit ?? null) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('ID Number') }}</span>
             {!! $val($employee->employee_id_number ?? null) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('Pink Card ID') }}</span>
             {!! $val($employee->pinkCardNo ?? null) !!}
         </div>
@@ -340,11 +152,11 @@
             <span class="preview-label">{{ __('Work Permit Issue Date') }}</span>
             {!! $val($employee->workPermitIssueDate ? $employee->workPermitIssueDate->format('d/m/Y') : null) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('Work Permit Expiry Date') }}</span>
             {!! $val($employee->workPermitExpiryDate ? $employee->workPermitExpiryDate->format('d/m/Y') : null) !!}
         </div>
-        <div class="preview-field">
+        <div class="preview-field pv-key">
             <span class="preview-label">{{ __('90-Day Report') }}</span>
             {!! $val($employee->ninetyDayReportDate ? $employee->ninetyDayReportDate->format('d/m/Y') : null) !!}
         </div>
@@ -361,10 +173,8 @@
             {!! $val($employee->job_description ?? null) !!}
         </div>
     </div>
-    </div>{{-- /pane workpermit --}}
 
-    {{-- ================== TAB: Employment ================== --}}
-    <div class="rec-tab-pane" data-rec-pane="employment">
+    <hr class="preview-hr">
     <div class="preview-section-header">
         <h6 class="preview-section-title">{{ __('Employment') }}</h6>
     </div>
@@ -492,7 +302,7 @@
         </div>
     </div>
 
-    </div>{{-- /pane insurance --}}
+    </div>{{-- /pane data --}}
 
     {{-- ================== TAB: Attachments ================== --}}
     <div class="rec-tab-pane" data-rec-pane="files">

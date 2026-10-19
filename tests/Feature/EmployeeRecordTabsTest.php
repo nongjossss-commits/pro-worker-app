@@ -91,8 +91,12 @@ class EmployeeRecordTabsTest extends TestCase
 
         $employee = $this->employee();
         $preview = $this->actingAs($admin)->get(route('global.preview', ['type' => 'employee', 'id' => $employee->id]))->assertOk()->getContent();
-        foreach (['personal', 'passport', 'employment', 'files'] as $tab) {
-            $this->assertStringContainsString('data-rec-pane="' . $tab . '"', $preview);
+        // All data on one tab, files on their own tab.
+        $this->assertSame(2, substr_count($preview, 'data-rec-pane="'));
+        $this->assertStringContainsString('data-rec-pane="personal"', $preview);
+        $this->assertStringContainsString('data-rec-pane="files"', $preview);
+        foreach (['Passport', 'Visa', 'Work Permit', 'Employment', 'Insurance', 'Contact & Login'] as $section) {
+            $this->assertStringContainsString(e(__($section)), $preview);
         }
         $this->assertStringContainsString('rec-profile', $preview);
         // Fixed frame: header + tab bar stay put, only the tab content scrolls.
@@ -101,6 +105,34 @@ class EmployeeRecordTabsTest extends TestCase
         $this->assertStringContainsString('class="pv-grid"', $preview);
         $this->assertStringNotContainsString('col-md-3 preview-field', $preview);
         $this->assertSame(18, substr_count($preview, 'class="pv-file '));
+    }
+
+    public function test_preview_values_have_copy_buttons_and_key_fields_are_highlighted(): void
+    {
+        $employee = $this->employee();
+        $employee->forceFill(['employeePassport' => 'MC1234567', 'employeeWorkPermit' => 'WP-998877', 'employeeNameEn' => "O'Neil Test"])->saveQuietly();
+
+        $preview = $this->actingAs($this->admin())
+            ->get(route('global.preview', ['type' => 'employee', 'id' => $employee->id]))->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="pv-copy" data-copy="MC1234567"', $preview);
+        $this->assertStringContainsString('class="pv-copy" data-copy="WP-998877"', $preview);
+        $this->assertStringContainsString('data-copy="' . e(trim(($employee->employeeTitleEn ?? '') . " O'Neil Test")) . '"', $preview);
+        // empty values get no copy button (header facts / names have their own)
+        $this->assertSame(substr_count($preview, '<span class="preview-value">'), substr_count($preview, 'class="pv-copy"') - substr_count($preview, '<span class="rec-fact-value">') - (int) str_contains($preview, '<h5 class="rec-profile-name">') - (int) (bool) preg_match('/rec-profile-sub">[^<]+<button/', $preview));
+        // passport no., visa, work permit, ID, expiry dates… are highlighted
+        $this->assertGreaterThanOrEqual(10, substr_count($preview, ' pv-key"')); // incl. pink card
+        // personal details live in the profile header (with copy buttons), not repeated below
+        $this->assertStringContainsString('class="rec-profile-facts"', $preview);
+        $this->assertFalse(str_contains($preview, e(__('Personal Information')) . '</h6>'), 'personal section is not repeated below the header');
+        $editPage = $this->actingAs($this->admin())->get(route('employees.edit', $employee->id))->getContent();
+        $this->assertFalse(str_contains($editPage, 'class="rec-profile-facts"'), 'edit page keeps its plain header');
+
+        $employer = Employer::factory()->create(['employerTaxId' => '0105551234567']);
+        $html = $this->actingAs($this->admin())
+            ->get(route('global.preview', ['type' => 'employer', 'id' => $employer->id]))->assertOk()->getContent();
+        $this->assertStringContainsString('class="pv-copy" data-copy="0105551234567"', $html);
+        $this->assertStringContainsString(' pv-key"', $html);
     }
 
     public function test_employer_preview_is_tabbed_in_a_fixed_frame(): void
@@ -115,9 +147,14 @@ class EmployeeRecordTabsTest extends TestCase
             ->get(route('global.preview', ['type' => 'employer', 'id' => $employer->id]))->assertOk()->getContent();
 
         $this->assertStringContainsString('empr-preview rec-fixed', $html);
-        foreach (['info', 'contact', 'signers', 'docs', 'addresses', 'employees'] as $tab) {
-            $this->assertStringContainsString('data-rec-pane="' . $tab . '"', $html);
+        // All data on one tab, documents on their own tab.
+        $this->assertSame(2, substr_count($html, 'data-rec-pane="'));
+        $this->assertStringContainsString('data-rec-pane="info"', $html);
+        $this->assertStringContainsString('data-rec-pane="docs"', $html);
+        foreach (['Contact & External Systems', 'Authorized Signatories', 'Addresses', 'Employee Summary'] as $section) {
+            $this->assertStringContainsString(e(__($section)), $html);
         }
+        $this->assertSame(6, substr_count($html, 'class="pv-file '));
         $this->assertStringContainsString('<span class="rec-tab-count">1</span>', $html);
         $this->assertStringContainsString('rec-expiry is-soon', $html); // certificate expires in 5 days
     }

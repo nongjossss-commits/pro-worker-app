@@ -33,6 +33,48 @@ document.addEventListener('hidden.bs.modal', function() {
         </div>
     </div>
 </div>
+<script>
+    // Copy buttons in the employee / employer previews (.pv-copy, see previews/_preview_compact):
+    // one click copies the value. Falls back to execCommand where the Clipboard API
+    // isn't available (plain-http sites).
+    (function () {
+        if (window.__pvCopyBound) return;
+        window.__pvCopyBound = true;
+        function fallbackCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+            (document.querySelector('#universalPreviewModal .modal-body') || document.body).appendChild(ta);
+            ta.select();
+            var ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            ta.remove();
+            return ok;
+        }
+        function done(btn, ok) {
+            var icon = btn.querySelector('i');
+            if (ok) {
+                btn.classList.add('is-copied');
+                if (icon) icon.className = 'bi bi-check-lg';
+                setTimeout(function () { btn.classList.remove('is-copied'); if (icon) icon.className = 'bi bi-copy'; }, 1500);
+            }
+            if (window.appToast) appToast(ok ? @json(__('Copied!')) : @json(__('Copy failed')), ok ? 'success' : 'error');
+        }
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.pv-copy');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var text = btn.getAttribute('data-copy') || '';
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(function () { done(btn, true); }, function () { done(btn, fallbackCopy(text)); });
+            } else {
+                done(btn, fallbackCopy(text));
+            }
+        });
+    })();
+</script>
 
 <!-- PDF Preview Modal -->
 <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfPreviewModalLabel" aria-hidden="true" style="z-index: 1060;">

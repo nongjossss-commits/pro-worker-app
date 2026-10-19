@@ -2697,5 +2697,11 @@
     "Other Document :n": "เอกสารอื่นๆ :n",
     "Rename document": "เปลี่ยนชื่อเอกสาร",
     "Passport, Visa & Work Permit": "พาสปอร์ต วีซ่า และใบอนุญาตทำงาน",
-    "Employment & Insurance": "การจ้างงานและประกันสุขภาพ"
+    "Employment & Insurance": "การจ้างงานและประกันสุขภาพ",
+    "Copy failed": "คัดลอกไม่สำเร็จ",
+    "Click to filter by this team": "คลิกเพื่อกรองเฉพาะทีมนี้",
+    "Click again to remove this team from the filter": "คลิกอีกครั้งเพื่อเอาทีมนี้ออกจากตัวกรอง",
+    "Click a team card to filter (several allowed) — click it again to remove": "คลิกการ์ดทีมเพื่อกรอง (เลือกได้หลายทีม) — คลิกซ้ำเพื่อยกเลิก",
+    "Clear team filter": "ล้างตัวกรองทีม",
+    "Several teams (:count)": "หลายทีม (:count)"
 }

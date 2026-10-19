@@ -54,6 +54,7 @@
         <li>修改所需信息，然后点击 <strong>"保存"</strong></li>
         <li>编辑页面分为标签页：<strong>雇主信息</strong> · <strong>系统登录与外包</strong> · <strong>授权签字人与印章</strong> · <strong>雇主附件</strong>(这 4 个标签页底部有保存栏，一次保存全部) · <strong>地址</strong> · <strong>雇员</strong> · <strong>离职雇员</strong></li>
         <li>快捷方式：在<strong>预览</strong>窗口(🔍 按钮)点击右上角的 <strong>"编辑"</strong> → 修改并保存(或取消) → 系统会回到原页面并重新打开预览，显示最新数据</li>
+        <li><strong>雇主预览</strong>(🔍 按钮)：共 2 个标签 —— <strong>雇主数据</strong> 在同一页显示全部信息(雇主信息 · 联系方式与外部系统 · 授权签字人 · 地址 · 雇员汇总)，以及 <strong>雇主附件</strong>(小方框；有文件 = 绿色 +「查看」/「PDF」；公司证明在方框中显示到期日) · 字段排满每行，窗口几乎占满屏幕 · 雇主编号、雇主税号、证明到期日和 RE Code 以颜色突出显示 · 每个已填写的值(包括泰文/英文地址)都有<strong>复制按钮</strong> ⧉ —— 点一下即可复制并粘贴</li>
     </ol>
 </div>
 

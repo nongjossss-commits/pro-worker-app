@@ -126,7 +126,8 @@
         'callouts' => [
             '<strong>Preview 🔍 button:</strong> on every employee card, on every page',
             '<strong>Read-only:</strong> viewable but not editable',
-            '<strong>Profile header + tabs:</strong> Personal · Passport, Visa & Work Permit · Employment & Insurance · Attached Files — fields flow to fill each row, the window is almost full screen',
+            '<strong>Profile header + 2 tabs:</strong> personal details in the header next to the photo · Employee Data (the other sections on one page) · Attached Files — frequently used fields (passport, visa, work permit, ID number, pink card, expiry dates) are highlighted',
+            '<strong>Copy button ⧉:</strong> on every filled value — one click copies it, ready to paste',
             '<strong>Attached files:</strong> small boxes side by side; slots with a file are green with View / PDF',
             '<strong>Expiry badges:</strong> see at a glance which documents have expired or are about to',
         ],

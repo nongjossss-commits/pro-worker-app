@@ -54,6 +54,7 @@
         <li>Change the information you need, then click <strong>"Save"</strong></li>
         <li>The edit page is split into tabs: <strong>Employer Info</strong> · <strong>System Access &amp; Outsource</strong> · <strong>Authorized Signatories &amp; Stamp</strong> · <strong>Employer Attachments</strong> (the Save bar sits at the bottom on these 4 tabs and saves them all at once) · <strong>Addresses</strong> · <strong>Employees</strong> · <strong>Employment History</strong></li>
         <li>Shortcut: in the <strong>preview</strong> window (🔍 button) press <strong>"Edit"</strong> at the top right → edit and save (or cancel) → you come back to the same page with the preview reopened, showing the new data</li>
+        <li><strong>Employer preview</strong> (🔍 button): 2 tabs — <strong>Employer Data</strong> shows everything on one page (employer information · contact &amp; external systems · signatories · addresses · employee summary) and <strong>Employer Attached Documents</strong> (small boxes; with a file = green + "View"/"PDF"; the company certificate shows its expiry in its box) · fields flow to fill each row and the window is almost full screen · employer ID, employer tax ID, certificate expiry and RE Code are highlighted · every filled value (including the Thai / English addresses) has a <strong>copy button</strong> ⧉ — one click copies it, ready to paste</li>
     </ol>
 </div>
 

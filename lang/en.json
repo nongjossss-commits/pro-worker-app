@@ -2644,5 +2644,11 @@
     "Other Document :n": "Other Document :n",
     "Rename document": "Rename document",
     "Passport, Visa & Work Permit": "Passport, Visa & Work Permit",
-    "Employment & Insurance": "Employment & Insurance"
+    "Employment & Insurance": "Employment & Insurance",
+    "Copy failed": "Copy failed",
+    "Click to filter by this team": "Click to filter by this team",
+    "Click again to remove this team from the filter": "Click again to remove this team from the filter",
+    "Click a team card to filter (several allowed) — click it again to remove": "Click a team card to filter (several allowed) — click it again to remove",
+    "Clear team filter": "Clear team filter",
+    "Several teams (:count)": "Several teams (:count)"
 }

@@ -1539,5 +1539,11 @@
     "Other Document :n": "အခြားစာရွက်စာတမ်း :n",
     "Rename document": "စာရွက်စာတမ်း အမည်ပြောင်းရန်",
     "Passport, Visa & Work Permit": "Passport၊ ဗီဇာ နှင့် အလုပ်လုပ်ခွင့်",
-    "Employment & Insurance": "အလုပ်အကိုင် နှင့် အာမခံ"
+    "Employment & Insurance": "အလုပ်အကိုင် နှင့် အာမခံ",
+    "Copy failed": "ကူးယူ၍ မရပါ",
+    "Click to filter by this team": "ဤအဖွဲ့ဖြင့် စစ်ထုတ်ရန် နှိပ်ပါ",
+    "Click again to remove this team from the filter": "ဤအဖွဲ့ကို စစ်ထုတ်မှုမှ ဖယ်ရန် ထပ်နှိပ်ပါ",
+    "Click a team card to filter (several allowed) — click it again to remove": "စစ်ထုတ်ရန် အဖွဲ့ကတ်ကို နှိပ်ပါ (အဖွဲ့များစွာ ရွေးနိုင်) — ပယ်ဖျက်ရန် ထပ်နှိပ်ပါ",
+    "Clear team filter": "အဖွဲ့ စစ်ထုတ်မှု ရှင်းရန်",
+    "Several teams (:count)": "အဖွဲ့များစွာ (:count)"
 }

@@ -384,8 +384,18 @@ class LaborContractController extends Controller
         // everyone else already sees only their own team's issuances (via
         // the issued_by scope above), so a team dropdown would have at
         // most one meaningful option for them.
-        if ($seesAllTeams && $request->filled('team_id')) {
-            $query->where('labor_team_id', $request->input('team_id'));
+        // Several teams can be picked by clicking the summary cards
+        // (team_ids[]); the dropdown (team_id) picks exactly one and wins
+        // when set. "__multi" is the dropdown's "several teams" placeholder.
+        $selectedTeamIds = [];
+        if ($seesAllTeams) {
+            $single = $request->input('team_id');
+            $selectedTeamIds = ($single !== null && $single !== '' && $single !== '__multi')
+                ? [(int) $single]
+                : collect((array) $request->input('team_ids', []))->filter(fn ($id) => is_numeric($id))->map(fn ($id) => (int) $id)->unique()->values()->all();
+            if ($selectedTeamIds) {
+                $query->whereIn('labor_team_id', $selectedTeamIds);
+            }
         }
 
         // "สัญญาสมบูรณ์" (has the employer's signed copy attached) vs. not
@@ -401,7 +411,7 @@ class LaborContractController extends Controller
         $teams = $seesAllTeams ? LaborTeam::orderBy('name')->get(['id', 'name']) : collect();
         $summary = $this->buildCompletionSummary($user, $seesAllTeams);
 
-        return view('labor.contracts.index', compact('contracts', 'teams', 'seesAllTeams', 'summary'));
+        return view('labor.contracts.index', compact('contracts', 'teams', 'seesAllTeams', 'summary', 'selectedTeamIds'));
     }
 
     /**
@@ -583,6 +593,7 @@ class LaborContractController extends Controller
                 'rows' => $teams->map(function ($team) use ($rows) {
                     $row = $rows->get($team->id);
                     return [
+                        'id' => $team->id,
                         'label' => $team->name,
                         'total' => (int) ($row->total ?? 0),
                         'complete' => (int) ($row->complete ?? 0),

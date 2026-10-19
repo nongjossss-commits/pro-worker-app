@@ -106,7 +106,7 @@
             '<strong>Preview 🔍 button:</strong> view read-only data',
             '<strong>Stats:</strong> number of active + terminated employees, broken down by nationality',
             '<strong>Profile header:</strong> employer name, ID, tax ID, worker count + company certificate expiry (red/yellow/green)',
-            '<strong>Tabs:</strong> Employer Information · Contact · Signatories · Attached Documents · Addresses · Employee Summary — the header stays put, no jumping between tabs',
+            '<strong>Tabs:</strong> Employer Data (every section on one page) · Employer Attached Documents — key fields highlighted, a copy button ⧉ on every filled value',
         ],
     ])
 
