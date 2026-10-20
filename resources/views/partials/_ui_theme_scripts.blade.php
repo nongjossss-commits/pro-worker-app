@@ -73,6 +73,19 @@
         });
     };
 
+    // A SweetAlert opened on top of a Bootstrap modal (e.g. "Rename team" in
+    // Manage Team): Bootstrap's focus trap pulls focus back into the modal,
+    // so the popup's input gets no cursor and typing lands in the modal's
+    // own field instead. Focus moving into a SweetAlert is let through.
+    if (!window.__swalFocusGuard) {
+        window.__swalFocusGuard = true;
+        document.addEventListener('focusin', function (e) {
+            if (e.target && e.target.closest && e.target.closest('.swal2-container')) {
+                e.stopImmediatePropagation();
+            }
+        }, true);
+    }
+
     window.appToast = function (message, icon) {
         if (!hasSwal()) { nativeAlert(message); return; }
         Swal.fire({

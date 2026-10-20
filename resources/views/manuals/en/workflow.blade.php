@@ -118,6 +118,9 @@
 <h5>11. Teams and steps</h5>
 <div class="manual-step">
     <strong>Manage Team:</strong> button on the employee card → pick or create a team; rename or delete a team from its pill (deleting only clears the label, employees stay); "No Team" removes the employee from a team. <strong>Steps button:</strong> add / rename / delete / drag to reorder steps instantly, no page reload (same window in all 4 menus).
+
+    <br><strong>Rename a team:</strong> press the pencil on the team pill → edit the current name right in the box (delete / add letters) and save — everyone in that team gets the new name; no new team is created.
+    <br><strong>Scrolling the employee cards inside an employer card:</strong> once you scroll down, a small <strong>"↑ Back to top"</strong> button appears in the middle of the frame's bottom edge (it no longer covers the operator / corner buttons of a card) · the page back-to-top buttons are smaller, and the right one sits above the chat button.
 </div>
 
 <h5>12. Employer "Select All"</h5>

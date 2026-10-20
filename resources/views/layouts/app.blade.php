@@ -267,17 +267,20 @@
             }
         }
 
+        /* Page "back to top" buttons: small and slightly see-through so they
+           don't cover page content; the right one sits above the chat
+           launcher (60px at bottom-right) instead of underneath it. */
         .scroll-to-top {
             position: fixed;
-            bottom: 20px;
-            width: 50px;
-            height: 50px;
+            bottom: 16px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background-color: var(--bs-primary);
             color: #ffffff;
             text-align: center;
-            line-height: 50px;
-            font-size: 24px;
+            line-height: 38px;
+            font-size: 18px;
             cursor: pointer;
             z-index: 1000;
             opacity: 0;
@@ -287,17 +290,19 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         .scroll-to-top.left {
-            left: 20px;
+            left: 16px;
         }
         .scroll-to-top.right {
-            right: 20px;
+            right: 31px;
+            bottom: 92px;
         }
         .scroll-to-top.show {
-            opacity: 1;
+            opacity: .8;
             visibility: visible;
             transform: translateY(0);
         }
         .scroll-to-top:hover {
+            opacity: 1;
             background-color: var(--bs-primary-dark);
         }
 

@@ -50,12 +50,14 @@
         {{ $slot }}
     </div>
 
+    {{-- Small pill sitting on the frame's bottom edge (centre) — not inside the
+         card area, so it never covers a card's corner buttons. --}}
     <button type="button"
-            class="btn btn-primary rounded-circle shadow card-scroll-back-top-btn"
+            class="btn btn-primary shadow-sm card-scroll-back-top-btn"
             data-target="{{ $frameId }}"
             title="{{ __('กลับไปการ์ดใบแรก') }}"
             aria-label="{{ __('กลับไปการ์ดใบแรก') }}">
-        <i class="bi bi-arrow-up-short" style="font-size: 1.3rem; line-height: 1;"></i>
+        <i class="bi bi-arrow-up-short"></i><span>{{ __('Back to top') }}</span>
     </button>
 </div>
 
@@ -73,6 +75,8 @@
             overflow-x: hidden;
             padding-left: var(--csf-padding-x, 0.5rem);
             padding-right: var(--csf-padding-x, 0.5rem);
+            /* room under the last card for the back-to-top pill on the bottom edge */
+            padding-bottom: 14px;
             border: 1px dashed #e5e7eb;
             border-radius: 10px;
             background: #fdfdfd;
@@ -106,21 +110,29 @@
             background: #ffffff;
         }
 
-        /* Back-to-first-card floating button */
+        /* Back-to-first-card button: a small pill centred on the frame's
+           bottom border (half outside the frame), so it never sits on top of
+           a card's corner controls (operator / team buttons…). */
         .card-scroll-back-top-btn {
             position: absolute;
-            right: 18px;
-            bottom: 18px;
-            width: 44px;
-            height: 44px;
-            padding: 0;
+            left: 50%;
+            bottom: -13px;
+            transform: translateX(-50%);
+            height: 26px;
+            padding: 0 .65rem 0 .4rem;
+            border-radius: 999px;
             display: none;
-            justify-content: center;
             align-items: center;
+            gap: .15rem;
+            font-size: .75rem;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
             z-index: 10;
-            opacity: 0.88;
+            opacity: 0.9;
             transition: opacity 0.2s;
         }
+        .card-scroll-back-top-btn i { font-size: 1.1rem; line-height: 1; }
         .card-scroll-back-top-btn:hover { opacity: 1; }
         .card-scroll-back-top-btn.is-visible { display: flex; }
 
@@ -136,6 +148,7 @@
                 box-shadow: none;
                 padding-left: 0;
                 padding-right: 0;
+                padding-bottom: 0;
             }
             .card-scroll-frame[data-mobile-enabled="0"] ~ .card-scroll-back-top-btn {
                 display: none !important;
