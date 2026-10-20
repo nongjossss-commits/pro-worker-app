@@ -138,8 +138,8 @@ class LaborItemizedBillTest extends TestCase
         $m2 = LaborTeamMember::create(['labor_team_id' => $a->id, 'name' => 'สมหญิง', 'is_active' => true]);
         $m3 = LaborTeamMember::create(['labor_team_id' => $b->id, 'name' => 'สมศรี', 'is_active' => true]);
 
-        $post = fn (string $month, array $rows) => $this->actingAs($this->admin)->post(route('labor.bills.monthly.store'), [
-            'month' => $month, 'labor_charge_type_id' => $ss->id, 'entry_date' => $month . '-25', 'rows' => $rows,
+        $post = fn (string $month, array $rows, string $title = 'ประกันสังคม') => $this->actingAs($this->admin)->post(route('labor.bills.monthly.store'), [
+            'month' => $month, 'title' => $title, 'entry_date' => $month . '-25', 'rows' => $rows,
         ]);
 
         $post('2026-09', [
@@ -161,17 +161,66 @@ class LaborItemizedBillTest extends TestCase
         // The charges are on the team balance like any other charge.
         $this->assertEquals(1250, (float) $a->ledgerEntries()->sum('amount'));
 
-        // Same member, same month and type → refused.
-        $post('2026-09', [['member_id' => $m1->id, 'amount' => 750, 'description' => 'ซ้ำ']])->assertSessionHasErrors('rows');
-        $this->assertSame(3, LaborLedgerEntry::count());
+        // The typed heading is kept on the bill; the charges carry no charge type.
+        $this->assertSame('ประกันสังคม', $billA->title);
+        $this->assertSame(0, LaborLedgerEntry::whereNotNull('labor_charge_type_id')->count());
 
-        // Next month: last month's amount/description are offered, and this month's bill is flagged.
-        $defaults = $this->actingAs($this->admin)->getJson(route('labor.bills.monthly.defaults', ['month' => '2026-10', 'charge_type_id' => $ss->id]))->json('defaults');
-        $this->assertEquals(750, $defaults[$m1->id]['amount']);
-        $this->assertSame('ประกันสังคม กันยายน 2569', $defaults[$m1->id]['description']);
-        $this->assertNull($defaults[$m1->id]['billed_no']);
-        $same = $this->actingAs($this->admin)->getJson(route('labor.bills.monthly.defaults', ['month' => '2026-09', 'charge_type_id' => $ss->id]))->json('defaults');
-        $this->assertSame($billA->bill_no, $same[$m1->id]['billed_no']);
+        // Same month and heading (spacing / case ignored) again → the SAME bill is
+        // updated: an edited amount, plus a member who wasn't billed yet is added.
+        // No second bill, bill number unchanged.
+        $m4 = LaborTeamMember::create(['labor_team_id' => $a->id, 'name' => 'สมปอง', 'is_active' => true]);
+        $post('2026-09', [
+            ['member_id' => $m1->id, 'amount' => 800, 'description' => 'ประกันสังคม กันยายน 2569 (แก้)'],
+            ['member_id' => $m4->id, 'amount' => 300, 'description' => 'ประกันสังคม กันยายน 2569'],
+        ], '  ประกันสังคม ')->assertSessionHasNoErrors();
+        $this->assertSame(2, LaborBill::where('bill_type', 'monthly')->count());
+        $billA->refresh();
+        $this->assertEquals(1600, $billA->total_due); // 800 + 500 + 300
+        $this->assertEquals(1600, $billA->period_charges);
+        $this->assertSame(3, $billA->entries()->count());
+        $this->assertEquals(800, (float) $billA->entries()->where('labor_team_member_id', $m1->id)->value('amount'));
+        $this->assertEquals(1600, (float) $a->ledgerEntries()->sum('amount')); // one figure, not two
+        $this->assertSame(4, LaborLedgerEntry::count());
+        Storage::disk('public')->assertExists($billA->pdf_path);
+
+        // A bill that already has a payment can't be changed (nothing is saved).
+        $billB = LaborBill::where('bill_type', 'monthly')->where('labor_team_id', $b->id)->first();
+        \App\Models\LaborBillPayment::create(['labor_bill_id' => $billB->id, 'amount' => 100, 'paid_at' => '2026-09-28', 'payment_method' => 'cash']);
+        $entriesBefore = LaborLedgerEntry::count();
+        $post('2026-09', [['member_id' => $m3->id, 'amount' => 999, 'description' => 'แก้']])->assertSessionHasErrors('rows');
+        $this->assertEquals(750, $billB->fresh()->total_due);
+        $this->assertSame($entriesBefore, LaborLedgerEntry::count());
+
+        // A different heading in the same month is a different expense → its own bill.
+        $post('2026-09', [['member_id' => $m1->id, 'amount' => 1200, 'description' => 'ค่าจองบิน ชุด ก.ย.']], 'ค่าจองบิน')->assertSessionHasNoErrors();
+        $this->assertSame(3, LaborBill::where('bill_type', 'monthly')->count());
+
+        // An older bill made with a charge type (no title) still counts as that heading.
+        $old = LaborBill::create([
+            'labor_team_id' => $b->id, 'bill_no' => 'LB-OLD-1', 'bill_type' => 'monthly', 'charge_type_ids' => [$ss->id],
+            'period_start' => '2026-08-01', 'period_end' => '2026-08-31', 'previous_balance' => 0, 'period_charges' => 750,
+            'total_due' => 750, 'status' => 'issued', 'is_auto_generated' => false, 'issued_at' => now(),
+        ]);
+        LaborLedgerEntry::create(['labor_team_id' => $b->id, 'labor_team_member_id' => $m3->id, 'labor_charge_type_id' => $ss->id,
+            'labor_bill_id' => $old->id, 'entry_date' => '2026-08-25', 'description' => 'เก่า', 'amount' => 750]);
+        $post('2026-08', [['member_id' => $m3->id, 'amount' => 700, 'description' => 'แก้ยอด ส.ค.']])->assertSessionHasNoErrors();
+        $this->assertSame(1, LaborBill::whereDate('period_start', '2026-08-01')->count()); // updated, not re-issued
+        $this->assertEquals(700, $old->fresh()->total_due);
+        $this->assertSame('ประกันสังคม', $old->fresh()->title);
+
+        // Reopening: no type to choose — each person's latest monthly bill is offered
+        // (even right after issuing it), plus the latest heading and recent headings.
+        $res = $this->actingAs($this->admin)->getJson(route('labor.bills.monthly.defaults', ['month' => '2026-10']))->json();
+        $this->assertEquals(1200, $res['defaults'][$m1->id]['amount']); // latest bill of สมชาย
+        $this->assertSame('ค่าจองบิน ชุด ก.ย.', $res['defaults'][$m1->id]['description']);
+        $this->assertSame('2026-09', $res['defaults'][$m1->id]['source_month']);
+        $this->assertEquals(500, $res['defaults'][$m2->id]['amount']);
+        $this->assertSame([], $res['defaults'][$m1->id]['billed']);
+        $this->assertSame('ประกันสังคม', $res['last_title']); // heading of the most recently created bill (the old one above)
+        $this->assertContains('ประกันสังคม', $res['titles']);
+        $same = $this->actingAs($this->admin)->getJson(route('labor.bills.monthly.defaults', ['month' => '2026-09']))->json('defaults');
+        $this->assertEqualsCanonicalizing(['ประกันสังคม', 'ค่าจองบิน'], array_column($same[$m1->id]['billed'], 'title'));
+        $this->assertContains($billA->bill_no, array_column($same[$m1->id]['billed'], 'bill_no'));
     }
 
     public function test_bills_page_shows_billed_paid_and_unbilled_per_team(): void

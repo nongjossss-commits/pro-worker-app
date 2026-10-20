@@ -2703,5 +2703,15 @@
     "Click again to remove this team from the filter": "คลิกอีกครั้งเพื่อเอาทีมนี้ออกจากตัวกรอง",
     "Click a team card to filter (several allowed) — click it again to remove": "คลิกการ์ดทีมเพื่อกรอง (เลือกได้หลายทีม) — คลิกซ้ำเพื่อยกเลิก",
     "Clear team filter": "ล้างตัวกรองทีม",
-    "Several teams (:count)": "หลายทีม (:count)"
+    "Several teams (:count)": "หลายทีม (:count)",
+    "e.g. Flight booking — October batch": "เช่น ค่าจองบิน ชุดเดือนตุลาคม",
+    "Type the expense heading yourself. Each person's amount and description from their latest monthly bill are filled in for you and stay until you change them — usually only the month and date need changing.": "พิมพ์ประเภท/หัวข้อค่าใช้จ่ายได้เอง · จำนวนเงินและคำอธิบายของแต่ละคนจะเติมจากใบวางบิลรายเดือนล่าสุดของคนนั้นให้ และคงไว้จนกว่าจะแก้ — ส่วนใหญ่แก้แค่เดือนและวันที่",
+    "Each ticked person becomes a charge under this heading on their team's balance, and each team gets its own bill and PDF. People without an amount are left out.": "ทุกคนที่ติ๊กจะถูกบันทึกเป็นค่าใช้จ่ายตามหัวข้อนี้เข้ายอดของทีม และแต่ละทีมได้ใบวางบิลและไฟล์ PDF แยกของตัวเอง · คนที่ไม่ได้กรอกยอดจะไม่ถูกรวม",
+    "edit and save to update this bill": "แก้แล้วบันทึก = อัปเดตบิลเดิม",
+    "paid / tax invoice issued — cannot be changed": "รับชำระ/ออกใบกำกับแล้ว — แก้ไม่ได้",
+    "edits to issued bills": "แก้ไขบิลที่ออกแล้ว",
+    "Updated :count bill(s): :nos": "อัปเดตใบวางบิลเดิม :count ใบ: :nos",
+    "Nothing changed.": "ไม่มีอะไรเปลี่ยนแปลง",
+    "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.": "บิล :no มีการรับชำระ ใบกำกับภาษี หรือหนังสือรับรองหัก ณ ที่จ่ายแล้ว จึงแก้ไม่ได้ — ให้ยกเลิกบิลแล้วออกใหม่แทน",
+    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "คนที่วางบิลเดือนนี้แล้วในหัวข้อเดียวกัน: แก้ยอด/คำอธิบาย หรือเพิ่มคนที่ยังไม่ได้วาง แล้วกดบันทึก — ระบบอัปเดตบิลเดิม (เลขเดิม) ไม่ออกบิลซ้ำ"
 }

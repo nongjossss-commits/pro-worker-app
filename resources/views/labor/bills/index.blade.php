@@ -549,12 +549,12 @@
                     </div>
                     <div class="col-6 col-md-3">
                         <label class="form-label small">{{ __('Charge Type') }}</label>
-                        <select name="labor_charge_type_id" class="form-select" x-model="typeId" @change="loadDefaults()" required>
-                            <option value="">-- {{ __('Select') }} --</option>
-                            @foreach($chargeTypes as $type)
-                                <option value="{{ $type->id }}">{{ $type->name }}</option>
-                            @endforeach
-                        </select>
+                        {{-- Typed freely (not the configured charge types); recent headings offered as suggestions. --}}
+                        <input type="text" name="title" class="form-control" x-model="title" list="monthlyBillTitles" maxlength="150"
+                               placeholder="{{ __('e.g. Flight booking — October batch') }}" autocomplete="off" required>
+                        <datalist id="monthlyBillTitles">
+                            <template x-for="t in titles" :key="t"><option :value="t"></option></template>
+                        </datalist>
                     </div>
                     <div class="col-6 col-md-3">
                         <label class="form-label small">{{ __('Entry Date') }}</label>
@@ -576,11 +576,12 @@
                     <div class="small">
                         <span x-show="loading" class="text-muted me-2"><span class="spinner-border spinner-border-sm me-1"></span>{{ __('Loading...') }}</span>
                         {{ __('Selected') }}: <strong x-text="selectedRows.length"></strong> {{ __('people') }}
+                        <span x-show="editCount" class="text-warning-emphasis">(<span x-text="editCount"></span> {{ __('edits to issued bills') }})</span>
                         = <strong x-text="money(selectedTotal)"></strong> {{ __('THB') }}
                         · <strong x-text="selectedTeamCount"></strong> {{ __('bill(s), one per team') }}
                     </div>
                 </div>
-                <div class="alert alert-light border small py-2" x-show="!typeId">{{ __('Choose the charge type first — amounts and descriptions from each person\'s previous monthly bill are filled in for you.') }}</div>
+                <div class="alert alert-light border small py-2">{{ __('Type the expense heading yourself. Each person\'s amount and description from their latest monthly bill are filled in for you and stay until you change them — usually only the month and date need changing.') }}<br>{{ __('Already on this month\'s bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.') }}</div>
 
                 @if($memberTeams->isEmpty())
                     <div class="text-center text-muted py-4">{{ __('No active team members yet — add them under Team Members first.') }}</div>
@@ -602,15 +603,18 @@
                                         <input class="form-check-input" type="checkbox" :id="'mMember' + m.id" x-model="rows[m.id].checked">
                                         <label class="form-check-label" :for="'mMember' + m.id" x-text="m.name"></label>
                                     </div>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis" x-show="rows[m.id].billedNo" x-text="'{{ __('Already billed this month') }}: ' + rows[m.id].billedNo"></span>
+                                    <span class="badge bg-warning-subtle text-warning-emphasis text-wrap text-start" style="line-height:1.35" x-show="billedNo(rows[m.id]) && !billedLocked(rows[m.id])"
+                                          x-text="'{{ __('Already billed this month') }}: ' + billedNo(rows[m.id]) + ' · ' + '{{ __('edit and save to update this bill') }}'"></span>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis text-wrap text-start" style="line-height:1.35" x-show="billedLocked(rows[m.id])"
+                                          x-text="'{{ __('Already billed this month') }}: ' + billedNo(rows[m.id]) + ' · ' + '{{ __('paid / tax invoice issued — cannot be changed') }}'"></span>
                                 </div>
                                 <div class="col-4 col-md-2">
                                     <input type="number" step="0.01" min="0" class="form-control form-control-sm text-end" placeholder="{{ __('Amount') }}"
-                                           x-model="rows[m.id].amount" @input="if (rows[m.id].amount !== '') rows[m.id].checked = true">
+                                           x-model="rows[m.id].amount" :disabled="billedLocked(rows[m.id])" @input="if (rows[m.id].amount !== '') rows[m.id].checked = true">
                                 </div>
                                 <div class="col-8 col-md-7">
                                     <input type="text" maxlength="255" class="form-control form-control-sm" placeholder="{{ __('Description') }}"
-                                           x-model="rows[m.id].description">
+                                           x-model="rows[m.id].description" :disabled="billedLocked(rows[m.id])" @input="if (rows[m.id].amount !== '') rows[m.id].checked = true">
                                 </div>
                             </div>
                         </template>
@@ -624,11 +628,11 @@
                         <input type="hidden" :name="'rows[' + i + '][description]'" :value="r.description">
                     </span>
                 </template>
-                <div class="small text-muted mt-2">{{ __('Each ticked person becomes a charge of the chosen type on their team\'s balance, and each team gets its own bill and PDF. People without an amount are left out.') }}</div>
+                <div class="small text-muted mt-2">{{ __('Each ticked person becomes a charge under this heading on their team\'s balance, and each team gets its own bill and PDF. People without an amount are left out.') }}</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                <button type="submit" class="btn btn-primary" :disabled="!typeId || selectedRows.length === 0 || submitting">
+                <button type="submit" class="btn btn-primary" :disabled="!title.trim() || selectedRows.length === 0 || submitting">
                     <i class="bi bi-file-earmark-plus me-1"></i>{{ __('Generate') }} (<span x-text="selectedTeamCount"></span>)
                 </button>
             </div>
@@ -703,27 +707,54 @@
         const teams = @json($memberTeams);
         const rows = {};
         teams.forEach(t => t.members.forEach(m => {
-            rows[m.id] = { id: m.id, teamId: t.id, name: m.name, checked: false, amount: '', description: '', billedNo: null };
+            rows[m.id] = { id: m.id, teamId: t.id, name: m.name, checked: false, amount: '', description: '', billed: [] };
         }));
-        const types = @json($chargeTypes->pluck('name', 'id'));
         const descTemplate = @json(__(':type for :month'));
         const locale = @json(app()->getLocale());
+        const norm = v => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase();
 
         return {
-            teams, rows, search: '', loading: false, submitting: false,
-            month: @json(now()->format('Y-m')), typeId: '', entryDate: @json(now()->format('Y-m-d')),
-            init() {},
+            teams, rows, search: '', loading: false, submitting: false, loaded: false,
+            month: @json($monthlyDefaultMonth), title: '', titles: [], entryDate: @json(now()->format('Y-m-d')),
+            init() {
+                // Fill in last time's figures as soon as the window opens (once —
+                // reopening keeps what was typed in the meantime).
+                this.$el.addEventListener('show.bs.modal', () => { if (!this.loaded) this.loadDefaults(); });
+                this.$watch('month', () => this.loadDefaults());
+                this.$watch('title', () => {
+                    Object.values(this.rows).forEach(r => this.applyBilled(r));
+                });
+            },
             money: billMoney,
-            monthLabel(offset = 0) {
-                const [y, m] = this.month.split('-').map(Number);
-                if (!y || !m) return this.month;
+            monthLabelOf(ym) {
+                const [y, m] = String(ym || '').split('-').map(Number);
+                if (!y || !m) return ym || '';
                 try {
-                    return new Date(y, m - 1 + offset, 1).toLocaleDateString(locale === 'th' ? 'th-TH' : locale, { month: 'long', year: 'numeric' });
-                } catch (e) { return this.month; }
+                    return new Date(y, m - 1, 1).toLocaleDateString(locale === 'th' ? 'th-TH' : locale, { month: 'long', year: 'numeric' });
+                } catch (e) { return ym; }
             },
+            monthLabel() { return this.monthLabelOf(this.month); },
             defaultDescription() {
-                return descTemplate.replace(':type', types[this.typeId] || '').replace(':month', this.monthLabel());
+                return descTemplate.replace(':type', this.title.trim()).replace(':month', this.monthLabel());
             },
+            // Already on a monthly bill of the chosen month with the heading being typed.
+            billedEntry(r) { return (r.billed || []).find(b => norm(b.title) === norm(this.title)) || null; },
+            billedNo(r) { const hit = this.billedEntry(r); return hit ? hit.bill_no : null; },
+            billedLocked(r) { const hit = this.billedEntry(r); return !!(hit && hit.locked); },
+            // Someone already on this month's bill: show the bill's current figures,
+            // unticked — editing them ticks the row, and saving updates that same bill.
+            applyBilled(r) {
+                const hit = this.billedEntry(r);
+                if (hit) {
+                    r.amount = hit.amount;
+                    r.description = hit.description || '';
+                    r.checked = false;
+                } else if (r.checked === false && r.amount !== '' && r._wasBilled) {
+                    r.checked = true;
+                }
+                r._wasBilled = !!hit;
+            },
+            get editCount() { return this.selectedRows.filter(r => this.billedNo(r)).length; },
             visibleMembers(team) {
                 const q = this.search.trim().toLowerCase();
                 if (!q || team.name.toLowerCase().includes(q)) return team.members;
@@ -734,29 +765,38 @@
             teamCount(team) { return team.members.filter(m => this.rows[m.id].checked).length; },
             teamTotal(team) { return team.members.filter(m => this.rows[m.id].checked).reduce((s, m) => s + Number(this.rows[m.id].amount || 0), 0); },
             get selectedRows() {
-                return Object.values(this.rows).filter(r => r.checked && Number(r.amount) > 0)
+                return Object.values(this.rows).filter(r => r.checked && Number(r.amount) > 0 && !this.billedLocked(r))
                     .map(r => ({ ...r, description: (r.description || '').trim() || this.defaultDescription() }));
             },
             get selectedTotal() { return this.selectedRows.reduce((s, r) => s + Number(r.amount), 0); },
             get selectedTeamCount() { return new Set(this.selectedRows.map(r => r.teamId)).size; },
             loadDefaults() {
-                if (!this.typeId || !this.month) return;
+                if (!this.month) return;
                 this.loading = true;
-                const params = new URLSearchParams({ month: this.month, charge_type_id: this.typeId });
+                const firstLoad = !this.loaded;
+                const params = new URLSearchParams({ month: this.month });
                 fetch(@json(route('labor.bills.monthly.defaults')) + '?' + params.toString(), { headers: { 'Accept': 'application/json' } })
                     .then(r => r.ok ? r.json() : Promise.reject(r))
                     .then(data => {
-                        const fallback = this.defaultDescription();
-                        const prevLabel = this.monthLabel(-1);
+                        this.titles = data.titles || [];
+                        if (!this.title.trim() && data.last_title) this.title = data.last_title;
                         const thisLabel = this.monthLabel();
                         Object.values(this.rows).forEach(r => {
                             const d = data.defaults[r.id] || null;
-                            r.billedNo = d ? d.billed_no : null;
-                            r.amount = d && d.amount !== null ? d.amount : '';
-                            // Reuse last month's description, with last month's name swapped for this one.
-                            r.description = d && d.description ? d.description.split(prevLabel).join(thisLabel) : fallback;
-                            r.checked = !r.billedNo && r.amount !== '';
+                            r.billed = d ? (d.billed || []) : [];
+                            // Amounts / descriptions: filled from the latest bill on the first
+                            // load; on a month change only the month name in the text moves.
+                            if (firstLoad) {
+                                r.amount = d && d.amount !== null ? d.amount : '';
+                                r.description = d && d.description ? d.description.split(this.monthLabelOf(d.source_month)).join(thisLabel) : '';
+                            } else if (r.description && r._descMonth) {
+                                r.description = r.description.split(r._descMonth).join(thisLabel);
+                            }
+                            r._descMonth = thisLabel;
+                            r.checked = r.amount !== '';
+                            this.applyBilled(r);
                         });
+                        this.loaded = true;
                     })
                     .catch(() => appToast(@json(__('Could not load the items. Please try again.')), 'error'))
                     .finally(() => { this.loading = false; });

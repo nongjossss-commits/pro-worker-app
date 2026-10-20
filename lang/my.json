@@ -1545,5 +1545,15 @@
     "Click again to remove this team from the filter": "ဤအဖွဲ့ကို စစ်ထုတ်မှုမှ ဖယ်ရန် ထပ်နှိပ်ပါ",
     "Click a team card to filter (several allowed) — click it again to remove": "စစ်ထုတ်ရန် အဖွဲ့ကတ်ကို နှိပ်ပါ (အဖွဲ့များစွာ ရွေးနိုင်) — ပယ်ဖျက်ရန် ထပ်နှိပ်ပါ",
     "Clear team filter": "အဖွဲ့ စစ်ထုတ်မှု ရှင်းရန်",
-    "Several teams (:count)": "အဖွဲ့များစွာ (:count)"
+    "Several teams (:count)": "အဖွဲ့များစွာ (:count)",
+    "e.g. Flight booking — October batch": "ဥပမာ လေယာဉ်လက်မှတ် ကြိုတင်မှာ — အောက်တိုဘာ အသုတ်",
+    "Type the expense heading yourself. Each person's amount and description from their latest monthly bill are filled in for you and stay until you change them — usually only the month and date need changing.": "ကုန်ကျစရိတ် ခေါင်းစဉ်ကို ကိုယ်တိုင် ရိုက်ထည့်ပါ။ လူတစ်ဦးချင်း၏ ပမာဏနှင့် ဖော်ပြချက်ကို ၎င်း၏ နောက်ဆုံး လစဉ်ဘေလ်မှ ဖြည့်ပေးပြီး ပြင်သည်အထိ ဆက်ရှိနေမည် — များသောအားဖြင့် လနှင့် ရက်စွဲသာ ပြင်ရန်လိုသည်။",
+    "Each ticked person becomes a charge under this heading on their team's balance, and each team gets its own bill and PDF. People without an amount are left out.": "အမှန်ခြစ်ထားသူတိုင်းကို ဤခေါင်းစဉ်ဖြင့် ၎င်းအဖွဲ့၏ လက်ကျန်တွင် ကုန်ကျစရိတ်အဖြစ် မှတ်တမ်းတင်ပြီး အဖွဲ့တစ်ခုစီသည် ကိုယ်ပိုင် ဘေလ်နှင့် PDF ရရှိသည်။ ပမာဏ မထည့်ထားသူများကို ထည့်မတွက်ပါ။",
+    "edit and save to update this bill": "ပြင်ပြီး သိမ်းလျှင် ဤဘေလ်ကို အပ်ဒိတ်လုပ်မည်",
+    "paid / tax invoice issued — cannot be changed": "ငွေရပြီး / အခွန်ပြေစာ ထုတ်ပြီး — ပြင်၍မရ",
+    "edits to issued bills": "ထုတ်ပြီးဘေလ်များ ပြင်ဆင်ခြင်း",
+    "Updated :count bill(s): :nos": "ဘေလ် :count ခု အပ်ဒိတ်လုပ်ပြီး: :nos",
+    "Nothing changed.": "ဘာမှ မပြောင်းလဲပါ။",
+    "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.": "ဘေလ် :no တွင် ငွေပေးချေမှု၊ အခွန်ပြေစာ သို့မဟုတ် WHT လက်မှတ် ရှိပြီးဖြစ်၍ ပြင်၍မရတော့ပါ — ပယ်ဖျက်ပြီး အသစ်ထုတ်ပါ။",
+    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "ဤလ ခေါင်းစဉ်တူ ဘေလ်တွင် ပါပြီးသားလား။ ပမာဏ / ဖော်ပြချက်ကို ပြင် (သို့မဟုတ် မထည့်ရသေးသူများ ထည့်) ပြီး သိမ်းပါ — ဘေလ်ဟောင်း (နံပါတ်တူ) ကို အပ်ဒိတ်လုပ်ပြီး ဘေလ်ထပ် မထုတ်ပါ။"
 }

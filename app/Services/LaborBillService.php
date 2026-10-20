@@ -19,7 +19,7 @@ use RuntimeException;
  * entry) is recorded, so the same balance can legitimately reappear as
  * "previous balance" on the next bill until it's paid off.
  *
- * Itemized / monthly bills (generateItemized(), generateMonthly()) are the
+ * Itemized / monthly bills (generateItemized(), saveMonthly()) are the
  * exception: they list only the entries ticked when issuing them, with no
  * brought-forward balance, and tag those entries (labor_bill_id) so they can
  * never be billed twice. Voiding one releases its entries again.
@@ -133,56 +133,148 @@ class LaborBillService
         });
     }
 
+    /** Comparable form of a monthly bill heading (spacing / case ignored). */
+    public static function normalizeHeading(?string $v): string
+    {
+        return mb_strtolower(preg_replace('/\s+/u', ' ', trim((string) $v)));
+    }
+
     /**
-     * "ใบวางบิลเรียกเก็บค่าใช้จ่ายรายเดือน": records one charge per team
-     * member ($rows: member_id, amount, description) for the month, then
-     * issues one bill — one PDF — per team.
-     *
-     * @return \Illuminate\Support\Collection<int, LaborBill>
+     * The team's (non-void) monthly bill for $month under $title, if any —
+     * older bills without a title match by their charge-type names.
      */
-    public function generateMonthly(
+    public function findMonthlyBill(int $teamId, Carbon $month, string $title): ?LaborBill
+    {
+        $want = self::normalizeHeading($title);
+
+        return LaborBill::where('labor_team_id', $teamId)
+            ->where('bill_type', 'monthly')->where('status', '!=', 'void')
+            ->whereDate('period_start', $month->copy()->startOfMonth()->toDateString())
+            ->orderBy('id')->get()
+            ->first(fn (LaborBill $bill) => self::normalizeHeading($bill->heading) === $want);
+    }
+
+    /**
+     * A bill that has a payment, tax invoice or WHT certificate is settled
+     * paperwork — its amount can't be changed here (void it and re-issue).
+     */
+    public function monthlyBillLocked(LaborBill $bill): bool
+    {
+        return $bill->payments()->exists() || $bill->taxInvoices()->exists() || $bill->whtCertificates()->exists();
+    }
+
+    /**
+     * "ใบวางบิลเรียกเก็บค่าใช้จ่ายรายเดือน": per team, for the month and
+     * heading ($title, typed by the accountant, e.g. "ค่าจองบิน ชุดตุลาคม"):
+     *  - no bill yet → records one charge per ticked member and issues one
+     *    bill (one PDF);
+     *  - a bill already exists → it is updated in place (same bill no.):
+     *    members already on it get their amount / description changed,
+     *    members not on it yet are added; totals and the PDF are redone. So
+     *    a team billed for 3 people first can get the rest later, and a
+     *    correction never leaves a second bill for the same charge.
+     * The charges carry no charge type (they're not one of the configured
+     * rate-based types), so they stay out of the charge-entry list /
+     * per-type figures but count on the team balance like any other charge.
+     * A bill with payments / tax invoice / WHT certificate is not changed
+     * (RuntimeException) — nothing is saved in that case.
+     *
+     * @return array{created: \Illuminate\Support\Collection<int, LaborBill>, updated: \Illuminate\Support\Collection<int, LaborBill>}
+     */
+    public function saveMonthly(
         Carbon $month,
-        int $chargeTypeId,
+        string $title,
         Carbon $entryDate,
         array $rows,
         ?int $financialProfileId = null
-    ) {
-        return DB::transaction(function () use ($month, $chargeTypeId, $entryDate, $rows, $financialProfileId) {
-            $members = LaborTeamMember::whereIn('id', array_column($rows, 'member_id'))->get()->keyBy('id');
-            $entryIds = [];
+    ): array {
+        $title = trim($title);
 
+        return DB::transaction(function () use ($month, $title, $entryDate, $rows, $financialProfileId) {
+            $members = LaborTeamMember::whereIn('id', array_column($rows, 'member_id'))->get()->keyBy('id');
+            $byTeam = [];
             foreach ($rows as $row) {
                 $member = $members[$row['member_id']] ?? null;
-                if (!$member) {
-                    continue;
+                if ($member) {
+                    $byTeam[$member->labor_team_id][] = ['member' => $member, 'amount' => round((float) $row['amount'], 2), 'description' => $row['description']];
                 }
-                $entryIds[] = LaborLedgerEntry::create([
-                    'labor_team_id' => $member->labor_team_id,
-                    'labor_team_member_id' => $member->id,
-                    'labor_charge_type_id' => $chargeTypeId,
-                    'entry_date' => $entryDate->toDateString(),
-                    'description' => $row['description'],
-                    'amount' => round((float) $row['amount'], 2),
-                    'created_by' => Auth::id(),
-                ])->id;
             }
-
-            if (!$entryIds) {
+            if (!$byTeam) {
                 throw new RuntimeException('ไม่มีรายการให้วางบิล');
             }
 
-            $bills = $this->generateItemized($entryIds, $financialProfileId, [$chargeTypeId], 'monthly');
+            $newEntryIds = [];
+            $updated = collect();
+            foreach ($byTeam as $teamId => $teamRows) {
+                $bill = $this->findMonthlyBill((int) $teamId, $month, $title);
+                if (!$bill) {
+                    foreach ($teamRows as $r) {
+                        $newEntryIds[] = $this->monthlyEntry($r, $entryDate)->id;
+                    }
+                    continue;
+                }
 
-            // A monthly bill covers the whole month, whatever day its charges are dated.
-            foreach ($bills as $bill) {
-                $bill->period_start = $month->copy()->startOfMonth();
-                $bill->period_end = $month->copy()->endOfMonth();
-                $bill->pdf_path = app(LaborBillPdfService::class)->generateAndStore($bill->loadMissing('team', 'financialProfile'));
-                $bill->save();
+                if ($this->monthlyBillLocked($bill)) {
+                    throw new RuntimeException(__('Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.', ['no' => $bill->bill_no]));
+                }
+
+                $existing = $bill->entries()->whereNotNull('labor_team_member_id')->get()->keyBy('labor_team_member_id');
+                $changed = false;
+                foreach ($teamRows as $r) {
+                    $entry = $existing[$r['member']->id] ?? null;
+                    if ($entry) {
+                        if ((float) $entry->amount !== $r['amount'] || $entry->description !== $r['description']) {
+                            $entry->update(['amount' => $r['amount'], 'description' => $r['description']]);
+                            $changed = true;
+                        }
+                    } else {
+                        $this->monthlyEntry($r, $entryDate, $bill->id);
+                        $changed = true;
+                    }
+                }
+                if ($changed) {
+                    $total = round((float) $bill->entries()->sum('amount'), 2);
+                    $bill->period_charges = $total;
+                    $bill->total_due = round((float) $bill->previous_balance + $total, 2);
+                    if ($bill->title === null || trim($bill->title) === '') {
+                        $bill->title = $title;
+                    }
+                    $bill->pdf_path = app(LaborBillPdfService::class)->generateAndStore($bill->loadMissing('team', 'financialProfile'));
+                    $bill->save();
+                    $updated->push($bill->fresh());
+                }
             }
 
-            return $bills->map->fresh();
+            $created = collect();
+            if ($newEntryIds) {
+                $created = $this->generateItemized($newEntryIds, $financialProfileId, [], 'monthly');
+
+                // A monthly bill covers the whole month, whatever day its charges are dated.
+                foreach ($created as $bill) {
+                    $bill->title = $title;
+                    $bill->period_start = $month->copy()->startOfMonth();
+                    $bill->period_end = $month->copy()->endOfMonth();
+                    $bill->pdf_path = app(LaborBillPdfService::class)->generateAndStore($bill->loadMissing('team', 'financialProfile'));
+                    $bill->save();
+                }
+                $created = $created->map->fresh();
+            }
+
+            return ['created' => $created->values(), 'updated' => $updated->values()];
         });
+    }
+
+    private function monthlyEntry(array $r, Carbon $entryDate, ?int $billId = null): LaborLedgerEntry
+    {
+        return LaborLedgerEntry::create([
+            'labor_bill_id' => $billId,
+            'labor_team_id' => $r['member']->labor_team_id,
+            'labor_team_member_id' => $r['member']->id,
+            'entry_date' => $entryDate->toDateString(),
+            'description' => $r['description'],
+            'amount' => $r['amount'],
+            'created_by' => Auth::id(),
+        ]);
     }
 
     public function void(LaborBill $bill, string $reason): LaborBill

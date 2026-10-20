@@ -1545,5 +1545,15 @@
     "Click again to remove this team from the filter": "再次点击可将此团队移出筛选",
     "Click a team card to filter (several allowed) — click it again to remove": "点击团队卡片进行筛选(可多选)——再次点击取消",
     "Clear team filter": "清除团队筛选",
-    "Several teams (:count)": "多个团队(:count)"
+    "Several teams (:count)": "多个团队(:count)",
+    "e.g. Flight booking — October batch": "例如：机票预订——十月批次",
+    "Type the expense heading yourself. Each person's amount and description from their latest monthly bill are filled in for you and stay until you change them — usually only the month and date need changing.": "可自行输入费用标题。每个人的金额和说明会按其最近一张月度账单自动填入，并保留到您修改为止——通常只需修改月份和日期。",
+    "Each ticked person becomes a charge under this heading on their team's balance, and each team gets its own bill and PDF. People without an amount are left out.": "每位勾选的人员都会按此标题记入其团队余额的费用，每个团队各自生成账单和 PDF。未填写金额的人员不计入。",
+    "edit and save to update this bill": "修改后保存即可更新此账单",
+    "paid / tax invoice issued — cannot be changed": "已收款/已开发票——无法修改",
+    "edits to issued bills": "修改已开账单",
+    "Updated :count bill(s): :nos": "已更新 :count 张账单：:nos",
+    "Nothing changed.": "没有任何更改。",
+    "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.": "账单 :no 已有收款、税务发票或预扣税证明，无法再修改——请作废后重新开具。",
+    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "本月同一标题的账单中已有此人？修改金额/说明（或添加尚未开账单的人员）后保存——会更新同一张账单（编号不变），不会再开第二张。"
 }

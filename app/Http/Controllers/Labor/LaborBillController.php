@@ -112,13 +112,18 @@ class LaborBillController extends Controller
                 'members' => $t->members->map(fn ($m) => ['id' => $m->id, 'name' => $m->name])->values(),
             ])->values();
 
+        // The monthly charge window opens on the latest month that has a monthly
+        // bill (e.g. already billed ahead for next month), else this month.
+        $latestMonthly = LaborBill::where('bill_type', 'monthly')->where('status', '!=', 'void')->max('period_start');
+        $monthlyDefaultMonth = $latestMonthly ? Carbon::parse($latestMonthly)->format('Y-m') : now()->format('Y-m');
+
         $createdBills = LaborBill::with('team')->whereIn('id', (array) session('created_bill_ids', []))->orderBy('id')->get();
 
         return view('labor.bills.index', compact(
             'bills', 'teams', 'profiles', 'currentProfileId',
             'totalBilled', 'totalPaid', 'totalOutstanding', 'billCount',
             'teamId', 'paymentStatus', 'period', 'filterMonth', 'filterDate',
-            'chargeTypes', 'tracking', 'memberTeams', 'createdBills',
+            'chargeTypes', 'tracking', 'memberTeams', 'createdBills', 'monthlyDefaultMonth',
         ));
     }
 
@@ -275,43 +280,63 @@ class LaborBillController extends Controller
     }
 
     /**
-     * Per-member defaults for the monthly charge bill (JSON): amount and
-     * description from the member's latest earlier monthly bill of this
-     * charge type, and the bill number if they're already on a (non-void)
-     * monthly bill for the chosen month.
+     * Per-member defaults for the monthly charge bill (JSON) — loaded as soon
+     * as the window opens (no charge type to pick any more):
+     *  - amount / description / source month from the member's latest
+     *    (non-void) monthly bill, whatever month or heading — so what was
+     *    entered last time stays until someone changes it;
+     *  - billed: the member's (non-void) monthly bills in the chosen month,
+     *    with heading, current amount / description and whether the bill is
+     *    locked (paid / tax invoice / WHT) — the page flags "already billed"
+     *    for the heading being typed and lets it be edited on the same bill;
+     *  - last_title / titles: the latest heading and recent headings to pick from.
      */
-    public function monthlyDefaults(Request $request)
+    public function monthlyDefaults(Request $request, LaborBillService $service)
     {
         abort_unless($request->user()->can('manage-labor-ledger'), 403);
 
         $validated = $request->validate([
             'month' => ['required', 'date_format:Y-m'],
-            'charge_type_id' => ['required', 'integer'],
         ]);
         $monthStart = Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01')->toDateString();
 
         $entries = LaborLedgerEntry::query()
-            ->where('labor_charge_type_id', $validated['charge_type_id'])
             ->whereNotNull('labor_team_member_id')
             ->whereHas('bill', fn ($q) => $q->where('bill_type', 'monthly')->where('status', '!=', 'void'))
-            ->with('bill:id,period_start,bill_no')
-            ->orderByDesc('entry_date')->orderByDesc('id')
+            ->with('bill:id,period_start,bill_no,title,charge_type_ids,created_at')
+            ->orderByDesc('labor_bill_id')->orderByDesc('id')
             ->get(['id', 'labor_team_member_id', 'labor_bill_id', 'amount', 'description', 'entry_date']);
 
         $defaults = [];
+        $locked = [];
         foreach ($entries as $e) {
-            $billMonth = $e->bill->period_start->toDateString();
-            $row = $defaults[$e->labor_team_member_id] ?? ['amount' => null, 'description' => null, 'billed_no' => null];
-            if ($billMonth === $monthStart) {
-                $row['billed_no'] ??= $e->bill->bill_no;
-            } elseif ($billMonth < $monthStart && $row['amount'] === null) {
+            $row = $defaults[$e->labor_team_member_id] ?? ['amount' => null, 'description' => null, 'source_month' => null, 'billed' => []];
+            if ($row['amount'] === null) {
                 $row['amount'] = (float) $e->amount;
                 $row['description'] = $e->description;
+                $row['source_month'] = $e->bill->period_start->format('Y-m');
+            }
+            if ($e->bill->period_start->toDateString() === $monthStart) {
+                // On that month's bill already: its current figures, so they can be edited in place.
+                $locked[$e->labor_bill_id] ??= $service->monthlyBillLocked($e->bill);
+                $row['billed'][] = [
+                    'bill_no' => $e->bill->bill_no, 'title' => $e->bill->heading,
+                    'amount' => (float) $e->amount, 'description' => $e->description,
+                    'locked' => $locked[$e->labor_bill_id],
+                ];
             }
             $defaults[$e->labor_team_member_id] = $row;
         }
 
-        return response()->json(['defaults' => (object) $defaults]);
+        $recentBills = LaborBill::where('bill_type', 'monthly')->where('status', '!=', 'void')
+            ->orderByDesc('id')->limit(60)->get(['id', 'title', 'charge_type_ids']);
+        $titles = $recentBills->map->heading->filter()->unique()->values();
+
+        return response()->json([
+            'defaults' => (object) $defaults,
+            'last_title' => $titles->first(),
+            'titles' => $titles->take(20)->values(),
+        ]);
     }
 
     /** "ใบวางบิลเรียกเก็บค่าใช้จ่ายรายเดือน" — one bill (and PDF) per team. */
@@ -321,7 +346,7 @@ class LaborBillController extends Controller
 
         $validated = $request->validate([
             'month' => ['required', 'date_format:Y-m'],
-            'labor_charge_type_id' => ['required', Rule::exists('labor_charge_types', 'id')->where('is_active', true)],
+            'title' => ['required', 'string', 'max:150'],
             'entry_date' => ['required', 'date'],
             'financial_profile_id' => ['nullable', 'exists:financial_profiles,id'],
             'rows' => ['required', 'array', 'min:1'],
@@ -332,23 +357,12 @@ class LaborBillController extends Controller
 
         $month = Carbon::createFromFormat('Y-m-d', $validated['month'] . '-01');
 
-        // Never bill the same member twice for the same month and charge type.
-        $already = LaborLedgerEntry::query()
-            ->whereIn('labor_team_member_id', array_column($validated['rows'], 'member_id'))
-            ->where('labor_charge_type_id', $validated['labor_charge_type_id'])
-            ->whereHas('bill', fn ($q) => $q->where('bill_type', 'monthly')->where('status', '!=', 'void')
-                ->whereDate('period_start', $month->copy()->startOfMonth()->toDateString()))
-            ->with('member:id,name')->get();
-        if ($already->isNotEmpty()) {
-            return back()->withErrors(['rows' => __('Already billed for this month: :names', [
-                'names' => $already->map(fn ($e) => $e->member->name ?? '-')->unique()->implode(', '),
-            ])]);
-        }
-
+        // A team already billed for this month and heading gets that same bill
+        // updated (amounts edited / people added) — see saveMonthly().
         try {
-            $bills = $service->generateMonthly(
+            $result = $service->saveMonthly(
                 $month,
-                (int) $validated['labor_charge_type_id'],
+                $validated['title'],
                 Carbon::parse($validated['entry_date']),
                 $validated['rows'],
                 $validated['financial_profile_id'] ?? null,
@@ -357,8 +371,13 @@ class LaborBillController extends Controller
             return back()->withErrors(['rows' => $e->getMessage()]);
         }
 
-        return back()->with('success', __('Created :count bill(s).', ['count' => $bills->count()]))
-            ->with('created_bill_ids', $bills->pluck('id')->all());
+        $message = collect([
+            $result['created']->isNotEmpty() ? __('Created :count bill(s).', ['count' => $result['created']->count()]) : null,
+            $result['updated']->isNotEmpty() ? __('Updated :count bill(s): :nos', ['count' => $result['updated']->count(), 'nos' => $result['updated']->pluck('bill_no')->implode(', ')]) : null,
+        ])->filter()->implode(' ') ?: __('Nothing changed.');
+
+        return back()->with('success', $message)
+            ->with('created_bill_ids', $result['created']->concat($result['updated'])->pluck('id')->all());
     }
 
     /**

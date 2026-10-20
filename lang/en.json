@@ -2650,5 +2650,15 @@
     "Click again to remove this team from the filter": "Click again to remove this team from the filter",
     "Click a team card to filter (several allowed) — click it again to remove": "Click a team card to filter (several allowed) — click it again to remove",
     "Clear team filter": "Clear team filter",
-    "Several teams (:count)": "Several teams (:count)"
+    "Several teams (:count)": "Several teams (:count)",
+    "e.g. Flight booking — October batch": "e.g. Flight booking — October batch",
+    "Type the expense heading yourself. Each person's amount and description from their latest monthly bill are filled in for you and stay until you change them — usually only the month and date need changing.": "Type the expense heading yourself. Each person's amount and description from their latest monthly bill are filled in for you and stay until you change them — usually only the month and date need changing.",
+    "Each ticked person becomes a charge under this heading on their team's balance, and each team gets its own bill and PDF. People without an amount are left out.": "Each ticked person becomes a charge under this heading on their team's balance, and each team gets its own bill and PDF. People without an amount are left out.",
+    "edit and save to update this bill": "edit and save to update this bill",
+    "paid / tax invoice issued — cannot be changed": "paid / tax invoice issued — cannot be changed",
+    "edits to issued bills": "edits to issued bills",
+    "Updated :count bill(s): :nos": "Updated :count bill(s): :nos",
+    "Nothing changed.": "Nothing changed.",
+    "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.": "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.",
+    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made."
 }

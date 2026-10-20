@@ -240,7 +240,10 @@ class LaborBillPdfService
         if ($bill->bill_type === 'monthly') {
             $rows[] = ['ประเภท / Type', 'ค่าใช้จ่ายรายเดือน'];
         }
-        if ($bill->charge_type_ids) {
+        if ($bill->title !== null && trim($bill->title) !== '') {
+            // Monthly bill heading typed by the accountant.
+            $rows[] = ['รายการ / Items', mb_strimwidth(trim($bill->title), 0, 34, '…')];
+        } elseif ($bill->charge_type_ids) {
             $typeNames = \App\Models\LaborChargeType::whereIn('id', $bill->charge_type_ids)->orderBy('name')->pluck('name')->implode(', ');
             if ($typeNames !== '') {
                 $rows[] = ['รายการ / Items', mb_strimwidth($typeNames, 0, 34, '…')];

@@ -16,6 +16,7 @@ class LaborBill extends Model
         'bill_no',
         'bill_type',
         'charge_type_ids',
+        'title',
         'financial_profile_id',
         'period_start',
         'period_end',
@@ -124,5 +125,21 @@ class LaborBill extends Model
     public function scopeActive($query)
     {
         return $query->where('status', '!=', 'void');
+    }
+
+    /**
+     * Heading of a monthly charge bill: the typed title, or — for bills made
+     * before titles existed — the names of its charge types.
+     */
+    public function getHeadingAttribute(): ?string
+    {
+        if ($this->title !== null && trim($this->title) !== '') {
+            return trim($this->title);
+        }
+        if ($this->charge_type_ids) {
+            $names = LaborChargeType::whereIn('id', $this->charge_type_ids)->orderBy('name')->pluck('name')->implode(', ');
+            return $names !== '' ? $names : null;
+        }
+        return null;
     }
 }
