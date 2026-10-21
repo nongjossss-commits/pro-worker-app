@@ -171,6 +171,9 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @include('partials._ui_theme_styles')
     <link rel="stylesheet" href="{{ asset('css/theme-dark.css') }}?v={{ @filemtime(public_path('css/theme-dark.css')) }}">
+    {{-- Phones: list tables shown as cards (public/js/mobile-table-cards.js) --}}
+    <link rel="stylesheet" href="{{ asset('css/mobile-table-cards.css') }}?v={{ @filemtime(public_path('css/mobile-table-cards.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/mobile-fit.css') }}?v={{ @filemtime(public_path('css/mobile-fit.css')) }}">
 </head>
 <body>
     <div class="main-layout">
@@ -424,6 +427,25 @@
         };
     </script>
 
+    {{-- Stop forms whose files exceed the server's upload limits (public/js/upload-size-guard.js) --}}
+    @php
+        $iniBytes = function ($v) {
+            $v = trim((string) $v);
+            if ($v === '' || $v === '-1' || $v === '0') return 0;
+            $n = (float) $v;
+            return (int) match (strtolower(substr($v, -1))) { 'g' => $n * 1073741824, 'm' => $n * 1048576, 'k' => $n * 1024, default => $n };
+        };
+    @endphp
+    <script>window.UploadLimits = {!! json_encode([
+        'file' => $iniBytes(ini_get('upload_max_filesize')),
+        'post' => $iniBytes(ini_get('post_max_size')),
+        'textTitle' => __('File too large'),
+        'textFile' => __('These files are larger than :max each and cannot be uploaded: :files'),
+        'textTotal' => __('The files together are :total — the limit for one save is :max. Save fewer files at a time.'),
+    ], JSON_UNESCAPED_UNICODE) !!};</script>
+    <script src="{{ asset('js/upload-size-guard.js') }}?v={{ @filemtime(public_path('js/upload-size-guard.js')) }}"></script>
+    <script>window.MobileTableCardsText = {!! json_encode(['selectAll' => __('Select all')], JSON_UNESCAPED_UNICODE) !!};</script>
+    <script src="{{ asset('js/mobile-table-cards.js') }}?v={{ @filemtime(public_path('js/mobile-table-cards.js')) }}"></script>
     @stack('scripts')
 </body>
 </html>

@@ -181,6 +181,21 @@
     when something is about to expire — check every morning
 </div>
 <div class="manual-tip">
+    <strong>Capturing / importing documents — changing the page order ("Review documents" screen):</strong>
+    <ul class="mb-0 mt-1">
+        <li><strong>Just drag:</strong> drag a page with the mouse to where it should go (phone: press and hold, then drag) — it takes that position and the others shift, e.g. drag the first page onto the last one = moved to the end</li>
+        <li><strong>Or press "Sort Pages":</strong> tap the pages in the new order (1, 2, 3 …) and press <strong>✓ Confirm</strong> at the top — while sorting, <strong>"Save" is locked</strong> until you confirm or cancel (so nothing is saved with an unconfirmed order)</li>
+    </ul>
+</div>
+<div class="manual-tip">
+    <strong>Advanced Export / Advanced Edit / Advanced Download — tick in order:</strong> the order you tick is the order used — a number badge shows on each item (1, 2, 3 …) and the "Order:" row above sums it up
+    <ul class="mb-0 mt-1">
+        <li><strong>Advanced Export:</strong> Excel columns run left → right in that order (Photo can be anywhere — no longer forced to the first column) · <strong>Advanced Edit:</strong> the edit table's columns follow it · <strong>Advanced Download:</strong> documents follow it, no. 1 first / on top — for "Merged PDF" and "Merged PDF (Individual)"</li>
+        <li>Click an item that is already ticked → "Change order no. N?" → OK removes it from that number, <strong>the others keep their numbers</strong>, and the next item you tick becomes no. N (with several gaps, the lowest is filled first)</li>
+        <li><strong>"Clear and pick again"</strong> unticks everything and starts again at 1 · every window opens empty (nothing pre-ticked) — just tick from no. 1; closing and reopening starts empty again</li>
+    </ul>
+</div>
+<div class="manual-tip">
     <strong>Advanced download as one PDF / one PDF per person:</strong> PDFs from scanners or phone apps (newer PDF format) are converted automatically before merging · if a file still can't be merged, the Download Center says so, and the per-person option puts the original file in the ZIP — the ZIP option always contains every original file
 </div>
 <div class="manual-tip">

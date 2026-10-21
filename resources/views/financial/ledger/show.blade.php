@@ -97,7 +97,7 @@
             <div class="card shadow">
                 <div class="card-header"><strong>{{ __('Amount Breakdown') }}</strong></div>
                 <div class="card-body">
-                    <table class="table table-sm mb-0">
+                    <table data-mobile-table="scroll" class="table table-sm mb-0">
                         <tr><td>{{ __('Gross') }}</td><td class="text-end">{{ number_format($entry->gross_amount, 2) }}</td></tr>
                         <tr><td>{{ __('Subtotal') }}</td><td class="text-end">{{ number_format($entry->subtotal, 2) }}</td></tr>
                         <tr>

@@ -11,6 +11,11 @@
 --}}
 <style>
     /* ---------- SweetAlert2 ---------- */
+    /* Confirm / alert popups always sit above every window — Bootstrap modals
+       (some are raised to 1070–1100, e.g. Advanced Download) and the chat
+       windows (up to 2300) — otherwise a confirm opened from inside a modal
+       ends up behind it and can't be clicked. */
+    .swal2-container { z-index: 2400 !important; }
     .swal2-popup {
         font-family: var(--bs-body-font-family, 'Inter', 'Sarabun', sans-serif);
         border-radius: 18px;

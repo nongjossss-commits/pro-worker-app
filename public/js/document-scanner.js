@@ -59,6 +59,13 @@
             isSorting: false,
             sortOrder: [], // Array of IDs in selected order
 
+            // Drag-to-move on the review grid (no sort mode needed): index being
+            // dragged / index under the pointer; suppressClick swallows the click
+            // that follows a drop so it doesn't toggle the selection.
+            dragFromIndex: -1,
+            dragOverIndex: -1,
+            suppressClick: false,
+
             // Camera
             stream: null,
 
@@ -977,7 +984,122 @@
                 this.sortOrder = [];
             },
 
+            // Text from data-* on the scanner root (translated in the Blade view).
+            t(key, fallback) {
+                const root = this.$root || this.$el;
+                const v = root && root.dataset ? root.dataset['txt' + key.charAt(0).toUpperCase() + key.slice(1)] : null;
+                return v || fallback;
+            },
+
+            // --- DRAG TO MOVE (review grid) ---
+            // Mouse: press and drag. Touch: press and hold ~0.3s, then drag.
+            // Dropping on a page puts the dragged page at that position; the
+            // others shift (dragging the first page onto the last = moves it to the end).
+            dragPointerDown(e, index) {
+                if (this.isSorting || this.view !== 'review') return;
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                if (e.target.closest('button, input, a, label')) return;
+
+                const card = e.currentTarget;
+                const startX = e.clientX, startY = e.clientY;
+                const isTouch = e.pointerType !== 'mouse';
+                const scroller = card.closest('.overflow-auto, .overflow-y-auto') || null;
+                let started = false, ghost = null, timer = null, offX = 0, offY = 0, lastX = startX, lastY = startY, raf = null;
+
+                const begin = () => {
+                    started = true;
+                    this.dragFromIndex = index;
+                    this.dragOverIndex = index;
+                    const r = card.getBoundingClientRect();
+                    offX = startX - r.left; offY = startY - r.top;
+                    ghost = card.cloneNode(true);
+                    // A plain picture of the card: no Alpine bindings (it lives outside
+                    // the component, so Alpine must not try to evaluate them).
+                    [ghost, ...ghost.querySelectorAll('*')].forEach(el => {
+                        Array.from(el.attributes).forEach(a => {
+                            if (/^(x-|:|@)/.test(a.name)) el.removeAttribute(a.name);
+                        });
+                    });
+                    ghost.setAttribute('x-ignore', '');
+                    ghost.removeAttribute('data-scan-idx');
+                    Object.assign(ghost.style, {
+                        position: 'fixed', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px',
+                        margin: '0', zIndex: '10000', pointerEvents: 'none', opacity: '.9', transform: 'scale(1.04) rotate(1deg)',
+                        boxShadow: '0 12px 28px rgba(0,0,0,.35)', transition: 'none',
+                    });
+                    document.body.appendChild(ghost);
+                    if (navigator.vibrate && isTouch) { try { navigator.vibrate(15); } catch (err) { /* ignore */ } }
+                };
+                const place = () => {
+                    raf = null;
+                    if (!ghost) return;
+                    ghost.style.left = (lastX - offX) + 'px';
+                    ghost.style.top = (lastY - offY) + 'px';
+                    const under = document.elementFromPoint(lastX, lastY);
+                    const target = under && under.closest('[data-scan-idx]');
+                    if (target) this.dragOverIndex = parseInt(target.dataset.scanIdx, 10);
+                    // keep scrolling while held near the top / bottom edge of the grid
+                    if (scroller) {
+                        const sr = scroller.getBoundingClientRect();
+                        if (lastY < sr.top + 50) scroller.scrollTop -= 12;
+                        else if (lastY > sr.bottom - 50) scroller.scrollTop += 12;
+                    }
+                };
+                const move = ev => {
+                    lastX = ev.clientX; lastY = ev.clientY;
+                    const dist = Math.hypot(lastX - startX, lastY - startY);
+                    if (!started) {
+                        if (!isTouch && dist > 6) begin();
+                        else if (isTouch && dist > 10) { cleanup(); return; } // a scroll, not a hold
+                        if (!started) return;
+                    }
+                    if (ev.cancelable) ev.preventDefault();
+                    if (!raf) raf = requestAnimationFrame(place);
+                };
+                const blockScroll = ev => { if (started && ev.cancelable) ev.preventDefault(); };
+                const up = () => {
+                    clearTimeout(timer);
+                    if (started) {
+                        const from = this.dragFromIndex, to = this.dragOverIndex;
+                        if (to >= 0 && to !== from) this.movePage(from, to);
+                        this.suppressClick = true;
+                        setTimeout(() => { this.suppressClick = false; }, 60);
+                    }
+                    cleanup();
+                };
+                const cleanup = () => {
+                    clearTimeout(timer);
+                    if (raf) cancelAnimationFrame(raf);
+                    if (ghost) ghost.remove();
+                    ghost = null; started = false;
+                    this.dragFromIndex = -1; this.dragOverIndex = -1;
+                    window.removeEventListener('pointermove', move);
+                    window.removeEventListener('pointerup', up);
+                    window.removeEventListener('pointercancel', cleanup);
+                    window.removeEventListener('touchmove', blockScroll);
+                };
+
+                if (isTouch) timer = setTimeout(begin, 300);
+                window.addEventListener('pointermove', move, { passive: false });
+                window.addEventListener('pointerup', up);
+                window.addEventListener('pointercancel', cleanup);
+                window.addEventListener('touchmove', blockScroll, { passive: false });
+            },
+
+            // Move page `from` to position `to` (the others shift); the ticked
+            // pages stay ticked (selection follows the pages, not the positions).
+            movePage(from, to) {
+                if (from === to || from < 0 || to < 0 || from >= this.capturedImages.length || to >= this.capturedImages.length) return;
+                const selectedIds = this.selectedIndices.map(i => this.capturedImages[i] && this.capturedImages[i].id);
+                const list = this.capturedImages.slice();
+                const [item] = list.splice(from, 1);
+                list.splice(to, 0, item);
+                this.capturedImages = list;
+                this.selectedIndices = selectedIds.map(id => list.findIndex(img => img.id === id)).filter(i => i >= 0);
+            },
+
             handleImageClick(index, id) {
+                if (this.suppressClick) return;
                 if (this.isSorting) {
                     this.toggleSort(id);
                 } else {
@@ -1975,6 +2097,11 @@
             // --- FINALIZATION ---
 
             async finalizeProcess() {
+                // Sort mode open = the new order isn't applied yet → confirm it first.
+                if (this.isSorting) {
+                    if (window.appToast) appToast(this.t('confirmOrderFirst', 'Press ✓ Confirm (top) to apply the page order before saving.'), 'warning');
+                    return;
+                }
                 this.isLoading = true;
                 this.loadingMessage = 'Generating Output...';
 

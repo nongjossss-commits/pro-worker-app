@@ -2217,14 +2217,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employerAddressEn' => 'Employer Address (EN)',
         ];
 
-        // Handle Photo Column Logic: Must be first if selected
+        // Columns come in the order the user ticked them (Advanced Export
+        // modal, public/js/ordered-checks.js) — Photo included, wherever it is.
+        $selectedColumns = array_values(array_unique($selectedColumns));
         $hasPhoto = in_array('employeePhoto', $selectedColumns);
-        if ($hasPhoto) {
-            // Remove 'employeePhoto' from its current position
-            $selectedColumns = array_diff($selectedColumns, ['employeePhoto']);
-            // Prepend it to the beginning
-            array_unshift($selectedColumns, 'employeePhoto');
-        }
 
         // Create new Spreadsheet
         $spreadsheet = new Spreadsheet();

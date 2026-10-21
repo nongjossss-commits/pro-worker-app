@@ -115,7 +115,7 @@
             <div class="card shadow">
                 <div class="card-header"><strong>{{ __('Amounts') }}</strong></div>
                 <div class="card-body">
-                    <table class="table table-sm mb-0">
+                    <table data-mobile-table="scroll" class="table table-sm mb-0">
                         <tr><td>{{ __('Subtotal') }}</td><td class="text-end">{{ number_format($note->subtotal, 2) }}</td></tr>
                         <tr><td>VAT {{ rtrim(rtrim($note->vat_rate, '0'), '.') }}%</td><td class="text-end text-info">{{ number_format($note->vat_amount, 2) }}</td></tr>
                         <tr class="table-active"><th>{{ __('Total Credit') }}</th><th class="text-end text-danger">-{{ number_format($note->total_credit, 2) }}</th></tr>

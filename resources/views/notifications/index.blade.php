@@ -53,7 +53,7 @@
                             :disabled="!request('employer_filter_id') && !request('employer_filter_name')"
                         />
                     </div>
-                    <div class="col-6 col-md-2">
+                    <div class="col-12 col-sm-6 col-md-3">
                         {{-- Month + year of the actual expiry date: on date-based tabs this also lists employees not inside the alert window yet. --}}
                         <div class="input-group input-group-sm" title="{{ __('Shows everyone whose date falls in this month, including those not alerted yet') }}">
                             <select name="month" class="form-select form-select-sm">
@@ -62,14 +62,14 @@
                                     <option value="{{ $m }}" @selected(request('month') == $m)>{{ \Carbon\Carbon::create(2000, $m, 1)->locale(app()->getLocale())->translatedFormat('F') }}</option>
                                 @endforeach
                             </select>
-                            <select name="year" class="form-select form-select-sm" style="max-width: 5.5rem;">
+                            <select name="year" class="form-select form-select-sm" style="flex: 0 0 6.25rem; max-width: 6.25rem;">
                                 @foreach(range(now()->year - 2, now()->year + 3) as $y)
                                     <option value="{{ $y }}" @selected((int) request('year', now()->year) === $y)>{{ $y }}</option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
-                    <div class="col-6 col-md-2">
+                    <div class="col-12 col-sm-6 col-md-2">
                         <x-nationality-select name="nationality" class="form-select form-select-sm" :selected="request('nationality')" :empty="'-- ' . __('All Nationalities') . ' --'" />
                     </div>
                     <div class="col-12 col-md-2">

@@ -844,6 +844,9 @@
     </style>
     @include('partials._ui_theme_styles')
     <link rel="stylesheet" href="{{ asset('css/theme-dark.css') }}?v={{ @filemtime(public_path('css/theme-dark.css')) }}">
+    {{-- Phones: list tables shown as cards (public/js/mobile-table-cards.js) --}}
+    <link rel="stylesheet" href="{{ asset('css/mobile-table-cards.css') }}?v={{ @filemtime(public_path('css/mobile-table-cards.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/mobile-fit.css') }}?v={{ @filemtime(public_path('css/mobile-fit.css')) }}">
     @auth
         {{-- Card / record-tab CSS before the content, so lists don't first draw in the old row layout. --}}
         @include('partials._record_tabs', ['part' => 'styles'])
@@ -1488,6 +1491,16 @@
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js', 'resources/js/duplicate-check.js'])
     <script src="{{ asset('js/financial-security.js') }}"></script>
     <script src="{{ asset('js/live-search-filter.js') }}?v={{ @filemtime(public_path('js/live-search-filter.js')) }}"></script>
+    {{-- Tick-order checkboxes (Advanced Export / Edit / Download) --}}
+    <script>window.OrderedChecksText = {!! json_encode([
+        'confirmTitle' => __('Change order no. :n?'),
+        'confirmText' => __('Remove ":label" from no. :n — the next item you tick becomes no. :n.'),
+        'confirmOk' => __('Yes, choose no. :n again'),
+        'pending' => __('Tick the item for no. :n'),
+        'order' => __('Order'),
+        'none' => __('Tick items in the order you want them.'),
+    ], JSON_UNESCAPED_UNICODE) !!};</script>
+    <script src="{{ asset('js/ordered-checks.js') }}?v={{ @filemtime(public_path('js/ordered-checks.js')) }}"></script>
     <script>window.NAT_I18N = {!! json_encode(['Recent' => __('Recently selected'), 'Main' => __('Main nationalities'), 'All' => __('All nationalities'), 'None' => __('No matching nationality'), 'Placeholder' => __('Type to search nationality...')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!};</script>
     <script src="{{ asset('js/nationality-select.js') }}?v={{ @filemtime(public_path('js/nationality-select.js')) }}"></script>
 
@@ -1940,6 +1953,25 @@
     @include('partials.background-removal-scripts')
     @include('partials.photo-editor-tools')
     @include('partials.view_selected_modal')
+    {{-- Stop forms whose files exceed the server's upload limits (public/js/upload-size-guard.js) --}}
+    @php
+        $iniBytes = function ($v) {
+            $v = trim((string) $v);
+            if ($v === '' || $v === '-1' || $v === '0') return 0;
+            $n = (float) $v;
+            return (int) match (strtolower(substr($v, -1))) { 'g' => $n * 1073741824, 'm' => $n * 1048576, 'k' => $n * 1024, default => $n };
+        };
+    @endphp
+    <script>window.UploadLimits = {!! json_encode([
+        'file' => $iniBytes(ini_get('upload_max_filesize')),
+        'post' => $iniBytes(ini_get('post_max_size')),
+        'textTitle' => __('File too large'),
+        'textFile' => __('These files are larger than :max each and cannot be uploaded: :files'),
+        'textTotal' => __('The files together are :total — the limit for one save is :max. Save fewer files at a time.'),
+    ], JSON_UNESCAPED_UNICODE) !!};</script>
+    <script src="{{ asset('js/upload-size-guard.js') }}?v={{ @filemtime(public_path('js/upload-size-guard.js')) }}"></script>
+    <script>window.MobileTableCardsText = {!! json_encode(['selectAll' => __('Select all')], JSON_UNESCAPED_UNICODE) !!};</script>
+    <script src="{{ asset('js/mobile-table-cards.js') }}?v={{ @filemtime(public_path('js/mobile-table-cards.js')) }}"></script>
     @stack('scripts')
 
 {{-- Global: Clean up stale Bootstrap modal backdrops that get stuck due to CSS display:none hack --}}

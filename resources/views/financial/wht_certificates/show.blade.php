@@ -112,7 +112,7 @@
             <div class="card shadow">
                 <div class="card-header"><strong>{{ __('Amounts') }}</strong></div>
                 <div class="card-body">
-                    <table class="table table-sm mb-0">
+                    <table data-mobile-table="scroll" class="table table-sm mb-0">
                         <tr><td>{{ __('Amount Paid') }}</td><td class="text-end">{{ number_format($cert->amount_paid, 2) }}</td></tr>
                         <tr><td>WHT {{ rtrim(rtrim($cert->wht_rate, '0'), '.') }}%</td><td class="text-end text-warning">{{ number_format($cert->wht_amount, 2) }}</td></tr>
                     </table>

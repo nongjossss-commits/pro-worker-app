@@ -87,7 +87,7 @@
     <div class="card shadow">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table data-mobile-table="scroll" class="table table-hover">
                     <thead class="table-light">
                         <tr>
                             <th>{{ __('Date') }}</th>

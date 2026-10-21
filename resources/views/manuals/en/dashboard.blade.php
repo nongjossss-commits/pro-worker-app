@@ -45,3 +45,7 @@
 <div class="manual-tip">
     <strong>Click the cards:</strong> every stat card is clickable — it takes you straight to that menu's details.
 </div>
+
+<div class="manual-tip">
+    <strong>On a phone:</strong> list tables in every menu (employers, importers, agencies, users, settings, Labor …) show one card per row — the name on the first line, each value with its column name, the view / edit / delete buttons at the bottom of the card, no sideways scrolling · "Select all" sits above the cards · accounting reports / ledgers / statements stay as side-scrolling tables · computers show the normal table
+</div>

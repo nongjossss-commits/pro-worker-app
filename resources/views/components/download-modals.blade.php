@@ -72,27 +72,32 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Select Files to Include</label>
+                        <div class="small text-muted mb-1">{{ __('Documents follow the order you tick them — no. 1 comes first (top of the PDF, for one combined PDF and for one PDF per employee).') }}</div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <div class="oc-summary flex-grow-1" data-oc-summary></div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary py-0" data-oc-clear><i class="bi bi-arrow-counterclockwise me-1"></i>{{ __('Clear and pick again') }}</button>
+                        </div>
                         <div class="row">
                             <!-- Column 1 -->
                             <div class="col-6">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="photo" id="chkPhoto" checked>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="photo" id="chkPhoto">
                                     <label class="form-check-label" for="chkPhoto">รูปถ่าย (Photo)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="passport" id="chkPassport" checked>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="passport" id="chkPassport">
                                     <label class="form-check-label" for="chkPassport">1. พาสปอร์ต (Passport)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="visa" id="chkVisa" checked>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="visa" id="chkVisa">
                                     <label class="form-check-label" for="chkVisa">2. วีซ่า (Visa)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="work_permit" id="chkWorkPermit" checked>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="work_permit" id="chkWorkPermit">
                                     <label class="form-check-label" for="chkWorkPermit">3. ใบอนุญาต Work Permit</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="pink_card" id="chkPinkCard" checked>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="pink_card" id="chkPinkCard">
                                     <label class="form-check-label" for="chkPinkCard">4. บัตรชมพู (Pink Card)</label>
                                 </div>
                                 <div class="form-check">
@@ -100,11 +105,11 @@
                                     <label class="form-check-label" for="chkTorRor38">5. ทร. 38</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="insurance" id="chkInsurance" checked>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="insurance" id="chkInsurance">
                                     <label class="form-check-label" for="chkInsurance">ไฟล์แนบประกัน (Insurance)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="files[]" value="medical_certificate" id="chkMedicalCertificate" checked>
+                                    <input class="form-check-input" type="checkbox" name="files[]" value="medical_certificate" id="chkMedicalCertificate">
                                     <label class="form-check-label" for="chkMedicalCertificate">ใบรับรองแพทย์ (Medical Certificate)</label>
                                 </div>
                             </div>
@@ -247,6 +252,16 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        const downloadOptionsForm = document.getElementById('downloadOptionsForm');
+        const downloadOrder = (window.OrderedChecks && downloadOptionsForm)
+            ? OrderedChecks.attach(downloadOptionsForm, { selector: 'input[name="files[]"]', summary: downloadOptionsForm.querySelector('[data-oc-summary]') })
+            : null;
+        // Nothing is pre-ticked: the user ticks the documents in the order wanted
+        // (1 = first). Closing the window starts the next download fresh, like Advanced Export.
+        document.getElementById('downloadOptionsModal').addEventListener('hidden.bs.modal', function () {
+            if (downloadOrder) downloadOrder.clear();
+        });
+
         // From Bulk Action (This function should be called by your bulk action handler)
         window.openBulkDownloadModal = function(employeeIds) {
             if (!employeeIds || employeeIds.length === 0) {
@@ -276,7 +291,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- 2. Handle Confirm Download ---
         document.getElementById('btnConfirmDownload').addEventListener('click', function() {
             const type = document.querySelector('input[name="download_type"]:checked').value;
-            const files = Array.from(document.querySelectorAll('input[name="files[]"]:checked')).map(cb => cb.value);
+            // In tick order (public/js/ordered-checks.js) — the job merges / lists them in this order.
+            const files = downloadOrder ? downloadOrder.values() : Array.from(document.querySelectorAll('input[name="files[]"]:checked')).map(cb => cb.value);
             const empIds = JSON.parse(document.getElementById('downloadEmployeeIds').value || '[]');
 
             const stampEmployeeInfo = document.getElementById('stampEmployeeInfo').checked;

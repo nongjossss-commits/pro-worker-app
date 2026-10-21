@@ -12,8 +12,12 @@
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info py-2 small">
-                        <i class="bi bi-info-circle me-1"></i> {{ __('Please select up to 15 fields. If Photo is selected, it will be the first column.') }}
+                        <i class="bi bi-info-circle me-1"></i> {{ __('Please select up to 15 fields — the columns follow the order you tick them (1 = first column on the left).') }}
                         <span class="float-end fw-bold" id="selection-counter">0/15</span>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <div class="oc-summary flex-grow-1" data-oc-summary></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0" data-oc-clear><i class="bi bi-arrow-counterclockwise me-1"></i>{{ __('Clear and pick again') }}</button>
                     </div>
 
                     <div class="row g-3">
@@ -496,6 +500,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     checkboxes.forEach(cb => {
         cb.addEventListener('change', updateCounter);
+    });
+
+    // Columns follow the tick order (public/js/ordered-checks.js); the modal
+    // can be on a page twice, so each copy of the form gets its own order.
+    document.querySelectorAll('form#advancedExportForm').forEach(form => {
+        if (window.OrderedChecks) {
+            OrderedChecks.attach(form, { selector: '.export-checkbox', form: form, name: 'columns[]', summary: form.querySelector('[data-oc-summary]') });
+        }
     });
 
     // Reset form when modal closes

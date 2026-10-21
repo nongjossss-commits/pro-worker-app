@@ -6,7 +6,7 @@
 <div class="container-fluid p-4" id="bulk-edit-selector-wrapper">
     <h2 class="mb-4">{{ __('Select Fields for Bulk Edit') }}</h2>
 
-    <form action="{{ route('employees.bulk_edit.form') }}" method="POST">
+    <form action="{{ route('employees.bulk_edit.form') }}" method="POST" id="bulk-edit-field-form">
         @csrf
         {{-- Pass the employee IDs to the next step --}}
         @foreach($employeeIds as $id)
@@ -20,6 +20,11 @@
         <div class="alert alert-info">
             <i class="bi bi-info-circle-fill me-2"></i>
             {{ __('Please select the fields you want to edit (Maximum 5 fields).') }}
+            {{ __('The edit table shows them in the order you tick them.') }}
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <div class="oc-summary flex-grow-1" data-oc-summary></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0" data-oc-clear><i class="bi bi-arrow-counterclockwise me-1"></i>{{ __('Clear and pick again') }}</button>
         </div>
 
         <div class="row g-3">
@@ -82,6 +87,15 @@
 
             // Initial check
             updateState();
+
+            // Fields follow the tick order (public/js/ordered-checks.js).
+            // (ordered-checks.js loads at the end of the layout, after this inline script)
+            document.addEventListener('DOMContentLoaded', function () {
+                const form = document.getElementById('bulk-edit-field-form');
+                if (window.OrderedChecks && form) {
+                    OrderedChecks.attach(form, { selector: '.field-checkbox', form: form, name: 'selected_fields[]', summary: form.querySelector('[data-oc-summary]') });
+                }
+            });
         })();
     </script>
 </div>

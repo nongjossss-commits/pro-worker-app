@@ -131,7 +131,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table align-middle mb-0">
+                    <table data-mobile-table="scroll" class="table align-middle mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 45%">{{ __('Description') }}</th>

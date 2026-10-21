@@ -1555,5 +1555,22 @@
     "Updated :count bill(s): :nos": "ဘေလ် :count ခု အပ်ဒိတ်လုပ်ပြီး: :nos",
     "Nothing changed.": "ဘာမှ မပြောင်းလဲပါ။",
     "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.": "ဘေလ် :no တွင် ငွေပေးချေမှု၊ အခွန်ပြေစာ သို့မဟုတ် WHT လက်မှတ် ရှိပြီးဖြစ်၍ ပြင်၍မရတော့ပါ — ပယ်ဖျက်ပြီး အသစ်ထုတ်ပါ။",
-    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "ဤလ ခေါင်းစဉ်တူ ဘေလ်တွင် ပါပြီးသားလား။ ပမာဏ / ဖော်ပြချက်ကို ပြင် (သို့မဟုတ် မထည့်ရသေးသူများ ထည့်) ပြီး သိမ်းပါ — ဘေလ်ဟောင်း (နံပါတ်တူ) ကို အပ်ဒိတ်လုပ်ပြီး ဘေလ်ထပ် မထုတ်ပါ။"
+    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "ဤလ ခေါင်းစဉ်တူ ဘေလ်တွင် ပါပြီးသားလား။ ပမာဏ / ဖော်ပြချက်ကို ပြင် (သို့မဟုတ် မထည့်ရသေးသူများ ထည့်) ပြီး သိမ်းပါ — ဘေလ်ဟောင်း (နံပါတ်တူ) ကို အပ်ဒိတ်လုပ်ပြီး ဘေလ်ထပ် မထုတ်ပါ။",
+    "Change order no. :n?": "အစဉ် :n ကို ပြောင်းမလား?",
+    "Remove \":label\" from no. :n — the next item you tick becomes no. :n.": "\":label\" ကို အစဉ် :n မှ ဖယ်မည် — နောက်ထပ် အမှန်ခြစ်သည့် အရာသည် အစဉ် :n ဖြစ်လာမည် (အခြားအစဉ်များ မရွေ့)",
+    "Yes, choose no. :n again": "ဟုတ်ကဲ့ အစဉ် :n ကို ပြန်ရွေးမည်",
+    "Tick the item for no. :n": "အစဉ် :n အတွက် အမှန်ခြစ်ပါ",
+    "Order": "အစဉ်",
+    "Tick items in the order you want them.": "လိုချင်သည့် အစဉ်အတိုင်း အမှန်ခြစ်ပါ။",
+    "Clear and pick again": "ရှင်းပြီး ပြန်ရွေးရန်",
+    "Please select up to 15 fields — the columns follow the order you tick them (1 = first column on the left).": "အများဆုံး ၁၅ ခု ရွေးနိုင် — ကော်လံများသည် အမှန်ခြစ်သည့် အစဉ်အတိုင်း (၁ = ဘယ်ဘက်ဆုံး ပထမကော်လံ)",
+    "The edit table shows them in the order you tick them.": "ပြင်ဆင်ရန် ဇယားတွင် အမှန်ခြစ်သည့် အစဉ်အတိုင်း ပြမည်။",
+    "Documents follow the order you tick them — no. 1 comes first (top of the PDF, for one combined PDF and for one PDF per employee).": "စာရွက်စာတမ်းများသည် အမှန်ခြစ်သည့် အစဉ်အတိုင်း — အစဉ် ၁ သည် ပထမ (PDF တစ်ဖိုင်တည်း ပေါင်းခြင်းနှင့် လူတစ်ဦးချင်း PDF နှစ်မျိုးလုံး)",
+    "Press ✓ Confirm (top) to apply the page order before saving.": "သိမ်းဆည်းခြင်းမပြုမီ စာမျက်နှာအစဉ်သစ်ကို အသုံးပြုရန် ✓ အတည်ပြု (အပေါ်) ကို နှိပ်ပါ။",
+    "Drag a page to move it (phone: press and hold, then drag) — or use Sort Pages": "စာမျက်နှာကို ဆွဲ၍ နေရာရွှေ့ပါ (ဖုန်း: ဖိထားပြီးမှ ဆွဲပါ) — သို့မဟုတ် \"စာမျက်နှာ အစဉ်စီ\" ကို သုံးပါ",
+    "Tick the pages in the new order, then press ✓ Confirm — saving is locked until then": "စာမျက်နှာများကို အစဉ်သစ်အတိုင်း နှိပ်ပြီး ✓ အတည်ပြု ကို နှိပ်ပါ — ထိုအချိန်အထိ သိမ်းခြင်းကို ပိတ်ထားသည်",
+    "Confirm the page order first": "စာမျက်နှာအစဉ်ကို အရင်အတည်ပြုပါ",
+    "File too large": "ဖိုင် အရမ်းကြီးသည်",
+    "These files are larger than :max each and cannot be uploaded: :files": "ဤဖိုင်များသည် တစ်ဖိုင်လျှင် :max ထက်ကြီး၍ upload မလုပ်နိုင်ပါ: :files",
+    "The files together are :total — the limit for one save is :max. Save fewer files at a time.": "ဖိုင်များ စုစုပေါင်း :total — တစ်ကြိမ်သိမ်းရန် ကန့်သတ်ချက် :max ဖြစ်သည်။ တစ်ကြိမ်လျှင် ဖိုင်နည်းနည်းသာ သိမ်းပါ။"
 }

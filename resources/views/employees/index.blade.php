@@ -110,12 +110,12 @@
                 <option value="has_visa" {{ request('visa_status') == 'has_visa' ? 'selected' : '' }}>{{ __('Has Visa') }}</option>
                 <option value="no_visa" {{ request('visa_status') == 'no_visa' ? 'selected' : '' }}>{{ __('No Visa') }}</option>
             </select>
-            <select name="passport_type_myanmar" class="form-select form-select-sm" style="width: auto;">
+            <select name="passport_type_myanmar" class="form-select form-select-sm mf-wide" style="width: auto;">
                 <option value="">-- {{ __('Passport Type (Myanmar)') }} --</option>
                 <option value="CI" {{ request('passport_type_myanmar') == 'CI' ? 'selected' : '' }}>{{ __('CI Book') }}</option>
                 <option value="PJ" {{ request('passport_type_myanmar') == 'PJ' ? 'selected' : '' }}>{{ __('PJ Book') }}</option>
             </select>
-            <select name="passport_type_cambodia" class="form-select form-select-sm" style="width: auto;">
+            <select name="passport_type_cambodia" class="form-select form-select-sm mf-wide" style="width: auto;">
                 <option value="">-- {{ __('Passport Type (Cambodia)') }} --</option>
                 <option value="เล่ม TD" {{ request('passport_type_cambodia') == 'เล่ม TD' ? 'selected' : '' }}>{{ __('TD Book') }}</option>
                 <option value="เล่มอินเตอร์" {{ request('passport_type_cambodia') == 'เล่มอินเตอร์' ? 'selected' : '' }}>{{ __('Inter Book') }}</option>

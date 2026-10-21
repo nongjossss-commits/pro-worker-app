@@ -1,5 +1,6 @@
 <!-- resources/views/components/document-scanner.blade.php -->
 <div x-data="documentScanner()"
+     data-txt-confirm-order-first="{{ __('Press ✓ Confirm (top) to apply the page order before saving.') }}"
      x-show="isOpen"
      @open-document-scanner.document="openScanner($event.detail)"
      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90"
@@ -189,7 +190,14 @@
                                 <i class="bi bi-info-circle me-1"></i> เลือกรูปภาพเพื่อจัดวางรูปแบบ
                              </span>
                         </div>
-                        <div x-show="scanMode !== 'id_card'" class="flex gap-2 w-full justify-end">
+                        <div x-show="scanMode !== 'id_card'" class="flex flex-wrap gap-2 w-full justify-end items-center">
+                            {{-- Drag-to-move works right here; the numbered sort mode is still there too. --}}
+                            <span x-show="!isSorting && capturedImages.length > 1" class="text-xs text-gray-500 me-auto">
+                                <i class="bi bi-arrows-move me-1"></i>{{ __('Drag a page to move it (phone: press and hold, then drag) — or use Sort Pages') }}
+                            </span>
+                            <span x-show="isSorting" class="text-xs text-warning-emphasis me-auto">
+                                <i class="bi bi-exclamation-circle me-1"></i>{{ __('Tick the pages in the new order, then press ✓ Confirm — saving is locked until then') }}
+                            </span>
                             <button x-show="!isSorting" @click="startSorting()" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                                 <i class="bi bi-sort-numeric-down"></i> จัดลำดับหน้า
                             </button>
@@ -199,7 +207,7 @@
                                 <button @click="resetSorting()" class="btn btn-xs btn-light rounded-circle" title="รีเซ็ต">
                                     <i class="bi bi-arrow-counterclockwise"></i>
                                 </button>
-                                <button @click="applySorting()" class="btn btn-xs btn-success text-white rounded-pill px-3">
+                                <button @click="applySorting()" class="btn btn-xs btn-success text-white rounded-pill px-3 animate-pulse">
                                     <i class="bi bi-check-lg"></i> ยืนยัน
                                 </button>
                                 <button @click="cancelSorting()" class="btn btn-xs btn-secondary rounded-pill px-2">
@@ -211,8 +219,15 @@
 
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         <template x-for="(img, index) in capturedImages" :key="img.id">
-                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200"
-                                 :class="(isSorting && sortOrder.includes(img.id)) ? 'ring-2 ring-success bg-green-50' : (selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : '')">
+                            <div class="relative group bg-white p-2 rounded shadow-sm hover:shadow-md transition-all duration-200 select-none"
+                                 :data-scan-idx="index"
+                                 @pointerdown="dragPointerDown($event, index)"
+                                 :style="isSorting ? '' : 'cursor: grab;'"
+                                 :class="[
+                                     (isSorting && sortOrder.includes(img.id)) ? 'ring-2 ring-success bg-green-50' : (selectedIndices.includes(index) ? 'ring-2 ring-primary bg-blue-50' : ''),
+                                     dragFromIndex === index ? 'opacity-40' : '',
+                                     (dragFromIndex >= 0 && dragOverIndex === index && dragFromIndex !== index) ? 'ring-4 ring-warning scale-95' : '',
+                                 ]">
 
                                 <!-- Normal Mode: Selection Checkbox -->
                                 <div class="absolute top-2 left-2 z-10" x-show="!isSorting">
@@ -232,7 +247,7 @@
                                 </div>
 
                                 <!-- Image -->
-                                <img :src="img.cropped"
+                                <img :src="img.cropped" draggable="false"
                                      class="w-full h-40 object-contain bg-gray-50 border rounded cursor-pointer"
                                      :class="isSorting ? (sortOrder.includes(img.id) ? '' : 'opacity-60 grayscale') : ''"
                                      @click="handleImageClick(index, img.id)">
@@ -273,10 +288,16 @@
                      <button @click="view = 'camera'; startCamera()" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> กลับไปถ่ายภาพ
                     </button>
-                    <button @click="finalizeProcess()" class="btn btn-primary px-4" :disabled="!canFinish()">
-                        <i class="bi bi-save"></i> บันทึกข้อมูล
-                        <span>(<span x-text="capturedImages.length"></span>)</span>
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <span x-show="isSorting" class="small text-warning-emphasis text-end">
+                            <i class="bi bi-lock-fill me-1"></i>{{ __('Confirm the page order first') }}
+                        </span>
+                        {{-- Locked while the sort mode is open: the new order only counts after ✓ Confirm. --}}
+                        <button @click="finalizeProcess()" class="btn btn-primary px-4" :disabled="!canFinish() || isSorting">
+                            <i class="bi bi-save"></i> บันทึกข้อมูล
+                            <span>(<span x-text="capturedImages.length"></span>)</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -2713,5 +2713,22 @@
     "Updated :count bill(s): :nos": "อัปเดตใบวางบิลเดิม :count ใบ: :nos",
     "Nothing changed.": "ไม่มีอะไรเปลี่ยนแปลง",
     "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.": "บิล :no มีการรับชำระ ใบกำกับภาษี หรือหนังสือรับรองหัก ณ ที่จ่ายแล้ว จึงแก้ไม่ได้ — ให้ยกเลิกบิลแล้วออกใหม่แทน",
-    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "คนที่วางบิลเดือนนี้แล้วในหัวข้อเดียวกัน: แก้ยอด/คำอธิบาย หรือเพิ่มคนที่ยังไม่ได้วาง แล้วกดบันทึก — ระบบอัปเดตบิลเดิม (เลขเดิม) ไม่ออกบิลซ้ำ"
+    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "คนที่วางบิลเดือนนี้แล้วในหัวข้อเดียวกัน: แก้ยอด/คำอธิบาย หรือเพิ่มคนที่ยังไม่ได้วาง แล้วกดบันทึก — ระบบอัปเดตบิลเดิม (เลขเดิม) ไม่ออกบิลซ้ำ",
+    "Change order no. :n?": "เปลี่ยนลำดับที่ :n ใช่ไหม?",
+    "Remove \":label\" from no. :n — the next item you tick becomes no. :n.": "เอา \":label\" ออกจากลำดับที่ :n — รายการที่ติ๊กถัดไปจะเป็นลำดับที่ :n แทน (ลำดับอื่นไม่เลื่อน)",
+    "Yes, choose no. :n again": "ใช่ เลือกลำดับที่ :n ใหม่",
+    "Tick the item for no. :n": "ติ๊กรายการสำหรับลำดับที่ :n",
+    "Order": "ลำดับ",
+    "Tick items in the order you want them.": "ติ๊กเลือกตามลำดับที่ต้องการ",
+    "Clear and pick again": "ล้างแล้วเลือกใหม่",
+    "Please select up to 15 fields — the columns follow the order you tick them (1 = first column on the left).": "เลือกได้สูงสุด 15 รายการ — คอลัมน์เรียงตามลำดับที่ติ๊ก (ลำดับ 1 = คอลัมน์แรกซ้ายสุด)",
+    "The edit table shows them in the order you tick them.": "ตารางแก้ไขจะเรียงคอลัมน์ตามลำดับที่ติ๊ก",
+    "Documents follow the order you tick them — no. 1 comes first (top of the PDF, for one combined PDF and for one PDF per employee).": "เอกสารเรียงตามลำดับที่ติ๊ก — ลำดับ 1 อยู่หน้าแรก/บนสุด (ทั้งรวมเป็น PDF ไฟล์เดียว และ PDF แยกรายคน)",
+    "Press ✓ Confirm (top) to apply the page order before saving.": "กด ✓ ยืนยัน (ด้านบน) เพื่อใช้ลำดับหน้าใหม่ก่อนบันทึก",
+    "Drag a page to move it (phone: press and hold, then drag) — or use Sort Pages": "ลากหน้าเอกสารเพื่อย้ายตำแหน่ง (มือถือ: กดค้างแล้วลาก) — หรือกด \"จัดลำดับหน้า\"",
+    "Tick the pages in the new order, then press ✓ Confirm — saving is locked until then": "กดหน้าเอกสารตามลำดับใหม่ แล้วกด ✓ ยืนยัน — ระหว่างนี้ล็อกปุ่มบันทึกไว้",
+    "Confirm the page order first": "กดยืนยันลำดับหน้าก่อน",
+    "File too large": "ไฟล์ใหญ่เกินไป",
+    "These files are larger than :max each and cannot be uploaded: :files": "ไฟล์เหล่านี้ใหญ่เกิน :max ต่อไฟล์ จึงอัปโหลดไม่ได้: :files — ลดจำนวนหน้าหรือแยกเป็นหลายไฟล์",
+    "The files together are :total — the limit for one save is :max. Save fewer files at a time.": "ไฟล์รวมกัน :total — บันทึกได้ครั้งละไม่เกิน :max กรุณาแนบไฟล์น้อยลงต่อการบันทึกหนึ่งครั้ง"
 }

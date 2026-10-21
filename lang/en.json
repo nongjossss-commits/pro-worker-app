@@ -2660,5 +2660,22 @@
     "Updated :count bill(s): :nos": "Updated :count bill(s): :nos",
     "Nothing changed.": "Nothing changed.",
     "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.": "Bill :no already has a payment, tax invoice or WHT certificate, so it can no longer be changed — void it and issue a new one instead.",
-    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made."
+    "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.": "Already on this month's bill under the same heading? Change the amount / description (or add people not billed yet) and save — the same bill (same number) is updated, no second bill is made.",
+    "Change order no. :n?": "Change order no. :n?",
+    "Remove \":label\" from no. :n — the next item you tick becomes no. :n.": "Remove \":label\" from no. :n — the next item you tick becomes no. :n.",
+    "Yes, choose no. :n again": "Yes, choose no. :n again",
+    "Tick the item for no. :n": "Tick the item for no. :n",
+    "Order": "Order",
+    "Tick items in the order you want them.": "Tick items in the order you want them.",
+    "Clear and pick again": "Clear and pick again",
+    "Please select up to 15 fields — the columns follow the order you tick them (1 = first column on the left).": "Please select up to 15 fields — the columns follow the order you tick them (1 = first column on the left).",
+    "The edit table shows them in the order you tick them.": "The edit table shows them in the order you tick them.",
+    "Documents follow the order you tick them — no. 1 comes first (top of the PDF, for one combined PDF and for one PDF per employee).": "Documents follow the order you tick them — no. 1 comes first (top of the PDF, for one combined PDF and for one PDF per employee).",
+    "Press ✓ Confirm (top) to apply the page order before saving.": "Press ✓ Confirm (top) to apply the page order before saving.",
+    "Drag a page to move it (phone: press and hold, then drag) — or use Sort Pages": "Drag a page to move it (phone: press and hold, then drag) — or use Sort Pages",
+    "Tick the pages in the new order, then press ✓ Confirm — saving is locked until then": "Tick the pages in the new order, then press ✓ Confirm — saving is locked until then",
+    "Confirm the page order first": "Confirm the page order first",
+    "File too large": "File too large",
+    "These files are larger than :max each and cannot be uploaded: :files": "These files are larger than :max each and cannot be uploaded: :files",
+    "The files together are :total — the limit for one save is :max. Save fewer files at a time.": "The files together are :total — the limit for one save is :max. Save fewer files at a time."
 }

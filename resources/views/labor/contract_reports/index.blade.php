@@ -55,7 +55,7 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white fw-bold">{{ __('By Team') }}</div>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table data-mobile-table="scroll" class="table table-sm mb-0">
                         <thead class="table-light"><tr><th>{{ __('Team') }}</th><th class="text-end">{{ __('Contracts') }}</th><th class="text-end">{{ __('Worker Count') }}</th></tr></thead>
                         <tbody>
                             @forelse($byTeam as $row)
@@ -72,7 +72,7 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white fw-bold">{{ __('By Staff') }}</div>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table data-mobile-table="scroll" class="table table-sm mb-0">
                         <thead class="table-light"><tr><th>{{ __('Staff') }}</th><th class="text-end">{{ __('Contracts') }}</th><th class="text-end">{{ __('Worker Count') }}</th></tr></thead>
                         <tbody>
                             @forelse($byStaff as $row)
