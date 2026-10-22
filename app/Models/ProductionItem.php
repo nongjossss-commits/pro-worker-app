@@ -14,6 +14,7 @@ class ProductionItem extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'source_item_id', // notify_in_report: the change-employer (notify_in) item this employee came from
         'production_order_id',
         'employee_id',
         'request_number',
@@ -156,4 +157,16 @@ class ProductionItem extends Model
         return $this->employee ? !empty($this->employee->visaExpiryDate) : false;
     }
 
+
+    /** notify_in_report items: the finished change-employer item they were made from. */
+    public function sourceItem()
+    {
+        return $this->belongsTo(ProductionItem::class, 'source_item_id');
+    }
+
+    /** Items made from this one (e.g. its notify_in_report follow-up). */
+    public function derivedItems()
+    {
+        return $this->hasMany(ProductionItem::class, 'source_item_id');
+    }
 }

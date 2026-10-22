@@ -43,21 +43,20 @@
 
     @include('manuals.training._screenshot', [
         'src' => 'dashboard/01-overview',
-        'alt' => '包含摘要卡片 + 快捷链接的 Dashboard 页面',
-        'caption' => 'Dashboard —— 摘要卡片 + 快捷链接 + 最近活动',
+        'alt' => '带数字卡片与图表的管理层仪表板',
+        'caption' => '仪表板 —— 业务概览:关键数字卡片 + 月度图表 + 各标签进行中的工作',
         'callouts' => [
-            '<strong>摘要卡片:</strong> 雇主/雇员/待处理工作数量',
-            '<strong>到期提醒:</strong> 即将到期的雇员(60/30/7 天)',
-            '<strong>快捷链接:</strong> 前往常用菜单',
-            '<strong>最近通知:</strong> 最新 5 条',
+            '<strong>页头:</strong> 日期 + 重点数字(近 12 个月完成 / 国籍 / 有进行中工作的标签 / 14 天操作)',
+            '<strong>数字卡片:</strong> 悬停 = 明细 + 统计方式',
+            '<strong>图表:</strong> 每月完成 · 每月收款(财务用户)· 各标签进行中(点击打开)· 国籍 · 证件到期 · 主要雇主',
         ],
     ])
 
     <div class="slide-instructions">
         <ol>
             <li>登录 → 自动进入 Dashboard</li>
-            <li>查看顶部的摘要卡片</li>
-            <li>点击卡片或快捷链接前往所需菜单</li>
+            <li>查看顶部的数字卡片 —— 将鼠标悬停在卡片或图表上查看详情</li>
+            <li>点击"各标签进行中的工作"中的柱条打开该标签 · 财务数字需先解锁财务菜单(若设置了密码)</li>
             <li>语言按钮后的按钮 = <strong>浅色 / 深色 / 跟随设备</strong>模式 —— 立即切换无需刷新,按设备分别记住</li>
         </ol>
     </div>

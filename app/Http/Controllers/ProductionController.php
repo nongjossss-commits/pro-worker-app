@@ -437,7 +437,9 @@ class ProductionController extends Controller
             // Team names (group_name) per order (for the team-filter
             // "flaps" hanging off the bottom of each order's card) — one
             // batched query for the whole page instead of one per order.
+            // (finished employees keep their team — not offered for rename here)
             $orderTeamNamesMap = ProductionItem::whereIn('production_order_id', $orders->pluck('id'))
+                ->where(fn ($q) => $q->where('status', '!=', 'completed')->orWhere('completed_at', '>=', now()->subHours(24)))
                 ->whereNotNull('group_name')
                 ->where('group_name', '!=', '')
                 ->select('production_order_id', 'group_name')

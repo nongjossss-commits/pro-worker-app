@@ -26,6 +26,18 @@ class WorkType extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * Tab 5 "แจ้งเข้า บต.52 / บต.55 / บต.56": cards are built from employees
+     * finished in the change-employer tab (notify_in); steps are ticked on the
+     * employer card for everyone on it at once. See WorkflowController::notifyInReport*().
+     */
+    public const SLUG_NOTIFY_IN_REPORT = 'notify_in_report';
+
+    public function isNotifyInReport(): bool
+    {
+        return $this->slug === self::SLUG_NOTIFY_IN_REPORT;
+    }
+
     protected $fillable = [
         'name',
         'slug',

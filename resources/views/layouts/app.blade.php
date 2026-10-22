@@ -1501,6 +1501,8 @@
         'none' => __('Tick items in the order you want them.'),
     ], JSON_UNESCAPED_UNICODE) !!};</script>
     <script src="{{ asset('js/ordered-checks.js') }}?v={{ @filemtime(public_path('js/ordered-checks.js')) }}"></script>
+    {{-- Job History popup filters (partials/_history_panel) --}}
+    <script src="{{ asset('js/history-filter.js') }}?v={{ @filemtime(public_path('js/history-filter.js')) }}"></script>
     <script>window.NAT_I18N = {!! json_encode(['Recent' => __('Recently selected'), 'Main' => __('Main nationalities'), 'All' => __('All nationalities'), 'None' => __('No matching nationality'), 'Placeholder' => __('Type to search nationality...')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!};</script>
     <script src="{{ asset('js/nationality-select.js') }}?v={{ @filemtime(public_path('js/nationality-select.js')) }}"></script>
 

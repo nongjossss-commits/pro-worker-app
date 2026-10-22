@@ -198,6 +198,8 @@
     <div class="slide-instructions">
         <ol>
             <li>员工卡片上的 <strong>分组</strong>:选择/新建、重命名、删除或"无分组"</li>
+            <li>已完成员工<strong>保留原分组</strong> —— 重命名 / 删除 / 更改分组只影响尚未完成的员工</li>
+            <li>工作卡片上的 <strong>历史</strong>(时钟)按钮:完成超过 24 小时的员工，按月查看 + 搜索员工/分组</li>
             <li><strong>Steps</strong> 按钮:即时新增 / 重命名 / 删除 / 排序 —— 4 个菜单相同</li>
         </ol>
     </div>

@@ -762,6 +762,11 @@
                                     <i class="bi bi-eye-slash"></i>
                                 </button>
 
+                                {{-- Job History: finished > 24h, by month + search --}}
+                                <button class="btn btn-outline-secondary btn-sm ms-1" onclick="openHistoryModal({{ $employer->id }}); event.stopPropagation();" title="{{ __('View History') }}">
+                                    <i class="bi bi-clock-history"></i>
+                                </button>
+
                                 <button class="btn btn-outline-info btn-sm ms-1" id="btn-employer-toggle-biometrics-{{ $employer->id }}" onclick="toggleEmployerBiometrics({{ $employer->id }}); event.stopPropagation();" title="{{ __('Filter Biometrics Collected') }}">
                                     <i class="bi bi-fingerprint"></i>
                                 </button>
@@ -1995,20 +2000,9 @@
 
     // --- History Modal ---
     window.openHistoryModal = function(employerId) {
-        const modal = new bootstrap.Modal(document.getElementById('historyModal'));
-        modal.show();
-
-        const body = document.getElementById('historyModalBody');
-        body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-secondary" role="status"></div></div>';
-
-        fetch(`/production/registration/{{ $currentTab->id }}/employer/${employerId}/history`)
-            .then(res => res.text())
-            .then(html => {
-                body.innerHTML = html;
-            })
-            .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>';
-            });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('historyModal')).show();
+        // month / date / employee / team filters — public/js/history-filter.js
+        HistoryPanel.open(document.getElementById('historyModalBody'), `/production/registration/{{ $currentTab->id }}/employer/${employerId}/history`);
     }
 
     // Modal variable init inside DOMContentLoaded to ensure Bootstrap is loaded

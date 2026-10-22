@@ -1,4 +1,5 @@
 <div class="d-flex justify-content-between align-items-center mb-3 pagination-controls">
+    @unless($isHistory ?? false) {{-- the history popup lists everyone; per-page belongs to the main list --}}
     <div class="d-flex align-items-center gap-2">
         <label for="perPage-{{ $employer->id }}" class="form-label mb-0 small text-muted">{{ __('Show') }}:</label>
         <select id="perPage-{{ $employer->id }}" class="form-select form-select-sm per-page-selector" style="width: 80px;" data-employer-id="{{ $employer->id }}">
@@ -7,6 +8,7 @@
             <option value="100" {{ request('per_page') == 100 || !request('per_page') ? 'selected' : '' }}>100</option>
         </select>
     </div>
+    @endunless
     @if($employees instanceof \Illuminate\Pagination\LengthAwarePaginator)
         <div class="employer-pagination">
             {{ $employees->links() }}

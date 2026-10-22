@@ -88,4 +88,34 @@ class TwoStageSearchTest extends TestCase
         $somchai = Employee::where('employeeNameEn', 'Somchai One')->value('id');
         $this->assertSame(['Somchai One'], $names(['employer_filter_name' => 'Somchai One', 'employee_pick_id' => $somchai]));
     }
+
+    public function test_card_request_numbers_ra_and_passport_are_found_in_every_menu_and_in_suggestions(): void
+    {
+        $emp = Employee::factory()->create([
+            'employer_id' => $this->acme->id, 'employeeNameEn' => 'Card Person',
+            'employeePassport' => 'PX778899', 'name_list_number' => 'RA-55501', 'request_number' => null,
+        ]);
+        // Workflow / Pre-Production card: request no. lives on the item, not on the employee
+        $order = \App\Models\ProductionOrder::create(['employer_id' => $this->acme->id, 'status' => 'active']);
+        \App\Models\ProductionItem::create(['production_order_id' => $order->id, 'employee_id' => $emp->id, 'status' => 'pending', 'request_number' => 'REQ-CARD-901']);
+        // Registration resolution card: request no. per resolution tab
+        $tab = \App\Models\ResolutionTab::create(['name' => 'มติลงทะเบียนทดสอบ', 'type' => 'registration', 'slug' => 'reg-test-' . uniqid()]);
+        $emp->forceFill(['resolution_tab_id' => $tab->id, 'status' => 'registration_pending'])->saveQuietly();
+        \App\Models\EmployeeRequestNumber::create(['employee_id' => $emp->id, 'resolution_tab_id' => $tab->id, 'request_number' => 'RES-REQ-4455']);
+
+        $names = fn (array $q) => collect(
+            \Illuminate\Support\Arr::pluck($this->get(route('employees.index', $q))->viewData('employees')->items(), 'employeeNameEn')
+        )->all();
+        $suggests = fn (string $route, array $params) => collect($this->getJson(route($route, $params))->json())->pluck('label')->implode(' | ');
+
+        foreach (['REQ-CARD-901', 'RES-REQ-4455', 'RA-55501', 'PX778899'] as $term) {
+            // Employees menu (box 1) + its suggestions
+            $this->assertContains('Card Person', $names(['employer_filter_name' => $term]), "employees menu finds $term");
+            $this->assertTrue(str_contains($suggests('employees.preview_search_combined', ['q' => $term, '_box' => 'employer_filter_name']), 'Card Person'), "employees suggestions find $term");
+            // Workflow suggestions (same employee is on an active card)
+            $this->assertTrue(str_contains($suggests('workflow.preview_search', ['q' => $term, '_box' => 'employer_filter_name']), 'Card Person'), "workflow suggestions find $term");
+        }
+        // Registration resolution suggestions find the resolution card's request no.
+        $this->assertTrue(str_contains($suggests('production.registration.preview_search', ['resolutionTab' => $tab->id, 'q' => 'RES-REQ-4455', '_box' => 'employer_filter_name']), 'Card Person'), 'registration suggestions find the card request no.');
+    }
 }

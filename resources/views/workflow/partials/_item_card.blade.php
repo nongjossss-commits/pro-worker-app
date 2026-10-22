@@ -942,7 +942,8 @@
                              $btnClass = "btn-success text-white"; // Default success for workflow
                         }
 
-                        $canManage = auth()->user()->can('update-progress-steps');
+                        // Tab 5: steps are ticked on the employer card only (everyone moves together).
+                        $canManage = auth()->user()->can('update-progress-steps') && !($order->workType?->isNotifyInReport() ?? false);
                         $disabled = ($isCompleted || $isCancelled || $isReadOnly || !$canManage) ? 'disabled' : '';
                         $onclick = $canManage ? "onclick=\"toggleWorkStep({$item->id}, {$step->id}, " . ($isStepCompleted ? 'false' : 'true') . ")\"" : '';
                     @endphp

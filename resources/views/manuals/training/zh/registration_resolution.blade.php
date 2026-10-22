@@ -123,9 +123,10 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>已完成的员工在 24 小时撤销期后可再次选择</li>
+            <li>已完成员工保留 24 小时后移入 <strong>历史</strong>(雇主卡片上的时钟按钮:按月查看 + 搜索员工/分组)· 可从 <strong>已保存到数据库</strong> 卡片选择所有已完成员工</li>
             <li>雇主全选 → <strong>全部 / 仅已完成 / 仅未完成</strong></li>
             <li>员工卡片上的 <strong>分组</strong>(按标签页和雇主分开)</li>
+            <li>已完成员工<strong>保留原分组</strong> —— 重命名 / 删除 / 更改分组只影响尚未完成的员工</li>
             <li>预约和申请编号按标签页保存</li>
         </ol>
     </div>

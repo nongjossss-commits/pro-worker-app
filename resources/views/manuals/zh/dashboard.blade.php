@@ -11,11 +11,14 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>页面各部分</h4>
 <ol>
-    <li><strong>统计摘要卡片</strong> —— 重要数字(雇主总数、活跃雇员数、进行中的工作)</li>
-    <li><strong>趋势图表</strong> —— 按月/按季度(如有)</li>
-    <li><strong>紧急事项列表</strong> —— 即将到期的工作、需要处理的通知</li>
-    <li><strong>快捷链接</strong> —— 直接前往常用菜单</li>
+    <li><strong>品牌色页头</strong> —— 日期、更新时间与重点数字:近 12 个月完成 · 国籍数 · 有进行中工作的标签 · 近 14 天操作</li>
+    <li><strong>关键数字卡片</strong> —— 在职员工 · 雇主 · 进行中 · 本月完成(较上月)· 30 天内到期的证件 ·(财务用户)本月收款与应收未收 —— <strong>将鼠标悬停在卡片上</strong>可查看明细与统计方式</li>
+    <li><strong>每月完成工作</strong>(12 个月，按 Workflow / 登记决议 / 续期决议)与<strong>每月收款</strong>(按实际收款日期，不含报价单 —— 与财务菜单一致)</li>
+    <li><strong>各标签进行中的工作</strong> —— 点击柱条即可打开该标签 · <strong>按国籍划分的员工</strong></li>
+    <li><strong>证件到期概况</strong>(签证 / 工作证 / 护照:已过期 · 30 · 60 · 90 天)· <strong>员工最多的前 8 个雇主</strong></li>
+    <li><strong>系统活动(14 天)</strong>与<strong>最近操作</strong></li>
 </ol>
+<p class="small">在职员工 = 未报离职、未删除且不在取消状态 · 财务数字仅对有财务查看权限的用户显示，若财务菜单设置了密码需先解锁(否则显示"财务数据已锁定")· 所有数字仅涵盖该账户可查看的雇主 · 支持浅色/深色模式与 4 种语言</p>
 
 <h4><i class="bi bi-shield-lock me-2"></i>登录与安全</h4>
 <ol>
@@ -43,7 +46,7 @@
 </div>
 
 <div class="manual-tip">
-    <strong>点击卡片:</strong> 每张统计卡片都可以点击 —— 会带你直接查看该菜单的详细内容。
+    <strong>悬停查看详情:</strong> 将鼠标指向数字卡片或图表即可立即看到明细，无需进入菜单 · 在"各标签进行中的工作"中点击柱条即可打开该标签
 </div>
 
 <div class="manual-tip">

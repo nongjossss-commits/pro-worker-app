@@ -239,7 +239,6 @@ class RenewalController extends Controller
             ->where('status', '!=', 'renewal_cancelled')
             ->where(function ($q) {
                 $q->where('status', '!=', 'renewal_completed')
-                  ->orWhereNull('resolution_completed_at')
                   ->orWhere('resolution_completed_at', '>=', now()->subHours(24));
             });
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
@@ -247,7 +246,7 @@ class RenewalController extends Controller
         $dualStepStatsBase = $dualLinked->filter(function ($e) {
             $link = $e->activeRenewalLink;
             if ($link->status === 'renewal_cancelled') return false;
-            if ($link->status === 'renewal_completed' && $link->resolution_completed_at && $link->resolution_completed_at->lt(now()->subHours(24))) return false;
+            if ($link->status === 'renewal_completed' && (! $link->resolution_completed_at || $link->resolution_completed_at->lt(now()->subHours(24)))) return false;
             return true;
         });
         foreach ($dualStepStatsBase as $dualEmp) {
@@ -529,8 +528,14 @@ class RenewalController extends Controller
         // the bottom of each employer card) — one batched query for the
         // whole page instead of one query per employer, since team names
         // are a per-employer vocabulary (see getTabTeamNames()'s docblock).
+        // Teams used only by employees already in the history popup aren't offered.
         $employerTeamNamesMap = \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('employer_id', $employers->pluck('id'))
+            ->whereNotIn('employee_id', fn ($sub) => $this->whereInHistory(
+                $sub->select('id')->from('employees')->where('resolution_tab_id', $this->currentTab->id)))
+            ->whereNotIn('employee_id', fn ($sub) => $sub->select('employee_id')->from('employee_renewal_links')
+                ->where('resolution_tab_id', $this->currentTab->id)->where('status', 'renewal_completed')
+                ->where(fn ($w) => $w->whereNull('resolution_completed_at')->orWhere('resolution_completed_at', '<', now()->subHours(24))))
             ->select('employer_id', 'team_name')
             ->distinct()
             ->orderBy('team_name')
@@ -729,6 +734,7 @@ class RenewalController extends Controller
                     ->orWhere('pinkCardNo', 'like', "%{$search}%")
                     ->orWhere('request_number', 'like', "%{$search}%")
                     ->orWhere('renewal_request_number', 'like', "%{$search}%")
+                    ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
                     ->orWhere('employer_employee_id', 'like', "%{$search}%")
                     ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                     ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
@@ -1187,8 +1193,7 @@ class RenewalController extends Controller
                 // employees whose 24h countdown finished no longer count
                 // toward the per-employer step badges either.
                 $countTowardsSteps = !($effectiveStatus === 'renewal_completed'
-                    && $effectiveCompletedAt
-                    && $effectiveCompletedAt->lt($graceCutoff));
+                    && (! $effectiveCompletedAt || $effectiveCompletedAt->lt($graceCutoff)));
 
                 if ($countTowardsSteps) {
                     $highestStep = $this->highestStepInTab($emp, $steps);
@@ -1235,14 +1240,21 @@ class RenewalController extends Controller
 
         $query->where(function($q) use ($request) {
                 if ($request->boolean('hide_cancelled', true)) {
-                    // Completed employees now stay in the main list (green card)
-                    // instead of being hidden after 24 hours.
                     $q->whereIn('status', ['renewal_pending', 'renewal_completed']);
                 } else {
                     $q->whereIn('status', ['renewal_pending', 'renewal_completed', 'renewal_cancelled']);
                 }
             })
             ->with(['registrationSteps', 'customFields']);
+
+        // Finished employees stay (green card) for 24 hours, then move into
+        // the employer's "Job History" popup (fetchHistory). The "Saved"
+        // counter filter still lists every finished employee so it matches
+        // its number. (Dual-listed rows: same rule on the link, below.)
+        $showArchived = $request->input('filter') === 'saved';
+        if (! $showArchived) {
+            $query->whereNot(fn ($q) => $this->whereInHistory($q));
+        }
 
         foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
             $this->applyEmployerSearchToQuery($query, $employer, $searchTerm);
@@ -1387,6 +1399,7 @@ class RenewalController extends Controller
             $emp->setRelation('activeRenewalLink', $link);
 
             if ($hideCancelled && $link->status === 'renewal_cancelled') return false;
+            if ($filter !== 'saved' && $this->linkInHistory($link)) return false;
 
             if ($filter) {
                 if ($filter === 'saved') return $link->status === 'renewal_completed';
@@ -2406,6 +2419,11 @@ class RenewalController extends Controller
         $validated = $request->validate(['team_name' => 'nullable|string|max:255']);
         $teamName = trim((string) ($validated['team_name'] ?? ''));
 
+        // A finished employee keeps the team they finished in (searchable in the history popup).
+        if (in_array($employee->id, $this->finishedEmployeeIds($tab->id, (int) $employee->employer_id), true)) {
+            return response()->json(['success' => false, 'message' => __('Finished employees keep the team they finished in.')], 422);
+        }
+
         if ($teamName === '') {
             \App\Models\EmployeeTeamAssignment::where('employee_id', $employee->id)
                 ->where('resolution_tab_id', $tab->id)
@@ -2440,9 +2458,11 @@ class RenewalController extends Controller
             'new_name' => 'required|string|max:255',
         ]);
 
+        // Finished employees keep the team name they finished under.
         \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $tab->id)
             ->where('employer_id', $data['employer_id'])
             ->where('team_name', $data['old_name'])
+            ->whereNotIn('employee_id', $this->finishedEmployeeIds($tab->id, (int) $data['employer_id']))
             ->update(['team_name' => $data['new_name']]);
 
         return response()->json(['success' => true]);
@@ -2466,9 +2486,11 @@ class RenewalController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
+        // Finished employees keep the team name they finished under.
         \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $tab->id)
             ->where('employer_id', $data['employer_id'])
             ->where('team_name', $data['name'])
+            ->whereNotIn('employee_id', $this->finishedEmployeeIds($tab->id, (int) $data['employer_id']))
             ->delete();
 
         return response()->json(['success' => true]);
@@ -2994,27 +3016,113 @@ class RenewalController extends Controller
     public function fetchHistory(Request $request, $resolutionTab, $employerId)
     {
         $this->resolveTab($resolutionTab, 'renewal');
+        $tabId = $this->currentTab->id;
 
-        $employer = Employer::findOrFail($employerId);
+        $employerQuery = Employer::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
+        $employer = $employerQuery->withTrashed()->findOrFail($employerId);
 
-        $employees = $employer->employees()
-            ->where('resolution_tab_id', $this->currentTab->id)
-            ->where('status', 'renewal_completed')
-            ->where(function($q) {
-                 $q->whereNotNull('resolution_completed_at')
-                   ->where('resolution_completed_at', '<', now()->subHours(24));
+        $scoped = function ($q) {
+            if (auth()->user()->can('manage-tickets')) {
+                $q->withoutGlobalScope('employerTenancy');
+            }
+            return $q;
+        };
+        // Primary employees of this tab, and dual-listed employees (finished on their link).
+        $primary = fn () => $scoped($employer->employees()->where('resolution_tab_id', $tabId)->where(fn ($w) => $this->whereInHistory($w)));
+        $linkInHistory = fn ($l) => $l->where('resolution_tab_id', $tabId)->where('status', 'renewal_completed')
+            ->where(fn ($w) => $w->whereNull('resolution_completed_at')->orWhere('resolution_completed_at', '<', now()->subHours(24)));
+        $linked = fn () => $scoped($employer->employees()->whereNull('terminated_at')->whereHas('renewalLinks', $linkInHistory));
+
+        $params = \App\Support\HistoryFilter::params($request);
+        $months = \App\Support\HistoryFilter::months($primary()->pluck('resolution_completed_at')->concat(
+            \App\Models\EmployeeRenewalLink::whereIn('employee_id', $linked()->select('employees.id'))
+                ->where(fn ($l) => $linkInHistory($l))->pluck('resolution_completed_at')));
+        $month = \App\Support\HistoryFilter::selectedMonth($params, $months);
+
+        $employeeSearch = fn ($q, $term) => \App\Services\TwoStageSearch::whereEmployee($q, $term);
+        $teamSearch = fn ($q, $team) => $q->whereIn('id', fn ($sub) => $sub->select('employee_id')->from('employee_team_assignments')
+            ->where('resolution_tab_id', $tabId)->where('team_name', 'like', "%{$team}%"));
+        $noop = fn ($q) => null;
+
+        $primaryQuery = $primary()->with(['registrationSteps', 'customFields']);
+        \App\Support\HistoryFilter::apply($primaryQuery, $params, $month, 'resolution_completed_at', $employeeSearch, $teamSearch);
+
+        // Dual-listed: the month / dates are on the link, the searches on the employee.
+        $linkedQuery = $scoped($employer->employees()->whereNull('terminated_at')
+            ->whereHas('renewalLinks', function ($l) use ($linkInHistory, $params, $month, $noop) {
+                $linkInHistory($l);
+                \App\Support\HistoryFilter::apply($l, array_merge($params, ['q' => '', 'team' => '']), $month, 'resolution_completed_at', $noop, $noop);
             })
-            ->with(['registrationSteps'])
-            ->get();
+            ->with(['registrationSteps', 'customFields', 'renewalLinks' => fn ($l) => $l->where('resolution_tab_id', $tabId)]));
+        if ($params['q'] !== '') {
+            $employeeSearch($linkedQuery, $params['q']);
+        }
+        if ($params['team'] !== '') {
+            $teamSearch($linkedQuery, $params['team']);
+        }
+        $linkedEmployees = $linkedQuery->get()->each(fn ($emp) => $emp->setRelation('activeRenewalLink', $emp->renewalLinks->first()));
 
-        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
+        $employees = $primaryQuery->get()->concat($linkedEmployees)
+            ->sortByDesc(fn ($emp) => optional($emp->relationLoaded('activeRenewalLink') ? $emp->activeRenewalLink->resolution_completed_at : $emp->resolution_completed_at)->timestamp ?? 0)
+            ->values();
 
-        return view('production.renewal._employee_list_content', array_merge([
-            'employees' => $employees,
-            'employer' => $employer,
-            'steps' => $steps,
-            'renewalTargets' => $this->getRenewalTargets('renewal'),
-        ], $this->getTabViewData('renewal')))->with('isHistory', true);
+        $this->applyTabAppointments($employees, $tabId);
+        $this->applyTabRequestNumbers($employees, $tabId);
+        $this->applyTabTeams($employees, $tabId);
+
+        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $tabId)->orderBy('order')->get();
+
+        return view('partials._history_panel', [
+            'historyMonths' => $months,
+            'historyMonth' => $month,
+            'historyParams' => $params,
+            'historyCount' => $employees->count(),
+            'listView' => 'production.renewal._employee_list_content',
+            'listData' => array_merge([
+                'employees' => $employees,
+                'employer' => $employer,
+                'steps' => $steps,
+                'renewalTargets' => $this->getRenewalTargets('renewal'),
+                'isHistory' => true,
+            ], $this->getTabViewData('renewal')),
+        ]);
+    }
+
+    /**
+     * Primary employees in the "Job History" popup instead of the main list:
+     * finished more than 24 hours ago, or before finish dates were kept.
+     */
+    private function whereInHistory($q)
+    {
+        return $q->where('status', 'renewal_completed')
+            ->where(fn ($w) => $w->whereNull('resolution_completed_at')
+                ->orWhere('resolution_completed_at', '<', now()->subHours(24)));
+    }
+
+    /** Same rule for a dual-listed employee's link. */
+    private function linkInHistory(\App\Models\EmployeeRenewalLink $link): bool
+    {
+        return $link->status === 'renewal_completed'
+            && (! $link->resolution_completed_at || $link->resolution_completed_at->lt(now()->subHours(24)));
+    }
+
+    /** Finished employees (primary or dual-listed) under this employer in this tab — they keep their team. */
+    private function finishedEmployeeIds(int $tabId, int $employerId): array
+    {
+        $primary = Employee::withoutGlobalScope('employerTenancy')
+            ->where('employer_id', $employerId)
+            ->where('resolution_tab_id', $tabId)
+            ->where('status', 'renewal_completed')
+            ->pluck('id');
+        $linked = \App\Models\EmployeeRenewalLink::where('resolution_tab_id', $tabId)
+            ->where('status', 'renewal_completed')
+            ->whereIn('employee_id', Employee::withoutGlobalScope('employerTenancy')->where('employer_id', $employerId)->select('id'))
+            ->pluck('employee_id');
+
+        return $primary->concat($linked)->unique()->values()->all();
     }
 
     public function destroy(Request $request, $resolutionTab, Employee $employee)
@@ -3240,6 +3348,7 @@ class RenewalController extends Controller
               ->orWhere('pinkCardNo', 'like', "%{$search}%")
               ->orWhere('request_number', 'like', "%{$search}%")
               ->orWhere('renewal_request_number', 'like', "%{$search}%")
+              ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
               ->orWhere('employer_employee_id', 'like', "%{$search}%")
               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
@@ -3305,6 +3414,7 @@ class RenewalController extends Controller
                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
                   ->orWhere('request_number', 'like', "%{$search}%")
                   ->orWhere('renewal_request_number', 'like', "%{$search}%")
+                  ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
                   ->orWhere('employer_employee_id', 'like', "%{$search}%")
                   ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                   ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
@@ -3338,6 +3448,8 @@ class RenewalController extends Controller
                    ->orWhere('name_list_number', 'like', "%{$search}%")
                    ->orWhere('pinkCardNo', 'like', "%{$search}%")
                    ->orWhere('request_number', 'like', "%{$search}%")
+                   ->orWhere('renewal_request_number', 'like', "%{$search}%")
+                   ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
                    ->orWhere('employer_employee_id', 'like', "%{$search}%")
                    ->orWhereHas('employer', function($q2) use ($search) {
                        $q2->withTrashed()

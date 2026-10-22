@@ -198,6 +198,8 @@
     <div class="slide-instructions">
         <ol>
             <li><strong>Manage Team</strong> on the employee card: pick/create, rename, delete, or "No Team"</li>
+            <li>Finished employees <strong>keep their team</strong> — rename / delete / change team only affects people not finished yet</li>
+            <li><strong>History</strong> (clock) button on the job card: people finished over 24 h ago, by month + employee / team search</li>
             <li><strong>Steps</strong> button: add / rename / delete / reorder instantly — same window in all 4 menus</li>
         </ol>
     </div>

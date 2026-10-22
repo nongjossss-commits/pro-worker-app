@@ -11,11 +11,14 @@
 
 <h4><i class="bi bi-layout-text-window me-2"></i>Page sections</h4>
 <ol>
-    <li><strong>Summary stat cards</strong> — key numbers (total employers, active employees, jobs in progress)</li>
-    <li><strong>Trend chart</strong> — monthly/quarterly (if available)</li>
-    <li><strong>Urgent items list</strong> — jobs nearing their deadline, notifications that need action</li>
-    <li><strong>Shortcut links</strong> — jump straight to frequently-used menus</li>
+    <li><strong>Brand-colour header</strong> — date, update time and highlight figures: finished in 12 months · nationalities · tabs with work in progress · actions in 14 days</li>
+    <li><strong>Key figure cards</strong> — workforce · employers · in progress · finished this month (vs last month) · documents expiring in 30 days · (finance users) cash received this month and outstanding receivable — <strong>hover a card</strong> for its breakdown and how it is counted</li>
+    <li><strong>Work finished per month</strong> (12 months, Workflow / Registration / Renewal resolution) and <strong>cash received per month</strong> (by actual payment date, quotations excluded — same as the Finance menu)</li>
+    <li><strong>Work in progress by tab</strong> — click a bar to open that tab · <strong>workforce by nationality</strong></li>
+    <li><strong>Document expiry outlook</strong> (visa / work permit / passport: expired · 30 · 60 · 90 days) · <strong>top 8 employers by workforce</strong></li>
+    <li><strong>System activity (14 days)</strong> and <strong>recent activities</strong></li>
 </ol>
+<p class="small">Workforce = not notified out, not deleted and not in a cancelled status · finance figures show only to users who can view finance, and if the Finance menu has a password it must be unlocked first (otherwise a "Finance figures are locked" box shows) · all figures cover only the employers that account may see · works in light/dark mode and all 4 languages</p>
 
 <h4><i class="bi bi-shield-lock me-2"></i>Login and security</h4>
 <ol>
@@ -43,7 +46,7 @@
 </div>
 
 <div class="manual-tip">
-    <strong>Click the cards:</strong> every stat card is clickable — it takes you straight to that menu's details.
+    <strong>Hover for details:</strong> point at a figure card or chart to see its breakdown right away, without opening the menu · in "Work in progress by tab", click a bar to open that tab
 </div>
 
 <div class="manual-tip">

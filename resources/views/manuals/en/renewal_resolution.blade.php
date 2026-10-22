@@ -20,7 +20,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
     <li><strong>Renewal Resolution tabs</strong> — each tab is one renewal round (e.g. "2024 Renewal Round 1")</li>
-    <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
+    <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away · searches name (Thai / English), passport no., work permit no., ID no., RA no., pink card no. and <strong>request no.</strong> — including the request no. on Workflow / Pre-Production work cards and on registration / renewal resolution cards · the suggestions shown while typing use the same rules as pressing Search</li>
     <li><strong>Two search boxes</strong> — box 1 takes an employee (name / passport / any number), an employer or a job owner; pick from the list: an employee = only that person, an employer = only that employer, a job owner = every employer under them (typing and pressing Enter searches the typed text) · box 2 opens once box 1 has a value and narrows box 1's result further, with the same kinds of text · inside an employer card, a term that matches the employer / job owner shows all of its employees; a term that matches an employee shows only the matching ones</li>
     <li><strong>Employer + Employee cards</strong> — uses the same mechanism as Registration Resolution</li>
     <li><strong>Progress filter</strong> — visa-only, work-permit-only, both</li>
@@ -91,12 +91,14 @@
 
 <h5>8. Selecting completed employees and 3-way Select All</h5>
 <div class="manual-step">
-    A completed employee's checkbox is hidden during the 24-hour Undo window and comes back after it. Select All on an employer with both completed and not-completed employees asks: <strong>All / Completed only / Not completed only</strong> (for export, bulk edit, download).
+    A completed employee's checkbox is hidden during the 24-hour Undo window; after it the employee moves into the history — click the <strong>Saved to Database</strong> box to list and select everyone finished. Select All on an employer with both completed and not-completed employees asks: <strong>All / Completed only / Not completed only</strong> (for export, bulk edit, download).
 </div>
 
 <h5>9. Teams</h5>
 <div class="manual-step">
     <strong>Manage Team</strong> on the employee card → pick or create a team (e.g. "Batch 1"). Teams are separate per resolution tab and per employer; rename/delete updates instantly without reloading.
+    <br><strong>Finished employees keep their team:</strong> renaming / deleting a team or changing someone's team only affects employees not finished yet — finished ones stay in their old team and can be found by that name in the history.
+    <br><strong>History (clock button on the employer card):</strong> a finished employee stays in the list for 24 hours, then moves into that employer's <strong>Job History</strong> popup. View one month at a time (opens on the latest month) or a date range; search employees (name / passport / request no. / RA no.) and teams — typing a search looks in every month. People finished before dates were kept are under "No date (older records)". To select finished people for export / download, click the <strong>Saved to Database</strong> box, which still lists everyone finished.
 </div>
 
 <h5>10. Appointments and request numbers per tab</h5>

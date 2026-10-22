@@ -43,21 +43,20 @@
 
     @include('manuals.training._screenshot', [
         'src' => 'dashboard/01-overview',
-        'alt' => 'Dashboard page with summary cards + quick links',
-        'caption' => 'Dashboard — Summary cards + Quick links + Recent activity',
+        'alt' => 'Executive Dashboard with figure cards + charts',
+        'caption' => 'Dashboard — business at a glance: key figure cards + monthly charts + work in progress by tab',
         'callouts' => [
-            '<strong>Summary cards:</strong> number of employers/employees/pending jobs',
-            '<strong>Expiry alerts:</strong> employees nearing expiry (60/30/7 days)',
-            '<strong>Quick links:</strong> jump to frequently-used menus',
-            '<strong>Recent notifications:</strong> the last 5 items',
+            '<strong>Header:</strong> date + highlight figures (finished in 12 months / nationalities / tabs with work in progress / 14-day actions)',
+            '<strong>Figure cards:</strong> hover = breakdown + how it is counted',
+            '<strong>Charts:</strong> finished per month · cash received per month (finance users) · work in progress by tab (click to open) · nationality · document expiry · top employers',
         ],
     ])
 
     <div class="slide-instructions">
         <ol>
             <li>Log in → automatically go to Dashboard</li>
-            <li>Check the summary cards at the top</li>
-            <li>Click a card or quick link to go to the menu you need</li>
+            <li>Check the figure cards at the top — hover a card or chart for details</li>
+            <li>Click a bar in "Work in progress by tab" to open that tab · finance figures need the Finance menu unlocked first (if it has a password)</li>
             <li>The button after the language button = <strong>Light / Dark / Device default</strong> mode — switches instantly with no refresh, remembered per device</li>
         </ol>
     </div>

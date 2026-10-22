@@ -273,7 +273,11 @@ class WorkflowController extends Controller
         // Team names (group_name) per order (for the team-filter "flaps"
         // hanging off the bottom of each order's card) — one batched query
         // for the whole page instead of one per order.
+        // Only teams of employees still shown in the card (in progress, or
+        // finished < 24h): finished employees keep their team in the history
+        // popup, and those names can no longer be renamed / deleted here.
         $orderTeamNamesMap = ProductionItem::whereIn('production_order_id', $orders->pluck('id'))
+            ->where(fn ($q) => $q->where('status', '!=', 'completed')->orWhere('completed_at', '>=', now()->subHours(24)))
             ->whereNotNull('group_name')
             ->where('group_name', '!=', '')
             ->select('production_order_id', 'group_name')
@@ -1106,22 +1110,38 @@ class WorkflowController extends Controller
             $steps = $order->workType->workflowSteps;
         }
 
-        $items = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
+        // Finished more than 24h ago (the 24h before that they stay in the card, with Undo).
+        $base = fn () => ProductionItem::query()
             ->where('production_order_id', $orderId)
             ->where('status', 'completed')
             ->where(function($q) {
                 $q->whereNull('completed_at')
                   ->orWhere('completed_at', '<', now()->subHours(24));
-            })
-            ->orderByDesc('completed_at')
-            ->get();
+            });
+
+        // By month / date range + search boxes (employee, team) — App\Support\HistoryFilter.
+        $params = \App\Support\HistoryFilter::params($request);
+        $months = \App\Support\HistoryFilter::months($base()->pluck('completed_at'));
+        $month = \App\Support\HistoryFilter::selectedMonth($params, $months);
+        $query = $base()->with(['employee', 'completedWorkTypeSteps']);
+        \App\Support\HistoryFilter::apply($query, $params, $month, 'completed_at',
+            fn ($q, $term) => $q->where(fn ($w) => $w
+                ->where('request_number', 'like', "%{$term}%")
+                ->orWhereHas('employee', fn ($e) => \App\Services\TwoStageSearch::whereEmployee($e, $term))),
+            fn ($q, $team) => $q->where('group_name', 'like', "%{$team}%"));
+        $items = $query->orderByDesc('completed_at')->get();
 
         $groupedItems = $items->groupBy('group_name');
 
-        // Reuse the order_items partial but maybe with a flag or different view
-        // For simplicity, reusing order_items but passing a flag is good,
-        // OR render a simple list. Let's reuse order_items but we need to handle "Restore" button hidden.
-        return view('workflow.partials.order_items', compact('order', 'groupedItems', 'steps'))->with('isHistory', true);
+        // Same order_items partial as the card (isHistory hides Undo etc.), inside the filter panel.
+        return view('partials._history_panel', [
+            'historyMonths' => $months,
+            'historyMonth' => $month,
+            'historyParams' => $params,
+            'historyCount' => $items->count(),
+            'listView' => 'workflow.partials.order_items',
+            'listData' => compact('order', 'groupedItems', 'steps') + ['isHistory' => true],
+        ]);
     }
 
     /**
@@ -1139,6 +1159,12 @@ class WorkflowController extends Controller
         ]);
 
         $item = ProductionItem::with('order.workType')->visibleToUser()->findOrFail($itemId);
+
+        // Tab 5 (notify_in_report): steps are ticked on the employer card for
+        // everyone at once (toggleCardStep()), never per employee.
+        if ($item->order?->workType?->isNotifyInReport()) {
+            return response()->json(['success' => false, 'message' => __('In this tab, tick the step on the employer card.')], 422);
+        }
 
         $stepName = \App\Models\WorkTypeStep::find($request->step_id)?->name ?? 'ขั้นตอน #' . $request->step_id;
 
@@ -1180,6 +1206,189 @@ class WorkflowController extends Controller
             'success' => true,
             'order_stats' => $orderStats,
             'tab_stats' => $tabStats
+        ]);
+    }
+
+    // ------------------------------------------------------------------
+    // Tab 5 "แจ้งเข้า บต.52 / บต.55 / บต.56" (WorkType::SLUG_NOTIFY_IN_REPORT)
+    // ------------------------------------------------------------------
+
+    /**
+     * Change-employer (notify_in) items that can go into tab 5: finished
+     * (including those still inside the 24h transfer countdown), finished
+     * after tab 5 was created, card not cancelled, and not already on a live
+     * tab-5 card. Grouped by the card's employer = the employee's NEW employer.
+     */
+    private function notifyInReportCandidateQuery(WorkType $reportTab)
+    {
+        $notifyInId = WorkType::where('slug', 'notify_in')->value('id');
+
+        return ProductionItem::query()
+            ->visibleToUser()
+            ->whereNotNull('employee_id')
+            ->where('status', 'completed')
+            ->where('completed_at', '>=', $reportTab->created_at)
+            ->whereHas('order', fn ($o) => $o->where('work_type_id', $notifyInId)->where('status', '!=', 'cancelled'))
+            ->whereDoesntHave('derivedItems', function ($d) use ($reportTab) {
+                $d->where('status', '!=', 'cancelled')
+                  ->whereHas('order', fn ($o) => $o->where('work_type_id', $reportTab->id)->where('status', '!=', 'cancelled'));
+            });
+    }
+
+    private function notifyInReportTab(): WorkType
+    {
+        return WorkType::where('slug', WorkType::SLUG_NOTIFY_IN_REPORT)->firstOrFail();
+    }
+
+    /** JSON for the "Add Employees" window of tab 5. */
+    public function notifyInReportCandidates(Request $request)
+    {
+        $tab = $this->notifyInReportTab();
+        $items = $this->notifyInReportCandidateQuery($tab)
+            ->with([
+                'order:id,employer_id',
+                'order.employer:id,employerNameTh,employerNameEn',
+                'employee:id,employeeTitleEn,employeeNameEn,employeeTitleTh,employeeNameTh,employeePassport,employeePhoto,employer_id',
+            ])
+            ->orderByDesc('completed_at')
+            ->get();
+
+        $groups = $items->groupBy(fn ($i) => $i->order->employer_id)->map(function ($rows, $employerId) {
+            $er = $rows->first()->order->employer;
+            return [
+                'employer_id' => (int) $employerId,
+                'employer_name' => $er->employerNameTh ?? $er->employerNameEn ?? '-',
+                'employer_name_en' => ($er && $er->employerNameEn && $er->employerNameEn !== $er->employerNameTh) ? $er->employerNameEn : '',
+                'employees' => $rows->map(function ($i) {
+                    $e = $i->employee;
+                    $transferAt = $i->completed_at->copy()->addDay();
+                    return [
+                        'source_item_id' => $i->id,
+                        'employee_id' => $e->id,
+                        'name' => trim(($e->employeeTitleEn ? $e->employeeTitleEn . ' ' : '') . ($e->employeeNameEn ?: $e->employeeNameTh ?: '-')),
+                        'name_th' => trim(($e->employeeTitleTh ? $e->employeeTitleTh . ' ' : '') . ($e->employeeNameTh ?? '')),
+                        'passport' => $e->employeePassport,
+                        'photo' => $e->photo_url,
+                        'completed_at' => $i->completed_at->format('d/m/Y H:i'),
+                        // still inside the 24h window before the scheduled employer move
+                        'transfer_pending' => $transferAt->isFuture(),
+                        'transfer_at' => $transferAt->format('d/m/Y H:i'),
+                    ];
+                })->values(),
+            ];
+        })->sortBy('employer_name')->values();
+
+        return response()->json(['groups' => $groups]);
+    }
+
+    /**
+     * Build tab-5 cards from the ticked change-employer items: one NEW card
+     * per employer per round (earlier cards of the same employer are left
+     * alone), one pending item per employee, linked to its source item.
+     */
+    public function notifyInReportStore(Request $request)
+    {
+        $request->validate([
+            'source_item_ids' => 'required|array|min:1',
+            'source_item_ids.*' => 'integer',
+        ]);
+
+        $tab = $this->notifyInReportTab();
+        $sources = $this->notifyInReportCandidateQuery($tab)
+            ->whereIn('id', $request->input('source_item_ids'))
+            ->with('order:id,employer_id', 'order.employer:id,employerNameTh,employerNameEn')
+            ->get();
+
+        if ($sources->isEmpty()) {
+            return response()->json(['success' => false, 'message' => __('These employees are no longer available — reload the list.')], 422);
+        }
+
+        $created = DB::transaction(function () use ($sources, $tab) {
+            $orders = collect();
+            foreach ($sources->groupBy(fn ($i) => $i->order->employer_id) as $employerId => $rows) {
+                $order = ProductionOrder::create([
+                    'employer_id' => $employerId,
+                    'work_type_id' => $tab->id,
+                    'type' => 'employer',
+                    'status' => 'active',
+                    'project_name' => $tab->name . ' - ' . now()->format('d/m/Y'),
+                    'created_by' => auth()->id(),
+                ]);
+                foreach ($rows as $src) {
+                    ProductionItem::create([
+                        'production_order_id' => $order->id,
+                        'employee_id' => $src->employee_id,
+                        'source_item_id' => $src->id,
+                        'status' => 'pending',
+                    ]);
+                }
+                $orders->push(['order' => $order, 'count' => $rows->count(), 'employer' => $rows->first()->order->employer]);
+            }
+            return $orders;
+        });
+
+        foreach ($created as $c) {
+            ActivityLogHelper::logAction('create', 'สร้างการ์ดงาน "' . $tab->name . '" นายจ้าง ' . ($c['employer']->employerNameTh ?? $c['employer']->employerNameEn ?? '-') . ' ลูกจ้าง ' . $c['count'] . ' ราย (จากแท็บเปลี่ยนนายจ้าง)', ProductionOrder::class, $c['order']->id, [
+                'work_type_id' => $tab->id,
+                'employee_count' => $c['count'],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'cards' => $created->count(),
+            'employees' => $created->sum('count'),
+            'message' => __('Created :cards card(s) for :employees employee(s).', ['cards' => $created->count(), 'employees' => $created->sum('count')]),
+        ]);
+    }
+
+    /**
+     * Tab 5: tick / untick a step on the employer card — applied to every
+     * employee on the card that is still in progress, so they always share
+     * the same step.
+     */
+    public function toggleCardStep(Request $request, ProductionOrder $order)
+    {
+        abort_unless(auth()->user()->can('update-progress-steps'), 403);
+        $order->loadMissing('workType');
+        abort_unless($order->workType && $order->workType->isNotifyInReport(), 403);
+
+        $request->validate([
+            'step_id' => 'required|exists:work_type_steps,id',
+            'completed' => 'required|boolean',
+        ]);
+        $step = WorkTypeStep::where('work_type_id', $order->work_type_id)->findOrFail($request->step_id);
+
+        if ($order->status !== 'active') {
+            return response()->json(['success' => false, 'message' => __('This card is no longer in progress.')], 422);
+        }
+
+        $items = $order->items()->where('status', 'pending')->get();
+        DB::transaction(function () use ($items, $step, $request) {
+            foreach ($items as $item) {
+                if ($request->completed) {
+                    $item->completedWorkTypeSteps()->syncWithoutDetaching([
+                        $step->id => ['completed_at' => now(), 'completed_by' => auth()->id()],
+                    ]);
+                } else {
+                    $item->completedWorkTypeSteps()->detach($step->id);
+                }
+            }
+        });
+        $order->touch();
+
+        ActivityLogHelper::logAction('update', ($request->completed ? 'ติ๊กขั้นตอน' : 'ยกเลิกติ๊กขั้นตอน') . ' "' . $step->name . '" ทั้งการ์ด (' . $items->count() . ' ราย)', ProductionOrder::class, $order->id, [
+            'step_id' => $step->id,
+            'step_name' => $step->name,
+            'completed' => (bool) $request->completed,
+            'item_ids' => $items->pluck('id')->all(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'item_ids' => $items->pluck('id')->all(),
+            'order_stats' => $this->calculateOrderStats($order->fresh()),
+            'tab_stats' => $this->calculateTabStats($order->workType, false),
         ]);
     }
 
@@ -1345,6 +1554,10 @@ class WorkflowController extends Controller
         $request->validate(['group_name' => 'nullable|string|max:255']);
 
         $item = ProductionItem::query()->visibleToUser()->findOrFail($itemId);
+        // A finished employee keeps the team they finished under (searchable in the history popup).
+        if ($item->status === 'completed') {
+            return response()->json(['success' => false, 'message' => __('Finished employees keep the team they finished in.')], 422);
+        }
         $item->update(['group_name' => $request->group_name]);
 
         return response()->json(['success' => true]);
@@ -1363,8 +1576,10 @@ class WorkflowController extends Controller
             'new_name' => 'required|string|max:255',
         ]);
 
+        // Finished employees keep the team name they finished under.
         ProductionItem::query()->visibleToUser()
             ->where('production_order_id', $orderId)
+            ->where('status', '!=', 'completed')
             ->where('group_name', $data['old_name'])
             ->update(['group_name' => $data['new_name']]);
 
@@ -1383,8 +1598,10 @@ class WorkflowController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
+        // Finished employees keep the team name they finished under.
         ProductionItem::query()->visibleToUser()
             ->where('production_order_id', $orderId)
+            ->where('status', '!=', 'completed')
             ->where('group_name', $data['name'])
             ->update(['group_name' => null]);
 
@@ -2372,6 +2589,15 @@ class WorkflowController extends Controller
                 'is_system' => true,
                 'order' => 4,
                 'steps' => ['ยื่นเอกสาร', 'รอผล', 'รับเล่ม']
+            ],
+            [
+                // Tab 5 — see the add_notify_in_report_work_type migration.
+                'name' => 'แจ้งเข้า บต.52 / บต.55 / บต.56',
+                'slug' => WorkType::SLUG_NOTIFY_IN_REPORT,
+                'is_system' => true,
+                'allow_multiple_orders' => true,
+                'order' => 5,
+                'steps' => []
             ]
         ];
 

@@ -180,7 +180,6 @@ class RegistrationController extends Controller
             ->where('status', '!=', 'registration_cancelled')
             ->where(function ($q) {
                 $q->where('status', '!=', 'registration_completed')
-                  ->orWhereNull('resolution_completed_at')
                   ->orWhere('resolution_completed_at', '>=', now()->subHours(24));
             });
         $stepStats = $this->getGlobalStepStats($stepStatsQuery, $steps);
@@ -396,8 +395,11 @@ class RegistrationController extends Controller
         // the bottom of each employer card) — one batched query for the
         // whole page instead of one query per employer, since team names
         // are a per-employer vocabulary (see getTabTeamNames()'s docblock).
+        // Teams used only by employees already in the history popup aren't offered.
         $employerTeamNamesMap = \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $this->currentTab->id)
             ->whereIn('employer_id', $employers->pluck('id'))
+            ->whereNotIn('employee_id', fn ($sub) => $this->whereInHistory(
+                $sub->select('id')->from('employees')->where('resolution_tab_id', $this->currentTab->id)))
             ->select('employer_id', 'team_name')
             ->distinct()
             ->orderBy('team_name')
@@ -604,6 +606,7 @@ class RegistrationController extends Controller
                                ->orWhere('pinkCardNo', 'like', "%{$search}%")
                                ->orWhere('request_number', 'like', "%{$search}%")
                                ->orWhere('registration_request_number', 'like', "%{$search}%")
+                               ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
                                ->orWhere('employer_employee_id', 'like', "%{$search}%")
                                ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
                                ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleanedSearch}%"]);
@@ -923,8 +926,7 @@ class RegistrationController extends Controller
                 // employees whose 24h countdown finished no longer count
                 // toward the per-employer step badges either.
                 $countTowardsSteps = !($emp->status === 'registration_completed'
-                    && $emp->resolution_completed_at
-                    && $emp->resolution_completed_at->lt($graceCutoff));
+                    && (! $emp->resolution_completed_at || $emp->resolution_completed_at->lt($graceCutoff)));
 
                 if ($countTowardsSteps) {
                     $highestStep = $this->highestStepInTab($emp, $steps);
@@ -1037,9 +1039,6 @@ class RegistrationController extends Controller
             $query->withoutGlobalScope('employerTenancy');
         }
 
-        // Completed employees now stay in the main list (green card) instead
-        // of being hidden after 24 hours — the user-driven 4-colour workflow
-        // replaced the auto-archive behaviour.
         $query->where(function($q) use ($request) {
                 if ($request->boolean('hide_cancelled', true)) {
                     $q->whereIn('status', ['registration_pending', 'registration_completed']);
@@ -1048,6 +1047,14 @@ class RegistrationController extends Controller
                 }
             })
             ->with(['registrationSteps', 'customFields']); // Load everything needed for the card
+
+        // Finished employees stay (green card) for 24 hours, then move into
+        // the employer's "Job History" popup (fetchHistory). The "Saved"
+        // counter filter still lists every finished employee so it matches
+        // its number.
+        if ($request->input('filter') !== 'saved') {
+            $query->whereNot(fn ($q) => $this->whereInHistory($q));
+        }
 
         // Apply Search (if global search is active)
         foreach (\App\Services\TwoStageSearch::terms($request) as $searchTerm) {
@@ -1463,27 +1470,73 @@ class RegistrationController extends Controller
     public function fetchHistory(Request $request, $resolutionTab, $employerId)
     {
         $this->resolveTab($resolutionTab, 'registration');
+        $tabId = $this->currentTab->id;
 
-        $employer = Employer::findOrFail($employerId);
+        $employerQuery = Employer::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $employerQuery->withoutGlobalScope('employerTenancy');
+        }
+        $employer = $employerQuery->withTrashed()->findOrFail($employerId);
 
-        $employees = $employer->employees()
-            ->where('resolution_tab_id', $this->currentTab->id)
+        $base = function () use ($employer, $tabId) {
+            $q = $employer->employees()->where('resolution_tab_id', $tabId)->where(fn ($w) => $this->whereInHistory($w));
+            if (auth()->user()->can('manage-tickets')) {
+                $q->withoutGlobalScope('employerTenancy');
+            }
+            return $q;
+        };
+
+        $params = \App\Support\HistoryFilter::params($request);
+        $months = \App\Support\HistoryFilter::months($base()->pluck('resolution_completed_at'));
+        $month = \App\Support\HistoryFilter::selectedMonth($params, $months);
+        $query = $base()->with(['registrationSteps', 'customFields']);
+        \App\Support\HistoryFilter::apply($query, $params, $month, 'resolution_completed_at',
+            fn ($q, $term) => \App\Services\TwoStageSearch::whereEmployee($q, $term),
+            fn ($q, $team) => $q->whereIn('id', fn ($sub) => $sub->select('employee_id')->from('employee_team_assignments')
+                ->where('resolution_tab_id', $tabId)->where('team_name', 'like', "%{$team}%")));
+        $employees = $query->orderByDesc('resolution_completed_at')->get();
+
+        $this->applyTabAppointments($employees, $tabId);
+        $this->applyTabRequestNumbers($employees, $tabId);
+        $this->applyTabTeams($employees, $tabId);
+
+        $steps = RegistrationStep::registration()->where('resolution_tab_id', $tabId)->orderBy('order')->get();
+
+        return view('partials._history_panel', [
+            'historyMonths' => $months,
+            'historyMonth' => $month,
+            'historyParams' => $params,
+            'historyCount' => $employees->count(),
+            'listView' => 'production.registration._employee_list_content',
+            'listData' => array_merge([
+                'employees' => $employees,
+                'steps' => $steps,
+                'employer' => $employer,
+                'renewalTargets' => $this->getRenewalTargets('registration'),
+                'isHistory' => true,
+            ], $this->getTabViewData('registration')),
+        ]);
+    }
+
+    /**
+     * Employees in the "Job History" popup instead of the main list:
+     * finished more than 24 hours ago, or before finish dates were kept.
+     */
+    private function whereInHistory($q)
+    {
+        return $q->where('status', 'registration_completed')
+            ->where(fn ($w) => $w->whereNull('resolution_completed_at')
+                ->orWhere('resolution_completed_at', '<', now()->subHours(24)));
+    }
+
+    /** Finished employees under this employer in this tab — they keep their team. */
+    private function finishedEmployeeIds(int $tabId, int $employerId): array
+    {
+        return Employee::withoutGlobalScope('employerTenancy')
+            ->where('employer_id', $employerId)
+            ->where('resolution_tab_id', $tabId)
             ->where('status', 'registration_completed')
-            ->where(function($q) {
-                 $q->whereNotNull('resolution_completed_at')
-                   ->where('resolution_completed_at', '<', now()->subHours(24));
-            })
-            ->with(['registrationSteps'])
-            ->get();
-
-        $steps = RegistrationStep::registration()->where('resolution_tab_id', $this->currentTab->id)->orderBy('order')->get();
-
-        return view('production.registration._employee_list_content', array_merge([
-            'employees' => $employees,
-            'steps' => $steps,
-            'employer' => $employer,
-            'renewalTargets' => $this->getRenewalTargets('registration'),
-        ], $this->getTabViewData('registration')))->with('isHistory', true);
+            ->pluck('id')->all();
     }
 
     /**
@@ -2577,6 +2630,7 @@ class RegistrationController extends Controller
               ->orWhere('pinkCardNo', 'like', "%{$search}%")
               ->orWhere('request_number', 'like', "%{$search}%")
               ->orWhere('registration_request_number', 'like', "%{$search}%")
+              ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
               ->orWhere('employer_employee_id', 'like', "%{$search}%")
               // Robust Name Search (Ignore Spaces)
               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
@@ -2655,6 +2709,7 @@ class RegistrationController extends Controller
                   ->orWhere('pinkCardNo', 'like', "%{$search}%")
                   ->orWhere('request_number', 'like', "%{$search}%")
                   ->orWhere('registration_request_number', 'like', "%{$search}%")
+                  ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
                   ->orWhere('employer_employee_id', 'like', "%{$search}%")
                   // Robust Name Search
                   ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleanedSearch}%"])
@@ -2740,6 +2795,11 @@ class RegistrationController extends Controller
         $validated = $request->validate(['team_name' => 'nullable|string|max:255']);
         $teamName = trim((string) ($validated['team_name'] ?? ''));
 
+        // A finished employee keeps the team they finished in (searchable in the history popup).
+        if ($employee->resolution_tab_id === $tab->id && $employee->status === 'registration_completed') {
+            return response()->json(['success' => false, 'message' => __('Finished employees keep the team they finished in.')], 422);
+        }
+
         if ($teamName === '') {
             \App\Models\EmployeeTeamAssignment::where('employee_id', $employee->id)
                 ->where('resolution_tab_id', $tab->id)
@@ -2774,9 +2834,11 @@ class RegistrationController extends Controller
             'new_name' => 'required|string|max:255',
         ]);
 
+        // Finished employees keep the team name they finished under.
         \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $tab->id)
             ->where('employer_id', $data['employer_id'])
             ->where('team_name', $data['old_name'])
+            ->whereNotIn('employee_id', $this->finishedEmployeeIds($tab->id, (int) $data['employer_id']))
             ->update(['team_name' => $data['new_name']]);
 
         return response()->json(['success' => true]);
@@ -2800,9 +2862,11 @@ class RegistrationController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
+        // Finished employees keep the team name they finished under.
         \App\Models\EmployeeTeamAssignment::where('resolution_tab_id', $tab->id)
             ->where('employer_id', $data['employer_id'])
             ->where('team_name', $data['name'])
+            ->whereNotIn('employee_id', $this->finishedEmployeeIds($tab->id, (int) $data['employer_id']))
             ->delete();
 
         return response()->json(['success' => true]);
@@ -3043,6 +3107,7 @@ class RegistrationController extends Controller
                    ->orWhere('pinkCardNo', 'like', "%{$search}%")
                    ->orWhere('request_number', 'like', "%{$search}%")
                    ->orWhere('registration_request_number', 'like', "%{$search}%")
+                   ->orWhereHas('requestNumbers', fn ($rn) => $rn->where('request_number', 'like', "%{$search}%")) // card request no. (per resolution tab)
                    ->orWhere('employer_employee_id', 'like', "%{$search}%")
                    ->orWhereHas('employer', function($q2) use ($search) {
                        $q2->withTrashed()

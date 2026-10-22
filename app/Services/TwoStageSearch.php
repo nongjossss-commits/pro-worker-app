@@ -88,6 +88,11 @@ class TwoStageSearch
               ->orWhere('registration_request_number', 'like', $like)
               ->orWhere('renewal_request_number', 'like', $like)
               ->orWhere('employer_employee_id', 'like', $like)
+              // Request numbers printed on the work cards live outside the
+              // employee row: Workflow / Pre-Production cards on the item,
+              // Registration / Renewal resolution cards per resolution tab.
+              ->orWhereHas('productionItems', fn ($i) => $i->where('request_number', 'like', $like))
+              ->orWhereHas('requestNumbers', fn ($r) => $r->where('request_number', 'like', $like))
               ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", [$clean])
               ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", [$clean]);
         });

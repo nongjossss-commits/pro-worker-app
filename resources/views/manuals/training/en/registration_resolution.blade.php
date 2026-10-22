@@ -123,9 +123,10 @@
 
     <div class="slide-instructions">
         <ol>
-            <li>Completed employees become selectable again after the 24 h Undo window</li>
+            <li>Finished employees stay 24 h, then move into <strong>History</strong> (clock button on the employer card: by month + employee / team search) · select everyone finished from the <strong>Saved to Database</strong> box</li>
             <li>Employer Select All → <strong>All / Completed only / Not completed only</strong></li>
             <li><strong>Manage Team</strong> on the employee card (teams per tab and per employer)</li>
+            <li>Finished employees <strong>keep their team</strong> — rename / delete / change team only affects people not finished yet</li>
             <li>Appointments and request numbers are stored per tab</li>
         </ol>
     </div>

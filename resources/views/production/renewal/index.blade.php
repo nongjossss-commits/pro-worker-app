@@ -741,6 +741,11 @@
                                     <i class="bi bi-eye-slash"></i>
                                 </button>
 
+                                {{-- Job History: finished > 24h, by month + search --}}
+                                <button class="btn btn-outline-secondary btn-sm ms-1" onclick="openHistoryModal({{ $employer->id }}); event.stopPropagation();" title="{{ __('View History') }}">
+                                    <i class="bi bi-clock-history"></i>
+                                </button>
+
                                 {{-- Collapse Chevron --}}
                                 <button class="btn btn-light btn-sm rounded-circle ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $employer->id }}">
                                     <i class="bi bi-chevron-down"></i>
@@ -1794,20 +1799,9 @@
 
     // --- History Modal ---
     window.openHistoryModal = function(employerId) {
-        const modal = new bootstrap.Modal(document.getElementById('historyModal'));
-        modal.show();
-
-        const body = document.getElementById('historyModalBody');
-        body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-secondary" role="status"></div></div>';
-
-        fetch(`/production/renewal/{{ $currentTab->id }}/employer/${employerId}/history`)
-            .then(res => res.text())
-            .then(html => {
-                body.innerHTML = html;
-            })
-            .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>';
-            });
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('historyModal')).show();
+        // month / date / employee / team filters — public/js/history-filter.js
+        HistoryPanel.open(document.getElementById('historyModalBody'), `/production/renewal/{{ $currentTab->id }}/employer/${employerId}/history`);
     }
 
     // --- Global & Employer Cancelled Toggle ---

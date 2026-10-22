@@ -274,7 +274,12 @@
                     {{ $showCompletedJobs ? __('Showing Completed Jobs') : __('Completed Jobs') }}
                 </a>
             @endif
-            @if(isset($activeTab) && $activeTab->allow_multiple_orders)
+            @if(isset($activeTab) && $activeTab->isNotifyInReport())
+                {{-- Tab 5: employees finished in the change-employer tab → one new card per employer --}}
+                <button class="btn btn-primary fw-bold shadow-sm" onclick="window.openNotifyInReportModal()">
+                    <i class="bi bi-person-plus-fill me-1"></i> {{ __('Add Employees') }}
+                </button>
+            @elseif(isset($activeTab) && $activeTab->allow_multiple_orders)
                 <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#createJobModal">
                     <i class="bi bi-plus-lg me-1"></i> {{ __('Create Job') }}
                 </button>
@@ -626,7 +631,8 @@
                                      <i class="bi bi-eye"></i>
                                  </button>
 
-                                 {{-- Add Employee + Import — แสดงทุก tab รวม MOU --}}
+                                 {{-- Add Employee + Import — แสดงทุก tab รวม MOU (ยกเว้นแท็บ 5: ลูกจ้างมาจากแท็บเปลี่ยนนายจ้างเท่านั้น) --}}
+                                 @unless($order->workType?->isNotifyInReport())
                                  <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openAddEmployeeModal({{ $order->id }}, {{ $order->employer_id }}, {{ $order->workType->id ?? 'null' }}, '{{ $order->workType->slug ?? '' }}', 'workflow')">
                                     <i class="bi bi-plus-lg"></i> {{ __('Add') }}
                                  </button>
@@ -634,6 +640,7 @@
                                  <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold">
                                     <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
                                  </a>
+                                 @endunless
                                  @endif
 
                                 @if(isset($activeTab) && $activeTab->allow_multiple_orders)
@@ -642,12 +649,14 @@
                                     <i class="bi bi-list-task"></i> {{ __('Fields') }}
                                 </button>
 
-                                {{-- SEND ENTIRE ORDER BACK TO PRE-PRODUCTION --}}
+                                {{-- SEND ENTIRE ORDER BACK TO PRE-PRODUCTION (not for tab 5 — it has no pre-production) --}}
+                                @unless($order->workType?->isNotifyInReport())
                                 <button class="btn btn-info btn-sm ms-2 fw-bold px-3 text-white shadow-sm"
                                         onclick="sendOrderBackToPreProduction({{ $order->id }})"
                                         title="{{ __('Return Job to Pre-production') }}">
                                     <i class="bi bi-arrow-counterclockwise"></i> <span class="d-none d-lg-inline">{{ __('Back to Prep') }}</span>
                                 </button>
+                                @endunless
                                 @endif
 
                                 {{-- Whole-card finish/cancel/delete — allow_multiple_orders tabs only,
@@ -758,6 +767,33 @@
                     {{-- Bottom Row: Workflow Steps (Horizontal Scroll) --}}
                     <div class="w-100 overflow-auto custom-scrollbar pb-1 mt-2" style="scrollbar-width: thin;">
                          <div class="d-flex flex-nowrap align-items-center gap-2">
+                             @if($order->workType?->isNotifyInReport())
+                                @php
+                                    // A step is "done" for the card when every in-progress employee has it.
+                                    $cardPendingIds = $order->items()->where('status', 'pending')->pluck('id');
+                                    $cardStepDone = \Illuminate\Support\Facades\DB::table('production_item_step')
+                                        ->whereIn('production_item_id', $cardPendingIds)
+                                        ->selectRaw('work_type_step_id, COUNT(*) AS c')->groupBy('work_type_step_id')
+                                        ->pluck('c', 'work_type_step_id');
+                                    $cardCanTick = $order->status === 'active' && !$isReadOnly && auth()->user()->can('update-progress-steps') && $cardPendingIds->isNotEmpty();
+                                @endphp
+                                <span class="d-inline-flex align-items-center text-muted flex-shrink-0" style="font-size: 0.78rem;" title="{{ __('Ticking a step here applies it to every employee on this card') }}">
+                                    <i class="bi bi-diagram-3 me-1"></i>{{ __('Card steps') }}:
+                                </span>
+                                @forelse($steps as $step)
+                                    @php $isCardDone = $cardPendingIds->isNotEmpty() && (int) ($cardStepDone[$step->id] ?? 0) >= $cardPendingIds->count(); @endphp
+                                    <button type="button"
+                                        class="btn btn-sm rounded-pill px-3 flex-shrink-0 fw-bold card-step-btn {{ $isCardDone ? 'btn-success text-white' : 'btn-light border text-secondary' }}"
+                                        id="card-step-{{ $order->id }}-{{ $step->id }}"
+                                        data-done="{{ $isCardDone ? 1 : 0 }}"
+                                        style="font-size: 0.85rem;"
+                                        @if($cardCanTick) onclick="window.toggleCardStep({{ $order->id }}, {{ $step->id }}, this)" @else disabled @endif>
+                                        {{ $step->name }}@if($isCardDone) <i class="bi bi-check-circle-fill ms-1"></i>@endif
+                                    </button>
+                                @empty
+                                    <span class="text-muted small">{{ __('No steps yet — add them with the steps settings button.') }}</span>
+                                @endforelse
+                             @else
                              @foreach($steps as $step)
                                 @php
                                     $count = $stepStats[$step->id] ?? 0;
@@ -770,6 +806,7 @@
                                     <span class="text-dark fw-bold" style="font-size: 0.85rem;">{{ $step->name }}</span>
                                 </div>
                              @endforeach
+                             @endif
                          </div>
                     </div>
 
@@ -1214,6 +1251,9 @@ document.addEventListener('alpine:init', () => {
 @include('employees.partials._edit_scripts')
 @include('production.registration.partials.edit_modal_script')
 @include('employees.modals.advanced_export')
+@if(isset($activeTab) && $activeTab->isNotifyInReport())
+    @include('workflow.partials.notify_in_report_modal', ['reportTab' => $activeTab])
+@endif
 @include('production.registration.partials.offcanvas_drawer')
 @include('production.registration.partials.modals.add_custom_field')
 @include('production.partials.order_fields_drawer')
@@ -1739,6 +1779,48 @@ window.loadBatchStats = function() {
     });
 
     // --- Toggle Step API (Updated for Button) ---
+    // Tab 5: tick / untick a step on the employer card → every in-progress
+    // employee on it gets the same step (WorkflowController::toggleCardStep()).
+    window.toggleCardStep = function(orderId, stepId, btn) {
+        const completed = btn.dataset.done !== '1';
+        btn.disabled = true;
+        fetch(`/workflow/order/${orderId}/card-step-toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ step_id: stepId, completed: completed })
+        })
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+            btn.disabled = false;
+            if (!ok || !data.success) { appToast(data.message || 'Error', 'error'); return; }
+            btn.dataset.done = completed ? '1' : '0';
+            btn.classList.toggle('btn-success', completed);
+            btn.classList.toggle('text-white', completed);
+            btn.classList.toggle('btn-light', !completed);
+            btn.classList.toggle('border', !completed);
+            btn.classList.toggle('text-secondary', !completed);
+            const icon = btn.querySelector('i');
+            if (completed && !icon) btn.insertAdjacentHTML('beforeend', ' <i class="bi bi-check-circle-fill ms-1"></i>');
+            if (!completed && icon) icon.remove();
+            // mirror the step on every employee card already shown
+            (data.item_ids || []).forEach(itemId => {
+                const b = document.querySelector(`.step-btn-${itemId}-${stepId}`);
+                if (!b) return;
+                b.classList.toggle('btn-success', completed);
+                b.classList.toggle('text-white', completed);
+                b.classList.toggle('btn-light', !completed);
+                b.classList.toggle('border', !completed);
+                b.classList.toggle('text-secondary', !completed);
+                const i = b.querySelector('i');
+                if (completed && !i) b.insertAdjacentHTML('beforeend', ' <i class="bi bi-check-circle-fill ms-1"></i>');
+                if (!completed && i) i.remove();
+            });
+            if (data.order_stats) updateOrderHeaderStats(orderId, data.order_stats);
+            if (data.tab_stats) updateGlobalStats(data.tab_stats);
+        })
+        .catch(() => { btn.disabled = false; appToast('Error', 'error'); });
+    };
+
     window.toggleWorkStep = function(itemId, stepId, completed) {
         // Toggle UI immediately (Optimistic)
         const btn = document.querySelector(`.step-btn-${itemId}-${stepId}`);
@@ -1941,17 +2023,8 @@ window.loadBatchStats = function() {
         const modal = new bootstrap.Modal(document.getElementById('historyModal'));
         modal.show();
 
-        const body = document.getElementById('historyModalBody');
-        body.innerHTML = '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-secondary" role="status"></div></div>';
-
-        fetch(`/workflow/${orderId}/history`)
-            .then(res => res.text())
-            .then(html => {
-                body.innerHTML = html;
-            })
-            .catch(err => {
-                body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>';
-            });
+        // month / date / search filters: public/js/history-filter.js
+        HistoryPanel.open(document.getElementById('historyModalBody'), `/workflow/${orderId}/history`);
     }
 
     // --- Item Actions ---

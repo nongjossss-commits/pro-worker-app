@@ -17,7 +17,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
     <li><strong>Step bar</strong> at the top — shows each Step a job must pass through + the number of jobs in each Step</li>
-    <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
+    <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away · searches name (Thai / English), passport no., work permit no., ID no., RA no., pink card no. and <strong>request no.</strong> — including the request no. on Workflow / Pre-Production work cards and on registration / renewal resolution cards · the suggestions shown while typing use the same rules as pressing Search</li>
     <li><strong>Two search boxes</strong> — box 1 takes an employee (name / passport / any number), an employer or a job owner; pick from the list: an employee = only that person, an employer = only that employer, a job owner = every employer under them (typing and pressing Enter searches the typed text) · box 2 opens once box 1 has a value and narrows box 1's result further, with the same kinds of text · inside an employer card, a term that matches the employer / job owner shows all of its employees; a term that matches an employee shows only the matching ones</li>
     <li><strong>Filter bar</strong> — filter by step, employer, job type</li>
     <li><strong>Job cards</strong> — shows all jobs currently in the selected step</li>
@@ -121,6 +121,7 @@
 
     <br><strong>Rename a team:</strong> press the pencil on the team pill → edit the current name right in the box (delete / add letters) and save — everyone in that team gets the new name; no new team is created.
     <br><strong>Scrolling the employee cards inside an employer card:</strong> once you scroll down, a small <strong>"↑ Back to top"</strong> button appears in the middle of the frame's bottom edge (it no longer covers the operator / corner buttons of a card) · the page back-to-top buttons are smaller, and the right one sits above the chat button.
+    <br><strong>History (clock button on the job card):</strong> a finished employee stays in the card for 24 hours, then moves into the history popup. View one month at a time (opens on the latest month) or a date range; search employees (name / passport / request no. / RA no.) and teams — typing a search looks in every month. <strong>Finished employees keep their team</strong>: renaming / deleting / changing a team only affects people not finished yet, and finished ones are found by their old team name in the history.
 </div>
 
 <h5>12. Employer "Select All"</h5>
@@ -183,3 +184,15 @@
     <dt>Q: Can I do a manual notify_out from the Employees menu?</dt>
     <dd>A: Yes — Employees menu → "Notify Out" button → enter the date + reason (Workflow isn't required; you can do it directly there if you need it done quickly)</dd>
 </dl>
+
+<h5>16. "Notify In BT.52 / BT.55 / BT.56" tab (built-in tab 5)</h5>
+<div class="manual-step">
+    <ul class="mb-0">
+        <li><strong>What it is for:</strong> the follow-up of the "Notify In / Change Employer" tab — employees <strong>finished</strong> there (including those still in the 24-hour countdown) continue here for the BT.52 / BT.55 / BT.56 notifications · the tab can be renamed but not deleted</li>
+        <li><strong>Add Employees:</strong> press <strong>"Add Employees"</strong> → the list is grouped by the <strong>new employer</strong> (e.g. employer A 3 people, employer B 1) → tick people, a whole employer, or "Select All" → <strong>"Create cards"</strong> = one card per employer · people already added are not offered again · only employees finished after this tab was introduced are listed</li>
+        <li><strong>A new card every round:</strong> when more of employer A's employees are finished later, they get a new card; earlier cards are left alone</li>
+        <li><strong>Steps are ticked on the employer card:</strong> the "Card steps" row under the card header — ticking applies to <strong>every</strong> employee on the card, unticking removes it for everyone · employee cards only show the steps · name / add steps with the <strong>Steps</strong> button (no steps at first)</li>
+        <li><strong>Finish:</strong> <strong>Finish Job</strong> on the card finishes everyone at once (undo within 24 hours) — it only closes the job; employee data is not changed (they already moved employer in the change-employer tab) · cancel / delete card and "Completed Jobs" work like the MOU Import tab</li>
+        <li>Search, filters and status badges work like the other tabs</li>
+    </ul>
+</div>

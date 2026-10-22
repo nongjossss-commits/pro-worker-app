@@ -17,7 +17,7 @@
 <h4><i class="bi bi-layout-text-window me-2"></i>What the page looks like</h4>
 <ol>
     <li><strong>Summary stat cards</strong> at the top — jobs nearing deadline, in progress, awaiting review</li>
-    <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away</li>
+    <li><strong>Search box</strong> — type part of an employer or employee name and matching suggestions appear instantly (no need to type the full name); click a suggestion to filter the list right away · searches name (Thai / English), passport no., work permit no., ID no., RA no., pink card no. and <strong>request no.</strong> — including the request no. on Workflow / Pre-Production work cards and on registration / renewal resolution cards · the suggestions shown while typing use the same rules as pressing Search</li>
     <li><strong>Two search boxes</strong> — box 1 takes an employee (name / passport / any number), an employer or a job owner; pick from the list: an employee = only that person, an employer = only that employer, a job owner = every employer under them (typing and pressing Enter searches the typed text) · box 2 opens once box 1 has a value and narrows box 1's result further, with the same kinds of text · inside an employer card, a term that matches the employer / job owner shows all of its employees; a term that matches an employee shows only the matching ones</li>
     <li><strong>Filter bar</strong> — filter by employer, job owner, job type (MOU/Visa)</li>
     <li><strong>Job cards</strong> — each card shows the sales rep's photo + employer name + number of employees + each step's status</li>
@@ -77,6 +77,7 @@
         <li>This note also appears on any invoice/receipt issued for that tier</li>
         <li>Click <i class="bi bi-trash"></i> to delete a tier — a confirmation appears, warning if employees are still assigned to it</li>
     </ul>
+    <br><strong>Fully paid installments:</strong> in "Installments & Payments" a fully paid installment stays under <strong>Current items</strong> for 24 hours (with a "Moves to Fully paid in N h" label), then moves to the <strong>Fully paid</strong> tab — open that tab to look back or issue documents as before. Totals and the financial summary still count every installment. If an installment becomes unpaid again (e.g. a payment is deleted) it returns to Current items by itself. In the Fully paid tab pick the <strong>month fully paid</strong> (opens on the latest month) with its installments / net amount / received totals; "All months" shows a monthly summary table — click a month to open its installments.
 </div>
 
 <h5>8. Teams in Pre-Production</h5>

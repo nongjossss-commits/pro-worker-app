@@ -5,6 +5,10 @@ if (typeof window.financialManager === 'undefined') {
             // --- Groups (Tabs) ---
             financialGroups: initialData.financialGroups || [],
             activeGroupId: null,
+            // Installments list: 'active' (unpaid + paid < 24h) | 'paid' (fully paid > 24h)
+            txnView: 'active',
+            // "Fully paid" tab month: '' = latest month, 'all' = monthly summary, 'YYYY-MM' | 'none'
+            paidMonth: '',
 
             // --- Data ---
             pricingMode: 'per_head',
@@ -1559,6 +1563,77 @@ if (typeof window.financialManager === 'undefined') {
 
             get advanceTransactions() {
                 return this.filteredTransactions.filter(t => t.type === 'advance_payment');
+            },
+
+            // A fully paid installment stays in the list for 24 hours after it
+            // became paid (fully_paid_at, kept by FinancialTransaction), then
+            // moves under the "Fully paid" tab so the list doesn't keep growing.
+            // Display only — totals still use every transaction.
+            isArchivedPaid(t) {
+                return t.status === 'paid' && !!t.fully_paid_at
+                    && (Date.now() - new Date(t.fully_paid_at).getTime()) >= 24 * 3600 * 1000;
+            },
+            paidMoveHoursLeft(t) {
+                if (t.status !== 'paid' || !t.fully_paid_at) return null;
+                const left = 24 - (Date.now() - new Date(t.fully_paid_at).getTime()) / 3600000;
+                return left > 0 ? Math.ceil(left) : null;
+            },
+            get shownIncomeTransactions() {
+                return this.incomeTransactions.filter(t => this.isShownInView(t));
+            },
+            get shownAdvanceTransactions() {
+                return this.advanceTransactions.filter(t => this.isShownInView(t));
+            },
+            isShownInView(t) {
+                if (this.txnView !== 'paid') return !this.isArchivedPaid(t);
+                if (!this.isArchivedPaid(t)) return false;
+                const m = this.effectivePaidMonth;
+                return m === 'all' || this.paidMonthKey(t) === m;
+            },
+
+            // "Fully paid" tab grouped by the month each installment became
+            // fully paid — month picker (latest month first) + per-month totals,
+            // so the tab doesn't turn into one endless list.
+            paidMonthKey(t) {
+                if (!t.fully_paid_at) return 'none';
+                const d = new Date(t.fully_paid_at);
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+            },
+            paidMonthLabel(key) {
+                if (key === 'none') return this.paidNoDateLabel || '-';
+                const [y, m] = key.split('-').map(Number);
+                const lang = document.documentElement.lang || 'th';
+                return new Date(y, m - 1, 1).toLocaleDateString(lang === 'th' ? 'th-TH' : lang, { month: 'long', year: 'numeric' });
+            },
+            get paidMonths() {
+                const buckets = {};
+                this.filteredTransactions.filter(t => this.isArchivedPaid(t)).forEach(t => {
+                    const key = this.paidMonthKey(t);
+                    const b = buckets[key] || (buckets[key] = { key, count: 0, net: 0, paid: 0 });
+                    b.count++;
+                    b.net += parseFloat(t.amount || 0) - parseFloat(t.discount_amount || 0) - parseFloat(t.credit_amount || 0);
+                    b.paid += parseFloat(t.paid_amount || 0);
+                });
+                return Object.values(buckets)
+                    .sort((a, b) => (a.key === 'none') - (b.key === 'none') || b.key.localeCompare(a.key))
+                    .map(b => ({ ...b, label: this.paidMonthLabel(b.key) }));
+            },
+            get effectivePaidMonth() {
+                const months = this.paidMonths;
+                if (this.paidMonth === 'all') return 'all';
+                if (this.paidMonth && months.some(m => m.key === this.paidMonth)) return this.paidMonth;
+                return months.length ? months[0].key : 'all';
+            },
+            get paidMonthSummary() {
+                const m = this.effectivePaidMonth;
+                const rows = m === 'all' ? this.paidMonths : this.paidMonths.filter(x => x.key === m);
+                return rows.reduce((a, r) => ({ count: a.count + r.count, net: a.net + r.net, paid: a.paid + r.paid }), { count: 0, net: 0, paid: 0 });
+            },
+            get archivedPaidCount() {
+                return this.filteredTransactions.filter(t => this.isArchivedPaid(t)).length;
+            },
+            get activeTxnCount() {
+                return this.filteredTransactions.length - this.archivedPaidCount;
             },
 
             get totalPaidAmount() {

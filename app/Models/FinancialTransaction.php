@@ -40,7 +40,24 @@ class FinancialTransaction extends Model
         'due_date' => 'date',
         'paid_at' => 'datetime',
         'wht_received_at' => 'datetime',
+        'fully_paid_at' => 'datetime',
     ];
+
+    /**
+     * fully_paid_at = when the status became 'paid' (every path that sets the
+     * status saves the model). The Finance popup keeps a paid installment in
+     * the main list for 24 hours, then shows it under the "Fully paid" tab.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (self $transaction) {
+            if ($transaction->status !== 'paid') {
+                $transaction->fully_paid_at = null;
+            } elseif (! $transaction->fully_paid_at || $transaction->getOriginal('status') !== 'paid') {
+                $transaction->fully_paid_at = now();
+            }
+        });
+    }
 
     public function productionOrder()
     {

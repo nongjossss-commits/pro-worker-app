@@ -550,7 +550,61 @@ class="row">
                 </button>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
+                {{-- Fully paid installments move to their own tab 24h after being paid (financial-manager.js isArchivedPaid) --}}
+                <ul class="nav nav-tabs small px-3 pt-2 fin-txn-view-tabs">
+                    <li class="nav-item">
+                        <button type="button" class="nav-link py-1" :class="{ 'active fw-bold': txnView === 'active' }" @click="txnView = 'active'">
+                            {{ __('Current items') }} <span class="badge rounded-pill bg-secondary" x-text="activeTxnCount"></span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link py-1" :class="{ 'active fw-bold': txnView === 'paid' }" @click="txnView = 'paid'">
+                            <i class="bi bi-check2-circle me-1"></i>{{ __('Fully paid') }} <span class="badge rounded-pill bg-success" x-text="archivedPaidCount"></span>
+                        </button>
+                    </li>
+                </ul>
+                {{-- Fully paid tab: by month (latest first) + totals; "All months" = monthly summary, click a month to open it --}}
+                <div class="px-3 py-2 border-bottom" x-show="txnView === 'paid'">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <label class="small fw-semibold mb-0">{{ __('Month fully paid') }}</label>
+                        <select class="form-select form-select-sm w-auto" @change="paidMonth = $event.target.value">
+                            <option value="all" :selected="effectivePaidMonth === 'all'">{{ __('All months') }} ({{ __('Monthly summary') }})</option>
+                            <template x-for="m in paidMonths" :key="m.key">
+                                <option :value="m.key" :selected="m.key === effectivePaidMonth" x-text="m.label + ' (' + m.count + ')'"></option>
+                            </template>
+                        </select>
+                        <span class="small text-muted">{{ __('Installments fully paid more than 24 hours ago.') }}</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-3 small mt-2" x-show="paidMonths.length">
+                        <span>{{ __('Installments') }}: <strong x-text="paidMonthSummary.count"></strong></span>
+                        <span>{{ __('Net amount') }}: <strong x-text="formatCurrency(paidMonthSummary.net)"></strong></span>
+                        <span class="text-success">{{ __('Received') }}: <strong x-text="formatCurrency(paidMonthSummary.paid)"></strong></span>
+                    </div>
+                    <div class="table-responsive mt-2" x-show="effectivePaidMonth === 'all' && paidMonths.length">
+                        <table class="table table-sm table-hover align-middle mb-0 small">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('Month') }}</th>
+                                    <th class="text-center">{{ __('Installments') }}</th>
+                                    <th class="text-end">{{ __('Net amount') }}</th>
+                                    <th class="text-end">{{ __('Received') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="m in paidMonths" :key="m.key">
+                                    <tr role="button" @click="paidMonth = m.key">
+                                        <td class="text-primary" x-text="m.label"></td>
+                                        <td class="text-center" x-text="m.count"></td>
+                                        <td class="text-end" x-text="formatCurrency(m.net)"></td>
+                                        <td class="text-end text-success" x-text="formatCurrency(m.paid)"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <div class="small text-muted mt-1">{{ __('Click a month to see its installments.') }}</div>
+                    </div>
+                </div>
+                <div class="table-responsive" x-show="!(txnView === 'paid' && effectivePaidMonth === 'all' && paidMonths.length)">
                     <!-- SECTION 1: Service Fees / Income -->
                     <div class="bg-light px-3 py-2 fw-bold text-muted border-bottom text-xs text-uppercase">
                         {{ __('Income / Service Fees') }}
@@ -567,7 +621,7 @@ class="row">
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="t in incomeTransactions" :key="t.id">
+                            <template x-for="t in shownIncomeTransactions" :key="t.id">
                                 <tr>
                                     <td class="ps-3">
                                         <div class="fw-bold" x-text="formatType(t.type)"></div>
@@ -595,6 +649,7 @@ class="row">
                                     </td>
                                     <td class="text-center">
                                         <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
+                                        <div class="text-muted" style="font-size:.7rem" x-show="paidMoveHoursLeft(t)" x-text="@js(__('Moves to Fully paid in :hours h')).replace(':hours', paidMoveHoursLeft(t))"></div>
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
@@ -614,8 +669,11 @@ class="row">
                                     </td>
                                 </tr>
                             </template>
-                            <tr x-show="incomeTransactions.length === 0">
+                            <tr x-show="txnView === 'active' && shownIncomeTransactions.length === 0">
                                 <td colspan="6" class="text-center py-4 text-muted">No income transactions recorded.</td>
+                            </tr>
+                            <tr x-show="txnView === 'paid' && shownIncomeTransactions.length === 0">
+                                <td colspan="6" class="text-center py-4 text-muted">{{ __('No fully paid installments yet.') }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -636,7 +694,7 @@ class="row">
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="t in advanceTransactions" :key="t.id">
+                            <template x-for="t in shownAdvanceTransactions" :key="t.id">
                                 <tr>
                                     <td class="ps-3">
                                         <div class="fw-bold text-primary" x-text="formatType(t.type)"></div>
@@ -659,6 +717,7 @@ class="row">
                                     </td>
                                     <td class="text-center">
                                         <span class="badge" :class="statusClass(t.status)" x-text="formatStatus(t.status)"></span>
+                                        <div class="text-muted" style="font-size:.7rem" x-show="paidMoveHoursLeft(t)" x-text="@js(__('Moves to Fully paid in :hours h')).replace(':hours', paidMoveHoursLeft(t))"></div>
                                     </td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group">
@@ -672,8 +731,11 @@ class="row">
                                     </td>
                                 </tr>
                             </template>
-                            <tr x-show="advanceTransactions.length === 0">
+                            <tr x-show="txnView === 'active' && shownAdvanceTransactions.length === 0">
                                 <td colspan="6" class="text-center py-4 text-muted">No reserve fund transactions.</td>
+                            </tr>
+                            <tr x-show="txnView === 'paid' && shownAdvanceTransactions.length === 0">
+                                <td colspan="6" class="text-center py-4 text-muted">{{ __('No fully paid installments yet.') }}</td>
                             </tr>
                         </tbody>
                     </table>
