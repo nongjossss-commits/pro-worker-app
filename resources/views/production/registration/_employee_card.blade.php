@@ -290,14 +290,6 @@
                             </div>
                         @endif
                         <div class="small text-muted mt-1">
-                             <span class="me-2" title="{{ __('Date of Birth') }}">
-                                <i class="bi bi-calendar-event me-1"></i>
-                                {{ $employee->employeeDob ? \Carbon\Carbon::parse($employee->employeeDob)->format('d/m/Y') : '-' }}
-                                ({{ __('Age') }} : {{ $employee->age ?? '-' }} {{ __('Years') }})
-                             </span>
-                        </div>
-                        <div class="small text-muted mt-1">
-                            <span class="me-2"><i class="bi bi-passport text-primary me-1"></i> {{ $employee->employeePassport ?? '-' }}</span>
                             <span class="d-inline-flex align-items-center">
                                 <i class="bi bi-geo-alt-fill text-danger me-1"></i>
                                 @php
@@ -311,6 +303,8 @@
                                 {{ $employee->employeeNationality ?? '-' }}
                             </span>
                         </div>
+                        {{-- Same details as the Employees menu cards (Super Admin → Settings), with copy buttons. --}}
+                        @include('partials._work_card_fields', ['employee' => $employee])
                     </div>
                 </div>
                 </div>

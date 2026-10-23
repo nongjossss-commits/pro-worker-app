@@ -132,3 +132,7 @@
     <dt>Q: 雇员在 Production 处理期间离职了?</dt>
     <dd>A: 打开该雇员卡片 → 点击"离职" —— 该工作会自动从 Production 中移除</dd>
 </dl>
+
+<div class="manual-tip">
+    <strong>员工卡片上的信息:</strong> 姓名下方最多显示 6 项详细信息 —— 与员工菜单卡片相同(Super Admin 可在 Super Admin 设置 →「雇员卡片信息」中选择和排序)· 国籍始终显示 · 每项都有<strong>复制按钮</strong> <i class="bi bi-copy"></i> —— 点一下即可复制，无需选中文字 · 编辑员工后卡片立即更新
+</div>

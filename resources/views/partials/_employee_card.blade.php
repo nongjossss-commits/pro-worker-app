@@ -213,10 +213,14 @@
             @if(count($cardFields))
             <div class="document-details small mt-2">
                 @foreach($cardFields as $fieldIndex => $field)
-                    @php $cardFieldText = \App\Services\EmployeeCardFieldsService::label($field) . ': ' . \App\Services\EmployeeCardFieldsService::value($employee, $field); @endphp
-                    <span class="emp-card-field" title="{{ $cardFieldText }}">{{ $cardFieldText }}</span>@if($fieldIndex < count($cardFields) - 1)<span class="emp-card-field-sep"> | </span>@endif
+                    @php
+                        $cardFieldValue = \App\Services\EmployeeCardFieldsService::value($employee, $field);
+                        $cardFieldText = \App\Services\EmployeeCardFieldsService::label($field) . ': ' . $cardFieldValue;
+                    @endphp
+                    <span class="emp-card-field" title="{{ $cardFieldText }}">{{ $cardFieldText }}@if($cardFieldValue !== '-') <button type="button" class="pv-copy" data-copy="{{ $cardFieldValue }}" title="{{ __('Copy') }}" aria-label="{{ __('Copy') }} {{ \App\Services\EmployeeCardFieldsService::label($field) }}"><i class="bi bi-copy"></i></button>@endif</span>@if($fieldIndex < count($cardFields) - 1)<span class="emp-card-field-sep"> | </span>@endif
                 @endforeach
             </div>
+            @include('partials._card_copy_btn_style')
             @endif
         </div>
 

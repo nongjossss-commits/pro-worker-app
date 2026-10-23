@@ -37,6 +37,7 @@
             <li>Sidebar → <strong>P Production</strong> → <strong>Pre-Production</strong></li>
             <li>Check the summary stat cards at the top</li>
             <li>Use the filters to narrow down by employer or owner</li>
+            <li>Under the name: the up-to-6 details Super Admin chose (same as the Employees menu) · press <i class="bi bi-copy"></i> to copy one</li>
         </ol>
     </div>
 </section>

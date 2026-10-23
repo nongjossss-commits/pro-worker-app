@@ -1682,5 +1682,6 @@
     "vs last month": "较上月",
     "In progress": "进行中",
     "Overdue": "逾期",
-    "Unlock": "解锁"
+    "Unlock": "解锁",
+    "The same details, each with a copy button, also show on the work cards in Workflow, Pre-Production, Registration Resolution and Renewal Resolution.": "同一组信息(每项附复制按钮)也会显示在 Workflow、预生产、登记决议和续期决议的工作卡片上。"
 }

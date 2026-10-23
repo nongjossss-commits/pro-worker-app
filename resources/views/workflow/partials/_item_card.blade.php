@@ -220,12 +220,17 @@
                         @endif
 
                         <div class="small text-muted mt-1">
+                            {{-- Draft (not yet saved) employee: only the typed passport exists. --}}
+                            @unless($item->employee)
                             <span class="me-2"><i class="bi bi-passport text-primary me-1"></i> {{ $empPassport }}</span>
+                            @endunless
                             <span class="d-inline-flex align-items-center">
                                 <i class="bi bi-geo-alt-fill text-danger me-1"></i>
                                 {{ $empNationality }}
                             </span>
                         </div>
+                        {{-- Same details as the Employees menu cards (Super Admin → Settings), with copy buttons. --}}
+                        @include('partials._work_card_fields', ['employee' => $item->employee])
                     </div>
                 </div>
 

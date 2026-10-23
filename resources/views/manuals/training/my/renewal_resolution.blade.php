@@ -36,6 +36,7 @@
             <li>Sidebar → <strong>P Production</strong> → <strong>Renewal Resolution</strong></li>
             <li>လိုချင်သော ဆုံးဖြတ်ချက်၏ tab ကို နှိပ်ပါ</li>
             <li>အပေါ်ပိုင်းရှိ အကျဉ်းချုပ်ကတ်များတွင် ခြုံငုံသုံးသပ်ချက် ကြည့်ပါ</li>
+            <li>အမည်အောက်: Super Admin ရွေးထားသော အသေးစိတ် ၆ ခုအထိ (ဝန်ထမ်းမီနူးနှင့် တူ) · တစ်ခုချင်း ကူးယူရန် <i class="bi bi-copy"></i> ကိုနှိပ်ပါ</li>
         </ol>
     </div>
 </section>

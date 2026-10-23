@@ -161,3 +161,7 @@
     <dt>Q: 为什么无法为该雇员续签?</dt>
     <dd>A: 请检查该雇员状态是否为"在职"(而非离职/合同到期)</dd>
 </dl>
+
+<div class="manual-tip">
+    <strong>员工卡片上的信息:</strong> 姓名下方最多显示 6 项详细信息 —— 与员工菜单卡片相同(Super Admin 可在 Super Admin 设置 →「雇员卡片信息」中选择和排序)· 国籍始终显示 · 每项都有<strong>复制按钮</strong> <i class="bi bi-copy"></i> —— 点一下即可复制，无需选中文字 · 编辑员工后卡片立即更新
+</div>

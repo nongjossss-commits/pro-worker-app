@@ -37,6 +37,7 @@
             <li>Sidebar → <strong>P Production (ฝ่ายผลิต)</strong> → <strong>Pre-Production</strong></li>
             <li>ดูการ์ดสรุปสถิติด้านบน</li>
             <li>ใช้ filter เพื่อกรองตามนายจ้างหรือ owner</li>
+            <li>ใต้ชื่อลูกจ้างแสดงรายละเอียด 6 รายการตามที่ Super Admin ตั้งไว้ (ชุดเดียวกับเมนูข้อมูลลูกจ้าง) · กดปุ่ม <i class="bi bi-copy"></i> เพื่อคัดลอกทีละรายการ</li>
         </ol>
     </div>
 </section>

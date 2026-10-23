@@ -37,6 +37,7 @@
             <li>Sidebar → <strong>P Production</strong> → <strong>Registration Resolution</strong></li>
             <li>Click the tab of the resolution you want</li>
             <li>The page refreshes to show that resolution's data</li>
+            <li>Under the name: the up-to-6 details Super Admin chose (same as the Employees menu) · press <i class="bi bi-copy"></i> to copy one</li>
         </ol>
     </div>
 </section>

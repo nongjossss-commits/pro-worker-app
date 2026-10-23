@@ -39,6 +39,7 @@
             <li>Click <strong>Sidebar → <strong>P Production</strong> → Workflow</strong></li>
             <li>Select the <strong>Tab</strong> for the Work Type you're working on</li>
             <li>Each employer's card shows with its list of employees</li>
+            <li>Under the name: the up-to-6 details Super Admin chose (same as the Employees menu) · press <i class="bi bi-copy"></i> to copy one</li>
         </ol>
     </div>
 

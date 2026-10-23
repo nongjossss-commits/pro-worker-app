@@ -36,6 +36,7 @@
             <li>Sidebar → <strong>P Production</strong> → <strong>Renewal Resolution</strong></li>
             <li>Click the tab for the resolution you want</li>
             <li>Check the overview in the summary cards at the top</li>
+            <li>Under the name: the up-to-6 details Super Admin chose (same as the Employees menu) · press <i class="bi bi-copy"></i> to copy one</li>
         </ol>
     </div>
 </section>

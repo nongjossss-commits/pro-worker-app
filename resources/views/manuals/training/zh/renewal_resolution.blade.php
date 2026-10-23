@@ -36,6 +36,7 @@
             <li>侧边栏 → <strong>P Production (生产)</strong> → <strong>续签决议</strong></li>
             <li>点击所需续签决议的标签</li>
             <li>查看顶部摘要卡片的整体情况</li>
+            <li>姓名下方：Super Admin 选择的最多 6 项信息(与员工菜单相同)· 点 <i class="bi bi-copy"></i> 复制单项</li>
         </ol>
     </div>
 </section>

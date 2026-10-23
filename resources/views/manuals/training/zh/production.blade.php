@@ -37,6 +37,7 @@
             <li>侧边栏 → <strong>P Production (生产)</strong> → <strong>Pre-Production</strong></li>
             <li>查看顶部的统计摘要卡片</li>
             <li>使用筛选器按雇主或负责人缩小范围</li>
+            <li>姓名下方：Super Admin 选择的最多 6 项信息(与员工菜单相同)· 点 <i class="bi bi-copy"></i> 复制单项</li>
         </ol>
     </div>
 </section>

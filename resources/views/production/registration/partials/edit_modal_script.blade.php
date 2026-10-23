@@ -111,7 +111,7 @@
                         })
                         .catch(err => console.error('Failed to refresh card:', err));
                 } else if (data.employee) {
-                    updateEmployeeCardInDom(data.employee);
+                    updateEmployeeCardInDom(data.employee, data.card_fields_html);
                 } else {
                     console.warn('No refresh context available.');
                 }
@@ -131,9 +131,18 @@
         });
     }
 
-    function updateEmployeeCardInDom(emp) {
+    function updateEmployeeCardInDom(emp, cardFieldsHtml) {
         const card = document.getElementById(`employee-card-${emp.id}`);
         if (!card) return;
+
+        // Detail lines chosen by Super Admin (partials/_work_card_fields), re-rendered by the server.
+        const fieldsBox = card.querySelector('.work-card-fields');
+        if (fieldsBox && typeof cardFieldsHtml === 'string') {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = cardFieldsHtml;
+            const fresh = tmp.querySelector('.work-card-fields');
+            if (fresh) fieldsBox.replaceWith(fresh);
+        }
 
         // 1. Update Names
         const nameDiv = card.querySelector('.fw-bold.text-dark');

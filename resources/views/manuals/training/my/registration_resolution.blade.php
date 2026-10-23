@@ -38,6 +38,7 @@
             <li>Sidebar → <strong>P Production</strong> → <strong>Registration Resolution</strong></li>
             <li>လိုချင်သော ဆုံးဖြတ်ချက်၏ tab ကို နှိပ်ပါ</li>
             <li>စာမျက်နှာသည် ထိုဆုံးဖြတ်ချက်၏ ဒေတာကို ပြသရန် refresh ဖြစ်သည်</li>
+            <li>အမည်အောက်: Super Admin ရွေးထားသော အသေးစိတ် ၆ ခုအထိ (ဝန်ထမ်းမီနူးနှင့် တူ) · တစ်ခုချင်း ကူးယူရန် <i class="bi bi-copy"></i> ကိုနှိပ်ပါ</li>
         </ol>
     </div>
 </section>

@@ -2836,5 +2836,6 @@
     "Workforce by nationality": "ลูกจ้างแยกตามสัญชาติ",
     "Working normally": "ทำงานปกติ",
     "of all": "ของทั้งหมด",
-    "vs last month": "เทียบเดือนที่แล้ว"
+    "vs last month": "เทียบเดือนที่แล้ว",
+    "The same details, each with a copy button, also show on the work cards in Workflow, Pre-Production, Registration Resolution and Renewal Resolution.": "รายละเอียดชุดเดียวกันนี้ (พร้อมปุ่มคัดลอกทุกรายการ) แสดงบนการ์ดงานในเมนู Workflow, Pre-Production, มติจดทะเบียน และมติต่ออายุด้วย"
 }

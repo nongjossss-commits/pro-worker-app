@@ -44,6 +44,7 @@
             <li>คลิกที่ <strong>Sidebar → <strong>P Production (ฝ่ายผลิต)</strong> → Workflow</strong></li>
             <li>เลือก <strong>Tab</strong> ของ Work Type ที่ต้องการทำงาน</li>
             <li>การ์ดของแต่ละนายจ้างจะแสดงพร้อมรายชื่อลูกจ้าง</li>
+            <li>ใต้ชื่อลูกจ้างแสดงรายละเอียด 6 รายการตามที่ Super Admin ตั้งไว้ (ชุดเดียวกับเมนูข้อมูลลูกจ้าง) · กดปุ่ม <i class="bi bi-copy"></i> เพื่อคัดลอกทีละรายการ</li>
         </ol>
     </div>
 

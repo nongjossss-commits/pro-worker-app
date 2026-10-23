@@ -30,6 +30,7 @@
         </h5>
         <p class="text-muted small mb-3">
             {{ __('Choose which employee details appear on the employee cards (Employees, the employer page\'s Employees tab, Groups & Teams, Notified-Out Employees, Central Trash). Photo, names, nationality, employer, work status and buttons always show.') }}
+            {{ __('The same details, each with a copy button, also show on the work cards in Workflow, Pre-Production, Registration Resolution and Renewal Resolution.') }}
         </p>
 
         <form action="{{ route('super-admin.settings.card-fields') }}" method="POST">

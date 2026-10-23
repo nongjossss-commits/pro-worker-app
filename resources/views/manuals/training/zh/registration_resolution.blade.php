@@ -37,6 +37,7 @@
             <li>侧边栏 → <strong>P Production (生产)</strong> → <strong>登记决议</strong></li>
             <li>点击所需决议的标签</li>
             <li>页面会刷新并显示该决议的数据</li>
+            <li>姓名下方：Super Admin 选择的最多 6 项信息(与员工菜单相同)· 点 <i class="bi bi-copy"></i> 复制单项</li>
         </ol>
     </div>
 </section>

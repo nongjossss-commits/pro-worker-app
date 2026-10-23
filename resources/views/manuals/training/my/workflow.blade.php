@@ -39,6 +39,7 @@
             <li><strong>Sidebar → <strong>P Production</strong> → Workflow</strong> ကို နှိပ်ပါ</li>
             <li>လုပ်ဆောင်နေသော Work Type ၏ <strong>Tab</strong> ကို ရွေးပါ</li>
             <li>အလုပ်ရှင်တစ်ဦးစီ၏ ကတ်သည် ၎င်း၏ ဝန်ထမ်းစာရင်းနှင့်အတူ ပေါ်လာသည်</li>
+            <li>အမည်အောက်: Super Admin ရွေးထားသော အသေးစိတ် ၆ ခုအထိ (ဝန်ထမ်းမီနူးနှင့် တူ) · တစ်ခုချင်း ကူးယူရန် <i class="bi bi-copy"></i> ကိုနှိပ်ပါ</li>
         </ol>
     </div>
 

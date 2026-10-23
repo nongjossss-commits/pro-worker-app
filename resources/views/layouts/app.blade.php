@@ -741,6 +741,15 @@
             }
         }
 
+        /* ─── Long work cards (Workflow / Pre-Production / มติจดทะเบียน / มติต่ออายุ):
+               the photo keeps its 50×50 size on a narrow or zoomed-in screen —
+               the text beside it wraps instead of squeezing the photo away. ─── */
+        [id^="info-container-"] > .avatar-container { flex: 0 0 auto; }
+        [id^="info-container-"] > .avatar-container > .rounded-circle {
+            width: 50px !important; height: 50px !important; min-width: 50px; max-width: none; flex-shrink: 0;
+        }
+        [id^="info-container-"] > div:not(.avatar-container) { min-width: 0; overflow-wrap: anywhere; }
+
         /* ─── Dashboard appointment card: mobile — text ใช้พื้นที่เต็ม ─── */
         @media (max-width: 767.98px) {
             .appt-card-item .card-body > .d-flex.align-items-start.gap-3 {

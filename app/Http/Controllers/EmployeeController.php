@@ -977,9 +977,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $employee->update($validated);
 
         if ($request->ajax()) {
+            $fresh = $employee->fresh(['employer']);
             return response()->json([
                 'success' => true,
-                'employee' => $employee->fresh(['employer']) // Return fresh data for frontend update
+                'employee' => $fresh, // Return fresh data for frontend update
+                // The work cards' detail lines (partials/_work_card_fields) re-rendered with the new data.
+                'card_fields_html' => view('partials._work_card_fields', ['employee' => $fresh])->render(),
             ]);
         }
 
