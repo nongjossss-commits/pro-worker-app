@@ -496,6 +496,7 @@ class RenewalController extends Controller
         }
 
         $employers = $employerQuery->paginate($perPage)->withQueryString();
+        Employer::preloadLastEdited($employers); // one query for every row's "last edited" badge
 
         $cancelledEmployersQuery = Employer::whereHas('productionOrders', function($q) {
                 $q->where('status', 'renewal_resolution_cancelled')

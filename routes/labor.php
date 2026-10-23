@@ -245,6 +245,8 @@ Route::middleware(['auth', 'labor.access', 'labor.member.restrict'])
             // LaborContractTemplateController::updateFormOrder().
             Route::get('/{proworkerContractTemplate}/form-order', [LaborContractTemplateController::class, 'formOrder'])->name('form-order');
             Route::put('/{proworkerContractTemplate}/form-order', [LaborContractTemplateController::class, 'updateFormOrder'])->name('form-order.update');
+            // Which form fields are the employer's name / ID number — shown and searched in Contract History.
+            Route::put('/{proworkerContractTemplate}/employer-fields', [LaborContractTemplateController::class, 'updateEmployerFields'])->name('employer-fields.update');
             Route::put('/{proworkerContractTemplate}', [LaborContractTemplateController::class, 'update'])->name('update');
             Route::delete('/{proworkerContractTemplate}', [LaborContractTemplateController::class, 'destroy'])->name('destroy');
         });

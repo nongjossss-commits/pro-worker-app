@@ -112,7 +112,7 @@
                     <x-live-search-filter
                         endpoint="{{ route('labor.contracts.preview_search') }}"
                         name="q"
-                        placeholder="{{ __('Employer name or contract number...') }}"
+                        placeholder="{{ __('Employer name, employer ID or contract number...') }}"
                         value="{{ request('q') }}"
                         class="form-control"
                     />
@@ -156,6 +156,20 @@
         </div>
     </div>
 
+    @if($searchSummary)
+        {{-- Searching for an employer → its contracts per team (signed / waiting) --}}
+        <div class="card shadow-sm border-0 mb-3 ct-search-summary">
+            <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2 small">
+                <span class="fw-semibold"><i class="bi bi-search me-1"></i>{{ __('":q" — :count contract(s)', ['q' => request('q'), 'count' => number_format($searchSummary['total'])]) }}</span>
+                <span class="badge rounded-pill text-bg-success">{{ __(':n complete', ['n' => $searchSummary['signed']]) }}</span>
+                <span class="badge rounded-pill text-bg-secondary">{{ __(':n awaiting signature', ['n' => $searchSummary['total'] - $searchSummary['signed']]) }}</span>
+                @foreach($searchSummary['teams'] as $t)
+                    <span class="badge rounded-pill bg-body-tertiary text-body border">{{ $t['name'] }}: {{ $t['total'] }} <span class="text-success">({{ $t['signed'] }} ✓)</span></span>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <div class="card shadow-sm border-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -189,7 +203,12 @@
                                    data-has-signed="{{ $contract->signed_copy_path ? '1' : '0' }}">
                         </td>
                         <td class="font-monospace">{{ $contract->contract_no }}</td>
-                        <td>{{ $contract->employer_name_snapshot ?? '-' }}</td>
+                        <td>
+                            {{ $contract->employer_name_snapshot ?? '-' }}
+                            @if($contract->employer_ref_snapshot)
+                                <div class="small text-muted">{{ __('Employer ID') }}: {{ $contract->employer_ref_snapshot }}</div>
+                            @endif
+                        </td>
                         <td>{{ $contract->template->name ?? '-' }}</td>
                         <td>{{ $contract->issuer->name ?? '-' }} @if($contract->issuer?->staff_code) ({{ $contract->issuer->staff_code }}) @endif</td>
                         <td>{{ $contract->team->name ?? '-' }}</td>

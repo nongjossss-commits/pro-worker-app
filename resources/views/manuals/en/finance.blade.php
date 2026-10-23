@@ -93,7 +93,7 @@
 
 <h5>11. Create a manual bill</h5>
 <div class="manual-step">
-    Choose the <strong>document type</strong> first: <strong>Quotation</strong> (employer optional) or <strong>Invoice</strong> (employer required). You can add <strong>draft employees</strong> (name/nationality/passport/photo without creating a real employee — manual bills only). Quotations can show the <strong>grand total</strong> or unit prices only. Every document carries the configured VAT/WHT note.
+    Choose the <strong>document type</strong> first: <strong>Quotation</strong> (employer optional) or <strong>Invoice</strong> (employer required). You can add <strong>draft employees</strong> (name/nationality/passport/photo without creating a real employee — manual bills only). Quotations can show the <strong>grand total</strong> or unit prices only. Every document carries the configured VAT/WHT note. · <strong>Picking the employer:</strong> just type to search (Thai/English name, employer ID, tax ID, job owner …) — the list narrows as you type — or press the arrow button to open the full A–Z list (scrolling loads more) · arrow keys + Enter also pick · the choice shows as a tag with ✕ to change it (picking doesn't create the bill — press "Create Bill &amp; Continue")
 </div>
 
 <h5>12. Monthly report</h5>

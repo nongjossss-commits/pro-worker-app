@@ -25,12 +25,12 @@
         'expiry' => $expiry,
         'topEmployers' => $topEmployers,
         'activity' => ['labels' => $activityLabels, 'counts' => $activityCounts],
-        'income' => $finance['income'] ?? null,
+        'movement' => $movement,
         't' => [
             'workflow' => __('Workflow'), 'registration' => __('Registration Resolution'), 'renewal' => __('Renewal Resolution'),
             'people' => __('people'), 'items' => __('items'), 'actions' => __('Actions Per Day'), 'total' => __('Total'),
             'expired' => __('Expired'), 'd30' => __('Within 30 days'), 'd60' => __('31–60 days'), 'd90' => __('61–90 days'),
-            'income' => __('Cash received'), 'clickToOpen' => __('Click to open this tab'), 'share' => __('of all'),
+            'hired' => __('New employees'), 'left' => __('Notified out'), 'net' => __('Net change'), 'clickToOpen' => __('Click to open this tab'), 'share' => __('of all'),
             'headcount' => __('Workforce'),
         ],
     ];
@@ -80,16 +80,14 @@
                  'detail' => view()->make('dashboard._kpi_detail', ['title' => __('Finished this month'), 'note' => __('Counted by the date each employee was finished.'),
                     'rows' => [[__('Workflow'), $outputLast('workflow')], [__('Registration Resolution'), $outputLast('registration')], [__('Renewal Resolution'), $outputLast('renewal')], [__('Last month'), $donePrevMonth]]])->render()],
             ];
-            if ($finance) {
-                $kpis[] = ['key' => 'income', 'icon' => 'bi-cash-coin', 'tone' => 'teal', 'label' => __('Cash received this month'), 'value' => $finance['income_month'], 'money' => true,
-                    'sub' => __('Today: :n', ['n' => '฿' . number_format($finance['income_today'], 2)]), 'delta' => $pct($finance['income_month'], $finance['income_prev_month']), 'deltaLabel' => __('vs last month'), 'spark' => 'income',
-                    'detail' => view()->make('dashboard._kpi_detail', ['title' => __('Cash received'), 'note' => __('By the date each payment was received; quotations excluded (same as Finance → Overview).'), 'money' => true,
-                        'rows' => [[__('Today'), $finance['income_today']], [__('This month'), $finance['income_month']], [__('Last month'), $finance['income_prev_month']], [__('Last 12 months'), $finance['income_year']]]])->render()];
-                $kpis[] = ['key' => 'outstanding', 'icon' => 'bi-receipt-cutoff', 'tone' => 'rose', 'label' => __('Outstanding receivable'), 'value' => $finance['outstanding'] + $finance['overdue'], 'money' => true,
-                    'sub' => __(':n open bills', ['n' => number_format($finance['open_bills'])]), 'delta' => null, 'spark' => null,
-                    'detail' => view()->make('dashboard._kpi_detail', ['title' => __('Outstanding receivable'), 'note' => __('Unpaid and partly paid bills; quotations excluded (same as Finance → Overview).'), 'money' => true,
-                        'rows' => [[__('Pending / partial'), $finance['outstanding']], [__('Overdue'), $finance['overdue']]]])->render()];
-            }
+            $kpis[] = ['key' => 'appointments', 'icon' => 'bi-calendar-check-fill', 'tone' => 'teal', 'label' => __('Appointments in the next 7 days'), 'value' => $appointments['week'],
+                'sub' => __('Today: :n', ['n' => number_format($appointments['today'])]), 'delta' => null, 'spark' => null,
+                'detail' => view()->make('dashboard._kpi_detail', ['title' => __('Appointments in the next 7 days'), 'note' => __('Registration / Renewal resolution and Workflow appointments not marked done.'),
+                    'rows' => [[__('Today'), $appointments['today']], [__('Tomorrow'), $appointments['tomorrow']], [__('Next 7 days'), $appointments['week']], [__('Past date, not done'), $appointments['overdue']]]])->render()];
+            $kpis[] = ['key' => 'ninety', 'icon' => 'bi-person-check', 'tone' => 'rose', 'label' => __('90-day reports due in 15 days'), 'value' => $ninetyDay['d15'],
+                'sub' => __('Within 7 days: :n', ['n' => number_format($ninetyDay['d7'])]), 'delta' => null, 'spark' => null,
+                'detail' => view()->make('dashboard._kpi_detail', ['title' => __('90-day reports due in 15 days'), 'note' => __('Current workforce only.'),
+                    'rows' => [[__('Within 7 days'), $ninetyDay['d7']], [__('Within 15 days'), $ninetyDay['d15']], [__('Missed (last 30 days)'), $ninetyDay['overdue']]]])->render()];
             $kpis[] = ['key' => 'expiry', 'icon' => 'bi-alarm-fill', 'tone' => 'orange', 'label' => __('Documents expiring in 30 days'), 'value' => $expiringSoon,
                 'sub' => __('Visa / work permit / passport'), 'delta' => null, 'spark' => null,
                 'detail' => view()->make('dashboard._kpi_detail', ['title' => __('Documents expiring in 30 days'), 'note' => __('Current workforce only.'),
@@ -107,8 +105,8 @@
                         @endif
                     </div>
                     <div class="ed-kpi-label">{{ $k['label'] }}</div>
-                    <div class="ed-kpi-value" data-countup="{{ $k['value'] }}" data-money="{{ !empty($k['money']) ? 1 : 0 }}">
-                        {{ !empty($k['money']) ? '฿' . number_format($k['value']) : number_format($k['value']) }}
+                    <div class="ed-kpi-value" data-countup="{{ $k['value'] }}">
+                        {{ number_format($k['value']) }}
                     </div>
                     <div class="ed-kpi-sub">{{ $k['sub'] }}</div>
                     @if($k['spark'])
@@ -121,20 +119,9 @@
         @endforeach
     </div>
 
-    @if($financeLocked)
-        <div class="ed-card mb-4 d-flex align-items-center gap-3 py-3">
-            <span class="ed-kpi-icon ed-tone-teal"><i class="bi bi-lock-fill"></i></span>
-            <div class="flex-grow-1">
-                <div class="fw-bold">{{ __('Finance figures are locked') }}</div>
-                <div class="small text-body-secondary">{{ __('Unlock the Finance menu to show cash received and receivables here.') }}</div>
-            </div>
-            <a href="{{ route('finance.index') }}" class="btn btn-sm btn-outline-primary">{{ __('Unlock') }}</a>
-        </div>
-    @endif
-
-    {{-- ===== Output trend + (income) ===== --}}
+    {{-- ===== Output trend + hires vs notified out ===== --}}
     <div class="row g-4 mb-4">
-        <div class="{{ $finance ? 'col-xl-7' : 'col-12' }}">
+        <div class="col-xl-7">
             <div class="ed-card h-100">
                 <div class="ed-card-head">
                     <div>
@@ -146,20 +133,18 @@
                 <div class="ed-chart" style="height: 320px;"><canvas id="edOutput"></canvas></div>
             </div>
         </div>
-        @if($finance)
-            <div class="col-xl-5">
-                <div class="ed-card h-100">
-                    <div class="ed-card-head">
-                        <div>
-                            <h6><i class="bi bi-graph-up-arrow me-2"></i>{{ __('Cash received per month') }}</h6>
-                            <div class="ed-card-sub">{{ __('By payment date · quotations excluded') }}</div>
-                        </div>
-                        <div class="ed-pill">{{ __('12 months') }} <strong>฿{{ number_format($finance['income_year'], 0) }}</strong></div>
+        <div class="col-xl-5">
+            <div class="ed-card h-100">
+                <div class="ed-card-head">
+                    <div>
+                        <h6><i class="bi bi-arrow-left-right me-2"></i>{{ __('New employees vs notified out') }}</h6>
+                        <div class="ed-card-sub">{{ __('Last 12 months · by month') }}</div>
                     </div>
-                    <div class="ed-chart" style="height: 320px;"><canvas id="edIncome"></canvas></div>
+                    <div class="ed-pill">{{ __('Net change') }} <strong>{{ (array_sum($movement['hired']) - array_sum($movement['left'])) >= 0 ? '+' : '' }}{{ number_format(array_sum($movement['hired']) - array_sum($movement['left'])) }}</strong></div>
                 </div>
+                <div class="ed-chart" style="height: 320px;"><canvas id="edMovement"></canvas></div>
             </div>
-        @endif
+        </div>
     </div>
 
     {{-- ===== Pipeline + nationality ===== --}}
@@ -366,7 +351,6 @@ document.addEventListener('DOMContentLoaded', function () {
         body: css('--bs-body-bg') || '#fff', strong: css('--bs-emphasis-color') || '#000',
     });
     const fmt = (n) => Number(n || 0).toLocaleString();
-    const money = (n) => '฿' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const alpha = (hex, a) => {
         const el = document.createElement('div'); el.style.color = hex; document.body.appendChild(el);
         const rgb = getComputedStyle(el).color.match(/\d+/g) || [13, 110, 253]; el.remove();
@@ -380,8 +364,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- count-up numbers ---
     document.querySelectorAll('[data-countup]').forEach(el => {
-        const target = parseFloat(el.dataset.countup) || 0, isMoney = el.dataset.money === '1';
-        const show = (v) => el.textContent = (isMoney ? '฿' : '') + Math.round(v).toLocaleString();
+        const target = parseFloat(el.dataset.countup) || 0;
+        const show = (v) => el.textContent = Math.round(v).toLocaleString();
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return show(target);
         const t0 = performance.now(), dur = 1100;
         const step = (t) => { const p = Math.min(1, (t - t0) / dur); show(target * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
@@ -413,14 +397,14 @@ document.addEventListener('DOMContentLoaded', function () {
         Chart.defaults.borderColor = c.grid;
 
         // sparklines
-        const sparkData = { headcount: D.headcount, output: D.months.map((_, i) => D.output.workflow[i] + D.output.registration[i] + D.output.renewal[i]).slice(-6), income: (D.income || []).slice(-6) };
+        const sparkData = { headcount: D.headcount, output: D.months.map((_, i) => D.output.workflow[i] + D.output.registration[i] + D.output.renewal[i]).slice(-6) };
         document.querySelectorAll('canvas[data-spark]').forEach(cv => {
             const tone = getComputedStyle(cv.closest('.ed-kpi')).getPropertyValue('--tone').trim() || c.c1;
             const data = sparkData[cv.dataset.spark] || [];
             charts.push(new Chart(cv, {
                 type: 'line',
                 data: { labels: data.map((_, i) => D.months[D.months.length - data.length + i]), datasets: [{ data, borderColor: tone, borderWidth: 2, tension: .4, pointRadius: 0, fill: true, backgroundColor: gradient(cv.getContext('2d'), tone, 40) }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { ...tooltip(), callbacks: { label: (x) => cv.dataset.spark === 'income' ? money(x.parsed.y) : fmt(x.parsed.y) } } },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { ...tooltip(), callbacks: { label: (x) => fmt(x.parsed.y) } } },
                     scales: { x: { display: false }, y: { display: false, beginAtZero: true } }, interaction: { intersect: false, mode: 'index' } },
             }));
         });
@@ -441,15 +425,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } } },
         }));
 
-        // cash received per month
-        const inc = document.getElementById('edIncome');
-        if (inc && D.income) charts.push(new Chart(inc, {
+        // new employees vs notified out
+        const mov = document.getElementById('edMovement');
+        if (mov) charts.push(new Chart(mov, {
             type: 'line',
-            data: { labels: D.months, datasets: [{ label: T.income, data: D.income, borderColor: c.c2, borderWidth: 3, tension: .35, fill: true,
-                backgroundColor: gradient(inc.getContext('2d'), c.c2, 320), pointRadius: 3, pointHoverRadius: 7, pointBackgroundColor: c.body, pointBorderWidth: 2 }] },
+            data: { labels: D.months, datasets: [
+                { label: T.hired, data: D.movement.hired, borderColor: c.c2, backgroundColor: gradient(mov.getContext('2d'), c.c2, 320), fill: true, borderWidth: 3, tension: .35, pointRadius: 3, pointHoverRadius: 7, pointBackgroundColor: c.body, pointBorderWidth: 2 },
+                { label: T.left, data: D.movement.left, borderColor: c.c5, backgroundColor: 'transparent', borderDash: [6, 4], borderWidth: 2, tension: .35, pointRadius: 3, pointHoverRadius: 7, pointBackgroundColor: c.body, pointBorderWidth: 2 },
+            ] },
             options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { display: false }, tooltip: { ...tooltip(), callbacks: { label: (x) => ` ${T.income}: ${money(x.parsed.y)}` } } },
-                scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { callback: (v) => v >= 1e6 ? '฿' + (v / 1e6).toFixed(1) + 'M' : v >= 1e3 ? '฿' + Math.round(v / 1e3) + 'K' : '฿' + v } } } },
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } },
+                    tooltip: { ...tooltip(), callbacks: { label: (x) => ` ${x.dataset.label}: ${fmt(x.parsed.y)} ${T.people}`,
+                        footer: (items) => { const n = (items[0]?.parsed.y || 0) - (items[1]?.parsed.y || 0); return `${T.net}: ${n >= 0 ? '+' : ''}${fmt(n)}`; } } } },
+                scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } } },
         }));
 
         // pipeline per tab

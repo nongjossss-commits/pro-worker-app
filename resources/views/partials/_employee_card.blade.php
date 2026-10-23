@@ -24,6 +24,7 @@
 
 @php
     $cardBorderStyle = '';
+    $cardTone = ''; // status colour → --emp-tone (tile look in partials/_employee_tiles)
     if (isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty()) {
         $isRegistration = $employee->active_workflows->contains('is_registration', true);
         $isRenewal = $employee->active_workflows->contains('is_renewal', true);
@@ -33,24 +34,48 @@
 
         if ($isRegistration) {
             $cardBorderStyle = 'border-left: 4px solid #8B5CF6;';
+            $cardTone = '#8B5CF6';
             $overlayBorder = 'border: 2px solid #8B5CF6;';
             $overlayBg = 'background-color: rgba(139, 92, 246, 0.08);';
         } elseif ($isRenewal) {
             $cardBorderStyle = 'border-left: 4px solid #EC4899;';
+            $cardTone = '#EC4899';
             $overlayBorder = 'border: 2px solid #EC4899;';
             $overlayBg = 'background-color: rgba(236, 72, 153, 0.08);';
         } elseif ($hasStandardWorkflow) {
             $cardBorderStyle = 'border-left: 4px solid #ffc107;';
+            $cardTone = '#ffc107';
             $overlayBorder = 'border: 2px solid #ffc107;';
             $overlayBg = 'background-color: rgba(255, 223, 0, 0.08);';
         } else {
             $cardBorderStyle = 'border-left: 4px solid #0dcaf0;';
+            $cardTone = '#0dcaf0';
             $overlayBorder = 'border: 2px solid #0dcaf0;';
             $overlayBg = 'background-color: rgba(13, 202, 240, 0.08);';
         }
+
+        // Every kind of work the employee is in (e.g. changing employer in
+        // Workflow AND in Renewal resolution) — the tile splits its colours
+        // between them (partials/_employee_tiles). Fixed order = the priority above.
+        $hasPreProduction = $employee->active_workflows->contains('is_pre_production', true);
+        $cardTones = array_values(array_filter([
+            $isRegistration ? '#8B5CF6' : null,
+            $isRenewal ? '#EC4899' : null,
+            $hasStandardWorkflow ? '#ffc107' : null,
+            $hasPreProduction ? '#0dcaf0' : null,
+        ])) ?: [$cardTone];
+    }
+    $cardToneStyle = '';
+    if ($cardTone) {
+        $tones = $cardTones;
+        $n = count($tones);
+        // hard colour stops: [a 0 50%, b 50% 100%] — split, not blended
+        $stops = implode(', ', array_map(fn ($c, $i) => $c . ' ' . round($i * 100 / $n, 2) . '% ' . round(($i + 1) * 100 / $n, 2) . '%', $tones, array_keys($tones)));
+        $cardToneStyle = ' --emp-tone: ' . $tones[0] . '; --emp-tone-2: ' . ($tones[1] ?? $tones[0]) . ';'
+            . ' --emp-tone-bar: linear-gradient(90deg, ' . $stops . '); --emp-tone-ring: conic-gradient(from -90deg, ' . $stops . ');';
     }
 @endphp
-<div id="{{ $cardId }}" class="employee-card card mb-3 position-relative" style="{{ $cardBorderStyle }}">
+<div id="{{ $cardId }}" class="employee-card card mb-3 position-relative{{ ($cardTones ?? null) && count($cardTones) > 1 ? ' emp-multi-tone' : '' }}" style="{{ $cardBorderStyle }}{{ $cardToneStyle }}"@if(($cardTones ?? null) && count($cardTones) > 1) data-tone-count="{{ count($cardTones) }}"@endif>
     <x-last-edited-badge :model="$employee" />
     @if(isset($employee->active_workflows) && $employee->active_workflows->isNotEmpty())
         {{-- Desktop/Tablet: overlay centered on card (≥576px) --}}

@@ -374,8 +374,11 @@ class LaborContractController extends Controller
 
         if ($request->filled('q')) {
             $search = '%' . trim($request->input('q')) . '%';
+            // employer name / employer ID number (copied from the template's fields —
+            // ProWorkerContractEmployerFields) or the contract number
             $query->where(function ($q) use ($search) {
                 $q->where('employer_name_snapshot', 'like', $search)
+                    ->orWhere('employer_ref_snapshot', 'like', $search)
                     ->orWhere('contract_no', 'like', $search);
             });
         }
@@ -407,11 +410,26 @@ class LaborContractController extends Controller
             $query->whereNull('signed_copy_path');
         }
 
+        // Searching for an employer → how many contracts it has, per team (and how many are signed).
+        $searchSummary = null;
+        if ($request->filled('q')) {
+            $byTeam = (clone $query)->reorder()->setEagerLoads([])
+                ->selectRaw('labor_team_id, COUNT(*) as total, SUM(CASE WHEN signed_copy_path IS NOT NULL THEN 1 ELSE 0 END) as signed')
+                ->groupBy('labor_team_id')->get();
+            $teamNames = LaborTeam::whereIn('id', $byTeam->pluck('labor_team_id')->filter())->pluck('name', 'id');
+            $searchSummary = [
+                'total' => (int) $byTeam->sum('total'),
+                'signed' => (int) $byTeam->sum('signed'),
+                'teams' => $byTeam->map(fn ($r) => ['name' => $teamNames[$r->labor_team_id] ?? '-', 'total' => (int) $r->total, 'signed' => (int) $r->signed])
+                    ->sortByDesc('total')->values()->all(),
+            ];
+        }
+
         $contracts = $query->paginate(20)->withQueryString();
         $teams = $seesAllTeams ? LaborTeam::orderBy('name')->get(['id', 'name']) : collect();
         $summary = $this->buildCompletionSummary($user, $seesAllTeams);
 
-        return view('labor.contracts.index', compact('contracts', 'teams', 'seesAllTeams', 'summary', 'selectedTeamIds'));
+        return view('labor.contracts.index', compact('contracts', 'teams', 'seesAllTeams', 'summary', 'selectedTeamIds', 'searchSummary'));
     }
 
     /**
@@ -431,16 +449,19 @@ class LaborContractController extends Controller
         $this->scopeVisibleContracts($query, Auth::user());
         $query->where(function ($cq) use ($like) {
             $cq->where('employer_name_snapshot', 'like', $like)
+               ->orWhere('employer_ref_snapshot', 'like', $like)
                ->orWhere('contract_no', 'like', $like);
         });
 
-        $contracts = $query->limit(10)->get(['id', 'employer_name_snapshot', 'contract_no']);
+        $contracts = $query->limit(10)->get(['id', 'employer_name_snapshot', 'employer_ref_snapshot', 'contract_no']);
 
         $results = [];
         foreach ($contracts as $c) {
             $results[] = [
                 'label' => $c->employer_name_snapshot ?: $c->contract_no,
-                'sub_label' => $c->contract_no,
+                // picking a suggestion searches by the employer's name (or the number when there is none)
+                'value' => $c->employer_name_snapshot ?: ($c->employer_ref_snapshot ?: $c->contract_no),
+                'sub_label' => trim($c->contract_no . ($c->employer_ref_snapshot ? ' · ' . __('Employer ID') . ' ' . $c->employer_ref_snapshot : '')),
                 'group' => __('สัญญา'),
             ];
         }

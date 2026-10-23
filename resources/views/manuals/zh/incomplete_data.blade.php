@@ -19,7 +19,7 @@
     <li><strong>类型标签</strong> —— Employers / Employees</li>
     <li><strong>表格</strong> —— 显示数据缺失的记录，并注明具体缺少什么</li>
     <li><strong>编辑按钮</strong> —— 点击前往补全数据</li>
-    <li><strong>雇员卡片</strong> —— 与雇员菜单相同的固定大小卡片(按钮相同)，黄色"缺少 N 项"标签显示仍为空的必填项数量</li>
+    <li><strong>雇员卡片</strong> —— 与雇员菜单相同的卡片(撑满整行)(按钮相同)，黄色"缺少 N 项"标签显示仍为空的必填项数量</li>
 </ol>
 
 <h4><i class="bi bi-list-check me-2"></i>使用步骤</h4>

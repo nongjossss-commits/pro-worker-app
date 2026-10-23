@@ -138,3 +138,7 @@
 <div class="manual-tip">
     <strong>Details on the employee card:</strong> under the name the card shows up to 6 details — the same set as the Employees menu cards (Super Admin picks and orders them under Super Admin Settings → "Employee Card Details") · nationality always shows · each detail has a <strong>copy button</strong> <i class="bi bi-copy"></i> — one click copies it, no text selecting · editing the employee updates the card right away
 </div>
+
+<div class="manual-tip">
+    <strong>Job card colours:</strong> the left bar and the glow follow the renewal progress — dark blue = both renewed (ready to finish), purple = visa renewed, amber = work permit renewed, green = finished, grey = cancelled (the card background stays as before) · hovering lifts the card with a coloured shadow
+</div>

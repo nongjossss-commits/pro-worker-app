@@ -102,16 +102,7 @@
     <meta name="apple-mobile-web-app-title" content="PWL System">
     <link rel="apple-touch-icon" href="{{ asset('images/icons/icon-192x192.png') }}">
 
-    <!-- Tailwind CSS (Scoped/Utility) for Components using it -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            prefix: '', // No prefix to match component code
-            corePlugins: {
-               preflight: false, // Disable preflight to avoid conflict with Bootstrap
-            }
-        }
-    </script>
+    {{-- Tailwind utilities: prebuilt file linked at the end of <head> (was the Play CDN — see below). --}}
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -860,7 +851,15 @@
         {{-- Card / record-tab CSS before the content, so lists don't first draw in the old row layout. --}}
         @include('partials._record_tabs', ['part' => 'styles'])
         @include('partials._employee_tiles', ['part' => 'styles'])
+        @include('partials._long_card_style')
     @endauth
+
+    {{-- Tailwind utilities for the components that use them (document scanner …), prebuilt
+         from resources/tailwind-static/input.css. Replaces the Tailwind Play CDN, which compiled
+         CSS in every browser and re-scanned the whole page on each change (made the big Workflow /
+         resolution pages lag). Kept last in <head>, where the CDN put its styles, so it wins over
+         Bootstrap exactly as before. --}}
+    <link rel="stylesheet" href="{{ asset('css/tailwind-utilities.css') }}?v={{ @filemtime(public_path('css/tailwind-utilities.css')) }}">
 </head>
 <body>
 

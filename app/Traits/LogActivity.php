@@ -19,6 +19,33 @@ trait LogActivity
             ->latest('created_at');
     }
 
+    /**
+     * Fill `lastEditedActivity` (+ user) for a whole page of models in three
+     * queries, so <x-last-edited-badge> doesn't run one query per row.
+     * Accepts a paginator or any collection of models of this class.
+     */
+    public static function preloadLastEdited($models): void
+    {
+        $models = $models instanceof \Illuminate\Pagination\AbstractPaginator
+            ? $models->getCollection()
+            : collect($models);
+        $missing = $models->reject(fn ($m) => $m->relationLoaded('lastEditedActivity'));
+        if ($missing->isEmpty()) {
+            return;
+        }
+        $latestIds = ActivityLog::query()
+            ->where('subject_type', (new static)->getMorphClass())
+            ->whereIn('subject_id', $missing->map->getKey()->all())
+            ->whereIn('action', ['create', 'update'])
+            ->selectRaw('max(id) as id')
+            ->groupBy('subject_id')
+            ->pluck('id');
+        $logs = ActivityLog::with('user')->whereIn('id', $latestIds)->get()->keyBy('subject_id');
+        foreach ($missing as $model) {
+            $model->setRelation('lastEditedActivity', $logs->get($model->getKey()));
+        }
+    }
+
     protected static function bootLogActivity()
     {
         static::created(function (Model $model) {

@@ -65,11 +65,20 @@ class ActivityLogController extends Controller
         return view('admin.activity_logs.index', compact('years'));
     }
 
+    /** MONTH()/DAY() are MySQL-only; SQLite (local dev / tests) needs strftime(). */
+    protected function datePartExpr(string $part): string
+    {
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
+            return "CAST(strftime('" . ($part === 'month' ? '%m' : '%d') . "', created_at) AS INTEGER)";
+        }
+        return ($part === 'month' ? 'MONTH' : 'DAY') . '(created_at)';
+    }
+
     public function showYear($year)
     {
         // Get months that have activity in this year
         $months = ActivityLog::whereYear('created_at', $year)
-            ->selectRaw('MONTH(created_at) as month')
+            ->selectRaw($this->datePartExpr('month') . ' as month')
             ->distinct()
             ->orderBy('month', 'desc')
             ->pluck('month');
@@ -82,7 +91,7 @@ class ActivityLogController extends Controller
         // Get days that have activity in this month
         $days = ActivityLog::whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
-            ->selectRaw('DAY(created_at) as day')
+            ->selectRaw($this->datePartExpr('day') . ' as day')
             ->distinct()
             ->orderBy('day', 'desc')
             ->pluck('day');

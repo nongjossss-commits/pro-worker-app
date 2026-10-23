@@ -78,6 +78,7 @@
         <li>Click <i class="bi bi-trash"></i> to delete a tier — a confirmation appears, warning if employees are still assigned to it</li>
     </ul>
     <br><strong>Fully paid installments:</strong> in "Installments & Payments" a fully paid installment stays under <strong>Current items</strong> for 24 hours (with a "Moves to Fully paid in N h" label), then moves to the <strong>Fully paid</strong> tab — open that tab to look back or issue documents as before. Totals and the financial summary still count every installment. If an installment becomes unpaid again (e.g. a payment is deleted) it returns to Current items by itself. In the Fully paid tab pick the <strong>month fully paid</strong> (opens on the latest month) with its installments / net amount / received totals; "All months" shows a monthly summary table — click a month to open its installments.
+    <br><strong>Left column in tabs:</strong> <strong>Pricing</strong> (mode + tiers) · <strong>Advance &amp; Tax</strong> (advance payments + VAT / WHT) · <strong>Summary</strong> (financial summary) · <strong>Documents</strong> (quotation / invoice / tax invoice / receipt + bill to) — switch at the top instead of scrolling · the strip under the tabs always shows grand total receivable / total paid / balance due · the save button is on the Pricing and Advance &amp; Tax tabs (saves both) · each tier's note box is as tall as its text (one line when short)
 </div>
 
 <h5>8. Teams in Pre-Production</h5>
@@ -135,4 +136,8 @@
 
 <div class="manual-tip">
     <strong>Details on the employee card:</strong> under the name the card shows up to 6 details — the same set as the Employees menu cards (Super Admin picks and orders them under Super Admin Settings → "Employee Card Details") · nationality always shows · each detail has a <strong>copy button</strong> <i class="bi bi-copy"></i> — one click copies it, no text selecting · editing the employee updates the card right away
+</div>
+
+<div class="manual-tip">
+    <strong>Job card colours:</strong> the left bar and the glow follow the renewal progress — brand colour = preparing, green = finished, grey = cancelled · hovering lifts the card with a coloured shadow
 </div>

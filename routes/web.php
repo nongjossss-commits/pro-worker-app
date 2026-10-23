@@ -703,6 +703,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/preview-search', [App\Http\Controllers\FinancialHubController::class, 'previewSearch'])->name('preview_search');
         Route::get('/preview-search-combined', [App\Http\Controllers\FinancialHubController::class, 'previewSearchCombined'])->name('preview_search_combined');
         Route::get('/create', [App\Http\Controllers\FinancialHubController::class, 'createManual'])->name('create');
+        Route::get('/create/employer-options', [App\Http\Controllers\FinancialHubController::class, 'manualEmployerOptions'])->name('create.employer_options');
         Route::post('/store', [App\Http\Controllers\FinancialHubController::class, 'storeManual'])->name('store');
         Route::get('/export-monthly', [App\Http\Controllers\FinancialHubController::class, 'exportMonthly'])->name('export_monthly');
     });

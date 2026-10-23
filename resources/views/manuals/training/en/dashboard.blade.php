@@ -48,7 +48,7 @@
         'callouts' => [
             '<strong>Header:</strong> date + highlight figures (finished in 12 months / nationalities / tabs with work in progress / 14-day actions)',
             '<strong>Figure cards:</strong> hover = breakdown + how it is counted',
-            '<strong>Charts:</strong> finished per month · cash received per month (finance users) · work in progress by tab (click to open) · nationality · document expiry · top employers',
+            '<strong>Charts:</strong> finished per month · new employees vs notified out · work in progress by tab (click to open) · nationality · document / 90-day report due dates · top employers',
         ],
     ])
 
@@ -56,7 +56,7 @@
         <ol>
             <li>Log in → automatically go to Dashboard</li>
             <li>Check the figure cards at the top — hover a card or chart for details</li>
-            <li>Click a bar in "Work in progress by tab" to open that tab · finance figures need the Finance menu unlocked first (if it has a password)</li>
+            <li>Click a bar in "Work in progress by tab" to open that tab · the dashboard shows no finance figures (see the Finance menu)</li>
             <li>The button after the language button = <strong>Light / Dark / Device default</strong> mode — switches instantly with no refresh, remembered per device</li>
         </ol>
     </div>

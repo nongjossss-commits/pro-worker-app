@@ -165,3 +165,7 @@
 <div class="manual-tip">
     <strong>员工卡片上的信息:</strong> 姓名下方最多显示 6 项详细信息 —— 与员工菜单卡片相同(Super Admin 可在 Super Admin 设置 →「雇员卡片信息」中选择和排序)· 国籍始终显示 · 每项都有<strong>复制按钮</strong> <i class="bi bi-copy"></i> —— 点一下即可复制，无需选中文字 · 编辑员工后卡片立即更新
 </div>
+
+<div class="manual-tip">
+    <strong>工作卡片颜色:</strong> 左侧色条和光晕随续期进度显示 —— 深蓝 = 两项都已续(可完成),紫色 = 签证已续，琥珀色 = 工作证已续，绿色 = 已完成，灰色 = 已取消(卡片背景色保持不变)· 鼠标悬停时卡片上浮并带彩色阴影
+</div>

@@ -4,10 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Employee;
+use App\Models\EmployeeAppointment;
 use App\Models\EmployeeRenewalLink;
 use App\Models\Employer;
-use App\Models\FinancialPayment;
-use App\Models\FinancialTransaction;
 use App\Models\ProductionItem;
 use App\Models\ProductionOrder;
 use App\Models\ResolutionTab;
@@ -17,16 +16,19 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Executive dashboard (showcase page): workforce, work pipeline, monthly
- * output, document expiry, nationality / top employers and — for finance
- * users with the Finance menu unlocked — cash received and receivables.
+ * Executive dashboard (showcase page): workforce, hires vs notified out,
+ * work pipeline, monthly output, upcoming appointments, 90-day reports,
+ * document expiry, nationality / top employers.
+ *
+ * No money figures on purpose — any account with the dashboard menu sees
+ * this page (finance stays in the Finance menu, behind its own permission
+ * and menu password).
  *
  * Every number is counted the same way as the menu it comes from:
  *  - workforce = employees not deleted, not notified out (terminated_at),
  *    and not in a cancelled resolution status;
- *  - cash received = per payment date, quotations excluded — the same rule
- *    as FinancialHubController::cashReceived() (Finance → Overview);
- *  - outstanding / overdue = Finance → Overview's own formula.
+ *  - appointments = Registration / Renewal tab appointments + Workflow item
+ *    appointments that are not marked done.
  * Date grouping is done in PHP (no MySQL-only date functions; dev = SQLite).
  */
 class DashboardController extends Controller
@@ -140,19 +142,48 @@ class DashboardController extends Controller
             return ['label' => trim($name . ($er && $er->name_suffix ? ' ' . $er->name_suffix : '')), 'count' => (int) $r->c];
         })->values()->all();
 
-        // ---------- 7. Finance (finance users, menu unlocked) ----------
-        $finance = null;
-        $financeLocked = false;
-        if (auth()->user()->can('view-finance') && $menus->isVisible('finance')) {
-            $unlocked = ! $menus->hasPassword('finance') || (session('menu_unlocked_finance') && now()->timestamp <= session('menu_unlocked_finance'));
-            if ($unlocked) {
-                $finance = $this->finance($months, $monthKeys, $today, $monthStart, $prevMonthStart);
-            } else {
-                $financeLocked = true;
-            }
-        }
+        // ---------- 7. Hires vs notified out per month (12 months) ----------
+        $movement = [
+            'hired' => $this->perMonth(Employee::query()->whereNotIn('status', self::CANCELLED)->where('created_at', '>=', $rangeStart)->pluck('created_at'), $monthKeys),
+            'left' => $this->perMonth(Employee::query()->where('terminated_at', '>=', $rangeStart)->pluck('terminated_at'), $monthKeys),
+        ];
 
-        // ---------- 8. Activity ----------
+        // ---------- 8. Upcoming appointments (not done) ----------
+        // Resolution tab appointments + Workflow item appointments.
+        $apptDates = EmployeeAppointment::query()->whereNotNull('appointment_date')->whereNull('appointment_completed_at')
+            ->where('appointment_date', '<', $today->copy()->addDays(7)->endOfDay())
+            ->whereHas('employee', fn ($e) => $e->whereNull('terminated_at'))
+            ->pluck('appointment_date')
+            ->concat(ProductionItem::query()->whereNotNull('appointment_date')->whereNull('appointment_completed_at')
+                ->where('status', 'pending')
+                ->where('appointment_date', '<', $today->copy()->addDays(7)->endOfDay())
+                ->whereHas('order', fn ($o) => $o->where('status', 'active'))
+                ->pluck('appointment_date'))
+            ->map(fn ($d) => Carbon::parse($d));
+        $appointments = [
+            'overdue' => $apptDates->filter(fn ($d) => $d->lt($today))->count(),
+            'today' => $apptDates->filter(fn ($d) => $d->isSameDay($today))->count(),
+            'tomorrow' => $apptDates->filter(fn ($d) => $d->isSameDay($today->copy()->addDay()))->count(),
+            'week' => $apptDates->filter(fn ($d) => $d->gte($today))->count(), // today … +7 days
+        ];
+
+        // ---------- 9. 90-day reports (workforce) ----------
+        $ninety = fn ($from, $to) => $workforce()->whereBetween('ninetyDayReportDate', [$from->toDateString(), $to->toDateString()])->count();
+        $ninetyDay = [
+            'overdue' => $workforce()->whereNotNull('ninetyDayReportDate')->where('ninetyDayReportDate', '<', $today->toDateString())
+                ->where('ninetyDayReportDate', '>=', $today->copy()->subDays(30)->toDateString())->count(), // missed in the last 30 days
+            'd7' => $ninety($today, $today->copy()->addDays(7)),
+            'd15' => $ninety($today, $today->copy()->addDays(15)),
+        ];
+        $expiry[] = [
+            'label' => __('90-Day Report'),
+            'expired' => $ninetyDay['overdue'],
+            'd30' => $ninety($today, $today->copy()->addDays(30)),
+            'd60' => $ninety($today->copy()->addDays(31), $today->copy()->addDays(60)),
+            'd90' => $ninety($today->copy()->addDays(61), $today->copy()->addDays(90)),
+        ];
+
+        // ---------- 10. Activity ----------
         $activity = ActivityLog::query()->where('created_at', '>=', $today->copy()->subDays(13))->pluck('created_at')
             ->countBy(fn ($d) => Carbon::parse($d)->toDateString());
         $activityDays = collect(range(13, 0))->map(fn ($i) => $today->copy()->subDays($i));
@@ -166,57 +197,9 @@ class DashboardController extends Controller
             'pipeline', 'preProduction', 'inProgressTotal',
             'monthLabels', 'output', 'doneThisMonth', 'donePrevMonth',
             'expiry', 'expiringSoon', 'nationalities', 'topEmployers',
-            'finance', 'financeLocked',
+            'movement', 'appointments', 'ninetyDay',
             'activityLabels', 'activityCounts', 'recentActivities'
         ));
-    }
-
-    /**
-     * Cash received per month (payment date, quotations excluded) + the
-     * receivable — mirrors FinancialHubController::index() 'overview' stats.
-     */
-    private function finance($months, array $monthKeys, Carbon $today, Carbon $monthStart, Carbon $prevMonthStart): array
-    {
-        $excludeQuotations = function ($q) {
-            $q->whereDoesntHave('productionOrder', fn ($po) => $po->where('manual_bill_type', 'quotation'));
-        };
-        $from = $months->first()->toDateString();
-
-        $payments = FinancialPayment::query()->whereDate('paid_at', '>=', $from)
-            ->whereHas('transaction', $excludeQuotations)->get(['paid_at', 'amount']);
-        $legacy = FinancialTransaction::query()->whereDoesntHave('payments')->where('paid_amount', '>', 0)
-            ->whereDate('paid_at', '>=', $from)->where($excludeQuotations)->get(['paid_at', 'paid_amount']);
-
-        $income = array_fill_keys($monthKeys, 0.0);
-        $todayIncome = 0.0;
-        foreach ($payments as $p) {
-            $d = Carbon::parse($p->paid_at);
-            $k = $d->format('Y-m');
-            if (isset($income[$k])) $income[$k] += (float) $p->amount;
-            if ($d->isSameDay($today)) $todayIncome += (float) $p->amount;
-        }
-        foreach ($legacy as $t) {
-            $d = Carbon::parse($t->paid_at);
-            $k = $d->format('Y-m');
-            if (isset($income[$k])) $income[$k] += (float) $t->paid_amount;
-            if ($d->isSameDay($today)) $todayIncome += (float) $t->paid_amount;
-        }
-        $income = array_values($income);
-
-        $outstanding = (float) FinancialTransaction::query()->whereIn('status', ['pending', 'partial'])->where($excludeQuotations)->sum(DB::raw('amount - paid_amount - credit_amount'));
-        $overdue = (float) FinancialTransaction::query()->where('status', 'overdue')->where($excludeQuotations)->sum(DB::raw('amount - paid_amount - credit_amount'));
-        $openBills = FinancialTransaction::query()->whereIn('status', ['pending', 'partial', 'overdue'])->where($excludeQuotations)->count();
-
-        return [
-            'income' => $income,
-            'income_month' => $income[11],
-            'income_prev_month' => $income[10],
-            'income_today' => $todayIncome,
-            'income_year' => array_sum($income),
-            'outstanding' => $outstanding,
-            'overdue' => $overdue,
-            'open_bills' => $openBills,
-        ];
     }
 
     /** Count dates into the given 'Y-m' buckets (in order). */

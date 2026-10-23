@@ -5,6 +5,8 @@ if (typeof window.financialManager === 'undefined') {
             // --- Groups (Tabs) ---
             financialGroups: initialData.financialGroups || [],
             activeGroupId: null,
+            // Left column tab: 'pricing' | 'tax' (advance & tax) | 'summary' | 'docs'
+            leftTab: 'pricing',
             // Installments list: 'active' (unpaid + paid < 24h) | 'paid' (fully paid > 24h)
             txnView: 'active',
             // "Fully paid" tab month: '' = latest month, 'all' = monthly summary, 'YYYY-MM' | 'none'

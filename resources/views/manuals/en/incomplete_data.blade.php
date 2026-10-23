@@ -19,7 +19,7 @@
     <li><strong>Type tabs</strong> — Employers / Employees</li>
     <li><strong>Table</strong> — shows records missing data + what exactly is missing</li>
     <li><strong>Edit button</strong> — click through to fill in the missing data</li>
-    <li><strong>Employee cards</strong> — the same fixed-size tiles as the Employees menu (with the same buttons), plus a yellow "Missing N fields" badge showing how many required fields are still empty</li>
+    <li><strong>Employee cards</strong> — the same tiles as the Employees menu (filling each row edge to edge) (with the same buttons), plus a yellow "Missing N fields" badge showing how many required fields are still empty</li>
 </ol>
 
 <h4><i class="bi bi-list-check me-2"></i>How to use it</h4>

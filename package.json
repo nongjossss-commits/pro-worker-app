@@ -5,7 +5,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "build:tailwind-static": "tailwindcss -c tailwind.static.config.js -i resources/tailwind-static/input.css -o public/css/tailwind-utilities.css --minify"
     },
     "devDependencies": {
         "@playwright/test": "^1.59.1",

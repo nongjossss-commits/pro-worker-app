@@ -199,10 +199,44 @@ class LaborContractTemplateController extends Controller
             })
             ->values();
 
+        $employerFields = app(\App\Services\ProWorkerContractEmployerFields::class);
+
         return view('labor.contract_templates.form_order', [
             'template' => $proworkerContractTemplate,
             'items' => $items,
+            'employerTextFields' => $employerFields->textFields($proworkerContractTemplate),
+            'employerKeys' => $employerFields->keys($proworkerContractTemplate),
         ]);
+    }
+
+    /**
+     * Super Admin picks which form field is the employer's NAME and which
+     * is the employer's ID number (or "guess from the label" / "none") —
+     * Contract History shows and searches them. Saved in meta_data, then
+     * every contract of this template is re-synced (search columns only —
+     * see ProWorkerContractEmployerFields::syncTemplate()).
+     */
+    public function updateEmployerFields(Request $request, ProWorkerContractTemplate $proworkerContractTemplate)
+    {
+        $employerFields = app(\App\Services\ProWorkerContractEmployerFields::class);
+        $allowed = array_merge(['auto', $employerFields::NONE], array_keys($employerFields->textFields($proworkerContractTemplate)));
+        $data = $request->validate([
+            'name_field' => ['required', 'string', \Illuminate\Validation\Rule::in($allowed)],
+            'ref_field' => ['required', 'string', \Illuminate\Validation\Rule::in($allowed)],
+        ]);
+
+        $meta = is_array($proworkerContractTemplate->meta_data) ? $proworkerContractTemplate->meta_data : [];
+        foreach ([$employerFields::NAME_KEY => $data['name_field'], $employerFields::REF_KEY => $data['ref_field']] as $metaKey => $value) {
+            if ($value === 'auto') {
+                unset($meta[$metaKey]);
+            } else {
+                $meta[$metaKey] = $value;
+            }
+        }
+        $proworkerContractTemplate->update(['meta_data' => $meta]);
+        $changed = $employerFields->syncTemplate($proworkerContractTemplate->fresh());
+
+        return back()->with('success', __('Employer fields saved — :count contract(s) updated.', ['count' => $changed]));
     }
 
     /**

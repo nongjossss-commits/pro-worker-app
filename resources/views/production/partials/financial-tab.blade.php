@@ -142,10 +142,28 @@ class="row">
     <!-- Left Column: Summary & Pricing Logic -->
     <div class="col-md-5">
 
+        {{-- Left column tabs (instead of one long scroll): pricing | advance & tax | summary | documents.
+             The totals strip stays visible on every tab. State: financial-manager.js leftTab. --}}
+        <div class="card shadow-sm border-0 mb-3 fin-left-head">
+            <div class="card-header bg-white p-0 border-bottom-0">
+                <ul class="nav nav-tabs nav-fill small px-2 pt-2 fin-left-nav">
+                    <li class="nav-item"><button type="button" class="nav-link px-2" :class="{ 'active fw-bold': leftTab === 'pricing' }" @click="leftTab = 'pricing'"><i class="bi bi-calculator me-1"></i>{{ __('Pricing') }}</button></li>
+                    <li class="nav-item"><button type="button" class="nav-link px-2" :class="{ 'active fw-bold': leftTab === 'tax' }" @click="leftTab = 'tax'"><i class="bi bi-percent me-1"></i>{{ __('Advance & Tax') }}</button></li>
+                    <li class="nav-item"><button type="button" class="nav-link px-2" :class="{ 'active fw-bold': leftTab === 'summary' }" @click="leftTab = 'summary'"><i class="bi bi-clipboard-data me-1"></i>{{ __('Summary') }}</button></li>
+                    <li class="nav-item"><button type="button" class="nav-link px-2" :class="{ 'active fw-bold': leftTab === 'docs' }" @click="leftTab = 'docs'"><i class="bi bi-printer me-1"></i>{{ __('Documents') }}</button></li>
+                </ul>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between gap-2 px-3 py-2 small bg-body-tertiary rounded-bottom fin-left-strip">
+                <span>{{ __('Grand Total Receivable') }}: <strong class="text-success" x-text="formatCurrency(grandTotalReceivable)"></strong></span>
+                <span>{{ __('Total Paid') }}: <strong x-text="formatCurrency(totalPaidAmount)"></strong></span>
+                <span>{{ __('Balance Due') }}: <strong class="text-danger" x-text="formatCurrency(remainingBalance)"></strong></span>
+            </div>
+        </div>
+
         <!-- Pricing Logic Card -->
-        <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-white fw-bold"><i class="bi bi-calculator me-2"></i>{{ __('Pricing Settings') }}</div>
+        <div class="card shadow-sm border-0 mb-3" x-show="leftTab === 'pricing' || leftTab === 'tax'">
             <div class="card-body">
+                <div x-show="leftTab === 'pricing'">
                 <!-- Mode Selection -->
                 <div class="mb-3">
                     <label class="form-label small text-muted">{{ __('Pricing Mode') }}</label>
@@ -183,11 +201,11 @@ class="row">
                                 <div class="card-body p-2">
                                     {{-- Row 1: Price | Assigned | Delete --}}
                                     <div class="d-flex align-items-end gap-2 flex-wrap mb-2">
-                                        <div style="min-width: 130px; flex: 0 0 auto;">
+                                        <div style="min-width: 90px; flex: 1 1 110px;">
                                             <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">{{ __('Price (฿)') }}</label>
                                             <input type="number" class="form-control form-control-sm" x-model="tier.price" @input="updateTotal()" placeholder="Price">
                                         </div>
-                                        <div style="min-width: 130px; flex: 0 0 auto;">
+                                        <div style="flex: 0 0 auto;">
                                             <label class="form-label text-muted small mb-1" style="font-size: 0.7rem;">{{ __('Assigned') }}</label>
                                             <div class="input-group input-group-sm">
                                                 <div class="input-group-text p-0 overflow-hidden" style="width: 60px;">
@@ -207,8 +225,8 @@ class="row">
                                                     class="btn btn-outline-danger d-inline-flex align-items-center justify-content-center"
                                                     @click="removeTier(index)"
                                                     :title="'{{ __('ลบงวดราคานี้') }}'"
-                                                    style="width: 38px; height: 38px; padding: 0;">
-                                                <i class="bi bi-trash" style="font-size: 1rem;"></i>
+                                                    style="width: 31px; height: 31px; padding: 0;">
+                                                <i class="bi bi-trash" style="font-size: .9rem;"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -219,21 +237,21 @@ class="row">
                                             <i class="bi bi-info-circle ms-1" title="{{ __('หมายเหตุจะแสดงในใบแจ้งหนี้/ใบเสร็จด้วย') }}" style="font-size: 0.7rem;"></i>
                                         </label>
                                         <div class="d-flex align-items-stretch gap-2">
-                                            <div class="flex-grow-1 small bg-white border rounded px-2 py-1"
-                                                 style="word-break: break-word; word-wrap: break-word; overflow-wrap: anywhere; white-space: pre-wrap; min-height: 38px; max-height: 120px; overflow-y: auto; cursor: pointer;"
+                                            <div class="flex-grow-1 small bg-white border rounded px-2 py-1 fin-tier-note"
+                                                 style="overflow-wrap: anywhere; min-height: 31px; max-height: 120px; overflow-y: auto; cursor: pointer;"
                                                  @click="editTierNote(index)"
                                                  :title="'{{ __('คลิกเพื่อแก้ไขหมายเหตุ') }}'">
                                                 <template x-if="tier.note && tier.note.trim()">
-                                                    <span x-text="tier.note"></span>
+                                                    <span style="white-space: pre-wrap;" x-text="tier.note.trim()"></span>
                                                 </template>
                                                 <template x-if="!tier.note || !tier.note.trim()">
                                                     <span class="text-muted fst-italic">{{ __('— คลิกเพื่อเพิ่มหมายเหตุ —') }}</span>
                                                 </template>
                                             </div>
-                                            <button type="button" class="btn btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                                            <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0 align-self-start"
                                                     @click.stop="editTierNote(index)"
                                                     :title="'{{ __('แก้ไขหมายเหตุ') }}'"
-                                                    style="width: 38px; min-height: 38px; padding: 0;">
+                                                    style="width: 31px; height: 31px; padding: 0;">
                                                 <i class="bi bi-pencil-square" style="font-size: 1rem;"></i>
                                             </button>
                                         </div>
@@ -263,9 +281,11 @@ class="row">
                 <div class="mb-3">
                     <small class="text-muted"><i class="bi bi-info-circle me-1"></i>{{ __('ส่วนลด: ตั้งค่าได้ในแต่ละรายการ Installment ที่สร้างขึ้น') }}</small>
                 </div>
+                </div>{{-- /pricing tab --}}
 
+                <div x-show="leftTab === 'tax'">
                 <!-- Advance Payments Section (NEW) -->
-                <div class="mb-3 border-top pt-3">
+                <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <label class="form-label mb-0 fw-bold small text-primary">{{ __('Advance Payments / Expenses') }}</label>
                         <button class="btn btn-sm btn-outline-primary py-0" style="font-size: 10px;" @click="addAdvanceItem()">
@@ -351,6 +371,7 @@ class="row">
                         <span class="badge bg-info text-dark">{{ __('International Standard') }}</span> {{ __('Deducted from Base Amount') }}
                     </div>
                 </div>
+                </div>{{-- /advance & tax tab --}}
 
                 <!-- Save Pricing Button -->
                 <button class="btn btn-primary btn-sm w-100" @click="saveFinancialData()" :disabled="isSavingSettings">
@@ -360,7 +381,7 @@ class="row">
         </div>
 
         <!-- Financial Summary -->
-        <div class="card shadow-sm border-0 mb-3">
+        <div class="card shadow-sm border-0 mb-3" x-show="leftTab === 'summary'">
             <div class="card-header bg-white fw-bold">{{ __('Financial Summary') }}</div>
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-1 small">
@@ -431,7 +452,7 @@ class="row">
         </div>
 
         <!-- Document Center & Headers -->
-        <div class="card shadow-sm border-0 mb-3">
+        <div class="card shadow-sm border-0 mb-3" x-show="leftTab === 'docs'">
             <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-printer me-2"></i>{{ __('Document Center') }}</span>
                 <button class="btn btn-xs btn-outline-secondary" @click="showCustomHeaderModal = true">
@@ -520,7 +541,7 @@ class="row">
         </div>
 
         <!-- Bill To / Customer Settings -->
-        <div class="card shadow-sm border-0 mb-3">
+        <div class="card shadow-sm border-0 mb-3" x-show="leftTab === 'docs'">
             <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-person-badge me-2"></i>{{ __('Bill To (Customer)') }}</span>
                 <button class="btn btn-xs btn-outline-secondary" @click="showCustomCustomerModal = true">

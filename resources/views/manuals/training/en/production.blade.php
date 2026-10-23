@@ -115,6 +115,7 @@
             <li>Select "Per-head" mode → add a Pricing Tier</li>
             <li>Click the <strong>note box</strong> → a popup opens for typing</li>
             <li>A <strong>fully paid</strong> installment stays in Current items for 24 h, then moves to the <strong>Fully paid</strong> tab (click to look back) · by month + monthly summary</li>
+            <li>Left column tabs: <strong>Pricing</strong> / <strong>Advance &amp; Tax</strong> / <strong>Summary</strong> / <strong>Documents</strong> — switch instead of scrolling</li>
         </ol>
     </div>
 

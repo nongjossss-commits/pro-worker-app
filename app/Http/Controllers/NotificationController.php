@@ -143,6 +143,16 @@ class NotificationController extends Controller
             $addressOptions = $this->getAddressOptions($activeQueryForOptions, 'employee_id', true);
         }
 
+        // Perf: the cards read $employee->active_workflows — load the open
+        // production items for every employee on the page in one go instead of
+        // one query per card.
+        $cardEmployees = collect($notificationsData)
+            ->flatMap(fn ($list) => $list instanceof \Illuminate\Pagination\AbstractPaginator ? $list->getCollection() : collect($list))
+            ->map(fn ($n) => $n instanceof Employee ? $n : data_get($n, 'employee'))
+            ->filter(fn ($e) => $e instanceof Employee)
+            ->unique(fn ($e) => spl_object_id($e));
+        Employee::preloadForCards($cardEmployees);
+
         return view('notifications.index', compact('notificationsData', 'counts', 'tabs', 'currentView', 'perPageOptions', 'addressOptions'));
     }
 

@@ -234,8 +234,12 @@
                     </div>
                 </div>
 
+                {{-- Info panel: appointment · outsource login · RA / request / reference no. · note —
+                     one grid with the same label + box style (layout only: CSS .wf-panel in
+                     workflow/partials/_item_card_panel_style). --}}
+                <div class="wf-panel">
                 {{-- Appointment Date & Location --}}
-                <div class="ms-md-4" x-data="{
+                <div class="ms-md-4 wf-appt" x-data="{
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: '{{ $appValue }}',
                     displayValue: '{{ $appDisplay }}',
@@ -355,21 +359,21 @@
                                     <span x-text="displayValue"></span>
                                     <i x-show="isAppCompleted" class="bi bi-check-circle-fill text-success ms-auto"></i>
                                 </div>
-                                <div x-show="locationValue" class="text-muted" style="font-size: 0.7rem;">
+                                <div x-show="locationValue" class="text-muted wf-oneline" style="font-size: 0.7rem;" :title="locationValue">
                                     <i class="bi bi-geo-alt me-1"></i><span x-text="locationValue"></span>
                                 </div>
                              </div>
                         </div>
 
                         <!-- Appt Updated By -->
-                        <div x-show="updatedByName" class="mt-1 text-end" style="font-size: 0.65rem;" x-cloak>
+                        <div x-show="updatedByName" class="mt-1 text-end wf-oneline" style="font-size: 0.65rem;" x-cloak :title="updatedAtHuman + ' โดย ' + updatedByName">
                             <span class="text-muted"><i class="bi bi-clock"></i> <span x-text="updatedAtHuman"></span> โดย <span x-text="updatedByName"></span></span>
                         </div>
                     </div>
                 </div>
 
                 {{-- NEW CREDENTIALS SECTION --}}
-                <div class="ms-md-4" x-data="{
+                <div class="ms-md-4 wf-cred" x-data="{
                     isEditing: false,
                     email: {{ json_encode($item->employee->email ?? '') }},
                     outsource_code: {{ json_encode($item->employee->outsource_code ?? '') }},
@@ -422,6 +426,7 @@
                         });
                     }
                 }">
+                    <small class="text-muted d-block wf-label">{{ __('Outsource login') }}</small>
                     {{-- Display Mode --}}
                     <div x-show="!isEditing" class="align-items-center gap-2" :class="{ 'd-flex': !isEditing }">
                         <div class="d-flex flex-column gap-1">
@@ -459,8 +464,8 @@
                 </div>
 
                 {{-- REMARKS & 3 Extra Fields SECTION --}}
-                <div class="ms-md-4 d-flex flex-column gap-2" style="min-width: 140px; max-width: 250px;">
-                    <div x-data="{
+                <div class="ms-md-4 d-flex flex-column gap-2 wf-more" style="min-width: 140px; max-width: 250px;">
+                    <div class="wf-remark" x-data="{
                         isEditing: false,
                         remarkText: {{ json_encode($item->remarks ?? '') }},
                         tempRemarkText: '',
@@ -514,7 +519,7 @@
 
                             <div class="d-flex align-items-start gap-1">
                                 <div x-cloak :style="{ display: !isEditing ? 'flex' : 'none' }" class="align-items-start gap-1 w-100">
-                                    <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden" style="min-height: 31px; word-break: break-word;">
+                                    <div class="text-dark small border rounded px-2 py-1 bg-light flex-grow-1 text-wrap overflow-hidden wf-remark-box" style="min-height: 31px; word-break: break-word;" :title="remarkText">
                                         <span x-text="remarkText || '-'"></span>
                                     </div>
                                     <button @click="startEditing()" class="btn btn-sm btn-outline-secondary rounded-circle flex-shrink-0" style="padding: 2px 6px;" title="แก้ไขหมายเหตุ">
@@ -544,7 +549,7 @@
                          attribute at the first inner double-quote, leaking
                          the entire JS block onto the page as visible text.
                          See _employee_card.blade.php for full explanation. --}}
-                    <div class="d-flex flex-column gap-2" x-data="{
+                    <div class="d-flex flex-column gap-2 wf-fields" x-data="{
                         isEditing: false,
                         nameList: @js($item->employee->name_list_number ?? ''),
                         reqNo: @js($item->request_number ?? ''),
@@ -644,7 +649,7 @@
                             <div style="flex-grow: 1;">
                                 <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
                                 <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                                    <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'"></div>
+                                    <div x-ref="raDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="nameList || '-'" :title="nameList"></div>
                                     <button x-show="nameList" @click="copy($event.currentTarget, nameList)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                         <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                     </button>
@@ -670,7 +675,7 @@
                         <div style="width: 100%;">
                             <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
                             <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                                <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
+                                <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'" :title="reqNo"></div>
                                 <button x-show="reqNo" @click="copy($event.currentTarget, reqNo)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                     <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                 </button>
@@ -682,7 +687,7 @@
                         <div style="width: 100%;">
                             <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
                             <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
-                                <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
+                                <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'" :title="refId"></div>
                                 <button x-show="refId" @click="copy($event.currentTarget, refId)" class="btn btn-link p-0 text-secondary ms-1 flex-shrink-0" title="{{ __('Copy') }}">
                                     <i class="bi bi-clipboard" style="font-size: 0.8rem;"></i>
                                 </button>
@@ -691,6 +696,7 @@
                         </div>
                     </div>
                 </div>
+                </div>{{-- /.wf-panel --}}
 
             </div>
 
@@ -968,3 +974,4 @@
     </div>
     </div>
 </div>
+@include('workflow.partials._item_card_panel_style')

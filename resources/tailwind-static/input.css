@@ -1,0 +1,11 @@
+/*
+ * Prebuilt Tailwind utilities for the components that use them (e.g. the document
+ * scanner) — replaces the Tailwind Play CDN (cdn.tailwindcss.com), which compiled
+ * CSS in every visitor's browser and re-scanned the whole page on every DOM change
+ * (slow on big Workflow / resolution pages). Same Tailwind 3.4.17, preflight off
+ * (Bootstrap owns the base styles). Rebuild after adding Tailwind classes:
+ *   npx tailwindcss -c tailwind.static.config.js -i resources/tailwind-static/input.css -o public/css/tailwind-utilities.css --minify
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

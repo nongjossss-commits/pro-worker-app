@@ -354,6 +354,7 @@ class RegistrationController extends Controller
         }
 
         $employers = $employerQuery->paginate($perPage)->withQueryString();
+        Employer::preloadLastEdited($employers); // one query for every row's "last edited" badge
 
         // Calculate Cancelled Employers Count (Approximate Global or based on current filter context)
         // Ideally we clone employerQuery before filters? But UI usually expects "Total Cancelled Employers" in the system or matching search.

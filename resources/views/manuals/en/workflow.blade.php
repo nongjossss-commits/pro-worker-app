@@ -200,3 +200,11 @@
 <div class="manual-tip">
     <strong>Details on the employee card:</strong> under the name the card shows up to 6 details — the same set as the Employees menu cards (Super Admin picks and orders them under Super Admin Settings → "Employee Card Details") · nationality always shows · each detail has a <strong>copy button</strong> <i class="bi bi-copy"></i> — one click copies it, no text selecting · editing the employee updates the card right away
 </div>
+
+<div class="manual-tip">
+    <strong>Info panel on the job card:</strong> appointment · Outsource login (email / code) · RA no. · request no. · worker reference no. · note sit in one box in the middle of the card with the same label and field style (3 columns on wide screens, 2 on medium, 1 on phones) · the pencil / copy buttons and the appointment-done switch work as before · every field stays on one line — long text (e.g. appointment place, note) ends with … and <strong>shows in full when you point at it</strong>, so the card never grows taller (the pencil still edits the whole text)
+</div>
+
+<div class="manual-tip">
+    <strong>Job card colours:</strong> the left bar and the glow show the status — amber = in progress, green = finished, grey = cancelled, cyan = Pre-Production · hovering lifts the card with a coloured shadow
+</div>

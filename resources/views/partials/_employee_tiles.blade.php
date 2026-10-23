@@ -5,7 +5,9 @@
     list container. Card markup (partials/_employee_card,
     employees/_history_card) is unchanged, so every button, the checkbox,
     drag & share keep working; only the layout changes:
-      - fixed-size tiles, as many per row as the screen fits (zoom out → more)
+      - tiles fill the whole row: as many as fit at the minimum width, then
+        stretched equally to the row's width (zoom out / wider screen → one
+        more tile as soon as it fits, each a bit narrower)
       - photo, names, employer, document dates stacked; buttons at the bottom
       - the work-status badges sit in their own box inside the tile instead
         of the full-card overlay used by the row layout
@@ -16,17 +18,19 @@
 @if(($part ?? 'all') !== 'scripts')
 <style>
     /*
-     * Fixed-size tiles: every tile is the same width and height; the grid fits
-     * as many per row as the screen holds (auto-fill). A wider screen or
-     * zooming out adds tiles to each row, zooming in removes some — tiles are
-     * never stretched. Phones get one full-width column.
+     * Tiles fill the row edge to edge: the grid fits as many tiles as the
+     * minimum width allows (auto-fill), then shares the leftover space equally
+     * (1fr) — no empty strip at the right. A wider screen or zooming out adds
+     * a tile as soon as one more fits (each gets a bit narrower), zooming in
+     * removes one (each gets wider). auto-fill (not auto-fit) keeps a short
+     * list (1–2 results) at normal width instead of stretching it across the
+     * row. All tiles keep the same height. Phones get one full-width column.
      */
     .emp-tile-grid {
-        --emp-tile-w: 280px;   /* fits names, the passport line and 7 action buttons */
+        --emp-tile-w: 260px;   /* minimum width — still fits names, the passport line and 7 action buttons */
         --emp-tile-h: 445px;   /* room for 6 detail lines + 3 status badges without growing */
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, var(--emp-tile-w));
-        justify-content: start;
+        grid-template-columns: repeat(auto-fill, minmax(var(--emp-tile-w), 1fr));
         gap: .75rem;
         align-items: stretch;
     }
@@ -47,6 +51,125 @@
         transition: box-shadow .15s, transform .15s;
     }
     .emp-tile-grid .employee-card:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, .12); transform: translateY(-1px); }
+
+    /* ── Tile look: a raised panel tinted by the work status. Colours come from
+       partials/_employee_card: --emp-tone (+ --emp-tone-2) and, for the split
+       pieces, --emp-tone-bar / --emp-tone-ring (hard colour stops, so an
+       employee in two kinds of work — e.g. changing employer in Workflow AND in
+       Renewal resolution — shows both colours side by side, not a blend).
+       purple = registration, pink = renewal, yellow = workflow, cyan =
+       pre-production; slate when no work. Pieces: colour bar on top, a glow
+       per colour (left / right), a gradient hairline border carrying both
+       colours, a ring around the photo, and on hover a lift, a coloured shadow
+       and one light sweep. Light and dark mode. Card contents are untouched. ── */
+    .emp-tile-grid .employee-card,
+    .emp-tile-grid > .position-relative > .list-group-item,
+    .emp-tile-grid > .notification-item {
+        --emp-tone: #94a3b8;
+        --emp-tone-2: var(--emp-tone);
+        --emp-tone-bar: linear-gradient(90deg, var(--emp-tone), var(--emp-tone));
+        --emp-tone-ring: conic-gradient(var(--emp-tone), var(--emp-tone));
+        --emp-card-bg: var(--bs-body-bg);
+        --emp-glow: 18%;
+        --emp-sheen: rgba(255, 255, 255, .28);
+        border: 1px solid transparent !important;
+        border-radius: 1rem;
+        background:
+            radial-gradient(70% 46% at 18% 0%, color-mix(in srgb, var(--emp-tone) var(--emp-glow), transparent) 0%, transparent 72%) padding-box,
+            radial-gradient(70% 46% at 82% 0%, color-mix(in srgb, var(--emp-tone-2) var(--emp-glow), transparent) 0%, transparent 72%) padding-box,
+            linear-gradient(180deg, color-mix(in srgb, var(--emp-card-bg) 95%, var(--emp-tone)) 0%, var(--emp-card-bg) 58%) padding-box,
+            linear-gradient(160deg, color-mix(in srgb, var(--emp-tone) 60%, var(--bs-border-color)) 0%,
+                                    color-mix(in srgb, var(--bs-border-color) 75%, transparent) 48%,
+                                    color-mix(in srgb, var(--emp-tone-2) 60%, var(--bs-border-color)) 100%) border-box !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 10px 26px -14px rgba(15, 23, 42, .28);
+        transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s ease;
+    }
+    /* colour bar (split into equal parts when there are several kinds of work) + a soft shine */
+    .emp-tile-grid .employee-card::before,
+    .emp-tile-grid > .position-relative > .list-group-item::before,
+    .emp-tile-grid > .notification-item::before {
+        content: ''; position: absolute; inset: 0 0 auto 0; height: 5px; z-index: 1; pointer-events: none;
+        background: linear-gradient(180deg, rgba(255, 255, 255, .45), rgba(255, 255, 255, 0)), var(--emp-tone-bar);
+    }
+    /* one light sweep across the tile on hover */
+    .emp-tile-grid .employee-card::after,
+    .emp-tile-grid > .position-relative > .list-group-item::after,
+    .emp-tile-grid > .notification-item::after {
+        content: ''; position: absolute; inset: 0; z-index: 7; pointer-events: none; border-radius: inherit;
+        background: linear-gradient(115deg, transparent 38%, var(--emp-sheen) 50%, transparent 62%);
+        transform: translateX(-130%); transition: transform 0s;
+    }
+    .emp-tile-grid .employee-card:hover::after,
+    .emp-tile-grid > .position-relative > .list-group-item:hover::after,
+    .emp-tile-grid > .notification-item:hover::after { transform: translateX(130%); transition: transform .9s ease; }
+    .emp-tile-grid .employee-card:hover,
+    .emp-tile-grid > .position-relative > .list-group-item:hover,
+    .emp-tile-grid > .notification-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 2px 4px rgba(15, 23, 42, .06),
+                    -12px 22px 38px -22px color-mix(in srgb, var(--emp-tone) 70%, transparent),
+                    12px 22px 38px -22px color-mix(in srgb, var(--emp-tone-2) 70%, transparent),
+                    0 26px 44px -26px rgba(15, 23, 42, .45);
+    }
+    /* ring around the photo (split like the bar) */
+    .emp-tile-grid .employee-card .card-body > .position-relative.flex-shrink-0 {
+        isolation: isolate; border-radius: 50%; width: 64px; height: 64px; line-height: 0; /* exactly the photo, so the ring is centred */
+    }
+    .emp-tile-grid .employee-card .card-body > .position-relative.flex-shrink-0::before {
+        content: ''; position: absolute; inset: -5px; border-radius: 50%; z-index: -1; background: var(--emp-tone-ring);
+        box-shadow: -6px 8px 18px -8px color-mix(in srgb, var(--emp-tone) 70%, transparent),
+                    6px 8px 18px -8px color-mix(in srgb, var(--emp-tone-2) 70%, transparent);
+    }
+    .emp-tile-grid .employee-card .employee-photo-thumb { position: relative; box-shadow: 0 0 0 2px var(--emp-card-bg) !important; }
+    .emp-tile-grid .employee-card .document-details {
+        background: color-mix(in srgb, var(--emp-tone) 6%, var(--bs-tertiary-bg)) !important;
+        border: 1px solid color-mix(in srgb, var(--emp-tone) 16%, transparent);
+    }
+    .emp-tile-grid .employee-card .emp-card-no {
+        background: linear-gradient(135deg, var(--bs-primary), color-mix(in srgb, var(--bs-primary) 65%, #000));
+    }
+    html[data-bs-theme="dark"] .emp-tile-grid .employee-card,
+    html[data-bs-theme="dark"] .emp-tile-grid > .position-relative > .list-group-item,
+    html[data-bs-theme="dark"] .emp-tile-grid > .notification-item {
+        --emp-card-bg: color-mix(in srgb, var(--bs-body-bg) 90%, #fff);
+        --emp-glow: 26%;
+        --emp-sheen: rgba(255, 255, 255, .09);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 12px 30px -16px rgba(0, 0, 0, .8);
+    }
+    html[data-bs-theme="dark"] .emp-tile-grid .employee-card:hover,
+    html[data-bs-theme="dark"] .emp-tile-grid > .position-relative > .list-group-item:hover,
+    html[data-bs-theme="dark"] .emp-tile-grid > .notification-item:hover {
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08),
+                    -12px 22px 40px -20px color-mix(in srgb, var(--emp-tone) 60%, transparent),
+                    12px 22px 40px -20px color-mix(in srgb, var(--emp-tone-2) 60%, transparent);
+    }
+    html[data-bs-theme="dark"] .emp-tile-grid .employee-card .document-details {
+        background: color-mix(in srgb, var(--emp-tone) 8%, rgba(0, 0, 0, .25)) !important;
+        border-color: color-mix(in srgb, var(--emp-tone) 22%, transparent);
+    }
+    /* ── The same look on the other tile pages: Employment History / Groups & Teams
+       (employees/_history_card) and Notifications (card view). Tone: history =
+       yellow while the employee has work in progress; notifications = how close
+       the due date is (red / yellow / dark, as before). ── */
+    .emp-tile-grid > .position-relative > .list-group-item:has(> .position-absolute.top-0.start-0) { --emp-tone: #ffc107; }
+    .emp-tile-grid > .notification-item.alert-danger { --emp-tone: #ef4444; }
+    .emp-tile-grid > .notification-item.alert-warning { --emp-tone: #f59e0b; }
+    .emp-tile-grid > .notification-item.alert-dark { --emp-tone: #64748b; }
+    .emp-tile-grid > .notification-item { color: var(--bs-body-color); }
+    .emp-tile-grid > .position-relative > .list-group-item .employee-photo-thumb,
+    .emp-tile-grid > .notification-item .notif-photo {
+        box-shadow: 0 0 0 3px var(--emp-card-bg), 0 0 0 5px color-mix(in srgb, var(--emp-tone) 70%, transparent),
+                    0 8px 18px -8px color-mix(in srgb, var(--emp-tone) 70%, rgba(0, 0, 0, .5)) !important;
+    }
+    /* "Jump to this employee" highlight (layouts/app .highlight) keeps its orange pulse on the new look. */
+    .emp-tile-grid .employee-card.highlight, .emp-tile-grid .employee-card.highlighted {
+        --emp-tone: #f97316 !important; --emp-tone-2: #f97316 !important;
+        --emp-tone-bar: linear-gradient(90deg, #f97316, #f97316) !important; --emp-tone-ring: conic-gradient(#f97316, #f97316) !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .emp-tile-grid .employee-card, .emp-tile-grid .employee-card:hover { transition: none; transform: none; }
+        .emp-tile-grid .employee-card::after { display: none; }
+    }
     .emp-tile-grid .employee-card .card-body {
         flex-direction: column !important; flex-wrap: nowrap !important; align-items: stretch !important;
         gap: .35rem !important; padding: 2.2rem .75rem .6rem; text-align: left; height: 100%;
@@ -156,8 +279,8 @@
 
     /* ── employees/_history_card (Employment History) ── */
     .emp-tile-grid > .position-relative > .list-group-item {
-        height: 100%; border-radius: .75rem !important; border: 1px solid var(--bs-border-color) !important;
-        padding: 1.6rem .75rem .6rem; text-align: left;
+        height: 100%; padding: 1.6rem .75rem .6rem; text-align: left; /* border / radius / background: tile look above */
+        border-radius: 1rem !important;
     }
     .emp-tile-grid .list-group-item > .d-flex.w-100 { flex-direction: column; align-items: stretch; height: 100%; gap: .35rem; }
     .emp-tile-grid .list-group-item > .d-flex.w-100 > .me-3 { margin: 0 !important; justify-content: center; }
@@ -191,11 +314,9 @@
        the days badge + buttons stack in that order inside the tile. */
     .emp-tile-grid:has(.notification-item) { grid-auto-rows: var(--emp-notif-h, 400px); }
     .emp-tile-grid > .notification-item {
-        margin: 0; height: 100%; overflow: hidden; border-radius: .75rem;
+        margin: 0; height: 100%; overflow: hidden; /* border / radius / shadow / hover: tile look above */
         padding: 2.2rem .75rem .6rem; display: flex; flex-direction: column; gap: .35rem; text-align: left;
-        transition: box-shadow .15s, transform .15s;
     }
-    .emp-tile-grid > .notification-item:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, .12); transform: translateY(-1px); }
     .emp-tile-grid > .notification-item > .d-flex.align-items-start,
     .emp-tile-grid > .notification-item > .d-flex.align-items-start > .d-flex.flex-column { display: contents !important; }
     .emp-tile-grid > .notification-item .form-check-input { position: absolute; top: .45rem; right: .5rem; margin: 0; z-index: 6; }

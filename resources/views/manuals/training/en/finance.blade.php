@@ -199,6 +199,7 @@
         <ol>
             <li>Customer won't pay the rest → issue a credit note for the remaining amount; the bill becomes "paid"</li>
             <li><strong>Manual bill</strong>: choose Quotation or Invoice first; quotations have their own tab and never count as income</li>
+            <li>Employer box: type to search, or press the arrow for the full list</li>
             <li>Manual bills can include draft employees</li>
         </ol>
     </div>

@@ -38,6 +38,44 @@
     </div>
 
     <div class="alert alert-success" x-show="saved" x-transition x-cloak>{{ __('Saved.') }}</div>
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
+    {{-- Which fields are the employer's name / ID number → shown and searched in Contract History
+         (ProWorkerContractEmployerFields). "Guess" picks by label until a field is chosen. --}}
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+            <h6 class="fw-bold mb-1"><i class="bi bi-search me-1"></i>{{ __('Employer fields for Contract History search') }}</h6>
+            <p class="small text-muted mb-3">{{ __('Pick the form fields that hold the employer\'s name and ID number. Contract History shows them in the Employer column and its search box finds contracts by either one. Saving also updates contracts already issued from this template (search data only — the documents are not changed).') }}</p>
+            <form method="POST" action="{{ route('labor.contract-templates.employer-fields.update', $template) }}" class="row g-2 align-items-end">
+                @csrf
+                @method('PUT')
+                @foreach(['name' => __('Employer name field'), 'ref' => __('Employer ID number field')] as $role => $label)
+                    @php
+                        $metaKey = $role === 'name' ? \App\Services\ProWorkerContractEmployerFields::NAME_KEY : \App\Services\ProWorkerContractEmployerFields::REF_KEY;
+                        $saved = ($template->meta_data ?? [])[$metaKey] ?? 'auto';
+                        $guess = $employerKeys[$role . 'Auto'] ? $employerKeys[$role] : app(\App\Services\ProWorkerContractEmployerFields::class)->guess($employerTextFields, $role);
+                    @endphp
+                    <div class="col-md-5">
+                        <label class="form-label small fw-semibold">{{ $label }}</label>
+                        <select name="{{ $role }}_field" class="form-select form-select-sm">
+                            <option value="auto" @selected($saved === 'auto')>
+                                {{ __('Guess from the label') }}: {{ $guess ? ($employerTextFields[$guess] ?? $guess) : __('(none found)') }}
+                            </option>
+                            @foreach($employerTextFields as $key => $fieldLabel)
+                                <option value="{{ $key }}" @selected($saved === $key)>{{ $fieldLabel }}</option>
+                            @endforeach
+                            <option value="{{ \App\Services\ProWorkerContractEmployerFields::NONE }}" @selected($saved === \App\Services\ProWorkerContractEmployerFields::NONE)>— {{ __('Not used') }} —</option>
+                        </select>
+                    </div>
+                @endforeach
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-save me-1"></i>{{ __('Save') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div class="card shadow-sm border-0">
         <div class="card-body">

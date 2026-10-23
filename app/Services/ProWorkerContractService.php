@@ -30,6 +30,8 @@ class ProWorkerContractService
             $contractNo = $this->generateContractNo();
 
             $filePath = app(ProWorkerContractPdfService::class)->generate($template, $fieldValues, $contractNo);
+            // employer name / ID number for the history search, read from the template's own fields
+            $employerCols = app(ProWorkerContractEmployerFields::class)->columnsFor($template, $fieldValues, $employerId);
 
             return ProWorkerContract::create([
                 'contract_no' => $contractNo,
@@ -37,7 +39,8 @@ class ProWorkerContractService
                 'issued_by' => $issuer->id,
                 'labor_team_id' => $issuer->labor_team_id,
                 'employer_id' => $employerId,
-                'employer_name_snapshot' => $employerNameSnapshot,
+                'employer_name_snapshot' => $employerNameSnapshot ?? ($employerCols['employer_name_snapshot'] ?? null),
+                'employer_ref_snapshot' => $employerCols['employer_ref_snapshot'],
                 'field_values' => $fieldValues,
                 'file_path' => $filePath,
                 'worker_count' => $this->resolveWorkerCount($template, $fieldValues),
@@ -75,6 +78,9 @@ class ProWorkerContractService
             if ($employerId !== null || $employerNameSnapshot !== null) {
                 $updateData['employer_id'] = $employerId;
                 $updateData['employer_name_snapshot'] = $employerNameSnapshot;
+            } else {
+                // re-read name / ID number from the corrected fields (name only when not linked to an Employer)
+                $updateData += app(ProWorkerContractEmployerFields::class)->columnsFor($template, $fieldValues, $contract->employer_id);
             }
             $contract->update($updateData);
 

@@ -115,6 +115,7 @@
             <li>选择"按人头(Per-head)"模式 → 新增定价分期</li>
             <li>点击<strong>备注框</strong> → 弹出窗口供输入</li>
             <li><strong>已全额付清</strong>的分期在当前项目中保留 24 小时，然后移至 <strong>已全额付清</strong> 标签(可点击回看) · 按月查看 + 月度汇总</li>
+            <li>左栏标签:<strong>价格</strong> / <strong>垫付与税务</strong> / <strong>汇总</strong> / <strong>文件</strong> —— 点击切换，无需滚动</li>
         </ol>
     </div>
 

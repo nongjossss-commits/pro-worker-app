@@ -57,6 +57,7 @@ class ProWorkerContract extends Model
         'labor_team_id',
         'employer_id',
         'employer_name_snapshot',
+        'employer_ref_snapshot', // employer ID number from the template's fields (ProWorkerContractEmployerFields) — search only
         'field_values',
         'file_path',
         'signed_copy_path',

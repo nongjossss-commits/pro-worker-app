@@ -617,7 +617,7 @@
                                  {{-- Finance Button --}}
                                  @can('view-finance')
                                  <button class="btn btn-outline-primary btn-sm rounded-circle me-1"
-                                    onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => new bootstrap.Modal(document.getElementById('financeModal-{{ $order->id }}')).show())"
+                                    onclick="event.stopPropagation(); FinancialSecurity.checkAndRun(() => openFinanceModal({{ $order->id }}))"
                                     title="{{ __('Finance') }}">
                                     <i class="bi bi-currency-dollar"></i>
                                 </button>
@@ -856,7 +856,7 @@
 
                 </div>
 
-            {{-- Finance Modal for this Order --}}
+            {{-- Finance Modal for this Order (lazy load — fetched on first open, not rendered for every order on page load) --}}
             <div class="modal fade" id="financeModal-{{ $order->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
@@ -864,12 +864,10 @@
                             <h5 class="modal-title">{{ __('Finance') }}: {{ $order->project_name }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body bg-light">
-                            @include('production.partials.financial-tab', [
-                                'production' => $order,
-                                'employeeCount' => $order->items->count(),
-                                'employees' => $order->items->pluck('employee')->filter()->values()
-                            ])
+                        <div class="modal-body bg-light" id="finance-modal-body-{{ $order->id }}">
+                            <div class="d-flex justify-content-center align-items-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1259,6 +1257,9 @@ document.addEventListener('alpine:init', () => {
 @include('production.partials.order_fields_drawer')
 
 @push('scripts')
+<script>
+    @include('production.partials._finance_modal_lazy_js')
+</script>
 <script>
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     const activeTabId = @json($activeTab->id ?? null);

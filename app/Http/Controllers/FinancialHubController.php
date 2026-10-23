@@ -1121,10 +1121,13 @@ class FinancialHubController extends Controller
         // For now, I'll pass basic data or use the existing "searchable-select" component if available.
         // Assuming we can pass a few recent employers or rely on the frontend component to fetch.
         // I'll pass all for now as per ProductionController pattern, but lighter.
-        $employers = Employer::select('id', 'employerNameTh', 'employerNameEn')
-            ->orderBy('employerNameTh')
-            ->limit(500) // Safety limit
-            ->get();
+        // Employer box is a search-as-you-type picker (manualEmployerOptions) —
+        // only the pre-selected one is needed here (was a 500-row dropdown, so
+        // employers past the first 500 couldn't be picked at all).
+        $selectedEmployerId = old('employer_id', $request->input('employer_id'));
+        $selectedEmployer = $selectedEmployerId
+            ? Employer::select('id', 'employerNameTh', 'employerNameEn', 'name_suffix')->find($selectedEmployerId)
+            : null;
 
         $selectedEmployees = collect();
         $employeeIds = $request->input('employee_ids', old('employee_ids'));
@@ -1138,7 +1141,41 @@ class FinancialHubController extends Controller
         // one-line addition here — no other file needs to know the list.
         $documentTypes = self::MANUAL_BILL_DOCUMENT_TYPES;
 
-        return view('financial.create_manual', compact('employers', 'selectedEmployees', 'documentTypes'));
+        return view('financial.create_manual', compact('selectedEmployer', 'selectedEmployees', 'documentTypes'));
+    }
+
+    /**
+     * Employer picker of "Create Manual Bill": matches like the program-wide
+     * search boxes (name Th/En/suffix, employer ID, tax ID, RE code, job owner,
+     * address — TwoStageSearch::whereEmployer); empty query = A–Z list to
+     * browse. Paged by 30 (`page`).
+     */
+    public function manualEmployerOptions(Request $request)
+    {
+        $q = trim((string) $request->input('q', ''));
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = 30;
+
+        $query = Employer::query()->with('jobOwner:id,name');
+        if ($q !== '') {
+            \App\Services\TwoStageSearch::whereEmployer($query, $q);
+        }
+        $rows = $query->orderBy('employerNameTh')->orderBy('id')
+            ->skip(($page - 1) * $perPage)->take($perPage + 1)
+            ->get(['id', 'employerNameTh', 'employerNameEn', 'name_suffix', 'employerId', 'job_owner_id']);
+
+        return response()->json([
+            'items' => $rows->take($perPage)->map(fn ($er) => [
+                'id' => $er->id,
+                'label' => trim(($er->employerNameTh ?: $er->employerNameEn ?: '-') . ($er->name_suffix ? ' ' . $er->name_suffix : '')),
+                'sub' => collect([
+                    $er->employerNameEn && $er->employerNameEn !== $er->employerNameTh ? $er->employerNameEn : null,
+                    $er->employerId ? __('ID') . ' ' . $er->employerId : null,
+                    $er->jobOwner?->name ? __('Job owner') . ': ' . $er->jobOwner->name : null,
+                ])->filter()->implode(' · '),
+            ])->values(),
+            'more' => $rows->count() > $perPage,
+        ]);
     }
 
     /**
