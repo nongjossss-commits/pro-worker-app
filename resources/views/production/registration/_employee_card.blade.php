@@ -471,6 +471,7 @@
                                     dateFormat: 'Y-m-d H:i',
                                     altInput: true,
                                     altFormat: 'd/m/Y H:i',
+                                    allowInput: true,
                                     time_24hr: true,
                                     defaultDate: this.dateValue
                                 });

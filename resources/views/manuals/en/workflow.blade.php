@@ -202,7 +202,7 @@
 </div>
 
 <div class="manual-tip">
-    <strong>Info panel on the job card:</strong> appointment · Outsource login (email / code) · RA no. · request no. · worker reference no. · note sit in one box in the middle of the card with the same label and field style (3 columns on wide screens, 2 on medium, 1 on phones) · the pencil / copy buttons and the appointment-done switch work as before · every field stays on one line — long text (e.g. appointment place, note) ends with … and <strong>shows in full when you point at it</strong>, so the card never grows taller (the pencil still edits the whole text)
+    <strong>Info panel on the job card:</strong> appointment · Outsource login (email / code) · RA no. · request no. · worker reference no. · note sit in one box in the middle of the card with the same label and field style (3 columns on wide screens, 2 on medium, 1 on phones) · the pencil / copy buttons and the appointment-done switch work as before · every field stays on one line — long text (e.g. appointment place, note) ends with … and <strong>shows in full when you point at it</strong>, so the card never grows taller (the pencil still edits the whole text) · editing the appointment date: type the digits only, e.g. <code>090620261430</code> → 09/06/2026 14:30 (no need to type "/" or ":")
 </div>
 
 <div class="manual-tip">

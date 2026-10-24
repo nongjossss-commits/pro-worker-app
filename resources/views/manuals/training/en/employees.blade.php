@@ -76,6 +76,10 @@
         </ol>
     </div>
 
+    <div class="slide-tip">
+        ⌨️ <strong>Typing dates:</strong> just type the digits, the "/" goes in for you — <code>09062026</code> → 09/06/2026 · an impossible date (e.g. 31/02) is not accepted and you are warned
+    </div>
+
     <div class="slide-warn">
         ⚠️ <strong>Careful:</strong> Employee Cap — the system limits the total number of employees based on the subscription tier
     </div>

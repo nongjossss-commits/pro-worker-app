@@ -1724,5 +1724,6 @@
     "Employer name, employer ID or contract number...": "အလုပ်ရှင်အမည်၊ အလုပ်ရှင် ID သို့မဟုတ် စာချုပ်နံပါတ်...",
     "\":q\" — :count contract(s)": "\":q\" — စာချုပ် :count စောင်",
     ":n complete": ":n ပြီးပြည့်စုံ",
-    ":n awaiting signature": ":n လက်မှတ်စောင့်"
+    ":n awaiting signature": ":n လက်မှတ်စောင့်",
+    "Invalid date — please check the day and month": "ရက်စွဲ မမှန်ပါ — ရက်နှင့် လကို စစ်ဆေးပါ"
 }

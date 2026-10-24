@@ -76,6 +76,10 @@
         </ol>
     </div>
 
+    <div class="slide-tip">
+        ⌨️ <strong>พิมพ์วันที่:</strong> พิมพ์ตัวเลขติดกันได้เลย ระบบใส่ "/" ให้ — <code>09062026</code> → 09/06/2026 · วันที่ไม่มีจริง (เช่น 31/02) ระบบไม่รับและแจ้งเตือน
+    </div>
+
     <div class="slide-warn">
         ⚠️ <strong>ระวัง:</strong> Employee Cap — ระบบจำกัดจำนวนลูกจ้างรวมตาม subscription tier
     </div>

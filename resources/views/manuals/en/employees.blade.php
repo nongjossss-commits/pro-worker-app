@@ -43,6 +43,10 @@
 </div>
 
 <div class="manual-tip">
+    ⌨️ <strong>Type dates as plain digits in every date box of the program</strong> — no need to type "/" yourself, it goes in automatically: type <code>09062026</code> → <strong>09/06/2026</strong> (2-digit day, 2-digit month, 4-digit year A.D.) · date + time boxes (e.g. appointments) keep going: <code>090620261430</code> → <strong>09/06/2026 14:30</strong> · typing "/" yourself still works (<code>9/6/2026</code> → 09/06/2026) · a single digit that can only be a one-digit day or month (e.g. day 4, month 7) gets its leading 0 · once complete the calendar jumps to that day · an impossible date (e.g. 31/02/2026) turns red, is <strong>not accepted</strong> and shows "Invalid date" so you can fix it (before, it silently became another day) · phones show the number keypad · picking from the calendar works as before
+</div>
+
+<div class="manual-tip">
     💡 <strong>The add / edit / preview employee pages are split into tabs</strong> — no scrolling, just click the tab you need:
     <strong>Personal Information</strong> (photo, names, date of birth, nationality, phone + login information) · <strong>Passport, Visa &amp; Work Permit</strong> (passport + passport type for Myanmar / Cambodian workers, visa, visa expiry · work permit in this order: permit type → work permit no. → ID number → pink card no. → issue / expiry date, 90-day report, RA number, position, job description) ·
     <strong>Employment &amp; Insurance</strong> (start date / work age, request no., tax ID, worker code, department, bank · insurance) · <strong>Attached Files</strong> (the number = files attached)

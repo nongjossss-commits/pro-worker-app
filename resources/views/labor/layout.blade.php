@@ -398,10 +398,14 @@
          native browser behavior unchanged. -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+    {{-- Type 09062026 → 09/06/2026 (public/js/date-autoslash.js) --}}
+    <script>window.DateAutoSlashText = {!! json_encode(['invalid' => __('Invalid date — please check the day and month')], JSON_UNESCAPED_UNICODE) !!};</script>
+    <script src="{{ asset('js/date-autoslash.js') }}?v={{ @filemtime(public_path('js/date-autoslash.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.js-flatpickr').forEach(function (el) {
-                flatpickr(el, { locale: 'th', dateFormat: 'Y-m-d' });
+                // shows d/m/Y and can be typed; the submitted value stays Y-m-d
+                flatpickr(el, { locale: 'th', dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', allowInput: true });
             });
         });
     </script>

@@ -1724,5 +1724,6 @@
     "Employer name, employer ID or contract number...": "雇主名称、雇主编号或合同编号...",
     "\":q\" — :count contract(s)": "\":q\" —— 共 :count 份合同",
     ":n complete": ":n 份已完成",
-    ":n awaiting signature": ":n 份待签署"
+    ":n awaiting signature": ":n 份待签署",
+    "Invalid date — please check the day and month": "日期无效 — 请检查日和月"
 }

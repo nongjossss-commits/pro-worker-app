@@ -2822,5 +2822,6 @@
     "Employer name, employer ID or contract number...": "Employer name, employer ID or contract number...",
     "\":q\" — :count contract(s)": "\":q\" — :count contract(s)",
     ":n complete": ":n complete",
-    ":n awaiting signature": ":n awaiting signature"
+    ":n awaiting signature": ":n awaiting signature",
+    "Invalid date — please check the day and month": "Invalid date — please check the day and month"
 }

@@ -76,6 +76,10 @@
         </ol>
     </div>
 
+    <div class="slide-tip">
+        ⌨️ <strong>输入日期:</strong> 直接连续输入数字，系统自动补 "/" —— <code>09062026</code> → 09/06/2026 · 不存在的日期(如 31/02)不被接受并会提示
+    </div>
+
     <div class="slide-warn">
         ⚠️ <strong>注意:</strong> Employee Cap —— 系统会根据订阅套餐限制雇员总数
     </div>

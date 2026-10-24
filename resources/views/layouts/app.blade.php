@@ -1905,6 +1905,9 @@
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+    {{-- Type 09062026 → 09/06/2026 in every date picker (public/js/date-autoslash.js) --}}
+    <script>window.DateAutoSlashText = {!! json_encode(['invalid' => __('Invalid date — please check the day and month')], JSON_UNESCAPED_UNICODE) !!};</script>
+    <script src="{{ asset('js/date-autoslash.js') }}?v={{ @filemtime(public_path('js/date-autoslash.js')) }}"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -1932,7 +1935,7 @@
         }
 
         // 1. Initialize on existing elements
-        const dateInputs = document.querySelectorAll('input[type="date"]');
+        const dateInputs = document.querySelectorAll('input[type="date"], input.js-flatpickr');
         dateInputs.forEach(input => initFlatpickr(input));
 
         // 2. Observe for new elements (e.g. via Alpine or AJAX)

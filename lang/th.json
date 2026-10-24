@@ -2875,5 +2875,6 @@
     "Employer name, employer ID or contract number...": "ชื่อนายจ้าง เลขประจำตัวนายจ้าง หรือเลขที่สัญญา...",
     "\":q\" — :count contract(s)": "\":q\" — พบ :count ฉบับ",
     ":n complete": ":n สมบูรณ์",
-    ":n awaiting signature": ":n รอลงนาม"
+    ":n awaiting signature": ":n รอลงนาม",
+    "Invalid date — please check the day and month": "วันที่ไม่ถูกต้อง — กรุณาตรวจสอบวันและเดือน"
 }
