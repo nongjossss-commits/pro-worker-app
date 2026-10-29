@@ -1102,13 +1102,7 @@ class WorkflowController extends Controller
      */
     public function fetchOrderHistory(Request $request, $orderId)
     {
-        $order = ProductionOrder::with('workType')->findOrFail($orderId);
-
-        if ($order->status === 'pre_production') {
-            $steps = $order->workType->preparationSteps;
-        } else {
-            $steps = $order->workType->workflowSteps;
-        }
+        $order = ProductionOrder::findOrFail($orderId);
 
         // Finished more than 24h ago (the 24h before that they stay in the card, with Undo).
         $base = fn () => ProductionItem::query()
@@ -1123,24 +1117,29 @@ class WorkflowController extends Controller
         $params = \App\Support\HistoryFilter::params($request);
         $months = \App\Support\HistoryFilter::months($base()->pluck('completed_at'));
         $month = \App\Support\HistoryFilter::selectedMonth($params, $months);
-        $query = $base()->with(['employee', 'completedWorkTypeSteps']);
+        $query = $base()->with(['employee']);
         \App\Support\HistoryFilter::apply($query, $params, $month, 'completed_at',
             fn ($q, $term) => $q->where(fn ($w) => $w
                 ->where('request_number', 'like', "%{$term}%")
                 ->orWhereHas('employee', fn ($e) => \App\Services\TwoStageSearch::whereEmployee($e, $term))),
             fn ($q, $team) => $q->where('group_name', 'like', "%{$team}%"));
-        $items = $query->orderByDesc('completed_at')->get();
+        $items = $query->orderByDesc('completed_at')->get()->filter(fn ($item) => $item->employee);
 
-        $groupedItems = $items->groupBy('group_name');
+        // Finished work: Employees-menu tiles grouped by team, no steps
+        // (partials/_history_employee_tiles), inside the filter panel.
+        $employees = new \Illuminate\Database\Eloquent\Collection($items->pluck('employee')->unique('id')->values()->all());
+        $employees->loadMissing(['employer', 'teams.group']);
+        Employee::preloadForCards($employees);
+        $teamOf = $items->mapWithKeys(fn ($item) => [$item->employee_id => (string) $item->group_name]);
+        $groups = $employees->groupBy(fn ($e) => $teamOf[$e->id] ?? '');
 
-        // Same order_items partial as the card (isHistory hides Undo etc.), inside the filter panel.
         return view('partials._history_panel', [
             'historyMonths' => $months,
             'historyMonth' => $month,
             'historyParams' => $params,
-            'historyCount' => $items->count(),
-            'listView' => 'workflow.partials.order_items',
-            'listData' => compact('order', 'groupedItems', 'steps') + ['isHistory' => true],
+            'historyCount' => $employees->count(),
+            'listView' => 'partials._history_employee_tiles',
+            'listData' => ['groups' => $groups, 'historyEmployerId' => $order->employer_id],
         ]);
     }
 

@@ -682,6 +682,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return NON_SELECTABLE_STATUSES.includes(status) || isTerminated;
     }
 
+    // While a "Completed Work History" popup is open (partials/_history_panel),
+    // "Select All" works on the cards in the popup only — finished cards included,
+    // since every card there is finished.
+    function historySelectionScope() {
+        return document.querySelector('.modal.show [data-history-list]');
+    }
+    function countsForSelectAll(cb, cardWrapper, scope) {
+        if (scope) return scope.contains(cb) && !cb.disabled;
+        return !isCardNonSelectable(cardWrapper);
+    }
+
     // Counter for tracking selection order
     window._selectionOrderCounter = (function() {
         const existing = window.getGlobalSelectedData();
@@ -767,6 +778,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Sync individual checkboxes dynamically across the page
         const currentCheckboxes = document.querySelectorAll('.employee-checkbox');
+        const historyScope = historySelectionScope();
         let visibleCount = 0;
         let visibleCheckedCount = 0;
 
@@ -779,7 +791,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const isHiddenByAccordion = accordionCollapse && !accordionCollapse.classList.contains('show');
             const isHidden = (cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none')) || isHiddenByAccordion;
 
-            if (!isHidden && !isCardNonSelectable(cardWrapper)) {
+            if (!isHidden && countsForSelectAll(cb, cardWrapper, historyScope)) {
                 visibleCount++;
                 if (cb.checked) {
                     visibleCheckedCount++;
@@ -900,13 +912,14 @@ document.addEventListener('DOMContentLoaded', function () {
         selectAllCheckbox.addEventListener('change', function () {
             // Re-query currently visible checkboxes
             const currentCheckboxes = document.querySelectorAll('.employee-checkbox');
+            const historyScope = historySelectionScope();
 
             const visibleCheckboxes = Array.from(currentCheckboxes).filter(cb => {
                 const cardWrapper = cb.closest('.item-card-wrapper') || cb.closest('.employee-card-wrapper') || cb.closest('tr');
                 const accordionCollapse = cb.closest('.accordion-collapse');
                 const isHiddenByAccordion = accordionCollapse && !accordionCollapse.classList.contains('show');
                 const isHidden = (cardWrapper && (cardWrapper.classList.contains('d-none') || cardWrapper.classList.contains('hide-cancelled') || cardWrapper.style.display === 'none')) || isHiddenByAccordion;
-                return !isHidden && !isCardNonSelectable(cardWrapper);
+                return !isHidden && countsForSelectAll(cb, cardWrapper, historyScope);
             });
 
             const visibleItems = visibleCheckboxes.map((cb, index) => {

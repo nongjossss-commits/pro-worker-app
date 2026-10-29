@@ -125,6 +125,7 @@
     <div class="slide-instructions">
         <ol>
             <li>Finished employees stay 24 h, then move into <strong>History</strong> (clock button on the employer card: by month + employee / team search) · select everyone finished from the <strong>Saved to Database</strong> box</li>
+            <li><strong>Completed Work History</strong> popup: Employees-menu cards (no steps) · tick cards → the selection bar appears at the bottom (download / export / edit) · red "Notified out" / yellow "Now with another employer" badge = no longer with this employer, check before summarising / downloading</li>
             <li>Employer Select All → <strong>All / Completed only / Not completed only</strong></li>
             <li><strong>Manage Team</strong> on the employee card (teams per tab and per employer)</li>
             <li>Finished employees <strong>keep their team</strong> — rename / delete / change team only affects people not finished yet</li>

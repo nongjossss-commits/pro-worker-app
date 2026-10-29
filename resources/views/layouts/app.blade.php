@@ -429,6 +429,15 @@
             }
         }
 
+        /* ─── "Completed Work History" popup (Workflow / Registration / Renewal):
+               almost the whole screen, so the employee tiles get the room ─── */
+        .modal-dialog.history-modal-wide {
+            max-width: calc(100vw - 1.5rem);
+            height: calc(100vh - 1.5rem);
+            margin: .75rem auto;
+        }
+        .modal-dialog.history-modal-wide .modal-content { height: 100%; }
+
         /* ─── Modal: ขยายเต็มจอบน mobile ─── */
         @media (max-width: 767.98px) {
             .modal-dialog.modal-xl,

@@ -241,11 +241,11 @@
                 {{-- Appointment Date & Location --}}
                 <div class="ms-md-4 wf-appt" x-data="{
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
-                    dateValue: '{{ $appValue }}',
-                    displayValue: '{{ $appDisplay }}',
-                    locationValue: '{{ $appLocation }}',
-                    updatedByName: '{{ $appUpdatedByName }}',
-                    updatedAtHuman: '{{ $appUpdatedAtHuman }}',
+                    dateValue: @js($appValue),
+                    displayValue: @js($appDisplay),
+                    locationValue: @js($appLocation),
+                    updatedByName: @js($appUpdatedByName),
+                    updatedAtHuman: @js($appUpdatedAtHuman),
                     toggleAppComplete() {
                         fetch('/workflow/item/{{ $item->id }}/appointment-complete', {
                             method: 'POST',
@@ -612,8 +612,8 @@
                             empFormData.append('_token', '{{ csrf_token() }}');
                             empFormData.append('name_list_number', this.nameList);
                             empFormData.append('employee_reference_id', this.refId);
-                            empFormData.append('employer_id', '{{ $item->employee->employer_id ?? '' }}');
-                            empFormData.append('employeeNameEn', '{{ $item->employee->employeeNameEn ?? '' }}');
+                            empFormData.append('employer_id', @js($item->employee->employer_id ?? ''));
+                            empFormData.append('employeeNameEn', @js($item->employee->employeeNameEn ?? ''));
 
                             let req2 = fetch('{{ route('employees.update', $item->employee->id ?? 0) }}', {
                                 method: 'POST',

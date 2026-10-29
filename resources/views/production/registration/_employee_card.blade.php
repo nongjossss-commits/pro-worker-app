@@ -313,12 +313,12 @@
             @can('edit-employees')
             <div class="ms-md-2" x-data="{
                 isEditing: false,
-                email: '{{ $employee->email ?? '' }}',
-                originalEmail: '{{ $employee->email ?? '' }}',
-                password: '{{ $employee->password ?? '' }}',
-                originalPassword: '{{ $employee->password ?? '' }}',
-                outsource_code: '{{ $employee->outsource_code ?? '' }}',
-                originalOutsourceCode: '{{ $employee->outsource_code ?? '' }}',
+                email: @js($employee->email ?? ''),
+                originalEmail: @js($employee->email ?? ''),
+                password: @js($employee->password ?? ''),
+                originalPassword: @js($employee->password ?? ''),
+                outsource_code: @js($employee->outsource_code ?? ''),
+                originalOutsourceCode: @js($employee->outsource_code ?? ''),
                 saveOutsourceLogin() {
                     let body = {
                         email: this.email,
@@ -432,9 +432,9 @@
                 @endphp
                 <div class="mt-2" style="min-width: 250px;" x-data="{
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
-                    dateValue: '{{ $appValue }}',
-                    displayValue: '{{ $appDisplay }}',
-                    locationValue: '{{ $appLocation }}',
+                    dateValue: @js($appValue),
+                    displayValue: @js($appDisplay),
+                    locationValue: @js($appLocation),
                     toggleAppComplete() {
                         fetch('/{{ $modulePath }}/{{ $employee->id }}/appointment-complete', {
                             method: 'POST',
@@ -641,8 +641,8 @@
             {{-- INSURANCE TYPE SECTION --}}
             <div x-data="{
                 isEditing: false,
-                insuranceType: '{{ $employee->insurance_type ?? '' }}',
-                tempInsuranceType: '{{ $employee->insurance_type ?? '' }}',
+                insuranceType: @js($employee->insurance_type ?? ''),
+                tempInsuranceType: @js($employee->insurance_type ?? ''),
                 isSaving: false,
                 startEditing() {
                     this.tempInsuranceType = this.insuranceType;
@@ -658,7 +658,7 @@
                     formData.append('insurance_type', this.tempInsuranceType);
                     // required fields for employees.update usually include these for safety if not using patch
                     formData.append('employer_id', '{{ $employee->employer_id }}');
-                    formData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
+                    formData.append('employeeNameEn', @js($employee->employeeNameEn));
 
                     fetch('{{ route('employees.update', $employee->id) }}', {
                         method: 'POST',
@@ -843,7 +843,7 @@
                     empFormData.append('name_list_number', this.nameList);
                     empFormData.append('employee_reference_id', this.refId);
                     empFormData.append('employer_id', '{{ $employee->employer_id }}');
-                    empFormData.append('employeeNameEn', '{{ $employee->employeeNameEn }}');
+                    empFormData.append('employeeNameEn', @js($employee->employeeNameEn));
 
                     let req2 = fetch('{{ route('employees.update', $employee->id) }}', {
                         method: 'POST',

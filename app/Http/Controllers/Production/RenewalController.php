@@ -3074,21 +3074,22 @@ class RenewalController extends Controller
         $this->applyTabRequestNumbers($employees, $tabId);
         $this->applyTabTeams($employees, $tabId);
 
-        $steps = RegistrationStep::renewal()->where('resolution_tab_id', $tabId)->orderBy('order')->get();
+        // Finished work: Employees-menu tiles grouped by team, no steps
+        // (partials/_history_employee_tiles), inside the filter panel.
+        $employees = new \Illuminate\Database\Eloquent\Collection($employees->all());
+        $employees->loadMissing(['employer', 'teams.group']);
+        Employee::preloadForCards($employees);
 
         return view('partials._history_panel', [
             'historyMonths' => $months,
             'historyMonth' => $month,
             'historyParams' => $params,
             'historyCount' => $employees->count(),
-            'listView' => 'production.renewal._employee_list_content',
-            'listData' => array_merge([
-                'employees' => $employees,
-                'employer' => $employer,
-                'steps' => $steps,
-                'renewalTargets' => $this->getRenewalTargets('renewal'),
-                'isHistory' => true,
-            ], $this->getTabViewData('renewal')),
+            'listView' => 'partials._history_employee_tiles',
+            'listData' => [
+                'groups' => $employees->groupBy(fn ($e) => (string) $e->team_name),
+                'historyEmployerId' => $employer->id,
+            ],
         ]);
     }
 

@@ -182,7 +182,18 @@
                  view excludes these), so staff can visually tell which
                  record is the inactive one when comparing two identity-field
                  duplicates. --}}
-            @if($employee->terminated_at)
+            @if(isset($historyEmployerId))
+                {{-- Completed Work History popup (partials/_history_employee_tiles): this person has
+                     since been notified out, or now works for another employer than the finished
+                     job's — so the user can leave them out of a summary / download. --}}
+                @php $historyNote = __('No longer with this employer — check before including them in a summary or download.'); @endphp
+                @if($employee->terminated_at)
+                    <span class="badge bg-danger ms-1 history-status-badge" title="{{ $historyNote }}"><i class="bi bi-box-arrow-right me-1"></i>{{ __('Notified out :date', ['date' => $employee->terminated_at->format('d/m/Y')]) }}</span>
+                @endif
+                @if($employee->employer_id && $employee->employer_id != $historyEmployerId)
+                    <span class="badge bg-warning text-dark ms-1 history-status-badge" title="{{ $historyNote }}"><i class="bi bi-arrow-left-right me-1"></i>{{ $employee->employer ? __('Now with another employer: :name', ['name' => $employerName]) : __('Now with another employer') }}</span>
+                @endif
+            @elseif($employee->terminated_at)
                 <span class="badge bg-secondary ms-1">{{ __('Terminated') }}</span>
             @elseif($employee->status === 'registration_cancelled')
                 <span class="badge bg-secondary ms-1">{{ __('Registration Cancelled') }}</span>

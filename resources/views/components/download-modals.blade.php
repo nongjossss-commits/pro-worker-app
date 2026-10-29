@@ -242,14 +242,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // --- 1. Handle Triggering Download Options ---
-        // From Single Action
-        document.querySelectorAll('.btn-download-single').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const empId = this.dataset.employeeId;
-                document.getElementById('downloadEmployeeIds').value = JSON.stringify([empId]);
-                downloadModal.show();
-            });
+        // From Single Action — delegated, so cards loaded later (e.g. the
+        // Completed Work History popup) work too.
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-download-single');
+            if (!btn) return;
+            e.preventDefault();
+            const empId = btn.dataset.employeeId;
+            document.getElementById('downloadEmployeeIds').value = JSON.stringify([empId]);
+            downloadModal.show();
         });
 
         const downloadOptionsForm = document.getElementById('downloadOptionsForm');

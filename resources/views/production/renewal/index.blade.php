@@ -1137,12 +1137,15 @@
     </div>
 </div>
 
+{{-- Modals for the employee card buttons in the Completed Work History popup (partials/_history_employee_tiles) --}}
+@include('partials._employee_action_modals')
+
 {{-- History Modal --}}
 <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable history-modal-wide">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-secondary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>{{ __('Job History') }}</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>{{ __('Completed Work History') }}</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body bg-light" id="historyModalBody">

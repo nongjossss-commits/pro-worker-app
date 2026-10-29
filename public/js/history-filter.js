@@ -5,12 +5,27 @@
  * reload only the list part ([data-history-list]) so typing isn't lost.
  * Typing a search while the month is still the default switches to
  * "All months", so a search finds people finished in any month.
+ * Ticking cards in the popup brings up the page's selection bar
+ * (#bulkActionBar — download, export, edit…) above the popup.
  */
 (function () {
     'use strict';
 
     function spinner() {
         return '<div class="d-flex justify-content-center py-5"><div class="spinner-border text-secondary" role="status"></div></div>';
+    }
+
+    // The page's floating selection bar sits inside the page layout, which
+    // the popup covers — move it to <body> so it shows above the popup
+    // (fixed position: it stays in the same place on screen).
+    function liftSelectionBar() {
+        const bar = document.getElementById('bulkActionBar');
+        if (bar && bar.parentElement !== document.body) document.body.appendChild(bar);
+    }
+
+    // Tick the cards that are already selected (selection kept across pages).
+    function syncSelection() {
+        if (window.refreshGlobalSelectionUI) window.refreshGlobalSelectionUI();
     }
 
     function bind(body, url) {
@@ -35,6 +50,7 @@
                     const fresh = doc.querySelector('[data-history-list]');
                     list.innerHTML = fresh ? fresh.innerHTML : html;
                     list.style.opacity = ''; // (Alpine picks up the new cards by itself)
+                    syncSelection();
                 })
                 .catch(() => { list.style.opacity = ''; });
         }
@@ -60,12 +76,20 @@
 
     window.HistoryPanel = {
         open(body, url) {
+            liftSelectionBar();
+            // Popup closed → "Select All" counts the page's own cards again.
+            const modal = body.closest('.modal');
+            if (modal && !modal.dataset.hfSync) {
+                modal.dataset.hfSync = '1';
+                modal.addEventListener('hidden.bs.modal', syncSelection);
+            }
             body.innerHTML = spinner();
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                 .then(r => r.text())
                 .then(html => {
                     body.innerHTML = html;
                     bind(body, url);
+                    syncSelection();
                 })
                 .catch(() => { body.innerHTML = '<div class="text-danger text-center p-4">Failed to load history.</div>'; });
         },

@@ -281,8 +281,20 @@
     .emp-tile-grid > .position-relative > .list-group-item {
         height: 100%; padding: 1.6rem .75rem .6rem; text-align: left; /* border / radius / background: tile look above */
         border-radius: 1rem !important;
+        display: flex; flex-direction: column; gap: .35rem;
     }
-    .emp-tile-grid .list-group-item > .d-flex.w-100 { flex-direction: column; align-items: stretch; height: 100%; gap: .35rem; }
+    /* The inner row is flattened (display: contents) so photo, details, the
+       work-status box and the buttons stack in the tile in that order — the
+       status box sits just above the buttons, as on the employee cards. (It used
+       to sit above an inner row of height 100%, which pushed the buttons out of
+       the tile where overflow:hidden cut them off, and put the nationality row
+       on top of the badges.) */
+    .emp-tile-grid .list-group-item > .d-flex.w-100:not(.position-absolute) { display: contents !important; }
+    .emp-tile-grid .list-group-item > .d-flex.w-100 > .me-3:nth-child(3) { order: 1; }
+    .emp-tile-grid .list-group-item > .d-flex.w-100 > .flex-grow-1 { order: 2; }
+    .emp-tile-grid .list-group-item > .position-absolute.top-0.start-0 { order: 3; margin-top: auto !important; }
+    .emp-tile-grid .list-group-item > .d-flex.w-100 > .ms-auto { order: 4; }
+    .emp-tile-grid .list-group-item:has(> .position-absolute.top-0.start-0) > .d-flex.w-100 > .ms-auto { margin-top: 0 !important; }
     .emp-tile-grid .list-group-item > .d-flex.w-100 > .me-3 { margin: 0 !important; justify-content: center; }
     .emp-tile-grid .list-group-item h5 { display: flex; flex-wrap: wrap; align-items: center; gap: .15rem .3rem; }
     /* checkbox + drag handle → top corners */
@@ -301,9 +313,9 @@
     .emp-tile-grid .list-group-item > .d-flex.w-100 > .ms-auto { margin: auto 0 0 !important; padding: 0 !important; justify-content: center; }
     .emp-tile-grid .list-group-item > .d-flex.w-100 > .ms-auto > div { flex-direction: row !important; flex-wrap: wrap; justify-content: center; gap: .25rem !important; }
     .emp-tile-grid .list-group-item .btn-sm { padding: .2rem .38rem; font-size: .72rem; }
-    /* history status overlay → a box at the top of the tile instead of covering it */
+    /* history status overlay → a box above the buttons instead of covering the tile */
     .emp-tile-grid .list-group-item > .position-absolute.top-0.start-0.w-100.h-100 {
-        position: static !important; height: auto !important; margin-bottom: .4rem; padding: .3rem; z-index: auto !important;
+        position: static !important; height: auto !important; margin-bottom: .1rem; padding: .3rem; z-index: auto !important;
         border-width: 1px !important; border-style: dashed !important;
     }
 
