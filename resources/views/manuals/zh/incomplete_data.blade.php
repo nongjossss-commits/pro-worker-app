@@ -44,3 +44,7 @@
 <div class="manual-tip">
     <strong>创建税务发票前:</strong> 请先检查此菜单 —— 如果雇主没有纳税人识别号，将无法开具发票
 </div>
+
+<div class="manual-tip">
+    <strong>每页条数：</strong>筛选栏上的 <strong>25 / 50 / 100</strong> 按钮，与员工菜单相同 —— 会在此浏览器中记住上次的选择（默认 25）
+</div>

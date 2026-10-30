@@ -836,36 +836,15 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'insurance_attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
-        // --- V6 Step 1.5: Map insurance data to correct model properties ---
-        $validated['insuranceType'] = $validated['insurance_type'] ?? null;
-
-        if ($validated['insuranceType'] === 'ประกันสังคม') {
-            $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
-            $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
-            $validated['sso_issue_date'] = $validated['sso_issue_date'] ?? null;
-            $validated['sso_expiry_date'] = $validated['sso_expiry_date'] ?? null;
-            $validated['insuranceCompany'] = null;
-            $validated['insuranceExpiryDate'] = null;
-        } elseif ($validated['insuranceType'] === 'ประกันเอกชน') {
-            $validated['insuranceCompany'] = $validated['insurance_detail_private'] ?? null;
-            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_private'] ?? null;
-            $validated['socialSecurityNumber'] = null;
-            $validated['hospitalName'] = null;
-            $validated['sso_issue_date'] = null;
-            $validated['sso_expiry_date'] = null;
-        } elseif ($validated['insuranceType'] === 'ประกันโรงพยาบาล') {
-            $validated['hospitalName'] = $validated['insurance_detail_hospital'] ?? null;
-            $validated['insuranceExpiryDate'] = $validated['insurance_expiry_date_hospital'] ?? null;
-            $validated['socialSecurityNumber'] = null;
-            $validated['insuranceCompany'] = null;
-            $validated['sso_issue_date'] = null;
-            $validated['sso_expiry_date'] = null;
-        } else {
-            // For 'None' or other types, null out all specific fields
-            $validated['socialSecurityNumber'] = null;
-            $validated['hospitalName'] = null;
-            $validated['insuranceCompany'] = null;
-            $validated['insuranceExpiryDate'] = null;
+        // --- V6 Step 1.5: Insurance type → clear the social-security dates when
+        // they no longer apply. Only when the request carries the insurance type
+        // (the full form, or the insurance quick edit): the work cards' quick
+        // edits (RA number, list number, …) post a few fields to this same
+        // route, and running this for them used to blank sso_issue_date /
+        // sso_expiry_date on every such save (data-loss report, 2026-10-30).
+        // (The camelCase keys this block used to set — insuranceType,
+        // socialSecurityNumber, … — are not columns and were never saved.)
+        if (array_key_exists('insurance_type', $validated) && $validated['insurance_type'] !== 'ประกันสังคม') {
             $validated['sso_issue_date'] = null;
             $validated['sso_expiry_date'] = null;
         }
@@ -890,15 +869,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $disk = 'public';
                 $folder = "employee_files/{$employee->employer_id}";
 
-                // 2. Cleanup: Delete old file from BOTH public and private to ensure clean migration
-                if ($employee->$dbColumnName) {
-                    if (Storage::disk('public')->exists($employee->$dbColumnName)) {
-                        Storage::disk('public')->delete($employee->$dbColumnName);
-                    }
-                    if (Storage::disk('private')->exists($employee->$dbColumnName)) {
-                        Storage::disk('private')->delete($employee->$dbColumnName);
-                    }
-                }
+                // 2. The old file is kept in the archive, not deleted (App\Support\AttachmentArchive)
+                \App\Support\AttachmentArchive::keep($employee->$dbColumnName, 'employees', $employee->id, $dbColumnName);
 
                 // 3. Upload new file
                 $file = $request->file($fileInputName);
@@ -953,9 +925,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // --- V-6: Step 4: Unified File Deletion Loop (FIX) ---
         foreach ($fileFields as $field) {
             if ($request->has('remove_' . $field)) {
-                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
-                    Storage::disk('public')->delete($employee->{$field});
-                }
+                // Removed from the record, kept in the archive (App\Support\AttachmentArchive)
+                \App\Support\AttachmentArchive::keep($employee->{$field}, 'employees', $employee->id, $field);
                 $validated[$field] = null;
             }
         }
@@ -963,15 +934,21 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // --- V-6: Step 5: Unified File Upload/Update Loop ---
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
-                if ($employee->{$field} && Storage::disk('public')->exists($employee->{$field})) {
-                    Storage::disk('public')->delete($employee->{$field});
-                }
+                // The replaced file is kept in the archive, not deleted (App\Support\AttachmentArchive)
+                \App\Support\AttachmentArchive::keep($employee->{$field}, 'employees', $employee->id, $field);
                 $file = $request->file($field);
                 $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
                 $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
                 $validated[$field] = $path;
             }
         }
+
+        // --- V6: Step 5.5: someone else saved this employee after the form was
+        // opened → keep their newer values for the fields this form only re-sent.
+        $keptFields = \App\Support\StaleFormGuard::protect($employee, $validated, $request->input(\App\Support\StaleFormGuard::INPUT));
+        $keptNotice = $keptFields
+            ? __('Someone else changed this employee while the form was open — their newer value was kept for: :fields', ['fields' => \App\Support\StaleFormGuard::labels($employee, $keptFields)])
+            : null;
 
         // --- V6: Step 6: Update Employee ---
         $employee->update($validated);
@@ -980,6 +957,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             $fresh = $employee->fresh(['employer']);
             return response()->json([
                 'success' => true,
+                'kept_notice' => $keptNotice,
                 'employee' => $fresh, // Return fresh data for frontend update
                 // The work cards' detail lines (partials/_work_card_fields) re-rendered with the new data.
                 'card_fields_html' => view('partials._work_card_fields', ['employee' => $fresh])->render(),
@@ -992,6 +970,10 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // Ensure the anchor is present for highlighting
         if (strpos($redirectUrl, '#') === false) {
             $redirectUrl .= '#employee-card-' . $employee->id;
+        }
+
+        if ($keptNotice) {
+            session()->flash('warning', $keptNotice);
         }
 
         return redirect($redirectUrl)
@@ -2007,6 +1989,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'bank_account_number',
         ];
         $bulkEditSkippedBlank = [];
+        $keptByOthers = [];
 
         foreach ($employeeIds as $id) {
             $employee = Employee::find($id);
@@ -2035,15 +2018,8 @@ public function create(Request $request) // เพิ่ม Request $request เ
                     $disk = 'public';
                     $folder = "employee_files/{$employee->employer_id}";
 
-                    // Cleanup old files from BOTH disks
-                    if ($employee->$dbColumn) {
-                        if (Storage::disk('public')->exists($employee->$dbColumn)) {
-                            Storage::disk('public')->delete($employee->$dbColumn);
-                        }
-                        if (Storage::disk('private')->exists($employee->$dbColumn)) {
-                            Storage::disk('private')->delete($employee->$dbColumn);
-                        }
-                    }
+                    // The replaced file is kept in the archive, not deleted (App\Support\AttachmentArchive)
+                    \App\Support\AttachmentArchive::keep($employee->$dbColumn, 'employees', $employee->id, $dbColumn);
 
                     $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();
                     $path = $file->storeAs($folder, $filename, $disk);
@@ -2079,6 +2055,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 }
             }
 
+            // Someone else saved this employee after the table was opened →
+            // keep their newer values for the cells this table only re-sent.
+            if ($kept = \App\Support\StaleFormGuard::protect($employee, $updateData, $request->input(\App\Support\StaleFormGuard::INPUT))) {
+                $keptByOthers[$id] = $kept;
+            }
+
             if (!empty($updateData)) {
                 $employee->update($updateData);
                 $updatedCount++;
@@ -2089,6 +2071,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
         // — so the operator immediately sees "these 3 rows had a protected
         // field left blank and were NOT cleared" instead of quietly losing data.
         $blankNotice = '';
+        if (!empty($keptByOthers)) {
+            $blankNotice .= ' ' . __(':n employee(s) were changed by someone else while the table was open — their newer values were kept', ['n' => count($keptByOthers)]);
+        }
         if (!empty($bulkEditSkippedBlank)) {
             $rowCount = count($bulkEditSkippedBlank);
             $blankNotice = " ข้าม {$rowCount} แถวที่มีช่องสำคัญปล่อยว่าง (วันที่ / เลข RA / เลขคำขอ / passport / work permit ฯลฯ) — ค่าเดิมยังอยู่ ไม่ถูกลบ";
@@ -2112,6 +2097,26 @@ public function create(Request $request) // เพิ่ม Request $request เ
     /**
      * Export selected employees with selected columns.
      */
+    /**
+     * Advanced Export popup: which employers the picked employees belong to,
+     * so a pick spanning several employers can ask "one file per employer, or
+     * one file grouped employer by employer?" before exporting.
+     */
+    public function advancedExportEmployers(Request $request)
+    {
+        $ids = array_filter(array_map('intval', (array) json_decode((string) $request->input('employee_ids'), true)));
+        $employees = Employee::whereIn('id', $ids)->with('employer')->get(['id', 'employer_id']);
+
+        $employers = $employees->groupBy(fn ($e) => (int) $e->employer_id)->map(fn ($group) => [
+            'name' => $group->first()->employer
+                ? ($group->first()->employer->getRawOriginal('employerNameTh') ?: ($group->first()->employer->employerNameEn ?: '-'))
+                : __('No employer'),
+            'count' => $group->count(),
+        ])->values();
+
+        return response()->json(['employers' => $employers]);
+    }
+
     public function advancedExport(Request $request)
     {
         $validated = $request->validate([
@@ -2225,40 +2230,27 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $selectedColumns = array_values(array_unique($selectedColumns));
         $hasPhoto = in_array('employeePhoto', $selectedColumns);
 
-        // Create new Spreadsheet
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
+        // One block = optional employer title row, the column header row and
+        // the employee rows. Several blocks can share a sheet ($employerMode).
+        $writeBlock = function ($sheet, int $headerRow, $employees, ?string $title = null) use ($selectedColumns, $columnLabels, $hasPhoto, $includeNameSuffix, $sourceMenu) {
+            if ($title !== null) {
+                $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($selectedColumns) + 1);
+                $sheet->mergeCells("A{$headerRow}:{$lastCol}{$headerRow}");
+                $sheet->setCellValue("A{$headerRow}", $title);
+                $sheet->getStyle("A{$headerRow}:{$lastCol}{$headerRow}")->applyFromArray([
+                    'font' => ['bold' => true, 'size' => 12],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDDEBF7']],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+                ]);
+                $sheet->getRowDimension($headerRow)->setRowHeight(24);
+                $headerRow++;
+            }
+            $columnIndex = 1;
 
-        // Style the header row
-        $headerRow = 1;
-        $columnIndex = 1;
-
-        // Add "No." column as the first column
-        $noCell = $sheet->getCell([$columnIndex, $headerRow]);
-        $noCell->setValue('No.');
-        $sheet->getStyle([$columnIndex, $headerRow])->applyFromArray([
-            'font' => ['bold' => true],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'borders' => [
-                'allBorders' => ['borderStyle' => Border::BORDER_THIN],
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FFF2F2F2'],
-            ],
-        ]);
-        $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(6);
-        $columnIndex++;
-
-        foreach ($selectedColumns as $col) {
-            $label = $columnLabels[$col] ?? $col;
-            $cell = $sheet->getCell([$columnIndex, $headerRow]);
-            $cell->setValue($label);
-
-            // Header styling
+            // Add "No." column as the first column
+            $noCell = $sheet->getCell([$columnIndex, $headerRow]);
+            $noCell->setValue('No.');
             $sheet->getStyle([$columnIndex, $headerRow])->applyFromArray([
                 'font' => ['bold' => true],
                 'alignment' => [
@@ -2270,184 +2262,270 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 ],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['argb' => 'FFF2F2F2'], // Light gray
+                    'startColor' => ['argb' => 'FFF2F2F2'],
                 ],
             ]);
-
-            // Set default width
-            if ($col === 'employeePhoto') {
-                $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(18); // Adjusted width for better framing
-            } else {
-                $sheet->getColumnDimensionByColumn($columnIndex)->setAutoSize(true);
-            }
-
-            $columnIndex++;
-        }
-
-        // Add Data Rows
-        $currentRow = 2;
-        $rowNumber = 1;
-        foreach ($employees as $employee) {
-            $columnIndex = 1;
-
-            // Set row height if photo column exists to accommodate the image
-            if ($hasPhoto) {
-                $sheet->getRowDimension($currentRow)->setRowHeight(90); // Approx 120px height
-            } else {
-                $sheet->getRowDimension($currentRow)->setRowHeight(20);
-            }
-
-            // Add row number in the "No." column
-            $noCell = $sheet->getCell([$columnIndex, $currentRow]);
-            $noCell->setValue($rowNumber);
-            $sheet->getStyle($noCell->getCoordinate())->applyFromArray([
-                'alignment' => [
-                    'vertical' => Alignment::VERTICAL_CENTER,
-                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                ],
-                'borders' => [
-                    'allBorders' => ['borderStyle' => Border::BORDER_THIN],
-                ]
-            ]);
+            $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(6);
             $columnIndex++;
 
             foreach ($selectedColumns as $col) {
-                $cellAddress = $sheet->getCell([$columnIndex, $currentRow])->getCoordinate();
-                $cell = $sheet->getCell([$columnIndex, $currentRow]);
+                $label = $columnLabels[$col] ?? $col;
+                $cell = $sheet->getCell([$columnIndex, $headerRow]);
+                $cell->setValue($label);
 
-                // Common cell styling
-                $sheet->getStyle($cellAddress)->applyFromArray([
+                // Header styling
+                $sheet->getStyle([$columnIndex, $headerRow])->applyFromArray([
+                    'font' => ['bold' => true],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['argb' => 'FFF2F2F2'], // Light gray
+                    ],
+                ]);
+
+                // Set default width
+                if ($col === 'employeePhoto') {
+                    $sheet->getColumnDimensionByColumn($columnIndex)->setWidth(18); // Adjusted width for better framing
+                } else {
+                    $sheet->getColumnDimensionByColumn($columnIndex)->setAutoSize(true);
+                }
+
+                $columnIndex++;
+            }
+
+            // Add Data Rows
+            $currentRow = $headerRow + 1;
+            $rowNumber = 1;
+            foreach ($employees as $employee) {
+                $columnIndex = 1;
+
+                // Set row height if photo column exists to accommodate the image
+                if ($hasPhoto) {
+                    $sheet->getRowDimension($currentRow)->setRowHeight(90); // Approx 120px height
+                } else {
+                    $sheet->getRowDimension($currentRow)->setRowHeight(20);
+                }
+
+                // Add row number in the "No." column
+                $noCell = $sheet->getCell([$columnIndex, $currentRow]);
+                $noCell->setValue($rowNumber);
+                $sheet->getStyle($noCell->getCoordinate())->applyFromArray([
                     'alignment' => [
                         'vertical' => Alignment::VERTICAL_CENTER,
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
-                        'wrapText' => true
                     ],
                     'borders' => [
                         'allBorders' => ['borderStyle' => Border::BORDER_THIN],
                     ]
                 ]);
-
-                if ($col === 'employeePhoto') {
-                    // Embed Image
-                    if ($employee->employeePhoto && Storage::disk('public')->exists($employee->employeePhoto)) {
-                        $path = Storage::disk('public')->path($employee->employeePhoto);
-
-                        $drawing = new Drawing();
-                        $drawing->setName('Employee Photo');
-                        $drawing->setDescription('Employee Photo');
-                        $drawing->setPath($path);
-                        $drawing->setCoordinates($cellAddress);
-                        $drawing->setHeight(100); // 100px height to prevent overflow (row height is ~120px)
-                        // Center image in cell roughly
-                        $drawing->setOffsetX(28); // Horizontally center (~30-35px based on col width 18)
-                        $drawing->setOffsetY(10); // Vertically center (10px padding top/bottom)
-                        $drawing->setWorksheet($sheet);
-                    } else {
-                        $cell->setValue('No Photo');
-                    }
-
-                } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaEndorsementDate', 'visaExpiryDate', 'startDate', 'workPermitIssueDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date'])) {
-                    // Format Dates
-                    $val = $employee->$col ? \Carbon\Carbon::parse($employee->$col)->format('d/m/Y') : '-';
-                    $cell->setValue($val);
-                } elseif ($col === 'employeeAge') {
-                    $cell->setValue($employee->age);
-                } elseif ($col === 'employeeGender') {
-                    $cell->setValue($employee->gender ?? $employee->employeeGender);
-                } elseif ($col === 'employerTaxId') {
-                    $cell->setValueExplicit($employee->employer->employerTaxId ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                } elseif ($col === 'businessType') {
-                    $cell->setValue($employee->employer->businessType ?? '-');
-                } elseif ($col === 'job_owner_id') {
-                    $cell->setValue($employee->employer->jobOwner->name ?? '-');
-                } elseif ($col === 'employerNameTh') {
-                    $val = $includeNameSuffix
-                        ? ($employee->employer->employerNameTh ?? '-')
-                        : ($employee->employer->getRawOriginal('employerNameTh') ?? '-');
-                    $cell->setValue($val);
-                } elseif ($col === 'employerNameEn') {
-                    $cell->setValue($employee->employer->employerNameEn ?? '-');
-                } elseif ($col === 'employerAddressTh') {
-                    $address = $employee->employer->addresses->first();
-                    $fullAddress = '-';
-                    if ($address) {
-                        $parts = array_filter([
-                            $address->addrNo,
-                            $address->addrMoo ? "หมู่ " . $address->addrMoo : null,
-                            $address->addrSoi ? "ซอย " . $address->addrSoi : null,
-                            $address->addrRoad ? "ถนน " . $address->addrRoad : null,
-                            $address->addrSubDistrict ? "ต." . $address->addrSubDistrict : null,
-                            $address->addrDistrict ? "อ." . $address->addrDistrict : null,
-                            $address->addrProvince ? "จ." . $address->addrProvince : null,
-                            $address->addrZipCode
-                        ]);
-                        $fullAddress = implode(' ', $parts);
-                    }
-                    $cell->setValue($fullAddress);
-                } elseif ($col === 'employerAddressEn') {
-                    $address = $employee->employer->addresses->first();
-                    $fullAddress = '-';
-                    if ($address) {
-                        $parts = array_filter([
-                            $address->addrNoEn,
-                            $address->addrMooEn ? "Moo " . $address->addrMooEn : null,
-                            $address->addrSoiEn ? "Soi " . $address->addrSoiEn : null,
-                            $address->addrRoadEn ? "Road " . $address->addrRoadEn : null,
-                            $address->addrSubDistrictEn,
-                            $address->addrDistrictEn,
-                            $address->addrProvinceEn,
-                            $address->addrZipCodeEn
-                        ]);
-                        $fullAddress = implode(', ', $parts);
-                    }
-                    $cell->setValue($fullAddress);
-                } elseif ($col === 'request_number') {
-                    $val = '-';
-                    if ($sourceMenu === 'registration') {
-                        $val = $employee->registration_request_number ?? '-';
-                    } elseif ($sourceMenu === 'renewal') {
-                        $val = $employee->renewal_request_number ?? '-';
-                    } elseif (in_array($sourceMenu, ['pre_production', 'workflow'])) {
-                        $latestItem = $employee->productionItems->first();
-                        $val = $latestItem ? ($latestItem->request_number ?? '-') : '-';
-                    } else {
-                        $val = $employee->request_number ?? '-';
-                    }
-
-                    if ($val !== '-') {
-                        $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                    } else {
-                        $cell->setValue($val);
-                    }
-                } else {
-                    // Handle name_suffix toggle for employee name
-                    if ($col === 'employeeNameEn' && !$includeNameSuffix) {
-                        $val = $employee->getRawOriginal('employeeNameEn') ?? '-';
-                    } else {
-                        $val = $employee->$col ?? '-';
-                    }
-                    // List of columns that might contain long numbers (e.g. 13 digits) and should be explicitly set as text
-                    $textColumns = [
-                        'employeePassport', 'employeeWorkPermit', 'pinkCardNo', 'tax_id_number',
-                        'social_security_number', 'employer_employee_id', 'employee_id_number',
-                        'name_list_number', 'bank_account_number', 'employeePhone',
-                        'outsource_code', 'employee_reference_id', 'visaEndorsementNo'
-                    ];
-
-                    if (in_array($col, $textColumns) && $val !== '-') {
-                        $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-                    } else {
-                        $cell->setValue($val);
-                    }
-                }
-
                 $columnIndex++;
+
+                foreach ($selectedColumns as $col) {
+                    $cellAddress = $sheet->getCell([$columnIndex, $currentRow])->getCoordinate();
+                    $cell = $sheet->getCell([$columnIndex, $currentRow]);
+
+                    // Common cell styling
+                    $sheet->getStyle($cellAddress)->applyFromArray([
+                        'alignment' => [
+                            'vertical' => Alignment::VERTICAL_CENTER,
+                            'horizontal' => Alignment::HORIZONTAL_CENTER,
+                            'wrapText' => true
+                        ],
+                        'borders' => [
+                            'allBorders' => ['borderStyle' => Border::BORDER_THIN],
+                        ]
+                    ]);
+
+                    if ($col === 'employeePhoto') {
+                        // Embed Image
+                        if ($employee->employeePhoto && Storage::disk('public')->exists($employee->employeePhoto)) {
+                            $path = Storage::disk('public')->path($employee->employeePhoto);
+
+                            $drawing = new Drawing();
+                            $drawing->setName('Employee Photo');
+                            $drawing->setDescription('Employee Photo');
+                            $drawing->setPath($path);
+                            $drawing->setCoordinates($cellAddress);
+                            $drawing->setHeight(100); // 100px height to prevent overflow (row height is ~120px)
+                            // Center image in cell roughly
+                            $drawing->setOffsetX(28); // Horizontally center (~30-35px based on col width 18)
+                            $drawing->setOffsetY(10); // Vertically center (10px padding top/bottom)
+                            $drawing->setWorksheet($sheet);
+                        } else {
+                            $cell->setValue('No Photo');
+                        }
+
+                    } elseif (in_array($col, ['employeeDob', 'passport_issue_date', 'passportExpiryDate', 'visaEndorsementDate', 'visaExpiryDate', 'startDate', 'workPermitIssueDate', 'workPermitExpiryDate', 'ninetyDayReportDate', 'insurance_expiry_date_hospital', 'insurance_expiry_date_private', 'sso_issue_date', 'sso_expiry_date'])) {
+                        // Format Dates
+                        $val = $employee->$col ? \Carbon\Carbon::parse($employee->$col)->format('d/m/Y') : '-';
+                        $cell->setValue($val);
+                    } elseif ($col === 'employeeAge') {
+                        $cell->setValue($employee->age);
+                    } elseif ($col === 'employeeGender') {
+                        $cell->setValue($employee->gender ?? $employee->employeeGender);
+                    } elseif ($col === 'employerTaxId') {
+                        $cell->setValueExplicit($employee->employer->employerTaxId ?? '-', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                    } elseif ($col === 'businessType') {
+                        $cell->setValue($employee->employer->businessType ?? '-');
+                    } elseif ($col === 'job_owner_id') {
+                        $cell->setValue($employee->employer->jobOwner->name ?? '-');
+                    } elseif ($col === 'employerNameTh') {
+                        $val = $includeNameSuffix
+                            ? ($employee->employer->employerNameTh ?? '-')
+                            : ($employee->employer->getRawOriginal('employerNameTh') ?? '-');
+                        $cell->setValue($val);
+                    } elseif ($col === 'employerNameEn') {
+                        $cell->setValue($employee->employer->employerNameEn ?? '-');
+                    } elseif ($col === 'employerAddressTh') {
+                        $address = $employee->employer->addresses->first();
+                        $fullAddress = '-';
+                        if ($address) {
+                            $parts = array_filter([
+                                $address->addrNo,
+                                $address->addrMoo ? "หมู่ " . $address->addrMoo : null,
+                                $address->addrSoi ? "ซอย " . $address->addrSoi : null,
+                                $address->addrRoad ? "ถนน " . $address->addrRoad : null,
+                                $address->addrSubDistrict ? "ต." . $address->addrSubDistrict : null,
+                                $address->addrDistrict ? "อ." . $address->addrDistrict : null,
+                                $address->addrProvince ? "จ." . $address->addrProvince : null,
+                                $address->addrZipCode
+                            ]);
+                            $fullAddress = implode(' ', $parts);
+                        }
+                        $cell->setValue($fullAddress);
+                    } elseif ($col === 'employerAddressEn') {
+                        $address = $employee->employer->addresses->first();
+                        $fullAddress = '-';
+                        if ($address) {
+                            $parts = array_filter([
+                                $address->addrNoEn,
+                                $address->addrMooEn ? "Moo " . $address->addrMooEn : null,
+                                $address->addrSoiEn ? "Soi " . $address->addrSoiEn : null,
+                                $address->addrRoadEn ? "Road " . $address->addrRoadEn : null,
+                                $address->addrSubDistrictEn,
+                                $address->addrDistrictEn,
+                                $address->addrProvinceEn,
+                                $address->addrZipCodeEn
+                            ]);
+                            $fullAddress = implode(', ', $parts);
+                        }
+                        $cell->setValue($fullAddress);
+                    } elseif ($col === 'request_number') {
+                        $val = '-';
+                        if ($sourceMenu === 'registration') {
+                            $val = $employee->registration_request_number ?? '-';
+                        } elseif ($sourceMenu === 'renewal') {
+                            $val = $employee->renewal_request_number ?? '-';
+                        } elseif (in_array($sourceMenu, ['pre_production', 'workflow'])) {
+                            $latestItem = $employee->productionItems->first();
+                            $val = $latestItem ? ($latestItem->request_number ?? '-') : '-';
+                        } else {
+                            $val = $employee->request_number ?? '-';
+                        }
+
+                        if ($val !== '-') {
+                            $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                        } else {
+                            $cell->setValue($val);
+                        }
+                    } else {
+                        // Handle name_suffix toggle for employee name
+                        if ($col === 'employeeNameEn' && !$includeNameSuffix) {
+                            $val = $employee->getRawOriginal('employeeNameEn') ?? '-';
+                        } else {
+                            $val = $employee->$col ?? '-';
+                        }
+                        // List of columns that might contain long numbers (e.g. 13 digits) and should be explicitly set as text
+                        $textColumns = [
+                            'employeePassport', 'employeeWorkPermit', 'pinkCardNo', 'tax_id_number',
+                            'social_security_number', 'employer_employee_id', 'employee_id_number',
+                            'name_list_number', 'bank_account_number', 'employeePhone',
+                            'outsource_code', 'employee_reference_id', 'visaEndorsementNo'
+                        ];
+
+                        if (in_array($col, $textColumns) && $val !== '-') {
+                            $cell->setValueExplicit($val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                        } else {
+                            $cell->setValue($val);
+                        }
+                    }
+
+                    $columnIndex++;
+                }
+                $currentRow++;
+                $rowNumber++;
             }
-            $currentRow++;
-            $rowNumber++;
+
+            return $currentRow;
+        };
+
+        // Employees of several employers: as selected (one list), one file
+        // grouped employer by employer, or a ZIP with one file per employer.
+        $employerMode = in_array($request->input('employer_mode'), ['grouped', 'separate'], true) ? $request->input('employer_mode') : 'as_selected';
+        $groups = $employees->groupBy(fn ($e) => (int) $e->employer_id); // first-picked employer first, selection order inside
+        $groupTitle = function ($group) {
+            $employer = $group->first()->employer;
+            $name = $employer ? ($employer->getRawOriginal('employerNameTh') ?: ($employer->employerNameEn ?: '-')) : __('No employer');
+            return [$name, __('Employer: :name — :count employee(s)', ['name' => $name, 'count' => $group->count()])];
+        };
+
+        if ($employerMode === 'separate' && $groups->count() > 1) {
+            $zipPath = tempnam(sys_get_temp_dir(), 'advexp');
+            $zip = new \ZipArchive();
+            $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+            $tmpFiles = [];
+            $usedNames = [];
+            foreach ($groups as $group) {
+                [$name, $title] = $groupTitle($group);
+                $spreadsheet = new Spreadsheet();
+                $writeBlock($spreadsheet->getActiveSheet(), 1, $group, $title);
+                $tmp = tempnam(sys_get_temp_dir(), 'advxl');
+                (new Xlsx($spreadsheet))->save($tmp);
+                $spreadsheet->disconnectWorksheets();
+                // "<employer> (n คน).xlsx" — DownloadFileName keeps it safe for every file system
+                $base = \App\Support\DownloadFileName::withCount($name, $group->count());
+                $file = $base . '.xlsx';
+                for ($n = 2; isset($usedNames[$file]); $n++) {
+                    $file = $base . " ($n).xlsx";
+                }
+                $usedNames[$file] = true;
+                $zip->addFile($tmp, $file);
+                $tmpFiles[] = $tmp;
+            }
+            $zip->close();
+            foreach ($tmpFiles as $tmp) {
+                @unlink($tmp);
+            }
+
+            return response()->download($zipPath, \App\Support\DownloadFileName::make(__('Advanced Export'), $employees->count(), 'zip', auth()->id()), [
+                'Content-Type' => 'application/zip',
+            ])->deleteFileAfterSend(true);
         }
 
-        $fileName = "advanced_employee_export_" . date('Y-m-d_H-i') . ".xlsx";
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        if ($employerMode === 'grouped' && $groups->count() > 1) {
+            $row = 1;
+            foreach ($groups as $group) {
+                [, $title] = $groupTitle($group);
+                $row = $writeBlock($sheet, $row, $group, $title) + 1; // one empty row between employers
+            }
+        } else {
+            $writeBlock($sheet, 1, $employees);
+        }
+
+        // "<employer> (n คน) <date time>.xlsx" when everyone is from one employer,
+        // otherwise "Advanced Export (n คน) <date time>.xlsx".
+        $fileName = \App\Support\DownloadFileName::make(
+            $groups->count() === 1 ? $groupTitle($groups->first())[0] : __('Advanced Export'),
+            $employees->count(), 'xlsx', auth()->id()
+        );
 
         $writer = new Xlsx($spreadsheet);
 

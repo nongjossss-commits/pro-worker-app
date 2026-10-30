@@ -242,7 +242,7 @@
                         </div>
                         <div class="card-body">
                             <div class="alert alert-info py-2 small mb-3">
-                                <strong>{{ __('แก้ทีละช่อง:') }}</strong> {{ __('พิมพ์รายละเอียดของช่องนั้น แล้วกดปุ่ม Update — ระบบจะอัพเดตทุก record ที่มีอยู่ + ตั้งเป็น default ให้ record ใหม่ที่จะเพิ่มเข้ามา') }}
+                                <strong>{{ __('แก้ทีละช่อง:') }}</strong> {{ __('Type the slot\'s name and press Update — records still using the old default name (or none) change to the new one, names typed for a single record are kept, and it becomes the default for new records.') }}
                                 <br>
                                 <span class="text-muted">{{ __('Record เก่าจะไม่ถูกอัพเดทอัตโนมัติซ้ำ — Super Admin ต้องกดปุ่มที่นี่อีกครั้งเพื่อ force-update') }}</span>
                             </div>
@@ -1346,7 +1346,7 @@
                 const newValue = (this.value || '').trim();
                 const wasEmpty = !this.original;
                 const isEmpty = !newValue;
-                let msg = `จะ${isEmpty ? 'ล้าง' : 'ตั้ง'}ค่า default ของ Other Doc ${this.slot} (${entityLabel}) เป็น:\n\n"${newValue || '(ว่าง)'}"\n\nและจะ force-update ทุก ${entityLabel} ที่มีอยู่แล้ว ให้ตรงกันด้วย\n\nดำเนินการ?`;
+                let msg = `จะ${isEmpty ? 'ล้าง' : 'ตั้ง'}ค่า default ของ Other Doc ${this.slot} (${entityLabel}) เป็น:\n\n"${newValue || '(ว่าง)'}"\n\n${entityLabel}ที่ยังใช้ชื่อเดิม (หรือยังว่าง) จะเปลี่ยนเป็นชื่อนี้ — ชื่อที่ตั้งเองของแต่ละราย จะไม่ถูกแก้\n\nดำเนินการ?`;
                 Swal.fire({
                     title: 'อัพเดต Slot ' + this.slot,
                     text: msg,

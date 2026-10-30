@@ -17,6 +17,7 @@ use App\Traits\AddressFilterTrait;
 class NotificationController extends Controller
 {
     use AddressFilterTrait;
+    use \App\Traits\RemembersPerPage;
 
     /**
      * Compact JSON digest for the modal that pops up on the Welcome page
@@ -33,8 +34,11 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $currentView = $request->input('view', 'card');
-        $perPageOptions = ($currentView === 'card') ? [10, 15, 20] : [25, 50, 100];
-        $perPage = $request->input('per_page', $perPageOptions[0]);
+        // 25 / 50 / 100 per page in both views, like the Employees menu; the last
+        // pick is remembered for this browser (RemembersPerPage).
+        $perPageOptions = [25, 50, 100];
+        $perPage = $this->rememberedPerPage($request, 'notifications', $perPageOptions, 25);
+        $currentPerPage = $perPage;
 
         // Fetch all settings once
         $allSettings = NotificationSetting::all()->keyBy('notification_type');
@@ -153,7 +157,7 @@ class NotificationController extends Controller
             ->unique(fn ($e) => spl_object_id($e));
         Employee::preloadForCards($cardEmployees);
 
-        return view('notifications.index', compact('notificationsData', 'counts', 'tabs', 'currentView', 'perPageOptions', 'addressOptions'));
+        return view('notifications.index', compact('notificationsData', 'counts', 'tabs', 'currentView', 'perPageOptions', 'currentPerPage', 'addressOptions'));
     }
 
     /**

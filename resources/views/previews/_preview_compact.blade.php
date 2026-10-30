@@ -117,6 +117,10 @@
     }
     :is(.emp-preview, .empr-preview) .pv-file.has-file { border-color: rgba(var(--bs-success-rgb), .45); background: rgba(var(--bs-success-rgb), .06); }
     :is(.emp-preview, .empr-preview) .pv-file.is-empty { border-style: dashed; opacity: .7; }
+    /* Recorded as attached but not on the server — stands out in red (previews: $missing). */
+    :is(.emp-preview, .empr-preview) .pv-file.is-missing { border-color: rgba(var(--bs-danger-rgb), .6); background: rgba(var(--bs-danger-rgb), .07); }
+    :is(.emp-preview, .empr-preview) .pv-file.is-missing .pv-file-icon { color: var(--bs-danger); }
+    :is(.emp-preview, .empr-preview) .pv-file-missing { flex: none; font-size: .75rem; font-weight: 600; color: var(--bs-danger); }
     :is(.emp-preview, .empr-preview) .pv-file-icon { flex: none; font-size: 1.1rem; color: var(--bs-secondary-color); }
     :is(.emp-preview, .empr-preview) .pv-file.has-file .pv-file-icon { color: var(--bs-success); }
     :is(.emp-preview, .empr-preview) .pv-file-body { flex: 1 1 auto; min-width: 0; }

@@ -2552,9 +2552,9 @@ class RegistrationController extends Controller
 
         if ($request->hasFile('biometrics_file')) {
             // Delete old file if exists (optional, but good practice)
-            if ($employee->employee_doc_9) {
-                Storage::disk('public')->delete($employee->employee_doc_9);
-            }
+            // Slot 9 is also shown as "Other document 1" — the file it replaces is
+            // kept in the archive, not deleted (App\Support\AttachmentArchive).
+            \App\Support\AttachmentArchive::keep($employee->employee_doc_9, 'employees', $employee->id, 'employee_doc_9');
 
             $file = $request->file('biometrics_file');
             $filename = Str::random(20) . '.' . $file->getClientOriginalExtension();

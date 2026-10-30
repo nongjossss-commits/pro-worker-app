@@ -1,3 +1,17 @@
+@php
+    // Popup asked when the picked employees belong to several employers (built
+    // here, not inline in @json([...]) — Blade's @json can't parse a multi-line array).
+    $downloadEmployerText = [
+        'title' => __('Separate the files by employer?'),
+        'intro' => __('The selected employees are from :n employers.'),
+        'count' => __(':count employee(s)'),
+        'start' => __('Start Download'),
+        'folders' => __('A folder per employer'),
+        'foldersHint' => __('Each employer gets its own folder, e.g. "Employer A (5 people)", with its employees inside — merged PDF: one PDF per employer.'),
+        'together' => __('All together'),
+        'togetherHint' => __('Same as before — not separated by employer.'),
+    ];
+@endphp
 <!-- Download Options Modal -->
 <div class="modal fade" id="downloadOptionsModal" tabindex="-1" aria-labelledby="downloadOptionsModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -314,6 +328,41 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.disabled = true;
             btn.innerText = 'Starting...';
 
+            // Employees of several employers → ask: a folder per employer
+            // ("นายจ้าง ก (5 คน)/…") or everything together as before.
+            const askEmployerFolders = function () {
+                const body = new FormData();
+                body.append('employee_ids', JSON.stringify(empIds));
+                body.append('_token', '{{ csrf_token() }}');
+                return fetch(@json(route('employees.advanced_export.employers')), { method: 'POST', body: body, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+                    .then(r => r.ok ? r.json() : { employers: [] })
+                    .catch(() => ({ employers: [] }))
+                    .then(function (data) {
+                        const employers = data.employers || [];
+                        if (employers.length < 2 || !window.appChoice) return false;
+                        const T = @json($downloadEmployerText);
+                        const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                        const list = '<div class="text-start small border rounded p-2" style="max-height: 9rem; overflow-y: auto;">'
+                            + employers.map(em => '<div class="d-flex justify-content-between gap-2"><span>' + esc(em.name) + '</span><span class="text-muted text-nowrap">'
+                                + esc(T.count.replace(':count', em.count)) + '</span></div>').join('') + '</div>';
+                        return appChoice('<div class="mb-2">' + esc(T.intro.replace(':n', employers.length)) + '</div>' + list, {
+                            title: T.title,
+                            confirmText: T.start,
+                            value: 'folders',
+                            choices: [
+                                { value: 'folders', label: T.folders, hint: T.foldersHint },
+                                { value: 'together', label: T.together, hint: T.togetherHint },
+                            ],
+                        }).then(choice => choice === null ? null : choice === 'folders');
+                    });
+            };
+
+            askEmployerFolders().then(function (employerFolders) {
+            if (employerFolders === null) { // popup cancelled
+                btn.disabled = false;
+                btn.innerText = 'Start Download';
+                return;
+            }
             fetch('{{ route("admin.downloads.initiate") }}', {
                 method: 'POST',
                 headers: {
@@ -326,7 +375,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     type: type,
                     stamp_employee_info: stampEmployeeInfo,
                     stamp_company_info: stampCompanyInfo,
-                    download_profile_id: stampCompanyInfo ? downloadProfileId : null
+                    download_profile_id: stampCompanyInfo ? downloadProfileId : null,
+                    employer_folders: !!employerFolders
                 })
             })
             .then(res => res.json())
@@ -357,6 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .finally(() => {
                 btn.disabled = false;
                 btn.innerText = 'Start Download';
+            });
             });
         });
 

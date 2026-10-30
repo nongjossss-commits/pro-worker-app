@@ -34,6 +34,9 @@
 
     $nameEn = trim(($employee->employeeTitleEn ?? '') . ' ' . ($employee->getRawOriginal('employeeNameEn') ?? ''));
     $nameTh = trim(($employee->employeeTitleTh ?? '') . ' ' . ($employee->employeeNameTh ?? ''));
+    // The copy buttons copy the name only — no title (MR. / MISS. / นาย …), shown but not copied.
+    $copyNameEn = trim($employee->getRawOriginal('employeeNameEn') ?? '');
+    $copyNameTh = trim($employee->employeeNameTh ?? '');
     $employerName = $employee->employer->employerNameTh ?? ($employee->employer->employerNameEn ?? null);
 
     if (!empty($details)) {
@@ -69,9 +72,9 @@
     @endif
     @if(!empty($details))
     <div class="rec-profile-main">
-        <h5 class="rec-profile-name">{{ $nameEn ?: ($nameTh ?: '-') }}@if($nameEn ?: $nameTh){!! $copyBtn($nameEn ?: $nameTh) !!}@endif</h5>
+        <h5 class="rec-profile-name">{{ $nameEn ?: ($nameTh ?: '-') }}@if($nameEn ? $copyNameEn : $copyNameTh){!! $copyBtn($nameEn ? $copyNameEn : $copyNameTh) !!}@endif</h5>
         @if($nameTh && $nameEn)
-            <div class="rec-profile-sub">{{ $nameTh }}{!! $copyBtn($nameTh) !!}</div>
+            <div class="rec-profile-sub">{{ $nameTh }}@if($copyNameTh){!! $copyBtn($copyNameTh) !!}@endif</div>
         @endif
         <div class="rec-profile-facts">
             @foreach($facts as [$icon, $label, $value, $always])

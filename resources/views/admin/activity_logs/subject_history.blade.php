@@ -105,6 +105,12 @@
                             <i class="bi bi-x-lg"></i> ล้างทั้งหมด
                         </a>
                     @endif
+                    {{-- Items per page — same 25 / 50 / 100 buttons as the Employees menu (RemembersPerPage). --}}
+                    <div class="btn-group btn-group-sm" title="{{ __('Items per page:') }}">
+                        @foreach($perPageOptions as $option)
+                            <a href="{{ route('admin.activity-logs.subject-history', array_merge(request()->query(), ['per_page' => $option, 'page' => null])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
+                        @endforeach
+                    </div>
                 </form>
             </div>
         </div>

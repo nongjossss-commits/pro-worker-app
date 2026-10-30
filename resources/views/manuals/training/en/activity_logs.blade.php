@@ -50,6 +50,7 @@
         <strong>Common use cases:</strong>
         <ol>
             <li>An employee record is missing — check who deleted it + when</li>
+            <li>Data / a file is missing — open that record's history: a remove/change entry = a person (name shown) · attached, never removed, and the preview says "File missing from the server" = a system problem</li>
             <li>Passport data changed — check who edited it</li>
             <li>An invoice number was voided — check who + why</li>
             <li>Reviewing a staff member's work each month</li>

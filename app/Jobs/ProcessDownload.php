@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\DownloadTask;
 use App\Models\Employee;
+use App\Support\DownloadFileName;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -47,6 +48,9 @@ class ProcessDownload implements ShouldQueue
 
     // "Merge into one PDF" that had to be split to stay within memory (createPdf()).
     protected $splitIntoParts = 0;
+
+    /** Employees per employer, first-picked employer first — for file / folder names. */
+    protected $employerGroups;
 
     // Thai labels matching the checkboxes in download-modals.blade.php —
     // used only for the missing-files summary message.
@@ -185,13 +189,16 @@ class ProcessDownload implements ShouldQueue
             // In batches — a single IN (…) with thousands of ids breaks on some databases.
             $employeesUnsorted = collect();
             foreach (array_chunk(array_values(array_unique(array_map('intval', $this->employeeIds))), 500) as $chunk) {
-                $employeesUnsorted = $employeesUnsorted->concat(Employee::whereIn('id', $chunk)->get());
+                $employeesUnsorted = $employeesUnsorted->concat(Employee::with('employer')->whereIn('id', $chunk)->get());
             }
             // Sort employees by the order of IDs passed from frontend (preserves user selection order)
             $idOrder = array_flip(array_map('intval', $this->employeeIds));
             $employees = $employeesUnsorted->sort(function ($a, $b) use ($idOrder) {
                 return ($idOrder[$a->id] ?? PHP_INT_MAX) - ($idOrder[$b->id] ?? PHP_INT_MAX);
             })->values();
+            $this->employerGroups = $employees->groupBy(fn ($e) => (int) $e->employer_id);
+            // Several employers + the user chose "a folder per employer" (download popup).
+            $byEmployer = !empty($this->options['employer_folders']) && $this->employerGroups->count() > 1;
             $tempDir = storage_path('app/temp_downloads/' . $task->id);
             if (!file_exists($tempDir)) {
                 mkdir($tempDir, 0755, true);
@@ -200,11 +207,13 @@ class ProcessDownload implements ShouldQueue
             $outputFile = '';
 
             if ($task->type === 'zip') {
-                $outputFile = $this->createZip($employees, $tempDir, $task, false);
+                $outputFile = $this->createZip($employees, $tempDir, $task, false, $byEmployer);
             } elseif ($task->type === 'zip_single') {
-                $outputFile = $this->createZip($employees, $tempDir, $task, true);
+                $outputFile = $this->createZip($employees, $tempDir, $task, true, $byEmployer);
             } elseif ($task->type === 'pdf_individual') {
-                $outputFile = $this->createIndividualPdfsZip($employees, $tempDir, $task);
+                $outputFile = $this->createIndividualPdfsZip($employees, $tempDir, $task, $byEmployer);
+            } elseif ($byEmployer) {
+                $outputFile = $this->createMergedPdfsByEmployer($employees, $tempDir, $task);
             } else {
                 $outputFile = $this->createPdf($employees, $tempDir, $task);
             }
@@ -231,15 +240,67 @@ class ProcessDownload implements ShouldQueue
         }
     }
 
-    protected function createZip($employees, $tempDir, $task, $singleFolder = false)
+    /**
+     * Where the finished file goes: storage/app/private/downloads/{task id}__{name}
+     * — the task id keeps it unique on disk; DownloadController hands it to the
+     * browser as just "{name}", e.g. "นายจ้าง ก (5 คน) 2026-10-30 15.36.12.zip"
+     * (one employer) or "Employee documents (12 คน) …" (several).
+     */
+    protected function outputPath(string $ext): string
     {
-        $zipFileName = 'download_' . $task->id . '_' . date('YmdHis') . '.zip';
-        $zipPath = storage_path('app/private/downloads/' . $zipFileName);
-
-        // Ensure download directory exists
-        if (!file_exists(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
+        $dir = storage_path('app/private/downloads');
+        if (!file_exists($dir)) {
+            mkdir($dir, 0755, true);
         }
+        $groups = $this->employerGroups ?? collect();
+        $name = $groups->count() === 1 ? $this->employerName($groups->first()->first()) : __('Employee documents');
+        $count = $groups->sum(fn ($g) => $g->count());
+
+        return 'downloads/' . $this->task->id . '__' . DownloadFileName::make($name, $count, $ext, $this->task->user_id);
+    }
+
+    protected function employerName($employee): string
+    {
+        $employer = $employee->employer ?? null;
+
+        return $employer ? ($employer->getRawOriginal('employerNameTh') ?: ($employer->employerNameEn ?: '-')) : __('No employer');
+    }
+
+    /** "นายจ้าง ก (5 คน)" — one folder per employer when the user asked for it. */
+    protected function employerFolder($group): string
+    {
+        return DownloadFileName::withCount($this->employerName($group->first()), $group->count());
+    }
+
+    /**
+     * The employees as [folder => employees]: one entry per employer (folder
+     * "นายจ้าง ก (5 คน)") when $byEmployer, otherwise one entry with no folder.
+     */
+    protected function employeeSets($employees, bool $byEmployer): array
+    {
+        if (!$byEmployer) {
+            return [['', $employees]];
+        }
+
+        return $this->employerGroups->map(fn ($group) => [$this->employerFolder($group), $group->values()])->values()->all();
+    }
+
+    protected function employeeFileName($employee, int $sequenceNumber): string
+    {
+        // Use English Title + Name if available, per user request
+        if (!empty($employee->employeeNameEn)) {
+            $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
+            $rawName = $prefix . $employee->employeeNameEn;
+        } else {
+            $rawName = $employee->employeeNameTh ?? 'Employee';
+        }
+
+        return $sequenceNumber . '. ' . $this->sanitizeFileName($rawName) . '_' . $employee->id;
+    }
+
+    protected function createZip($employees, $tempDir, $task, $singleFolder = false, bool $byEmployer = false)
+    {
+        $zipPath = storage_path('app/private/' . ($output = $this->outputPath('zip')));
 
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE) !== TRUE) {
@@ -253,33 +314,29 @@ class ProcessDownload implements ShouldQueue
             $hasThaiFont = true;
         }
 
-        $sequenceNumber = 1;
-        foreach ($employees as $employee) {
-            // Use English Title + Name if available, per user request
-            if (!empty($employee->employeeNameEn)) {
-                $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
-                $rawName = $prefix . $employee->employeeNameEn;
-            } else {
-                $rawName = $employee->employeeNameTh ?? 'Employee';
+        $done = 0;
+        foreach ($this->employeeSets($employees, $byEmployer) as [$employerFolder, $set]) {
+            $sequenceNumber = 1; // numbering starts again in each employer folder
+            foreach ($set as $employee) {
+                $safeName = $this->employeeFileName($employee, $sequenceNumber);
+
+                // Single folder: every file in the root (or the employer's folder),
+                // prefixed with the employee name to avoid collisions.
+                // Separate: a folder per employee (inside the employer's folder).
+                $base = $employerFolder !== '' ? $employerFolder . '/' : '';
+                $folderName = $singleFolder ? rtrim($base, '/') : $base . $safeName;
+                $filePrefix = $singleFolder ? $safeName . '_' : '';
+
+                foreach ($this->selectedFiles as $fileType) {
+                    $this->addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix, $hasThaiFont);
+                }
+                $this->progress(++$done);
+                $sequenceNumber++;
             }
-
-            $safeName = $sequenceNumber . '. ' . $this->sanitizeFileName($rawName) . '_' . $employee->id;
-
-            // If singleFolder is true, we use an empty folder name (root),
-            // but we might want to prefix the file with the employee name to avoid collisions.
-            // If separated, we use the safeName as the folder.
-            $folderName = $singleFolder ? '' : $safeName;
-            $filePrefix = $singleFolder ? $safeName . '_' : '';
-
-            foreach ($this->selectedFiles as $fileType) {
-                $this->addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix, $hasThaiFont);
-            }
-            $this->progress($sequenceNumber);
-            $sequenceNumber++;
         }
 
         $zip->close();
-        return 'downloads/' . $zipFileName;
+        return $output;
     }
 
     protected function addFilesToZip($zip, $employee, $fileType, $folderName, $filePrefix = '', $hasThaiFont = false)
@@ -337,18 +394,13 @@ class ProcessDownload implements ShouldQueue
         }
     }
 
-    protected function createIndividualPdfsZip($employees, $tempDir, $task)
+    protected function createIndividualPdfsZip($employees, $tempDir, $task, bool $byEmployer = false)
     {
         if (!class_exists(Fpdi::class)) {
             throw new Exception("FPDI library not found.");
         }
 
-        $zipFileName = 'download_individual_pdfs_' . $task->id . '_' . date('YmdHis') . '.zip';
-        $zipPath = storage_path('app/private/downloads/' . $zipFileName);
-
-        if (!file_exists(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
-        }
+        $zipPath = storage_path('app/private/' . ($output = $this->outputPath('zip')));
 
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE) !== TRUE) {
@@ -362,62 +414,121 @@ class ProcessDownload implements ShouldQueue
             $hasThaiFont = true;
         }
 
-        $sequenceNumber = 1;
-        foreach ($employees as $employee) {
-            try {
-                $pdf = new Fpdi();
-                $pdf->SetAutoPageBreak(false);
+        $done = 0;
+        foreach ($this->employeeSets($employees, $byEmployer) as $setIndex => [$employerFolder, $set]) {
+            $inFolder = $employerFolder !== '' ? $employerFolder . '/' : '';
+            $sequenceNumber = 1; // numbering starts again in each employer folder
+            foreach ($set as $employee) {
+                try {
+                    $pdf = new Fpdi();
+                    $pdf->SetAutoPageBreak(false);
 
-                if ($hasThaiFont) {
-                    $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
-                }
-
-                $hasPages = false;
-                $unreadableBefore = count($this->unreadablePdfs);
-
-                foreach ($this->selectedFiles as $fileType) {
-                    try {
-                        $pageCountBefore = $pdf->PageNo();
-                        $this->addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont);
-                        if ($pdf->PageNo() > $pageCountBefore) {
-                            $hasPages = true;
-                        }
-                    } catch (Throwable $e) {
-                        Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
+                    if ($hasThaiFont) {
+                        $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
                     }
-                }
 
-                if (!empty($employee->employeeNameEn)) {
-                    $prefix = !empty($employee->employeeTitleEn) ? $employee->employeeTitleEn . ' ' : '';
-                    $rawName = $prefix . $employee->employeeNameEn;
-                } else {
-                    $rawName = $employee->employeeNameTh ?? 'Employee';
-                }
-                $safeName = $sequenceNumber . '. ' . $this->sanitizeFileName($rawName) . '_' . $employee->id;
+                    $hasPages = false;
+                    $unreadableBefore = count($this->unreadablePdfs);
 
-                if ($hasPages) {
-                    $pdfPath = $tempDir . '/' . $safeName . '.pdf';
+                    foreach ($this->selectedFiles as $fileType) {
+                        try {
+                            $pageCountBefore = $pdf->PageNo();
+                            $this->addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont);
+                            if ($pdf->PageNo() > $pageCountBefore) {
+                                $hasPages = true;
+                            }
+                        } catch (Throwable $e) {
+                            Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
+                        }
+                    }
 
-                    $pdf->Output('F', $pdfPath);
-                    $zip->addFile($pdfPath, $this->uniqueZipName($safeName . '.pdf'));
-                }
+                    $safeName = $this->employeeFileName($employee, $sequenceNumber);
 
-                // PDFs that couldn't be merged: ship the original next to this person's PDF.
-                foreach (array_slice($this->unreadablePdfs, $unreadableBefore) as $entry) {
-                    $zip->addFile($entry['path'], $this->uniqueZipName($safeName . '_' . $entry['fileType'] . '_' . basename($entry['path'])));
+                    if ($hasPages) {
+                        $pdfPath = $tempDir . '/' . $setIndex . '_' . $safeName . '.pdf';
+
+                        $pdf->Output('F', $pdfPath);
+                        $zip->addFile($pdfPath, $this->uniqueZipName($inFolder . $safeName . '.pdf'));
+                    }
+
+                    // PDFs that couldn't be merged: ship the original next to this person's PDF.
+                    foreach (array_slice($this->unreadablePdfs, $unreadableBefore) as $entry) {
+                        $zip->addFile($entry['path'], $this->uniqueZipName($inFolder . $safeName . '_' . $entry['fileType'] . '_' . basename($entry['path'])));
+                    }
+                } catch (Throwable $e) {
+                    Log::warning("Failed to create individual PDF for employee {$employee->id}: " . $e->getMessage());
                 }
-            } catch (Throwable $e) {
-                Log::warning("Failed to create individual PDF for employee {$employee->id}: " . $e->getMessage());
+                // One person's PDF is on disk now — don't keep it in memory while building the next.
+                unset($pdf);
+                gc_collect_cycles();
+                $this->progress(++$done);
+                $sequenceNumber++;
             }
-            // One person's PDF is on disk now — don't keep it in memory while building the next.
-            unset($pdf);
-            gc_collect_cycles();
-            $this->progress($sequenceNumber);
-            $sequenceNumber++;
         }
 
         $zip->close();
-        return 'downloads/' . $zipFileName;
+        return $output;
+    }
+
+    /**
+     * All the employees' files merged into PDF(s) written in $tempDir. FPDF
+     * keeps the whole document in memory until it is written, and writing it
+     * needs about twice that. If a very large merge gets close to PHP's memory
+     * limit, finish this part and start another instead of crashing — normal
+     * sizes stay one part.
+     *
+     * @return string[] part files, in order (at least one)
+     */
+    protected function buildMergedPdfParts($employees, string $tempDir, bool $hasThaiFont, string $partPrefix, int &$done): array
+    {
+        $newPdf = function () use ($hasThaiFont) {
+            $pdf = new Fpdi();
+            $pdf->SetAutoPageBreak(false);
+            if ($hasThaiFont) {
+                $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
+            }
+            return $pdf;
+        };
+
+        $partLimit = (int) ($this->memoryLimitBytes() * 0.4);
+        $parts = [];
+        $pdf = $newPdf();
+        $pdfHasPages = false;
+        $total = count($employees);
+
+        foreach (array_values(is_array($employees) ? $employees : $employees->all()) as $index => $employee) {
+            foreach ($this->selectedFiles as $fileType) {
+                try {
+                    $before = $pdf->PageNo();
+                    $this->addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont);
+                    $pdfHasPages = $pdfHasPages || $pdf->PageNo() > $before;
+                } catch (Throwable $e) {
+                    Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
+                }
+            }
+            $this->progress(++$done);
+
+            if ($pdfHasPages && $index + 1 < $total && memory_get_usage(true) > $partLimit) {
+                $partPath = $tempDir . '/' . $partPrefix . 'part_' . (count($parts) + 1) . '.pdf';
+                $pdf->Output('F', $partPath);
+                $parts[] = $partPath;
+                unset($pdf);
+                gc_collect_cycles();
+                $pdf = $newPdf();
+                $pdfHasPages = false;
+            }
+        }
+
+        // The last (or only) part — always written, as before.
+        if (!$parts || $pdfHasPages) {
+            $partPath = $tempDir . '/' . $partPrefix . 'part_' . (count($parts) + 1) . '.pdf';
+            $pdf->Output('F', $partPath);
+            $parts[] = $partPath;
+        }
+        unset($pdf);
+        gc_collect_cycles();
+
+        return $parts;
     }
 
     protected function createPdf($employees, $tempDir, $task)
@@ -431,70 +542,19 @@ class ProcessDownload implements ShouldQueue
             $fontDir = defined('FPDF_FONTPATH') ? FPDF_FONTPATH : storage_path('fonts/');
             $hasThaiFont = file_exists($fontDir . 'THSarabunNew.php');
 
-            $newPdf = function () use ($hasThaiFont) {
-                $pdf = new Fpdi();
-                $pdf->SetAutoPageBreak(false);
-                if ($hasThaiFont) {
-                    $pdf->AddFont('THSarabunNew', '', 'THSarabunNew.php');
-                }
-                return $pdf;
-            };
+            $done = 0;
+            $parts = $this->buildMergedPdfParts($employees, $tempDir, $hasThaiFont, '', $done);
 
-            // FPDF keeps the whole document in memory until it is written, and
-            // writing it needs about twice that. If a very large merge gets
-            // close to PHP's memory limit, finish this part and start another
-            // (delivered together in a ZIP) instead of crashing. Normal-sized
-            // downloads never reach this and stay one PDF exactly as before.
-            $partLimit = (int) ($this->memoryLimitBytes() * 0.4);
-            $parts = [];
-            $pdf = $newPdf();
-            $pdfHasPages = false;
-            $total = count($employees);
-
-            foreach ($employees as $index => $employee) {
-                foreach ($this->selectedFiles as $fileType) {
-                    try {
-                        $before = $pdf->PageNo();
-                        $this->addFilesToPdf($pdf, $employee, $fileType, $hasThaiFont);
-                        $pdfHasPages = $pdfHasPages || $pdf->PageNo() > $before;
-                    } catch (Throwable $e) {
-                        Log::warning("Failed to add file type $fileType for employee {$employee->id}: " . $e->getMessage());
-                    }
-                }
-                $this->progress($index + 1);
-
-                if ($pdfHasPages && $index + 1 < $total && memory_get_usage(true) > $partLimit) {
-                    $partPath = $tempDir . '/part_' . (count($parts) + 1) . '.pdf';
-                    $pdf->Output('F', $partPath);
-                    $parts[] = $partPath;
-                    unset($pdf);
-                    gc_collect_cycles();
-                    $pdf = $newPdf();
-                    $pdfHasPages = false;
-                }
+            if (count($parts) === 1) {
+                $output = $this->outputPath('pdf');
+                rename($parts[0], storage_path('app/private/' . $output));
+                return $output;
             }
 
-            if (!file_exists(storage_path('app/private/downloads'))) {
-                mkdir(storage_path('app/private/downloads'), 0755, true);
-            }
-            $stamp = $task->id . '_' . date('YmdHis');
-
-            if (!$parts) {
-                $fileName = 'merged_' . $stamp . '.pdf';
-                $pdf->Output('F', storage_path('app/private/downloads/' . $fileName));
-                return 'downloads/' . $fileName;
-            }
-
-            if ($pdfHasPages) {
-                $partPath = $tempDir . '/part_' . (count($parts) + 1) . '.pdf';
-                $pdf->Output('F', $partPath);
-                $parts[] = $partPath;
-            }
-            unset($pdf);
-
-            $fileName = 'merged_' . $stamp . '.zip';
+            // Too big for one PDF: the parts together in a ZIP (same order as the employees).
+            $output = $this->outputPath('zip');
             $zip = new ZipArchive;
-            if ($zip->open(storage_path('app/private/downloads/' . $fileName), ZipArchive::CREATE) !== true) {
+            if ($zip->open(storage_path('app/private/' . $output), ZipArchive::CREATE) !== true) {
                 throw new Exception('Cannot create zip file');
             }
             foreach ($parts as $i => $partPath) {
@@ -503,7 +563,48 @@ class ProcessDownload implements ShouldQueue
             $zip->close();
             $this->splitIntoParts = count($parts);
 
-            return 'downloads/' . $fileName;
+            return $output;
+
+        } catch (Throwable $e) {
+            throw new Exception("PDF Generation Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Merged PDF, one per employer: a ZIP with a folder per employer
+     * ("นายจ้าง ก (5 คน)/") holding that employer's employees merged into
+     * "นายจ้าง ก (5 คน).pdf" (in parts only if it is very large).
+     */
+    protected function createMergedPdfsByEmployer($employees, $tempDir, $task)
+    {
+        if (!class_exists(Fpdi::class)) {
+            throw new Exception("FPDI library not found.");
+        }
+
+        try {
+            $fontDir = defined('FPDF_FONTPATH') ? FPDF_FONTPATH : storage_path('fonts/');
+            $hasThaiFont = file_exists($fontDir . 'THSarabunNew.php');
+
+            $output = $this->outputPath('zip');
+            $zip = new ZipArchive;
+            if ($zip->open(storage_path('app/private/' . $output), ZipArchive::CREATE) !== true) {
+                throw new Exception('Cannot create zip file');
+            }
+
+            $done = 0;
+            foreach ($this->employeeSets($employees, true) as $setIndex => [$employerFolder, $set]) {
+                $parts = $this->buildMergedPdfParts($set, $tempDir, $hasThaiFont, $setIndex . '_', $done);
+                foreach ($parts as $i => $partPath) {
+                    $name = count($parts) === 1
+                        ? $employerFolder . '.pdf'
+                        : sprintf('%s part %d of %d.pdf', $employerFolder, $i + 1, count($parts));
+                    $zip->addFile($partPath, $this->uniqueZipName($employerFolder . '/' . $name));
+                }
+                $this->splitIntoParts = max($this->splitIntoParts, count($parts));
+            }
+            $zip->close();
+
+            return $output;
 
         } catch (Throwable $e) {
             throw new Exception("PDF Generation Error: " . $e->getMessage());

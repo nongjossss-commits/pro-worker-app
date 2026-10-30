@@ -56,6 +56,16 @@
     </ul>
 </div>
 
+<h5>Data or a file is missing — changed by a person, or a system fault?</h5>
+<div class="manual-step">
+    <ol class="mb-0">
+        <li>Type the employee's or employer's name in the search box and open <strong>that record's history</strong> — in time order, every change shows <strong>the field, old value → new value, date-time and who changed it</strong></li>
+        <li><em>"Cleared …"</em>, <em>"Removed the file from …"</em> or <em>"Changed the file in …"</em> = a person changed it (the name is shown) · <strong>system</strong> entries (user = System), e.g. "automatic update from the resolution settings" or "attachment move tool", are recorded too</li>
+        <li>If a file was attached (a "File attached in …" entry) with no remove/replace after it, but the preview shows the red <strong>"File missing from the server"</strong> badge = a system / server problem, not a file never attached — tell the system administrator</li>
+        <li>Since 30/10/2026 replaced or removed files are <strong>kept for 30 days</strong>, then deleted for good — Super Admin (and admins a Super Admin ticked "View replaced files" for) can open them from "View old file" in the history or the "Replaced files" button in the preview</li>
+    </ol>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

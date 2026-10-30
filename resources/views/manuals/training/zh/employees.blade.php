@@ -174,6 +174,8 @@
             <li>从下拉菜单中选择操作:
                 <ul>
                     <li><strong>Export CSV / Advanced Export</strong></li>
+                    <li>高级导出：员工来自多个雇主时 → 选择按雇主分组的一个文件，或每个雇主一个文件（ZIP）</li>
+                    <li>高级下载：员工来自多个雇主 → 每个雇主一个文件夹 · 文件名包含雇主、人数和日期时间</li>
                     <li><strong>转移雇主</strong>(Bulk Transfer)</li>
                     <li><strong>Automated PDF</strong>(从模板批量生成 PDF)</li>
                     <li><strong>Send to Production</strong></li>

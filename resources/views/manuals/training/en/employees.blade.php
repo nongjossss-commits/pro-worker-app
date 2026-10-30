@@ -174,6 +174,8 @@
             <li>Select an action from the dropdown:
                 <ul>
                     <li><strong>Export CSV / Advanced Export</strong></li>
+                    <li>Advanced Export: employees of several employers → choose one file grouped by employer, or one file per employer (ZIP)</li>
+                    <li>Advanced Download: employees of several employers → a folder per employer · file names carry the employer, the number of people and the date-time</li>
                     <li><strong>Transfer Employer</strong> (Bulk Transfer)</li>
                     <li><strong>Automated PDF</strong> (generate PDFs from a template)</li>
                     <li><strong>Send to Production</strong></li>

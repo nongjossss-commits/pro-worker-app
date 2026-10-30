@@ -44,3 +44,7 @@
 <div class="manual-tip">
     <strong>Before creating a tax invoice:</strong> check this menu first — if an employer has no tax ID, you can't issue an invoice
 </div>
+
+<div class="manual-tip">
+    <strong>Items per page:</strong> the <strong>25 / 50 / 100</strong> buttons on the filter bar, the same as the Employees menu — your last choice is remembered in this browser (default 25)
+</div>

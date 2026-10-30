@@ -367,10 +367,16 @@ class UserController extends Controller
                 // no checkboxes at all and is untouched here.
                 if ($request->role_name === 'admin') {
                     $checkedPermissions = $request->input('permissions', []);
-                    if (in_array('move-attachments', $checkedPermissions, true)) {
-                        $user->givePermissionTo('move-attachments');
-                    } else {
-                        $user->revokePermissionTo('move-attachments');
+                    // The permissions Admin doesn't get automatically (AppServiceProvider's Gate::before).
+                    foreach (['move-attachments', 'view-attachment-archive'] as $delegated) {
+                        if (!\Spatie\Permission\Models\Permission::where('name', $delegated)->exists()) {
+                            continue;
+                        }
+                        if (in_array($delegated, $checkedPermissions, true)) {
+                            $user->givePermissionTo($delegated);
+                        } else {
+                            $user->revokePermissionTo($delegated);
+                        }
                     }
                 }
             } else {

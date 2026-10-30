@@ -5,6 +5,8 @@
                 @csrf
                 <input type="hidden" name="employee_ids" id="export_employee_ids">
                 <input type="hidden" name="export_source_menu" id="export_source_menu" value="">
+                {{-- as_selected | grouped | separate — asked on export when the picked employees belong to several employers --}}
+                <input type="hidden" name="employer_mode" value="as_selected" data-employer-mode>
 
                 <div class="modal-header">
                     <h5 class="modal-title" id="advancedExportModalLabel">{{ __('Advanced Export') }} (Max 15 items)</h5>
@@ -476,6 +478,21 @@
     </div>
 </div>
 
+@php
+    // Built here, not inline in @json([...]) — Blade's @json can't parse a multi-line array.
+    $advancedExportText = [
+        'title' => __('How should the Excel be arranged?'),
+        'intro' => __('The selected employees are from :n employers.'),
+        'count' => __(':count employee(s)'),
+        'export' => __('Export Selected'),
+        'grouped' => __('One file, grouped by employer'),
+        'groupedHint' => __('Each employer gets its own heading followed by its employees — easy to copy and send per employer.'),
+        'separate' => __('One file per employer (ZIP)'),
+        'separateHint' => __('A separate Excel file for every employer, packed into one ZIP file.'),
+        'asSelected' => __('One list in the order selected'),
+        'asSelectedHint' => __('Same as before — employees are not grouped by employer.'),
+    ];
+@endphp
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -509,6 +526,54 @@ document.addEventListener('DOMContentLoaded', function() {
             OrderedChecks.attach(form, { selector: '.export-checkbox', form: form, name: 'columns[]', summary: form.querySelector('[data-oc-summary]') });
         }
     });
+
+    // Picked employees from several employers → ask how to arrange the Excel
+    // (one file grouped employer by employer / one file per employer in a ZIP /
+    // one list as before). The answer goes in employer_mode, then the form is
+    // submitted again for real (requestSubmit keeps the tick-order columns).
+    const exportText = @json($advancedExportText);
+    // the modal (and this script) can be on a page twice — listen once
+    if (!window.__advancedExportEmployerChoice) {
+    window.__advancedExportEmployerChoice = true;
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!form.matches || !form.matches('form#advancedExportForm')) return;
+        const modeInput = form.querySelector('[data-employer-mode]');
+        if (!modeInput) return;
+        if (form.dataset.employerChoiceDone === '1') { delete form.dataset.employerChoiceDone; return; }
+        e.preventDefault();
+
+        const body = new FormData();
+        body.append('employee_ids', form.querySelector('[name="employee_ids"]').value || '[]');
+        body.append('_token', form.querySelector('[name="_token"]').value);
+        const go = function (mode) {
+            modeInput.value = mode;
+            form.dataset.employerChoiceDone = '1';
+            if (typeof form.requestSubmit === 'function') form.requestSubmit(); else { delete form.dataset.employerChoiceDone; form.submit(); }
+        };
+        fetch(@json(route('employees.advanced_export.employers')), { method: 'POST', body: body, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+            .then(r => r.ok ? r.json() : { employers: [] })
+            .catch(() => ({ employers: [] }))
+            .then(function (data) {
+                const employers = data.employers || [];
+                if (employers.length < 2 || !window.appChoice) return go('as_selected');
+                const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                const list = '<div class="text-start small border rounded p-2" style="max-height: 9rem; overflow-y: auto;">'
+                    + employers.map(em => '<div class="d-flex justify-content-between gap-2"><span>' + esc(em.name) + '</span><span class="text-muted text-nowrap">'
+                        + esc(exportText.count.replace(':count', em.count)) + '</span></div>').join('') + '</div>';
+                appChoice('<div class="mb-2">' + esc(exportText.intro.replace(':n', employers.length)) + '</div>' + list, {
+                    title: exportText.title,
+                    confirmText: exportText.export,
+                    value: 'grouped',
+                    choices: [
+                        { value: 'grouped', label: exportText.grouped, hint: exportText.groupedHint },
+                        { value: 'separate', label: exportText.separate, hint: exportText.separateHint },
+                        { value: 'as_selected', label: exportText.asSelected, hint: exportText.asSelectedHint },
+                    ],
+                }).then(function (mode) { if (mode) go(mode); });
+            });
+    });
+    }
 
     // Reset form when modal closes
     const modalEl = document.getElementById('advancedExportModal');

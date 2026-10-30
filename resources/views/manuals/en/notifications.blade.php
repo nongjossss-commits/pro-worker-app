@@ -53,3 +53,7 @@
 <div class="manual-tip">
     <strong>Send to a LINE chat:</strong> drag the <i class="bi bi-grid-3x2-gap-fill"></i> button on a card into the chat, or click it to copy text / a card image / share — see the Employees manual, section 11
 </div>
+
+<div class="manual-tip">
+    <strong>Items per page:</strong> the <strong>25 / 50 / 100</strong> buttons on the filter bar, the same as the Employees menu — your last choice is remembered in this browser (default 25)
+</div>

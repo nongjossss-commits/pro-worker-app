@@ -14,6 +14,7 @@ use App\Traits\AddressFilterTrait;
 class IncompleteEmployeeController extends Controller
 {
     use AddressFilterTrait;
+    use \App\Traits\RemembersPerPage;
 
     public function index(Request $request)
     {
@@ -114,8 +115,8 @@ class IncompleteEmployeeController extends Controller
                 'mandatoryFields' => $mandatoryFields,
                 'totalIncomplete' => 0,
                 'is_incomplete_view' => true,
-                'perPageOptions' => [12, 25, 50, 100],
-                'currentPerPage' => 12,
+                'perPageOptions' => [25, 50, 100],
+                'currentPerPage' => $this->rememberedPerPage($request, 'incomplete_employees', [25, 50, 100], 25),
                 'currentView' => 'card',
                 'addressOptions' => $addressOptions
             ]);
@@ -124,8 +125,9 @@ class IncompleteEmployeeController extends Controller
         $totalIncomplete = (clone $query)->count(); // Count matching filter AND incomplete criteria
 
         // 3. Paginate
-        $perPageOptions = [12, 25, 50, 100];
-        $currentPerPage = $request->input('per_page', 12);
+        // 25 / 50 / 100 per page like the Employees menu; the last pick is remembered (RemembersPerPage).
+        $perPageOptions = [25, 50, 100];
+        $currentPerPage = $this->rememberedPerPage($request, 'incomplete_employees', $perPageOptions, 25);
         $employees = $query->with('employer')->latest()->paginate($currentPerPage)->withQueryString();
         \App\Models\Employee::preloadForCards($employees);
 

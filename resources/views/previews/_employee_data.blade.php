@@ -343,13 +343,18 @@
                 $label = $description ? $key . '. ' . $description : $file['label'];
                 $url = $employee->{$field} ? Storage::disk('public')->url($employee->{$field}) : '#';
                 $pdfUrl = $employee->{$field} ? route('employees.documents.pdf', ['employee' => $employee->id, 'field' => $field]) : '#';
+                $missing = $employee->{$field} && !Storage::disk('public')->exists($employee->{$field}) && !Storage::disk('private')->exists($employee->{$field});
             @endphp
             {{-- One compact chip per slot: attached ones are solid with View / PDF,
                  empty ones are faded so the attached files stand out. --}}
-            <div class="pv-file {{ $employee->{$field} ? 'has-file' : 'is-empty' }}">
+            <div class="pv-file {{ $missing ? 'is-missing' : ($employee->{$field} ? 'has-file' : 'is-empty') }}">
                 <i class="bi {{ $employee->{$field} ? 'bi-file-earmark-check-fill' : 'bi-file-earmark' }} pv-file-icon"></i>
                 <span class="pv-file-name" title="{{ $label }}">{{ $label }}</span>
-                @if($employee->{$field})
+                @if($missing)
+                    {{-- The record says a file was attached, but the server doesn't have it: a system
+                         problem, not "never attached" — the history (activity log) shows when it was attached. --}}
+                    <span class="pv-file-missing" title="{{ __('The record says a file was attached here, but the file is not on the server. Check the change history for when it was attached or replaced.') }}"><i class="bi bi-exclamation-triangle-fill"></i> {{ __('File missing from the server') }}</span>
+                @elseif($employee->{$field})
                     <span class="pv-file-actions">
                         <a href="#" onclick="event.preventDefault(); viewPDF('{{ $url }}', '{{ __('View Document') }}')" class="btn btn-success preview-attach-btn text-white" title="{{ __('View') }}">
                             <i class="bi bi-eye-fill"></i> {{ __('View') }}
@@ -364,6 +369,17 @@
             </div>
         @endforeach
     </div>
+    {{-- Old files that were replaced / removed, kept 30 days — only for 'view-attachment-archive' (AttachmentArchiveController). --}}
+    @can('view-attachment-archive')
+        @php $archivedCount = count(\App\Support\AttachmentArchive::files('employees', $employee->id)); @endphp
+        @if($archivedCount)
+            <div class="mt-3">
+                <a href="{{ route('attachment-archive.index', ['employees', $employee->id]) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-archive me-1"></i>{{ __('Replaced files (kept :days days)', ['days' => \App\Support\AttachmentArchive::KEEP_DAYS]) }} <span class="badge bg-secondary">{{ $archivedCount }}</span>
+                </a>
+            </div>
+        @endif
+    @endcan
     </div>{{-- /pane files --}}
     </div>{{-- /rec-tabs --}}
 </div>

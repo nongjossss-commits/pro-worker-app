@@ -658,7 +658,7 @@
                     formData.append('insurance_type', this.tempInsuranceType);
                     // required fields for employees.update usually include these for safety if not using patch
                     formData.append('employer_id', '{{ $employee->employer_id }}');
-                    formData.append('employeeNameEn', @js($employee->employeeNameEn));
+                    formData.append('employeeNameEn', @js($employee->getRawOriginal('employeeNameEn')));
 
                     fetch('{{ route('employees.update', $employee->id) }}', {
                         method: 'POST',
@@ -843,7 +843,7 @@
                     empFormData.append('name_list_number', this.nameList);
                     empFormData.append('employee_reference_id', this.refId);
                     empFormData.append('employer_id', '{{ $employee->employer_id }}');
-                    empFormData.append('employeeNameEn', @js($employee->employeeNameEn));
+                    empFormData.append('employeeNameEn', @js($employee->getRawOriginal('employeeNameEn')));
 
                     let req2 = fetch('{{ route('employees.update', $employee->id) }}', {
                         method: 'POST',

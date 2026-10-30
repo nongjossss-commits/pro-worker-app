@@ -79,8 +79,8 @@
                     <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['view' => 'card', 'page' => 1])) }}" class="btn {{ $currentView == 'card' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Card') }}</a>
                     <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['view' => 'table', 'page' => 1])) }}" class="btn {{ $currentView == 'table' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('Table') }}</a>
                 </div>
-                {{-- Per Page Toggle --}}
-                <div class="btn-group btn-group-sm">
+                {{-- Per Page Toggle — 25 / 50 / 100 like the Employees menu (RemembersPerPage) --}}
+                <div class="btn-group btn-group-sm" title="{{ __('Items per page:') }}">
                     @foreach($perPageOptions as $option)
                         <a href="{{ route('admin.incomplete_employees.index', array_merge(request()->query(), ['per_page' => $option, 'page' => 1])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
                     @endforeach

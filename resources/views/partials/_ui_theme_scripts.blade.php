@@ -5,6 +5,8 @@
       appConfirm(message, { title, danger, confirmText, cancelText }) -> Promise<boolean>
       appAlert(message, { title, icon })                            -> Promise
       appToast(message, icon = 'success')
+      appChoice(html, { title, choices: [{ value, label, hint }], value, confirmText, cancelText }) -> Promise<value|null>
+        (pick one of several options — e.g. Advanced Export: one file per employer or one file grouped)
 
     Declarative confirm — replaces the old inline `return confirm('...')` handlers:
       <form data-confirm="Delete this?" data-confirm-danger> ... </form>
@@ -85,6 +87,33 @@
             }
         }, true);
     }
+
+    window.appChoice = function (html, opts) {
+        opts = opts || {};
+        const choices = opts.choices || [];
+        if (!hasSwal()) return Promise.resolve(choices.length ? choices[0].value : null);
+        const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const picked = opts.value != null ? opts.value : (choices[0] && choices[0].value);
+        const list = choices.map(function (c, i) {
+            return '<label class="app-choice-item d-flex gap-2 align-items-start text-start p-2 mb-2 border rounded" style="cursor:pointer;">'
+                + '<input class="form-check-input mt-1 flex-shrink-0" type="radio" name="app-choice" value="' + esc(c.value) + '"' + (c.value === picked ? ' checked' : '') + '>'
+                + '<span><span class="fw-semibold d-block">' + esc(c.label) + '</span>'
+                + (c.hint ? '<small class="text-muted">' + esc(c.hint) + '</small>' : '') + '</span></label>';
+        }).join('');
+        return Swal.fire({
+            icon: 'question',
+            title: opts.title || T.pleaseConfirm,
+            html: (html || '') + '<div class="mt-3">' + list + '</div>',
+            showCancelButton: true,
+            confirmButtonText: opts.confirmText || T.confirm,
+            cancelButtonText: opts.cancelText || T.cancel,
+            reverseButtons: true,
+            preConfirm: function () {
+                const r = Swal.getPopup().querySelector('input[name="app-choice"]:checked');
+                return r ? r.value : null;
+            },
+        }).then(function (r) { return r.isConfirmed ? r.value : null; });
+    };
 
     window.appToast = function (message, icon) {
         if (!hasSwal()) { nativeAlert(message); return; }

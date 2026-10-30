@@ -174,6 +174,8 @@
             <li>dropdown မှ လုပ်ဆောင်ချက် ရွေးပါ:
                 <ul>
                     <li><strong>Export CSV / Advanced Export</strong></li>
+                    <li>အဆင့်မြင့် Export: အလုပ်ရှင် အများအပြား၏ ဝန်ထမ်းများ → အလုပ်ရှင်အလိုက် စုစည်းထားသော ဖိုင်တစ်ခု သို့မဟုတ် အလုပ်ရှင်တစ်ဦးလျှင် ဖိုင်တစ်ခု (ZIP) ရွေးပါ</li>
+                    <li>အဆင့်မြင့် ဒေါင်းလုဒ်: အလုပ်ရှင် အများအပြား → အလုပ်ရှင်တစ်ဦးလျှင် ဖိုင်တွဲ · ဖိုင်အမည်တွင် အလုပ်ရှင်၊ လူဦးရေ နှင့် ရက်စွဲ-အချိန် ပါသည်</li>
                     <li><strong>Transfer Employer</strong> (Bulk Transfer)</li>
                     <li><strong>Automated PDF</strong> (နမူနာမှ PDF ဖန်တီးရန်)</li>
                     <li><strong>Send to Production</strong></li>

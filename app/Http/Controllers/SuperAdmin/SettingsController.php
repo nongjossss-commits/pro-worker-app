@@ -670,8 +670,34 @@ class SettingsController extends Controller
     }
 
     /**
-     * Per-slot update: save one slot's default to SuperAdminSetting AND force-update
-     * every existing record's description column to match. Returns JSON for AJAX.
+     * New default name for an "other document" slot → the records that still
+     * show the old default (or nothing) take the new one. A name typed for one
+     * employee / employer is left alone: it used to be overwritten for every
+     * record, and the name people had typed was lost (data-loss report,
+     * 2026-10-30). Logged in the activity log with how many records changed.
+     */
+    protected function applyDefaultDescription(string $modelClass, string $column, ?string $previous, ?string $value): int
+    {
+        $value = trim((string) $value);
+        $affected = $modelClass::query()
+            ->where(function ($q) use ($column, $previous) {
+                $q->whereNull($column)->orWhere($column, '');
+                if (filled($previous)) {
+                    $q->orWhere($column, $previous);
+                }
+            })
+            ->update([$column => $value !== '' ? $value : null]);
+
+        \App\Helpers\ActivityLogHelper::logAction('update',
+            'เปลี่ยนชื่อเริ่มต้นของช่องเอกสารอื่นๆ (' . $column . ') เป็น "' . ($value !== '' ? $value : '-') . '" — ใช้กับ ' . $affected . ' รายการที่ยังใช้ชื่อเดิม/ว่าง (ชื่อที่ตั้งเองของแต่ละรายการไม่ถูกแก้)',
+            null, null, ['column' => $column, 'previous_default' => $previous, 'new_default' => $value, 'records' => $affected]);
+
+        return $affected;
+    }
+
+    /**
+     * Per-slot update: save one slot's default to SuperAdminSetting and apply it
+     * to the records still on the old default (applyDefaultDescription()). Returns JSON for AJAX.
      */
     public function updateSingleAttachmentDescription(Request $request)
     {
@@ -700,16 +726,14 @@ class SettingsController extends Controller
 
         DB::beginTransaction();
         try {
+            $previous = SuperAdminSetting::where('key', $settingKey)->value('value');
+
             // 1) Save default to SuperAdminSetting (drives auto-apply for future records)
             SuperAdminSetting::updateOrCreate(['key' => $settingKey], ['value' => $value]);
 
-            // 2) Force-update every existing record to match
-            $affected = 0;
-            if ($entity === 'employer') {
-                $affected = Employer::query()->update([$dbColumn => $value !== '' ? $value : null]);
-            } else {
-                $affected = Employee::query()->update([$dbColumn => $value !== '' ? $value : null]);
-            }
+            // 2) Records still on the old default (or blank) follow the new one —
+            //    a name typed for one employee / employer is kept (see applyDefaultDescription()).
+            $affected = $this->applyDefaultDescription($entity === 'employer' ? Employer::class : Employee::class, $dbColumn, $previous, $value);
 
             DB::commit();
 
@@ -740,6 +764,12 @@ class SettingsController extends Controller
         }
         $request->validate($employeeRules);
 
+        // The defaults before this save — records still on them follow the new ones.
+        $previousDefaults = SuperAdminSetting::whereIn('key', array_merge(
+            array_map(fn ($i) => "employer_other_{$i}_desc", range(1, 3)),
+            array_map(fn ($i) => "employee_other_{$i}_desc", range(1, 10))
+        ))->pluck('value', 'key')->all();
+
         // Save to Settings
         $settingData = [];
         for ($i = 1; $i <= 3; $i++) {
@@ -761,30 +791,19 @@ class SettingsController extends Controller
         // Apply changes to existing records
         DB::beginTransaction();
         try {
-            // Update Employers
-            $employerUpdates = [];
+            // Update Employers / Employees — only records still on the old
+            // default (or blank); a name typed for one record is kept.
             for ($i = 1; $i <= 3; $i++) {
                 $inputKey = "employer_other_{$i}_desc";
-                $dbCol = "employer_doc_other_{$i}_desc";
                 if ($request->has($inputKey) && !empty($request->input($inputKey))) {
-                    $employerUpdates[$dbCol] = $request->input($inputKey);
+                    $this->applyDefaultDescription(Employer::class, "employer_doc_other_{$i}_desc", $previousDefaults[$inputKey] ?? null, (string) $request->input($inputKey));
                 }
             }
-            if (!empty($employerUpdates)) {
-                Employer::query()->update($employerUpdates);
-            }
-
-            // Update Employees
-            $employeeUpdates = [];
             for ($i = 1; $i <= 10; $i++) {
                 $inputKey = "employee_other_{$i}_desc";
-                $dbCol = "other_doc_{$i}_desc";
                 if ($request->has($inputKey) && !empty($request->input($inputKey))) {
-                    $employeeUpdates[$dbCol] = $request->input($inputKey);
+                    $this->applyDefaultDescription(Employee::class, "other_doc_{$i}_desc", $previousDefaults[$inputKey] ?? null, (string) $request->input($inputKey));
                 }
-            }
-            if (!empty($employeeUpdates)) {
-                Employee::query()->update($employeeUpdates);
             }
 
             DB::commit();

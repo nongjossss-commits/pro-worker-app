@@ -264,6 +264,8 @@ class ActivityLogPresenter
 
     protected static function updateLines(ActivityLog $log, string $model, array $old, array $new): array
     {
+        $props = is_array($log->properties) ? $log->properties : [];
+        $archived = is_array($props['archived_files'] ?? null) ? $props['archived_files'] : [];
         $lines = [];
         $changed = [];
         foreach ($new as $field => $value) {
@@ -298,18 +300,21 @@ class ActivityLogPresenter
             $label = '<strong>' . e(self::label($log, $model, $field)) . '</strong>';
 
             if (self::isFileField($field, $after) || self::isFileField($field, $before)) {
+                // Since 2026-10-30 the old file is kept 30 days (App\Support\AttachmentArchive)
+                $kept = !empty($archived[$field]) ? ' ' . self::archivedBadge($log, (string) $archived[$field]) : '';
                 if (!$before) {
                     $lines[] = "แนบไฟล์ในช่อง {$label}: " . self::fileLink($after);
                 } elseif (!$after) {
-                    $lines[] = "ลบไฟล์ออกจากช่อง {$label} (ไฟล์เดิม: " . e(basename((string) $before)) . ')';
+                    $lines[] = "ลบไฟล์ออกจากช่อง {$label} (ไฟล์เดิม: " . e(basename((string) $before)) . ')' . $kept;
                 } else {
-                    $lines[] = "เปลี่ยนไฟล์ในช่อง {$label}: " . e(basename((string) $before)) . ' → ' . self::fileLink($after);
+                    $lines[] = "เปลี่ยนไฟล์ในช่อง {$label}: " . e(basename((string) $before)) . ' → ' . self::fileLink($after) . $kept;
                 }
                 continue;
             }
 
             if (self::isSecret($field)) {
-                $lines[] = "เปลี่ยน{$label}";
+                // The value itself is never stored — only that it was set / changed / cleared.
+                $lines[] = !$before ? "กรอก{$label}" : (!$after ? "ลบค่า{$label}" : "เปลี่ยน{$label}");
                 continue;
             }
 
@@ -402,6 +407,31 @@ class ActivityLogPresenter
         return ActivityLogHelper::getFieldLabel($field);
     }
 
+    /**
+     * "Old file kept for 30 days" — a link to it for users allowed to see kept
+     * files ('view-attachment-archive'), or "deleted after 30 days" once pruned.
+     */
+    protected static function archivedBadge(ActivityLog $log, string $archivedPath): string
+    {
+        $days = \App\Support\AttachmentArchive::KEEP_DAYS;
+        try {
+            $exists = Storage::disk('private')->exists($archivedPath);
+        } catch (\Throwable $e) {
+            $exists = false;
+        }
+        if (!$exists) {
+            return '<span class="badge bg-secondary-subtle text-secondary-emphasis">ไฟล์เดิมเก็บสำรองครบ ' . $days . ' วันแล้ว — ลบถาวรแล้ว</span>';
+        }
+        $badge = '<span class="badge bg-success-subtle text-success-emphasis">ไฟล์เดิมเก็บสำรองไว้ ' . $days . ' วัน</span>';
+        $owner = \App\Support\AttachmentArchive::ownerFor((string) $log->subject_type);
+        if (auth()->user()?->can('view-attachment-archive') && isset(\App\Support\AttachmentArchive::OWNERS[$owner])) {
+            $url = route('attachment-archive.show', [$owner, $log->subject_id, basename($archivedPath)]);
+            $badge .= ' <a href="' . e($url) . '" target="_blank" rel="noopener"><i class="bi bi-eye"></i> ดูไฟล์เดิม</a>';
+        }
+
+        return $badge;
+    }
+
     protected static function isSecret(string $field): bool
     {
         return str_contains(strtolower($field), 'password') || $field === 'remember_token';
@@ -430,7 +460,9 @@ class ActivityLogPresenter
             }
         } catch (\Throwable $e) {
         }
-        return '<i class="bi bi-paperclip"></i> ' . $name;
+        // Recorded as attached but not on the server any more (replaced later
+        // before files were archived, or lost) — flagged so it can be checked.
+        return '<i class="bi bi-paperclip"></i> ' . $name . ' <span class="badge bg-danger-subtle text-danger-emphasis">ไม่พบไฟล์นี้บนเซิร์ฟเวอร์แล้ว</span>';
     }
 
     protected static function value(string $field, $value): string

@@ -174,6 +174,8 @@
             <li>เลือก action จาก dropdown:
                 <ul>
                     <li><strong>Export CSV / Advanced Export</strong></li>
+                    <li>ส่งออกขั้นสูง: ถ้าเลือกลูกจ้างหลายนายจ้าง ระบบถามว่าจะรวมไฟล์เดียว (เรียงแยกนายจ้าง) หรือแยกไฟล์ตามนายจ้าง (ZIP)</li>
+                    <li>ดาวน์โหลดขั้นสูง: ลูกจ้างหลายนายจ้าง → เลือกแยกโฟลเดอร์ตามนายจ้างได้ · ชื่อไฟล์มีชื่อนายจ้าง/จำนวนคน/วันเวลา</li>
                     <li><strong>ย้ายนายจ้าง</strong> (Bulk Transfer)</li>
                     <li><strong>Automated PDF</strong> (สร้าง PDF จาก template)</li>
                     <li><strong>Send to Production</strong></li>

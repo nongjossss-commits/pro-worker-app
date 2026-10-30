@@ -170,9 +170,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/employees/{employee}/restore', [EmployeeController::class, 'restore'])->middleware('permission:restore-employees')->name('employees.restore')->withTrashed();
     Route::delete('/employees/{employee}/force-delete', [EmployeeController::class, 'forceDelete'])->middleware('permission:force-delete-employees')->name('employees.forceDelete')->withTrashed();
     Route::get('/employees/{employee}/locate', [EmployeeController::class, 'locate'])->name('employees.locate');
+    // Replaced / removed attachments kept 30 days (App\Support\AttachmentArchive) — Super Admin, or users it was granted to
+    Route::middleware('can:view-attachment-archive')->group(function () {
+        Route::get('/attachment-archive/{owner}/{id}', [\App\Http\Controllers\AttachmentArchiveController::class, 'index'])->whereIn('owner', ['employees', 'employers'])->whereNumber('id')->name('attachment-archive.index');
+        Route::get('/attachment-archive/{owner}/{id}/{file}', [\App\Http\Controllers\AttachmentArchiveController::class, 'show'])->whereIn('owner', ['employees', 'employers'])->whereNumber('id')->name('attachment-archive.show');
+    });
     Route::get('/employees/{employee}/create-job', [JobController::class, 'createFromEmployee'])->name('jobs.create_from_employee');
     Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
     Route::post('/employees/advanced-export', [EmployeeController::class, 'advancedExport'])->name('employees.advanced_export');
+    Route::post('/employees/advanced-export/employers', [EmployeeController::class, 'advancedExportEmployers'])->name('employees.advanced_export.employers');
     Route::get('/employees/history', [EmployeeController::class, 'historyIndex'])->middleware('menu:employment_history')->name('employees.history');
     Route::get('/employees/history/preview-search', [EmployeeController::class, 'previewHistorySearch'])->name('employees.history.preview_search');
     Route::get('/employees/history/preview-search-combined', [EmployeeController::class, 'previewHistorySearchCombined'])->name('employees.history.preview_search_combined');

@@ -49,6 +49,7 @@ class DownloadController extends Controller
             'stamp_employee_info' => 'nullable|boolean',
             'stamp_company_info' => 'nullable|boolean',
             'download_profile_id' => 'nullable|exists:download_profiles,id',
+            'employer_folders' => 'nullable|boolean',
         ]);
 
         // Authorization Logic:
@@ -83,6 +84,8 @@ class DownloadController extends Controller
             'stamp_employee_info' => $request->boolean('stamp_employee_info'),
             'stamp_company_info' => $request->boolean('stamp_company_info'),
             'download_profile_id' => $request->input('download_profile_id'),
+            // employees of several employers → a folder per employer (asked in the download popup)
+            'employer_folders' => $request->boolean('employer_folders'),
         ];
 
         // Runs right after this response is sent, in this same PHP process —
@@ -136,14 +139,17 @@ class DownloadController extends Controller
         }
 
         $disposition = $request->input('disposition', 'attachment');
+        // On disk "{task id}__{name}" (unique); the browser gets just "{name}" —
+        // e.g. "นายจ้าง ก (5 คน) 2026-10-30 15.36.12.zip" (ProcessDownload::outputPath()).
+        $downloadName = preg_replace('/^' . $task->id . '__/', '', basename($fullPath));
 
         if ($disposition === 'inline') {
             return response()->file($fullPath, [
                 'Content-Type' => mime_content_type($fullPath)
-            ])->setContentDisposition('inline', basename($fullPath), 'download_file');
+            ])->setContentDisposition('inline', $downloadName, 'download_file');
         }
 
-        return response()->download($fullPath, basename($fullPath));
+        return response()->download($fullPath, $downloadName);
     }
 
     // Helper to clean up old files (optional, can be scheduled)

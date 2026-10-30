@@ -68,6 +68,7 @@ class PermissionHelper
         'approve-production' => ['th' => 'อนุมัติงาน Pre-Production', 'en' => 'Approve Production', 'zh' => '批准生产'],
         'manage-own-workflow' => ['th' => 'จัดการ Workflow ของตนเอง', 'en' => 'Manage Own Workflow', 'zh' => '管理自己的工作流程'],
         'move-attachments' => ['th' => 'โยกย้ายไฟล์แนบ (Move Attachment Files)', 'en' => 'Move Attachment Files', 'zh' => '移动附件文件'],
+        'view-attachment-archive' => ['th' => 'ดูไฟล์เดิมที่ถูกแทนที่ (เก็บสำรอง 30 วัน)', 'en' => 'View replaced files (kept 30 days)', 'zh' => '查看被替换的旧文件（保留 30 天）'],
     ];
 
     public static function getLabel($permissionName)

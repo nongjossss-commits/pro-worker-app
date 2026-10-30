@@ -74,7 +74,7 @@ class AppServiceProvider extends ServiceProvider
             // permission. Returning null here (not false) defers to the
             // normal per-user permission check instead of denying outright.
             // Super Admin is untouched — still always bypasses.
-            if ($ability === 'move-attachments') {
+            if ($ability === 'move-attachments' || $ability === 'view-attachment-archive') {
                 return $user->hasRole('super-admin') ? true : null;
             }
 

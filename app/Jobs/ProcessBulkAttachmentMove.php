@@ -86,6 +86,48 @@ class ProcessBulkAttachmentMove implements ShouldQueue
     {
         $fromPath = $employee->{$this->fromField};
         $toPath = $employee->{$this->toField};
+        $result = $this->applyMove($employee, $fromPath, $toPath);
+        if ($result === 'moved') {
+            $this->logMove($employee, $fromPath, $toPath);
+        }
+
+        return $result;
+    }
+
+    /**
+     * saveQuietly() skips the model events, so the activity log is written
+     * here: the employee's history shows which slots changed and who ran the
+     * tool (the history page recognises a file moved from one slot to another).
+     */
+    protected function logMove(Employee $employee, ?string $fromBefore, ?string $toBefore): void
+    {
+        $properties = [
+            'old' => [$this->fromField => $fromBefore, $this->toField => $toBefore],
+            'attributes' => [$this->fromField => $employee->{$this->fromField}, $this->toField => $employee->{$this->toField}],
+        ];
+        $archived = \App\Support\AttachmentArchive::pending('employees', $employee->id);
+        if ($archived) {
+            $properties['archived_files'] = $archived;
+        }
+        $modes = ['swap' => 'สลับไฟล์', 'move_delete' => 'ย้ายไฟล์ (แทนที่ไฟล์ปลายทาง)', 'merge_append' => 'รวมไฟล์เป็น PDF เดียว'];
+
+        \App\Models\ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'update',
+            'subject_type' => Employee::class,
+            'subject_id' => $employee->id,
+            'description' => 'เครื่องมือย้ายไฟล์แนบ (Super Admin) — ' . ($modes[$this->mode] ?? $this->mode),
+            'properties' => $properties,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+    }
+
+    /**
+     * @return string 'moved' or 'skipped'
+     */
+    protected function applyMove(Employee $employee, ?string $fromPath, ?string $toPath): string
+    {
 
         if ($this->mode === 'swap') {
             if (!$fromPath && !$toPath) {
@@ -103,9 +145,8 @@ class ProcessBulkAttachmentMove implements ShouldQueue
         }
 
         if ($this->mode === 'move_delete') {
-            if ($toPath) {
-                Storage::disk('public')->delete($toPath);
-            }
+            // The file being replaced is kept in the archive, not deleted
+            \App\Support\AttachmentArchive::keep($toPath, 'employees', $employee->id, $this->toField);
             $employee->{$this->toField} = $fromPath;
             $employee->{$this->fromField} = null;
             $employee->saveQuietly();
@@ -128,8 +169,9 @@ class ProcessBulkAttachmentMove implements ShouldQueue
             throw new \RuntimeException("Could not merge files for employee {$employee->id} (unreadable source file).");
         }
 
-        Storage::disk('public')->delete($toPath);
-        Storage::disk('public')->delete($fromPath);
+        // The two source files are kept in the archive, not deleted
+        \App\Support\AttachmentArchive::keep($toPath, 'employees', $employee->id, $this->toField);
+        \App\Support\AttachmentArchive::keep($fromPath, 'employees', $employee->id, $this->fromField);
         $employee->{$this->toField} = $mergedPath;
         $employee->{$this->fromField} = null;
         $employee->saveQuietly();

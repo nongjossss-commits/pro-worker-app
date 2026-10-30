@@ -390,8 +390,15 @@ class EmployerController extends Controller
         $staffIds = $validated['assigned_staff_ids'] ?? [];
         unset($validated['assigned_staff_ids']);
 
+        // Someone else saved this employer after the form was opened → keep
+        // their newer values for the fields this form only re-sent.
+        $keptFields = \App\Support\StaleFormGuard::protect($employer, $validated, $request->input(\App\Support\StaleFormGuard::INPUT));
+
         $employer->update($validated);
         $employer->caretakers()->sync($staffIds);
+        if ($keptFields) {
+            session()->flash('warning', __('Someone else changed this employer while the form was open — their newer value was kept for: :fields', ['fields' => \App\Support\StaleFormGuard::labels($employer, $keptFields)]));
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -445,16 +452,9 @@ class EmployerController extends Controller
 
     public function destroy(Employer $employer)
     {
-        if ($employer->document_company_registration) {
-            Storage::disk('public')->delete($employer->document_company_registration);
-        }
-        if ($employer->document_vat_registration) {
-            Storage::disk('public')->delete($employer->document_vat_registration);
-        }
-        if ($employer->document_map) {
-            Storage::disk('public')->delete($employer->document_map);
-        }
-
+        // Moving to the trash keeps the files: the employer can be restored
+        // from the trash, and its documents must come back with it (they used
+        // to be deleted here, so a restored employer had lost its files).
         $employer->delete();
         return redirect()->route('employers.index')->with('success', 'Employer deleted successfully.');
     }
@@ -972,9 +972,8 @@ class EmployerController extends Controller
         foreach (self::EMPLOYER_DOC_FIELDS as $field) {
             if (!$request->hasFile($field)) continue;
 
-            if ($employer->{$field}) {
-                Storage::disk('public')->delete($employer->{$field});
-            }
+            // The replaced file is kept in the archive, not deleted (App\Support\AttachmentArchive)
+            \App\Support\AttachmentArchive::keep($employer->{$field}, 'employers', $employer->id, $field);
             $validated[$field] = $request->file($field)->store('employer_documents', 'public');
         }
     }
@@ -1004,13 +1003,13 @@ class EmployerController extends Controller
         ?string $generateSeed
     ): void {
         if ($action === 'upload' && $request->hasFile($fileInput)) {
-            $this->deleteIfExists($employer->{$dbField});
+            \App\Support\AttachmentArchive::keep($employer->{$dbField}, 'employers', $employer->id, $dbField); // kept, not deleted
             $validated[$dbField] = $request->file($fileInput)->store('signatures/employers', 'public');
             return;
         }
 
         if ($action === 'generate' && $generateSeed !== null) {
-            $this->deleteIfExists($employer->{$dbField});
+            \App\Support\AttachmentArchive::keep($employer->{$dbField}, 'employers', $employer->id, $dbField); // kept, not deleted
             $sigService = app(SignatureGeneratorService::class);
             $content = $sigService->generate($generateSeed);
             // ใช้ uniqid + microtime แทน time() กัน filename collision เมื่อ concurrent uploads
@@ -1024,21 +1023,13 @@ class EmployerController extends Controller
         if ($action === 'draw' && $request->filled($base64Field)) {
             $base64Image = $request->input($base64Field);
             if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
-                $this->deleteIfExists($employer->{$dbField});
+                \App\Support\AttachmentArchive::keep($employer->{$dbField}, 'employers', $employer->id, $dbField); // kept, not deleted
                 $data = base64_decode(substr($base64Image, strpos($base64Image, ',') + 1));
                 $unique = uniqid('', true);
                 $path = "signatures/employers/emp_{$employer->id}_{$filenameSlug}_{$unique}." . strtolower($type[1]);
                 Storage::disk('public')->put($path, $data);
                 $validated[$dbField] = $path;
             }
-        }
-    }
-
-    /** ลบไฟล์ใน public disk ถ้า path มีค่า */
-    private function deleteIfExists(?string $path): void
-    {
-        if ($path) {
-            Storage::disk('public')->delete($path);
         }
     }
 }

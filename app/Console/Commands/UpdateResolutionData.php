@@ -131,12 +131,43 @@ class UpdateResolutionData extends Command
 
             // updateQuietly bypasses EmployeeObserver → prevents auto re-pull
             // into another resolution tab when the new dates happen to match.
+            $before = $employee->only(['workPermitExpiryDate', 'visaExpiryDate', 'workPermitMOUGroup']);
             $employee->updateQuietly($updates);
+            $this->logAutoApply($employee, $group, $before);
             $applied++;
         }
 
         $this->info("  Applied to {$applied} employee(s) in {$group}.");
         Log::info("UpdateResolutionData: applied to {$applied} employee(s) in {$group}.");
         return $applied;
+    }
+
+    /**
+     * updateQuietly() skips the model events, so the activity log is written
+     * here — the employee's history shows the dates / work-permit type the
+     * system changed by itself (user = system), not a mystery change.
+     */
+    protected function logAutoApply(Employee $employee, string $group, array $before): void
+    {
+        $old = [];
+        $new = [];
+        foreach (array_keys($before) as $field) {
+            if ($employee->wasChanged($field)) {
+                $old[$field] = $before[$field] instanceof \DateTimeInterface ? $before[$field]->format('Y-m-d') : $before[$field];
+                $new[$field] = $employee->getAttributes()[$field] ?? null;
+            }
+        }
+        if (!$new) {
+            return;
+        }
+
+        \App\Models\ActivityLog::create([
+            'user_id' => null,
+            'action' => 'update',
+            'subject_type' => Employee::class,
+            'subject_id' => $employee->id,
+            'description' => 'ระบบปรับข้อมูลอัตโนมัติตามการตั้งค่า' . ($group === 'registration' ? 'มติลงทะเบียน' : 'มติต่ออายุ') . ' (24 ชม. หลังกดเสร็จสิ้น)',
+            'properties' => ['old' => $old, 'attributes' => $new],
+        ]);
     }
 }

@@ -12,6 +12,8 @@ use Carbon\Carbon;
 
 class ActivityLogController extends Controller
 {
+    use \App\Traits\RemembersPerPage;
+
     /** Employee columns searched by name / any ID number (RA = name_list_number). */
     protected const EMPLOYEE_SEARCH_COLUMNS = [
         'employeeNameTh', 'employeeNameEn', 'name_suffix', 'employeePassport', 'employee_reference_id',
@@ -310,7 +312,10 @@ class ActivityLogController extends Controller
             $query->whereIn('action', ['terminate', 'reinstate', 'transfer', 'status_change', 'workflow_process', 'bulk_action']);
         }
 
-        $logs = $query->paginate(50)->withQueryString();
+        // 25 / 50 / 100 per page like the Employees menu; the last pick is remembered (RemembersPerPage).
+        $perPageOptions = [25, 50, 100];
+        $currentPerPage = $this->rememberedPerPage($request, 'activity_log_history', $perPageOptions, 50);
+        $logs = $query->paginate($currentPerPage)->withQueryString();
 
         // รายชื่อผู้ใช้ที่มี activity กับ subject นี้
         $activeUserIds = ActivityLog::where('subject_type', $subjectType)
@@ -325,7 +330,7 @@ class ActivityLogController extends Controller
 
         return view('admin.activity_logs.subject_history', compact(
             'logs', 'subject', 'subjectType', 'subjectId', 'subjectLabel',
-            'users', 'userId', 'actions', 'actionFilter', 'categoryFilter'
+            'users', 'userId', 'actions', 'actionFilter', 'categoryFilter', 'perPageOptions', 'currentPerPage'
         ));
     }
 }

@@ -19,7 +19,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class AttachmentSizeController extends Controller
 {
     public const THRESHOLDS_MB = [5, 10, 20, 50];
-    public const PER_PAGE = [20, 30, 50, 100];
+    public const PER_PAGE = [25, 50, 100]; // same choices as the Employees menu
     public const VIEWS = ['owned', 'orphans'];
 
     public function index(Request $request)
@@ -71,12 +71,12 @@ class AttachmentSizeController extends Controller
     protected function options(Request $request): array
     {
         $mb = (int) $request->query('min', 10);
-        $perPage = (int) $request->query('per_page', 20);
+        $perPage = (int) $request->query('per_page', 25);
         $view = (string) $request->query('view', 'owned');
 
         return [
             'minMb' => in_array($mb, self::THRESHOLDS_MB, true) ? $mb : 10,
-            'perPage' => in_array($perPage, self::PER_PAGE, true) ? $perPage : 20,
+            'perPage' => in_array($perPage, self::PER_PAGE, true) ? $perPage : 25,
             'view' => in_array($view, self::VIEWS, true) ? $view : 'owned',
         ];
     }

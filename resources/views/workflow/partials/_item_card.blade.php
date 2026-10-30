@@ -613,7 +613,7 @@
                             empFormData.append('name_list_number', this.nameList);
                             empFormData.append('employee_reference_id', this.refId);
                             empFormData.append('employer_id', @js($item->employee->employer_id ?? ''));
-                            empFormData.append('employeeNameEn', @js($item->employee->employeeNameEn ?? ''));
+                            empFormData.append('employeeNameEn', @js($item->employee?->getRawOriginal('employeeNameEn') ?? ''));
 
                             let req2 = fetch('{{ route('employees.update', $item->employee->id ?? 0) }}', {
                                 method: 'POST',

@@ -161,6 +161,9 @@
         .then(data => {
             if (data.success) {
                 handleSaveSuccess();
+                // Someone else changed some fields while this form was open — their values were kept
+                // (StaleFormGuard). Shown after the success toast so it isn't replaced by it.
+                if (data.kept_notice && window.appAlert) window.appAlert(data.kept_notice, { icon: 'warning' });
             } else {
                 throw new Error(data.message || 'Unknown error');
             }

@@ -51,6 +51,8 @@
 
     <form id="bulkEditForm" action="{{ route('employees.bulk_update') }}" method="POST" enctype="multipart/form-data">
         @csrf
+        {{-- When the form was opened — someone else's later changes are not overwritten (App\Support\StaleFormGuard) --}}
+        <input type="hidden" name="_form_loaded_at" value="{{ now()->timestamp }}">
         @method('PUT')
 
         {{-- Hidden inputs for Employee IDs --}}

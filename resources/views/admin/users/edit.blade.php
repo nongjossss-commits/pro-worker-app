@@ -172,7 +172,7 @@
                                 with AppServiceProvider's Gate::before.
                             --}}
                             @foreach ($allPermissions as $permission)
-                                <div x-cloak x-show="selectedRole !== 'admin' || {{ in_array($permission->name, ['move-attachments'], true) ? 'true' : 'false' }}">
+                                <div x-cloak x-show="selectedRole !== 'admin' || {{ in_array($permission->name, ['move-attachments', 'view-attachment-archive'], true) ? 'true' : 'false' }}">
                                     <label for="perm-{{ $permission->id }}" class="inline-flex items-center">
                                         <input id="perm-{{ $permission->id }}" type="checkbox" name="permissions[]" value="{{ $permission->name }}"
                                             {{ in_array($permission->name, $initialCheckedPermissions, true) ? 'checked' : '' }}

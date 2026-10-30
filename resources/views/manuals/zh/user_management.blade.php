@@ -96,3 +96,7 @@
     <dt>Q: 为什么我的 Staff 用户无法进入某些菜单?</dt>
     <dd>A: 请查看"角色与权限"区块 —— 确认 Staff 拥有哪些权限，如有缺失，请联系 Super Admin 添加</dd>
 </dl>
+
+<div class="manual-tip">
+    <strong>查看被替换的旧文件（保留 30 天）：</strong>Super Admin 始终可以 —— 管理员或其他用户需要 Super Admin 在其用户页面勾选此权限（与"移动附件文件"相同）
+</div>

@@ -107,11 +107,13 @@
                         <input type="radio" class="btn-check" name="view" id="view-table" value="table" onchange="this.form.submit()" @checked(request('view') === 'table')>
                         <label class="btn btn-outline-primary" for="view-table"><i class="bi bi-table"></i></label>
                     </div>
-                    <select name="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    {{-- Items per page — same 25 / 50 / 100 buttons as the Employees menu; the last pick is remembered (RemembersPerPage). --}}
+                    @php $perPageQuery = collect(request()->query())->reject(fn ($v, $k) => $k === 'page' || str_ends_with($k, '_page'))->all(); @endphp
+                    <div class="btn-group btn-group-sm" title="{{ __('Items per page:') }}">
                         @foreach($perPageOptions as $option)
-                        <option value="{{ $option }}" @selected(request('per_page', $perPageOptions[0]) == $option)>{{ __('Show') }} {{ $option }}</option>
+                            <a href="{{ route('notifications.index', array_merge($perPageQuery, ['per_page' => $option])) }}" class="btn {{ $currentPerPage == $option ? 'btn-primary' : 'btn-outline-secondary' }}">{{ $option }}</a>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
             </form>
         </div>

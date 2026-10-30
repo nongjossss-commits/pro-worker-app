@@ -48,18 +48,18 @@ class AttachmentSizePaginationTest extends TestCase
         });
     }
 
-    public function test_default_page_shows_20_files_and_the_page_links(): void
+    public function test_default_page_shows_25_files_and_the_page_links(): void
     {
         $this->fakeScan(45, 3);
 
         $html = $this->actingAs($this->admin())->get(route('admin.attachment-sizes.list'))->assertOk()->getContent();
 
         $this->assertStringContainsString('file-0.pdf', $html);
-        $this->assertStringContainsString('file-19.pdf', $html);
-        $this->assertStringNotContainsString('file-20.pdf', $html);
-        $this->assertStringContainsString('per_page=20', $html);
-        $this->assertStringContainsString('page=3', $html);          // 45 / 20 → 3 pages
-        $this->assertStringContainsString('1–20', $html);
+        $this->assertStringContainsString('file-24.pdf', $html);
+        $this->assertStringNotContainsString('file-25.pdf', $html);
+        $this->assertStringContainsString('per_page=25', $html);
+        $this->assertStringContainsString('page=2', $html);          // 45 / 25 → 2 pages
+        $this->assertStringContainsString('1–25', $html);
         $this->assertStringContainsString('>45<', $html);            // tab count
         $this->assertStringContainsString('>3<', $html);             // orphan tab count
     }
@@ -68,12 +68,12 @@ class AttachmentSizePaginationTest extends TestCase
     {
         $this->fakeScan(45, 0);
 
-        $html = $this->actingAs($this->admin())->get(route('admin.attachment-sizes.list', ['per_page' => 30, 'page' => 2]))->assertOk()->getContent();
+        $html = $this->actingAs($this->admin())->get(route('admin.attachment-sizes.list', ['per_page' => 25, 'page' => 2]))->assertOk()->getContent();
 
-        $this->assertStringContainsString('file-30.pdf', $html);
+        $this->assertStringContainsString('file-25.pdf', $html);
         $this->assertStringContainsString('file-44.pdf', $html);
-        $this->assertStringNotContainsString('file-29.pdf', $html);
-        $this->assertStringContainsString('31–45', $html);
+        $this->assertStringNotContainsString('file-24.pdf', $html);
+        $this->assertStringContainsString('26–45', $html);
     }
 
     public function test_orphan_tab_and_invalid_options_fall_back(): void
@@ -82,9 +82,9 @@ class AttachmentSizePaginationTest extends TestCase
 
         $html = $this->actingAs($this->admin())->get(route('admin.attachment-sizes.list', ['view' => 'orphans', 'per_page' => 7, 'page' => 99]))->assertOk()->getContent();
 
-        // per_page 7 is not allowed → 20; page 99 → last page (2)
+        // per_page 7 is not allowed → 25; page 99 → last page (1)
         $this->assertStringContainsString('data-view="orphans"', $html);
-        $this->assertStringContainsString('21–25', $html);
+        $this->assertStringContainsString('1–25', $html);
         $this->assertStringContainsString('file-26.pdf', $html);
         $this->assertStringNotContainsString('Owner 0', $html);
     }

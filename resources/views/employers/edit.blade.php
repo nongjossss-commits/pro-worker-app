@@ -65,6 +65,8 @@
         data-duplicate-label-ok="{{ __('OK') }}"
         data-duplicate-label-suffix-hint="{{ __('If this is intentional (e.g. a branch), add a Name Suffix above to tell the two records apart.') }}">
         @csrf
+        {{-- When the form was opened — someone else's later changes are not overwritten (App\Support\StaleFormGuard) --}}
+        <input type="hidden" name="_form_loaded_at" value="{{ now()->timestamp }}">
         @method('PUT')
         <input type="hidden" id="return_url" name="return_url" value="{{ request('return_url', route('employers.index')) }}">
 

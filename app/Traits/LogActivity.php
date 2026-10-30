@@ -111,7 +111,15 @@ trait LogActivity
 
             foreach ($changes as $key => $value) {
                 // Skip timestamps or hidden fields if needed
-                if (in_array($key, ['updated_at', 'password', 'remember_token'])) {
+                if (in_array($key, ['updated_at', 'remember_token'])) {
+                    continue;
+                }
+
+                // A password / code is recorded as "set / changed / cleared" only —
+                // never its value (two different markers, so the change shows).
+                if ($key === 'password') {
+                    $old[$key] = filled($original[$key] ?? null) ? '•••• (เดิม)' : null;
+                    $new[$key] = filled($attributes[$key] ?? null) ? '•••• (ใหม่)' : null;
                     continue;
                 }
 
@@ -127,6 +135,13 @@ trait LogActivity
                 'old' => $old,
                 'attributes' => $new,
             ];
+
+            // Replaced / removed attachments kept in the archive (App\Support\AttachmentArchive)
+            // — the history can then say the old file was kept, not lost.
+            $archived = \App\Support\AttachmentArchive::pending(\App\Support\AttachmentArchive::ownerFor($model), (int) $model->getKey());
+            if ($archived) {
+                $properties['archived_files'] = $archived;
+            }
         } elseif ($action === 'create') {
             $attributes = $model->getAttributes();
             // Mask password

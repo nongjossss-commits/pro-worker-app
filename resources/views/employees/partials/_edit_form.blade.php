@@ -9,6 +9,8 @@
     data-duplicate-label-ok="{{ __('OK') }}"
     data-duplicate-label-terminated="{{ __('Terminated') }}">
     @csrf
+    {{-- When the form was opened — someone else's later changes are not overwritten (App\Support\StaleFormGuard) --}}
+    <input type="hidden" name="_form_loaded_at" value="{{ now()->timestamp }}">
     @method('PUT')
     <input type="hidden" name="_previous" value="{{ old('_previous', $returnUrl ?? url()->previous()) }}">
     <input type="hidden" name="employer_id" value="{{ $employee->employer_id }}">

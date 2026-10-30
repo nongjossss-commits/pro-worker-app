@@ -44,3 +44,5 @@ Schedule::command('app:prune-download-files')->hourly();
 // (see the command).
 Schedule::command('app:process-employee-transfers')->hourly();
 Schedule::command('app:prune-orphan-files')->dailyAt('03:30');
+// Replaced / removed attachments are kept 30 days, then deleted (App\Support\AttachmentArchive)
+Schedule::command('app:prune-attachment-archive')->dailyAt('03:45');

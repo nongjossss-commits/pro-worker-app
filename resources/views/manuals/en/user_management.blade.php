@@ -96,3 +96,7 @@
     <dt>Q: Why can't my Staff user access certain menus?</dt>
     <dd>A: Check the "Roles & Permissions" section — see what permissions Staff has; if something's missing, ask a Super Admin to add it</dd>
 </dl>
+
+<div class="manual-tip">
+    <strong>View replaced files (kept 30 days):</strong> Super Admin always can — an admin or other user only when a Super Admin ticks this permission on their user page (like "Move Attachment Files")
+</div>
