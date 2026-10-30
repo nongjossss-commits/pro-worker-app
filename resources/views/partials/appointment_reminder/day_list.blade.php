@@ -43,7 +43,8 @@
 
                 <div class="flex-grow-1" style="min-width:0;">
                     <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
-                        <div>
+                        {{-- long names / addresses wrap instead of running off a phone screen --}}
+                        <div style="min-width:0; overflow-wrap:anywhere;">
                             <span class="badge {{ $badgeClass }} mb-1">{{ $item->source_label }}</span>
                             <div class="fw-bold d-flex align-items-center gap-1">
                                 <span>{{ $item->title_en }} {{ $item->name_en ?: '-' }}</span>

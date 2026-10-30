@@ -1364,7 +1364,7 @@
         if (bulkEditBtn) {
             bulkEditBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+                const selected = Array.from(window.getSelectedEmployeeCheckboxes()).map(cb => cb.value);
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -1407,7 +1407,7 @@
         if (bulkDownloadBtn) {
             bulkDownloadBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+                const selected = Array.from(window.getSelectedEmployeeCheckboxes()).map(cb => cb.value);
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
                     return;
@@ -1426,7 +1426,7 @@
         if (bulkExportBtn) {
             bulkExportBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+                const selected = Array.from(window.getSelectedEmployeeCheckboxes()).map(cb => cb.value);
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -1481,7 +1481,7 @@
         if (bulkFinanceBtn) {
             bulkFinanceBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+                const selected = Array.from(window.getSelectedEmployeeCheckboxes()).map(cb => cb.value);
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -1523,7 +1523,7 @@
             bulkSendProductionBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 // Get selected employees
-                const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+                const checkboxes = window.getSelectedEmployeeCheckboxes();
                 const selected = Array.from(checkboxes).map(cb => cb.value);
 
                 // Prepare URL params
@@ -1543,7 +1543,7 @@
         if (bulkGeneratePdfBtn) {
             bulkGeneratePdfBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                const selected = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+                const selected = Array.from(window.getSelectedEmployeeCheckboxes()).map(cb => cb.value);
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');

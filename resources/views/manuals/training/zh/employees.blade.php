@@ -174,6 +174,7 @@
             <li>从下拉菜单中选择操作:
                 <ul>
                     <li><strong>Export CSV / Advanced Export</strong></li>
+                    <li>所选内容在翻页/切换标签/刷新后保留，直到点击"清除选择" · 操作或刷新后页面回到原来的卡片</li>
                     <li>高级导出：员工来自多个雇主时 → 选择按雇主分组的一个文件，或每个雇主一个文件（ZIP）</li>
                     <li>高级下载：员工来自多个雇主 → 每个雇主一个文件夹 · 文件名包含雇主、人数和日期时间</li>
                     <li><strong>转移雇主</strong>(Bulk Transfer)</li>

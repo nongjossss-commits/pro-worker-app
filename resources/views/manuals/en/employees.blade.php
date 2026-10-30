@@ -159,6 +159,7 @@
                 <li><strong>Copy as card image</strong> — a brand-coloured card with the photo and data; press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the chat</li>
                 <li><strong>Save card image</strong> — a PNG file to forward</li>
                 <li><strong>Share…</strong> (phone/tablet) — opens the device share sheet; pick LINE</li>
+                <li><strong>The employee's e-mail password:</strong> if the employee has an e-mail password on file, Copy as text / Copy as card image / Save card image first ask whether to <strong>hide</strong> it (the default) or <strong>show</strong> it on the card · drag-and-drop and the share sheet never include it · when shown, the activity log notes "e-mail password included"</li>
             </ul>
         </li>
         <li>From Notifications the text includes the reason, e.g. "⚠️ Visa expiry: 28/01/2026 (overdue 242 days)"</li>
@@ -232,3 +233,7 @@
     <dt>Q: I only see employees from one company?</dt>
     <dd>A: If you're logged in with the "Employer" role, you'll only see your own employees — you need an Admin/Staff role or higher to see everyone</dd>
 </dl>
+
+<div class="manual-tip">
+    <strong>Selection and your place:</strong> ticked employees are remembered when you change page (page 1 → 2), switch tabs or refresh — the bar counts every page, and download / export / edit use the whole selection until you press <strong>Clear Selection</strong> · after saving / deleting / cancelling / editing and coming back, or a refresh, the page returns to the card you were working on (open job cards are reopened) · moving an employee to the trash removes the card in place, without a refresh
+</div>

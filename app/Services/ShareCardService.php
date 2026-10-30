@@ -111,7 +111,7 @@ class ShareCardService
      *   "tab:{resolution_tab id}"  — Registration / Renewal tab (that tab's request no., appointment, team, remarks)
      *   null                       — Employees menu etc.: the employee record itself
      */
-    public function forEmployee(Employee $employee, ?Notification $notification = null, bool $withPhoto = false, ?string $context = null): array
+    public function forEmployee(Employee $employee, ?Notification $notification = null, bool $withPhoto = false, ?string $context = null, bool $withPassword = false): array
     {
         $allowed = self::allowedFields()['employee'];
         $employee->loadMissing('employer');
@@ -151,6 +151,13 @@ class ShareCardService
 
         $lines = $this->lines(self::EMPLOYEE_FIELDS, $allowed, $values);
 
+        // The employee's e-mail password goes out only when the user chose "show"
+        // in the popup asked on copy text / copy image / save image (share-card JS).
+        $hasPassword = filled($employee->password);
+        if ($withPassword && $hasPassword) {
+            $lines[] = ['key' => 'email_password', 'icon' => '🔑', 'label' => __('Email Password'), 'value' => (string) $employee->password];
+        }
+
         // Notification context: the reason this card was shared (e.g. visa expiry).
         $alert = null;
         if ($notification && $notification->employee_id === $employee->id) {
@@ -168,7 +175,7 @@ class ShareCardService
             'title' => $employee->employeeNameTh ?: $title,
             'subtitle' => $employee->employeeNameEn,
             'url' => route('employees.show', $employee->id),
-        ], $allowed);
+        ], $allowed) + ['has_password' => $hasPassword];
     }
 
     public function forEmployer(Employer $employer, ?Notification $notification = null): array

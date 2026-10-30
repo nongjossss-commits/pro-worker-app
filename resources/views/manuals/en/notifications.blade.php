@@ -57,3 +57,7 @@
 <div class="manual-tip">
     <strong>Items per page:</strong> the <strong>25 / 50 / 100</strong> buttons on the filter bar, the same as the Employees menu — your last choice is remembered in this browser (default 25)
 </div>
+
+<div class="manual-tip">
+    <strong>Selection and your place:</strong> ticked employees are remembered when you change page (page 1 → 2), switch tabs or refresh — the bar counts every page, and download / export / edit use the whole selection until you press <strong>Clear Selection</strong> · after saving / deleting / cancelling / editing and coming back, or a refresh, the page returns to the card you were working on (open job cards are reopened) · moving an employee to the trash removes the card in place, without a refresh
+</div>

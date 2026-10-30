@@ -2883,5 +2883,13 @@
     "Replaced files (kept :days days)": "Replaced files (kept :days days)",
     "Slot": "Slot",
     "Someone else changed this employee while the form was open — their newer value was kept for: :fields": "Someone else changed this employee while the form was open — their newer value was kept for: :fields",
-    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "Someone else changed this employer while the form was open — their newer value was kept for: :fields"
+    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "Someone else changed this employer while the form was open — their newer value was kept for: :fields",
+    "Hide the employee's password?": "Hide the employee's password?",
+    "This employee has an e-mail password on file.": "This employee has an e-mail password on file.",
+    "Hide the password": "Hide the password",
+    "The card goes out without the password (recommended).": "The card goes out without the password (recommended).",
+    "Show the password": "Show the password",
+    "The e-mail password is included on the card.": "The e-mail password is included on the card.",
+    "Continue": "Continue",
+    "Moved to trash": "Moved to trash"
 }

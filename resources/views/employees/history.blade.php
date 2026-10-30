@@ -207,11 +207,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // The remembered selection (every page, until "Clear Selection") — components/bulk-action-bar.
+    const historySelectedIds = function () {
+        const fn = window.bulkBarSelectedIds && window.bulkBarSelectedIds['history-bulk-action-bar'];
+        return fn ? fn() : Array.from(document.querySelectorAll('.history-employee-checkbox:checked')).map(cb => cb.value);
+    };
+
     const bulkMoveAttachmentsBtn = document.getElementById('history-bulk-move-attachments-btn');
     if (bulkMoveAttachmentsBtn) {
         bulkMoveAttachmentsBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const selected = Array.from(document.querySelectorAll('.history-employee-checkbox:checked')).map(cb => cb.value);
+            const selected = historySelectedIds();
             window.openBulkMoveAttachmentsModal(selected);
         });
     }
@@ -220,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bulkExportBtn) {
         bulkExportBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const selected = Array.from(document.querySelectorAll('.history-employee-checkbox:checked')).map(cb => cb.value);
+            const selected = historySelectedIds();
 
             if (selected.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -348,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (transferBtn) {
         transferBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            const selectedCheckboxes = document.querySelectorAll('.history-employee-checkbox:checked');
+            const selectedCheckboxes = historySelectedIds().map(id => ({ dataset: { employeeId: id } }));
             if (selectedCheckboxes.length === 0) return;
             isBulkTransfer = true;
             const employeeIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.employeeId);
@@ -442,8 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             // Since this page uses .history-employee-checkbox and not the global one (yet),
             // we must collect them manually from the DOM.
-            const checkboxes = document.querySelectorAll('.history-employee-checkbox:checked');
-            const selected = Array.from(checkboxes).map(cb => cb.value);
+            const selected = historySelectedIds();
 
             if (selected.length === 0) {
                 showToast('{{ __('Please select employees first.') }}', 'danger');

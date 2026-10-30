@@ -9,6 +9,9 @@
     • click  → (only with data-share-menu) a small menu: copy text,
                copy / save / share a card image
   Every share that leaves the page is logged (POST /share-card/log).
+  Copy text / copy image / save image of an employee who has an e-mail
+  password ask first whether to hide it (askPassword) — hidden unless the
+  user picks "show"; drag and the phone share menu never include it.
   Which fields go out is set by an admin: Admin → Share settings
   (ShareCardService). Handles: components/share-handle.blade.php.
 --}}
@@ -30,6 +33,13 @@
         'employeeCard' => __('Employee card'),
         'employerCard' => __('Employer card'),
         'sentFrom' => __('Sent from'),
+        'pwTitle' => __('Hide the employee\'s password?'),
+        'pwIntro' => __('This employee has an e-mail password on file.'),
+        'pwHide' => __('Hide the password'),
+        'pwHideHint' => __('The card goes out without the password (recommended).'),
+        'pwShow' => __('Show the password'),
+        'pwShowHint' => __('The e-mail password is included on the card.'),
+        'pwGo' => __('Continue'),
     ];
     $shareIsAdmin = auth()->check() && auth()->user()->hasAnyRole(['admin', 'super-admin']);
 @endphp
@@ -84,18 +94,19 @@
     const fetchedAt = new Map();
     function fresh(k) { return cache.has(k) && Date.now() - (fetchedAt.get(k) || 0) < MAX_AGE; }
 
-    function fetchShare(info, withPhoto) {
-        const k = info.key + (withPhoto ? ':p' : '');
+    function fetchShare(info, withPhoto, withPassword) {
+        const k = info.key + (withPhoto ? ':p' : '') + (withPassword ? ':pw' : '');
         if (!fresh(k)) {
             // Older data in `ready` stays usable until the new answer arrives.
             fetchedAt.set(k, Date.now());
-            const qs = new URLSearchParams({ notification: info.notification || '', context: info.context || '', photo: withPhoto ? 1 : 0 });
+            const qs = new URLSearchParams({ notification: info.notification || '', context: info.context || '', photo: withPhoto ? 1 : 0, password: withPassword ? 1 : 0 });
             const p = fetch('/share-card/' + info.type + '/' + info.id + '?' + qs, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin'
             })
                 .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
-                .then(d => { ready.set(k, d); if (withPhoto) ready.set(info.key, d); return d; })
+                // The with-password data is never reused for drag / share (ready under its own key only).
+                .then(d => { ready.set(k, d); if (withPhoto && !withPassword) ready.set(info.key, d); return d; })
                 .catch(err => { cache.delete(k); throw err; });
             cache.set(k, p);
         }
@@ -106,12 +117,12 @@
         return ready.get(info.key) || ready.get(info.key + ':p') || null;
     }
 
-    function logShare(info, method) {
+    function logShare(info, method, withPassword) {
         try {
             fetch('/share-card/log', {
                 method: 'POST', keepalive: true, credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() },
-                body: JSON.stringify({ type: info.type, id: info.id, method: method })
+                body: JSON.stringify({ type: info.type, id: info.id, method: method, password: !!withPassword })
             }).catch(() => {});
         } catch (_) {}
     }
@@ -360,8 +371,30 @@
 
     function toast(msg, icon) { if (typeof window.appToast === 'function') window.appToast(msg, icon); }
 
-    function copyText(info) {
-        const dataP = fetchShare(info, false);
+    /**
+     * Employee with an e-mail password → ask whether to hide it. Resolves
+     * false (hide / nothing to hide), true (show) or null (popup cancelled).
+     */
+    function askPassword(info) {
+        if (info.type !== 'employee') return Promise.resolve(false);
+        const known = readyData(info);
+        const dataP = known ? Promise.resolve(known) : fetchShare(info, true);
+        return dataP.then(d => {
+            if (!d || !d.has_password || typeof window.appChoice !== 'function') return false;
+            return window.appChoice('<div>' + esc(T.pwIntro) + '</div>', {
+                title: T.pwTitle,
+                confirmText: T.pwGo,
+                value: 'hide',
+                choices: [
+                    { value: 'hide', label: T.pwHide, hint: T.pwHideHint },
+                    { value: 'show', label: T.pwShow, hint: T.pwShowHint },
+                ],
+            }).then(v => v === null ? null : v === 'show');
+        }, () => false);
+    }
+
+    function copyText(info, withPassword) {
+        const dataP = fetchShare(info, false, withPassword);
         let p;
         try {
             // Promise-valued ClipboardItem keeps the click's permission while the data loads.
@@ -373,31 +406,31 @@
         } catch (_) {
             p = dataP.then(d => navigator.clipboard.writeText(d.text));
         }
-        p.then(() => { toast(T.copiedText); logShare(info, 'copy_text'); })
+        p.then(() => { toast(T.copiedText); logShare(info, 'copy_text', withPassword); })
          .catch(() => toast(T.failed, 'error'));
     }
 
-    function copyImage(info) {
-        const blobP = fetchShare(info, true).then(renderCard);
+    function copyImage(info, withPassword) {
+        const blobP = fetchShare(info, true, withPassword).then(renderCard);
         let p;
         try {
             p = navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]);
         } catch (err) {
             p = Promise.reject(err);
         }
-        p.then(() => { toast(T.copiedImage); logShare(info, 'copy_image'); })
-         .catch(() => blobP.then(blob => fetchShare(info, true).then(d => {
+        p.then(() => { toast(T.copiedImage); logShare(info, 'copy_image', withPassword); })
+         .catch(() => blobP.then(blob => fetchShare(info, true, withPassword).then(d => {
                 downloadBlob(blob, fileName(d));
                 toast(T.imageFallback, 'info');
-                logShare(info, 'download_image');
+                logShare(info, 'download_image', withPassword);
             })).catch(() => toast(T.failed, 'error')));
     }
 
-    function saveImage(info) {
-        fetchShare(info, true).then(d => renderCard(d).then(blob => {
+    function saveImage(info, withPassword) {
+        fetchShare(info, true, withPassword).then(d => renderCard(d).then(blob => {
             downloadBlob(blob, fileName(d));
             toast(T.saved);
-            logShare(info, 'download_image');
+            logShare(info, 'download_image', withPassword);
         })).catch(() => toast(T.failed, 'error'));
     }
 
@@ -462,10 +495,15 @@
             if (!b) return;
             const act = b.dataset.act;
             closeMenu();
-            if (act === 'copy_text') copyText(info);
-            else if (act === 'copy_image') copyImage(info);
-            else if (act === 'save_image') saveImage(info);
-            else if (act === 'share') shareNative(info);
+            if (act === 'share') { shareNative(info); return; }
+            // Copy text / copy image / save image: ask about the password first
+            // (the click on the popup's button keeps the clipboard permission).
+            askPassword(info).then(withPassword => {
+                if (withPassword === null) return; // cancelled
+                if (act === 'copy_text') copyText(info, withPassword);
+                else if (act === 'copy_image') copyImage(info, withPassword);
+                else if (act === 'save_image') saveImage(info, withPassword);
+            });
         });
     }
 

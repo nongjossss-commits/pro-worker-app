@@ -1801,5 +1801,13 @@
     "Replaced files (kept :days days)": "အစားထိုးခံရသော ဖိုင်များ (:days ရက် သိမ်း)",
     "Slot": "အကွက်",
     "Someone else changed this employee while the form was open — their newer value was kept for: :fields": "ဖောင်ဖွင့်ထားစဉ် အခြားသူက ဤဝန်ထမ်းကို ပြင်ခဲ့သည် — အောက်ပါအကွက်များတွင် ၎င်းတို့၏ တန်ဖိုးအသစ်ကို ထားရှိထားသည်: :fields",
-    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "ဖောင်ဖွင့်ထားစဉ် အခြားသူက ဤအလုပ်ရှင်ကို ပြင်ခဲ့သည် — အောက်ပါအကွက်များတွင် ၎င်းတို့၏ တန်ဖိုးအသစ်ကို ထားရှိထားသည်: :fields"
+    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "ဖောင်ဖွင့်ထားစဉ် အခြားသူက ဤအလုပ်ရှင်ကို ပြင်ခဲ့သည် — အောက်ပါအကွက်များတွင် ၎င်းတို့၏ တန်ဖိုးအသစ်ကို ထားရှိထားသည်: :fields",
+    "Hide the employee's password?": "ဝန်ထမ်း၏ စကားဝှက်ကို ဝှက်မလား?",
+    "This employee has an e-mail password on file.": "ဤဝန်ထမ်းတွင် အီးမေးလ် စကားဝှက် မှတ်ထားသည်။",
+    "Hide the password": "စကားဝှက်ကို ဝှက်ရန်",
+    "The card goes out without the password (recommended).": "စကားဝှက်မပါဘဲ ကတ်ကို ပို့မည် (အကြံပြု)",
+    "Show the password": "စကားဝှက်ကို ပြရန်",
+    "The e-mail password is included on the card.": "ကတ်တွင် အီးမေးလ် စကားဝှက် ပါဝင်မည်",
+    "Continue": "ဆက်လုပ်ရန်",
+    "Moved to trash": "အမှိုက်ပုံးသို့ ရွှေ့ပြီး"
 }

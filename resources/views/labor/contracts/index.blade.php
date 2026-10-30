@@ -62,6 +62,72 @@
         .ct-team-check { margin-left: auto; color: var(--bs-primary); visibility: hidden; flex: none; }
         .ct-team.is-on .ct-team-check { visibility: visible; }
         .ct-team-hint { font-size: .8rem; color: var(--bs-secondary-color); }
+
+        /* Contract cards: the full table needs ~1100px; anything narrower
+           (phone, tablet, laptop with the sidebar) shows one card per contract
+           — number + status on top, the details as "label … value", then the
+           signed-copy slot across the card and the buttons at the bottom.
+           Decided by the list's own width (container query), not the screen. */
+        .ct-list { container-type: inline-size; }
+        .ct-selectall { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; }
+        .ct-selectall-text { display: none; }
+        @container (max-width: 1099.98px) {
+            .ct-list .table-responsive { overflow: visible; }
+            .ct-table { display: block; width: 100%; }
+            .ct-table > thead { display: block; }
+            .ct-table > thead > tr { display: flex; }
+            .ct-table > thead > tr > th { display: none; }
+            .ct-table > thead > tr > th:first-child {
+                display: block; width: 100% !important; padding: .55rem .9rem;
+                font-weight: 500; font-size: .875rem; border-bottom: 1px solid var(--bs-border-color);
+            }
+            .ct-table .ct-selectall-text { display: inline; }
+            .ct-table > tbody {
+                display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; padding: .75rem;
+            }
+            .ct-table > tbody > tr {
+                display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+                column-gap: 0; padding: .7rem .85rem .6rem; min-width: 0;
+                border: 1px solid var(--bs-border-color); border-radius: .6rem;
+                background: var(--bs-body-bg); box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+            }
+            .ct-table > tbody > tr:has(.contract-checkbox:checked) { border-color: var(--bs-primary); box-shadow: 0 0 0 1px var(--bs-primary) inset; }
+            .ct-table > tbody > tr > td {
+                display: block; grid-column: 1 / -1; min-width: 0; padding: .2rem 0;
+                border: 0; background: transparent !important; box-shadow: none !important; text-align: left;
+            }
+            /* top line: checkbox · contract no. · status */
+            .ct-table > tbody > tr > td:is(.ct-cb, .ct-no, .ct-status) {
+                grid-row: 1; align-self: stretch; display: flex; align-items: center;
+                padding: 0 0 .5rem; margin-bottom: .3rem;
+                border-bottom: 1px solid var(--bs-border-color-translucent);
+            }
+            .ct-table > tbody > tr > td.ct-cb { grid-column: 1; }
+            .ct-table > tbody > tr > td.ct-no { grid-column: 2; padding-left: .6rem; padding-right: .5rem; font-weight: 700; font-size: .95rem; overflow-wrap: anywhere; }
+            .ct-table > tbody > tr > td.ct-status { grid-column: 3; justify-content: flex-end; }
+            .ct-table > tbody > tr > td.ct-field {
+                display: flex; justify-content: space-between; align-items: baseline; gap: .75rem;
+                text-align: right; white-space: normal !important; overflow-wrap: anywhere; font-size: .9rem;
+            }
+            .ct-table > tbody > tr > td.ct-field::before {
+                content: attr(data-label); flex: 0 0 auto; max-width: 45%;
+                color: var(--bs-secondary-color); font-size: .78rem; font-weight: 500; text-align: left;
+            }
+            .ct-table > tbody > tr > td.ct-signed { padding-top: .5rem; }
+            .ct-table > tbody > tr > td.ct-signed .att-card { width: 100%; }
+            .ct-table > tbody > tr > td.ct-actions {
+                display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .35rem;
+                margin-top: .4rem; padding-top: .5rem;
+                border-top: 1px solid var(--bs-border-color-translucent);
+            }
+            .ct-table > tbody > tr.ct-empty { display: block; }
+            .ct-table > tbody > tr.ct-empty > td { text-align: center; }
+        }
+        /* two cards side by side once there is room (tablet / small laptop) */
+        @container (min-width: 640px) and (max-width: 1099.98px) {
+            .ct-table > tbody { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .ct-table > tbody > tr.ct-empty { grid-column: 1 / -1; }
+        }
     </style>
     @endpush
     <div class="ct-summary" style="--ct-cols: {{ $summaryCols }}">
@@ -170,13 +236,20 @@
         </div>
     @endif
 
-    <div class="card shadow-sm border-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+    {{-- ct-list: when the list is narrower than the full table (tablet, phone,
+         small laptop with the sidebar open) each contract becomes a card —
+         see the "Contract cards" styles above. data-mobile-table="scroll":
+         this page has its own cards, not the generic phone cards. --}}
+    <div class="card shadow-sm border-0 ct-list">
+        <div class="table-responsive" data-mobile-table="scroll">
+            <table class="table table-hover align-middle mb-0 ct-table">
                 <thead class="table-light">
                     <tr>
                         <th style="width: 1%;">
-                            <input type="checkbox" class="form-check-input" id="contractSelectAll" title="{{ __('Select all') }}">
+                            <label class="ct-selectall mb-0">
+                                <input type="checkbox" class="form-check-input" id="contractSelectAll" title="{{ __('Select all') }}">
+                                <span class="ct-selectall-text">{{ __('Select all') }}</span>
+                            </label>
                         </th>
                         <th>{{ __('Contract No.') }}</th>
                         <th>{{ __('Employer') }}</th>
@@ -192,7 +265,7 @@
                 <tbody>
                     @forelse($contracts as $contract)
                     <tr>
-                        <td>
+                        <td class="ct-cb">
                             {{-- uploadSignedCopy() is gated by assertCanAccessContract()
                                  — the same, looser scope index() itself already uses to
                                  decide which rows appear here at all — so every row a
@@ -202,25 +275,27 @@
                                    name="ids[]" value="{{ $contract->id }}"
                                    data-has-signed="{{ $contract->signed_copy_path ? '1' : '0' }}">
                         </td>
-                        <td class="font-monospace">{{ $contract->contract_no }}</td>
-                        <td>
-                            {{ $contract->employer_name_snapshot ?? '-' }}
-                            @if($contract->employer_ref_snapshot)
-                                <div class="small text-muted">{{ __('Employer ID') }}: {{ $contract->employer_ref_snapshot }}</div>
-                            @endif
+                        <td class="font-monospace ct-no">{{ $contract->contract_no }}</td>
+                        <td class="ct-field" data-label="{{ __('Employer') }}">
+                            <div>
+                                {{ $contract->employer_name_snapshot ?? '-' }}
+                                @if($contract->employer_ref_snapshot)
+                                    <div class="small text-muted">{{ __('Employer ID') }}: {{ $contract->employer_ref_snapshot }}</div>
+                                @endif
+                            </div>
                         </td>
-                        <td>{{ $contract->template->name ?? '-' }}</td>
-                        <td>{{ $contract->issuer->name ?? '-' }} @if($contract->issuer?->staff_code) ({{ $contract->issuer->staff_code }}) @endif</td>
-                        <td>{{ $contract->team->name ?? '-' }}</td>
-                        <td class="text-nowrap">{{ $contract->issued_at->format('d/m/Y H:i') }}</td>
-                        <td>
+                        <td class="ct-field" data-label="{{ __('Template') }}">{{ $contract->template->name ?? '-' }}</td>
+                        <td class="ct-field" data-label="{{ __('Issued By') }}">{{ $contract->issuer->name ?? '-' }} @if($contract->issuer?->staff_code) ({{ $contract->issuer->staff_code }}) @endif</td>
+                        <td class="ct-field" data-label="{{ __('Team') }}">{{ $contract->team->name ?? '-' }}</td>
+                        <td class="text-nowrap ct-field" data-label="{{ __('Issued At') }}">{{ $contract->issued_at->format('d/m/Y H:i') }}</td>
+                        <td class="ct-status">
                             @if($contract->signed_copy_path)
                                 <span class="badge bg-success">{{ __('Complete Contract') }}</span>
                             @else
                                 <span class="badge bg-secondary">{{ __('Awaiting signed copy') }}</span>
                             @endif
                         </td>
-                        <td>
+                        <td class="ct-signed">
                             {{-- Deliberately a PLAIN file picker here, not
                                  <x-file-input-group> (which routes every selection
                                  through the camera-scan/crop tool via
@@ -265,7 +340,7 @@
                                 </x-file-input-group>
                             </form>
                         </td>
-                        <td class="text-end">
+                        <td class="text-end ct-actions">
                             <a href="{{ route('labor.contracts.view', $contract) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="{{ __('Preview') }}">
                                 <i class="bi bi-eye"></i>
                             </a>
@@ -282,7 +357,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr>
+                    <tr class="ct-empty">
                         <td colspan="10" class="text-center text-muted py-4">{{ __('No contracts issued yet.') }}</td>
                     </tr>
                     @endforelse

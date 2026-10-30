@@ -393,7 +393,7 @@
                 e.preventDefault();
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
-                const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
+                const selected = window.getGlobalSelectedIds();
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -439,7 +439,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
 
-                const checkboxes = activePane.querySelectorAll('.bulk-action-checkbox:checked');
+                const checkboxes = window.getSelectedEmployeeCheckboxes();
                 const selected = Array.from(checkboxes).map(cb => cb.value);
 
                 if (selected.length === 0) {
@@ -467,7 +467,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
 
-                const checkboxes = activePane.querySelectorAll('.bulk-action-checkbox:checked');
+                const checkboxes = window.getSelectedEmployeeCheckboxes();
                 const selected = Array.from(checkboxes).map(cb => cb.value);
 
                 if (selected.length === 0) {
@@ -505,7 +505,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
 
-                const checkboxes = activePane.querySelectorAll('.bulk-action-checkbox:checked');
+                const checkboxes = window.getSelectedEmployeeCheckboxes();
                 const selected = Array.from(checkboxes).map(cb => cb.value);
 
                 if (selected.length === 0) {
@@ -533,7 +533,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
 
-                const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
+                const selected = window.getGlobalSelectedIds();
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -574,7 +574,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
 
-                const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
+                const selected = window.getGlobalSelectedIds();
 
                 if (selected.length === 0) {
                     showToast('{{ __('Please select employees first.') }}', 'danger');
@@ -627,8 +627,8 @@
             clearSelectionBtn.addEventListener('click', function() {
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
-                activePane.querySelectorAll('.bulk-action-checkbox:checked').forEach(cb => cb.checked = false);
                 if (window.clearGlobalSelection) window.clearGlobalSelection();
+                else activePane.querySelectorAll('.bulk-action-checkbox:checked').forEach(cb => cb.checked = false);
                 updateActionBar();
             });
         }
@@ -645,8 +645,10 @@
             if (!activePane) return;
 
             const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
-            const selectedCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox:checked');
-            const count = selectedCheckboxes.length;
+            const visibleChecked = activePane.querySelectorAll('.bulk-action-checkbox:checked').length;
+            // The selection is remembered across pages, refreshes and tabs until
+            // "Clear Selection" (layouts/_app_scripts, sessionStorage) — count it all.
+            const count = window.getGlobalSelectedIds ? window.getGlobalSelectedIds().length : visibleChecked;
 
             if (count > 0) {
                 actionBar.style.display = 'flex';
@@ -661,8 +663,8 @@
             }
 
             // Select All checkbox state
-            const allChecked = itemCheckboxes.length > 0 && count === itemCheckboxes.length;
-            const someChecked = count > 0 && !allChecked;
+            const allChecked = itemCheckboxes.length > 0 && visibleChecked === itemCheckboxes.length;
+            const someChecked = visibleChecked > 0 && !allChecked;
             if (selectAllCheckbox) {
                 selectAllCheckbox.checked = allChecked;
                 selectAllCheckbox.indeterminate = someChecked;
@@ -677,12 +679,23 @@
             }
         }
 
+        // Tick / untick boxes the way a click would (change event), so the
+        // program-wide selection (layouts/_app_scripts) records them.
+        function setBoxes(boxes, checked) {
+            boxes.forEach(cb => {
+                if (cb.disabled || cb.checked === checked) return;
+                cb.checked = checked;
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            updateActionBar();
+        }
+
         // Use the previously defined 'container' if available or query it
         const tabContentContainer = document.querySelector('.tab-content');
         if (tabContentContainer) {
             tabContentContainer.addEventListener('change', function(e) {
                 if (e.target.classList.contains('bulk-action-checkbox')) {
-                    updateActionBar();
+                    setTimeout(updateActionBar, 0);
                 }
             });
         }
@@ -692,10 +705,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
                 const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
-                itemCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                updateActionBar();
+                setBoxes(itemCheckboxes, this.checked);
             });
         }
 
@@ -706,8 +716,7 @@
              const tbody = thead.nextElementSibling;
              if(tbody && tbody.tagName === 'TBODY') {
                  const checkboxes = tbody.querySelectorAll('.bulk-action-checkbox');
-                 checkboxes.forEach(cb => cb.checked = triggerCheckbox.checked);
-                 updateActionBar();
+                 setBoxes(checkboxes, triggerCheckbox.checked);
              }
         }
 
@@ -728,10 +737,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
                 const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
-                itemCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                updateActionBar();
+                setBoxes(itemCheckboxes, this.checked);
             });
         }
 
@@ -740,10 +746,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
                 const itemCheckboxes = activePane.querySelectorAll('.bulk-action-checkbox');
-                itemCheckboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                updateActionBar();
+                setBoxes(itemCheckboxes, this.checked);
             });
         }
 
@@ -754,7 +757,7 @@
                 const activePane = document.querySelector('.tab-content .tab-pane.active');
                 if (!activePane) return;
 
-                const selected = Array.from(activePane.querySelectorAll('.bulk-action-checkbox:checked')).map(cb => cb.value);
+                const selected = window.getGlobalSelectedIds();
                 if (selected.length === 0) return;
 
                 if (window.openBulkDownloadModal) {

@@ -1144,8 +1144,36 @@
          and workflow/index.blade.php, just pointed at the combined
          appointments.calendar/appointments.by-date endpoints instead of a
          single module's. --}}
+    {{-- Phone / tablet (2026-10-30): the dialog was 68% of the screen there too,
+         so the calendar spilled out and the list header was squeezed — below
+         992px it now uses the screen width, the calendar gets smaller day boxes,
+         and the headers wrap. Computers keep the 68% dialog as before. --}}
+    <style>
+        .appt-reminder-dialog { max-width: 68%; }
+        @media (max-width: 991.98px) {
+            .appt-reminder-dialog { max-width: none; width: auto; margin: .75rem; }
+            #appointmentReminderModal .modal-body { padding: .75rem !important; }
+            #appointmentReminderModal .appt-cal-row { --bs-gutter-x: .75rem; --bs-gutter-y: .75rem; }
+            #appointmentReminderModal .appt-cal-row > [class*="col-"] { height: auto !important; }
+            #appointmentReminderModal .appt-cal-head { flex-wrap: wrap; gap: .5rem; padding: .75rem !important; }
+            #appointmentReminderModal .appt-cal-nav { width: 100%; justify-content: space-between; }
+            #appointmentReminderModal .appt-cal-nav > span { min-width: 0 !important; flex: 1 1 auto; }
+            #appointmentReminderModal .appt-cal-body { padding: .5rem !important; }
+            #appointmentReminderModal .appt-cal-dow { font-size: .7rem !important; }
+            #appointmentReminderModal .appt-cal-grid { gap: 3px !important; }
+            #appointmentReminderModal .appt-cal-day { padding: .3rem .1rem !important; min-height: 2.6rem; min-width: 0; justify-content: flex-start !important; }
+            #appointmentReminderModal .appt-cal-day > span:first-child { font-size: .95rem !important; line-height: 1.2; }
+            #appointmentReminderModal .appt-cal-day .badge { font-size: .65rem !important; margin-top: .15rem !important; }
+            #appointmentReminderModal .appt-list-head { flex-wrap: wrap; gap: .5rem; padding: .75rem !important; }
+            #appointmentReminderModal .appt-list-head > h6 { flex: 1 1 100%; }
+            #appointmentReminderModal .appt-list-head > .input-group { max-width: none !important; flex: 1 1 100%; }
+        }
+        @media (max-width: 575.98px) {
+            .appt-reminder-dialog { margin: .5rem; }
+        }
+    </style>
     <div class="modal fade" id="appointmentReminderModal" tabindex="-1" aria-labelledby="appointmentReminderModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable" style="max-width: 68%;">
+        <div class="modal-dialog modal-dialog-scrollable appt-reminder-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white border-0">
                     <h5 class="modal-title fw-bold" id="appointmentReminderModalLabel">
@@ -1154,26 +1182,26 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4" x-data="combinedCalendarApp()">
-                    <div class="row g-4 h-100">
+                    <div class="row g-4 h-100 appt-cal-row">
                         {{-- Left: Monthly Calendar --}}
                         <div class="col-lg-5 col-xl-4 h-100 d-flex flex-column">
                             <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
-                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
+                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0 appt-cal-head">
                                     <h6 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-month me-2"></i>{{ __('Monthly Overview') }}</h6>
-                                    <div class="d-flex align-items-center gap-2">
+                                    <div class="d-flex align-items-center gap-2 appt-cal-nav">
                                         <button class="btn btn-sm btn-light border" @click="prevMonth()"><i class="bi bi-chevron-left"></i></button>
                                         <span class="fw-bold text-uppercase" style="min-width: 120px; text-align: center;" x-text="monthNames[month] + ' ' + year"></span>
                                         <button class="btn btn-sm btn-light border" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
                                     </div>
                                 </div>
-                                <div class="card-body p-3 flex-grow-1 d-flex flex-column">
-                                    <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
+                                <div class="card-body p-3 flex-grow-1 d-flex flex-column appt-cal-body">
+                                    <div class="d-grid text-center mb-2 appt-cal-dow" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
                                         <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                                     </div>
-                                    <div class="d-grid flex-grow-1" style="grid-template-columns: repeat(7, 1fr); gap: 5px; min-height: 0;">
+                                    <div class="d-grid flex-grow-1 appt-cal-grid" style="grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; min-height: 0;">
                                         <template x-for="day in days" :key="day.dateStr">
                                             <div
-                                                class="border rounded p-2 d-flex flex-column align-items-center justify-content-between position-relative cursor-pointer h-100"
+                                                class="border rounded p-2 d-flex flex-column align-items-center justify-content-between position-relative cursor-pointer h-100 appt-cal-day"
                                                 :class="{
                                                     'bg-light text-muted': !day.isCurrentMonth,
                                                     'bg-white': day.isCurrentMonth,
@@ -1196,7 +1224,7 @@
                         {{-- Right: Appointments List --}}
                         <div class="col-lg-7 col-xl-8 h-100 d-flex flex-column">
                             <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
-                                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                                <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center appt-list-head">
                                     <h6 class="fw-bold text-primary mb-0">
                                         <i class="bi bi-list-check me-2"></i>{{ __('Appointments for') }}: <span class="text-dark" x-text="selectedDateFormatted"></span>
                                     </h6>
@@ -1520,6 +1548,8 @@
     <script src="{{ asset('js/ordered-checks.js') }}?v={{ @filemtime(public_path('js/ordered-checks.js')) }}"></script>
     {{-- Job History popup filters (partials/_history_panel) --}}
     <script src="{{ asset('js/history-filter.js') }}?v={{ @filemtime(public_path('js/history-filter.js')) }}"></script>
+    {{-- Come back to the same place after an action that reloads the page (public/js/keep-position.js) --}}
+    <script src="{{ asset('js/keep-position.js') }}?v={{ @filemtime(public_path('js/keep-position.js')) }}"></script>
     <script>window.NAT_I18N = {!! json_encode(['Recent' => __('Recently selected'), 'Main' => __('Main nationalities'), 'All' => __('All nationalities'), 'None' => __('No matching nationality'), 'Placeholder' => __('Type to search nationality...')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!};</script>
     <script src="{{ asset('js/nationality-select.js') }}?v={{ @filemtime(public_path('js/nationality-select.js')) }}"></script>
 

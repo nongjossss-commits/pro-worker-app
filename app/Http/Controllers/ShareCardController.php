@@ -33,7 +33,7 @@ class ShareCardController extends Controller
         // Model global scopes (employer tenancy) apply — a user only gets
         // cards they could already see.
         $data = match ($type) {
-            'employee' => $service->forEmployee(Employee::findOrFail($id), $notification, $withPhoto, $context),
+            'employee' => $service->forEmployee(Employee::findOrFail($id), $notification, $withPhoto, $context, $request->boolean('password')),
             'employer' => $service->forEmployer(Employer::findOrFail($id), $notification),
             default => abort(404),
         };
@@ -47,7 +47,9 @@ class ShareCardController extends Controller
             'type' => 'required|in:employee,employer',
             'id' => 'required|integer',
             'method' => 'required|in:' . implode(',', array_keys(self::METHODS)),
+            'password' => 'nullable|boolean',
         ]);
+        $withPassword = $validated['type'] === 'employee' && $request->boolean('password');
 
         $model = $validated['type'] === 'employee'
             ? Employee::findOrFail($validated['id'])
@@ -60,12 +62,13 @@ class ShareCardController extends Controller
 
         ActivityLogHelper::logAction(
             'share',
-            "ส่งข้อมูล{$what} {$name} (รหัส {$model->id}) ออกนอกโปรแกรม — " . self::METHODS[$validated['method']],
+            "ส่งข้อมูล{$what} {$name} (รหัส {$model->id}) ออกนอกโปรแกรม — " . self::METHODS[$validated['method']] . ($withPassword ? ' (รวมรหัสอีเมล)' : ''),
             get_class($model),
             $model->id,
             [
                 'method' => $validated['method'],
                 'fields' => ShareCardService::allowedFields()[$validated['type']],
+                'email_password_included' => $withPassword,
             ]
         );
 

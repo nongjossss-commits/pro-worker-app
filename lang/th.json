@@ -2934,5 +2934,13 @@
     "Replaced files (kept :days days)": "ไฟล์เดิมที่ถูกแทนที่ (เก็บ :days วัน)",
     "Slot": "ช่อง",
     "Someone else changed this employee while the form was open — their newer value was kept for: :fields": "มีคนอื่นแก้ข้อมูลลูกจ้างรายนี้ระหว่างที่คุณเปิดฟอร์มอยู่ — ระบบเก็บค่าที่เขาแก้ล่าสุดไว้ในช่อง: :fields",
-    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "มีคนอื่นแก้ข้อมูลนายจ้างรายนี้ระหว่างที่คุณเปิดฟอร์มอยู่ — ระบบเก็บค่าที่เขาแก้ล่าสุดไว้ในช่อง: :fields"
+    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "มีคนอื่นแก้ข้อมูลนายจ้างรายนี้ระหว่างที่คุณเปิดฟอร์มอยู่ — ระบบเก็บค่าที่เขาแก้ล่าสุดไว้ในช่อง: :fields",
+    "Hide the employee's password?": "ซ่อนรหัสผ่านของลูกจ้างไหม?",
+    "This employee has an e-mail password on file.": "ลูกจ้างรายนี้มีรหัสผ่านอีเมลบันทึกไว้",
+    "Hide the password": "ซ่อนรหัสผ่าน",
+    "The card goes out without the password (recommended).": "ส่งการ์ดออกไปโดยไม่มีรหัสผ่าน (แนะนำ)",
+    "Show the password": "แสดงรหัสผ่าน",
+    "The e-mail password is included on the card.": "ใส่รหัสผ่านอีเมลไว้ในการ์ดด้วย",
+    "Continue": "ดำเนินการต่อ",
+    "Moved to trash": "ย้ายไปถังขยะแล้ว"
 }

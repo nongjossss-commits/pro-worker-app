@@ -1801,5 +1801,13 @@
     "Replaced files (kept :days days)": "被替换的文件（保留 :days 天）",
     "Slot": "栏位",
     "Someone else changed this employee while the form was open — their newer value was kept for: :fields": "在表单打开期间，其他人修改了该员工 —— 以下栏位保留了他们的最新值：:fields",
-    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "在表单打开期间，其他人修改了该雇主 —— 以下栏位保留了他们的最新值：:fields"
+    "Someone else changed this employer while the form was open — their newer value was kept for: :fields": "在表单打开期间，其他人修改了该雇主 —— 以下栏位保留了他们的最新值：:fields",
+    "Hide the employee's password?": "是否隐藏员工的密码？",
+    "This employee has an e-mail password on file.": "该员工已登记邮箱密码。",
+    "Hide the password": "隐藏密码",
+    "The card goes out without the password (recommended).": "发送的卡片不含密码（推荐）。",
+    "Show the password": "显示密码",
+    "The e-mail password is included on the card.": "卡片上会包含邮箱密码。",
+    "Continue": "继续",
+    "Moved to trash": "已移至回收站"
 }

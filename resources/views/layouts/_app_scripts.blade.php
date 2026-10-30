@@ -664,6 +664,23 @@ window.getGlobalSelectedIds = function() {
         .map(item => item.id);
 };
 
+// The whole remembered selection (every page, every menu — until "Clear
+// Selection") shaped like the ticked checkboxes the bulk actions used to read
+// with querySelectorAll('.employee-checkbox:checked'), which only saw the page
+// on screen: .value, .dataset.employerId and getAttribute('data-employer-id')
+// still work (2026-10-30).
+window.getSelectedEmployeeCheckboxes = function() {
+    const attr = { 'data-employer-id': 'employer_id', 'data-employee-id': 'id', 'data-name-th': 'name_th', 'data-name-en': 'name_en' };
+    return window.getGlobalSelectedData()
+        .sort((a, b) => (a.selection_order || 0) - (b.selection_order || 0))
+        .map(item => ({
+            value: String(item.id),
+            checked: true,
+            dataset: { employeeId: String(item.id), employerId: item.employer_id || '', nameTh: item.name_th || '', nameEn: item.name_en || '' },
+            getAttribute: name => (attr[name] ? (item[attr[name]] ?? null) : null),
+        }));
+};
+
 document.addEventListener('DOMContentLoaded', function () {
     // Stores array of objects: { id: "1", employer_id: "5", selection_order: 1 }
     const selectAllCheckbox = document.getElementById('select-all-checkbox');
@@ -1487,7 +1504,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                             window.location.reload();
+                            // The card / row just disappears where it is — no reload,
+                            // the user carries on from the same spot (2026-10-30).
+                            const card = form.closest('.employee-card');
+                            const box = (card && card.parentElement && card.parentElement.closest('.emp-tile-grid') === card.parentElement.parentElement
+                                    ? card.parentElement : card)
+                                || form.closest('tr') || form.closest('[id^="history-row-"]') || form.closest('.notification-item');
+                            const employeeId = (form.getAttribute('action') || '').match(/employees\/(\d+)/);
+                            if (employeeId && window.removeItemsByIds) window.removeItemsByIds([employeeId[1]]);
+                            if (box) {
+                                box.style.transition = 'opacity .25s ease, transform .25s ease';
+                                box.style.opacity = '0';
+                                box.style.transform = 'scale(.97)';
+                                setTimeout(() => box.remove(), 260);
+                                showToast(@json(__('Moved to trash')), 'success');
+                            } else {
+                                window.location.reload();
+                            }
                         } else {
                             showToast(data.message || '{{ __('An error occurred while trying to delete the employee.') }}', 'danger');
                         }

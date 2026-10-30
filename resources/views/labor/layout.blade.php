@@ -401,6 +401,8 @@
     {{-- Type 09062026 → 09/06/2026 (public/js/date-autoslash.js) --}}
     <script>window.DateAutoSlashText = {!! json_encode(['invalid' => __('Invalid date — please check the day and month')], JSON_UNESCAPED_UNICODE) !!};</script>
     <script src="{{ asset('js/date-autoslash.js') }}?v={{ @filemtime(public_path('js/date-autoslash.js')) }}"></script>
+    {{-- Come back to the same place after an action that reloads the page (public/js/keep-position.js) --}}
+    <script src="{{ asset('js/keep-position.js') }}?v={{ @filemtime(public_path('js/keep-position.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.js-flatpickr').forEach(function (el) {
