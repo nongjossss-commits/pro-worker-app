@@ -790,7 +790,18 @@
                     @else
                         {{-- Send Back to Pre-Production --}}
                         @if(!$isCompleted && !$isCancelled)
-                            @if($activeTab && $activeTab->slug !== 'mou')
+                            @if($order->workType?->isNotifyInReport())
+                            {{-- Tab 5 has no preparation stage: instead, take the employee off
+                                 this card and back into the "Add Employees" list (picked by
+                                 mistake / to put them on another card). --}}
+                            @if($order->status === 'active')
+                            <button class="btn btn-outline-info btn-sm fw-bold shadow-sm px-3"
+                                    onclick="returnNotifyInReportItem({{ $item->id }})"
+                                    title="{{ __('Take off this card and back to the list of employees to pick') }}">
+                                 <i class="bi bi-arrow-return-left"></i> <span class="d-none d-lg-inline">{{ __('Return to list') }}</span>
+                            </button>
+                            @endif
+                            @elseif($activeTab && $activeTab->slug !== 'mou')
                             <button class="btn btn-info btn-sm fw-bold shadow-sm px-3 text-white"
                                     onclick="sendBackToPreProduction({{ $item->id }})"
                                     title="{{ __('Back to Preparation') }}">

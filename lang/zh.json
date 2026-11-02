@@ -1809,5 +1809,16 @@
     "Show the password": "显示密码",
     "The e-mail password is included on the card.": "卡片上会包含邮箱密码。",
     "Continue": "继续",
-    "Moved to trash": "已移至回收站"
+    "Moved to trash": "已移至回收站",
+    "Added :employees employee(s) to this card.": "已将 :employees 名雇员加入此卡片。",
+    "Only employees still in progress on an open card can be returned to the list.": "只有仍在进行中、且卡片未关闭的雇员才能退回列表。",
+    "Returned to the list — it can be added again from \"Add Employees\".": "已退回待选列表 —— 可在\"添加雇员\"中重新加入。",
+    "Add more employees of this employer to this card": "将此雇主的更多雇员加入此卡片",
+    "Take off this card and back to the list of employees to pick": "从此卡片移出，退回待选雇员列表",
+    "Return to list": "退回列表",
+    "Return to list?": "退回待选列表？",
+    "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.": "该雇员将离开此卡片，回到\"变更雇主\"中已完成的雇员列表 —— 可重新加入此卡片或新卡片。这不是取消。",
+    "Add to this card": "加入此卡片",
+    "Only this card's employer is shown. The ticked employees join this card — no new card is made.": "仅显示此卡片的雇主。勾选的雇员将加入此卡片 —— 不会新建卡片。",
+    "No more finished change-employer employees for this employer right now.": "目前此雇主暂无更多已完成变更雇主的雇员。"
 }

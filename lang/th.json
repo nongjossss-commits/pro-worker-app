@@ -2942,5 +2942,16 @@
     "Show the password": "แสดงรหัสผ่าน",
     "The e-mail password is included on the card.": "ใส่รหัสผ่านอีเมลไว้ในการ์ดด้วย",
     "Continue": "ดำเนินการต่อ",
-    "Moved to trash": "ย้ายไปถังขยะแล้ว"
+    "Moved to trash": "ย้ายไปถังขยะแล้ว",
+    "Added :employees employee(s) to this card.": "เพิ่มลูกจ้าง :employees ราย เข้าการ์ดนี้แล้ว",
+    "Only employees still in progress on an open card can be returned to the list.": "นำกลับไปรายชื่อได้เฉพาะลูกจ้างที่ยังดำเนินการอยู่ในการ์ดที่ยังไม่ปิด",
+    "Returned to the list — it can be added again from \"Add Employees\".": "นำกลับไปรายชื่อรอเลือกแล้ว — เพิ่มเข้าการ์ดได้อีกครั้งจาก \"เพิ่มลูกจ้าง\"",
+    "Add more employees of this employer to this card": "เพิ่มลูกจ้างของนายจ้างนี้เข้าการ์ดนี้",
+    "Take off this card and back to the list of employees to pick": "นำออกจากการ์ดนี้ กลับไปเป็นรายชื่อรอเลือก",
+    "Return to list": "กลับไปรายชื่อ",
+    "Return to list?": "นำกลับไปรายชื่อรอเลือก?",
+    "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.": "ลูกจ้างรายนี้จะออกจากการ์ดนี้ และกลับไปอยู่ในรายชื่อลูกจ้างที่เสร็จจากแท็บเปลี่ยนนายจ้าง — เพิ่มเข้าการ์ดนี้หรือการ์ดใหม่ได้อีกครั้ง · ไม่ใช่การยกเลิก",
+    "Add to this card": "เพิ่มเข้าการ์ดนี้",
+    "Only this card's employer is shown. The ticked employees join this card — no new card is made.": "แสดงเฉพาะนายจ้างของการ์ดนี้ · ลูกจ้างที่ติ๊กจะถูกเพิ่มเข้าการ์ดนี้ — ไม่สร้างการ์ดใหม่",
+    "No more finished change-employer employees for this employer right now.": "ตอนนี้ยังไม่มีลูกจ้างของนายจ้างนี้ที่เสร็จจากแท็บเปลี่ยนนายจ้างเพิ่ม"
 }

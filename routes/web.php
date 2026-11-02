@@ -788,6 +788,7 @@ Route::middleware(['auth'])->group(function () {
     // Tab 5 "แจ้งเข้า บต.52 / บต.55 / บต.56": pick finished change-employer employees → one new card per employer; steps ticked per card.
     Route::get('workflow/notify-in-report/candidates', [\App\Http\Controllers\WorkflowController::class, 'notifyInReportCandidates'])->name('workflow.notify_in_report.candidates');
     Route::post('workflow/notify-in-report/cards', [\App\Http\Controllers\WorkflowController::class, 'notifyInReportStore'])->name('workflow.notify_in_report.store');
+    Route::post('workflow/notify-in-report/item/{item}/return', [\App\Http\Controllers\WorkflowController::class, 'notifyInReportReturnItem'])->name('workflow.notify_in_report.return_item');
     Route::post('workflow/order/{order}/card-step-toggle', [\App\Http\Controllers\WorkflowController::class, 'toggleCardStep'])->name('workflow.order.card_step_toggle');
     Route::post('workflow/order/{order}/restore', [\App\Http\Controllers\WorkflowController::class, 'restoreOrder'])->name('workflow.order.restore');
     Route::post('workflow/order/{order}/cancel', [\App\Http\Controllers\WorkflowController::class, 'cancelOrder'])->name('workflow.order.cancel');

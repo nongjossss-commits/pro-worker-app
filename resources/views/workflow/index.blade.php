@@ -640,6 +640,15 @@
                                  <a href="{{ route('employees.import_view', ['production_id' => $order->id, 'employer_id' => $order->employer_id, 'return_to' => 'workflow']) }}" class="btn btn-outline-success btn-sm fw-bold">
                                     <i class="bi bi-file-earmark-spreadsheet"></i> {{ __('Import') }}
                                  </a>
+                                 @else
+                                 {{-- Tab 5: add more finished change-employer employees of this
+                                      employer to THIS card (instead of a new card) --}}
+                                 @if($order->status === 'active')
+                                 <button class="btn btn-outline-warning btn-sm fw-bold" onclick="window.openNotifyInReportModal({{ $order->id }}, {{ $order->employer_id }})"
+                                         title="{{ __('Add more employees of this employer to this card') }}">
+                                    <i class="bi bi-plus-lg"></i> {{ __('Add') }}
+                                 </button>
+                                 @endif
                                  @endunless
                                  @endif
 
@@ -2218,6 +2227,30 @@ window.loadBatchStats = function() {
                     }
                 });
             }
+        });
+    }
+
+    // Tab 5: take the employee off the card → back to the "Add Employees" list
+    // (WorkflowController::notifyInReportReturnItem()). The page reloads so the
+    // card's shared step buttons are worked out again (keep-position.js puts it back in place).
+    window.returnNotifyInReportItem = function(itemId) {
+        appConfirm(@json(__('This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.')), {
+            title: @json(__('Return to list?')),
+            confirmText: @json(__('Return to list')),
+        }).then((ok) => {
+            if (!ok) return;
+            fetch(@json(url('workflow/notify-in-report/item')) + '/' + itemId + '/return', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            })
+            .then(r => r.json().then(d => ({ ok: r.ok, d })))
+            .then(({ ok, d }) => {
+                if (!ok || !d.success) { appToast(d.message || 'Error', 'error'); return; }
+                removeItemCard(itemId);
+                appToast(d.message, 'success');
+                setTimeout(() => location.reload(), 800);
+            })
+            .catch(() => appToast('Error', 'error'));
         });
     }
 

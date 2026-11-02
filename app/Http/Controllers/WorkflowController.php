@@ -1290,6 +1290,8 @@ class WorkflowController extends Controller
         $request->validate([
             'source_item_ids' => 'required|array|min:1',
             'source_item_ids.*' => 'integer',
+            // set = add to this existing card (same employer) instead of making new cards
+            'order_id' => 'nullable|integer',
         ]);
 
         $tab = $this->notifyInReportTab();
@@ -1297,6 +1299,45 @@ class WorkflowController extends Controller
             ->whereIn('id', $request->input('source_item_ids'))
             ->with('order:id,employer_id', 'order.employer:id,employerNameTh,employerNameEn')
             ->get();
+
+        if ($request->filled('order_id')) {
+            $order = ProductionOrder::where('work_type_id', $tab->id)->findOrFail($request->integer('order_id'));
+            if ($order->status !== 'active') {
+                return response()->json(['success' => false, 'message' => __('This card is no longer in progress.')], 422);
+            }
+            // only this card's employer (the employee's new employer)
+            $sources = $sources->filter(fn ($i) => (int) $i->order->employer_id === (int) $order->employer_id);
+            if ($sources->isEmpty()) {
+                return response()->json(['success' => false, 'message' => __('These employees are no longer available — reload the list.')], 422);
+            }
+
+            DB::transaction(function () use ($sources, $order) {
+                foreach ($sources as $src) {
+                    ProductionItem::create([
+                        'production_order_id' => $order->id,
+                        'employee_id' => $src->employee_id,
+                        'source_item_id' => $src->id,
+                        'status' => 'pending',
+                    ]);
+                }
+                $order->touch();
+            });
+
+            $names = $sources->map(fn ($i) => Employee::find($i->employee_id))->filter()
+                ->map(fn ($e) => $e->employeeNameTh ?: ($e->employeeNameEn ?: 'ID:' . $e->id))->implode(', ');
+            ActivityLogHelper::logAction('update', 'เพิ่มลูกจ้าง ' . $sources->count() . ' ราย เข้าการ์ดงาน "' . $tab->name . '" เดิม (จากแท็บเปลี่ยนนายจ้าง): ' . $names, ProductionOrder::class, $order->id, [
+                'work_type_id' => $tab->id,
+                'source_item_ids' => $sources->pluck('id')->values()->all(),
+                'employee_ids' => $sources->pluck('employee_id')->values()->all(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'cards' => 0,
+                'employees' => $sources->count(),
+                'message' => __('Added :employees employee(s) to this card.', ['employees' => $sources->count()]),
+            ]);
+        }
 
         if ($sources->isEmpty()) {
             return response()->json(['success' => false, 'message' => __('These employees are no longer available — reload the list.')], 422);
@@ -1338,6 +1379,41 @@ class WorkflowController extends Controller
             'cards' => $created->count(),
             'employees' => $created->sum('count'),
             'message' => __('Created :cards card(s) for :employees employee(s).', ['cards' => $created->count(), 'employees' => $created->sum('count')]),
+        ]);
+    }
+
+    /**
+     * Tab 5: take an employee off the card (picked by mistake / to put them
+     * on another card). Not a "cancel": the card item is removed (soft
+     * delete, kept in the database) so the finished change-employer job is
+     * offered again in "Add Employees" — on a new card or added to an
+     * existing one. The employee record itself is never touched.
+     */
+    public function notifyInReportReturnItem(Request $request, $itemId)
+    {
+        $item = ProductionItem::with(['order.workType', 'employee'])->visibleToUser()->findOrFail($itemId);
+        $order = $item->order;
+        abort_unless($order && $order->workType && $order->workType->isNotifyInReport(), 403);
+
+        if ($order->status !== 'active' || $item->status !== 'pending') {
+            return response()->json(['success' => false, 'message' => __('Only employees still in progress on an open card can be returned to the list.')], 422);
+        }
+
+        $item->delete();
+        $order->touch();
+
+        $e = $item->employee;
+        $name = $e ? ($e->employeeNameTh ?: ($e->employeeNameEn ?: 'ID:' . $e->id)) : 'ID:' . $item->employee_id;
+        ActivityLogHelper::logAction('update', 'นำลูกจ้าง ' . $name . ' ออกจากการ์ดงาน "' . $order->workType->name . '" กลับไปเป็นรายชื่อรอเลือก', ProductionOrder::class, $order->id, [
+            'production_item_id' => $item->id,
+            'employee_id' => $item->employee_id,
+            'source_item_id' => $item->source_item_id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => __('Returned to the list — it can be added again from "Add Employees".'),
+            'order_stats' => $this->calculateOrderStats($order->fresh()),
         ]);
     }
 

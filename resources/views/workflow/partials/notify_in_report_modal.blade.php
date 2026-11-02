@@ -4,17 +4,20 @@
     the 24h transfer countdown), grouped by their new employer; tick people /
     a whole employer / everything → one NEW card per employer
     (WorkflowController::notifyInReportCandidates() / notifyInReportStore()).
+    Opened from a card's "Add" button (openNotifyInReportModal(orderId, employerId))
+    it shows only that card's employer and adds the ticked people to that card.
 --}}
 <div class="modal fade" id="notifyInReportModal" tabindex="-1" aria-hidden="true" x-data="notifyInReportPicker()" x-init="init()">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-person-plus-fill me-1"></i>{{ __('Add Employees') }} — {{ $reportTab->name }}</h5>
+                <h5 class="modal-title"><i class="bi bi-person-plus-fill me-1"></i>{{ __('Add Employees') }} — {{ $reportTab->name }}<span x-show="orderId" class="badge bg-warning-subtle text-warning-emphasis border ms-2 fs-6 fw-semibold">{{ __('Add to this card') }}</span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-light border small py-2 mb-2">
-                    <i class="bi bi-info-circle me-1"></i>{{ __('Employees finished in the change-employer tab, grouped by their new employer. Tick people (or a whole employer) — each employer gets a new card; steps are ticked on the card for everyone at once.') }}
+                    <span x-show="!orderId"><i class="bi bi-info-circle me-1"></i>{{ __('Employees finished in the change-employer tab, grouped by their new employer. Tick people (or a whole employer) — each employer gets a new card; steps are ticked on the card for everyone at once.') }}</span>
+                    <span x-show="orderId"><i class="bi bi-info-circle me-1"></i>{{ __('Only this card\'s employer is shown. The ticked employees join this card — no new card is made.') }}</span>
                 </div>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                     <input type="search" class="form-control form-control-sm" style="max-width: 280px" x-model="search" placeholder="{{ __('Search name, passport or employer...') }}">
@@ -27,7 +30,9 @@
 
                 <div x-show="loading" class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>{{ __('Loading...') }}</div>
                 <div x-show="!loading && !groups.length" class="text-center text-muted py-4">
-                    <i class="bi bi-inbox fs-3 d-block mb-1"></i>{{ __('No employees waiting — employees appear here after they are finished in the change-employer tab.') }}
+                    <i class="bi bi-inbox fs-3 d-block mb-1"></i>
+                    <span x-show="!orderId">{{ __('No employees waiting — employees appear here after they are finished in the change-employer tab.') }}</span>
+                    <span x-show="orderId">{{ __('No more finished change-employer employees for this employer right now.') }}</span>
                 </div>
 
                 <template x-for="g in visibleGroups()" :key="g.employer_id">
@@ -66,7 +71,9 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                 <button type="button" class="btn btn-primary" @click="submit()" :disabled="!selectedCount || saving">
                     <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                    <i class="bi bi-plus-lg me-1" x-show="!saving"></i>{{ __('Create cards') }} (<span x-text="selectedEmployerCount"></span>)
+                    <i class="bi bi-plus-lg me-1" x-show="!saving"></i>
+                    <span x-show="!orderId">{{ __('Create cards') }} (<span x-text="selectedEmployerCount"></span>)</span>
+                    <span x-show="orderId">{{ __('Add to this card') }} (<span x-text="selectedCount"></span>)</span>
                 </button>
             </div>
         </div>
@@ -78,15 +85,25 @@
     function notifyInReportPicker() {
         return {
             groups: [], selected: [], search: '', loading: false, saving: false,
+            // set by a card's "Add" button: add to that card, its employer only
+            orderId: null, employerId: null,
             init() {
-                this.$el.addEventListener('show.bs.modal', () => this.load());
+                this.$el.addEventListener('show.bs.modal', () => {
+                    const t = window.notifyInReportTarget || {};
+                    this.orderId = t.orderId || null;
+                    this.employerId = t.employerId || null;
+                    this.load();
+                });
             },
             load() {
                 this.loading = true;
                 this.selected = [];
                 fetch(@json(route('workflow.notify_in_report.candidates')), { headers: { 'Accept': 'application/json' } })
                     .then(r => r.ok ? r.json() : Promise.reject(r))
-                    .then(d => { this.groups = d.groups || []; })
+                    .then(d => {
+                        const groups = d.groups || [];
+                        this.groups = this.employerId ? groups.filter(g => Number(g.employer_id) === Number(this.employerId)) : groups;
+                    })
                     .catch(() => appToast(@json(__('Could not load the items. Please try again.')), 'error'))
                     .finally(() => { this.loading = false; });
             },
@@ -119,7 +136,7 @@
                 fetch(@json(route('workflow.notify_in_report.store')), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-                    body: JSON.stringify({ source_item_ids: this.selected }),
+                    body: JSON.stringify(this.orderId ? { source_item_ids: this.selected, order_id: this.orderId } : { source_item_ids: this.selected }),
                 })
                     .then(r => r.json().then(d => ({ ok: r.ok, d })))
                     .then(({ ok, d }) => {
@@ -131,7 +148,9 @@
             },
         };
     }
-    window.openNotifyInReportModal = function () {
+    // no arguments = the tab's "Add Employees" (new cards); orderId + employerId = a card's "Add"
+    window.openNotifyInReportModal = function (orderId, employerId) {
+        window.notifyInReportTarget = orderId ? { orderId: orderId, employerId: employerId } : null;
         bootstrap.Modal.getOrCreateInstance(document.getElementById('notifyInReportModal')).show();
     };
 </script>

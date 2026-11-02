@@ -1809,5 +1809,16 @@
     "Show the password": "စကားဝှက်ကို ပြရန်",
     "The e-mail password is included on the card.": "ကတ်တွင် အီးမေးလ် စကားဝှက် ပါဝင်မည်",
     "Continue": "ဆက်လုပ်ရန်",
-    "Moved to trash": "အမှိုက်ပုံးသို့ ရွှေ့ပြီး"
+    "Moved to trash": "အမှိုက်ပုံးသို့ ရွှေ့ပြီး",
+    "Added :employees employee(s) to this card.": "ဝန်ထမ်း :employees ဦးကို ဤကတ်ထဲသို့ ထည့်ပြီးပါပြီ။",
+    "Only employees still in progress on an open card can be returned to the list.": "မပိတ်ရသေးသော ကတ်ပေါ်တွင် ဆောင်ရွက်ဆဲ ဝန်ထမ်းများကိုသာ စာရင်းသို့ ပြန်ပို့နိုင်သည်။",
+    "Returned to the list — it can be added again from \"Add Employees\".": "စာရင်းသို့ ပြန်ပို့ပြီးပါပြီ — \"ဝန်ထမ်း ထည့်ရန်\" မှ ပြန်ထည့်နိုင်သည်။",
+    "Add more employees of this employer to this card": "ဤအလုပ်ရှင်၏ ဝန်ထမ်းများကို ဤကတ်ထဲသို့ ထပ်ထည့်ရန်",
+    "Take off this card and back to the list of employees to pick": "ဤကတ်မှ ဖယ်ပြီး ရွေးရန် ဝန်ထမ်းစာရင်းသို့ ပြန်ပို့ရန်",
+    "Return to list": "စာရင်းသို့ ပြန်ပို့ရန်",
+    "Return to list?": "စာရင်းသို့ ပြန်ပို့မလား?",
+    "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.": "ဤဝန်ထမ်းသည် ဤကတ်မှ ထွက်ပြီး အလုပ်ရှင်ပြောင်း tab တွင် ပြီးဆုံးသော ဝန်ထမ်းစာရင်းသို့ ပြန်သွားမည် — ဤကတ် သို့မဟုတ် ကတ်အသစ်သို့ ပြန်ထည့်နိုင်သည်။ ပယ်ဖျက်ခြင်း မဟုတ်ပါ။",
+    "Add to this card": "ဤကတ်ထဲသို့ ထည့်ရန်",
+    "Only this card's employer is shown. The ticked employees join this card — no new card is made.": "ဤကတ်၏ အလုပ်ရှင်ကိုသာ ပြသည်။ ခြစ်ထားသော ဝန်ထမ်းများ ဤကတ်ထဲသို့ ဝင်မည် — ကတ်အသစ် မဖန်တီးပါ။",
+    "No more finished change-employer employees for this employer right now.": "ယခုအချိန်တွင် ဤအလုပ်ရှင်အတွက် အလုပ်ရှင်ပြောင်းပြီးသော ဝန်ထမ်း ထပ်မရှိသေးပါ။"
 }

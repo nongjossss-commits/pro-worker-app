@@ -2891,5 +2891,16 @@
     "Show the password": "Show the password",
     "The e-mail password is included on the card.": "The e-mail password is included on the card.",
     "Continue": "Continue",
-    "Moved to trash": "Moved to trash"
+    "Moved to trash": "Moved to trash",
+    "Added :employees employee(s) to this card.": "Added :employees employee(s) to this card.",
+    "Only employees still in progress on an open card can be returned to the list.": "Only employees still in progress on an open card can be returned to the list.",
+    "Returned to the list — it can be added again from \"Add Employees\".": "Returned to the list — it can be added again from \"Add Employees\".",
+    "Add more employees of this employer to this card": "Add more employees of this employer to this card",
+    "Take off this card and back to the list of employees to pick": "Take off this card and back to the list of employees to pick",
+    "Return to list": "Return to list",
+    "Return to list?": "Return to list?",
+    "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.": "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.",
+    "Add to this card": "Add to this card",
+    "Only this card's employer is shown. The ticked employees join this card — no new card is made.": "Only this card's employer is shown. The ticked employees join this card — no new card is made.",
+    "No more finished change-employer employees for this employer right now.": "No more finished change-employer employees for this employer right now."
 }
