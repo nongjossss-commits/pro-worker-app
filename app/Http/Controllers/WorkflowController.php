@@ -2105,8 +2105,22 @@ class WorkflowController extends Controller
                 'insurance_detail_social', 'medical_hospital_name', 'outsource_code', 'bank_name',
                 'bank_account_number', 'other_doc_1_desc', 'other_doc_2_desc', 'other_doc_3_desc',
                 'other_doc_4_desc', 'other_doc_5_desc', 'other_doc_6_desc', 'other_doc_7_desc',
-                'other_doc_8_desc', 'other_doc_9_desc', 'other_doc_10_desc'
+                'other_doc_8_desc', 'other_doc_9_desc', 'other_doc_10_desc',
+                // On the same form but were never saved from here (2026-11-03):
+                'name_suffix', 'height', 'weight', 'department', 'passport_issue_place',
+                'visaType', 'visa_issue_place', 'visaEndorsementDate', 'visaEndorsementNo',
+                'workPermitIssueDate', 'sso_issue_date', 'sso_expiry_date',
              ]);
+
+             // Social security: "hospital right" is the insurance_detail column
+             // (the form's insurance_detail_social is not a column and was lost);
+             // the social-security dates only apply to that insurance type.
+             if (($employeeData['insurance_type'] ?? null) === 'ประกันสังคม') {
+                 $employeeData['insurance_detail'] = $request->insurance_detail_social;
+             } else {
+                 $employeeData['sso_issue_date'] = null;
+                 $employeeData['sso_expiry_date'] = null;
+             }
 
              // Insurance Mapping
             $employeeData['insuranceType'] = $request->insurance_type ?? null;
@@ -2150,6 +2164,14 @@ class WorkflowController extends Controller
                     $path = $file->storeAs("employee_files/{$employee->employer_id}", $filename, 'public');
                     $filesToUpdate[$field] = $path;
                 }
+            }
+
+            // Social-security / hospital document slots of the same form → the
+            // insurance_document_path column (never saved before, 2026-11-03).
+            $insuranceSlot = \App\Http\Controllers\EmployeeController::newEmployeeInsuranceSlot($request);
+            if ($insuranceSlot && empty($filesToUpdate['insurance_document_path'])) {
+                $file = $request->file($insuranceSlot);
+                $filesToUpdate['insurance_document_path'] = $file->storeAs("employee_files/{$employee->employer_id}", \Illuminate\Support\Str::random(20) . '.' . $file->getClientOriginalExtension(), 'public');
             }
 
             if (!empty($filesToUpdate)) {
@@ -3106,6 +3128,13 @@ class WorkflowController extends Controller
 
         if ($request->has('operator_filter') && $request->operator_filter) {
             $query->where('operator_id', $request->operator_filter);
+        }
+
+        // Team filter flaps: "select all" takes only the teams being shown
+        // (same rule as the card's list) — before, it took everyone on the
+        // card while a team was filtered (2026-11-03).
+        if ($request->has('team_filter') && is_array($request->team_filter) && count($request->team_filter)) {
+            $query->whereIn('group_name', $request->team_filter);
         }
 
         $items = $query->with(['employee:id,employer_id,employeeNameTh,employeeNameEn,employeeTitleTh,employeeTitleEn,employeeNationality,employeePhoto,insurance_type,employeePassport'])

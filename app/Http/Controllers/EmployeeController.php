@@ -408,6 +408,28 @@ public function create(Request $request) // เพิ่ม Request $request เ
     ]);
 }
 
+    /**
+     * New-employee form (employees.partials.create_form_partial_content, used by
+     * the Employees menu and Workflow → Add Employee): which of its two
+     * social-security / hospital document slots holds the file for
+     * insurance_document_path — the one matching the chosen insurance type,
+     * otherwise whichever has a file. Null = no file.
+     */
+    public static function newEmployeeInsuranceSlot(Request $request): ?string
+    {
+        $byType = match ($request->input('insurance_type')) {
+            'ประกันสังคม' => 'insurance_document_path_social',
+            'ประกันโรงพยาบาล' => 'insurance_document_path_hospital',
+            default => null,
+        };
+        foreach (array_filter([$byType, 'insurance_document_path_social', 'insurance_document_path_hospital']) as $slot) {
+            if ($request->hasFile($slot) && $request->file($slot)->isValid()) {
+                return $slot;
+            }
+        }
+        return null;
+    }
+
     public function store(Request $request)
     {
         // --- V6: Step 1: Validate ALL text/date data (new and old) ---
@@ -488,6 +510,9 @@ public function create(Request $request) // เพิ่ม Request $request เ
             'employeePhoto' => 'nullable|image|max:2048',
             'insurance_document_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'insurance_document_path_private' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            // new-employee form's social-security / hospital document slots
+            'insurance_document_path_social' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'insurance_document_path_hospital' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'medical_certificate_path' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_1' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'employee_doc_2' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
@@ -515,6 +540,12 @@ public function create(Request $request) // เพิ่ม Request $request เ
         if ($validated['insuranceType'] === 'ประกันสังคม') {
             $validated['socialSecurityNumber'] = $validated['social_security_number'] ?? null;
             $validated['hospitalName'] = $validated['insurance_detail_social'] ?? null;
+            // "Hospital right" is the insurance_detail column (the edit form's
+            // field); insurance_detail_social / hospitalName are not columns, so
+            // what was typed here on a new employee was lost (2026-11-03).
+            if (! empty($validated['insurance_detail_social']) && empty($validated['insurance_detail'])) {
+                $validated['insurance_detail'] = $validated['insurance_detail_social'];
+            }
             $validated['sso_issue_date'] = $validated['sso_issue_date'] ?? null;
             $validated['sso_expiry_date'] = $validated['sso_expiry_date'] ?? null;
             $validated['insuranceCompany'] = null;
@@ -569,6 +600,16 @@ public function create(Request $request) // เพิ่ม Request $request เ
                 $validated[$field] = $path;
             }
         }
+
+        // The new-employee form has separate social-security / hospital document
+        // slots; both belong in insurance_document_path (the column the edit form
+        // and previews use). They were never saved before (2026-11-03).
+        $insuranceSlot = self::newEmployeeInsuranceSlot($request);
+        if ($insuranceSlot && empty($validated['insurance_document_path'])) {
+            $file = $request->file($insuranceSlot);
+            $validated['insurance_document_path'] = $file->storeAs("employee_files/{$validated['employer_id']}", Str::random(20) . '.' . $file->getClientOriginalExtension(), 'public');
+        }
+        unset($validated['insurance_document_path_social'], $validated['insurance_document_path_hospital']);
 
         // Apply SuperAdmin defaults for Other Document Descriptions if not provided
         $defaults = \App\Models\SuperAdminSetting::where('key', 'like', 'employee_other_%_desc')->pluck('value', 'key');

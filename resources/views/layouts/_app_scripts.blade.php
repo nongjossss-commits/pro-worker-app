@@ -545,6 +545,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('addressModalLabel').textContent = '{{ __('Add New Address') }}';
         } else if (isEditButton && targetBtn) {
             const addressId = targetBtn.dataset.addressId;
+            // only the address opened LAST may fill the form (a slow answer for
+            // an address opened before must not land in it)
+            const addrReq = addressModalEl.__addrReq = (addressModalEl.__addrReq || 0) + 1;
             document.getElementById('addressModalLabel').textContent = '{{ __('Loading...') }}';
 
             // Disable save button while loading
@@ -557,6 +560,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return response.json();
                 })
                 .then(data => {
+                    if (addrReq !== addressModalEl.__addrReq || !addressModalEl.classList.contains('show')) return;
                     addressForm.reset();
                     for (const key in data) {
                         if (fields[key]) {
@@ -635,6 +639,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     addressModalEl.addEventListener('hidden.bs.modal', function () {
         addressForm.reset();
+        // hidden fields survive reset(): an address edited before must not be
+        // the one the next save goes to (2026-11-03)
+        fields.id.value = '';
+        addressModalEl.__addrReq = (addressModalEl.__addrReq || 0) + 1;
         populateDistricts('');
         document.getElementById('addressModalLabel').textContent = '{{ __('Add New Address') }}';
     });
@@ -1337,7 +1345,8 @@ window.updateEmployerSelectionLabel = function (employerId) {
 window.smartEmployerSelectAll = function (masterCb, endpointUrl, opts = {}) {
     const isChecked = masterCb.checked;
     const employerId = masterCb.dataset.employerId;
-    const cacheKey = endpointUrl + '|' + window.location.search;
+    // the team flaps are part of "what is on screen" — a different pick is a different list
+    const cacheKey = endpointUrl + '|' + window.location.search + '|' + (opts.teams || []).join('\u0001');
 
     const finish = (items) => {
         const groups = opts.supportsLockedCompleted
@@ -1441,11 +1450,20 @@ window.smartEmployerSelectAll = function (masterCb, endpointUrl, opts = {}) {
     }
 
     const url = new URL(endpointUrl, window.location.origin);
+    // Every filter the list itself uses, so "select all" takes exactly the
+    // employees on screen (2026-11-03: the first search box, a picked
+    // employee, the renewal-progress filters and the team flaps were not
+    // passed on — select all then took people the filter had hidden).
+    const FORWARD = ['search', 'filter', 'operator_filter', 'insurance_filter',
+        'employer_filter_name', 'employer_filter_id', 'employee_pick_id', 'job_owner_pick_id', 'renewal_filters'];
     new URLSearchParams(window.location.search).forEach((value, key) => {
-        if (['search', 'filter', 'operator_filter', 'insurance_filter'].includes(key)) {
-            url.searchParams.set(key, value);
+        const base = key.replace(/\[\]$/, '');
+        if (FORWARD.includes(base)) {
+            if (key.endsWith('[]')) url.searchParams.append(key, value);
+            else url.searchParams.set(key, value);
         }
     });
+    (opts.teams || []).forEach(name => url.searchParams.append('team_filter[]', name));
 
     fetch(url)
         .then(res => res.json())

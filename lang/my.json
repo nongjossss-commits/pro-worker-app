@@ -1820,5 +1820,7 @@
     "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.": "ဤဝန်ထမ်းသည် ဤကတ်မှ ထွက်ပြီး အလုပ်ရှင်ပြောင်း tab တွင် ပြီးဆုံးသော ဝန်ထမ်းစာရင်းသို့ ပြန်သွားမည် — ဤကတ် သို့မဟုတ် ကတ်အသစ်သို့ ပြန်ထည့်နိုင်သည်။ ပယ်ဖျက်ခြင်း မဟုတ်ပါ။",
     "Add to this card": "ဤကတ်ထဲသို့ ထည့်ရန်",
     "Only this card's employer is shown. The ticked employees join this card — no new card is made.": "ဤကတ်၏ အလုပ်ရှင်ကိုသာ ပြသည်။ ခြစ်ထားသော ဝန်ထမ်းများ ဤကတ်ထဲသို့ ဝင်မည် — ကတ်အသစ် မဖန်တီးပါ။",
-    "No more finished change-employer employees for this employer right now.": "ယခုအချိန်တွင် ဤအလုပ်ရှင်အတွက် အလုပ်ရှင်ပြောင်းပြီးသော ဝန်ထမ်း ထပ်မရှိသေးပါ။"
+    "No more finished change-employer employees for this employer right now.": "ယခုအချိန်တွင် ဤအလုပ်ရှင်အတွက် အလုပ်ရှင်ပြောင်းပြီးသော ဝန်ထမ်း ထပ်မရှိသေးပါ။",
+    "Some files were not included": "ဖိုင်အချို့ မပါဝင်ပါ",
+    "Some files were not included — see details": "ဖိုင်အချို့ မပါဝင်ပါ — အသေးစိတ်ကြည့်ရန်"
 }

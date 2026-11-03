@@ -1534,6 +1534,13 @@ class ProductionController extends Controller
             $query->where('operator_id', $request->operator_filter);
         }
 
+        // Team filter flaps: "select all" takes only the teams being shown
+        // (same rule as the card's list) — before, it took everyone on the
+        // card while a team was filtered (2026-11-03).
+        if ($request->has('team_filter') && is_array($request->team_filter) && count($request->team_filter)) {
+            $query->whereIn('group_name', $request->team_filter);
+        }
+
         $items = $query->with(['employee:id,employer_id,employeeNameTh,employeeNameEn,employeeTitleTh,employeeTitleEn,employeeNationality,employeePhoto,insurance_type,employeePassport'])
             ->get(['id', 'employee_id']);
 

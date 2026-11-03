@@ -672,6 +672,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Reset form on modal close
     addressModalEl.addEventListener('hidden.bs.modal', function () {
         addressForm.reset();
+        // Closed without saving → no longer editing that address. Otherwise the
+        // next "Add Address" overwrote the address opened before (2026-11-03),
+        // same as delegates/importers create already do.
+        currentlyEditing = null;
         // Reset dropdowns to their initial disabled state
         document.getElementById('addrDistrict').disabled = true;
         document.getElementById('addrSubDistrict').disabled = true;
@@ -682,6 +686,7 @@ document.addEventListener('DOMContentLoaded', function () {
         button.addEventListener('click', function() {
             const addressType = this.getAttribute('data-type');
             document.getElementById('address_type').value = addressType;
+            currentlyEditing = null; // "Add" always adds a new address
         });
     });
 });

@@ -1947,6 +1947,8 @@
     {{-- Type 09062026 → 09/06/2026 in every date picker (public/js/date-autoslash.js) --}}
     <script>window.DateAutoSlashText = {!! json_encode(['invalid' => __('Invalid date — please check the day and month')], JSON_UNESCAPED_UNICODE) !!};</script>
     <script src="{{ asset('js/date-autoslash.js') }}?v={{ @filemtime(public_path('js/date-autoslash.js')) }}"></script>
+    {{-- Date boxes: reset really clears them, and what is shown is what gets saved (public/js/date-form-sync.js) --}}
+    <script src="{{ asset('js/date-form-sync.js') }}?v={{ @filemtime(public_path('js/date-form-sync.js')) }}"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {

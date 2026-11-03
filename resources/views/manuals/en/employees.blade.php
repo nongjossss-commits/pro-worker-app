@@ -207,7 +207,7 @@
     </ul>
 </div>
 <div class="manual-tip">
-    <strong>Advanced download as one PDF / one PDF per person:</strong> PDFs from scanners or phone apps (newer PDF format) are converted automatically before merging · if a file still can't be merged, the Download Center says so, and the per-person option puts the original file in the ZIP — the ZIP option always contains every original file
+    <strong>Advanced download as one PDF / one PDF per person:</strong> PDFs from scanners or phone apps (newer PDF format) are converted automatically before merging · PDFs with stray data in front of the file are read too · a file that still can't be merged (e.g. an iPhone HEIC photo) is <strong>never left out</strong>: "one PDF" then gives a ZIP = the merged PDF + the originals in the folder "ไฟล์ที่รวมเข้า PDF ไม่ได้" (files that could not be merged), with a notice page in the PDF where that document belongs · the per-person option puts the original in the ZIP · the Download Center shows "Some files were not included — see details" listing who and which document (also selected employees deleted meanwhile) — the ZIP option always contains every original file
 </div>
 <div class="manual-tip">
     <strong>Downloading many employees:</strong> after you press start, the file is built in the background — the Download Center shows progress (e.g. "Processing... 120/500") and starts the download by itself when ready (keep the Download Center open) · if you close it, come back and press Download in the list within 24 hours · a "merge into one PDF" too large for the server's memory is split into several PDFs in a ZIP (same order) instead of failing

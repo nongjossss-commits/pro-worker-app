@@ -111,8 +111,11 @@ class AdvancedDownloadPdfTest extends TestCase
         $this->assertStringContainsString('ใส่ไฟล์ต้นฉบับไว้ใน ZIP', (string) $perPerson->error_message);
         $this->assertStringContainsString('พาสปอร์ต', (string) $perPerson->error_message);
 
+        // Merged PDF (2026-11-03): the original is no longer left out — the
+        // download becomes a ZIP with the merged PDF + the original file.
         $merged = $this->download('pdf', $employee);
-        $this->assertStringContainsString('กรุณาดาวน์โหลดแบบ ZIP', (string) $merged->error_message);
+        $this->assertStringContainsString(\App\Jobs\ProcessDownload::UNMERGED_FOLDER, (string) $merged->error_message);
+        $this->assertTrue(collect($this->zipEntries($merged))->contains(fn ($n) => str_contains($n, \App\Jobs\ProcessDownload::UNMERGED_FOLDER) && str_ends_with($n, 'passport.pdf')));
     }
 
     public function test_zip_download_contains_the_original_files(): void

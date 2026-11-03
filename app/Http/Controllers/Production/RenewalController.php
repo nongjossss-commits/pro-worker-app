@@ -1548,6 +1548,22 @@ class RenewalController extends Controller
             ]);
         }
 
+        // Team filter flaps: "select all" takes only the teams being shown
+        // (same subquery as fetchEmployees()) — before, it took everyone
+        // under the employer while a team was filtered (2026-11-03).
+        $teamFilterScope = function ($q) use ($request) {
+            if ($request->has('team_filter') && is_array($request->team_filter) && count($request->team_filter)) {
+                $tabId = $this->currentTab->id;
+                $teamFilter = $request->team_filter;
+                $q->whereIn('id', function ($sub) use ($teamFilter, $tabId) {
+                    $sub->select('employee_id')->from('employee_team_assignments')
+                        ->where('resolution_tab_id', $tabId)
+                        ->whereIn('team_name', $teamFilter);
+                });
+            }
+        };
+        $teamFilterScope($query);
+
         $isStepFilter = $request->has('filter') && is_numeric($request->filter);
 
         $employees = $query->select([
@@ -1626,6 +1642,8 @@ class RenewalController extends Controller
                     $linkedQuery->where('insurance_type', $request->insurance_filter);
                 }
             }
+
+            $teamFilterScope($linkedQuery);
 
             $filterVal = $request->input('filter');
             $linkedItems = $linkedQuery->get()->filter(function ($emp) use ($filterVal, $stepOneId, $steps) {
@@ -1955,6 +1973,13 @@ class RenewalController extends Controller
             'passportExpiryDate' => 'nullable|date',
             'pinkCardNo' => 'nullable|string|max:255',
             'visaType' => 'nullable|string|max:255',
+            // on the new-employee form but not saved from here before (2026-11-03)
+            'name_suffix' => 'nullable|string|max:255',
+            'visaEndorsementDate' => 'nullable|date',
+            'visaEndorsementNo' => 'nullable|string|max:50',
+            'workPermitIssueDate' => 'nullable|date',
+            'insurance_document_path_social' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+            'insurance_document_path_hospital' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
             'visa_issue_place' => 'nullable|string|max:255',
             'visaExpiryDate' => 'nullable|date',
             'job_title' => 'nullable|string|max:255',
@@ -2100,6 +2125,19 @@ class RenewalController extends Controller
                 $validated[$field] = $path;
             }
         }
+
+        // Same as the Employees menu (EmployeeController::store): the social-security
+        // "hospital right" box and the social-security / hospital document slots
+        // belong in insurance_detail / insurance_document_path (lost before, 2026-11-03).
+        if (($validated['insurance_type'] ?? null) === 'ประกันสังคม' && ! empty($validated['insurance_detail_social']) && empty($validated['insurance_detail'])) {
+            $validated['insurance_detail'] = $validated['insurance_detail_social'];
+        }
+        $insuranceSlot = \App\Http\Controllers\EmployeeController::newEmployeeInsuranceSlot($request);
+        if ($insuranceSlot && empty($validated['insurance_document_path'])) {
+            $file = $request->file($insuranceSlot);
+            $validated['insurance_document_path'] = $file->storeAs("employee_files/{$validated['employer_id']}", Str::random(20) . '.' . $file->getClientOriginalExtension(), 'public');
+        }
+        unset($validated['insurance_document_path_social'], $validated['insurance_document_path_hospital']);
 
         Employee::create($validated);
 

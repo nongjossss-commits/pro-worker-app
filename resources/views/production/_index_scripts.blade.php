@@ -277,7 +277,7 @@
             if (!e.isTrusted) return;
             const orderId = e.target.dataset.employerId;
             const endpoint = `/production/order/${orderId}/select-all-ids`;
-            window.smartEmployerSelectAll(e.target, endpoint, { supportsLockedCompleted: false });
+            window.smartEmployerSelectAll(e.target, endpoint, { supportsLockedCompleted: false, teams: (window.orderTeamFilters && window.orderTeamFilters[orderId]) || [] });
         }
     });
 

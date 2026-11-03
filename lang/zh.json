@@ -1820,5 +1820,7 @@
     "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.": "该雇员将离开此卡片，回到\"变更雇主\"中已完成的雇员列表 —— 可重新加入此卡片或新卡片。这不是取消。",
     "Add to this card": "加入此卡片",
     "Only this card's employer is shown. The ticked employees join this card — no new card is made.": "仅显示此卡片的雇主。勾选的雇员将加入此卡片 —— 不会新建卡片。",
-    "No more finished change-employer employees for this employer right now.": "目前此雇主暂无更多已完成变更雇主的雇员。"
+    "No more finished change-employer employees for this employer right now.": "目前此雇主暂无更多已完成变更雇主的雇员。",
+    "Some files were not included": "部分文件未包含",
+    "Some files were not included — see details": "部分文件未包含 —— 查看详情"
 }

@@ -2130,7 +2130,7 @@
             if (!e.isTrusted) return;
             const employerId = e.target.dataset.employerId;
             const endpoint = `/production/registration/{{ $currentTab->id }}/employer/${employerId}/select-all-ids`;
-            window.smartEmployerSelectAll(e.target, endpoint, { supportsLockedCompleted: true });
+            window.smartEmployerSelectAll(e.target, endpoint, { supportsLockedCompleted: true, teams: (window.employerTeamFilters && window.employerTeamFilters[employerId]) || [] });
         }
     });
 

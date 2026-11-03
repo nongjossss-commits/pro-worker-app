@@ -2,6 +2,10 @@
     // Global function to open the Edit Modal
     window.openEditEmployeeModal = function(employeeId, itemId = null) {
         window.currentEditItemId = itemId; // Store Item ID for refresh logic
+        // Only the form of the employee opened LAST may appear (opening A then
+        // quickly B must not show A's slower answer as if it were B).
+        const requestNo = window.__editEmployeeRequestNo = (window.__editEmployeeRequestNo || 0) + 1;
+        const isCurrent = () => requestNo === window.__editEmployeeRequestNo;
         const modalEl = document.getElementById('editEmployeeModal');
         const modalBody = document.getElementById('editEmployeeModalBody');
         const modal = new bootstrap.Modal(modalEl);
@@ -29,6 +33,7 @@
             return response.text();
         })
         .then(html => {
+            if (!isCurrent()) return;
             modalBody.innerHTML = html;
 
             // Re-initialize scripts for the form
@@ -44,6 +49,7 @@
         })
         .catch(error => {
             console.error(error);
+            if (!isCurrent()) return;
             modalBody.innerHTML = `<div class="alert alert-danger">Error loading form: ${error.message}</div>`;
         });
     };

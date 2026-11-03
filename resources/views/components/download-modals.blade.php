@@ -447,7 +447,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         // task itself succeeded, so it doesn't look like everything
                         // downloaded fine when some files were silently skipped.
                         if (task.error_message) {
-                            actionBtn += ` <i class="bi bi-exclamation-triangle-fill ms-1 text-warning" data-bs-toggle="tooltip" title="${task.error_message}"></i>`;
+                            // A visible link (not just an icon) — opens the full list of what was not included.
+                            window.downloadTaskNotes = window.downloadTaskNotes || {};
+                            window.downloadTaskNotes[task.id] = task.error_message;
+                            actionBtn += ` <button type="button" class="btn btn-sm btn-link text-warning-emphasis p-0 ms-1 align-baseline" onclick="appAlert(window.downloadTaskNotes[${Number(task.id)}].split(' || ').join('\\n\\n'), {title: @js(__('Some files were not included')), icon: 'warning'})"><i class="bi bi-exclamation-triangle-fill me-1"></i>{{ __('Some files were not included — see details') }}</button>`;
                         }
                     } else if (task.status === 'failed') {
                         autoDownloadTaskIds.delete(task.id);

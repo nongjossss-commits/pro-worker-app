@@ -2902,5 +2902,7 @@
     "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.": "This employee leaves this card and goes back to the list of finished change-employer employees — they can be added again to this card or a new one. Nothing is cancelled.",
     "Add to this card": "Add to this card",
     "Only this card's employer is shown. The ticked employees join this card — no new card is made.": "Only this card's employer is shown. The ticked employees join this card — no new card is made.",
-    "No more finished change-employer employees for this employer right now.": "No more finished change-employer employees for this employer right now."
+    "No more finished change-employer employees for this employer right now.": "No more finished change-employer employees for this employer right now.",
+    "Some files were not included": "Some files were not included",
+    "Some files were not included — see details": "Some files were not included — see details"
 }

@@ -50,6 +50,11 @@
         }
 
         lastEditedEmployeeId = employeeId;
+        // Only the form of the employee opened LAST may appear: opening A, then
+        // quickly B, must not let A's slower answer replace B's form (the user
+        // would edit A believing it is B).
+        const requestNo = window.__editEmployeeRequestNo = (window.__editEmployeeRequestNo || 0) + 1;
+        const isCurrent = () => requestNo === window.__editEmployeeRequestNo;
 
         // Reset and show spinner immediately
         modalBody.innerHTML = `
@@ -86,6 +91,7 @@
             return res.text();
         })
         .then(html => {
+            if (!isCurrent()) return;
             modalBody.innerHTML = html;
 
             // Re-initialize any scripts that need to bind to the freshly-injected
@@ -107,6 +113,7 @@
             }
         })
         .catch(err => {
+            if (!isCurrent()) return;
             modalBody.innerHTML = `
                 <div class="alert alert-danger m-3">
                     <i class="bi bi-exclamation-triangle me-2"></i>${err.message}

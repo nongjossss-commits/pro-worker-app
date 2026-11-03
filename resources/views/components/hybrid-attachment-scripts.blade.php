@@ -408,6 +408,8 @@ function hybridAttachmentManager(config = {}) {
             });
             const formElement = document.getElementById('newEmployeeActualForm');
             if (formElement) formElement.reset();
+            // date boxes show what the (now empty) form holds — public/js/date-form-sync.js
+            this.$nextTick(() => { if (window.syncDatePickers && formElement) window.syncDatePickers(formElement); });
         },
 
         openNewEmployeeModal() {

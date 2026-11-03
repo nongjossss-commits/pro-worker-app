@@ -41,6 +41,12 @@ class ProcessDownload implements ShouldQueue
     protected $unreadablePdfs = [];
     protected $task;
 
+    // Files of which only some pages went into the PDF (a page failed to import).
+    protected $partialPdfs = [];
+
+    // Selected employees that could not be loaded (e.g. moved to the trash meanwhile).
+    protected $notFoundIds = [];
+
     // Per-job caches: PDFs already converted (path => converted path) and
     // names already used in the ZIP being built.
     protected $normalizedPdfs = [];
@@ -193,6 +199,7 @@ class ProcessDownload implements ShouldQueue
             }
             // Sort employees by the order of IDs passed from frontend (preserves user selection order)
             $idOrder = array_flip(array_map('intval', $this->employeeIds));
+            $this->notFoundIds = array_values(array_diff(array_unique(array_map('intval', $this->employeeIds)), $employeesUnsorted->pluck('id')->map(fn ($id) => (int) $id)->all()));
             $employees = $employeesUnsorted->sort(function ($a, $b) use ($idOrder) {
                 return ($idOrder[$a->id] ?? PHP_INT_MAX) - ($idOrder[$b->id] ?? PHP_INT_MAX);
             })->values();
@@ -545,7 +552,7 @@ class ProcessDownload implements ShouldQueue
             $done = 0;
             $parts = $this->buildMergedPdfParts($employees, $tempDir, $hasThaiFont, '', $done);
 
-            if (count($parts) === 1) {
+            if (count($parts) === 1 && empty($this->unreadablePdfs)) {
                 $output = $this->outputPath('pdf');
                 rename($parts[0], storage_path('app/private/' . $output));
                 return $output;
@@ -558,8 +565,12 @@ class ProcessDownload implements ShouldQueue
                 throw new Exception('Cannot create zip file');
             }
             foreach ($parts as $i => $partPath) {
-                $zip->addFile($partPath, sprintf('merged_part_%d_of_%d.pdf', $i + 1, count($parts)));
+                $zip->addFile($partPath, count($parts) === 1
+                    ? DownloadFileName::withCount(__('Employee documents'), count($employees)) . '.pdf'
+                    : sprintf('merged_part_%d_of_%d.pdf', $i + 1, count($parts)));
             }
+            // Files that couldn't be merged go in as originals — nothing is left out.
+            $this->addUnmergedOriginals($zip, $this->unreadablePdfs);
             $zip->close();
             $this->splitIntoParts = count($parts);
 
@@ -593,6 +604,7 @@ class ProcessDownload implements ShouldQueue
 
             $done = 0;
             foreach ($this->employeeSets($employees, true) as $setIndex => [$employerFolder, $set]) {
+                $unmergedBefore = count($this->unreadablePdfs);
                 $parts = $this->buildMergedPdfParts($set, $tempDir, $hasThaiFont, $setIndex . '_', $done);
                 foreach ($parts as $i => $partPath) {
                     $name = count($parts) === 1
@@ -601,6 +613,8 @@ class ProcessDownload implements ShouldQueue
                     $zip->addFile($partPath, $this->uniqueZipName($employerFolder . '/' . $name));
                 }
                 $this->splitIntoParts = max($this->splitIntoParts, count($parts));
+                // this employer's files that couldn't be merged, as originals
+                $this->addUnmergedOriginals($zip, array_slice($this->unreadablePdfs, $unmergedBefore), $employerFolder . '/');
             }
             $zip->close();
 
@@ -634,20 +648,27 @@ class ProcessDownload implements ShouldQueue
         $hadValue = false;
         $added = false;
 
+        $foundOnDisk = false;
+
         foreach ($attributes as $attr) {
             if (!empty($employee->$attr)) {
                 $hadValue = true;
                 $originalFilePath = $this->getFilePath($employee->$attr);
                 if ($originalFilePath && file_exists($originalFilePath)) {
-                    $added = true;
+                    $foundOnDisk = true;
+                    // "Added" only when pages really went into the PDF (2026-11-03):
+                    // before, a file was counted as added as soon as it existed, so a
+                    // file that then failed to merge disappeared without a trace.
+                    $pagesBefore = $pdf->PageNo();
+                    $mergedOk = false;
                     try {
-                        $mime = @mime_content_type($originalFilePath);
+                        $kind = $this->fileKind($originalFilePath);
 
-                        if ($mime === 'application/pdf') {
+                        if ($kind === 'pdf') {
                             $pageCount = $this->openPdfSource($pdf, $originalFilePath);
                             if ($pageCount === null) {
-                                // Unreadable even after conversion — say so instead of skipping silently.
-                                $this->unreadablePdfs[] = ['employee' => $employee, 'fileType' => $fileType, 'path' => $originalFilePath];
+                                // Unreadable even after conversion — handled below (original kept).
+                                $this->cannotMerge($pdf, $employee, $fileType, $originalFilePath, $hasThaiFont);
                                 continue;
                             }
                             for ($i = 1; $i <= $pageCount; $i++) {
@@ -665,13 +686,19 @@ class ProcessDownload implements ShouldQueue
                                 } catch (Throwable $e) {
                                     // Log and skip bad pages
                                     Log::warning("Failed to import page $i of $originalFilePath: " . $e->getMessage());
+                                    $this->partialPdfs[] = ['employee' => $employee, 'fileType' => $fileType, 'page' => $i, 'of' => $pageCount];
                                     continue;
                                 }
                             }
-                        } elseif (strpos($mime, 'image/') === 0) {
+                            $mergedOk = $pdf->PageNo() > $pagesBefore;
+                        } elseif ($kind === 'image') {
                             // Normalize Image: Converts all images (jpg, png, gif, webp, bmp) to a standard temporary JPEG
                             $normalizedPath = $this->normalizeImage($originalFilePath);
-                            if (!$normalizedPath) continue;
+                            if (!$normalizedPath) {
+                                // e.g. HEIC from an iPhone — the server can't draw it
+                                $this->cannotMerge($pdf, $employee, $fileType, $originalFilePath, $hasThaiFont);
+                                continue;
+                            }
 
                             $this->tempImageFiles[] = $normalizedPath; // Track for cleanup
 
@@ -710,16 +737,115 @@ class ProcessDownload implements ShouldQueue
 
                             // Add Header
                             $this->drawHeader($pdf, $employee, $hasThaiFont);
+                            $mergedOk = true;
                         }
                     } catch (Throwable $e) {
                         Log::error("Failed to merge file $originalFilePath: " . $e->getMessage());
+                    }
+
+                    if ($mergedOk) {
+                        $added = true;
+                    } elseif ($pdf->PageNo() === $pagesBefore) {
+                        // Not a PDF / image the server can read.
+                        $this->cannotMerge($pdf, $employee, $fileType, $originalFilePath, $hasThaiFont);
+                    } else {
+                        // Stopped part-way: some pages are in, the rest are not.
+                        $added = true;
+                        $this->partialPdfs[] = ['employee' => $employee, 'fileType' => $fileType, 'page' => null, 'of' => null];
                     }
                 }
             }
         }
 
-        if (!$added) {
+        if (!$added && !$foundOnDisk) {
             $this->recordMissing($employee, $fileType, $hadValue);
+        }
+    }
+
+    /**
+     * What a stored file really is: 'pdf', 'image' or null. Looks at the
+     * content first — a PDF is any file with "%PDF" near the start, even with
+     * a few junk bytes in front (some scanners / web downloads do that and
+     * the strict check said "octet-stream", so the merge skipped the file
+     * while the preview — which falls back to the extension — showed it).
+     */
+    protected function fileKind(string $path): ?string
+    {
+        $head = @file_get_contents($path, false, null, 0, 1024);
+        if ($head !== false && strpos($head, '%PDF') !== false) {
+            return 'pdf';
+        }
+        if (@getimagesize($path)) {
+            return 'image';
+        }
+        if (function_exists('mime_content_type')) {
+            $mime = (string) @mime_content_type($path);
+            if ($mime === 'application/pdf') return 'pdf';
+            if (str_starts_with($mime, 'image/')) return 'image';
+        }
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if ($ext === 'pdf') return 'pdf';
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif', 'tif', 'tiff'], true)) return 'image';
+
+        return null;
+    }
+
+    /**
+     * A file that exists but can't go into the merged PDF: remembered so the
+     * ORIGINAL is shipped in the download (see addUnmergedOriginals()), listed
+     * in the summary, and a notice page marks its place in the PDF — so nobody
+     * prints the set believing it is complete.
+     */
+    protected function cannotMerge($pdf, $employee, string $fileType, string $path, bool $hasThaiFont): void
+    {
+        foreach ($this->unreadablePdfs as $entry) {
+            if ($entry['path'] === $path && $entry['employee']->id === $employee->id) {
+                return;
+            }
+        }
+        $this->unreadablePdfs[] = ['employee' => $employee, 'fileType' => $fileType, 'path' => $path];
+
+        try {
+            $pdf->AddPage();
+            $name = trim(($employee->employeeTitleEn ? $employee->employeeTitleEn . ' ' : '') . ($employee->employeeNameEn ?: $employee->employeeNameTh ?: ('#' . $employee->id)));
+            if ($hasThaiFont) {
+                $pdf->SetFont('THSarabunNew', '', 22);
+                $toPdf = fn ($s) => iconv('UTF-8', 'cp874//IGNORE', $s);
+                $lines = [
+                    'เอกสาร "' . $this->fileTypeLabel($fileType) . '" ของ ' . $name,
+                    'รวมเข้า PDF นี้ไม่ได้ (รูปแบบไฟล์ที่ระบบอ่านไม่ได้)',
+                    'ไฟล์ต้นฉบับอยู่ในโฟลเดอร์ "' . self::UNMERGED_FOLDER . '" ใน ZIP ที่ดาวน์โหลด',
+                ];
+            } else {
+                $pdf->SetFont('Helvetica', '', 14);
+                $toPdf = fn ($s) => $s;
+                $lines = [
+                    'Document "' . $fileType . '" of ' . $name,
+                    'could not be merged into this PDF (unreadable file format).',
+                    'The original file is in the "unmerged files" folder of the downloaded ZIP.',
+                ];
+            }
+            $pdf->SetXY(20, 110);
+            foreach ($lines as $line) {
+                $pdf->Cell(170, 12, $toPdf($line), 0, 1, 'C');
+                $pdf->SetX(20);
+            }
+            $this->drawHeader($pdf, $employee, $hasThaiFont);
+        } catch (Throwable $e) {
+            Log::warning('ProcessDownload: notice page failed: ' . $e->getMessage());
+        }
+    }
+
+    /** Folder in the ZIP holding originals that couldn't be merged into the PDF. */
+    public const UNMERGED_FOLDER = 'ไฟล์ที่รวมเข้า PDF ไม่ได้';
+
+    /** Put the originals of the files that couldn't be merged into $zip (under $prefix). */
+    protected function addUnmergedOriginals(ZipArchive $zip, array $entries, string $prefix = ''): void
+    {
+        foreach ($entries as $entry) {
+            $emp = $entry['employee'];
+            $who = $this->sanitizeFileName(($emp->employeeNameEn ?: $emp->employeeNameTh ?: 'Employee') . '_' . $emp->id);
+            $zip->addFile($entry['path'], $this->uniqueZipName($prefix . self::UNMERGED_FOLDER . '/' . $who . '_' . $entry['fileType'] . '_' . basename($entry['path'])));
         }
     }
 
@@ -789,6 +915,31 @@ class ProcessDownload implements ShouldQueue
             return $pdf->setSourceFile($path);
         } catch (Throwable $e) {
             Log::info("ProcessDownload: PDF needs conversion ({$path}): " . $e->getMessage());
+        }
+
+        // Junk bytes before "%PDF" (some scanners / web downloads): a copy that
+        // starts at the header usually reads fine — browsers ignore the junk,
+        // which is why the preview showed these files (2026-11-03).
+        try {
+            $head = (string) @file_get_contents($path, false, null, 0, 1024);
+            $at = strpos($head, '%PDF');
+            if ($at !== false && $at > 0) {
+                $trimmed = tempnam(sys_get_temp_dir(), 'pdf_trim_') . '.pdf';
+                $in = fopen($path, 'rb');
+                $out = fopen($trimmed, 'wb');
+                fseek($in, $at);
+                stream_copy_to_stream($in, $out);
+                fclose($in);
+                fclose($out);
+                $this->tempImageFiles[] = $trimmed; // removed by cleanupTempImages()
+                try {
+                    return $pdf->setSourceFile($trimmed);
+                } catch (Throwable $e) {
+                    $path = $trimmed; // let the conversion below work on the cleaned copy
+                }
+            }
+        } catch (Throwable $e) {
+            // fall through to the conversion
         }
 
         try {
@@ -935,6 +1086,10 @@ class ProcessDownload implements ShouldQueue
             $srcImg = @imagecreatefromstring($data);
             if (!$srcImg) return null;
 
+            // Phone photos are often stored sideways with an EXIF "rotate" tag;
+            // browsers (the preview) apply it, GD does not — turn it upright here.
+            $srcImg = $this->applyExifOrientation($srcImg, $this->jpegOrientation($data));
+
             $width = imagesx($srcImg);
             $height = imagesy($srcImg);
             unset($data);
@@ -982,6 +1137,76 @@ class ProcessDownload implements ShouldQueue
             Log::error("Image normalization failed for $filePath: " . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * EXIF Orientation (1–8) of a JPEG, read straight from its APP1 segment —
+     * works without PHP's exif extension. 1 (= as stored) when absent.
+     */
+    protected function jpegOrientation(string $data): int
+    {
+        if (strncmp($data, "\xFF\xD8", 2) !== 0) {
+            return 1;
+        }
+        $pos = 2;
+        $len = strlen($data);
+        while ($pos + 4 <= $len && $data[$pos] === "\xFF") {
+            $marker = ord($data[$pos + 1]);
+            $size = unpack('n', substr($data, $pos + 2, 2))[1];
+            if ($marker === 0xDA || $size < 2) {
+                break; // image data starts — no EXIF before it
+            }
+            if ($marker === 0xE1 && substr($data, $pos + 4, 6) === "Exif\0\0") {
+                $tiff = substr($data, $pos + 10, $size - 8);
+                $le = substr($tiff, 0, 2) === 'II';
+                $u16 = fn ($o) => unpack($le ? 'v' : 'n', substr($tiff, $o, 2))[1] ?? 0;
+                $u32 = fn ($o) => unpack($le ? 'V' : 'N', substr($tiff, $o, 4))[1] ?? 0;
+                if (strlen($tiff) < 8) {
+                    return 1;
+                }
+                $ifd = $u32(4);
+                $count = $ifd + 2 <= strlen($tiff) ? $u16($ifd) : 0;
+                for ($i = 0; $i < $count; $i++) {
+                    $entry = $ifd + 2 + $i * 12;
+                    if ($entry + 12 > strlen($tiff)) {
+                        break;
+                    }
+                    if ($u16($entry) === 0x0112) {
+                        $o = $u16($entry + 8);
+                        return ($o >= 1 && $o <= 8) ? $o : 1;
+                    }
+                }
+                return 1;
+            }
+            $pos += 2 + $size;
+        }
+
+        return 1;
+    }
+
+    /** Turn a GD image as EXIF Orientation says (2–8); 1 = unchanged. */
+    protected function applyExifOrientation($img, int $orientation)
+    {
+        if ($orientation <= 1 || $orientation > 8) {
+            return $img;
+        }
+        try {
+            // flips first (2, 4, 5, 7), then rotation (imagerotate turns counter-clockwise)
+            if (in_array($orientation, [2, 5, 7], true)) imageflip($img, IMG_FLIP_HORIZONTAL);
+            if ($orientation === 4) imageflip($img, IMG_FLIP_VERTICAL);
+            $angle = match ($orientation) { 3 => 180, 5, 6 => 270, 7, 8 => 90, default => 0 };
+            if ($angle) {
+                $rotated = imagerotate($img, $angle, 0);
+                if ($rotated) {
+                    imagedestroy($img);
+                    $img = $rotated;
+                }
+            }
+        } catch (Throwable $e) {
+            Log::warning('ProcessDownload: EXIF orientation not applied: ' . $e->getMessage());
+        }
+
+        return $img;
     }
 
     /**
@@ -1129,8 +1354,22 @@ class ProcessDownload implements ShouldQueue
                 $lines[] = ($emp->employeeNameEn ?: $emp->employeeNameTh) . " (#{$emp->id}): " . $this->fileTypeLabel($entry['fileType']);
             }
             $parts[] = ($this->task && $this->task->type === 'pdf_individual')
-                ? 'ไฟล์ PDF บางไฟล์รวมเข้า PDF ไม่ได้ จึงใส่ไฟล์ต้นฉบับไว้ใน ZIP แยกให้แทน — ' . implode(' | ', array_unique($lines))
-                : 'ไฟล์ PDF บางไฟล์รวมเข้า PDF ไม่ได้ (รูปแบบไฟล์ที่ระบบอ่านไม่ได้) — กรุณาดาวน์โหลดแบบ ZIP เพื่อได้ไฟล์ต้นฉบับ: ' . implode(' | ', array_unique($lines));
+                ? 'ไฟล์บางไฟล์รวมเข้า PDF ไม่ได้ จึงใส่ไฟล์ต้นฉบับไว้ใน ZIP แยกให้แทน — ' . implode(' | ', array_unique($lines))
+                : 'ไฟล์บางไฟล์รวมเข้า PDF ไม่ได้ (รูปแบบไฟล์ที่ระบบอ่านไม่ได้) — ได้เป็น ZIP: ไฟล์ PDF รวม + ไฟล์ต้นฉบับในโฟลเดอร์ "' . self::UNMERGED_FOLDER . '" (ใน PDF มีหน้าแจ้งไว้ตรงตำแหน่งเอกสารนั้น): ' . implode(' | ', array_unique($lines));
+        }
+
+        if (!empty($this->partialPdfs)) {
+            $lines = [];
+            foreach ($this->partialPdfs as $entry) {
+                $emp = $entry['employee'];
+                $lines[] = ($emp->employeeNameEn ?: $emp->employeeNameTh) . " (#{$emp->id}): " . $this->fileTypeLabel($entry['fileType'])
+                    . ($entry['page'] ? " หน้า {$entry['page']}/{$entry['of']}" : '');
+            }
+            $parts[] = 'บางหน้าของไฟล์ต่อไปนี้รวมเข้า PDF ไม่ได้ — กรุณาเปิดไฟล์ต้นฉบับ (ดาวน์โหลดแบบ ZIP): ' . implode(' | ', array_unique($lines));
+        }
+
+        if (!empty($this->notFoundIds)) {
+            $parts[] = 'ไม่พบลูกจ้างบางคนที่เลือก (อาจถูกย้ายไปถังขยะหรือไม่มีสิทธิ์เห็น) — รหัส: ' . implode(', ', array_map(fn ($id) => '#' . $id, $this->notFoundIds));
         }
 
         if ($this->splitIntoParts > 1) {
