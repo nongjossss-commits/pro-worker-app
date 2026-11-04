@@ -290,6 +290,7 @@ class NotificationController extends Controller
 
         // Two-stage filter — box 1 locks one exact employer; box 2's free-text
         // search (below) then only needs to match the employee's own fields.
+        \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
         $employerFilterId = $request->input('employer_filter_id');
         if ($employerFilterId) {
             if ($type === 'employer_document_expiry') {
@@ -516,6 +517,7 @@ class NotificationController extends Controller
         }
 
         // Same filters as the notification list.
+        \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
         \App\Services\TwoStageSearch::applyEmployeePicks($employees, $request);
         $employerFilterId = $request->input('employer_filter_id');
         if ($employerFilterId) {

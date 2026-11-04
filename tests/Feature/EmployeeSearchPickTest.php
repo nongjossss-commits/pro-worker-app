@@ -49,16 +49,19 @@ class EmployeeSearchPickTest extends TestCase
         $this->assertSame(1, $this->cardCount($this->get(route('employees.index', ['employer_filter_name' => 'Jai Jian', 'employee_pick_id' => $a->id]))->getContent()));
     }
 
-    public function test_box_one_finds_terminated_employees_the_suggestions_offer(): void
+    public function test_terminated_employees_never_appear_on_the_active_employees_page(): void
     {
         $employer = Employer::factory()->create();
         Employee::factory()->create(['employer_id' => $employer->id, 'employeeNameEn' => 'Gone Worker', 'terminated_at' => now()->subDay()]);
 
-        $this->assertNotEmpty($this->getJson(route('employees.preview_search_combined', ['q' => 'Gone Worker']))->json());
-        // Was 0 before: the "hide terminated" check ran before box 1's text became the search.
-        $this->assertSame(1, $this->cardCount($this->get(route('employees.index', ['employer_filter_name' => 'Gone Worker']))->getContent()));
+        // A notified-out employee belongs only on the History page — never
+        // suggested, never found, by box 1 on the active Employees page.
+        $this->assertEmpty($this->getJson(route('employees.preview_search_combined', ['q' => 'Gone Worker']))->json());
+        $this->assertSame(0, $this->cardCount($this->get(route('employees.index', ['employer_filter_name' => 'Gone Worker']))->getContent()));
         // Plain browsing still hides them.
         $this->assertSame(0, $this->cardCount($this->get(route('employees.index'))->getContent()));
+        // But they're still findable on the History page.
+        $this->assertStringContainsString('Gone Worker', $this->get(route('employees.history', ['search' => 'Gone Worker']))->getContent());
     }
 
     public function test_list_queries_do_not_grow_with_the_number_of_cards(): void

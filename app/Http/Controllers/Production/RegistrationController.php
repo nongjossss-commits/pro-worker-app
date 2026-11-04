@@ -112,6 +112,7 @@ class RegistrationController extends Controller
         // hard filter on top of the existing search logic (not touching
         // applySearchToQuery()/applyEmployerLevelSearch() themselves), so a
         // suggestion from box 2 can never land outside that one employer.
+        \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
         $employerFilterId = $request->input('employer_filter_id');
         if ($employerFilterId) {
             $statsQuery->where('employer_id', $employerFilterId);

@@ -107,6 +107,7 @@ class RenewalController extends Controller
 
         // Two-stage filter — box 1 locks one exact employer; applied as a
         // hard filter on top of the existing search logic.
+        \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
         $employerFilterId = $request->input('employer_filter_id');
         if ($employerFilterId) {
             $statsQuery->where('employer_id', $employerFilterId);

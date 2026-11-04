@@ -118,6 +118,7 @@ class ProductionController extends Controller
             // Two-stage filter — box 1 locks one exact employer; box 2's
             // free-text search then only needs to match everything EXCEPT
             // the employer's own name (already locked to one exact row).
+            \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
             $employerAlreadyFiltered = $request->filled('employer_filter_id');
             if ($employerAlreadyFiltered) {
                 $query->where('employer_id', $request->input('employer_filter_id'));

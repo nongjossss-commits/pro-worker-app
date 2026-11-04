@@ -34,6 +34,7 @@ class IncompleteEmployeeController extends Controller
         $query->whereNull('terminated_at');
 
         // Two-stage filter — see EmployeeController::index() for the same pattern.
+        \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
         $employerAlreadyFiltered = $request->filled('employer_filter_id');
         if ($employerAlreadyFiltered) {
             $query->where('employer_id', $request->input('employer_filter_id'));

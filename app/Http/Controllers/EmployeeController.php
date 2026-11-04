@@ -166,19 +166,21 @@ public function reinstate(Employee $employee)
 {
     $query = Employee::query();
 
-    // Filter out terminated / 'registration_cancelled' employees from the
-    // default browse view so they don't clutter it (registration_pending IS
-    // included, per earlier request, to show Resolution employees here).
-    // This filter is SKIPPED once a search term is typed — otherwise a
-    // terminated/cancelled employee sharing an identity number (passport,
-    // RA number, etc.) with an active one is invisible here even though the
-    // duplicate-data warning flags it, leaving staff with no way to find
-    // and compare the two records to decide which to fix/remove.
-    // (Applied below, AFTER box 1's text has been folded into 'search' — checking
-    // it here first hid terminated/cancelled employees that the search
-    // suggestions had just offered, so picking one showed "no records".)
+    // Filter out terminated / 'registration_cancelled' employees — always,
+    // search or not (registration_pending IS included, per earlier request,
+    // to show Resolution employees here). A notified-out employee belongs
+    // only on the "ลูกจ้างที่ถูกแจ้งออก" (History) page, never mixed into this
+    // active list — even when searching/picking a suggestion, which is why
+    // previewSearch()/previewSearchCombined() below are scoped the same way.
+    $query->whereNull('terminated_at')
+        ->where(function($q) {
+            $q->whereNotIn('status', ['registration_cancelled'])
+              ->orWhereNull('status');
+        });
 
     // --- START: ADDED FILTERING LOGIC ---
+    // Must run before reading employer_filter_id below — see its docblock.
+    \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
     // Two-stage filter: "employer_filter_id" (box 1 — pick one exact
     // employer) scopes everything below it, including box 2's own free-text
     // search — which then only needs to match the employee's own fields,
@@ -186,16 +188,6 @@ public function reinstate(Employee $employee)
     $employerAlreadyFiltered = $request->filled('employer_filter_id');
     if ($employerAlreadyFiltered) {
         $query->where('employer_id', $request->input('employer_filter_id'));
-    }
-
-    // Default browse view hides terminated / cancelled employees; any search
-    // (box 1 or box 2) or an exact pick shows them, matching the suggestions.
-    if (!\App\Services\TwoStageSearch::terms($request) && !\App\Services\TwoStageSearch::hasPick($request)) {
-        $query->whereNull('terminated_at')
-            ->where(function($q) {
-                $q->whereNotIn('status', ['registration_cancelled'])
-                  ->orWhereNull('status');
-            });
     }
 
     // Every term must match (TwoStageSearch): box 1's typed text (when it isn't a
@@ -326,9 +318,8 @@ public function reinstate(Employee $employee)
 
 /**
  * Live-search preview for the index() search box — same core name/ID
- * fields index() matches on, independent lightweight query (not scoped
- * to the terminated/cancelled exclusion, matching how index() itself
- * drops that exclusion once a search term is present).
+ * fields index() matches on, scoped to active (non-notified-out) employees
+ * to match index() itself.
  */
 public function previewSearch(Request $request)
 {
@@ -338,8 +329,10 @@ public function previewSearch(Request $request)
     }
 
     // Box 1: employers / job owners / employees; box 2: employees inside box 1's
-    // result (App\Services\TwoStageSearch).
-    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::query()));
+    // result (App\Services\TwoStageSearch). Scoped to active (non-notified-out)
+    // employees, same as index() — a suggestion must never offer a record the
+    // list itself would then hide.
+    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at')));
     }
 
 /**
@@ -357,8 +350,9 @@ public function previewSearchCombined(Request $request)
     }
 
     // Box 1: employers / job owners / employees; box 2: employees inside box 1's
-    // result (App\Services\TwoStageSearch).
-    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::query()));
+    // result (App\Services\TwoStageSearch). Scoped to active employees — see
+    // previewSearch() above.
+    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at')));
     }
 
 /**
@@ -1345,6 +1339,7 @@ public function create(Request $request) // เพิ่ม Request $request เ
         $query = Employee::query()->whereNotNull('terminated_at');
 
         // Two-stage filter — see EmployeeController::index() for the same pattern.
+        \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
         $employerAlreadyFiltered = $request->filled('employer_filter_id');
         if ($employerAlreadyFiltered) {
             $query->where('employer_id', $request->input('employer_filter_id'));

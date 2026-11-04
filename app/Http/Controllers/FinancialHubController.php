@@ -31,6 +31,8 @@ class FinancialHubController extends Controller
     public function index(Request $request)
     {
         $tab = $request->input('tab', 'overview');
+        // Must run before any branch below reads employer_filter_id directly.
+        \App\Services\TwoStageSearch::resolveExactEmployerPick($request);
 
         // Prepare variables that might be used across views
         $stats = [

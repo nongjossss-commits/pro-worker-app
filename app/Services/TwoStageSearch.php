@@ -30,6 +30,8 @@ class TwoStageSearch
     /** Free-text terms in order: box 1 (unless it locked onto a pick) then box 2. */
     public static function terms(Request $request): array
     {
+        self::resolveExactEmployerPick($request);
+
         $terms = [];
         $box1 = trim((string) $request->input('employer_filter_name'));
         if ($box1 !== '' && ! $request->filled('employer_filter_id') && ! self::hasPick($request)) {
@@ -41,6 +43,35 @@ class TwoStageSearch
         }
 
         return array_values(array_unique($terms));
+    }
+
+    /**
+     * If box 1's typed text exactly matches exactly one employer's name, lock
+     * onto it exactly as if it had been picked from the dropdown. Without
+     * this, typing a company's full name and pressing Enter (instead of
+     * clicking the suggestion) fell back to the fuzzy free-text match below,
+     * which also matches that same text inside unrelated employees' own
+     * names — so a staff member who happens to share part of the name shows
+     * up too. An exact match is unambiguous, so it's safe to auto-lock.
+     *
+     * Public and idempotent — call it at the very top of any method that
+     * reads request('employer_filter_id') directly, BEFORE that read, since
+     * every caller currently checks employer_filter_id before it ever calls
+     * terms()/preview() (which also call this, but too late to matter there).
+     */
+    public static function resolveExactEmployerPick(Request $request): void
+    {
+        if ($request->filled('employer_filter_id') || self::hasPick($request)) {
+            return;
+        }
+        $box1 = trim((string) $request->input('employer_filter_name'));
+        if ($box1 === '') {
+            return;
+        }
+        $matches = Employer::where('employerNameTh', $box1)->orWhere('employerNameEn', $box1)->limit(2)->pluck('id');
+        if ($matches->count() === 1) {
+            $request->merge(['employer_filter_id' => $matches->first()]);
+        }
     }
 
     public static function hasPick(Request $request): bool
@@ -56,6 +87,7 @@ class TwoStageSearch
      */
     public static function previewScopeTerms(Request $request): array
     {
+        self::resolveExactEmployerPick($request);
         if ($request->input('_box') !== 'search') {
             return [];
         }
@@ -229,6 +261,7 @@ class TwoStageSearch
      */
     public static function preview(Request $request, string $q, \Closure $employeeBase, ?\Closure $employerBase = null, int $limit = 12): array
     {
+        self::resolveExactEmployerPick($request);
         $results = [];
         $employerFilterId = $request->input('employer_filter_id');
         $boxOne = self::isBoxOne($request);
