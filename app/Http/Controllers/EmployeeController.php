@@ -985,6 +985,23 @@ public function create(Request $request) // เพิ่ม Request $request เ
             ? __('Someone else changed this employee while the form was open — their newer value was kept for: :fields', ['fields' => \App\Support\StaleFormGuard::labels($employee, $keptFields)])
             : null;
 
+        // A terminated employee's employer must change only through the
+        // dedicated "Transfer" action (transfer()/bulkTransfer() below) —
+        // that's the one place that also clears terminated_at/
+        // termination_reason and writes a proper transfer log entry.
+        // Letting this general form silently change employer_id here left
+        // the record stuck: shown under the new employer's name but still
+        // flagged terminated, so it vanished from both the active list
+        // (correctly hidden, per that employer's own records) and the
+        // History page no longer matched what actually happened.
+        if ($employee->terminated_at && (int) $validated['employer_id'] !== (int) $employee->employer_id) {
+            $message = __('This employee is notified-out (terminated). To move them to a new employer, use the "Transfer" action on the History page instead of editing here.');
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return back()->withInput()->with('error', $message);
+        }
+
         // --- V6: Step 6: Update Employee ---
         $employee->update($validated);
 
