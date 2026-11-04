@@ -38,3 +38,18 @@
     .nav-tabs .nav-link.active { background: var(--bs-primary) !important; border-color: var(--bs-primary) !important; color: #fff !important; }
     .nav-tabs .nav-link.active i { color: inherit !important; }
 }
+
+/*
+ * Phones + tablets (< 992px): the page "scroll to top" buttons
+ * (layouts/_app_scripts.blade.php) default to the bottom corners, which on
+ * a narrow screen sits right on top of the floating bulk-action bar
+ * (checkbox / "Actions" toolbar that appears once cards are selected) —
+ * blocking it instead of floating clear of it. Only one button is needed
+ * here (the left/right pair both just scroll to top), so the left one is
+ * dropped and the remaining one moves above both the bulk-action bar and
+ * the chat launcher.
+ */
+@media (max-width: 991.98px) {
+    .scroll-to-top.left { display: none !important; }
+    .scroll-to-top.right { right: 16px; bottom: 150px; }
+}
