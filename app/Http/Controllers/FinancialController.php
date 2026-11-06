@@ -7,6 +7,7 @@ use App\Models\IncomeCategory;
 use App\Models\ProductionOrder;
 use App\Models\FinancialTransaction;
 use App\Models\FinancialPayment;
+use App\Models\FinancialTransactionItemPayment;
 use App\Models\CompanyProfile;
 use App\Models\ProductionItem;
 use App\Services\LedgerService;
@@ -135,7 +136,8 @@ class FinancialController extends Controller
             'item_ids' => 'nullable|array',
             'item_ids.*' => 'exists:production_items,id',
             'employee_ids' => 'nullable|array',
-            'employee_ids.*' => 'exists:employees,id'
+            'employee_ids.*' => 'exists:employees,id',
+            'payment_collection_mode' => 'nullable|in:lump_sum,per_employee',
         ]);
 
         $transaction = FinancialTransaction::create([
@@ -147,7 +149,8 @@ class FinancialController extends Controller
             'discount_description' => $request->discount_description,
             'due_date' => $request->due_date,
             'notes' => $request->notes,
-            'status' => 'pending'
+            'status' => 'pending',
+            'payment_collection_mode' => $request->payment_collection_mode ?? 'lump_sum',
         ]);
 
         $finalItemIds = $request->item_ids ?? [];
@@ -204,6 +207,13 @@ class FinancialController extends Controller
         $transaction = FinancialTransaction::with('payments')->findOrFail($id);
         $request->validate(self::UPDATE_TRANSACTION_RULES);
 
+        if ($request->has('payment_collection_mode')) {
+            $blockReason = $this->paymentCollectionModeSwitchBlockReason($transaction, $request->payment_collection_mode);
+            if ($blockReason) {
+                return response()->json(['success' => false, 'message' => $blockReason], 422);
+            }
+        }
+
         $this->applyTransactionFields($transaction, $request);
         $this->applyTransactionFiles($transaction, $request);
         // Auto-update status ทำงานเฉพาะเมื่อ user ไม่ได้ระบุ status มาเอง (เช่น flag เป็น 'overdue')
@@ -215,7 +225,7 @@ class FinancialController extends Controller
 
         $this->syncTransactionItems($transaction, $request);
 
-        $transaction->load(['items.employee', 'payments', 'bankAccount']);
+        $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
         return response()->json(['success' => true, 'transaction' => $transaction]);
     }
 
@@ -305,7 +315,7 @@ class FinancialController extends Controller
             throw $e;
         }
 
-        $transaction->load(['items.employee', 'payments', 'bankAccount']);
+        $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
         return response()->json(['success' => true, 'transaction' => $transaction]);
     }
 
@@ -446,7 +456,7 @@ class FinancialController extends Controller
             Storage::disk('public')->delete($oldSlipPath);
         }
 
-        $transaction->load(['items.employee', 'payments', 'bankAccount']);
+        $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
         return response()->json(['success' => true, 'transaction' => $transaction]);
     }
 
@@ -496,8 +506,252 @@ class FinancialController extends Controller
             Storage::disk('public')->delete($slipPath);
         }
 
-        $transaction->load(['items.employee', 'payments', 'bankAccount']);
+        $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
         return response()->json(['success' => true, 'transaction' => $transaction]);
+    }
+
+    // =========================================================================
+    // Per-Employee Collection (FinancialTransaction.payment_collection_mode
+    // === 'per_employee') — each employee pays their own share, possibly in
+    // several partial payments. These entries are the detail ledger; a batch
+    // of them rolls up into ONE FinancialPayment (see finalizeItemPayments())
+    // so the existing receipt/ledger/paid_amount logic above never has to
+    // change — it just sees one more payment, like it always has.
+    // =========================================================================
+
+    /**
+     * Record one employee's one payment. Starts unassigned to any receipt
+     * (financial_payment_id null) until finalizeItemPayments() rolls it up.
+     */
+    public function storeItemPayment(Request $request, $transactionId)
+    {
+        if (!$this->canManageFinance()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $transaction = FinancialTransaction::findOrFail($transactionId);
+
+        $validated = $request->validate([
+            'production_item_id' => 'required|exists:production_items,id',
+            'amount' => 'required|numeric|min:0.01',
+            'paid_at' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        // The item must actually be attached to this bill — otherwise a
+        // payment could be recorded against someone not even on it.
+        $attached = $transaction->items()->where('production_items.id', $validated['production_item_id'])->exists();
+        if (!$attached) {
+            return response()->json(['success' => false, 'message' => 'This employee is not attached to this bill.'], 422);
+        }
+
+        $entry = $transaction->itemPayments()->create([
+            'production_item_id' => $validated['production_item_id'],
+            'amount' => $validated['amount'],
+            'paid_at' => \Carbon\Carbon::parse($validated['paid_at']),
+            'notes' => $validated['notes'] ?? null,
+            'created_by' => auth()->id(),
+        ]);
+
+        return response()->json(['success' => true, 'entry' => $entry]);
+    }
+
+    /**
+     * Edit one per-employee payment entry. If it was already rolled into a
+     * receipt (financial_payment_id set), that receipt's amount/ledger entry
+     * is recalculated from the new sum of its entries — same safeguards
+     * (05:00 closed-day lock) as updatePayment() above.
+     */
+    public function updateItemPayment(Request $request, $id)
+    {
+        if (!$this->canManageFinance()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $entry = FinancialTransactionItemPayment::findOrFail($id);
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'paid_at' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        $transaction = null;
+        DB::transaction(function () use ($entry, $validated, &$transaction) {
+            $entry->amount = $validated['amount'];
+            $entry->paid_at = \Carbon\Carbon::parse($validated['paid_at']);
+            $entry->notes = $validated['notes'] ?? null;
+            $entry->save();
+
+            if ($entry->financial_payment_id) {
+                $transaction = $this->resyncRoundPayment($entry->financial_payment_id);
+            }
+        });
+
+        $response = ['success' => true, 'entry' => $entry->fresh()];
+        if ($transaction) {
+            $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
+            $response['transaction'] = $transaction;
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Delete one per-employee payment entry — same round-recalculation as
+     * updateItemPayment() above (removes the receipt entirely if it was the
+     * last entry left in that round).
+     */
+    public function destroyItemPayment($id)
+    {
+        if (!$this->canManageFinance()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $entry = FinancialTransactionItemPayment::findOrFail($id);
+        $roundPaymentId = $entry->financial_payment_id;
+
+        $transaction = null;
+        DB::transaction(function () use ($entry, $roundPaymentId, &$transaction) {
+            $entry->delete();
+            if ($roundPaymentId) {
+                $transaction = $this->resyncRoundPayment($roundPaymentId);
+            }
+        });
+
+        $response = ['success' => true];
+        if ($transaction) {
+            $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
+            $response['transaction'] = $transaction;
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Roll up every not-yet-assigned per-employee entry on this bill into
+     * ONE new FinancialPayment — reuses the exact same recalculation/ledger
+     * logic as a normal lump-sum "Add Payment" (storePayment() above), just
+     * with the amount computed as a sum instead of typed in directly. The
+     * receipt date is always "today" (the day this button is pressed), not
+     * each person's own payment date, which can differ per person.
+     */
+    public function finalizeItemPayments(Request $request, $transactionId)
+    {
+        if (!$this->canManageFinance()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $transaction = FinancialTransaction::findOrFail($transactionId);
+
+        $request->validate([
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'notes' => 'nullable|string',
+        ]);
+
+        $pending = $transaction->itemPayments()->whereNull('financial_payment_id')->get();
+        if ($pending->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'No new individual payments to collect.'], 422);
+        }
+
+        $sum = $pending->sum('amount');
+
+        DB::transaction(function () use ($request, $transaction, $pending, $sum) {
+            $payment = $transaction->payments()->create([
+                'amount' => $sum,
+                'paid_at' => now(),
+                'bank_account_id' => $request->input('bank_account_id') ?: null,
+                'notes' => $request->input('notes') ?: null,
+                'created_by' => auth()->id(),
+            ]);
+
+            FinancialTransactionItemPayment::whereIn('id', $pending->pluck('id'))
+                ->update(['financial_payment_id' => $payment->id]);
+
+            // Recalculate paid_amount จาก DB — same as storePayment() above.
+            $transaction->paid_amount = $transaction->payments()->sum('amount');
+            $transaction->paid_at = now();
+
+            $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - ($transaction->credit_amount ?? 0);
+            $transaction->status = $transaction->paid_amount >= $effectiveAmount ? 'paid' : 'partial';
+            $transaction->save();
+
+            if ($payment->bank_account_id) {
+                app(LedgerService::class)->createEntry([
+                    'entry_date' => $payment->paid_at->toDateString(),
+                    'type' => 'income',
+                    'bank_account_id' => $payment->bank_account_id,
+                    'category_id' => $this->defaultIncomeCategory()->id,
+                    'category_type' => 'income',
+                    'counterparty_name' => optional(optional($transaction->productionOrder)->employer)->employerNameTh,
+                    'gross_amount' => $payment->amount,
+                    'description' => $this->paymentLedgerDescription($transaction),
+                    'source_type' => FinancialPayment::class,
+                    'source_id' => $payment->id,
+                ]);
+            }
+        });
+
+        $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
+        return response()->json(['success' => true, 'transaction' => $transaction, 'payment_amount' => $sum]);
+    }
+
+    /**
+     * Recompute one collection round's aggregate FinancialPayment from the
+     * current sum of its linked item-payments — called after an edit/delete
+     * touches an entry that's already part of a finalized round. Deletes the
+     * FinancialPayment (and reverses its ledger entry, same as
+     * destroyPayment() above) if no entries are left linked to it. Returns
+     * the owning FinancialTransaction (refreshed) for the response payload.
+     */
+    private function resyncRoundPayment(int $paymentId): ?FinancialTransaction
+    {
+        $payment = FinancialPayment::with('transaction')->find($paymentId);
+        if (!$payment) {
+            return null;
+        }
+        $transaction = $payment->transaction;
+        $ledgerService = app(LedgerService::class);
+
+        $newSum = FinancialTransactionItemPayment::where('financial_payment_id', $paymentId)->sum('amount');
+
+        if ($newSum <= 0) {
+            $linked = $payment->ledgerEntry()->first();
+            if ($linked) {
+                $ledgerService->deleteEntry($linked);
+            }
+            $payment->delete();
+        } else {
+            $payment->amount = $newSum;
+            $payment->save();
+
+            $linked = $payment->ledgerEntry()->first();
+            if ($linked) {
+                $ledgerService->updateEntry($linked, [
+                    'entry_date' => $payment->paid_at->toDateString(),
+                    'type' => 'income',
+                    'bank_account_id' => $payment->bank_account_id,
+                    'category_id' => $linked->category_id ?? $this->defaultIncomeCategory()->id,
+                    'category_type' => 'income',
+                    'gross_amount' => $newSum,
+                    'description' => $this->paymentLedgerDescription($transaction),
+                ]);
+            }
+        }
+
+        $newTotalPaid = $transaction->payments()->sum('amount');
+        $transaction->paid_amount = $newTotalPaid;
+        $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - ($transaction->credit_amount ?? 0);
+        if ($newTotalPaid >= $effectiveAmount) {
+            $transaction->status = 'paid';
+        } elseif ($newTotalPaid > 0 || ($transaction->credit_amount ?? 0) > 0) {
+            $transaction->status = 'partial';
+        } else {
+            $transaction->status = 'pending';
+        }
+        $transaction->save();
+
+        return $transaction;
     }
 
     /**
@@ -774,6 +1028,7 @@ class FinancialController extends Controller
         'amount'                  => 'nullable|numeric|min:0',
         'discount_amount'         => 'nullable|numeric|min:0',
         'discount_description'    => 'nullable|string|max:255',
+        'payment_collection_mode' => 'nullable|in:lump_sum,per_employee',
     ];
 
     /** Field ที่ apply ตรงๆ จาก request → transaction (apply เฉพาะ field ที่ส่งมาใน request) */
@@ -786,6 +1041,7 @@ class FinancialController extends Controller
         'withholding_tax_amount',
         'amount',
         'status',
+        'payment_collection_mode',
     ];
 
     /** ตรวจสิทธิ์การจัดการการเงิน — admin/super-admin หรือมี permission 'manage-finance' */
@@ -793,6 +1049,30 @@ class FinancialController extends Controller
     {
         $user = auth()->user();
         return $user && ($user->can('manage-finance') || $user->hasAnyRole(['admin', 'super-admin']));
+    }
+
+    /**
+     * บิลเดียวห้ามมีทั้งยอดรวมก้อนเดียวและรายบุคคลปนกัน — สลับโหมดได้อิสระ
+     * ตราบใดที่โหมดปัจจุบันยังไม่มีการบันทึกยอดจริง ถ้ามีแล้วต้องลบยอดที่
+     * บันทึกไว้ก่อนถึงจะสลับได้ (ผู้ใช้ยืนยันเงื่อนไขนี้แล้ว)
+     * คืนค่า string ข้อความ block ถ้าห้ามสลับ, null ถ้าสลับได้
+     */
+    private function paymentCollectionModeSwitchBlockReason(FinancialTransaction $transaction, ?string $newMode): ?string
+    {
+        $currentMode = $transaction->payment_collection_mode ?? 'lump_sum';
+        if ($newMode === null || $newMode === $currentMode) {
+            return null;
+        }
+
+        if ($currentMode === 'lump_sum' && $transaction->payments()->exists()) {
+            return 'This bill already has lump-sum payments recorded. Delete them first before switching to individual collection.';
+        }
+
+        if ($currentMode === 'per_employee' && $transaction->itemPayments()->exists()) {
+            return 'This bill already has individual payments recorded. Delete them first before switching to lump-sum collection.';
+        }
+
+        return null;
     }
 
     /** Copy ฟิลด์ scalar จาก request → transaction (skip field ที่ไม่ส่งมา) */

@@ -86,6 +86,19 @@
     Open the bill → record the <strong>amount</strong>, <strong>date received</strong>, <strong>receiving account</strong> and slip. Several instalments are allowed; the status becomes "partial"/"paid" automatically (credit notes included). With no account selected the system asks for confirmation because the payment will <strong>not</strong> post to any bank balance. Payments with an account are posted to the Ledger on the date received.
 </div>
 
+<h5>9.1 Individual collection (when each employee pays for themselves)</h5>
+<div class="manual-step">
+    For a bill priced <strong>per head</strong> — when each employee pays their own share, possibly over several partial payments:
+    <ol class="mb-0">
+        <li>Open the bill → set <strong>Collection Mode: Individual</strong> (instead of a single lump amount)</li>
+        <li>Click <strong>Open Individual Collection</strong> — a table of employees opens with photo, passport number, social security status and current step</li>
+        <li>Click <strong>Pay</strong> next to an employee → enter the amount paid this time + date (defaults to today, editable) → save. Their running total and remaining balance update immediately</li>
+        <li>Partial payments are fine — collect more later (click the history number to view/edit/delete past entries)</li>
+        <li>Once you've finished collecting from everyone for this round, click <strong>Update</strong> at the bottom — the system combines everything collected into <strong>one receipt</strong> (same as a normal payment), posting to the Ledger if an account is selected</li>
+        <li>This never affects other bills' lump-sum payments — only bills with this mode turned on behave this way</li>
+    </ol>
+</div>
+
 <h5>10. Credit notes</h5>
 <div class="manual-step">
     Reduce a bill that has been issued (discount, or writing off the rest): <strong>Credit Notes</strong> → <strong>New</strong> → pick the bill, amount and reason (saved as draft) → <strong>Issue</strong> locks the number and reduces the outstanding amount at once. Issued by mistake → <strong>Void</strong>; drafts can be deleted. Credit notes are included in the monthly bundle.

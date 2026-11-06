@@ -75,13 +75,26 @@ if (typeof window.financialManager === 'undefined') {
 
             // Transaction State
             transactions: initialData.transactions || [],
-            newTransaction: { type: 'installment', amount: '', due_date: '', notes: '', discount_amount: '', discount_description: '' },
+            newTransaction: { type: 'installment', amount: '', due_date: '', notes: '', discount_amount: '', discount_description: '', payment_collection_mode: 'lump_sum' },
             editingTransaction: { payments: [] },
             selectedFile: null,
             editingPaymentId: null,
             newPayment: { amount: '', paid_at: '', bank_account_id: '', notes: '', slip_path: null },
             paymentSlipFile: null,
             isSavingPayment: false,
+
+            // --- Per-Employee Collection (payment_collection_mode === 'per_employee') ---
+            // Draft row for whichever employee's "pay" button is currently open
+            // in the Individual Collection modal — see openItemPayRow().
+            itemPaymentDraftItemId: null,
+            itemPaymentDraft: { amount: '', paid_at: '', notes: '' },
+            isSavingItemPayment: false,
+            editingItemPaymentId: null,
+            expandedItemHistoryId: null, // production_item_id whose past entries are shown
+            individualSearch: '',
+            finalizeBankAccountId: '',
+            finalizeNotes: '',
+            isFinalizingCollection: false,
 
             // Separate Saving States
             isSavingSettings: false,
@@ -747,7 +760,7 @@ if (typeof window.financialManager === 'undefined') {
                             bootstrap.Modal.getOrCreateInstance(this.$refs.addModal).hide();
                         }
 
-                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '', discount_amount: '', discount_description: '' };
+                        this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '', discount_amount: '', discount_description: '', payment_collection_mode: 'lump_sum' };
                         this.selectedTransactionItems = [];
 
                         if (data.transaction.items) {
@@ -788,6 +801,17 @@ if (typeof window.financialManager === 'undefined') {
                 this.editingTransaction.withholding_tax_amount = t.withholding_tax_amount || '';
                 this.editingTransaction.bank_account_id = t.bank_account_id || '';
                 this.editingTransaction.wht_file = null;
+                this.editingTransaction.payment_collection_mode = t.payment_collection_mode || 'lump_sum';
+                this.editingTransaction.itemPayments = t.item_payments || [];
+
+                // Reset per-employee collection UI state for the newly opened bill.
+                this.itemPaymentDraftItemId = null;
+                this.itemPaymentDraft = { amount: '', paid_at: new Date().toISOString().split('T')[0], notes: '' };
+                this.editingItemPaymentId = null;
+                this.expandedItemHistoryId = null;
+                this.individualSearch = '';
+                this.finalizeBankAccountId = '';
+                this.finalizeNotes = '';
 
                 // Initialize default payment
                 let effectiveAmount = t.amount - (parseFloat(t.discount_amount) || 0);
@@ -860,7 +884,7 @@ if (typeof window.financialManager === 'undefined') {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                         if(idx !== -1) this.transactions[idx] = data.transaction;
 
-                        this.editingTransaction = { ...data.transaction };
+                        this.editingTransaction = { ...data.transaction, itemPayments: data.transaction.item_payments || [] };
 
                         // Reset form
                         let effectiveAmt = data.transaction.amount - (parseFloat(data.transaction.discount_amount) || 0);
@@ -956,7 +980,7 @@ if (typeof window.financialManager === 'undefined') {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                         if(idx !== -1) this.transactions[idx] = data.transaction;
 
-                        this.editingTransaction = { ...data.transaction };
+                        this.editingTransaction = { ...data.transaction, itemPayments: data.transaction.item_payments || [] };
 
                         this.cancelEditPayment();
 
@@ -987,7 +1011,7 @@ if (typeof window.financialManager === 'undefined') {
                             if(data.success) {
                                 const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                                 if(idx !== -1) this.transactions[idx] = data.transaction;
-                                this.editingTransaction = { ...data.transaction };
+                                this.editingTransaction = { ...data.transaction, itemPayments: data.transaction.item_payments || [] };
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 3000 });
                             } else {
                                 throw new Error(data.message || 'Error deleting payment');
@@ -996,6 +1020,258 @@ if (typeof window.financialManager === 'undefined') {
                         .catch(err => Swal.fire('Error', err.message, 'error'));
                     }
                 });
+            },
+
+            // =====================================================================
+            // Per-Employee Collection (payment_collection_mode === 'per_employee')
+            // Only offered when this production's pricing is 'per_head' — a
+            // lump-sum-priced bill has no per-person amount to collect against.
+            // =====================================================================
+
+            /**
+             * A bill can't mix lump-sum and per-employee payments — once the
+             * currently-stored mode has real recorded amounts (either a
+             * lump-sum payment, or any per-employee entry, pending or
+             * finalized), the Collection Mode toggle locks. The server
+             * enforces this too (updateTransaction), this is just so the
+             * user sees why before they try and gets rejected.
+             */
+            get paymentCollectionModeLocked() {
+                const hasLumpSumPayments = (this.editingTransaction.payments || []).length > 0;
+                const hasItemPayments = (this.editingTransaction.itemPayments || []).length > 0;
+                return hasLumpSumPayments || hasItemPayments;
+            },
+
+            /**
+             * Items attached to the transaction currently open in the Pay modal,
+             * with display fields cross-referenced from productionItems (same
+             * lookup robustness as editModalItems, for cross-stage ID drift) plus
+             * this collection mode's own computed price/paid/remaining.
+             */
+            get individualCollectionItems() {
+                if (!this.editingTransaction.items || !Array.isArray(this.editingTransaction.items)) return [];
+
+                const byId = new Map(this.productionItems.map(it => [it.id, it]));
+
+                return this.editingTransaction.items
+                    .map(att => {
+                        const display = byId.get(att.id) || byId.get(parseInt(att.id)) || att;
+                        const price = this.getItemPrice(att.id);
+                        const paid = this.itemPaidSoFar(att.id);
+                        return {
+                            id: att.id,
+                            name: display.name || display.employeeNameTh || '-',
+                            name_en: display.name_en,
+                            title_en: display.title_en,
+                            photo: display.photo,
+                            nationality: display.nationality,
+                            insurance_type: display.insurance_type,
+                            passport: display.passport,
+                            has_visa: display.has_visa,
+                            last_step_name: display.last_step_name,
+                            price: price,
+                            paid: paid,
+                            remaining: Math.max(0, price - paid),
+                            isFullyPaid: price > 0 && paid >= price,
+                        };
+                    })
+                    .filter(i => this.matchesEmployeeSearch(i, this.individualSearch));
+            },
+
+            /** Sum of every per-employee entry recorded for this item, this transaction. */
+            itemPaidSoFar(itemId) {
+                const entries = (this.editingTransaction.itemPayments || []).filter(p => p.production_item_id == itemId);
+                return entries.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+            },
+
+            /** Past entries for one employee, newest first — for the expandable history row. */
+            itemHistoryEntries(itemId) {
+                return (this.editingTransaction.itemPayments || [])
+                    .filter(p => p.production_item_id == itemId)
+                    .slice()
+                    .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at) || b.id - a.id);
+            },
+
+            /** Entries collected but not yet rolled into a receipt (financial_payment_id still null). */
+            get pendingCollectionEntries() {
+                return (this.editingTransaction.itemPayments || []).filter(p => !p.financial_payment_id);
+            },
+
+            get pendingCollectionTotal() {
+                return this.pendingCollectionEntries.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+            },
+
+            toggleItemHistory(itemId) {
+                this.expandedItemHistoryId = this.expandedItemHistoryId === itemId ? null : itemId;
+            },
+
+            openItemPayRow(itemId) {
+                this.itemPaymentDraftItemId = itemId;
+                this.editingItemPaymentId = null;
+                this.itemPaymentDraft = { amount: '', paid_at: new Date().toISOString().split('T')[0], notes: '' };
+            },
+
+            closeItemPayRow() {
+                this.itemPaymentDraftItemId = null;
+                this.editingItemPaymentId = null;
+                this.itemPaymentDraft = { amount: '', paid_at: new Date().toISOString().split('T')[0], notes: '' };
+            },
+
+            openIndividualCollectionModal() {
+                // Opened via a button *inside* the already-open Payment modal.
+                // Bootstrap's declarative data-bs-toggle="modal" auto-hides
+                // whatever modal is currently open before showing the target,
+                // which raced with this modal's own show and made it look like
+                // the whole thing just closed on the first click. Showing it
+                // directly via the JS API (same pattern as openPayModal/
+                // openSelectionModal below) avoids that auto-hide entirely, so
+                // this modal correctly stacks on top of the Payment modal.
+                bootstrap.Modal.getOrCreateInstance(this.$refs.individualCollectionModal).show();
+            },
+
+            editItemPaymentEntry(entry) {
+                this.itemPaymentDraftItemId = entry.production_item_id;
+                this.editingItemPaymentId = entry.id;
+                this.itemPaymentDraft = {
+                    amount: entry.amount,
+                    paid_at: entry.paid_at ? entry.paid_at.split('T')[0] : new Date().toISOString().split('T')[0],
+                    notes: entry.notes || '',
+                };
+            },
+
+            saveItemPayment() {
+                if (!this.itemPaymentDraft.amount || !this.itemPaymentDraft.paid_at) {
+                    Swal.fire('Warning', 'Amount and Date are required.', 'warning');
+                    return;
+                }
+
+                this.isSavingItemPayment = true;
+                const isEdit = !!this.editingItemPaymentId;
+                const url = isEdit
+                    ? `/production/item-payments/${this.editingItemPaymentId}`
+                    : `/production/transactions/${this.editingTransaction.id}/item-payments`;
+
+                const payload = {
+                    production_item_id: this.itemPaymentDraftItemId,
+                    amount: this.itemPaymentDraft.amount,
+                    paid_at: this.itemPaymentDraft.paid_at,
+                    notes: this.itemPaymentDraft.notes || '',
+                };
+
+                fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok || !data.success) throw new Error(data.message || 'Error saving payment');
+
+                    if (isEdit) {
+                        const idx = this.editingTransaction.itemPayments.findIndex(p => p.id === data.entry.id);
+                        if (idx !== -1) this.editingTransaction.itemPayments[idx] = data.entry;
+                        else this.editingTransaction.itemPayments.push(data.entry);
+                    } else {
+                        this.editingTransaction.itemPayments.push(data.entry);
+                    }
+                    // If this entry belonged to an already-finalized round, the
+                    // aggregate payment/paid_amount changed server-side too.
+                    if (data.transaction) {
+                        this.editingTransaction.paid_amount = data.transaction.paid_amount;
+                        this.editingTransaction.status = data.transaction.status;
+                        this.editingTransaction.payments = data.transaction.payments;
+                        const idx2 = this.transactions.findIndex(t => t.id === data.transaction.id);
+                        if (idx2 !== -1) this.transactions[idx2] = { ...this.transactions[idx2], ...data.transaction };
+                    }
+
+                    this.closeItemPayRow();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Saved', showConfirmButton: false, timer: 2500 });
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'))
+                .finally(() => this.isSavingItemPayment = false);
+            },
+
+            deleteItemPaymentEntry(entry) {
+                this._safeFire({
+                    title: 'Delete this payment?',
+                    text: 'This removes this one payment from this employee\'s history.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (!result.isConfirmed) return;
+                    fetch(`/production/item-payments/${entry.id}`, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
+                    })
+                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (!ok || !data.success) throw new Error(data.message || 'Error deleting payment');
+                        this.editingTransaction.itemPayments = this.editingTransaction.itemPayments.filter(p => p.id !== entry.id);
+                        if (data.transaction) {
+                            this.editingTransaction.paid_amount = data.transaction.paid_amount;
+                            this.editingTransaction.status = data.transaction.status;
+                            this.editingTransaction.payments = data.transaction.payments;
+                            const idx2 = this.transactions.findIndex(t => t.id === data.transaction.id);
+                            if (idx2 !== -1) this.transactions[idx2] = { ...this.transactions[idx2], ...data.transaction };
+                        }
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 2500 });
+                    })
+                    .catch(err => Swal.fire('Error', err.message, 'error'));
+                });
+            },
+
+            /**
+             * Rolls every not-yet-assigned per-employee entry on this bill into
+             * ONE receipt-worthy FinancialPayment — same effect (paid_amount,
+             * status, ledger posting) as typing one lump amount into "Add Payment".
+             */
+            finalizeIndividualCollection() {
+                if (this.pendingCollectionTotal <= 0) {
+                    Swal.fire('Nothing to collect', 'No new individual payments since the last update.', 'info');
+                    return;
+                }
+
+                if (!this.finalizeBankAccountId) {
+                    this._safeFire({
+                        title: 'No bank account selected',
+                        text: 'This combined receipt will not be posted to any bank balance. Save it anyway?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Save anyway',
+                    }).then((result) => {
+                        if (result.isConfirmed) this._submitFinalizeCollection();
+                    });
+                    return;
+                }
+                this._submitFinalizeCollection();
+            },
+
+            _submitFinalizeCollection() {
+                this.isFinalizingCollection = true;
+                fetch(`/production/transactions/${this.editingTransaction.id}/item-payments/finalize`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bank_account_id: this.finalizeBankAccountId || '',
+                        notes: this.finalizeNotes || '',
+                    })
+                })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok || !data.success) throw new Error(data.message || 'Error finalizing collection');
+
+                    this.editingTransaction = { ...this.editingTransaction, ...data.transaction, itemPayments: data.transaction.item_payments || [] };
+                    const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
+                    if (idx !== -1) this.transactions[idx] = data.transaction;
+
+                    this.finalizeBankAccountId = '';
+                    this.finalizeNotes = '';
+
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Receipt created: ' + this.formatCurrency(data.payment_amount), showConfirmButton: false, timer: 3500 });
+                })
+                .catch(err => Swal.fire('Error', err.message, 'error'))
+                .finally(() => this.isFinalizingCollection = false);
             },
 
             updateTransaction() {
@@ -1011,6 +1287,7 @@ if (typeof window.financialManager === 'undefined') {
                 formData.append('withholding_tax_amount', this.editingTransaction.withholding_tax_amount || '');
                 formData.append('discount_amount', this.editingTransaction.discount_amount || 0);
                 formData.append('discount_description', this.editingTransaction.discount_description || '');
+                formData.append('payment_collection_mode', this.editingTransaction.payment_collection_mode || 'lump_sum');
 
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
                 if (this.editingTransaction.wht_file) formData.append('wht_document', this.editingTransaction.wht_file);
@@ -1028,13 +1305,17 @@ if (typeof window.financialManager === 'undefined') {
                     headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: formData
                 })
-                .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) throw new Error(data.message || ('HTTP ' + (data.status || '')));
+                    return data;
+                })
                 .then(data => {
                     if(data.success) {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                         if(idx !== -1) this.transactions[idx] = data.transaction;
 
-                        this.editingTransaction = { ...data.transaction };
+                        this.editingTransaction = { ...data.transaction, itemPayments: data.transaction.item_payments || [] };
 
                         if (data.transaction.items) {
                             data.transaction.items.forEach(newItem => {

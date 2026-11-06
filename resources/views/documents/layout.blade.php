@@ -1022,6 +1022,12 @@
 
     @if(!empty($includeEmployeeList) && $includeEmployeeList)
     {{-- ใน list-only mode ไม่ใส่ page-break-before เพราะไม่มีหน้าก่อนหน้า --}}
+    @php
+        // Per-employee collection bills set 'paid_so_far' on each row; a
+        // lump-sum bill leaves it null for everyone, so this table's columns
+        // stay exactly as before for every existing/lump-sum document.
+        $hasPaidColumn = collect($employeeList)->contains(fn($e) => ($e['paid_so_far'] ?? null) !== null);
+    @endphp
     <div class="page" style="@unless(!empty($listOnly) && $listOnly) page-break-before: always; @endunless margin-top: 20px;">
         <div class="doc-band"></div>
         <h2 class="list-title">ตารางรายชื่อพนักงาน / Employee List</h2>
@@ -1031,13 +1037,16 @@
                     <th style="width: 3%; text-align: center;">ลำดับ<br><span class="en-label">No.</span></th>
                     <th style="width: 9%; text-align: center;">รูปถ่าย<br><span class="en-label">Photo</span></th>
                     <th style="width: 8%;">รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
-                    <th style="width: 17%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
+                    <th style="width: {{ $hasPaidColumn ? '15%' : '17%' }};">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
                     <th style="width: 9%; text-align: center;">สัญชาติ<br><span class="en-label">Nationality</span></th>
-                    <th style="width: 11%;">เลขพาสปอร์ต<br><span class="en-label">Passport No.</span></th>
-                    <th style="width: 11%;">เลขประจำตัว<br><span class="en-label">ID No.</span></th>
-                    <th style="width: 11%;">เลขใบอนุญาตทำงาน<br><span class="en-label">Work Permit No.</span></th>
-                    <th style="width: 11%;">หมายเหตุ<br><span class="en-label">Notes</span></th>
-                    <th style="width: 10%; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
+                    <th style="width: {{ $hasPaidColumn ? '9%' : '11%' }};">เลขพาสปอร์ต<br><span class="en-label">Passport No.</span></th>
+                    <th style="width: {{ $hasPaidColumn ? '9%' : '11%' }};">เลขประจำตัว<br><span class="en-label">ID No.</span></th>
+                    <th style="width: {{ $hasPaidColumn ? '9%' : '11%' }};">เลขใบอนุญาตทำงาน<br><span class="en-label">Work Permit No.</span></th>
+                    <th style="width: {{ $hasPaidColumn ? '7%' : '11%' }};">หมายเหตุ<br><span class="en-label">Notes</span></th>
+                    <th style="width: {{ $hasPaidColumn ? '8%' : '10%' }}; text-align: right;">ราคาต่อหัว<br><span class="en-label">Price</span></th>
+                    @if($hasPaidColumn)
+                    <th style="width: 8%; text-align: right;">จ่ายมาแล้ว<br><span class="en-label">Paid</span></th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -1059,6 +1068,9 @@
                     <td style="vertical-align: middle;">{{ $emp['work_permit'] ?: '-' }}</td>
                     <td style="vertical-align: middle;">{{ !empty($emp['note']) ? $emp['note'] : '-' }}</td>
                     <td style="text-align: right; vertical-align: middle;">{{ number_format($emp['price'], 2) }}</td>
+                    @if($hasPaidColumn)
+                    <td style="text-align: right; vertical-align: middle;">{{ number_format($emp['paid_so_far'] ?? 0, 2) }}</td>
+                    @endif
                 </tr>
                 @endforeach
             </tbody>

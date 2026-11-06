@@ -3190,5 +3190,15 @@
     "แจ้งออกเมื่อ": "Terminated On",
     "ไม่บังคับ": "Optional",
     "— คลิกเพื่อเพิ่มหมายเหตุ —": "— Click to add a note —",
-    "Credited (Credit Notes)": "Credited (Credit Notes)"
+    "Credited (Credit Notes)": "Credited (Credit Notes)",
+    "Collection Mode": "Collection Mode",
+    "Lump Sum": "Lump Sum",
+    "Individual": "Individual",
+    "Individual: each employee pays their own share, tracked and receipted separately from the amount below.": "Individual: each employee pays their own share, tracked and receipted separately from the amount below.",
+    "Collected so far": "Collected so far",
+    "Receipted (finalized)": "Receipted (finalized)",
+    "Pending finalize": "Pending finalize",
+    "Open Individual Collection": "Open Individual Collection",
+    "Individual Collection": "Individual Collection",
+    "Receipted": "Receipted"
 }

@@ -621,7 +621,7 @@
 
                 {{-- Finance Modal (lazy load — โหลดข้อมูลเมื่อเปิดครั้งแรก ไม่โหลดทุก order พร้อมกันตอนเปิดหน้า) --}}
                 <div class="modal fade" id="financeModal-{{ $order->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
-                    <div class="modal-dialog modal-xl">
+                    <div class="modal-dialog modal-dialog-near-fullscreen modal-dialog-scrollable">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">{{ __('Finance') }}: {{ $order->employer->employerNameTh ?? $order->project_name }}</h5>

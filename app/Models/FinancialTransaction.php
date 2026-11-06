@@ -30,6 +30,7 @@ class FinancialTransaction extends Model
         'wht_received_at',
         'wht_no_cert_reason',
         'financial_profile_id',
+        'payment_collection_mode', // 'lump_sum' (default) | 'per_employee'
     ];
 
     protected $casts = [
@@ -87,6 +88,15 @@ class FinancialTransaction extends Model
     public function payments()
     {
         return $this->hasMany(FinancialPayment::class);
+    }
+
+    /**
+     * Per-employee payment ledger (payment_collection_mode === 'per_employee'
+     * only) — see FinancialTransactionItemPayment's docblock.
+     */
+    public function itemPayments()
+    {
+        return $this->hasMany(FinancialTransactionItemPayment::class);
     }
 
     public function creditNotes()

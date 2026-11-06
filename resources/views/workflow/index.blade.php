@@ -867,7 +867,7 @@
 
             {{-- Finance Modal for this Order (lazy load — fetched on first open, not rendered for every order on page load) --}}
             <div class="modal fade" id="financeModal-{{ $order->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
-                <div class="modal-dialog modal-xl">
+                <div class="modal-dialog modal-dialog-near-fullscreen modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">{{ __('Finance') }}: {{ $order->project_name }}</h5>

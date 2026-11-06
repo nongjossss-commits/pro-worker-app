@@ -3240,5 +3240,15 @@
     "แจ้งออก": "แจ้งออก",
     "แจ้งออกเมื่อ": "แจ้งออกเมื่อ",
     "ไม่บังคับ": "ไม่บังคับ",
-    "— คลิกเพื่อเพิ่มหมายเหตุ —": "— คลิกเพื่อเพิ่มหมายเหตุ —"
+    "— คลิกเพื่อเพิ่มหมายเหตุ —": "— คลิกเพื่อเพิ่มหมายเหตุ —",
+    "Collection Mode": "รูปแบบการเก็บเงิน",
+    "Lump Sum": "ยอดรวมก้อนเดียว",
+    "Individual": "รายบุคคล",
+    "Individual: each employee pays their own share, tracked and receipted separately from the amount below.": "รายบุคคล: ลูกจ้างแต่ละคนจ่ายส่วนของตัวเอง ติดตามและออกใบเสร็จแยกจากยอดด้านล่าง",
+    "Collected so far": "เก็บเงินมาแล้ว",
+    "Receipted (finalized)": "ออกใบเสร็จแล้ว",
+    "Pending finalize": "รอยืนยันออกใบเสร็จ",
+    "Open Individual Collection": "เปิดเก็บเงินรายบุคคล",
+    "Individual Collection": "เก็บเงินรายบุคคล",
+    "Receipted": "ออกใบเสร็จแล้ว"
 }

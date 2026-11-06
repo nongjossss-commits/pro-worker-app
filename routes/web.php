@@ -746,6 +746,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('production/transactions/{id}/payments', [FinancialController::class, 'storePayment']);
         Route::match(['post', 'put'], 'production/payments/{id}', [FinancialController::class, 'updatePayment']);
         Route::delete('production/payments/{id}', [FinancialController::class, 'destroyPayment']);
+
+        // Per-employee collection (payment_collection_mode === 'per_employee').
+        Route::post('production/transactions/{id}/item-payments', [FinancialController::class, 'storeItemPayment']);
+        Route::post('production/transactions/{id}/item-payments/finalize', [FinancialController::class, 'finalizeItemPayments']);
+        Route::match(['post', 'put'], 'production/item-payments/{id}', [FinancialController::class, 'updateItemPayment']);
+        Route::delete('production/item-payments/{id}', [FinancialController::class, 'destroyItemPayment']);
     });
     // Replaced by dedicated ProductionDocumentController
     // Route::get('production/{id}/documents/{type}', [FinancialController::class, 'generateDocument']);

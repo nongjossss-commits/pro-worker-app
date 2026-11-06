@@ -2137,5 +2137,15 @@
     "This cannot be undone.": "此操作无法撤销",
     "This employee is still fully active in Registration Resolution — this card is a separate, independent copy for Renewal only.": "该员工在登记决议中仍完全有效——此卡仅为续签单独创建的副本",
     "Type to search...": "输入以搜索...",
-    "Move Attachment Files": "移动附件文件"
+    "Move Attachment Files": "移动附件文件",
+    "Collection Mode": "收款方式",
+    "Lump Sum": "总额",
+    "Individual": "个人",
+    "Individual: each employee pays their own share, tracked and receipted separately from the amount below.": "个人：每位员工支付自己的份额，与下方金额分开记录和开具收据",
+    "Collected so far": "已收款",
+    "Receipted (finalized)": "已开票（已确认）",
+    "Pending finalize": "待确认开票",
+    "Open Individual Collection": "打开个人收款",
+    "Individual Collection": "个人收款",
+    "Receipted": "已开票"
 }

@@ -127,7 +127,7 @@
 <!-- Modal for Financial Tab is shared and should be included via registration tab or similar mechanism, but since they are separate partials, we should include the modal definition here too. -->
 @if($tab === 'renewal')
 <div class="modal fade" id="financialTabModal" tabindex="-1" aria-labelledby="financialTabModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-near-fullscreen modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-light">
                 <h5 class="modal-title" id="financialTabModalLabel">{{ __('Financial Data') }}</h5>

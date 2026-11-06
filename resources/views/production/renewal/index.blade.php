@@ -857,7 +857,7 @@
 
             {{-- Finance Modal for this Employer --}}
             <div class="modal fade" id="financeModal-{{ $employer->id }}" tabindex="-1" aria-hidden="true" onclick="event.stopPropagation()">
-                <div class="modal-dialog modal-xl">
+                <div class="modal-dialog modal-dialog-near-fullscreen modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">{{ __('Finance') }}: {{ $employer->employerNameTh }}</h5>

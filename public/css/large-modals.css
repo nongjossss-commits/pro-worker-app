@@ -1,0 +1,21 @@
+/* Shared sizing utilities for "workspace" modals — popups that act as a
+   full work area (employee lists, payment management, financial tabs)
+   rather than a quick confirm/alert dialog. Loaded globally so any page
+   (including modals whose content is fetched via AJAX, e.g. Financial
+   Hub's financialTabModal) can use them without depending on load order.
+   Sizing only — no color changes, so no dark-mode pairing needed. */
+.modal-dialog-near-fullscreen {
+    max-width: 96vw;
+    width: 96vw;
+    height: 92vh;
+}
+.modal-dialog-near-fullscreen .modal-content {
+    height: 100%;
+}
+.modal-dialog-large {
+    max-width: 1100px;
+    height: 85vh;
+}
+.modal-dialog-large .modal-content {
+    height: 100%;
+}

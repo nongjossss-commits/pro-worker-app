@@ -165,6 +165,20 @@ class ProductionDocumentController extends Controller
                 });
             }
 
+            // Per-employee "paid so far" — only meaningful for bills collected
+            // individually (payment_collection_mode === 'per_employee'); a
+            // lump-sum bill has no per-person paid amount, so this stays
+            // empty and the column is simply omitted for it (unchanged
+            // document layout for every existing/lump-sum bill).
+            $itemPaidSoFar = [];
+            if ($transactions->contains(fn ($t) => $t->payment_collection_mode === 'per_employee')) {
+                $itemPaidSoFar = \App\Models\FinancialTransactionItemPayment::whereIn('financial_transaction_id', $transactions->pluck('id'))
+                    ->selectRaw('production_item_id, SUM(amount) as total')
+                    ->groupBy('production_item_id')
+                    ->pluck('total', 'production_item_id')
+                    ->all();
+            }
+
             $index = 1;
             foreach ($items as $item) {
                 $emp = $item->employee;
@@ -225,6 +239,7 @@ class ProductionDocumentController extends Controller
                             'name' => trim($emp->employeeNameEn ?: $emp->employeeNameTh),
                             'nationality' => $emp->employeeNationality,
                             'price' => $price,
+                            'paid_so_far' => isset($itemPaidSoFar[$item->id]) ? (float) $itemPaidSoFar[$item->id] : null,
                             'employee_id' => 'EMP' . str_pad($emp->id, 5, '0', STR_PAD_LEFT),
                             'note' => $tierNote,
                             'passport' => $emp->employeePassport,
@@ -239,6 +254,7 @@ class ProductionDocumentController extends Controller
                             'name' => trim(($draft['name_en'] ?? '') ?: ($draft['name_th'] ?? '')),
                             'nationality' => $draft['nationality'] ?? '',
                             'price' => $price,
+                            'paid_so_far' => isset($itemPaidSoFar[$item->id]) ? (float) $itemPaidSoFar[$item->id] : null,
                             'employee_id' => '-', // no real Employee record
                             'note' => $tierNote,
                             'passport' => $draft['passport'] ?? '',

@@ -856,6 +856,7 @@
     {{-- Phones: list tables shown as cards (public/js/mobile-table-cards.js) --}}
     <link rel="stylesheet" href="{{ asset('css/mobile-table-cards.css') }}?v={{ @filemtime(public_path('css/mobile-table-cards.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/mobile-fit.css') }}?v={{ @filemtime(public_path('css/mobile-fit.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/large-modals.css') }}?v={{ @filemtime(public_path('css/large-modals.css')) }}">
     @auth
         {{-- Card / record-tab CSS before the content, so lists don't first draw in the old row layout. --}}
         @include('partials._record_tabs', ['part' => 'styles'])

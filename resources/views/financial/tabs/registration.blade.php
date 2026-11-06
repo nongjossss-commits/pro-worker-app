@@ -126,7 +126,7 @@
 
 <!-- Modal for Financial Tab -->
 <div class="modal fade" id="financialTabModal" tabindex="-1" aria-labelledby="financialTabModalLabel" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-near-fullscreen modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-light">
                 <h5 class="modal-title" id="financialTabModalLabel">{{ __('Financial Data') }}</h5>

@@ -207,6 +207,48 @@
             </table>
         @endif
 
+        {{-- Employee list — only meaningful detail here is "how much each
+             person still owes", so for a per-employee-collected bill we show
+             Paid/Remaining per person; a lump-sum bill has no per-person paid
+             amount, so it just lists the full price per person as before. --}}
+        @if(!empty($includeEmployeeList) && $includeEmployeeList && !empty($employeeList))
+            @php
+                $hasPaidColumn = collect($employeeList)->contains(fn($e) => ($e['paid_so_far'] ?? null) !== null);
+            @endphp
+            <h4 class="text-muted text-sm mt-8 mb-4">ตารางรายชื่อพนักงาน / Employee List</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 4%;">#</th>
+                        <th style="width: {{ $hasPaidColumn ? '20%' : '26%' }};">ชื่อ-นามสกุล / Name</th>
+                        <th style="width: 12%;">สัญชาติ / Nationality</th>
+                        <th style="width: 14%;">เลขพาสปอร์ต / Passport</th>
+                        <th class="text-right" style="width: {{ $hasPaidColumn ? '14%' : '18%' }};">ราคา / Price</th>
+                        @if($hasPaidColumn)
+                            <th class="text-right" style="width: 14%;">จ่ายมาแล้ว / Paid</th>
+                            <th class="text-right" style="width: 14%;">คงเหลือ / Remaining</th>
+                        @endif
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($employeeList as $emp)
+                        @php $empRemaining = max(0, (float) $emp['price'] - (float) ($emp['paid_so_far'] ?? 0)); @endphp
+                        <tr>
+                            <td>{{ $emp['index'] }}</td>
+                            <td>{{ trim(($emp['prefix'] ?? '') . ' ' . $emp['name']) }}</td>
+                            <td>{{ $emp['nationality'] ?: '-' }}</td>
+                            <td>{{ $emp['passport'] ?: '-' }}</td>
+                            <td class="amount">{{ number_format($emp['price'], 2) }}</td>
+                            @if($hasPaidColumn)
+                                <td class="amount">{{ number_format($emp['paid_so_far'] ?? 0, 2) }}</td>
+                                <td class="amount {{ $empRemaining > 0 ? 'fw-bold text-danger' : '' }}">{{ number_format($empRemaining, 2) }}</td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+
         {{-- Outstanding highlight --}}
         <div class="outstanding-box">
             <div>

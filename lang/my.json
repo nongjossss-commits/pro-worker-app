@@ -2137,5 +2137,15 @@
     "This cannot be undone.": "ဤလုပ်ဆောင်ချက်ကို နောက်ပြန်လှည့်၍ မရပါ",
     "This employee is still fully active in Registration Resolution — this card is a separate, independent copy for Renewal only.": "ဤဝန်ထမ်းသည် မှတ်ပုံတင်ခြင်း ဆုံးဖြတ်ချက်တွင် လက်ရှိအတိုင်း အပြည့်အဝ ဆက်လက်ရှိနေဆဲဖြစ်သည် — ဤကတ်သည် သက်တမ်းတိုးခြင်းအတွက်သာ သီးခြား မိတ္တူဖြစ်သည်",
     "Type to search...": "ရှာဖွေရန် ရိုက်ထည့်ပါ...",
-    "Move Attachment Files": "ပူးတွဲဖိုင်များ ရွှေ့ရန်"
+    "Move Attachment Files": "ပူးတွဲဖိုင်များ ရွှေ့ရန်",
+    "Collection Mode": "ငွေကောက်ခံမှု ပုံစံ",
+    "Lump Sum": "တစ်ပေါင်းတည်း",
+    "Individual": "တစ်ဦးချင်း",
+    "Individual: each employee pays their own share, tracked and receipted separately from the amount below.": "တစ်ဦးချင်း - ဝန်ထမ်းတစ်ဦးစီသည် မိမိ၏ ဝေစုကို ကိုယ်တိုင်ပေးချေပြီး အောက်ပါပမာဏနှင့် သီးခြားစီ မှတ်တမ်းတင်/ဖြတ်ပိုင်းထုတ်ပေးသည်",
+    "Collected so far": "ယခုအချိန်ထိ ကောက်ခံပြီး",
+    "Receipted (finalized)": "ဖြတ်ပိုင်းထုတ်ပြီး (အတည်ပြုပြီး)",
+    "Pending finalize": "အတည်ပြုရန် ဆိုင်းငံ့",
+    "Open Individual Collection": "တစ်ဦးချင်း ငွေကောက်ခံမှု ဖွင့်ရန်",
+    "Individual Collection": "တစ်ဦးချင်း ငွေကောက်ခံမှု",
+    "Receipted": "ဖြတ်ပိုင်းထုတ်ပြီး"
 }
