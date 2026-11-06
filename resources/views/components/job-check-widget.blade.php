@@ -6,9 +6,10 @@
 
 <button type="button"
         id="jobCheckBtn"
-        class="btn {{ $jobCheckSession ? 'btn-warning' : 'btn-outline-secondary' }} d-none d-md-flex align-items-center ms-2"
+        class="btn {{ $jobCheckSession ? 'btn-warning' : 'btn-outline-secondary' }} d-flex align-items-center ms-2"
+        title="{{ __('Job Check Mode') }}" aria-label="{{ __('Job Check Mode') }}"
         onclick="jobCheckOpen()">
-    <i class="bi bi-clipboard-check-fill me-1"></i> {{ __('Job Check Mode') }}
+    <i class="bi bi-clipboard-check-fill me-1"></i> <span class="tb-label">{{ __('Job Check Mode') }}</span>
     @if($jobCheckSession)
         <span id="jobCheckStatusBadge"
               class="badge {{ $jobCheckSession->status === 'paused' ? 'bg-secondary' : 'bg-danger' }} ms-1">

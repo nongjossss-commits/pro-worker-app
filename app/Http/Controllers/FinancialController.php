@@ -255,6 +255,10 @@ class FinancialController extends Controller
             'notes' => 'nullable|string'
         ]);
 
+        if ($blocked = $this->collectionModeBlockedBy($transaction, 'lump_sum')) {
+            return response()->json(['success' => false, 'message' => $blocked], 422);
+        }
+
         // เก็บไฟล์ก่อน DB transaction — ถ้า DB fail จะลบไฟล์ใน catch
         $slipPath = null;
         if ($request->hasFile('slip_file')) {
@@ -263,6 +267,8 @@ class FinancialController extends Controller
 
         try {
             DB::transaction(function () use ($request, $transaction, $slipPath) {
+                $transaction->payment_collection_mode = 'lump_sum'; // first pay-in decides — saved below
+
                 $payment = $transaction->payments()->create([
                     'amount' => $request->amount,
                     'paid_at' => \Carbon\Carbon::parse($request->paid_at),
@@ -360,6 +366,11 @@ class FinancialController extends Controller
 
         $payment = FinancialPayment::with('transaction')->findOrFail($paymentId);
         $transaction = $payment->transaction;
+
+        // A per-employee round's total comes from its entries — edit those instead.
+        if (FinancialTransactionItemPayment::where('financial_payment_id', $payment->id)->exists()) {
+            return response()->json(['success' => false, 'message' => __('This total comes from each person\'s entries — change those instead.')], 422);
+        }
 
         $request->validate([
             'amount' => 'required|numeric|min:0.01',
@@ -473,6 +484,11 @@ class FinancialController extends Controller
         $transaction = $payment->transaction;
         $slipPath = $payment->slip_path; // เก็บ path ไว้ลบหลัง DB commit สำเร็จ
 
+        // A per-employee round whose receipt / tax invoice was issued is final.
+        if ($payment->receipt_generated_at && FinancialTransactionItemPayment::where('financial_payment_id', $payment->id)->exists()) {
+            return response()->json(['success' => false, 'message' => __('A receipt or tax invoice has been issued for this payment, so it can no longer be changed.')], 422);
+        }
+
         DB::transaction(function () use ($payment, $transaction) {
             // Reverse the linked LedgerEntry (if any) — throws
             // LedgerEntryLockedException (aborting this whole delete) if
@@ -545,6 +561,13 @@ class FinancialController extends Controller
             return response()->json(['success' => false, 'message' => 'This employee is not attached to this bill.'], 422);
         }
 
+        if ($blocked = $this->collectionModeBlockedBy($transaction, 'per_employee')) {
+            return response()->json(['success' => false, 'message' => $blocked], 422);
+        }
+        if ($transaction->payment_collection_mode !== 'per_employee') {
+            $transaction->update(['payment_collection_mode' => 'per_employee']);
+        }
+
         $entry = $transaction->itemPayments()->create([
             'production_item_id' => $validated['production_item_id'],
             'amount' => $validated['amount'],
@@ -568,13 +591,23 @@ class FinancialController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $entry = FinancialTransactionItemPayment::findOrFail($id);
+        $entry = FinancialTransactionItemPayment::with('payment', 'transaction')->findOrFail($id);
+
+        if ($locked = $this->lockedEntryResponse($entry)) {
+            return $locked;
+        }
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
             'paid_at' => 'required|date',
             'notes' => 'nullable|string',
         ]);
+
+        // The bill can't end up collected for more than it is worth.
+        $others = $entry->transaction->itemPayments()->where('id', '!=', $entry->id)->sum('amount');
+        if ($others + (float) $validated['amount'] > $this->billEffectiveAmount($entry->transaction) + 0.005) {
+            return response()->json(['success' => false, 'message' => __('The total is more than what is left on this bill.')], 422);
+        }
 
         $transaction = null;
         DB::transaction(function () use ($entry, $validated, &$transaction) {
@@ -590,7 +623,7 @@ class FinancialController extends Controller
 
         $response = ['success' => true, 'entry' => $entry->fresh()];
         if ($transaction) {
-            $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
+            $transaction->load(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments']);
             $response['transaction'] = $transaction;
         }
 
@@ -608,7 +641,12 @@ class FinancialController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $entry = FinancialTransactionItemPayment::findOrFail($id);
+        $entry = FinancialTransactionItemPayment::with('payment')->findOrFail($id);
+
+        if ($locked = $this->lockedEntryResponse($entry)) {
+            return $locked;
+        }
+
         $roundPaymentId = $entry->financial_payment_id;
 
         $transaction = null;
@@ -621,7 +659,7 @@ class FinancialController extends Controller
 
         $response = ['success' => true];
         if ($transaction) {
-            $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
+            $transaction->load(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments']);
             $response['transaction'] = $transaction;
         }
 
@@ -657,43 +695,159 @@ class FinancialController extends Controller
         $sum = $pending->sum('amount');
 
         DB::transaction(function () use ($request, $transaction, $pending, $sum) {
-            $payment = $transaction->payments()->create([
-                'amount' => $sum,
-                'paid_at' => now(),
-                'bank_account_id' => $request->input('bank_account_id') ?: null,
-                'notes' => $request->input('notes') ?: null,
-                'created_by' => auth()->id(),
-            ]);
-
-            FinancialTransactionItemPayment::whereIn('id', $pending->pluck('id'))
-                ->update(['financial_payment_id' => $payment->id]);
-
-            // Recalculate paid_amount จาก DB — same as storePayment() above.
-            $transaction->paid_amount = $transaction->payments()->sum('amount');
-            $transaction->paid_at = now();
-
-            $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - ($transaction->credit_amount ?? 0);
-            $transaction->status = $transaction->paid_amount >= $effectiveAmount ? 'paid' : 'partial';
-            $transaction->save();
-
-            if ($payment->bank_account_id) {
-                app(LedgerService::class)->createEntry([
-                    'entry_date' => $payment->paid_at->toDateString(),
-                    'type' => 'income',
-                    'bank_account_id' => $payment->bank_account_id,
-                    'category_id' => $this->defaultIncomeCategory()->id,
-                    'category_type' => 'income',
-                    'counterparty_name' => optional(optional($transaction->productionOrder)->employer)->employerNameTh,
-                    'gross_amount' => $payment->amount,
-                    'description' => $this->paymentLedgerDescription($transaction),
-                    'source_type' => FinancialPayment::class,
-                    'source_id' => $payment->id,
-                ]);
-            }
+            $this->rollUpIntoPayment($transaction, $pending->pluck('id')->all(), $sum, now(), $request->input('bank_account_id'), $request->input('notes'));
         });
 
-        $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
+        $transaction->load(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments']);
         return response()->json(['success' => true, 'transaction' => $transaction, 'payment_amount' => $sum]);
+    }
+
+    /**
+     * Save one collection round in one go: what each ticked-in employee paid
+     * now, plus any earlier entries not combined yet, become ONE FinancialPayment
+     * dated the day the money was received — all or nothing. This is what
+     * the Individual Collection popup's save button calls.
+     */
+    public function saveItemPaymentRound(Request $request, $transactionId)
+    {
+        if (!$this->canManageFinance()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $transaction = FinancialTransaction::findOrFail($transactionId);
+
+        $validated = $request->validate([
+            'paid_at' => 'required|date',
+            'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            'notes' => 'nullable|string',
+            'rows' => 'nullable|array',
+            'rows.*.production_item_id' => 'required|integer',
+            'rows.*.amount' => 'required|numeric|min:0.01',
+            'rows.*.notes' => 'nullable|string',
+        ]);
+
+        // The mode chosen when the bill was created is only a starting point: the
+        // first money collected decides how this bill is collected from then on.
+        if ($blocked = $this->collectionModeBlockedBy($transaction, 'per_employee')) {
+            return response()->json(['success' => false, 'message' => $blocked], 422);
+        }
+
+        $rows = collect($validated['rows'] ?? []);
+        $attached = $transaction->items()->pluck('production_items.id')->map(fn ($id) => (int) $id)->all();
+        if ($rows->contains(fn ($row) => !in_array((int) $row['production_item_id'], $attached, true))) {
+            return response()->json(['success' => false, 'message' => 'This employee is not attached to this bill.'], 422);
+        }
+
+        $pending = $transaction->itemPayments()->whereNull('financial_payment_id')->get();
+        $sum = round((float) $rows->sum('amount') + (float) $pending->sum('amount'), 2);
+        if ($sum <= 0) {
+            return response()->json(['success' => false, 'message' => 'No new individual payments to collect.'], 422);
+        }
+
+        $collected = (float) $transaction->itemPayments()->sum('amount') + (float) $rows->sum('amount');
+        if ($collected > $this->billEffectiveAmount($transaction) + 0.005) {
+            return response()->json(['success' => false, 'message' => __('The total is more than what is left on this bill.')], 422);
+        }
+
+        $paidAt = \Carbon\Carbon::parse($validated['paid_at']);
+
+        DB::transaction(function () use ($transaction, $rows, $pending, $sum, $paidAt, $validated) {
+            $transaction->payment_collection_mode = 'per_employee'; // saved by rollUpIntoPayment()
+            $ids = $pending->pluck('id')->all();
+            foreach ($rows as $row) {
+                $ids[] = $transaction->itemPayments()->create([
+                    'production_item_id' => $row['production_item_id'],
+                    'amount' => $row['amount'],
+                    'paid_at' => $paidAt,
+                    'notes' => $row['notes'] ?? null,
+                    'created_by' => auth()->id(),
+                ])->id;
+            }
+            $this->rollUpIntoPayment($transaction, $ids, $sum, $paidAt, $validated['bank_account_id'] ?? null, $validated['notes'] ?? null);
+        });
+
+        $transaction->load(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments']);
+        return response()->json(['success' => true, 'transaction' => $transaction, 'payment_amount' => $sum]);
+    }
+
+    /**
+     * Turn the given per-employee entries into one FinancialPayment — the same
+     * recalculation / ledger posting as a lump-sum "Add Payment" (storePayment()).
+     * Call inside a DB transaction.
+     */
+    private function rollUpIntoPayment(FinancialTransaction $transaction, array $entryIds, float $sum, $paidAt, $bankAccountId, $notes): FinancialPayment
+    {
+        $payment = $transaction->payments()->create([
+            'amount' => $sum,
+            'paid_at' => $paidAt,
+            'bank_account_id' => $bankAccountId ?: null,
+            'notes' => $notes ?: null,
+            'created_by' => auth()->id(),
+        ]);
+
+        FinancialTransactionItemPayment::whereIn('id', $entryIds)->update(['financial_payment_id' => $payment->id]);
+
+        // Recalculate paid_amount จาก DB — same as storePayment() above.
+        $transaction->paid_amount = $transaction->payments()->sum('amount');
+        $transaction->paid_at = $paidAt;
+
+        $effectiveAmount = $transaction->amount - ($transaction->discount_amount ?? 0) - ($transaction->credit_amount ?? 0);
+        $transaction->status = $transaction->paid_amount >= $effectiveAmount ? 'paid' : 'partial';
+        $transaction->save();
+
+        if ($payment->bank_account_id) {
+            app(LedgerService::class)->createEntry([
+                'entry_date' => $payment->paid_at->toDateString(),
+                'type' => 'income',
+                'bank_account_id' => $payment->bank_account_id,
+                'category_id' => $this->defaultIncomeCategory()->id,
+                'category_type' => 'income',
+                'counterparty_name' => optional(optional($transaction->productionOrder)->employer)->employerNameTh,
+                'gross_amount' => $payment->amount,
+                'description' => $this->paymentLedgerDescription($transaction),
+                'source_type' => FinancialPayment::class,
+                'source_id' => $payment->id,
+            ]);
+        }
+
+        return $payment;
+    }
+
+    /**
+     * Collecting in $mode: free while no money has been recorded on the bill
+     * (whatever was picked when it was created), then fixed to the way it was
+     * first collected until those payments are deleted. Reason text if refused.
+     */
+    private function collectionModeBlockedBy(FinancialTransaction $transaction, string $mode): ?string
+    {
+        $hasMoney = $transaction->payments()->exists() || $transaction->itemPayments()->exists();
+        if (!$hasMoney || ($transaction->payment_collection_mode ?? 'lump_sum') === $mode) {
+            return null;
+        }
+
+        return $mode === 'lump_sum'
+            ? __('This bill is already collected individually. Delete those payments first to collect it as a lump sum.')
+            : __('This bill is already collected as a lump sum. Delete those payments first to collect it individually.');
+    }
+
+    /** What the bill is worth after discount and credit notes. */
+    private function billEffectiveAmount(FinancialTransaction $transaction): float
+    {
+        return (float) $transaction->amount - (float) ($transaction->discount_amount ?? 0) - (float) ($transaction->credit_amount ?? 0);
+    }
+
+    /**
+     * A round whose receipt / tax invoice was issued (FinancialPayment::
+     * receipt_generated_at) is final: the amount on the document must stay
+     * what the system says. 422 response if this entry belongs to one.
+     */
+    private function lockedEntryResponse(FinancialTransactionItemPayment $entry)
+    {
+        if ($entry->payment && $entry->payment->receipt_generated_at) {
+            return response()->json(['success' => false, 'message' => __('A receipt or tax invoice has been issued for this payment, so it can no longer be changed.')], 422);
+        }
+
+        return null;
     }
 
     /**
@@ -809,6 +963,11 @@ class FinancialController extends Controller
         }
 
         $transaction = FinancialTransaction::with('payments.ledgerEntry')->findOrFail($id);
+
+        // Individually collected bill with an issued receipt / tax invoice: final.
+        if ($transaction->payment_collection_mode === 'per_employee' && $transaction->payments->contains(fn ($p) => $p->receipt_generated_at)) {
+            return response()->json(['success' => false, 'message' => __('A receipt or tax invoice has been issued for this payment, so it can no longer be changed.')], 422);
+        }
 
         // Wrapped in one transaction so a locked (closed-day) payment
         // aborts the WHOLE delete rather than leaving it half-done.

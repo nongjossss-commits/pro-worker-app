@@ -31,7 +31,10 @@
     // for fields filled / emptied by a script (e.g. Alpine x-model resetting a
     // form), which flatpickr's visible box does not notice by itself.
     window.syncDatePickers = function (root) {
-        datePickers(root || document).forEach(function (el) {
+        // every date box, also those without a name (Alpine x-model fields sent by script)
+        Array.prototype.filter.call((root || document).querySelectorAll('input'), function (el) {
+            return el._flatpickr && el._flatpickr.altInput;
+        }).forEach(function (el) {
             var fp = el._flatpickr;
             if (fp.config.mode && fp.config.mode !== 'single') return;
             var picked = fp.selectedDates && fp.selectedDates.length ? fp.formatDate(fp.selectedDates[0], fp.config.dateFormat) : '';

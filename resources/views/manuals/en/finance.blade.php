@@ -90,12 +90,14 @@
 <div class="manual-step">
     For a bill priced <strong>per head</strong> — when each employee pays their own share, possibly over several partial payments:
     <ol class="mb-0">
-        <li>Open the bill → set <strong>Collection Mode: Individual</strong> (instead of a single lump amount)</li>
-        <li>Click <strong>Open Individual Collection</strong> — a table of employees opens with photo, passport number, social security status and current step</li>
-        <li>Click <strong>Pay</strong> next to an employee → enter the amount paid this time + date (defaults to today, editable) → save. Their running total and remaining balance update immediately</li>
-        <li>Partial payments are fine — collect more later (click the history number to view/edit/delete past entries)</li>
-        <li>Once you've finished collecting from everyone for this round, click <strong>Update</strong> at the bottom — the system combines everything collected into <strong>one receipt</strong> (same as a normal payment), posting to the Ledger if an account is selected</li>
-        <li>This never affects other bills' lump-sum payments — only bills with this mode turned on behave this way</li>
+        <li>Open the bill → set <strong>Collection Mode: Individual</strong> (instead of lump sum) · the choice made when creating the installment is only a starting point: <strong>it can change until the first payment is collected</strong>; the bill then stays collected that way unless those payments are deleted</li>
+        <li>Click <strong>Open Individual Collection</strong> — the top shows the bill amount, collected, remaining and how many people are fully paid · search, and filter All / Still owing / Fully Paid</li>
+        <li>Each row is one employee (price, paid, remaining) — type <strong>Received this round</strong>, or press <strong>Full</strong> to fill what they owe · <strong>Fill in full for everyone shown</strong> collects from many at once · more than someone owes is flagged and cannot be saved</li>
+        <li>At the bottom pick the <strong>Date received</strong> and <strong>account</strong>, then <strong>Save and create Payment</strong> — everyone in the round is saved together and <strong>one Payment</strong> is created for the total, like a lump-sum payment (posted to the ledger on the date received if an account is chosen)</li>
+        <li>The Payments are listed on the bill; press the people button to see who paid what · pick the document date, then press <strong>Receipt</strong> or <strong>Tax Invoice</strong> right on that Payment</li>
+        <li>Correct or delete a person from that Payment, or from the history button on their row — <strong>the Payment and bill totals follow automatically</strong> · deleting the last person removes that Payment</li>
+        <li><strong>Once a receipt or tax invoice is issued for a Payment it is locked and cannot be changed or deleted</strong> (opening the document counts as issuing it) · closed accounting days cannot be changed either</li>
+        <li>This never affects other bills' lump-sum payments</li>
     </ol>
 </div>
 

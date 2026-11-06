@@ -20,6 +20,9 @@
 </ol>
 <p class="small">Workforce = not notified out, not deleted and not in a cancelled status · appointments = Registration / Renewal resolution and Workflow appointments not marked done · <strong>the dashboard shows no finance figures</strong> (income / outstanding) because every account with the dashboard sees it — see them in the Finance menu · all figures cover only the employers that account may see · works in light/dark mode and all 4 languages</p>
 
+<h4><i class="bi bi-calendar-event me-2"></i>Top bar buttons (every menu)</h4>
+<p><strong>Appointment Calendar</strong> <i class="bi bi-calendar-event"></i>, next to Job Check Mode: opens the same combined calendar that pops up at login, from any menu, even after it was closed; it refreshes each time it opens (shown to accounts allowed to edit employees, like the popup) · on smaller screens the buttons become icons (point at one to see its name) and wrap to a new row instead of running off the screen · phones: Download Center and Job Check Mode are now available; "Drag to split" stays hidden because phones cannot split the screen by dragging</p>
+
 <h4><i class="bi bi-shield-lock me-2"></i>Login and security</h4>
 <ol>
     <li><strong>Log in</strong> with email and password (click the eye to show what you typed)</li>

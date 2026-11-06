@@ -42,6 +42,11 @@ class EnforceJobCheckMode
         // would silently render the wrong page inside the preview modal
         // instead of failing loudly.
         'global.preview',
+        // Combined appointment calendar (top-bar button, every menu) — read-only
+        // JSON. fetch() normally passes anyway (Sec-Fetch-Dest below); this covers
+        // connections that don't send that header (e.g. plain HTTP), like global.preview.
+        'appointments.calendar',
+        'appointments.by-date',
     ];
 
     protected const ALLOWED_ROUTE_PREFIXES = [

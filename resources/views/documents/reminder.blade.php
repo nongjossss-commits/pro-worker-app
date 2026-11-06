@@ -23,7 +23,28 @@
         .doc-title { color: #dc2626; letter-spacing: 1px; }
         .no-print { position: fixed; top: 20px; right: 20px; z-index: 999; }
         .no-print button { padding: 10px 18px; background: #f97316; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        @media print { body { background: #fff; padding: 0; } .page { box-shadow: none; padding: 0; margin: 0; } .no-print { display: none !important; } @page { margin: 12mm; size: A4 portrait; } }
+        /* Employee list page (same idea as the invoice's) */
+        .list-page { margin-top: 20px; min-height: 0; }
+        .list-page.list-only { margin-top: 0; }
+        .list-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+        .list-head .doc-title { letter-spacing: 0; }
+        .list-table { font-size: 11px; table-layout: auto; }
+        .list-table th { font-size: 9.5px; text-transform: none; letter-spacing: 0; padding: 4px 3px; line-height: 1.2; white-space: nowrap; }
+        .list-table .en-label { font-weight: 400; color: #6b7280; font-size: 9px; }
+        .list-table td { font-size: 10.5px; padding: 3px; vertical-align: middle; white-space: nowrap; }
+        .list-table td.list-name { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+        .list-table thead { display: table-header-group; }
+        .list-table tfoot { display: table-row-group; } /* totals once, at the end */
+        .list-table tr { page-break-inside: avoid; break-inside: avoid; }
+        .list-photo { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto; }
+        .list-no-photo { background: #f1f5f9; color: #94a3b8; font-size: 8px; line-height: 42px; text-align: center; }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .page { box-shadow: none; padding: 0; margin: 0; min-height: 0; max-width: none; }
+            .list-page:not(.list-only) { page-break-before: always; break-before: page; }
+            .no-print { display: none !important; }
+            @page { margin: 12mm; size: A4 portrait; }
+        }
     </style>
 </head>
 <body>
@@ -31,6 +52,8 @@
         <button onclick="window.print()">🖨️ Print / Save as PDF</button>
     </div>
 
+    @php $reminderDocNo = 'RMD-' . $production->id . '-' . date('Ymd-Hi'); @endphp
+    @unless(!empty($listOnly))
     <div class="page">
         {{-- Header — biller profile (หัวบิลจาก finance tab) wins over the default
              CompanyProfile. Same pattern as documents/layout.blade.php so both
@@ -58,7 +81,7 @@
                 <h1 class="doc-title">ใบทวงถามยอดคงค้าง</h1>
                 <div class="text-sm text-muted" style="margin-top: 4px;">PAYMENT REMINDER</div>
                 <div class="text-sm" style="margin-top: 8px;">
-                    <strong>Doc No:</strong> RMD-{{ $production->id }}-{{ date('Ymd-Hi') }}<br>
+                    <strong>Doc No:</strong> {{ $reminderDocNo }}<br>
                     <strong>Date:</strong> {{ date('d/m/Y') }}
                 </div>
             </div>
@@ -207,46 +230,11 @@
             </table>
         @endif
 
-        {{-- Employee list — only meaningful detail here is "how much each
-             person still owes", so for a per-employee-collected bill we show
-             Paid/Remaining per person; a lump-sum bill has no per-person paid
-             amount, so it just lists the full price per person as before. --}}
-        @if(!empty($includeEmployeeList) && $includeEmployeeList && !empty($employeeList))
-            @php
-                $hasPaidColumn = collect($employeeList)->contains(fn($e) => ($e['paid_so_far'] ?? null) !== null);
-            @endphp
-            <h4 class="text-muted text-sm mt-8 mb-4">ตารางรายชื่อพนักงาน / Employee List</h4>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 4%;">#</th>
-                        <th style="width: {{ $hasPaidColumn ? '20%' : '26%' }};">ชื่อ-นามสกุล / Name</th>
-                        <th style="width: 12%;">สัญชาติ / Nationality</th>
-                        <th style="width: 14%;">เลขพาสปอร์ต / Passport</th>
-                        <th class="text-right" style="width: {{ $hasPaidColumn ? '14%' : '18%' }};">ราคา / Price</th>
-                        @if($hasPaidColumn)
-                            <th class="text-right" style="width: 14%;">จ่ายมาแล้ว / Paid</th>
-                            <th class="text-right" style="width: 14%;">คงเหลือ / Remaining</th>
-                        @endif
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($employeeList as $emp)
-                        @php $empRemaining = max(0, (float) $emp['price'] - (float) ($emp['paid_so_far'] ?? 0)); @endphp
-                        <tr>
-                            <td>{{ $emp['index'] }}</td>
-                            <td>{{ trim(($emp['prefix'] ?? '') . ' ' . $emp['name']) }}</td>
-                            <td>{{ $emp['nationality'] ?: '-' }}</td>
-                            <td>{{ $emp['passport'] ?: '-' }}</td>
-                            <td class="amount">{{ number_format($emp['price'], 2) }}</td>
-                            @if($hasPaidColumn)
-                                <td class="amount">{{ number_format($emp['paid_so_far'] ?? 0, 2) }}</td>
-                                <td class="amount {{ $empRemaining > 0 ? 'fw-bold text-danger' : '' }}">{{ number_format($empRemaining, 2) }}</td>
-                            @endif
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        {{-- The employee list is its own page after this one (below) — same as the
+             invoice — so a bill with 100 people doesn't push the total and
+             signatures pages away. Here: just say it's attached. --}}
+        @if(!empty($includeEmployeeList) && !empty($employeeList))
+            <div class="text-sm text-muted mt-8"><strong>แนบรายชื่อลูกจ้าง / Employee list attached:</strong> {{ count($employeeList) }} คน (หน้าถัดไป / next page)</div>
         @endif
 
         {{-- Outstanding highlight --}}
@@ -329,5 +317,89 @@
             </div>
         </div>
     </div>
+    @endunless
+
+    {{-- Employee list page — same layout as the invoice's (documents/layout.blade.php:
+         photo, IDs, price), plus what each person still owes on a bill collected
+         individually. Rows never split across printed pages; the header repeats. --}}
+    @if(!empty($includeEmployeeList) && !empty($employeeList))
+        @php
+            // A lump-sum bill leaves paid_so_far null for everyone: no paid/remaining columns.
+            $hasPaidColumn = collect($employeeList)->contains(fn ($e) => ($e['paid_so_far'] ?? null) !== null);
+            $listPriceTotal = collect($employeeList)->sum(fn ($e) => (float) $e['price']);
+            $listPaidTotal = collect($employeeList)->sum(fn ($e) => (float) ($e['paid_so_far'] ?? 0));
+            $listRemainingTotal = collect($employeeList)->sum(fn ($e) => max(0, (float) $e['price'] - (float) ($e['paid_so_far'] ?? 0)));
+        @endphp
+        <div class="page list-page {{ !empty($listOnly) ? 'list-only' : '' }}">
+            <div class="list-head">
+                <div>
+                    <h3 class="doc-title">ตารางรายชื่อพนักงาน / Employee List</h3>
+                    <div class="text-sm text-muted">{{ $production->project_name ?? '-' }} · {{ count($employeeList) }} คน</div>
+                </div>
+                <div class="text-sm text-right text-muted">
+                    แนบใบทวงถาม / Attached to reminder<br>
+                    <strong>{{ $reminderDocNo }}</strong>
+                </div>
+            </div>
+            <table class="list-table">
+                <thead>
+                    <tr>
+                        <th class="text-center">ลำดับ<br><span class="en-label">No.</span></th>
+                        <th class="text-center">รูปถ่าย<br><span class="en-label">Photo</span></th>
+                        <th>รหัสลูกจ้าง<br><span class="en-label">Employee ID</span></th>
+                        <th style="width: 99%;">ชื่อ-นามสกุล<br><span class="en-label">Name</span></th>
+                        <th class="text-center">สัญชาติ<br><span class="en-label">Nationality</span></th>
+                        <th>เลขพาสปอร์ต<br><span class="en-label">Passport No.</span></th>
+                        <th>เลขประจำตัว<br><span class="en-label">ID No.</span></th>
+                        <th>ใบอนุญาต<br><span class="en-label">Work Permit</span></th>
+                        <th class="text-right">ราคาต่อหัว<br><span class="en-label">Price</span></th>
+                        @if($hasPaidColumn)
+                            <th class="text-right">จ่ายแล้ว<br><span class="en-label">Paid</span></th>
+                            <th class="text-right">คงเหลือ<br><span class="en-label">Remaining</span></th>
+                        @endif
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($employeeList as $emp)
+                        @php $empRemaining = max(0, (float) $emp['price'] - (float) ($emp['paid_so_far'] ?? 0)); @endphp
+                        <tr>
+                            <td class="text-center">{{ $emp['index'] }}</td>
+                            <td class="text-center">
+                                @if(!empty($emp['image']))
+                                    <img class="list-photo" src="{{ asset('storage/' . $emp['image']) }}" alt="Photo">
+                                @else
+                                    <div class="list-photo list-no-photo">No Image</div>
+                                @endif
+                            </td>
+                            <td>{{ $emp['employee_id'] ?: '-' }}</td>
+                            <td class="list-name">
+                                {{ trim(($emp['prefix'] ?? '') . ' ' . $emp['name']) }}
+                                @if(!empty($emp['note']))<div class="text-muted" style="font-size: 10px;">{{ $emp['note'] }}</div>@endif
+                            </td>
+                            <td class="text-center">{{ $emp['nationality'] ?: '-' }}</td>
+                            <td>{{ $emp['passport'] ?: '-' }}</td>
+                            <td>{{ $emp['id_number'] ?: '-' }}</td>
+                            <td>{{ $emp['work_permit'] ?: '-' }}</td>
+                            <td class="amount">{{ number_format($emp['price'], 2) }}</td>
+                            @if($hasPaidColumn)
+                                <td class="amount">{{ number_format($emp['paid_so_far'] ?? 0, 2) }}</td>
+                                <td class="amount {{ $empRemaining > 0 ? 'fw-bold text-danger' : '' }}">{{ number_format($empRemaining, 2) }}</td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="8" class="text-right">Total / รวม</td>
+                        <td class="amount">{{ number_format($listPriceTotal, 2) }}</td>
+                        @if($hasPaidColumn)
+                            <td class="amount">{{ number_format($listPaidTotal, 2) }}</td>
+                            <td class="amount text-danger">{{ number_format($listRemainingTotal, 2) }}</td>
+                        @endif
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    @endif
 </body>
 </html>

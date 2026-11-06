@@ -917,7 +917,7 @@ class="row">
                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 32px; height: 32px; object-fit: cover;">
                                     <div class="d-flex flex-column" style="line-height: 1.2; min-width: 0;">
                                         <div class="fw-bold text-wrap" style="font-size: 0.85rem;">
-                                            <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
+                                            <span x-text="item.name_en ? ((item.title_en ? item.title_en + ' ' : '') + item.name_en) : item.name"></span>
                                             <!-- Insurance Badge -->
                                             <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
@@ -1110,6 +1110,7 @@ class="row">
                                         <label class="btn btn-outline-success btn-sm" for="newTxnCollectionModeIndividual">{{ __('Individual') }}</label>
                                     </div>
                                     <div class="form-text" style="font-size: 0.7rem;">{{ __('Individual: each employee pays their own share, tracked and receipted separately from the amount below.') }}</div>
+                                    <div class="form-text" style="font-size: 0.7rem;">{{ __('You can change this until the first payment is collected. After that the bill stays collected this way.') }}</div>
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Amount</label>
@@ -1165,7 +1166,7 @@ class="row">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
                                                         <div class="fw-bold text-wrap">
-                                                            <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
+                                                            <span x-text="item.name_en ? ((item.title_en ? item.title_en + ' ' : '') + item.name_en) : item.name"></span>
                                                             <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
                                                                     :class="{
@@ -1250,6 +1251,7 @@ class="row">
                                     <label class="btn btn-outline-success btn-sm" for="collectionModeIndividual">{{ __('Individual') }}</label>
                                 </div>
                                 <div class="form-text" style="font-size: 0.7rem;" x-show="!paymentCollectionModeLocked">{{ __('Individual: each employee pays their own share, tracked and receipted separately from the amount below.') }}</div>
+                                <div class="form-text" style="font-size: 0.7rem;" x-show="!paymentCollectionModeLocked">{{ __('You can change this until the first payment is collected. After that the bill stays collected this way.') }}</div>
                                 <div class="form-text text-warning" style="font-size: 0.7rem;" x-show="paymentCollectionModeLocked" x-cloak>
                                     <i class="bi bi-lock-fill me-1"></i>{{ __('Locked — this bill already has payments recorded. Delete them first to switch collection mode.') }}
                                 </div>
@@ -1282,7 +1284,7 @@ class="row">
                                             <div class="small fst-italic text-muted text-truncate" style="max-width: 40%;" x-text="pay.notes"></div>
                                             <div class="d-flex gap-1">
                                                 <div class="btn-group">
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
                                                         Doc
                                                     </button>
                                                     <ul class="dropdown-menu shadow" style="font-size: 0.8rem;">
@@ -1376,25 +1378,71 @@ class="row">
                             </div>
                             </div>
 
-                            <!-- Individual: per-employee collection summary + entry point. -->
+                            <!-- Individual: per-employee collection. Each saved round is one Payment below,
+                                 same as a lump-sum payment (documents, ledger, totals). -->
                             <div x-show="editingTransaction.payment_collection_mode === 'per_employee'" x-cloak>
-                                <div class="card shadow-sm border-success mb-3">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between small mb-1">
-                                            <span class="text-muted">{{ __('Collected so far') }}:</span>
-                                            <span class="fw-bold text-success" x-text="formatCurrency((editingTransaction.itemPayments || []).reduce((s, p) => s + parseFloat(p.amount || 0), 0))"></span>
+                                <div class="ic-summary mb-3">
+                                    <div class="d-flex justify-content-between align-items-baseline flex-wrap gap-1">
+                                        <span class="small text-body-secondary">{{ __('Collected so far') }}</span>
+                                        <span class="fw-bold fs-5 text-success" x-text="formatCurrency(individualCollectedTotal)"></span>
+                                    </div>
+                                    <div class="progress my-2" style="height: 6px;"><div class="progress-bar bg-success" :style="'width:' + individualProgress + '%'"></div></div>
+                                    <div class="d-flex justify-content-between small text-body-secondary mb-3">
+                                        <span><span x-text="individualPaidPeople"></span>/<span x-text="individualPeopleCount"></span> {{ __('people') }} {{ __('Fully Paid') }}</span>
+                                        <span>{{ __('Remaining') }} <strong class="text-danger" x-text="formatCurrency(individualBillRemaining)"></strong></span>
+                                    </div>
+                                    <button type="button" class="btn btn-success w-100" @click="openIndividualCollectionModal()">
+                                        <i class="bi bi-people-fill me-1"></i> {{ __('Open Individual Collection') }}
+                                    </button>
+                                </div>
+
+                                <div class="fw-bold small mb-2"><i class="bi bi-receipt me-1"></i>{{ __('Payments (one total per round)') }}</div>
+                                <div class="ic-rounds">
+                                    <template x-for="pay in editingTransaction.payments" :key="pay.id">
+                                        <div class="ic-round" :class="pay.receipt_generated_at ? 'is-locked' : ''">
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <span class="fw-bold text-success fs-6" x-text="formatCurrency(pay.amount)"></span>
+                                                <span class="small text-body-secondary" x-text="formatDate(pay.paid_at)"></span>
+                                                <span class="small text-body-secondary text-truncate" x-text="pay.bank_account ? pay.bank_account.bank_name : '{{ __('No account') }}'"></span>
+                                                <span class="ms-auto ic-lock" x-show="pay.receipt_generated_at"><i class="bi bi-lock-fill me-1"></i>{{ __('Document issued — cannot be changed') }}</span>
+                                                <span class="ms-auto ic-open" x-show="!pay.receipt_generated_at">{{ __('No document yet') }}</span>
+                                            </div>
+                                            <div class="small fst-italic text-body-secondary text-truncate" x-show="pay.notes" x-text="pay.notes"></div>
+                                            <div class="d-flex align-items-center gap-1 mt-2 flex-wrap">
+                                                <button type="button" class="btn btn-sm btn-light border py-0 px-2" @click="expandedRoundId = expandedRoundId === pay.id ? null : pay.id">
+                                                    <i class="bi" :class="expandedRoundId === pay.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                                                    <span x-text="roundEntries(pay.id).length"></span> {{ __('people') }}
+                                                </button>
+                                                <div class="ms-auto d-flex gap-1">
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" x-show="!pay.receipt_generated_at" @click="deletePayment(pay.id)" title="{{ __('Delete') }}"><i class="bi bi-trash"></i></button>
+                                                </div>
+                                            </div>
+                                            <div class="ic-docs">
+                                                <div class="ic-doc-date">
+                                                    <label class="form-label">{{ __('Document date') }}</label>
+                                                    <input type="date" class="form-control form-control-sm" :max="todayYmd()" x-init="docDatePicker($el)" :value="paymentDocDate(pay)" @input="paymentDocDates[pay.id] = $event.target.value">
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" @click="generatePaymentDocument(pay.id, 'receipt')"><i class="bi bi-receipt me-1"></i>{{ __('Receipt') }}</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" @click="generatePaymentDocument(pay.id, 'tax_invoice')"><i class="bi bi-file-earmark-text me-1"></i>{{ __('Tax Invoice') }}</button>
+                                            </div>
+                                            <div class="ic-round-people" x-show="expandedRoundId === pay.id" x-cloak>
+                                                <template x-for="entry in roundEntries(pay.id)" :key="entry.id">
+                                                    <div class="ic-entry">
+                                                        <span class="text-truncate flex-grow-1" x-text="entryPersonName(entry)"></span>
+                                                        <span class="text-body-secondary text-truncate ic-entry-note" x-show="entry.notes" x-text="entry.notes"></span>
+                                                        <span class="fw-bold text-success" x-text="formatCurrency(entry.amount)"></span>
+                                                        <span class="ic-actions" x-show="!pay.receipt_generated_at">
+                                                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="openEntryEdit(entry)" title="{{ __('Edit') }}"><i class="bi bi-pencil"></i></button>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deleteItemPaymentEntry(entry)" title="{{ __('Delete') }}"><i class="bi bi-trash"></i></button>
+                                                        </span>
+                                                    </div>
+                                                </template>
+                                            </div>
                                         </div>
-                                        <div class="d-flex justify-content-between small mb-1">
-                                            <span class="text-muted">{{ __('Receipted (finalized)') }}:</span>
-                                            <span class="fw-bold" x-text="formatCurrency(editingTransaction.paid_amount || 0)"></span>
-                                        </div>
-                                        <div class="d-flex justify-content-between small mb-3">
-                                            <span class="text-muted">{{ __('Pending finalize') }}:</span>
-                                            <span class="fw-bold text-warning" x-text="formatCurrency(pendingCollectionTotal)"></span>
-                                        </div>
-                                        <button type="button" class="btn btn-success btn-sm w-100" @click="openIndividualCollectionModal()">
-                                            <i class="bi bi-people-fill me-1"></i> {{ __('Open Individual Collection') }}
-                                        </button>
+                                    </template>
+                                    <div class="text-center text-body-secondary small py-3" x-show="!editingTransaction.payments || editingTransaction.payments.length === 0">
+                                        {{ __('No payments yet — press the button above to collect.') }}
                                     </div>
                                 </div>
                             </div>
@@ -1556,7 +1604,7 @@ class="row">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
                                                         <div class="fw-bold text-wrap">
-                                                            <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
+                                                            <span x-text="item.name_en ? ((item.title_en ? item.title_en + ' ' : '') + item.name_en) : item.name"></span>
                                                             <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
                                                                 <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
                                                                     :class="{
@@ -1611,113 +1659,145 @@ class="row">
         </div>
     </div>
 
-    <!-- Individual Collection Modal — per-employee payment entry/history
-         (payment_collection_mode === 'per_employee'). Opened from the
-         summary card in the Pay modal's left column above. -->
-    <div class="modal fade" :id="'individualCollectionModal-' + productionId" tabindex="-1" x-ref="individualCollectionModal">
-        <div class="modal-dialog modal-dialog-near-fullscreen modal-dialog-scrollable">
+    <!-- Individual Collection Modal — one screen for one collection round: type what
+         each person paid now, press save once → their entries + ONE Payment
+         (FinancialController::saveItemPaymentRound()). Styles: .ic-* in public/css/large-modals.css -->
+    @php
+        $icText = [
+            'noAccountTitle' => __('No bank account selected'),
+            'noAccountText' => __('This Payment will not be posted to any bank balance. Save it anyway?'),
+            'saveAnyway' => __('Save anyway'),
+            'saved' => __('Payment created'),
+            'updated' => __('Updated'),
+            'overPerson' => __('Some amounts are more than that person still owes.'),
+            'overBill' => __('The total is more than what is left on this bill.'),
+            'needDate' => __('Please choose the date the money was received.'),
+            'editTitle' => __('Edit this person\'s payment'),
+            'amount' => __('Amount'),
+            'date' => __('Date'),
+            'notes' => __('Notes'),
+            'save' => __('Save'),
+            'cancel' => __('Cancel'),
+            'deleteTitle' => __('Delete this payment?'),
+            'deleteText' => __('The Payment total for this round goes down by this amount.'),
+            'deleted' => __('Deleted'),
+        ];
+    @endphp
+    <div class="modal fade" :id="'individualCollectionModal-' + productionId" tabindex="-1" x-ref="individualCollectionModal" data-text="{{ json_encode($icText, JSON_UNESCAPED_UNICODE) }}">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable ic-dialog">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h6 class="modal-title">
-                        <i class="bi bi-people-fill me-1"></i> {{ __('Individual Collection') }}
-                    </h6>
+                    <h6 class="modal-title"><i class="bi bi-people-fill me-1"></i> {{ __('Individual Collection') }}</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-3">
-                    <input type="text" class="form-control form-control-sm mb-2" placeholder="{{ __('Search by name, passport, work permit, ID no., RA no., reference no....') }}" x-model="individualSearch">
 
-                    <div class="list-group list-group-flush border rounded">
+                <div class="ic-stats">
+                    <div class="ic-stat"><span>{{ __('Bill amount') }}</span><strong x-text="formatCurrency(individualEffectiveAmount)"></strong></div>
+                    <div class="ic-stat"><span>{{ __('Collected so far') }}</span><strong class="text-success" x-text="formatCurrency(individualCollectedTotal)"></strong></div>
+                    <div class="ic-stat"><span>{{ __('Remaining') }}</span><strong class="text-danger" x-text="formatCurrency(individualBillRemaining)"></strong></div>
+                    <div class="ic-stat"><span>{{ __('Fully Paid') }}</span><strong><span x-text="individualPaidPeople"></span>/<span x-text="individualPeopleCount"></span> {{ __('people') }}</strong></div>
+                </div>
+                <div class="progress rounded-0" style="height: 4px;"><div class="progress-bar bg-success" :style="'width:' + individualProgress + '%'"></div></div>
+
+                <div class="modal-body p-0">
+                    <div class="ic-tools">
+                        <div class="input-group input-group-sm ic-search">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" placeholder="{{ __('Search by name, passport, work permit, ID no., RA no., reference no....') }}" x-model="individualSearch">
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn" :class="individualFilter === 'all' ? 'btn-primary' : 'btn-outline-secondary'" @click="individualFilter = 'all'">{{ __('All') }}</button>
+                            <button type="button" class="btn" :class="individualFilter === 'due' ? 'btn-primary' : 'btn-outline-secondary'" @click="individualFilter = 'due'">{{ __('Still owing') }}</button>
+                            <button type="button" class="btn" :class="individualFilter === 'paid' ? 'btn-primary' : 'btn-outline-secondary'" @click="individualFilter = 'paid'">{{ __('Fully Paid') }}</button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-success ms-auto" @click="fillAllIndividual()"><i class="bi bi-check2-all me-1"></i>{{ __('Fill in full for everyone shown') }}</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" x-show="individualDraftTotal > 0" @click="clearIndividualDrafts()">{{ __('Clear') }}</button>
+                    </div>
+
+                    <div class="ic-table">
+                        <div class="ic-row ic-head">
+                            <div>{{ __('Employee') }}</div>
+                            <div class="ic-num">{{ __('Price') }}</div>
+                            <div class="ic-num">{{ __('Paid') }}</div>
+                            <div class="ic-num">{{ __('Remaining') }}</div>
+                            <div>{{ __('Received this round') }}</div>
+                            <div>{{ __('Notes') }}</div>
+                            <div></div>
+                        </div>
                         <template x-for="item in individualCollectionItems" :key="item.id">
-                            <div class="list-group-item p-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;">
-                                    <div class="flex-grow-1" style="min-width: 0;">
-                                        <div class="fw-bold text-truncate" style="font-size: 0.85rem;">
-                                            <span x-text="item.name_en ? (item.title_en + ' ' + item.name_en) : item.name"></span>
-                                            <span class="badge rounded-pill ms-1" :class="item.isFullyPaid ? 'bg-success' : 'bg-secondary'" style="font-size: 0.6rem;" x-text="item.isFullyPaid ? '{{ __('Fully Paid') }}' : '{{ __('Pending') }}'"></span>
-                                            <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'">
-                                                <span class="badge rounded-pill ms-1" style="font-size: 0.6rem;"
-                                                    :class="{
-                                                        'bg-primary': item.insurance_type === 'ประกันสังคม',
-                                                        'bg-warning text-dark': item.insurance_type === 'ประกันเอกชน',
-                                                        'bg-success': item.insurance_type === 'ประกันโรงพยาบาล',
-                                                        'bg-secondary': item.insurance_type !== 'ประกันสังคม' && item.insurance_type !== 'ประกันเอกชน' && item.insurance_type !== 'ประกันโรงพยาบาล'
-                                                    }"
-                                                    x-text="item.insurance_type"></span>
-                                            </template>
-                                            <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'">
-                                                <span class="badge bg-info text-dark rounded-pill ms-1" style="font-size: 0.6rem;">{{ __('Passport') }}</span>
-                                            </template>
-                                            <template x-if="item.last_step_name">
-                                                <span class="badge border border-primary text-primary rounded-pill ms-1" style="font-size: 0.6rem;" x-text="item.last_step_name"></span>
-                                            </template>
+                            <div class="ic-person" :class="{ 'is-paid': item.isFullyPaid, 'has-draft': draftAmount(item.id) > 0 }">
+                                <div class="ic-row">
+                                    <div class="ic-who">
+                                        <img :src="item.photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.name_en || item.name || 'User') + '&background=random'" alt="">
+                                        <div class="ic-who-text">
+                                            <div class="ic-name" x-text="item.displayName"></div>
+                                            <div class="ic-meta">
+                                                <span x-show="item.nationality" x-text="item.nationality"></span>
+                                                <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'"><span class="ic-chip">{{ __('Passport') }}</span></template>
+                                                <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'"><span class="ic-chip" x-text="item.insurance_type"></span></template>
+                                                <template x-if="item.last_step_name"><span class="ic-chip ic-chip-step" x-text="item.last_step_name"></span></template>
+                                            </div>
                                         </div>
-                                        <div class="small text-muted" style="font-size: 0.75rem;" x-text="item.nationality"></div>
                                     </div>
-                                    <div class="text-end flex-shrink-0" style="font-size: 0.75rem;">
-                                        <div><span class="text-muted">{{ __('Price') }}:</span> <span class="fw-bold" x-text="formatCurrency(item.price)"></span></div>
-                                        <div><span class="text-muted">{{ __('Paid') }}:</span> <span class="fw-bold text-success" x-text="formatCurrency(item.paid)"></span></div>
-                                        <div><span class="text-muted">{{ __('Remaining') }}:</span> <span class="fw-bold text-danger" x-text="formatCurrency(item.remaining)"></span></div>
+                                    <div class="ic-num" data-label="{{ __('Price') }}" x-text="formatCurrency(item.price)"></div>
+                                    <div class="ic-num text-success" data-label="{{ __('Paid') }}" x-text="formatCurrency(item.paid)"></div>
+                                    <div class="ic-num fw-bold" :class="item.remaining > 0 ? 'text-danger' : 'text-body-secondary'" data-label="{{ __('Remaining') }}" x-text="formatCurrency(item.remaining)"></div>
+                                    <div class="ic-pay">
+                                        <template x-if="!item.isFullyPaid">
+                                            <div>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">฿</span>
+                                                    <input type="number" step="0.01" min="0" inputmode="decimal" class="form-control text-end" :class="draftOver(item) ? 'is-invalid' : ''" placeholder="0.00" x-model="draftFor(item.id).amount" :aria-label="item.displayName">
+                                                    <button type="button" class="btn btn-outline-success" @click="draftFor(item.id).amount = item.remaining" title="{{ __('Fill in full') }}">{{ __('Full') }}</button>
+                                                </div>
+                                                <div class="ic-over" x-show="draftOver(item)">{{ __('More than this person still owes') }}</div>
+                                            </div>
+                                        </template>
+                                        <template x-if="item.isFullyPaid">
+                                            <span class="ic-done"><i class="bi bi-check-circle-fill me-1"></i>{{ __('Fully Paid') }}</span>
+                                        </template>
                                     </div>
-                                    <div class="d-flex flex-column gap-1 flex-shrink-0">
-                                        <button type="button" class="btn btn-sm btn-success py-0 px-2" style="font-size: 0.7rem;" @click="openItemPayRow(item.id)">
-                                            <i class="bi bi-cash-coin"></i> {{ __('Pay') }}
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.7rem;" @click="toggleItemHistory(item.id)" x-show="itemHistoryEntries(item.id).length > 0">
+                                    <div class="ic-note">
+                                        <input type="text" class="form-control form-control-sm" placeholder="{{ __('Notes') }}" x-model="draftFor(item.id).notes" x-show="!item.isFullyPaid">
+                                    </div>
+                                    <div class="ic-hist">
+                                        <button type="button" class="btn btn-sm btn-light border py-0 px-2" x-show="itemHistoryEntries(item.id).length > 0" @click="toggleItemHistory(item.id)" title="{{ __('Payment history') }}">
                                             <i class="bi bi-clock-history"></i> <span x-text="itemHistoryEntries(item.id).length"></span>
                                         </button>
                                     </div>
                                 </div>
-
-                                <!-- Inline pay/edit form for this row -->
-                                <div class="mt-2 p-2 bg-body-tertiary rounded border" x-show="itemPaymentDraftItemId === item.id" x-cloak @click.outside="closeItemPayRow()">
-                                    <div class="row g-1">
-                                        <div class="col-5">
-                                            <input type="number" step="0.01" min="0.01" class="form-control form-control-sm" x-model="itemPaymentDraft.amount" placeholder="{{ __('Amount') }}">
-                                        </div>
-                                        <div class="col-4">
-                                            <input type="date" class="form-control form-control-sm" x-model="itemPaymentDraft.paid_at">
-                                        </div>
-                                        <div class="col-3 d-flex gap-1">
-                                            <button type="button" class="btn btn-success btn-sm flex-grow-1" @click="saveItemPayment()" :disabled="isSavingItemPayment">
-                                                <span x-show="isSavingItemPayment" class="spinner-border spinner-border-sm"></span>
-                                                <i class="bi bi-check-lg" x-show="!isSavingItemPayment"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" @click="closeItemPayRow()"><i class="bi bi-x-lg"></i></button>
-                                        </div>
-                                    </div>
-                                    <input type="text" class="form-control form-control-sm mt-1" x-model="itemPaymentDraft.notes" placeholder="{{ __('Notes') }}">
-                                </div>
-
-                                <!-- Past entries for this employee -->
-                                <div class="mt-2" x-show="expandedItemHistoryId === item.id" x-cloak>
+                                <div class="ic-history" x-show="expandedItemHistoryId === item.id" x-cloak>
                                     <template x-for="entry in itemHistoryEntries(item.id)" :key="entry.id">
-                                        <div class="d-flex justify-content-between align-items-center small border-top pt-1 mt-1" style="font-size: 0.75rem;">
+                                        <div class="ic-entry">
                                             <span class="fw-bold text-success" x-text="formatCurrency(entry.amount)"></span>
-                                            <span class="text-muted" x-text="formatDate(entry.paid_at)"></span>
-                                            <span class="text-muted text-truncate" style="max-width: 30%;" x-text="entry.notes"></span>
-                                            <span class="badge" :class="entry.financial_payment_id ? 'bg-success' : 'bg-warning text-dark'" x-text="entry.financial_payment_id ? '{{ __('Receipted') }}' : '{{ __('Pending finalize') }}'"></span>
-                                            <div class="d-flex gap-1">
-                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="editItemPaymentEntry(entry)"><i class="bi bi-pencil"></i></button>
-                                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deleteItemPaymentEntry(entry)"><i class="bi bi-trash"></i></button>
-                                            </div>
+                                            <span class="text-body-secondary" x-text="formatDate(entry.paid_at)"></span>
+                                            <span class="text-body-secondary text-truncate flex-grow-1" x-text="entry.notes"></span>
+                                            <span class="ic-lock" x-show="isEntryLocked(entry)"><i class="bi bi-lock-fill me-1"></i>{{ __('Document issued — cannot be changed') }}</span>
+                                            <span class="ic-open" x-show="!isEntryLocked(entry) && !entry.financial_payment_id">{{ __('Not combined yet') }}</span>
+                                            <span class="ic-actions" x-show="!isEntryLocked(entry)">
+                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="openEntryEdit(entry)" title="{{ __('Edit') }}"><i class="bi bi-pencil"></i></button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deleteItemPaymentEntry(entry)" title="{{ __('Delete') }}"><i class="bi bi-trash"></i></button>
+                                            </span>
                                         </div>
                                     </template>
                                 </div>
                             </div>
                         </template>
-                        <div x-show="individualCollectionItems.length === 0" class="text-center text-muted p-3 small">
-                            {{ __('No employees found.') }}
-                        </div>
+                        <div x-show="individualCollectionItems.length === 0" class="text-center text-body-secondary p-4 small">{{ __('No employees found.') }}</div>
                     </div>
                 </div>
-                <div class="modal-footer py-2 flex-column align-items-stretch">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small text-muted">{{ __('Pending finalize') }}:</span>
-                        <span class="fw-bold text-warning" x-text="formatCurrency(pendingCollectionTotal)"></span>
+
+                <div class="modal-footer ic-footer">
+                    <div class="ic-pending" x-show="pendingCollectionTotal > 0">
+                        <i class="bi bi-info-circle me-1"></i>{{ __('Earlier entries not combined yet are included in this Payment') }}: <strong x-text="formatCurrency(pendingCollectionTotal)"></strong>
                     </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-7">
+                    <div class="ic-footer-fields">
+                        <div>
+                            <label class="form-label">{{ __('Date received') }}</label>
+                            <input type="date" name="ic_round_date" class="form-control form-control-sm" x-model="individualRoundDate">
+                        </div>
+                        <div>
+                            <label class="form-label">{{ __('Receive to account') }}</label>
                             <select class="form-select form-select-sm" x-model="finalizeBankAccountId">
                                 <option value="">-- {{ __('Select Account') }} --</option>
                                 @foreach(\App\Models\BankAccount::where('is_active', true)->get() as $bank)
@@ -1725,14 +1805,22 @@ class="row">
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-5">
+                        <div>
+                            <label class="form-label">{{ __('Notes') }}</label>
                             <input type="text" class="form-control form-control-sm" x-model="finalizeNotes" placeholder="{{ __('Notes') }}">
                         </div>
                     </div>
-                    <button type="button" class="btn btn-success w-100" @click="finalizeIndividualCollection()" :disabled="isFinalizingCollection || pendingCollectionTotal <= 0">
-                        <span x-show="isFinalizingCollection" class="spinner-border spinner-border-sm me-1"></span>
-                        {{ __('Update') }} — <span x-text="formatCurrency(pendingCollectionTotal)"></span>
-                    </button>
+                    <div class="ic-footer-total">
+                        <div class="ic-total-text">
+                            <span>{{ __('Total this round') }}</span>
+                            <strong x-text="formatCurrency(individualRoundTotal)"></strong>
+                            <em x-show="individualDraftCount > 0"><span x-text="individualDraftCount"></span> {{ __('people') }}</em>
+                        </div>
+                        <button type="button" class="btn btn-success ic-save" @click="saveIndividualRound()" :disabled="isFinalizingCollection || individualRoundTotal <= 0">
+                            <span x-show="isFinalizingCollection" class="spinner-border spinner-border-sm me-1"></span>
+                            <i class="bi bi-check-lg me-1" x-show="!isFinalizingCollection"></i>{{ __('Save and create Payment') }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

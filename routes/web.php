@@ -750,6 +750,7 @@ Route::middleware(['auth'])->group(function () {
         // Per-employee collection (payment_collection_mode === 'per_employee').
         Route::post('production/transactions/{id}/item-payments', [FinancialController::class, 'storeItemPayment']);
         Route::post('production/transactions/{id}/item-payments/finalize', [FinancialController::class, 'finalizeItemPayments']);
+        Route::post('production/transactions/{id}/item-payments/round', [FinancialController::class, 'saveItemPaymentRound']);
         Route::match(['post', 'put'], 'production/item-payments/{id}', [FinancialController::class, 'updateItemPayment']);
         Route::delete('production/item-payments/{id}', [FinancialController::class, 'destroyItemPayment']);
     });

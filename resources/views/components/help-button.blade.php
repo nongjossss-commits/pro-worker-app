@@ -41,7 +41,7 @@
                 data-bs-target="#{{ $modalId }}"
                 title="{{ __('User Manual') }}">
             <i class="bi bi-book-half me-1"></i>
-            <span class="d-none d-md-inline">{{ __('User Manual') }}</span>
+            <span class="d-none d-md-inline tb-help-label">{{ __('User Manual') }}</span>
         </button>
     @endpush
 

@@ -898,15 +898,17 @@
             {{-- Contract status banner: shown when read-only, in grace period, or approaching expiry --}}
             <x-contract-status-banner />
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="d-flex align-items-center gap-2">
+            {{-- Top bar — .app-topbar styles in public/css/mobile-fit.css: never wider than
+                 the screen; labels collapse to icons on smaller screens (.tb-label). --}}
+            <div class="d-flex justify-content-between align-items-center mb-3 app-topbar">
+                <div class="d-flex align-items-center gap-2 app-topbar-group">
                     <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                         <i class="bi bi-list"></i>
                     </button>
 
                     {{-- Download Center Button (Fixed for better visibility) --}}
-                    <button class="btn btn-outline-secondary d-none d-md-block" onclick="openDownloadCenter()">
-                        <i class="bi bi-cloud-download-fill me-1"></i> Download Center
+                    <button class="btn btn-outline-secondary" onclick="openDownloadCenter()" title="Download Center" aria-label="Download Center">
+                        <i class="bi bi-cloud-download-fill me-1"></i> <span class="tb-label">Download Center</span>
                     </button>
 
                     {{-- Drag to Split Button --}}
@@ -915,29 +917,39 @@
                        draggable="true"
                        ondragstart="event.dataTransfer.setData('text/plain', this.href); event.dataTransfer.setData('text/uri-list', this.href);"
                        title="ลากเพื่อแยกหน้าจอ (Drag to Split)">
-                        <i class="bi bi-grid-3x2-gap-fill me-1"></i> ลากเพื่อแยก
+                        <i class="bi bi-grid-3x2-gap-fill me-1"></i> <span class="tb-label">ลากเพื่อแยก</span>
                     </a>
 
                     <x-job-check-widget />
+
+                    {{-- Combined appointment calendar: the popup shown after login, on
+                         demand from every menu (same permission as the popup itself). --}}
+                    @can('edit-employees')
+                    <button type="button" id="appointmentCalendarBtn" class="btn btn-outline-secondary d-flex align-items-center ms-2"
+                            data-bs-toggle="modal" data-bs-target="#appointmentReminderModal"
+                            title="{{ __('Appointment Calendar') }}" aria-label="{{ __('Appointment Calendar') }}">
+                        <i class="bi bi-calendar-event me-1"></i> <span class="tb-label">{{ __('Appointment Calendar') }}</span>
+                    </button>
+                    @endcan
                     @if(auth()->check() && auth()->user()->can('move-attachments'))
                         <x-bulk-move-attachments-modal />
                     @endif
                 </div>
 
-                <div class="d-flex align-items-center ms-auto gap-2">
+                <div class="d-flex align-items-center ms-auto gap-2 app-topbar-group">
                     {{-- Per-page User Manual button — pages render <x-help-button>
                          which pushes its trigger into this stack so the button
                          lives in the navbar next to the language switcher. --}}
                     @stack('navbar-help')
 
                     <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-translate me-1"></i>
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{{ __('Language') }}" aria-label="{{ __('Language') }}">
+                            <i class="bi bi-translate me-1 tb-lang-icon"></i>
                             @switch(app()->getLocale())
-                                @case('th') 🇹🇭 ไทย @break
-                                @case('zh') 🇨🇳 中文 @break
-                                @case('my') 🇲🇲 မြန်မာ @break
-                                @default 🇺🇸 English
+                                @case('th') 🇹🇭 <span class="tb-lang-name">ไทย</span> @break
+                                @case('zh') 🇨🇳 <span class="tb-lang-name">中文</span> @break
+                                @case('my') 🇲🇲 <span class="tb-lang-name">မြန်မာ</span> @break
+                                @default 🇺🇸 <span class="tb-lang-name">English</span>
                             @endswitch
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -954,7 +966,7 @@
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i>
-                            <span class="d-none d-md-inline">{{ Auth::user()->name ?? __('User') }}</span>
+                            <span class="d-none d-md-inline tb-user-name">{{ Auth::user()->name ?? __('User') }}</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
@@ -1395,6 +1407,14 @@
                 init() {
                     this.generateCalendar();
                     this.fetchCounts();
+
+                    // Reopened from the top-bar button: show what is current now
+                    // (appointments may have changed since the page was loaded).
+                    document.getElementById('appointmentReminderModal').addEventListener('show.bs.modal', (e) => {
+                        if (e.target.id !== 'appointmentReminderModal') return;
+                        this.fetchCounts();
+                        if (this.selectedDate) this.openDay(this.selectedDate);
+                    });
 
                     this.$watch('searchQuery', (value) => {
                         const cards = document.querySelectorAll('#reminderDayAppointmentsContent .appointment-card');
