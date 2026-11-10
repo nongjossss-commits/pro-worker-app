@@ -146,6 +146,11 @@
     将"已通知离职的员工"列表中的员工加入 <strong>入职 / 变更雇主</strong> 标签页时,系统会立即把员工转到新雇主并清除离职状态。
 </div>
 
+<h5>16. 跨日期预约搜索</h5>
+<div class="manual-step">
+    Workflow 仪表盘的预约日历上方有搜索框。输入雇主名称/编号、雇员姓名、护照号或身份证号(至少 2 个字符),系统会弹出窗口显示 Workflow 中<strong>所有日期</strong>内匹配的预约,立即按日期分组显示(仅限 Workflow 内搜索——如需跨所有菜单搜索,请改用顶部栏的预约日历)。清空搜索框即可返回所选日期的视图。
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>
 
 <div class="manual-tip">

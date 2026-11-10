@@ -91,6 +91,7 @@
 <h5>9. Appointments and request numbers per tab</h5>
 <div class="manual-step">
     Appointment date/place and request number are stored <strong>per resolution tab</strong> — setting them in one tab never shows up in another tab or menu.
+    <br><strong>Cross-date appointment search:</strong> the "Dashboard & Appointments" page for this tab has a search box next to the calendar. Type an employer name/ID, employee name, passport, or RA no. (2+ characters) and it searches <strong>every date in this tab</strong> with a matching appointment, showing results grouped by date right away (scoped to this tab only — use the top-bar Appointment Calendar instead to search across every menu). Clear the box to go back to the selected day.
 </div>
 
 <h5>10. Tab badge switch (Super Admin)</h5>

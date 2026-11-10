@@ -1239,11 +1239,17 @@
                             <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column">
                                 <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center appt-list-head">
                                     <h6 class="fw-bold text-primary mb-0">
-                                        <i class="bi bi-list-check me-2"></i>{{ __('Appointments for') }}: <span class="text-dark" x-text="selectedDateFormatted"></span>
+                                        <i class="bi bi-list-check me-2"></i>
+                                        <template x-if="!isSearchActive()">
+                                            <span>{{ __('Appointments for') }}: <span class="text-dark" x-text="selectedDateFormatted"></span></span>
+                                        </template>
+                                        <template x-if="isSearchActive()">
+                                            <span>{{ __('Search results for') }}: <span class="text-dark" x-text="searchQuery"></span></span>
+                                        </template>
                                     </h6>
-                                    <div class="input-group" style="max-width: 260px;">
+                                    <div class="input-group" style="max-width: 280px;">
                                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                                        <input type="text" class="form-control border-start-0 bg-light" placeholder="{{ __('Search names, employer...') }}" x-model="searchQuery">
+                                        <input type="text" class="form-control border-start-0 bg-light" placeholder="{{ __('Search employer, employee, passport, ID no....') }}" x-model="searchQuery">
                                     </div>
                                 </div>
                                 {{-- Selection toolbar — static markup (not part of the
@@ -1416,15 +1422,43 @@
                         if (this.selectedDate) this.openDay(this.selectedDate);
                     });
 
+                    // Typing here searches EVERY upcoming appointment across
+                    // all 3 sources/all dates (not just the currently-open
+                    // day) — matches employer/employee name, passport, ID
+                    // no., RA no., etc. — and groups the results by date so
+                    // every date an employer/employee has an appointment on
+                    // shows at a glance. Clearing the box goes back to
+                    // whichever single day was last selected (or the
+                    // "select a date" placeholder if none yet).
                     this.$watch('searchQuery', (value) => {
-                        const cards = document.querySelectorAll('#reminderDayAppointmentsContent .appointment-card');
-                        const query = value.toLowerCase();
-                        cards.forEach(card => {
-                            const nameTh = card.dataset.employeeNameTh || '';
-                            const employer = card.dataset.employerName || '';
-                            card.style.display = (nameTh.includes(query) || employer.includes(query)) ? 'block' : 'none';
-                        });
+                        clearTimeout(this._searchDebounce);
+                        const q = value.trim();
+                        if (q.length < 2) {
+                            if (this.selectedDate) {
+                                this.openDay(this.selectedDate, true);
+                            } else {
+                                document.getElementById('reminderDayAppointmentsContent').innerHTML =
+                                    '<div class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-1 opacity-25"></i><p class="mt-2">{{ __('Select a date to view appointments.') }}</p></div>';
+                                this.appointmentsLoaded = false;
+                            }
+                            return;
+                        }
+                        this._searchDebounce = setTimeout(() => {
+                            this.isLoading = true;
+                            this.appointmentsLoaded = true;
+                            fetch(`{{ route('appointments.search') }}?q=${encodeURIComponent(q)}`)
+                                .then(res => res.json())
+                                .then(data => {
+                                    document.getElementById('reminderDayAppointmentsContent').innerHTML = data.html;
+                                    this.isLoading = false;
+                                })
+                                .catch(() => { this.isLoading = false; });
+                        }, 300);
                     });
+                },
+
+                isSearchActive() {
+                    return this.searchQuery.trim().length >= 2;
                 },
 
                 prevMonth() {
@@ -1477,7 +1511,7 @@
                         .then(data => { this.counts = data; });
                 },
 
-                openDay(dateStr) {
+                openDay(dateStr, keepSearch) {
                     this.selectedDate = dateStr;
                     const d = new Date(dateStr);
                     this.selectedDateFormatted = d.toLocaleDateString('{{ app()->getLocale() }}', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1489,7 +1523,7 @@
                         .then(data => {
                             document.getElementById('reminderDayAppointmentsContent').innerHTML = data.html;
                             this.isLoading = false;
-                            this.searchQuery = '';
+                            if (!keepSearch) this.searchQuery = '';
                         })
                         .catch(() => { this.isLoading = false; });
                 }

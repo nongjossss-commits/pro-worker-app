@@ -108,6 +108,7 @@ Route::get('/thai-addresses', [AddressController::class, 'getThaiAddressData'])-
 Route::middleware(['auth'])->group(function () {
     Route::get('/appointments/calendar', [\App\Http\Controllers\AppointmentReminderController::class, 'calendarData'])->name('appointments.calendar');
     Route::get('/appointments/by-date', [\App\Http\Controllers\AppointmentReminderController::class, 'appointmentsByDate'])->name('appointments.by-date');
+    Route::get('/appointments/search', [\App\Http\Controllers\AppointmentReminderController::class, 'search'])->name('appointments.search');
 });
 
 // Language Switch Route
@@ -450,6 +451,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/resolution', [App\Http\Controllers\Production\RegistrationController::class, 'updateResolutionSettings'])->name('settings.resolution');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RegistrationController::class, 'getCalendarData'])->name('api.calendar');
         Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RegistrationController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');
+        Route::get('/api/appointments-search', [App\Http\Controllers\Production\RegistrationController::class, 'searchAppointments'])->name('api.appointments_search');
 
         // Trash Routes
         Route::get('/trash', [App\Http\Controllers\Production\RegistrationController::class, 'fetchTrash'])->name('trash');
@@ -515,6 +517,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/settings/notification', [App\Http\Controllers\Production\RenewalController::class, 'updateNotificationSettings'])->name('settings.notification');
         Route::get('/api/calendar', [App\Http\Controllers\Production\RenewalController::class, 'getCalendarData'])->name('api.calendar');
         Route::get('/api/appointments-by-date', [App\Http\Controllers\Production\RenewalController::class, 'getAppointmentsByDate'])->name('api.appointments_by_date');
+        Route::get('/api/appointments-search', [App\Http\Controllers\Production\RenewalController::class, 'searchAppointments'])->name('api.appointments_search');
 
         // Actions
         Route::post('/{employee}/finalize', [App\Http\Controllers\Production\RenewalController::class, 'finalize'])->name('finalize');
@@ -807,6 +810,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('workflow/api/employer-teams/{employerId}', [\App\Http\Controllers\WorkflowController::class, 'getEmployerTeams'])->name('workflow.api.employer_teams');
     Route::get('workflow/api/calendar', [\App\Http\Controllers\WorkflowController::class, 'getCalendarData'])->name('workflow.api.calendar');
     Route::get('workflow/api/appointments-by-date', [\App\Http\Controllers\WorkflowController::class, 'getAppointmentsByDate'])->name('workflow.api.appointments_by_date');
+    Route::get('workflow/api/appointments-search', [\App\Http\Controllers\WorkflowController::class, 'searchAppointments'])->name('workflow.api.appointments_search');
 
     Route::post('workflow/item/{item}/team', [\App\Http\Controllers\WorkflowController::class, 'updateItemTeam'])->name('workflow.item.team');
 

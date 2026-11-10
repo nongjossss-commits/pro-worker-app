@@ -146,6 +146,11 @@
     Adding an employee from the "Notified-Out Employees" list to the <strong>Notify In / Change Employer</strong> tab moves them to the new employer and clears the notified-out status immediately.
 </div>
 
+<h5>16. Cross-date appointment search</h5>
+<div class="manual-step">
+    The Workflow dashboard has a search box above the appointment calendar. Type an employer name/ID, employee name, passport, or ID no. (2+ characters) and it opens a popup with every Workflow appointment matching the term, on <strong>any date</strong>, grouped by date right away (scoped to Workflow only — use the top-bar Appointment Calendar instead to search across every menu). Clear the box to go back to the selected day.
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">

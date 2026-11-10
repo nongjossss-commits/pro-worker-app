@@ -150,6 +150,16 @@
                         <button class="btn btn-sm btn-light border" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
                     </div>
                 </div>
+                <div class="px-3 pt-3">
+                    {{-- Search every upcoming appointment in Workflow (not just one
+                         day) by employer/employee name, passport, ID no., etc. —
+                         opens the same day modal, grouped by date. --}}
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" x-model="tabSearchQuery" @focus="openSearchModal()"
+                               placeholder="{{ __('Search any date: employer, employee, passport, ID no....') }}">
+                    </div>
+                </div>
                 <div class="card-body p-3">
                     {{-- Calendar Grid --}}
                     <div class="d-grid text-center mb-2" style="grid-template-columns: repeat(7, 1fr); font-size: 0.8rem; font-weight: bold; color: #6c757d;">
@@ -176,11 +186,21 @@
                 <div class="modal fade" id="dayDetailsModal" tabindex="-1">
                     <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: 1100px;">
                         <div class="modal-content">
-                            <div class="modal-header bg-primary text-white py-2">
-                                <h5 class="modal-title">
-                                    <i class="bi bi-calendar-event me-2"></i>{{ __('Appointments for') }}
-                                    <span x-text="selectedDateFormatted"></span>
+                            <div class="modal-header bg-primary text-white py-2 flex-wrap gap-2">
+                                <h5 class="modal-title mb-0">
+                                    <i class="bi bi-calendar-event me-2"></i>
+                                    <template x-if="!isSearchActive()">
+                                        <span>{{ __('Appointments for') }} <span x-text="selectedDateFormatted"></span></span>
+                                    </template>
+                                    <template x-if="isSearchActive()">
+                                        <span>{{ __('Search results for') }}: <span x-text="tabSearchQuery"></span></span>
+                                    </template>
                                 </h5>
+                                <div class="input-group input-group-sm" style="max-width: 280px;">
+                                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0" x-model="tabSearchQuery"
+                                           placeholder="{{ __('Search any date: employer, employee, passport, ID no....') }}">
+                                </div>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body p-0" id="dayAppointmentsContent" style="min-height: 300px;">
@@ -297,10 +317,43 @@
             counts: {},
             selectedDate: null,
             selectedDateFormatted: '',
+            tabSearchQuery: '',
+            isLoading: false,
 
             init() {
                 this.generateCalendar();
                 this.fetchCounts();
+
+                // Cross-date search — every upcoming appointment in Workflow
+                // matching the term, grouped by date (not just the
+                // currently open day). Clearing the box goes back to
+                // whichever day was last selected, if any.
+                this.$watch('tabSearchQuery', (value) => {
+                    clearTimeout(this._tabSearchDebounce);
+                    const q = value.trim();
+                    if (q.length < 2) {
+                        if (this.selectedDate) this.openDayModal(this.selectedDate, true);
+                        return;
+                    }
+                    this._tabSearchDebounce = setTimeout(() => {
+                        const container = document.getElementById('dayAppointmentsContent');
+                        container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+                        fetch(`{{ route('workflow.api.appointments_search') }}?q=${encodeURIComponent(q)}`)
+                            .then(res => res.json())
+                            .then(data => { container.innerHTML = data.html; })
+                            .catch(() => {
+                                container.innerHTML = '<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle fs-1"></i><p class="mt-2">{{ __("Failed to load appointments.") }}</p></div>';
+                            });
+                    }, 300);
+                });
+            },
+
+            isSearchActive() {
+                return this.tabSearchQuery.trim().length >= 2;
+            },
+
+            openSearchModal() {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('dayDetailsModal')).show();
             },
 
             prevMonth() {
@@ -389,9 +442,10 @@
                     });
             },
 
-            openDayModal(dateStr) {
+            openDayModal(dateStr, keepSearch) {
                 this.selectedDate = dateStr;
                 this.selectedDateFormatted = moment(dateStr).format('D MMM YYYY');
+                if (!keepSearch) this.tabSearchQuery = '';
 
                 const container = document.getElementById('dayAppointmentsContent');
                 container.innerHTML = '<div class="d-flex justify-content-center align-items-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
@@ -417,6 +471,93 @@
                     });
             }
         }
+    }
+
+    // search_appointment_card.blade.php (cross-date search results) calls
+    // these same two global functions as day_appointments_list.blade.php's
+    // own injected <script> — defined there too, but ONLY once that script
+    // has actually run (i.e. a day was opened at least once). Defining them
+    // here as well means searching works even if the user never opened a
+    // single day first. Identical logic in both places; whichever runs
+    // last simply wins, harmlessly.
+    if (!window.wfUpdateAppointment) {
+        window.wfUpdateAppointment = function(itemId, currentDate, currentLocation, btn) {
+            Swal.fire({
+                title: '{{ __("Update Appointment") }}',
+                html: `
+                    <div class='mb-3 text-start'>
+                        <label class='form-label fw-bold'>{{ __('Date & Time') }}</label>
+                        <input type='text' id='wf-swal-date' class='form-control bg-white' placeholder='{{ __('Select Date & Time...') }}'>
+                    </div>
+                    <div class='mb-3 text-start'>
+                        <label class='form-label fw-bold'>{{ __('Location') }}</label>
+                        <input type='text' id='wf-swal-location' class='form-control' value='${currentLocation}' placeholder='{{ __('e.g., Office A') }}'>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-check-lg"></i> {{ __("Save") }}',
+                cancelButtonText: '{{ __("Cancel") }}',
+                confirmButtonColor: '#198754',
+                focusConfirm: false,
+                didOpen: () => {
+                    if (window.flatpickr) {
+                        flatpickr('#wf-swal-date', {
+                            enableTime: true,
+                            dateFormat: 'Y-m-d H:i',
+                            altInput: true,
+                            altFormat: 'd/m/Y H:i',
+                            allowInput: true,
+                            time_24hr: true,
+                            defaultDate: currentDate || null
+                        });
+                    }
+                },
+                preConfirm: () => ({
+                    date:     document.getElementById('wf-swal-date').value,
+                    location: document.getElementById('wf-swal-location').value
+                })
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                fetch(`/workflow/item/${itemId}/appointment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ appointment_date: result.value.date, appointment_location: result.value.location })
+                }).then(r => r.json()).then(data => {
+                    if (data.success) {
+                        Swal.fire({ toast:true, position:'top-end', icon:'success', title:'{{ __("Saved") }}', showConfirmButton:false, timer:1500 });
+                    }
+                });
+            });
+        };
+    }
+
+    if (!window.wfMarkAppointmentComplete) {
+        window.wfMarkAppointmentComplete = function(itemId, btn) {
+            fetch(`/workflow/item/${itemId}/appointment-complete`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    Swal.fire({ toast:true, position:'top-end', icon:'success', title:'{{ __("Updated") }}', showConfirmButton:false, timer:1500 });
+                    if (btn) {
+                        const updateBtn = btn.parentElement.querySelector('.btn-warning, .btn-success');
+                        if (updateBtn && updateBtn !== btn) {
+                            updateBtn.classList.remove('btn-warning', 'text-dark');
+                            updateBtn.classList.add('btn-success');
+                            updateBtn.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>{{ __("Completed") }}';
+                        }
+                        btn.remove();
+                    }
+                }
+            });
+        };
     }
 </script>
 @endpush

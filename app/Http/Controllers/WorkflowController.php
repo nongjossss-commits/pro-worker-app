@@ -735,6 +735,87 @@ class WorkflowController extends Controller
     }
 
     /**
+     * Search Workflow appointments across every upcoming date (not just one
+     * day) by employer/employee name, passport, ID no., etc. — same
+     * matching fields as the board's own search. Groups matches by date.
+     * Renders each match with search_appointment_card.blade.php rather than
+     * the normal day_appointments_list partial — that one's bulk-select
+     * toolbar and inline search bar use fixed element ids, which would
+     * collide if the partial were repeated once per matching date.
+     */
+    public function searchAppointments(Request $request)
+    {
+        $search = trim((string) $request->input('q', ''));
+        if ($search === '') {
+            return response()->json(['html' => '', 'count' => 0]);
+        }
+        $cleaned = str_replace(' ', '', $search);
+
+        $base = ProductionItem::where('status', '!=', 'cancelled')
+            ->where('status', '!=', 'completed')
+            ->whereNull('appointment_completed_at')
+            ->whereNotNull('appointment_date');
+
+        if (!auth()->user()->can('manage-tickets')) {
+            $base->visibleToUser();
+        }
+
+        $base->where(function ($q) use ($search, $cleaned) {
+            $q->where('request_number', 'like', "%{$search}%")
+              ->orWhereHas('employee', function ($emp) use ($search, $cleaned) {
+                  $emp->where('employeeNameTh', 'like', "%{$search}%")
+                      ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                      ->orWhere('employeePassport', 'like', "%{$search}%")
+                      ->orWhere('employee_id_number', 'like', "%{$search}%")
+                      ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleaned}%"])
+                      ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleaned}%"]);
+              })
+              ->orWhereHas('order.employer', function ($emp) use ($search, $cleaned) {
+                  $emp->where('employerNameTh', 'like', "%{$search}%")
+                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                      ->orWhere('employerId', 'like', "%{$search}%")
+                      ->orWhere('employerTaxId', 'like', "%{$search}%")
+                      ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleaned}%"])
+                      ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleaned}%"]);
+              });
+        });
+
+        $dates = (clone $base)
+            ->selectRaw('DATE(appointment_date) as d')
+            ->distinct()
+            ->orderBy('d')
+            ->pluck('d');
+
+        $html = '';
+        $totalCount = 0;
+        foreach ($dates as $date) {
+            $items = (clone $base)
+                ->whereDate('appointment_date', $date)
+                ->with(['employee', 'order.employer', 'order.workType'])
+                ->orderBy('appointment_date')
+                ->get();
+
+            $totalCount += $items->count();
+
+            $html .= view('partials.appointment_reminder._date_header', [
+                'dateLabel' => Carbon::parse($date)->translatedFormat('j F Y'),
+                'count' => $items->count(),
+            ])->render();
+            $html .= '<div class="px-3">';
+            foreach ($items as $item) {
+                $html .= view('workflow.partials.search_appointment_card', compact('item'))->render();
+            }
+            $html .= '</div>';
+        }
+
+        if ($dates->isEmpty()) {
+            $html = view('partials.appointment_reminder._no_results')->render();
+        }
+
+        return response()->json(['html' => $html, 'count' => $totalCount]);
+    }
+
+    /**
      * API: Export Selected Appointments
      */
     public function exportAppointments(Request $request)

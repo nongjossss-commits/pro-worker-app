@@ -210,14 +210,24 @@
     {{-- Appointments Panel (full width, below calendar row) --}}
     <div id="appt-panel-wrapper">
         <div class="card border-0 shadow-sm mt-4">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h5 class="fw-bold text-primary mb-0">
-                    <i class="bi bi-list-check me-2"></i>{{ __('Appointments for') }}:
-                    <span class="text-dark" x-text="selectedDateFormatted || '{{ __('Select a date') }}'"></span>
+                    <i class="bi bi-list-check me-2"></i>
+                    <template x-if="!isSearchActive()">
+                        <span>{{ __('Appointments for') }}: <span class="text-dark" x-text="selectedDateFormatted || '{{ __('Select a date') }}'"></span></span>
+                    </template>
+                    <template x-if="isSearchActive()">
+                        <span>{{ __('Search results for') }}: <span class="text-dark" x-text="tabSearchQuery"></span></span>
+                    </template>
                 </h5>
-                <span class="badge bg-light text-muted border" x-show="!appointmentsLoaded">
+                <span class="badge bg-light text-muted border" x-show="!appointmentsLoaded && !isSearchActive()">
                     <i class="bi bi-arrow-up-left me-1"></i>{{ __('Click a date on the calendar above') }}
                 </span>
+                <div class="input-group" style="max-width: 280px;">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 bg-light" x-model="tabSearchQuery"
+                           placeholder="{{ __('Search any date: employer, employee, passport, ID no....') }}">
+                </div>
             </div>
             <div class="card-body bg-light position-relative p-3" style="min-height: 200px;">
                 <div x-show="isLoading" class="position-absolute w-100 h-100 bg-white bg-opacity-75 top-0 start-0" style="z-index: 10;">
@@ -259,6 +269,7 @@
             isLoading: false,
             appointmentsLoaded: false,
             searchQuery: '',
+            tabSearchQuery: '',
 
             init() {
                 this.generateCalendar();
@@ -281,6 +292,40 @@
                         }
                     });
                 });
+
+                // Cross-date search — every upcoming appointment in THIS tab
+                // matching the term, grouped by date (not just the currently
+                // open day). Clearing the box goes back to whichever day
+                // was last selected.
+                this.$watch('tabSearchQuery', (value) => {
+                    clearTimeout(this._tabSearchDebounce);
+                    const q = value.trim();
+                    if (q.length < 2) {
+                        if (this.selectedDate) {
+                            this.openDay(this.selectedDate, true);
+                        } else {
+                            document.getElementById('dayAppointmentsContent').innerHTML =
+                                '<div class="text-center py-5 text-muted"><i class="bi bi-calendar-event fs-1 opacity-25"></i><p class="mt-2">{{ __('Select a date to view appointments.') }}</p></div>';
+                            this.appointmentsLoaded = false;
+                        }
+                        return;
+                    }
+                    this._tabSearchDebounce = setTimeout(() => {
+                        this.isLoading = true;
+                        this.appointmentsLoaded = true;
+                        fetch(`{{ route('production.renewal.api.appointments_search', ['resolutionTab' => $currentTab->id]) }}?q=${encodeURIComponent(q)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                document.getElementById('dayAppointmentsContent').innerHTML = data.html;
+                                this.isLoading = false;
+                            })
+                            .catch(() => { this.isLoading = false; });
+                    }, 300);
+                });
+            },
+
+            isSearchActive() {
+                return this.tabSearchQuery.trim().length >= 2;
             },
 
             prevMonth() {
@@ -367,12 +412,13 @@
                     });
             },
 
-            openDay(dateStr) {
+            openDay(dateStr, keepSearch) {
                 this.selectedDate = dateStr;
                 const d = new Date(dateStr);
                 this.selectedDateFormatted = d.toLocaleDateString('{{ app()->getLocale() }}', { day: 'numeric', month: 'short', year: 'numeric' });
                 this.isLoading = true;
                 this.appointmentsLoaded = true;
+                if (!keepSearch) this.tabSearchQuery = '';
 
                 fetch(`{{ route('production.renewal.api.appointments_by_date', ['resolutionTab' => $currentTab->id]) }}?date=${dateStr}&_t=${Date.now()}`)
                     .then(res => res.json())

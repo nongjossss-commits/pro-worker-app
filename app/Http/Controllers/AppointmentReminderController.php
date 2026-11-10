@@ -173,4 +173,152 @@ class AppointmentReminderController extends Controller
 
         return response()->json(['html' => $html]);
     }
+
+    /**
+     * Search across every upcoming (not-yet-completed) appointment in all 3
+     * sources, with no date restriction — unlike calendarData()/
+     * appointmentsByDate() above, which are always scoped to one day. Groups
+     * matches by date so a search for one employer/employee surfaces every
+     * date they have an appointment on at a glance, instead of having to
+     * click through the calendar day by day. Reuses the same day_list
+     * partial per date group — identical card markup to the normal
+     * single-day view.
+     */
+    public function search(Request $request)
+    {
+        abort_unless(auth()->user()->can('edit-employees'), 403);
+
+        $search = trim((string) $request->input('q', ''));
+        if ($search === '') {
+            return response()->json(['html' => '', 'count' => 0]);
+        }
+        $cleaned = str_replace(' ', '', $search);
+
+        $items = collect();
+
+        foreach (['registration' => 'มติลงทะเบียน', 'renewal' => 'มติต่ออายุ'] as $type => $label) {
+            $query = Employee::query()
+                ->join('employee_appointments', 'employee_appointments.employee_id', '=', 'employees.id')
+                ->join('resolution_tabs', 'resolution_tabs.id', '=', 'employee_appointments.resolution_tab_id')
+                ->where('resolution_tabs.type', $type);
+            if (auth()->user()->can('manage-tickets')) {
+                $query->withoutGlobalScope('employerTenancy');
+            }
+
+            $query->where(function ($q) use ($search, $cleaned) {
+                $q->where('employeeNameTh', 'like', "%{$search}%")
+                  ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                  ->orWhere('employeePassport', 'like', "%{$search}%")
+                  ->orWhere('employee_id_number', 'like', "%{$search}%")
+                  ->orWhere('name_list_number', 'like', "%{$search}%")
+                  ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleaned}%"])
+                  ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleaned}%"])
+                  ->orWhereHas('employer', function ($q2) use ($search, $cleaned) {
+                      $q2->where('employerNameTh', 'like', "%{$search}%")
+                         ->orWhere('employerNameEn', 'like', "%{$search}%")
+                         ->orWhere('employerId', 'like', "%{$search}%")
+                         ->orWhere('employerTaxId', 'like', "%{$search}%")
+                         ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleaned}%"])
+                         ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleaned}%"]);
+                  });
+            });
+
+            $query->select(
+                    'employees.*',
+                    'employee_appointments.resolution_tab_id as resolution_tab_id',
+                    'employee_appointments.appointment_date as appointment_date',
+                    'employee_appointments.appointment_location as appointment_location',
+                    'employee_appointments.appointment_completed_at as appointment_completed_at'
+                )
+                ->whereNull('employee_appointments.appointment_completed_at')
+                ->with(['employer', 'resolutionTab'])
+                ->orderBy('employee_appointments.appointment_date')
+                ->get()
+                ->each(function ($employee) use (&$items, $type, $label) {
+                    $items->push((object) [
+                        'source' => $type,
+                        'source_label' => $label,
+                        'employee_id' => $employee->id,
+                        'employer_id' => $employee->employer_id,
+                        'name_th' => $employee->employeeNameTh,
+                        'name_en' => $employee->employeeNameEn,
+                        'title_th' => $employee->employeeTitleTh,
+                        'title_en' => $employee->employeeTitleEn,
+                        'passport' => $employee->employeePassport,
+                        'photo_url' => $employee->photo_url,
+                        'company' => $employee->employer->employerNameTh ?? '-',
+                        'appointment_date' => $employee->appointment_date,
+                        'appointment_location' => $employee->appointment_location,
+                        'share_context' => 'tab:' . $employee->resolution_tab_id,
+                        'link' => route($type === 'registration' ? 'production.registration.index' : 'production.renewal.index', ['resolutionTab' => $employee->resolution_tab_id]),
+                    ]);
+                });
+        }
+
+        $workflowItemsQuery = ProductionItem::where('status', '!=', 'cancelled')
+            ->where('status', '!=', 'completed')
+            ->whereNull('appointment_completed_at')
+            ->whereNotNull('appointment_date');
+
+        if (!auth()->user()->can('manage-tickets')) {
+            $workflowItemsQuery->visibleToUser();
+        }
+
+        $workflowItemsQuery->where(function ($q) use ($search, $cleaned) {
+            $q->where('request_number', 'like', "%{$search}%")
+              ->orWhereHas('employee', function ($emp) use ($search, $cleaned) {
+                  $emp->where('employeeNameTh', 'like', "%{$search}%")
+                      ->orWhere('employeeNameEn', 'like', "%{$search}%")
+                      ->orWhere('employeePassport', 'like', "%{$search}%")
+                      ->orWhere('employee_id_number', 'like', "%{$search}%")
+                      ->orWhereRaw("REPLACE(employeeNameTh, ' ', '') LIKE ?", ["%{$cleaned}%"])
+                      ->orWhereRaw("REPLACE(employeeNameEn, ' ', '') LIKE ?", ["%{$cleaned}%"]);
+              })
+              ->orWhereHas('order.employer', function ($emp) use ($search, $cleaned) {
+                  $emp->where('employerNameTh', 'like', "%{$search}%")
+                      ->orWhere('employerNameEn', 'like', "%{$search}%")
+                      ->orWhere('employerId', 'like', "%{$search}%")
+                      ->orWhere('employerTaxId', 'like', "%{$search}%")
+                      ->orWhereRaw("REPLACE(employerNameTh, ' ', '') LIKE ?", ["%{$cleaned}%"])
+                      ->orWhereRaw("REPLACE(employerNameEn, ' ', '') LIKE ?", ["%{$cleaned}%"]);
+              });
+        });
+
+        $workflowItemsQuery
+            ->with(['employee', 'order.employer'])
+            ->get()
+            ->each(function ($item) use (&$items) {
+                $employee = $item->employee;
+                $items->push((object) [
+                    'source' => 'workflow',
+                    'source_label' => 'Workflow',
+                    'employee_id' => $employee->id ?? null,
+                    'employer_id' => $item->order->employer_id ?? null,
+                    'name_th' => $employee->employeeNameTh ?? null,
+                    'name_en' => $employee->employeeNameEn ?? null,
+                    'title_th' => $employee->employeeTitleTh ?? null,
+                    'title_en' => $employee->employeeTitleEn ?? null,
+                    'passport' => $employee->employeePassport ?? null,
+                    'photo_url' => $employee->photo_url ?? null,
+                    'company' => $item->order->employer->employerNameTh ?? '-',
+                    'appointment_date' => $item->appointment_date,
+                    'appointment_location' => $item->appointment_location,
+                    'share_context' => 'item:' . $item->id,
+                    'link' => route('workflow.index'),
+                ]);
+            });
+
+        $groups = $items->sortBy('appointment_date')
+            ->groupBy(fn ($item) => optional($item->appointment_date)->format('Y-m-d'))
+            ->map(fn ($dayItems, $date) => (object) [
+                'date' => $date,
+                'date_label' => Carbon::parse($date)->translatedFormat('j F Y'),
+                'items' => $dayItems->values(),
+            ])
+            ->values();
+
+        $html = view('partials.appointment_reminder.search_results', compact('groups'))->render();
+
+        return response()->json(['html' => $html, 'count' => $items->count()]);
+    }
 }

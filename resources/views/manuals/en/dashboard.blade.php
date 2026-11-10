@@ -22,6 +22,7 @@
 
 <h4><i class="bi bi-calendar-event me-2"></i>Top bar buttons (every menu)</h4>
 <p><strong>Appointment Calendar</strong> <i class="bi bi-calendar-event"></i>, next to Job Check Mode: opens the same combined calendar that pops up at login, from any menu, even after it was closed; it refreshes each time it opens (shown to accounts allowed to edit employees, like the popup) · on smaller screens the buttons become icons (point at one to see its name) and wrap to a new row instead of running off the screen · phones: Download Center and Job Check Mode are now available; "Drag to split" stays hidden because phones cannot split the screen by dragging</p>
+<p><strong>Search box in the calendar:</strong> type an employer name/ID, employee name, passport, RA no., or ID no. (2+ characters) in the top-right of the popup — it searches <strong>every date</strong> with a matching appointment (not just the day you're viewing) and shows the results grouped by date right away. Clear the box to go back to the normal calendar. This combined calendar searches across every menu (Registration, Renewal, Workflow) at once.</p>
 
 <h4><i class="bi bi-shield-lock me-2"></i>Login and security</h4>
 <ol>

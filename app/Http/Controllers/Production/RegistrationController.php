@@ -3120,6 +3120,78 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Search this tab's appointments across every upcoming date (not just
+     * one day) by employer/employee name, passport, ID no., etc. — reuses
+     * applySearchToQuery(), the same matching logic as the operations list's
+     * own search box. Groups matches by date. Renders each match with
+     * search_appointment_card.blade.php rather than the normal
+     * day_appointments_list partial — that one's bulk-select toolbar and
+     * inline search bar use fixed element ids, which would collide if the
+     * partial were repeated once per matching date.
+     */
+    public function searchAppointments(Request $request, $resolutionTab)
+    {
+        $this->resolveTab($resolutionTab, 'registration');
+
+        $search = trim((string) $request->input('q', ''));
+        if ($search === '') {
+            return response()->json(['html' => '', 'count' => 0]);
+        }
+
+        $tabId = $this->currentTab->id;
+        $base = Employee::query()->where('employees.resolution_tab_id', $tabId);
+        if (auth()->user()->can('manage-tickets')) {
+            $base->withoutGlobalScope('employerTenancy');
+        }
+        $this->applySearchToQuery($base, $search);
+
+        $joinAppointments = function ($query) use ($tabId) {
+            return $query->join('employee_appointments', function ($join) use ($tabId) {
+                $join->on('employee_appointments.employee_id', '=', 'employees.id')
+                    ->where('employee_appointments.resolution_tab_id', $tabId);
+            })
+            ->whereIn('status', ['registration_pending', 'registration_completed', 'registration_cancelled'])
+            ->whereNull('employee_appointments.appointment_completed_at');
+        };
+
+        $dates = $joinAppointments((clone $base))
+            ->selectRaw('DATE(employee_appointments.appointment_date) as d')
+            ->distinct()
+            ->orderBy('d')
+            ->pluck('d');
+
+        $html = '';
+        $totalCount = 0;
+        foreach ($dates as $date) {
+            $employees = $joinAppointments((clone $base))
+                ->whereDate('employee_appointments.appointment_date', $date)
+                ->with(['employer'])
+                ->orderBy('employee_appointments.appointment_date')
+                ->select('employees.*', 'employee_appointments.appointment_date as appointment_date', 'employee_appointments.appointment_location as appointment_location', 'employee_appointments.appointment_completed_at as appointment_completed_at')
+                ->get();
+
+            $this->applyTabRequestNumbers($employees, $tabId);
+            $totalCount += $employees->count();
+
+            $html .= view('partials.appointment_reminder._date_header', [
+                'dateLabel' => Carbon::parse($date)->translatedFormat('j F Y'),
+                'count' => $employees->count(),
+            ])->render();
+            $html .= '<div class="row g-3 mb-2">';
+            foreach ($employees as $employee) {
+                $html .= view('production.registration.partials.search_appointment_card', compact('employee', 'tabId'))->render();
+            }
+            $html .= '</div>';
+        }
+
+        if ($dates->isEmpty()) {
+            $html = view('partials.appointment_reminder._no_results')->render();
+        }
+
+        return response()->json(['html' => $html, 'count' => $totalCount]);
+    }
+
+    /**
      * Fetch Trash (Deleted Employees with Registration Status)
      */
     public function fetchTrash(Request $request, $resolutionTab)
