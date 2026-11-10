@@ -19,6 +19,18 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    {{-- Employees sent to a tab from another tab, waiting there (WorkflowHandoff) --}}
+    @if(!empty($handoffCounts))
+        <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 shadow-sm mb-4" role="alert">
+            <i class="bi bi-inbox-fill fs-5"></i>
+            <strong class="me-1">{{ __('Employees sent to tabs, waiting:') }}</strong>
+            @foreach($tabs as $tab)
+                @if(!empty($handoffCounts[$tab->id]))
+                    <a href="{{ route('workflow.index', ['tab' => $tab->slug]) }}" class="btn btn-sm btn-warning fw-bold">{{ $tab->name }} <span class="badge text-bg-light ms-1">{{ $handoffCounts[$tab->id] }}</span></a>
+                @endif
+            @endforeach
+        </div>
+    @endif
     {{-- Scoreboard (Global Stats) --}}
     <div class="row row-cols-1 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
         {{-- Total Employees --}}

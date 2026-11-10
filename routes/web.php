@@ -772,6 +772,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('workflow/order/{order}/employees', [\App\Http\Controllers\WorkflowController::class, 'fetchEmployees'])->name('workflow.order.employees');
     Route::get('workflow/order/{order}/select-all-ids', [\App\Http\Controllers\WorkflowController::class, 'selectAllOrderEmployeeIds'])->name('workflow.order.select_all_ids');
     Route::post('workflow/store', [\App\Http\Controllers\WorkflowController::class, 'store'])->name('workflow.store');
+    // Send ticked employees to another Workflow tab → they wait there until added to a card (2026-11-11)
+    Route::post('workflow/handoffs/send', [\App\Http\Controllers\WorkflowHandoffController::class, 'send'])->middleware('menu:workflow')->name('workflow.handoffs.send');
+    Route::get('workflow/handoffs', [\App\Http\Controllers\WorkflowHandoffController::class, 'index'])->middleware('menu:workflow')->name('workflow.handoffs.index');
+    Route::post('workflow/handoffs/receive', [\App\Http\Controllers\WorkflowHandoffController::class, 'receive'])->middleware('menu:workflow')->name('workflow.handoffs.receive');
+    Route::post('workflow/handoffs/dismiss', [\App\Http\Controllers\WorkflowHandoffController::class, 'dismiss'])->middleware('menu:workflow')->name('workflow.handoffs.dismiss');
     Route::get('workflow/{order}/items', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderItems'])->name('workflow.items');
     Route::get('workflow/{order}/history', [\App\Http\Controllers\WorkflowController::class, 'fetchOrderHistory'])->name('workflow.history');
     Route::get('workflow/item/{item}/card', [\App\Http\Controllers\WorkflowController::class, 'getItemHtml'])->name('workflow.item.card');

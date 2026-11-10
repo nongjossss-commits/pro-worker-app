@@ -452,7 +452,10 @@ class WorkflowController extends Controller
         $workflowAutoSettings = $this->loadWorkflowAutoSettings();
         $mouGroupOptions = \App\Models\WorkPermitType::ordered()->pluck('name')->push('อื่นๆ')->all();
 
-        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users', 'workflowAutoSettings', 'mouGroupOptions', 'showCompletedJobs'));
+        // employees sent here from other tabs, waiting to be added to a card
+        $handoffCounts = auth()->user()->can('manage-own-workflow') ? \App\Models\WorkflowHandoff::pendingCounts() : [];
+
+        return view('workflow.index', compact('orders', 'tabs', 'activeTab', 'stats', 'steps', 'addressOptions', 'employers', 'users', 'workflowAutoSettings', 'mouGroupOptions', 'showCompletedJobs', 'handoffCounts'));
     }
 
     /**
@@ -564,7 +567,9 @@ class WorkflowController extends Controller
         // Sort by date soonest
         $upcomingAppointments = $upcomingAppointments->sortBy('appointment_date');
 
-        return view('workflow.dashboard', compact('tabs', 'stats', 'upcomingAppointments'));
+        $handoffCounts = auth()->user()->can('manage-own-workflow') ? \App\Models\WorkflowHandoff::pendingCounts() : [];
+
+        return view('workflow.dashboard', compact('tabs', 'stats', 'upcomingAppointments', 'handoffCounts'));
     }
 
     /**
@@ -2134,26 +2139,7 @@ class WorkflowController extends Controller
                     // to work. Employees who are NOT currently notified
                     // out are untouched here.
                     if ($orderWorkTypeSlug === 'notify_in') {
-                        $emp = Employee::find($empId);
-                        if ($emp && $emp->terminated_at) {
-                            $oldEmployerId = $emp->employer_id;
-                            $oldEmployerName = optional($emp->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
-                            $newEmployerName = optional($order->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
-
-                            $emp->update([
-                                'employer_id' => $order->employer_id,
-                                'terminated_at' => null,
-                                'termination_reason' => null,
-                                'status' => 'active',
-                            ]);
-
-                            ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $emp->getRawOriginal('employeeNameEn') . ' จาก ' . $oldEmployerName . ' ไป ' . $newEmployerName . ' (แจ้งเข้า/เปลี่ยนนายจ้างใน Workflow)', Employee::class, $emp->id, [
-                                'old_employer_id' => $oldEmployerId,
-                                'old_employer_name' => $oldEmployerName,
-                                'new_employer_id' => $order->employer_id,
-                                'new_employer_name' => $newEmployerName,
-                            ]);
-                        }
+                        self::rejoinNotifiedOutEmployee($empId, $order);
                     }
                 }
             }
@@ -3362,5 +3348,35 @@ class WorkflowController extends Controller
             'success' => true,
             'stats' => $results
         ]);
+    }
+
+    /**
+     * "แจ้งเข้า / เปลี่ยนนายจ้าง": an employee who was notified out (terminated_at
+     * set) and is now put on a notify_in card is moved to that card's employer
+     * right away. Moved out of store() unchanged so the Workflow "send to
+     * another tab" receive (WorkflowHandoffController) applies the same rule.
+     */
+    public static function rejoinNotifiedOutEmployee($empId, ProductionOrder $order): void
+    {
+        $emp = Employee::find($empId);
+        if ($emp && $emp->terminated_at) {
+            $oldEmployerId = $emp->employer_id;
+            $oldEmployerName = optional($emp->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
+            $newEmployerName = optional($order->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
+
+            $emp->update([
+                'employer_id' => $order->employer_id,
+                'terminated_at' => null,
+                'termination_reason' => null,
+                'status' => 'active',
+            ]);
+
+            ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $emp->getRawOriginal('employeeNameEn') . ' จาก ' . $oldEmployerName . ' ไป ' . $newEmployerName . ' (แจ้งเข้า/เปลี่ยนนายจ้างใน Workflow)', Employee::class, $emp->id, [
+                'old_employer_id' => $oldEmployerId,
+                'old_employer_name' => $oldEmployerName,
+                'new_employer_id' => $order->employer_id,
+                'new_employer_name' => $newEmployerName,
+            ]);
+        }
     }
 }

@@ -272,6 +272,25 @@
 {{-- ═════════════════════════════════════════════════════════════════════ --}}
 
 <section class="training-slide">
+    <div class="slide-number">STEP 9</div>
+    <h2 class="slide-title">ส่งข้อมูลลูกจ้างไปแท็บอื่น</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ติ๊กเลือกลูกจ้าง → <strong>การจัดการ</strong> → <strong>ส่งข้อมูลไปแท็บอื่น</strong> → เลือกแท็บ → <strong>ส่ง</strong></li>
+            <li>แท็บปลายทางขึ้นตัวเลขสีส้ม + กล่องแจ้งเตือน → <strong>เปิดดู</strong> → ติ๊กเลือก → <strong>เพิ่มเข้าการ์ด</strong></li>
+            <li>แท็บหลายการ์ด: เลือกการ์ดของนายจ้าง หรือ <strong>สร้างการ์ดใหม่</strong> → <strong>ยืนยันและเพิ่ม</strong></li>
+        </ol>
+    </div>
+
+    <div class="slide-tip">
+        💡 คนที่มีงานค้างในแท็บปลายทางอยู่แล้วจะไม่ถูกส่งซ้ำ · งานในแท็บเดิมไม่เปลี่ยน
+    </div>
+</section>
+
+{{-- ═════════════════════════════════════════════════════════════════════ --}}
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">คำถามที่พบบ่อย</h2>
 

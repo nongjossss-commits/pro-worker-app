@@ -2,6 +2,7 @@
     'tabs',
     'activeTab' => null,
     'routeName', // 'workflow.index' or 'production.index'
+    'handoffCounts' => [], // Workflow: employees sent to each tab, waiting (WorkflowHandoff)
 ])
 
 @php
@@ -14,6 +15,9 @@
            href="{{ route($routeName, ['tab' => $tab->slug]) }}"
            style="white-space: nowrap;">
             <span>{{ $tab->name }}</span>
+            @if(!empty($handoffCounts[$tab->id]))
+                <span class="badge rounded-pill text-bg-warning" title="{{ __('Employees sent to this tab') }}"><i class="bi bi-inbox-fill me-1"></i>{{ $handoffCounts[$tab->id] }}</span>
+            @endif
             @if($isSuperAdmin)
                 <span class="d-inline-flex align-items-center ms-1"
                       onclick="event.preventDefault(); event.stopPropagation(); editWorkTypeTab({{ $tab->id }}, '{{ addslashes($tab->name) }}', {{ $tab->allow_multiple_orders ? 'true' : 'false' }}, {{ $tab->is_system ? 'true' : 'false' }})"

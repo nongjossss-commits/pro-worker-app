@@ -151,6 +151,18 @@
     Workflow 仪表盘的预约日历上方有搜索框。输入雇主名称/编号、雇员姓名、护照号或身份证号(至少 2 个字符),系统会弹出窗口显示 Workflow 中<strong>所有日期</strong>内匹配的预约,立即按日期分组显示(仅限 Workflow 内搜索——如需跨所有菜单搜索,请改用顶部栏的预约日历)。清空搜索框即可返回所选日期的视图。
 </div>
 
+<h5>17. 将员工资料发送到其他标签</h5>
+<div class="manual-step">
+    当同一批员工需要在 Workflow 的其他标签继续办理时（例如变更雇主完成后要办理社保）—— 无需进入该标签逐个搜索添加
+    <ol class="mb-0">
+        <li><strong>发送：</strong>勾选员工 → 底部栏 <strong>操作</strong> → <strong>发送资料到其他标签</strong> → 选择目标标签（显示所有现有标签，包括之后新增的）→ <strong>发送</strong> · 当前标签的工作不变</li>
+        <li>在目标标签已有未完成工作、或已发送仍在等待的员工<strong>不会重复发送</strong> —— 系统列出名单及原因</li>
+        <li><strong>接收：</strong>目标标签名称上会显示橙色数字，并出现「有员工被发送到此标签」提示框（总览页也会提示）→ <strong>打开</strong> → 勾选员工 → <strong>加入卡片</strong></li>
+        <li>员工会加入<strong>勾选时所在卡片的雇主</strong>的卡片 · 单卡片标签：加入该雇主的卡片（若没有则自动创建）· 多卡片标签：选择雇主已开放的卡片或<strong>新建卡片</strong> → <strong>确认并加入</strong></li>
+        <li>不需要时 → 勾选 → <strong>不需要（从列表移除）</strong> · 所有可管理 Workflow 的人都能看到并接收，一旦接收即对所有人消失</li>
+    </ol>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>
 
 <div class="manual-tip">

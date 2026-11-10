@@ -229,6 +229,25 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 9</div>
+    <h2 class="slide-title">Send employees to another tab</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>Tick employees → <strong>Actions</strong> → <strong>Send to another tab</strong> → pick a tab → <strong>Send</strong></li>
+            <li>The target tab shows an orange number + a notice box → <strong>Open</strong> → tick → <strong>Add to card</strong></li>
+            <li>Multi-card tabs: choose the employer's card or <strong>Create a new card</strong> → <strong>Confirm and add</strong></li>
+        </ol>
+    </div>
+
+    <div class="slide-tip">
+        💡 People who already have an open job in the target tab are not sent again · the current tab is unchanged
+    </div>
+</section>
+
+{{-- ═════════════════════════════════════════════════════════════════════ --}}
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">Frequently Asked Questions</h2>
 

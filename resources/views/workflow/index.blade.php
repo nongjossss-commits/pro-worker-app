@@ -305,10 +305,24 @@
                         <i class="bi bi-speedometer2 me-1"></i> {{ __('Dashboard') }}
                     </a>
                 </li>
-                <x-work-type-tab-bar :tabs="$tabs" :activeTab="$activeTab ?? null" routeName="workflow.index" />
+                <x-work-type-tab-bar :tabs="$tabs" :activeTab="$activeTab ?? null" routeName="workflow.index" :handoffCounts="$handoffCounts ?? []" />
             </ul>
         </div>
     </div>
+
+    {{-- Employees sent to this tab from another tab (WorkflowHandoff) --}}
+    @if($canManage && isset($activeTab) && !empty($handoffCounts[$activeTab->id]))
+        <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 shadow-sm mb-4" role="alert">
+            <i class="bi bi-inbox-fill fs-5"></i>
+            <div class="flex-grow-1">
+                <strong>{{ __(':count employees were sent to this tab', ['count' => $handoffCounts[$activeTab->id]]) }}</strong>
+                <span class="small d-block d-sm-inline ms-sm-1">{{ __('— waiting to be added to an employer card') }}</span>
+            </div>
+            <button type="button" class="btn btn-warning btn-sm fw-bold" onclick="window.openHandoffInbox({{ $activeTab->id }})">
+                <i class="bi bi-box-arrow-in-down me-1"></i>{{ __('Open') }}
+            </button>
+        </div>
+    @endif
 
     {{-- Bulk Action Bar --}}
     <div class="bulk-action-bar mt-3 align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
@@ -337,6 +351,10 @@
                 @can('manage-tickets')
                 <li><a class="dropdown-item" href="#" id="bulk-generate-pdf-btn"><i class="bi bi-file-earmark-pdf me-2"></i>{{ __('Automated PDF') }}</a></li>
                 @endcan
+                @if($canManage)
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); window.openHandoffSendModal();"><i class="bi bi-send me-2"></i>{{ __('Send to another tab') }}</a></li>
+                @endif
             </ul>
         </div>
         <button class="btn btn-sm btn-outline-danger ms-2" onclick="window.clearGlobalSelection();">{{ __('Clear Selection') }}</button>
@@ -911,6 +929,11 @@
 {{-- Add Employee Modal --}}
 @if(!$isReadOnly)
 @include('workflow.partials.add_employee_modal')
+@endif
+
+{{-- Send to another tab / employees sent here --}}
+@if($canManage)
+@include('workflow.partials.handoff_modals')
 @endif
 
 {{-- Auto MOU Settings Modal — admin sets a default workPermitMOUGroup

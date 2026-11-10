@@ -229,6 +229,25 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 9</div>
+    <h2 class="slide-title">将员工资料发送到其他标签</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>勾选员工 → <strong>操作</strong> → <strong>发送资料到其他标签</strong> → 选择标签 → <strong>发送</strong></li>
+            <li>目标标签显示橙色数字 + 提示框 → <strong>打开</strong> → 勾选 → <strong>加入卡片</strong></li>
+            <li>多卡片标签：选择雇主的卡片或<strong>新建卡片</strong> → <strong>确认并加入</strong></li>
+        </ol>
+    </div>
+
+    <div class="slide-tip">
+        💡 在目标标签已有未完成工作的人不会重复发送 · 当前标签不变
+    </div>
+</section>
+
+{{-- ═════════════════════════════════════════════════════════════════════ --}}
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">常见问题</h2>
 

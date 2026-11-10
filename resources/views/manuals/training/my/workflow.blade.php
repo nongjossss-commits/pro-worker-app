@@ -229,6 +229,25 @@
 </section>
 
 <section class="training-slide">
+    <div class="slide-number">STEP 9</div>
+    <h2 class="slide-title">ဝန်ထမ်းအချက်အလက်ကို အခြား tab သို့ ပို့ခြင်း</h2>
+
+    <div class="slide-instructions">
+        <ol>
+            <li>ဝန်ထမ်းရွေး → <strong>လုပ်ဆောင်ချက်</strong> → <strong>အခြား tab သို့ အချက်အလက် ပို့ရန်</strong> → tab ရွေး → <strong>ပို့ရန်</strong></li>
+            <li>ဦးတည် tab တွင် လိမ္မော်ရောင် နံပါတ် + အသိပေးအကွက် → <strong>ဖွင့်ရန်</strong> → ရွေး → <strong>ကတ်ထဲ ထည့်ရန်</strong></li>
+            <li>ကတ်များစွာ tab: အလုပ်ရှင်၏ ကတ် ရွေး သို့မဟုတ် <strong>ကတ်အသစ် ဖန်တီးရန်</strong> → <strong>အတည်ပြုပြီး ထည့်ရန်</strong></li>
+        </ol>
+    </div>
+
+    <div class="slide-tip">
+        💡 ဦးတည် tab တွင် မပြီးသေးသော အလုပ်ရှိသူကို ထပ်မပို့ · လက်ရှိ tab မပြောင်း
+    </div>
+</section>
+
+{{-- ═════════════════════════════════════════════════════════════════════ --}}
+
+<section class="training-slide">
     <div class="slide-number">FAQ</div>
     <h2 class="slide-title">မေးလေ့ရှိသော မေးခွန်းများ</h2>
 

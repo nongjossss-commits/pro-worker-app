@@ -151,6 +151,18 @@
     The Workflow dashboard has a search box above the appointment calendar. Type an employer name/ID, employee name, passport, or ID no. (2+ characters) and it opens a popup with every Workflow appointment matching the term, on <strong>any date</strong>, grouped by date right away (scoped to Workflow only — use the top-bar Appointment Calendar instead to search across every menu). Clear the box to go back to the selected day.
 </div>
 
+<h5>17. Send employees to another tab</h5>
+<div class="manual-step">
+    For when the same employees continue in another Workflow tab (e.g. the employer change is done and social security comes next) — no need to open that tab and add them one by one
+    <ol class="mb-0">
+        <li><strong>Send:</strong> tick the employees → bottom bar <strong>Actions</strong> → <strong>Send to another tab</strong> → pick the target tab (every existing tab, including ones added later) → <strong>Send</strong> · nothing changes in the current tab</li>
+        <li>Anyone who already has an open job in the target tab, or was already sent there and is still waiting, is <strong>not sent again</strong> — the system lists them with the reason</li>
+        <li><strong>Receive:</strong> the target tab shows an orange number on its name and a "employees were sent to this tab" box (the Dashboard shows it too) → <strong>Open</strong> → tick the employees → <strong>Add to card</strong></li>
+        <li>They go to a card of <strong>the employer of the card they were ticked on</strong> · one-card tabs: that employer's card (created if missing) · multi-card tabs: choose one of the employer's open cards or <strong>Create a new card</strong> → <strong>Confirm and add</strong></li>
+        <li>Not needed → tick → <strong>Not needed (remove from list)</strong> · everyone who can manage Workflow sees and can receive them; once received they disappear for everyone</li>
+    </ol>
+</div>
+
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>
 
 <div class="manual-tip">
