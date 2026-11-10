@@ -712,7 +712,7 @@ class="row">
                                             <a class="btn btn-sm btn-outline-warning py-0" :href="'{{ route('finance.credit-notes.create') }}?financial_transaction_id=' + t.id" target="_blank" title="ออกใบลดหนี้ / Issue Credit Note">
                                                 <i class="bi bi-file-earmark-minus"></i>
                                             </a>
-                                            <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="Delete">
+                                            <button class="btn btn-sm btn-outline-danger py-0" x-show="t.status !== 'paid'" @click="deleteTransaction(t.id)" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -774,7 +774,7 @@ class="row">
                                             <button class="btn btn-sm btn-outline-success py-0" @click="openPayModal(t)" title="Update Payment">
                                                 <i class="bi bi-cash"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger py-0" @click="deleteTransaction(t.id)" title="Delete">
+                                            <button class="btn btn-sm btn-outline-danger py-0" x-show="t.status !== 'paid'" @click="deleteTransaction(t.id)" title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -931,7 +931,7 @@ class="row">
                     </div>
                     @endif
 
-                    <div class="list-group list-group-flush border rounded small" style="max-height: 300px; overflow-y: auto;">
+                    <div class="list-group list-group-flush border rounded small" style="max-height: max(300px, calc(100vh - 270px)); overflow-y: auto;">
                         <template x-for="item in allEmployeesForTier" :key="item.id">
                             <label class="list-group-item list-group-item-action d-flex gap-2 align-items-center py-2"
                                    style="cursor: pointer;">
@@ -1195,7 +1195,7 @@ class="row">
                                         <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="deselectAllTransactionItems()">None</button>
                                     </div>
                                 </div>
-                                <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
+                                <div class="border rounded bg-light" style="max-height: max(250px, calc(100vh - 330px)); overflow-y: auto;">
                                     <div class="list-group list-group-flush">
                                         <!-- Available Items -->
                                         <template x-for="item in availableItems" :key="item.id">
@@ -1300,7 +1300,7 @@ class="row">
                             <!-- Lump Sum: the existing single-amount payment list + form, unchanged. -->
                             <div x-show="editingTransaction.payment_collection_mode !== 'per_employee'">
                             <!-- Payment List -->
-                            <div class="list-group list-group-flush mb-3 border rounded shadow-sm" style="max-height: 250px; overflow-y: auto;">
+                            <div class="list-group list-group-flush mb-3 border rounded shadow-sm" style="max-height: max(250px, calc(100vh - 640px)); overflow-y: auto;">
                                 <template x-for="pay in editingTransaction.payments" :key="pay.id">
                                     <div class="list-group-item py-2 px-3">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -1672,13 +1672,13 @@ class="row">
                                         <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = []; recalcEditAmount()">None</button>
                                     </div>
                                 </div>
-                                <div class="border rounded bg-light" style="max-height: 250px; overflow-y: auto;">
+                                <div class="border rounded bg-light" style="max-height: max(250px, calc(100vh - 330px)); overflow-y: auto;">
                                     <div class="list-group list-group-flush">
                                         <!-- Show ALL items for edit (Available + Currently Attached) -->
                                         <template x-for="item in editModalItems" :key="item.id">
                                             <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
                                                 <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcEditAmount()">
-                                                <span class="badge bg-light text-dark border ms-auto" x-text="getItemPrice(item.id)" style="font-size: 0.65rem;"></span>
+                                                <span class="badge bg-light text-dark border ms-auto" x-text="billItemPrice(item.id, editingTransaction)" style="font-size: 0.65rem;"></span>
                                                 <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
