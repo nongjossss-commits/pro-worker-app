@@ -14,7 +14,7 @@ if (typeof window.financialManager === 'undefined') {
 
             // --- Data ---
             pricingMode: 'per_head',
-            fixedTotal: 0,
+            fixedItems: [], // [{ description, amount }] — replaces the old single fixedTotal number
             pricingTiers: [],
             employeeCount: initialData.employeeCount || 0,
             discount: 0,
@@ -35,6 +35,7 @@ if (typeof window.financialManager === 'undefined') {
             productionItems: initialData.productionItems || [], // List of {id, name, employee_id} (Scoped to Current Stage)
             employees: initialData.employees || [], // List of candidates {id, name} (Scoped to Current Stage)
             selectedTransactionItems: [], // List of IDs (ProductionItem ID or 'emp_ID')
+            selectedFixedItemIds: [], // fixedItems.id picked to include in the "Add Installment" form (Fixed Total mode)
 
             // Employee Filter State
             tierEmployeeFilter: 'active', // 'active' or 'cancelled'
@@ -80,6 +81,9 @@ if (typeof window.financialManager === 'undefined') {
             selectedFile: null,
             editingPaymentId: null,
             newPayment: { amount: '', paid_at: '', bank_account_id: '', notes: '', slip_path: null },
+            // Ad-hoc extra charge added onto the bill being edited in Payment History (e.g. "ค่าอาหารกลางวัน") —
+            // folds straight into editingTransaction.amount/notes, saved by the existing Update button.
+            newExtraCharge: { description: '', amount: '' },
             paymentSlipFile: null,
             isSavingPayment: false,
 
@@ -164,7 +168,14 @@ if (typeof window.financialManager === 'undefined') {
                 const data = group.financial_data || {};
 
                 this.pricingMode = data.pricing_mode || 'per_head';
-                this.fixedTotal = data.fixed_base_amount || 0;
+                // Fixed-total items: migrate an old single fixed_base_amount into one row so nothing is lost.
+                this.fixedItems = Array.isArray(data.fixed_items) && data.fixed_items.length
+                    ? data.fixed_items
+                    : (parseFloat(data.fixed_base_amount) > 0 ? [{ description: '', amount: parseFloat(data.fixed_base_amount) }] : []);
+                // Every item needs a stable id so an installment built from it can be
+                // traced back (and the item hidden from the picker while that installment exists).
+                this.fixedItems.forEach(it => { if (!it.id) it.id = this.makeFixedItemId(); });
+                this.selectedFixedItemIds = [];
                 // Ensure reference sharing with group data
                 if (!data.pricing_tiers) data.pricing_tiers = [];
                 this.pricingTiers = data.pricing_tiers;
@@ -739,11 +750,17 @@ if (typeof window.financialManager === 'undefined') {
                     }
                 });
 
+                const lineItems = this.selectedFixedItemIds
+                    .map(id => this.fixedItems.find(x => x.id === id))
+                    .filter(Boolean)
+                    .map(fi => ({ description: fi.description || '', amount: parseFloat(fi.amount) || 0, fixed_item_id: fi.id }));
+
                 const payload = {
                     ...this.newTransaction,
                     financial_group_id: this.activeGroupId,
                     item_ids: itemIds,
-                    employee_ids: employeeIds
+                    employee_ids: employeeIds,
+                    line_items: lineItems.length ? lineItems : undefined
                 };
 
                 fetch(`/production/${this.productionId}/transactions`, {
@@ -762,6 +779,7 @@ if (typeof window.financialManager === 'undefined') {
 
                         this.newTransaction = { type: 'installment', amount: '', due_date: '', notes: '', discount_amount: '', discount_description: '', payment_collection_mode: 'lump_sum' };
                         this.selectedTransactionItems = [];
+                        this.selectedFixedItemIds = [];
 
                         if (data.transaction.items) {
                             data.transaction.items.forEach(newItem => {
@@ -820,6 +838,7 @@ if (typeof window.financialManager === 'undefined') {
                 this.editingPaymentId = null;
                 this.newPayment = { amount: defaultAmount, paid_at: today, bank_account_id: '', notes: '', slip_path: null };
                 this.paymentSlipFile = null;
+                this.newExtraCharge = { description: '', amount: '' };
 
                 if (t.items) {
                     this.selectedTransactionItems = t.items.map(i => i.id);
@@ -920,6 +939,16 @@ if (typeof window.financialManager === 'undefined') {
                 // clear file input if possible
                 const fileInput = document.getElementById('paymentSlipInput');
                 if (fileInput) fileInput.value = '';
+            },
+
+            addExtraCharge() {
+                const amt = parseFloat(this.newExtraCharge.amount) || 0;
+                if (amt <= 0) return;
+                const label = (this.newExtraCharge.description || '').trim() || 'ค่าใช้จ่ายเพิ่มเติม';
+                this.editingTransaction.amount = (parseFloat(this.editingTransaction.amount) || 0) + amt;
+                const line = '+ ' + label + ': ' + this.formatCurrency(amt);
+                this.editingTransaction.notes = this.editingTransaction.notes ? (this.editingTransaction.notes + '\n' + line) : line;
+                this.newExtraCharge = { description: '', amount: '' };
             },
 
             cancelEditPayment() {
@@ -1854,6 +1883,51 @@ if (typeof window.financialManager === 'undefined') {
                 this.updateTotal();
             },
 
+            makeFixedItemId() {
+                return 'fx_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+            },
+            addFixedItem() {
+                this.fixedItems.push({ id: this.makeFixedItemId(), description: '', amount: 0 });
+                this.updateTotal();
+            },
+            removeFixedItemById(id) {
+                const idx = this.fixedItems.findIndex(it => it.id === id);
+                if (idx !== -1) this.fixedItems.splice(idx, 1);
+                this.updateTotal();
+            },
+            // A fixed item is "used" once it's part of an active (non-cancelled) installment's
+            // line_items — mirrors billedItemIds for per-head employees: fully derived, no manual
+            // flag to keep in sync, so deleting that installment makes the item available again automatically.
+            get usedFixedItemIds() {
+                const ids = new Set();
+                this.transactions.forEach(t => {
+                    if (t.status === 'cancelled') return;
+                    if (Array.isArray(t.line_items)) {
+                        t.line_items.forEach(li => { if (li.fixed_item_id) ids.add(li.fixed_item_id); });
+                    }
+                });
+                return ids;
+            },
+            get availableFixedItems() {
+                const used = this.usedFixedItemIds;
+                return this.fixedItems.filter(it => !used.has(it.id));
+            },
+            // Checkbox toggle in "Add Installment" — picking/unpicking a saved fixed item
+            // recomputes the installment's amount from the sum of what's currently picked.
+            toggleFixedItemForNewTransaction(item) {
+                const idx = this.selectedFixedItemIds.indexOf(item.id);
+                if (idx === -1) {
+                    this.selectedFixedItemIds.push(item.id);
+                } else {
+                    this.selectedFixedItemIds.splice(idx, 1);
+                }
+                const total = this.selectedFixedItemIds.reduce((sum, id) => {
+                    const fi = this.fixedItems.find(x => x.id === id);
+                    return sum + (fi ? (parseFloat(fi.amount) || 0) : 0);
+                }, 0);
+                this.newTransaction.amount = total;
+            },
+
             updateTotal() {
                 let gross = 0;
                 if (this.pricingMode === 'per_head') {
@@ -1988,6 +2062,17 @@ if (typeof window.financialManager === 'undefined') {
                 return this.filteredTransactions.length - this.archivedPaidCount;
             },
 
+            // Grand total receivable is built from this — it must stay stable (sum of EVERY
+            // configured item, used or not) so invoicing part of the project never shrinks the
+            // total the client owes. Mirrors per-head: billed employees still count toward their tier.
+            get fixedTotal() {
+                return this.fixedItems.reduce((sum, it) => sum + (parseFloat(it.amount) || 0), 0);
+            },
+            // Display-only sum for the left panel's own footer — just the rows still visible
+            // there (not yet pulled into an installment), so it reads 0 once everything's billed.
+            get unusedFixedItemsTotal() {
+                return this.availableFixedItems.reduce((sum, it) => sum + (parseFloat(it.amount) || 0), 0);
+            },
             get totalPaidAmount() {
                 return this.filteredTransactions.reduce((sum, t) => sum + parseFloat(t.paid_amount || 0), 0);
             },
@@ -2037,6 +2122,7 @@ if (typeof window.financialManager === 'undefined') {
                 const payload = {
                     pricing_mode: this.pricingMode,
                     fixed_base_amount: this.fixedTotal,
+                    fixed_items: this.fixedItems,
                     pricing_tiers: this.pricingTiers,
                     discount: this.discount,
                     vat_enabled: this.vatEnabled,

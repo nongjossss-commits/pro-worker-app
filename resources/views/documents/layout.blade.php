@@ -688,16 +688,40 @@
                                 @endforeach
                             @else
                                 {{-- Fixed mode or no items --}}
-                                <tr>
-                                    <td class="text-center">{{ $lineIdx++ }}</td>
-                                    <td>
-                                        <strong>{{ $t->notes ?: ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
-                                        @if($t->due_date)<br><span style="color: #94a3b8; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
-                                    </td>
-                                    <td class="text-center">1</td>
-                                    <td class="text-right">{{ number_format($amount, 2) }}</td>
-                                    <td class="text-right"><strong>{{ $showTotal ? number_format($amount, 2) : '—' }}</strong></td>
-                                </tr>
+                                @php
+                                    $lineItems = is_array($t->line_items ?? null) ? $t->line_items : [];
+                                    // Only split into named rows when they actually sum to the amount being
+                                    // printed on this document — a partially paid receipt, or a bill that
+                                    // later got an extra charge added on top of its amount, keeps the single
+                                    // summed row below instead of showing a breakdown that doesn't add up.
+                                    $lineItemsSum = collect($lineItems)->sum(fn($li) => (float)($li['amount'] ?? 0));
+                                    $canExplodeLineItems = !empty($lineItems) && abs($lineItemsSum - (float) $amount) < 0.01;
+                                @endphp
+                                @if($canExplodeLineItems)
+                                    @foreach($lineItems as $li)
+                                        <tr>
+                                            <td class="text-center">{{ $lineIdx++ }}</td>
+                                            <td>
+                                                <strong>{{ $li['description'] ?: ($t->notes ?: ucfirst(str_replace('_', ' ', $t->type))) }}</strong>
+                                                @if($loop->first && $t->due_date)<br><span style="color: #94a3b8; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                            </td>
+                                            <td class="text-center">1</td>
+                                            <td class="text-right">{{ number_format($li['amount'] ?? 0, 2) }}</td>
+                                            <td class="text-right"><strong>{{ $showTotal ? number_format($li['amount'] ?? 0, 2) : '—' }}</strong></td>
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td class="text-center">{{ $lineIdx++ }}</td>
+                                        <td>
+                                            <strong>{{ $t->notes ?: ucfirst(str_replace('_', ' ', $t->type)) }}</strong>
+                                            @if($t->due_date)<br><span style="color: #94a3b8; font-size: 11px;">Due: {{ $t->due_date->format('d/m/Y') }}</span>@endif
+                                        </td>
+                                        <td class="text-center">1</td>
+                                        <td class="text-right">{{ number_format($amount, 2) }}</td>
+                                        <td class="text-right"><strong>{{ $showTotal ? number_format($amount, 2) : '—' }}</strong></td>
+                                    </tr>
+                                @endif
                             @endif
                         @endforeach
                     @else

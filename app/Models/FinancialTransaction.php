@@ -23,6 +23,7 @@ class FinancialTransaction extends Model
         'slip_path',
         'status', // pending, partial, paid, overdue
         'notes',
+        'line_items',
         'bank_account_id',
         'withholding_tax_amount',
         'wht_document_path',
@@ -35,6 +36,7 @@ class FinancialTransaction extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'line_items' => 'array',
         'discount_amount' => 'decimal:2',
         'credit_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',

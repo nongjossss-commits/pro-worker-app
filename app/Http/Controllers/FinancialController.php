@@ -138,6 +138,10 @@ class FinancialController extends Controller
             'employee_ids' => 'nullable|array',
             'employee_ids.*' => 'exists:employees,id',
             'payment_collection_mode' => 'nullable|in:lump_sum,per_employee',
+            'line_items' => 'nullable|array',
+            'line_items.*.description' => 'nullable|string|max:255',
+            'line_items.*.amount' => 'required_with:line_items|numeric|min:0',
+            'line_items.*.fixed_item_id' => 'nullable|string|max:64',
         ]);
 
         $transaction = FinancialTransaction::create([
@@ -149,6 +153,7 @@ class FinancialController extends Controller
             'discount_description' => $request->discount_description,
             'due_date' => $request->due_date,
             'notes' => $request->notes,
+            'line_items' => $request->line_items ?: null,
             'status' => 'pending',
             'payment_collection_mode' => $request->payment_collection_mode ?? 'lump_sum',
         ]);

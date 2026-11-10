@@ -181,12 +181,36 @@ class="row">
                     </div>
                 </div>
 
-                <!-- Fixed Price Input -->
+                <!-- Fixed Price Items (multiple rows, each with its own note) -->
                 <div x-show="pricingMode === 'fixed'" class="mb-3">
-                    <label class="form-label">{{ __('Total Project Value') }} <span x-show="vatEnabled && !vatIncluded">{{ __('(Excl. VAT)') }}</span><span x-show="vatEnabled && vatIncluded">{{ __('(Incl. VAT)') }}</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text">฿</span>
-                        <input type="number" class="form-control" x-model="fixedTotal" @input="updateTotal()">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label mb-0">{{ __('Total Project Value') }} <span x-show="vatEnabled && !vatIncluded">{{ __('(Excl. VAT)') }}</span><span x-show="vatEnabled && vatIncluded">{{ __('(Incl. VAT)') }}</span></label>
+                        <button class="btn btn-sm btn-outline-primary" type="button" @click="addFixedItem()">
+                            <i class="bi bi-plus-lg"></i> {{ __('Add Item') }}
+                        </button>
+                    </div>
+                    <div class="border rounded p-2 mb-2 bg-light">
+                        <template x-for="fItem in availableFixedItems" :key="fItem.id">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="input-group input-group-sm" style="max-width: 160px;">
+                                    <span class="input-group-text">฿</span>
+                                    <input type="number" class="form-control" x-model="fItem.amount" @input="updateTotal()" placeholder="0.00">
+                                </div>
+                                <input type="text" class="form-control form-control-sm" x-model="fItem.description" placeholder="{{ __('หมายเหตุ เช่น ค่ารถ, ค่าอาหารกลางวัน') }}">
+                                <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0" @click="removeFixedItemById(fItem.id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="availableFixedItems.length === 0">
+                            <div class="text-center text-muted small fst-italic py-2">— {{ __('ยังไม่มีรายการ — กดปุ่ม "Add Item" ด้านบนเพื่อเพิ่ม') }} —</div>
+                        </template>
+                    </div>
+                    <div class="d-flex justify-content-end small fw-bold">
+                        {{ __('รวม (ยังไม่ได้วางบิล)') }}: <span class="ms-1 text-success" x-text="formatCurrency(unusedFixedItemsTotal)"></span>
+                    </div>
+                    <div class="form-text" style="font-size: 0.7rem;" x-show="fixedItems.length > availableFixedItems.length">
+                        {{ __('รายการที่ถูกใช้สร้างงวดงานไปแล้วจะไม่แสดงที่นี่ — ลบงวดงานนั้นเพื่อให้กลับมาแก้ไขได้อีกครั้ง') }}
                     </div>
                 </div>
 
@@ -1117,6 +1141,22 @@ class="row">
                                     <input type="number" step="0.01" class="form-control form-control-sm" x-model="newTransaction.amount" required>
                                     <div class="form-text small">Remaining: <span x-text="formatCurrency(remainingSchedule)"></span></div>
                                 </div>
+                                <div class="mb-2" x-show="pricingMode === 'fixed' && fixedItems.length > 0" x-cloak>
+                                    <label class="form-label small fw-bold mb-1">{{ __('เลือกรายการราคารวมคงที่ที่จะใช้ในงวดนี้') }}</label>
+                                    <div class="border rounded bg-light p-1" style="max-height: 160px; overflow-y: auto;">
+                                        <template x-for="fItem in availableFixedItems" :key="fItem.id">
+                                            <label class="d-flex align-items-center gap-2 py-1 px-2 bg-white rounded mb-1" style="font-size: 0.8rem; cursor: pointer;">
+                                                <input type="checkbox" class="form-check-input mt-0" :checked="selectedFixedItemIds.includes(fItem.id)" @change="toggleFixedItemForNewTransaction(fItem)">
+                                                <span class="flex-grow-1 text-truncate" x-text="fItem.description || '{{ __('ไม่มีหมายเหตุ') }}'"></span>
+                                                <span class="fw-bold text-nowrap" x-text="formatCurrency(fItem.amount)"></span>
+                                            </label>
+                                        </template>
+                                        <div class="text-center text-muted small fst-italic py-1" x-show="availableFixedItems.length === 0">
+                                            {{ __('ไม่มีรายการเหลือ — ถูกใช้ไปในงวดงานอื่นหมดแล้ว') }}
+                                        </div>
+                                    </div>
+                                    <div class="form-text" style="font-size: 0.7rem;">{{ __('เลือกได้หลายรายการ ยอดเงินด้านบนจะรวมให้อัตโนมัติ และแต่ละรายการจะแยกแสดงเป็นบรรทัดของตัวเองในใบแจ้งหนี้/ใบเสร็จ') }}</div>
+                                </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Due Date</label>
                                     <input type="date" class="form-control form-control-sm" x-model="newTransaction.due_date">
@@ -1461,6 +1501,19 @@ class="row">
                                     <div><span class="text-muted">Remaining:</span> <span class="fw-bold text-danger" x-text="formatCurrency(Math.max(0, editingTransaction.amount - (parseFloat(editingTransaction.discount_amount) || 0) - (editingTransaction.paid_amount || 0)))"></span></div>
                                 </div>
 
+                                <!-- Read-only breakdown of fixed-total items used to build this installment -->
+                                <div class="mb-3" x-show="Array.isArray(editingTransaction.line_items) && editingTransaction.line_items.length > 0" x-cloak>
+                                    <label class="form-label small text-muted mb-1">{{ __('รายการที่ใช้ประกอบงวดนี้') }}</label>
+                                    <div class="border rounded p-2 bg-light small">
+                                        <template x-for="(li, liIndex) in (editingTransaction.line_items || [])" :key="liIndex">
+                                            <div class="d-flex justify-content-between">
+                                                <span x-text="li.description || '{{ __('ไม่มีหมายเหตุ') }}'"></span>
+                                                <span class="fw-bold" x-text="formatCurrency(li.amount)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-6 mb-2">
                                         <label class="form-label small">Status Override</label>
@@ -1529,6 +1582,32 @@ class="row">
                                         <div class="small text-muted mt-1" x-show="editingTransaction.discount_amount > 0">
                                             ยอดหลังหักส่วนลด: <span class="fw-bold text-success" x-text="formatCurrency(editingTransaction.amount - (parseFloat(editingTransaction.discount_amount) || 0))"></span>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Additional Charge / ค่าใช้จ่ายเพิ่มเติม — adds straight onto this bill's
+                                     Amount + Notes so it shows correctly in every total and on the printed document
+                                     without needing a separate bill. -->
+                                <div class="card border-info mb-2">
+                                    <div class="card-header py-1 px-2 bg-info bg-opacity-10">
+                                        <label class="form-label small mb-0 text-info fw-bold"><i class="bi bi-plus-circle-fill me-1"></i>{{ __('ค่าใช้จ่ายเพิ่มเติม') }}</label>
+                                    </div>
+                                    <div class="card-body p-2">
+                                        <div class="row g-2">
+                                            <div class="col-5">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">฿</span>
+                                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm" x-model="newExtraCharge.amount" placeholder="0.00">
+                                                </div>
+                                            </div>
+                                            <div class="col-7">
+                                                <input type="text" class="form-control form-control-sm" x-model="newExtraCharge.description" placeholder="{{ __('เหตุผล เช่น ค่าอาหารกลางวัน') }}">
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-info w-100 mt-2" @click="addExtraCharge()">
+                                            <i class="bi bi-plus-lg me-1"></i>{{ __('เพิ่มเข้าบิลนี้') }}
+                                        </button>
+                                        <div class="form-text" style="font-size: 0.7rem;">{{ __('จะบวกเข้ายอด Total ของบิลนี้ทันที และเติมหมายเหตุให้อัตโนมัติ — กด Update ด้านล่างเพื่อบันทึก') }}</div>
                                     </div>
                                 </div>
 
