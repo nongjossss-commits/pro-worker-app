@@ -190,6 +190,9 @@ class FinancialController extends Controller
         // This ensures invoices can map the new item back to its price tier correctly.
         $this->syncPricingTiers($request->financial_group_id, $createdItemMap);
 
+        // Per-head: remember each employee's price on this bill (later tier edits don't change it).
+        $transaction->snapshotItemPrices();
+
         // Return transaction with items to update frontend state if needed
         $transaction->load('items.employee'); // Load employee for name display
 
@@ -969,6 +972,12 @@ class FinancialController extends Controller
 
         $transaction = FinancialTransaction::with('payments.ledgerEntry')->findOrFail($id);
 
+        // A fully paid bill is a closed record — deleting it would erase its
+        // payment history. Corrections go through a credit note instead.
+        if ($transaction->isFullyPaid()) {
+            return response()->json(['success' => false, 'message' => __('A fully paid bill cannot be deleted. To correct the amount, issue a credit note.')], 422);
+        }
+
         // Individually collected bill with an issued receipt / tax invoice: final.
         if ($transaction->payment_collection_mode === 'per_employee' && $transaction->payments->contains(fn ($p) => $p->receipt_generated_at)) {
             return response()->json(['success' => false, 'message' => __('A receipt or tax invoice has been issued for this payment, so it can no longer be changed.')], 422);
@@ -1314,6 +1323,9 @@ class FinancialController extends Controller
         if (!empty($createdItemMap)) {
             $this->syncPricingTiers($transaction->production_financial_group_id, $createdItemMap);
         }
+
+        // Newly added employees take today's tier price; those already on the bill keep theirs.
+        $transaction->snapshotItemPrices();
     }
 
     /** Parse list ที่อาจเป็น array หรือ FormData string "1,2,3" */

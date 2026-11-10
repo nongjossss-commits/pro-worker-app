@@ -109,6 +109,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/appointments/calendar', [\App\Http\Controllers\AppointmentReminderController::class, 'calendarData'])->name('appointments.calendar');
     Route::get('/appointments/by-date', [\App\Http\Controllers\AppointmentReminderController::class, 'appointmentsByDate'])->name('appointments.by-date');
     Route::get('/appointments/search', [\App\Http\Controllers\AppointmentReminderController::class, 'search'])->name('appointments.search');
+    Route::post('/appointments/complete', [\App\Http\Controllers\AppointmentReminderController::class, 'complete'])->name('appointments.complete');
+    Route::get('/appointments/edit-kit', [\App\Http\Controllers\AppointmentReminderController::class, 'editKit'])->name('appointments.edit-kit');
 });
 
 // Language Switch Route

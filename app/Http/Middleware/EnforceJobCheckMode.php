@@ -47,6 +47,9 @@ class EnforceJobCheckMode
         // connections that don't send that header (e.g. plain HTTP), like global.preview.
         'appointments.calendar',
         'appointments.by-date',
+        'appointments.search',
+        'appointments.complete',
+        'appointments.edit-kit',
     ];
 
     protected const ALLOWED_ROUTE_PREFIXES = [

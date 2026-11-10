@@ -2185,5 +2185,9 @@
     "Tax Invoice": "税务发票",
     "This bill is already collected individually. Delete those payments first to collect it as a lump sum.": "此账单已按个人收款。如需按总额收款，请先删除这些付款。",
     "This bill is already collected as a lump sum. Delete those payments first to collect it individually.": "此账单已按总额收款。如需按个人收款，请先删除这些付款。",
-    "You can change this until the first payment is collected. After that the bill stays collected this way.": "在首次收款前可更改，之后账单将保持此方式。"
+    "You can change this until the first payment is collected. After that the bill stays collected this way.": "在首次收款前可更改，之后账单将保持此方式。",
+    "Appointment marked as done": "已标记预约完成",
+    "Appointment reopened": "已重新打开预约",
+    "Could not save. Please try again.": "保存失败，请重试。",
+    "A fully paid bill cannot be deleted. To correct the amount, issue a credit note.": "已全额付款的账单不能删除。如需更正金额，请开具贷项通知单。"
 }

@@ -3234,5 +3234,9 @@
     "Delete this payment?": "Delete this payment?",
     "This bill is already collected individually. Delete those payments first to collect it as a lump sum.": "This bill is already collected individually. Delete those payments first to collect it as a lump sum.",
     "This bill is already collected as a lump sum. Delete those payments first to collect it individually.": "This bill is already collected as a lump sum. Delete those payments first to collect it individually.",
-    "You can change this until the first payment is collected. After that the bill stays collected this way.": "You can change this until the first payment is collected. After that the bill stays collected this way."
+    "You can change this until the first payment is collected. After that the bill stays collected this way.": "You can change this until the first payment is collected. After that the bill stays collected this way.",
+    "Appointment marked as done": "Appointment marked as done",
+    "Appointment reopened": "Appointment reopened",
+    "Could not save. Please try again.": "Could not save. Please try again.",
+    "A fully paid bill cannot be deleted. To correct the amount, issue a credit note.": "A fully paid bill cannot be deleted. To correct the amount, issue a credit note."
 }

@@ -210,6 +210,9 @@
     <h2 class="slide-title">Frequently Asked Questions</h2>
 
     <dl class="slide-faq">
+        <dt>Q: Can I delete a fully paid bill?</dt>
+        <dd>A: No — its payment history must stay. If the amount is wrong, issue a <strong>credit note</strong> · the per-head price of people on a bill also stays as billed, even if the price tier is changed later</dd>
+
         <dt>Q: Are tax invoice numbers sequential?</dt>
         <dd>A: Yes — the system continues numbering from the last invoice in the same tax year, with no gaps</dd>
 

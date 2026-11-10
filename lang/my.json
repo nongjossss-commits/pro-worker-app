@@ -2185,5 +2185,9 @@
     "Tax Invoice": "အခွန်ပြေစာ",
     "This bill is already collected individually. Delete those payments first to collect it as a lump sum.": "ဤဘီလ်ကို တစ်ဦးချင်း ကောက်ပြီးဖြစ်သည်။ တစ်ပေါင်းတည်း ကောက်ရန် ထိုငွေပေးချေမှုများကို အရင်ဖျက်ပါ။",
     "This bill is already collected as a lump sum. Delete those payments first to collect it individually.": "ဤဘီလ်ကို တစ်ပေါင်းတည်း ကောက်ပြီးဖြစ်သည်။ တစ်ဦးချင်း ကောက်ရန် ထိုငွေပေးချေမှုများကို အရင်ဖျက်ပါ။",
-    "You can change this until the first payment is collected. After that the bill stays collected this way.": "ပထမဆုံး ငွေမကောက်မီ ပြောင်းနိုင်သည်။ ထို့နောက် ဤပုံစံအတိုင်း မှတ်ထားမည်။"
+    "You can change this until the first payment is collected. After that the bill stays collected this way.": "ပထမဆုံး ငွေမကောက်မီ ပြောင်းနိုင်သည်။ ထို့နောက် ဤပုံစံအတိုင်း မှတ်ထားမည်။",
+    "Appointment marked as done": "ချိန်းဆိုမှု ပြီးဆုံးကြောင်း မှတ်ပြီး",
+    "Appointment reopened": "ချိန်းဆိုမှုကို ပြန်ဖွင့်ပြီး",
+    "Could not save. Please try again.": "မသိမ်းနိုင်ပါ။ ထပ်ကြိုးစားပါ။",
+    "A fully paid bill cannot be deleted. To correct the amount, issue a credit note.": "ငွေအပြည့်ပေးချေပြီးသော ဘေလ်ကို ဖျက်၍မရပါ။ ပမာဏပြင်ရန် ခရက်ဒစ်နုတ် (credit note) ထုတ်ပါ။"
 }

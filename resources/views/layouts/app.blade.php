@@ -1163,6 +1163,10 @@
          and the headers wrap. Computers keep the 68% dialog as before. --}}
     <style>
         .appt-reminder-dialog { max-width: 68%; }
+        #reminderDayAppointmentsContent .appt-when-done { display: none; }
+        #reminderDayAppointmentsContent .appointment-card.is-done { opacity: .6; }
+        #reminderDayAppointmentsContent .appointment-card.is-done .appt-when-done { display: inline-flex; }
+        #reminderDayAppointmentsContent .appointment-card.is-done .appt-when-open { display: none; }
         @media (max-width: 991.98px) {
             .appt-reminder-dialog { max-width: none; width: auto; margin: .75rem; }
             #appointmentReminderModal .modal-body { padding: .75rem !important; }
@@ -1397,6 +1401,114 @@
             });
         });
 
+        // ── Combined calendar: work in place (2026-11-10) ─────────────────
+        // Edit the employee and mark the appointment done straight from the
+        // list, like each menu's own calendar. Delegated on the static list
+        // container, so day lists and cross-date search results both work.
+        (function () {
+            const T = {!! json_encode([
+                'done' => __('Appointment marked as done'),
+                'reopened' => __('Appointment reopened'),
+                'error' => __('Could not save. Please try again.'),
+            ], JSON_UNESCAPED_UNICODE) !!};
+            const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+            let editKit = null; // pages without an edit popup get it the first time Edit is pressed
+
+            // Run the edit popup's scripts as if the page had just loaded
+            // (their DOMContentLoaded set-up runs right away), without touching
+            // anything else on the page.
+            function loadEditKit() {
+                if (typeof window.openEditEmployeeModal === 'function') return Promise.resolve();
+                if (editKit) return editKit;
+                editKit = fetch(@json(route('appointments.edit-kit')), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+                    .then(html => {
+                        const box = document.createElement('div');
+                        box.innerHTML = html;
+                        const scripts = [...box.querySelectorAll('script')];
+                        scripts.forEach(s => s.remove());
+                        while (box.firstChild) document.body.appendChild(box.firstChild);
+                        const origAdd = document.addEventListener;
+                        document.addEventListener = function (type, fn, opts) {
+                            if (type === 'DOMContentLoaded') { try { fn.call(document, new Event('DOMContentLoaded')); } catch (e) { console.error(e); } return; }
+                            return origAdd.call(this, type, fn, opts);
+                        };
+                        try {
+                            scripts.forEach(old => {
+                                const s = document.createElement('script');
+                                [...old.attributes].forEach(a => s.setAttribute(a.name, a.value));
+                                s.textContent = old.textContent;
+                                document.body.appendChild(s);
+                            });
+                        } finally {
+                            document.addEventListener = origAdd;
+                        }
+                        if (typeof window.openEditEmployeeModal !== 'function') throw new Error('edit popup not available');
+                    })
+                    .catch(e => { editKit = null; throw e; });
+                return editKit;
+            }
+
+            document.addEventListener('click', function (e) {
+                const list = e.target.closest('#reminderDayAppointmentsContent');
+                if (!list) return;
+                const card = e.target.closest('.appointment-card');
+                if (!card) return;
+
+                const editBtn = e.target.closest('[data-appt-edit]');
+                if (editBtn) {
+                    const empId = card.dataset.apptEmployee;
+                    editBtn.disabled = true;
+                    loadEditKit()
+                        .then(() => {
+                            // Menus keep their edit popup inside the page content, which sits
+                            // below this calendar — lift it to the top level so it opens above.
+                            const editModal = document.getElementById('editEmployeeModal');
+                            if (editModal && editModal.parentElement !== document.body) document.body.appendChild(editModal);
+                            window.__apptEditFromCalendar = true;
+                            window.openEditEmployeeModal(parseInt(empId, 10));
+                        })
+                        .catch(() => { window.open('/employees/' + empId + '/edit', '_blank'); })
+                        .finally(() => { editBtn.disabled = false; });
+                    return;
+                }
+
+                const doneBtn = e.target.closest('[data-appt-done]');
+                if (doneBtn) {
+                    const done = doneBtn.dataset.apptDone === '1';
+                    doneBtn.disabled = true;
+                    fetch(@json(route('appointments.complete')), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() },
+                        body: JSON.stringify({
+                            source: card.dataset.apptSource,
+                            employee_id: card.dataset.apptEmployee || null,
+                            resolution_tab_id: card.dataset.apptTab || null,
+                            item_id: card.dataset.apptItem || null,
+                            done: done,
+                        }),
+                    })
+                        .then(r => r.json().then(d => ({ ok: r.ok, d })))
+                        .then(({ ok, d }) => {
+                            if (!ok || !d.success) throw new Error(d.message || T.error);
+                            card.classList.toggle('is-done', done);
+                            if (window.appToast) appToast(done ? T.done : T.reopened, 'success');
+                            window.dispatchEvent(new CustomEvent('appointment-updated'));
+                        })
+                        .catch(err => { if (window.appAlert) appAlert(err.message || T.error); })
+                        .finally(() => { doneBtn.disabled = false; });
+                }
+            });
+
+            // Back from the edit popup opened here → refresh the list (names, dates may have changed).
+            document.addEventListener('hidden.bs.modal', function (e) {
+                if (e.target.id !== 'editEmployeeModal' || !window.__apptEditFromCalendar) return;
+                window.__apptEditFromCalendar = false;
+                const cal = document.getElementById('appointmentReminderModal');
+                if (cal && cal.classList.contains('show')) window.dispatchEvent(new CustomEvent('appointment-list-refresh'));
+            });
+        })();
+
         function combinedCalendarApp() {
             return {
                 month: new Date().getMonth(),
@@ -1413,6 +1525,17 @@
                 init() {
                     this.generateCalendar();
                     this.fetchCounts();
+
+                    // "Mark Completed" / "Undo" in a card: the day's count follows.
+                    window.addEventListener('appointment-updated', () => this.fetchCounts());
+                    // Back from editing an employee: show the list again with the saved data.
+                    window.addEventListener('appointment-list-refresh', () => {
+                        if (this.isSearchActive()) {
+                            const q = this.searchQuery; this.searchQuery = ''; this.$nextTick(() => { this.searchQuery = q; });
+                        } else if (this.selectedDate) {
+                            this.openDay(this.selectedDate, true);
+                        }
+                    });
 
                     // Reopened from the top-bar button: show what is current now
                     // (appointments may have changed since the page was loaded).

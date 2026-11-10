@@ -638,20 +638,28 @@
                             @if($pricingMode === 'per_head' && $items->isNotEmpty())
                                 {{-- Group items by Tier Index to preserve Note grouping --}}
                                 @php
+                                    // Employees keep the price they were billed at (pivot unit_price snapshot),
+                                    // so they are grouped by tier AND that price.
                                     $tierGroups = $items->groupBy(function($item) use ($getTierKey, $pricingTiers) {
-                                        return $getTierKey($item, $pricingTiers);
+                                        $key = $getTierKey($item, $pricingTiers);
+                                        $billed = $item->pivot->unit_price ?? null;
+                                        return $billed !== null ? $key . '@' . $billed : (string) $key;
                                     });
                                 @endphp
 
-                                @foreach($tierGroups as $tierIdx => $groupedItems)
+                                @foreach($tierGroups as $tierGroupKey => $groupedItems)
                                     @php
                                         $count = $groupedItems->count();
+                                        $tierIdx = (int) explode('@', (string) $tierGroupKey)[0];
+                                        $billedPrice = $groupedItems->first()->pivot->unit_price ?? null;
                                         // Get tier data
                                         $tier = ($tierIdx >= 0 && isset($pricingTiers[$tierIdx])) ? $pricingTiers[$tierIdx] : null;
 
                                         // Use the exact tier price for this group instead of averaging the total transaction amount.
                                         // This ensures that employees with different tier prices are billed correctly.
-                                        if ($tier && isset($tier['price'])) {
+                                        if ($billedPrice !== null) {
+                                            $price = (float) $billedPrice;
+                                        } elseif ($tier && isset($tier['price'])) {
                                             $price = (float)$tier['price'];
                                         } else {
                                             // Fallback to average if tier price is missing for some reason

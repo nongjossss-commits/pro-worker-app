@@ -246,6 +246,16 @@ if (typeof window.financialManager === 'undefined') {
                 return tier ? parseFloat(tier.price || 0) : 0;
             },
 
+            // Price an employee was billed at on this bill (pivot unit_price
+            // snapshot) — editing/deleting a tier later does not change it.
+            // Not on the bill yet / no snapshot → today's tier price.
+            billItemPrice(itemId, tx) {
+                const att = (tx && Array.isArray(tx.items)) ? tx.items.find(i => i.id == itemId) : null;
+                const snap = att && att.pivot ? att.pivot.unit_price : null;
+                if (snap !== null && snap !== undefined && snap !== '') return parseFloat(snap);
+                return this.getItemPrice(itemId);
+            },
+
             assignItemsToTier(tierIndex, itemIds) {
                 // Ensure IDs are integers OR emp_ strings
                 // Fix: Do not parseInt candidate IDs (emp_ prefix)
@@ -709,7 +719,7 @@ if (typeof window.financialManager === 'undefined') {
                  if (this.pricingMode === 'per_head') {
                     let total = 0;
                     this.selectedTransactionItems.forEach(val => {
-                         total += this.getItemPrice(val);
+                         total += this.billItemPrice(val, this.editingTransaction);
                     });
                     // Update editingTransaction.amount dynamically
                     this.editingTransaction.amount = total;
@@ -1090,7 +1100,7 @@ if (typeof window.financialManager === 'undefined') {
                 return this.editingTransaction.items
                     .map(att => {
                         const display = byId.get(att.id) || byId.get(parseInt(att.id)) || att;
-                        const price = this.getItemPrice(att.id);
+                        const price = this.billItemPrice(att.id, this.editingTransaction);
                         const paid = this.itemPaidSoFar(att.id);
                         return {
                             id: att.id,
@@ -1158,7 +1168,14 @@ if (typeof window.financialManager === 'undefined') {
                 this.individualCollectionItems.filter(i => !i.isFullyPaid && i.remaining > 0)
                     .forEach(i => { this.draftFor(i.id).amount = i.remaining; });
             },
-            clearIndividualDrafts() { this.individualDrafts = {}; },
+            clearIndividualDrafts() { this.individualDrafts = this.freshIndividualDrafts(); },
+            // One entry per person up front (not created lazily while the row
+            // renders) so the row colour reacts as soon as an amount is typed.
+            freshIndividualDrafts() {
+                const drafts = {};
+                (this.editingTransaction.items || []).forEach(i => { drafts[i.id] = { amount: '', notes: '' }; });
+                return drafts;
+            },
 
             icText(key) {
                 try { return JSON.parse(this.$refs.individualCollectionModal.dataset.text)[key] || key; } catch (e) { return key; }
@@ -1213,7 +1230,7 @@ if (typeof window.financialManager === 'undefined') {
                 // directly via the JS API (same pattern as openPayModal/
                 // openSelectionModal below) avoids that auto-hide entirely, so
                 // this modal correctly stacks on top of the Payment modal.
-                this.individualDrafts = {};
+                this.individualDrafts = this.freshIndividualDrafts();
                 this.individualSearch = '';
                 this.individualFilter = 'all';
                 this.expandedItemHistoryId = null;
@@ -1360,7 +1377,7 @@ if (typeof window.financialManager === 'undefined') {
                     if (!ok || !data.success) throw new Error(data.message || 'Error');
 
                     this._applyCollectionResult(data.transaction);
-                    this.individualDrafts = {};
+                    this.individualDrafts = this.freshIndividualDrafts();
                     this.finalizeBankAccountId = '';
                     this.finalizeNotes = '';
                     // Back to the bill: the new Payment is right there in its list.
@@ -2201,7 +2218,7 @@ if (typeof window.financialManager === 'undefined') {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
-                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+                        .then(res => res.json().catch(() => ({})).then(data => { if (!res.ok && !data.message) throw new Error('HTTP ' + res.status); return data; }))
                         .then(data => {
                             if(data.success) {
                                 this.transactions = this.transactions.filter(t => t.id !== id);

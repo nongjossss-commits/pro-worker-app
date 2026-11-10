@@ -74,7 +74,7 @@ class FinancialTransaction extends Model
 
     public function items()
     {
-        return $this->belongsToMany(ProductionItem::class, 'financial_transaction_items');
+        return $this->belongsToMany(ProductionItem::class, 'financial_transaction_items')->withPivot('unit_price');
     }
 
     public function bankAccount()
@@ -104,5 +104,61 @@ class FinancialTransaction extends Model
     public function creditNotes()
     {
         return $this->hasMany(CreditNote::class);
+    }
+
+    /**
+     * Fully paid = nothing left to collect. Such a bill is a closed record:
+     * it cannot be deleted (corrections go through a credit note).
+     */
+    public function isFullyPaid(): bool
+    {
+        if ($this->status === 'paid') {
+            return true;
+        }
+        $effective = (float) $this->amount - (float) ($this->discount_amount ?? 0) - (float) ($this->credit_amount ?? 0);
+
+        return (float) $this->paid_amount > 0 && (float) $this->paid_amount + 0.005 >= $effective;
+    }
+
+    /**
+     * Price of one employee from a group's per-head tiers — explicit tier
+     * membership only (same rule as getTierForItem() on the finance screen).
+     * Tier ids may be the item id, or emp_{id} / {id} of the employee.
+     */
+    public static function tierPriceFor(array $tiers, $itemId, $employeeId = null): ?float
+    {
+        foreach ($tiers as $tier) {
+            $ids = array_map('strval', $tier['item_ids'] ?? []);
+            if (in_array((string) $itemId, $ids, true)
+                || in_array('emp_' . $itemId, $ids, true)
+                || ($employeeId && (in_array('emp_' . $employeeId, $ids, true) || in_array((string) $employeeId, $ids, true)))) {
+                return (float) ($tier['price'] ?? 0);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Snapshot the per-head price of every employee on this bill that has
+     * none yet. Employees already on the bill keep the price they were
+     * billed at even when the tier is later edited or deleted; only taking
+     * them off the bill (or deleting it) drops the snapshot.
+     */
+    public function snapshotItemPrices(): void
+    {
+        $group = $this->financialGroup()->first();
+        $data = $group?->financial_data ?? [];
+        if (($data['pricing_mode'] ?? 'per_head') !== 'per_head') {
+            return;
+        }
+        $tiers = $data['pricing_tiers'] ?? [];
+
+        foreach ($this->items()->wherePivotNull('unit_price')->get() as $item) {
+            $price = self::tierPriceFor($tiers, $item->id, $item->employee_id);
+            if ($price !== null && $price > 0) {
+                $this->items()->updateExistingPivot($item->id, ['unit_price' => $price]);
+            }
+        }
     }
 }

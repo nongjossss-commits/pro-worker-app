@@ -15,7 +15,11 @@
         @endphp
         <div class="list-group-item appointment-card"
              data-employee-name-th="{{ strtolower($item->name_th ?? '') }}"
-             data-employer-name="{{ strtolower($item->company ?? '') }}">
+             data-employer-name="{{ strtolower($item->company ?? '') }}"
+             data-appt-source="{{ $item->source }}"
+             data-appt-employee="{{ $item->employee_id }}"
+             data-appt-tab="{{ $item->resolution_tab_id ?? '' }}"
+             data-appt-item="{{ $item->item_id ?? '' }}">
             <div class="d-flex align-items-start gap-2">
                 @can('edit-employees')
                 @if($item->employee_id)
@@ -73,6 +77,24 @@
                         </div>
                         <div class="text-end">
                             <div class="small text-muted mb-1">{{ optional($item->appointment_date)->format('H:i') }}</div>
+                            {{-- Work right here, like each menu's own calendar: edit the
+                                 employee, mark the appointment done (with undo). --}}
+                            @can('edit-employees')
+                            <div class="d-flex justify-content-end flex-wrap gap-1 mb-1 appt-actions">
+                                @if($item->employee_id)
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-appt-edit title="{{ __('Edit Employee') }}">
+                                    <i class="bi bi-pencil me-1"></i>{{ __('Edit') }}
+                                </button>
+                                @endif
+                                <button type="button" class="btn btn-sm btn-success fw-bold appt-when-open" data-appt-done="1" title="{{ __('Mark Completed') }}">
+                                    <i class="bi bi-check-lg me-1"></i>{{ __('Mark Completed') }}
+                                </button>
+                                <span class="badge bg-success align-self-center appt-when-done"><i class="bi bi-check-circle-fill me-1"></i>{{ __('Done') }}</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary appt-when-done" data-appt-done="0" title="{{ __('Undo') }}">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>{{ __('Undo') }}
+                                </button>
+                            </div>
+                            @endcan
                             <a href="{{ $item->link }}" class="btn btn-sm btn-outline-primary" target="_blank">
                                 {{ __('Go to record') }} <i class="bi bi-box-arrow-up-right"></i>
                             </a>

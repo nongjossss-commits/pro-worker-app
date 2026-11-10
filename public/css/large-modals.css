@@ -34,7 +34,9 @@
 .ic-num { text-align: right; font-size: .85rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ic-person { border-bottom: 1px solid var(--bs-border-color-translucent); transition: background-color .12s; }
 .ic-person:hover { background: var(--bs-tertiary-bg); }
-.ic-person.has-draft { background: rgba(var(--bs-success-rgb), .08); box-shadow: inset 3px 0 0 var(--bs-success); }
+/* amount typed in → clearly green so staff can skip people already entered (visual only) */
+.ic-person.has-draft, .ic-person.has-draft:hover { background: rgba(var(--bs-success-rgb), .2); box-shadow: inset 5px 0 0 var(--bs-success); }
+.ic-person.has-draft .ic-pay .form-control { border-color: var(--bs-success); font-weight: 600; }
 .ic-person.is-paid .ic-who img { opacity: .75; }
 .ic-who { display: flex; align-items: center; gap: .6rem; min-width: 0; }
 .ic-who img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex: none; }

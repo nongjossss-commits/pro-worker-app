@@ -744,3 +744,7 @@ html[data-bs-theme="dark"] [style*="border-color:#d1d5db" i]:not(.theme-keep-lig
 html[data-bs-theme="dark"] [style*="border-color:#cbd5e1" i]:not(.theme-keep-light *),
 html[data-bs-theme="dark"] [style*="border-color:#f0f0f0" i]:not(.theme-keep-light *) { border-color: var(--dk-border) !important; }
 /* @generated-inline-end */
+
+/* Individual Collection: row with an amount typed in — stronger green on dark */
+html[data-bs-theme="dark"] .ic-person.has-draft,
+html[data-bs-theme="dark"] .ic-person.has-draft:hover { background: rgba(var(--bs-success-rgb), .38); box-shadow: inset 5px 0 0 var(--bs-success-text-emphasis); }

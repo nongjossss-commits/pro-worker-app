@@ -382,6 +382,13 @@
         window.openEditEmployeeModal(btn.dataset.editEmployeeId);
     });
     window.addEventListener('employee-saved', function () {
+        // Edited from the combined appointment calendar: keep it open and
+        // reload once it is closed, so the cards here still show the saved data.
+        const cal = document.getElementById('appointmentReminderModal');
+        if (window.__apptEditFromCalendar && cal) {
+            cal.addEventListener('hidden.bs.modal', function () { window.location.reload(); }, { once: true });
+            return;
+        }
         setTimeout(function () { window.location.reload(); }, 800);
     });
 

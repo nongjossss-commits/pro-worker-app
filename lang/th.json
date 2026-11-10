@@ -3284,5 +3284,9 @@
     "Delete this payment?": "ลบรายการนี้?",
     "This bill is already collected individually. Delete those payments first to collect it as a lump sum.": "บิลนี้เก็บเงินแบบรายบุคคลไปแล้ว ถ้าจะเก็บแบบยอดรวมก้อนเดียว ต้องลบรายการที่บันทึกไว้ก่อน",
     "This bill is already collected as a lump sum. Delete those payments first to collect it individually.": "บิลนี้เก็บเงินแบบยอดรวมก้อนเดียวไปแล้ว ถ้าจะเก็บแบบรายบุคคล ต้องลบรายการที่บันทึกไว้ก่อน",
-    "You can change this until the first payment is collected. After that the bill stays collected this way.": "เปลี่ยนได้จนกว่าจะเก็บเงินครั้งแรก หลังจากนั้นระบบจะจำรูปแบบนั้นไว้"
+    "You can change this until the first payment is collected. After that the bill stays collected this way.": "เปลี่ยนได้จนกว่าจะเก็บเงินครั้งแรก หลังจากนั้นระบบจะจำรูปแบบนั้นไว้",
+    "Appointment marked as done": "บันทึกว่านัดหมายเสร็จแล้ว",
+    "Appointment reopened": "ยกเลิกสถานะเสร็จแล้ว",
+    "Could not save. Please try again.": "บันทึกไม่สำเร็จ กรุณาลองใหม่",
+    "A fully paid bill cannot be deleted. To correct the amount, issue a credit note.": "บิลที่ชำระครบแล้วลบไม่ได้ ถ้าต้องแก้ยอด ให้ออกใบลดหนี้"
 }

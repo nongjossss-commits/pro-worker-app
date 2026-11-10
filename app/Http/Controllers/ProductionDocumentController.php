@@ -179,6 +179,20 @@ class ProductionDocumentController extends Controller
                     ->all();
             }
 
+            // Price each employee was billed at (snapshot on the bill) — wins
+            // over today's tier price, so editing/deleting a tier later does
+            // not change documents of bills already issued.
+            $billedPrice = [];
+            if ($request->has('transaction_ids')) {
+                foreach ($transactions as $t) {
+                    foreach ($t->items as $billedItem) {
+                        if ($billedItem->pivot && $billedItem->pivot->unit_price !== null) {
+                            $billedPrice[$billedItem->id] = (float) $billedItem->pivot->unit_price;
+                        }
+                    }
+                }
+            }
+
             $index = 1;
             foreach ($items as $item) {
                 $emp = $item->employee;
@@ -222,6 +236,10 @@ class ProductionDocumentController extends Controller
                                 // up with 0 price unless it's genuinely free.
                             }
                         }
+                    }
+
+                    if (isset($billedPrice[$item->id])) {
+                        $price = $billedPrice[$item->id];
                     }
 
                     // For documents NOT filtered by transaction_ids, we only want to show employees

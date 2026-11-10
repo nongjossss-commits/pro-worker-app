@@ -130,6 +130,7 @@ class AppointmentReminderController extends Controller
                         'appointment_date' => $employee->appointment_date,
                         'appointment_location' => $employee->appointment_location,
                         'share_context' => 'tab:' . $employee->resolution_tab_id,
+                        'resolution_tab_id' => $employee->resolution_tab_id,
                         'link' => route($type === 'registration' ? 'production.registration.index' : 'production.renewal.index', ['resolutionTab' => $employee->resolution_tab_id]),
                     ]);
                 });
@@ -163,6 +164,7 @@ class AppointmentReminderController extends Controller
                     'appointment_date' => $item->appointment_date,
                     'appointment_location' => $item->appointment_location,
                     'share_context' => 'item:' . $item->id,
+                    'item_id' => $item->id,
                     'link' => route('workflow.index'),
                 ]);
             });
@@ -250,6 +252,7 @@ class AppointmentReminderController extends Controller
                         'appointment_date' => $employee->appointment_date,
                         'appointment_location' => $employee->appointment_location,
                         'share_context' => 'tab:' . $employee->resolution_tab_id,
+                        'resolution_tab_id' => $employee->resolution_tab_id,
                         'link' => route($type === 'registration' ? 'production.registration.index' : 'production.renewal.index', ['resolutionTab' => $employee->resolution_tab_id]),
                     ]);
                 });
@@ -304,6 +307,7 @@ class AppointmentReminderController extends Controller
                     'appointment_date' => $item->appointment_date,
                     'appointment_location' => $item->appointment_location,
                     'share_context' => 'item:' . $item->id,
+                    'item_id' => $item->id,
                     'link' => route('workflow.index'),
                 ]);
             });
@@ -320,5 +324,65 @@ class AppointmentReminderController extends Controller
         $html = view('partials.appointment_reminder.search_results', compact('groups'))->render();
 
         return response()->json(['html' => $html, 'count' => $items->count()]);
+    }
+
+    /**
+     * Mark one appointment done / not done from the combined calendar — the
+     * same flag as each menu's own "Mark Completed" (registration / renewal:
+     * employee_appointments.appointment_completed_at for that tab; Workflow:
+     * production_items.appointment_completed_at). Same permission and the
+     * same who-can-see-what rules as the list itself.
+     */
+    public function complete(Request $request)
+    {
+        abort_unless(auth()->user()->can('edit-employees'), 403);
+
+        $data = $request->validate([
+            'source' => 'required|in:registration,renewal,workflow',
+            'done' => 'required|boolean',
+            'employee_id' => 'nullable|required_unless:source,workflow|integer',
+            'resolution_tab_id' => 'nullable|required_unless:source,workflow|integer',
+            'item_id' => 'nullable|required_if:source,workflow|integer',
+        ]);
+        $stamp = $request->boolean('done') ? now() : null;
+
+        if ($data['source'] === 'workflow') {
+            $query = ProductionItem::query();
+            if (!auth()->user()->can('manage-tickets')) {
+                $query->visibleToUser();
+            }
+            $item = $query->findOrFail($data['item_id']);
+            $item->update(['appointment_completed_at' => $stamp]);
+
+            return response()->json(['success' => true, 'completed_at' => $item->appointment_completed_at]);
+        }
+
+        // the employee must be one this user can see (employer accounts: their own)
+        $employees = Employee::query();
+        if (auth()->user()->can('manage-tickets')) {
+            $employees->withoutGlobalScope('employerTenancy');
+        }
+        $employee = $employees->findOrFail($data['employee_id']);
+        $tab = \App\Models\ResolutionTab::where('type', $data['source'])->findOrFail($data['resolution_tab_id']);
+
+        $appointment = \App\Models\EmployeeAppointment::where('employee_id', $employee->id)
+            ->where('resolution_tab_id', $tab->id)
+            ->firstOrFail();
+        $appointment->appointment_completed_at = $stamp;
+        $appointment->save();
+
+        return response()->json(['success' => true, 'completed_at' => $appointment->appointment_completed_at]);
+    }
+
+    /**
+     * The edit-employee popup (same as the menus use), for pages that don't
+     * already have it — fetched only when someone presses "Edit" in the
+     * combined calendar, so no page gets heavier.
+     */
+    public function editKit()
+    {
+        abort_unless(auth()->user()->can('edit-employees'), 403);
+
+        return response()->view('partials.appointment_reminder.edit_kit');
     }
 }
