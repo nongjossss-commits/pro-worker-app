@@ -37,11 +37,11 @@ class LaborContractListCardsTest extends TestCase
 
         $html = $this->actingAs($admin)->get(route('labor.contracts.index'))->assertOk()->getContent();
 
-        $this->assertStringContainsString('class="card shadow-sm border-0 ct-list"', $html);
+        $this->assertStringContainsString('class="card pwc-panel ct-list"', $html);
         $this->assertStringContainsString('<div class="table-responsive" data-mobile-table="scroll">', $html);
-        $this->assertStringContainsString('@container (max-width: 1099.98px)', $html);
+        $this->assertStringContainsString('@container (max-width: 1249.98px)', $html);
         foreach (['ct-cb', 'ct-no', 'ct-status', 'ct-signed', 'ct-actions'] as $cell) {
-            $this->assertStringContainsString('class="' . ($cell === 'ct-no' ? 'font-monospace ' : ($cell === 'ct-actions' ? 'text-end ' : '')) . $cell . '"', $html, $cell);
+            $this->assertStringContainsString('class="' . ($cell === 'ct-actions' ? 'text-end ' : '') . $cell . '"', $html, $cell);
         }
         $this->assertSame(5, substr_count($html, 'ct-field" data-label='));
         $this->assertStringContainsString('id="contractSelectAll"', $html);

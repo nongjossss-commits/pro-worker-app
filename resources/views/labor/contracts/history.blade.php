@@ -14,37 +14,45 @@
 @section('title', __('Edit History') . ' — ' . $contract->contract_no)
 
 @section('content')
-<div class="container-fluid">
-    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h4 class="fw-bold mb-0">{{ __('Edit History') }} (ประวัติการแก้ไขสัญญา)</h4>
-            <p class="text-muted small mb-0">
-                {{ __('Contract No.') }} <span class="font-monospace fw-bold">{{ $contract->contract_no }}</span>
-                — {{ __('Total edits') }}: <strong>{{ $editCount }}</strong>
-            </p>
+@include('labor.contracts._pwc_styles')
+<div class="container-fluid pwc">
+    <div class="pwc-hero">
+        <div class="pwc-hero-main">
+            <div class="pwc-hero-icon"><i class="bi bi-clock-history"></i></div>
+            <div>
+                <h4 class="pwc-hero-title">{{ __('Edit History') }}</h4>
+                <p class="pwc-hero-sub">
+                    @if(app()->getLocale() !== 'th')ประวัติการแก้ไขสัญญา · @endif{{ __('Contract No.') }} <span class="pwc-no">{{ $contract->contract_no }}</span>
+                    — {{ __('Total edits') }}: <strong>{{ $editCount }}</strong>
+                </p>
+            </div>
         </div>
-        <a href="{{ route('labor.contracts.show', $contract) }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i>{{ __('Back') }}
-        </a>
+        <div class="pwc-hero-actions">
+            <a href="{{ route('labor.contracts.show', $contract) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>{{ __('Back') }}
+            </a>
+        </div>
     </div>
 
-    <div class="card shadow-sm border-0">
+    <div class="card pwc-panel">
         <div class="card-body">
             @if($logs->isEmpty())
-                <p class="text-muted mb-0">{{ __('No history recorded yet.') }}</p>
+                <p class="text-muted mb-0 text-center py-4"><i class="bi bi-inbox d-block fs-1 mb-2 opacity-50"></i>{{ __('No history recorded yet.') }}</p>
             @else
-                <div class="list-group list-group-flush">
+                <ol class="pwc-timeline">
                     @foreach($logs as $entry)
                         @php($log = $entry['log'])
-                        <div class="list-group-item px-0">
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-1 mb-2">
+                        <li class="pwc-tl-item {{ $log->action === 'create' ? 'is-create' : '' }}">
+                            <span class="pwc-tl-dot"><i class="bi {{ $log->action === 'create' ? 'bi-file-earmark-plus' : 'bi-pencil' }}"></i></span>
+                            <div class="pwc-tl-card">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
                                 <div>
-                                    <span class="badge {{ $log->action === 'create' ? 'bg-success' : 'bg-primary' }}">
+                                    <span class="pwc-status {{ $log->action === 'create' ? 'is-done' : 'is-wait' }}" style="{{ $log->action === 'create' ? '' : 'color: var(--bs-primary); background: var(--pwc-tint); border-color: var(--pwc-line);' }}">
                                         {{ $log->action === 'create' ? __('Created') : __('Edited') }}
                                     </span>
                                     <span class="fw-bold ms-1">{{ $log->user->name ?? __('Unknown User') }}</span>
                                 </div>
-                                <span class="text-muted small">{{ $log->created_at->format('d/m/Y H:i') }}</span>
+                                <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>{{ $log->created_at->format('d/m/Y H:i') }}</span>
                             </div>
                             <ul class="mb-0 small">
                                 @foreach($entry['changes'] as $change)
@@ -55,9 +63,10 @@
                                     <li>{{ $change }}</li>
                                 @endforeach
                             </ul>
-                        </div>
+                            </div>
+                        </li>
                     @endforeach
-                </div>
+                </ol>
             @endif
         </div>
     </div>

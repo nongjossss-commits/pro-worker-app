@@ -3,24 +3,26 @@
 @section('title', __('Contract Issued'))
 
 @section('content')
-<div class="container-fluid">
+@include('labor.contracts._pwc_styles')
+<div class="container-fluid pwc">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm border-0 text-center">
-                <div class="card-body p-5">
-                    <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
-                    <h4 class="fw-bold mt-3">{{ __('Contract Issued Successfully') }}</h4>
-                    <p class="text-muted mb-1">{{ __('Contract No.') }}</p>
-                    <p class="fs-3 fw-bold font-monospace">{{ $contract->contract_no }}</p>
-                    <p class="text-muted small">{{ __('Issued at') }} {{ $contract->issued_at->format('d/m/Y H:i') }} — {{ $contract->team->name ?? '-' }}</p>
+        <div class="col-lg-9 col-xl-7">
+            <div class="card pwc-done text-center">
+                <div class="pwc-done-top">
+                    <div class="pwc-done-check"><i class="bi bi-check-lg"></i></div>
+                    <h4 class="fw-bold mt-3 mb-2">{{ __('Contract Issued Successfully') }}</h4>
+                    <p class="text-muted mb-0 small text-uppercase fw-semibold">{{ __('Contract No.') }}</p>
+                    <div class="pwc-done-no">{{ $contract->contract_no }}</div>
+                    <p class="text-muted small mb-3"><i class="bi bi-calendar3 me-1"></i>{{ __('Issued at') }} {{ $contract->issued_at->format('d/m/Y H:i') }} — <i class="bi bi-people-fill me-1"></i>{{ $contract->team->name ?? '-' }}</p>
 
                     @if($contract->signed_copy_path)
-                        <span class="badge bg-success"><i class="bi bi-patch-check-fill me-1"></i>{{ __('Complete Contract') }} ({{ __('signed copy attached') }})</span>
+                        <span class="pwc-status is-done">{{ __('Complete Contract') }} ({{ __('signed copy attached') }})</span>
                     @else
-                        <span class="badge bg-secondary"><i class="bi bi-hourglass-split me-1"></i>{{ __('Awaiting signed copy') }}</span>
+                        <span class="pwc-status is-wait">{{ __('Awaiting signed copy') }}</span>
                     @endif
-
-                    <div class="mt-3 text-start">
+                </div>
+                <div class="card-body px-4 pb-4 pt-3">
+                    <div class="text-start">
                         <label class="form-label small text-muted mb-1">{{ __('Verify Link (also encoded in the QR code on the document)') }}</label>
                         <input type="text" class="form-control form-control-sm font-monospace" readonly
                                value="{{ route('labor.contracts.public-verify', $contract->contract_no) }}"

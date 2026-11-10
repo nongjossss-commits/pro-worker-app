@@ -2222,5 +2222,17 @@
     "This tab no longer exists.": "此标签已不存在。",
     "Will be added to": "将加入",
     "created": "创建于",
-    "— waiting to be added to an employer card": "—— 等待加入雇主卡片"
+    "— waiting to be added to an employer card": "—— 等待加入雇主卡片",
+    "Download Selected": "下载所选",
+    "Edited": "已编辑",
+    "Export file (.json)": "导出文件 (.json)",
+    "Import Templates": "导入模板",
+    "No history recorded yet.": "尚无记录",
+    "This creates new templates — it never overwrites an existing one. A template whose name is already used here is skipped. Any image/stamp/signature fields need to be re-uploaded manually afterward in the builder.": "将创建新模板 —— 不会覆盖现有模板 · 名称重复的模板会被跳过 · 图片/印章/签名字段需之后在编辑器中重新上传",
+    "Tick templates in the list below first": "请先在下方列表勾选模板",
+    "Total edits": "编辑总数",
+    "Unknown User": "未知用户",
+    "awaiting signature": "待签署",
+    "complete": "已完成",
+    "issued": "份"
 }

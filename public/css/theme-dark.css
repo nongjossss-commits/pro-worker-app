@@ -748,3 +748,8 @@ html[data-bs-theme="dark"] [style*="border-color:#f0f0f0" i]:not(.theme-keep-lig
 /* Individual Collection: row with an amount typed in — stronger green on dark */
 html[data-bs-theme="dark"] .ic-person.has-draft,
 html[data-bs-theme="dark"] .ic-person.has-draft:hover { background: rgba(var(--bs-success-rgb), .38); box-shadow: inset 5px 0 0 var(--bs-success-text-emphasis); }
+
+/* Pro Worker contracts pages (public/css/proworker-contracts.css) */
+html[data-bs-theme="dark"] .pwc { --pwc-surface: var(--dk-surface); --pwc-amber: #fbbf24; --pwc-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 26px -14px rgba(0, 0, 0, .7); }
+html[data-bs-theme="dark"] .pwc-status::before { box-shadow: 0 0 0 3px rgba(0, 0, 0, .35); }
+html[data-bs-theme="dark"] .pwc-stat.is-ink { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border: 1px solid var(--dk-border); }

@@ -3321,5 +3321,17 @@
     "This tab no longer exists.": "แท็บนี้ไม่มีอยู่แล้ว",
     "Will be added to": "จะเพิ่มเข้า",
     "created": "สร้างเมื่อ",
-    "— waiting to be added to an employer card": "— รอเพิ่มเข้าการ์ดนายจ้าง"
+    "— waiting to be added to an employer card": "— รอเพิ่มเข้าการ์ดนายจ้าง",
+    "Download Selected": "ดาวน์โหลดที่เลือก",
+    "Edited": "แก้ไข",
+    "Export file (.json)": "ไฟล์ส่งออก (.json)",
+    "Import Templates": "นำเข้าเทมเพลต",
+    "No history recorded yet.": "ยังไม่มีประวัติ",
+    "This creates new templates — it never overwrites an existing one. A template whose name is already used here is skipped. Any image/stamp/signature fields need to be re-uploaded manually afterward in the builder.": "ระบบจะสร้างเทมเพลตใหม่ — ไม่เขียนทับเทมเพลตเดิม · เทมเพลตที่ชื่อซ้ำกับที่มีอยู่จะถูกข้าม · ช่องรูปภาพ/ตราประทับ/ลายเซ็น ต้องอัปโหลดใหม่เองในหน้าจัดวางฟิลด์",
+    "Tick templates in the list below first": "ติ๊กเลือกเทมเพลตในรายการด้านล่างก่อน",
+    "Total edits": "แก้ไขทั้งหมด",
+    "Unknown User": "ไม่ทราบผู้ใช้",
+    "awaiting signature": "รอลงนาม",
+    "complete": "สมบูรณ์",
+    "issued": "ฉบับ"
 }

@@ -3,10 +3,17 @@
 @section('title', __('Pro Worker Contract Templates'))
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">{{ __('Pro Worker Contract Templates') }} (จัดการเทมเพลตสัญญา)</h1>
-        <div class="d-flex gap-2">
+@include('labor.contracts._pwc_styles')
+<div class="container-fluid pwc">
+    <div class="pwc-hero">
+        <div class="pwc-hero-main">
+            <div class="pwc-hero-icon"><i class="bi bi-layout-text-sidebar-reverse"></i></div>
+            <div>
+                <h1 class="pwc-hero-title">{{ __('Pro Worker Contract Templates') }}</h1>
+                @if(app()->getLocale() !== 'th')<p class="pwc-hero-sub">จัดการเทมเพลตสัญญา</p>@endif
+            </div>
+        </div>
+        <div class="pwc-hero-actions">
             <button type="submit" form="contractTemplateExportForm" id="contractTemplateExportBtn" class="btn btn-outline-secondary" disabled
                     title="{{ __('Tick templates in the list below first') }}">
                 <i class="bi bi-download"></i> {{ __('Export Selected') }}
@@ -44,10 +51,10 @@
         </div>
     @endif
 
-    <div class="card shadow mb-4">
-        <div class="card-body">
+    <div class="card pwc-panel mb-4">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-hover align-middle pwc-table">
                     <thead>
                         <tr>
                             <th style="width: 1%;">
@@ -66,11 +73,11 @@
                                 <td>
                                     <input type="checkbox" class="form-check-input contract-template-checkbox" name="ids[]" value="{{ $template->id }}" form="contractTemplateExportForm">
                                 </td>
-                                <td>{{ $template->name }}</td>
-                                <td>{{ count($template->field_mapping ?? []) }}</td>
-                                <td>{{ $template->creator->name ?? '-' }}</td>
-                                <td>{{ $template->created_at->format('d/m/Y') }}</td>
-                                <td>
+                                <td><div class="pwc-tpl-name"><span class="pwc-chip-icon"><i class="bi bi-file-earmark-richtext"></i></span>{{ $template->name }}</div></td>
+                                <td><span class="pwc-count"><i class="bi bi-input-cursor-text"></i>{{ count($template->field_mapping ?? []) }}</span></td>
+                                <td><span class="pwc-meta"><i class="bi bi-person"></i>{{ $template->creator->name ?? '-' }}</span></td>
+                                <td><span class="pwc-meta"><i class="bi bi-calendar3"></i>{{ $template->created_at->format('d/m/Y') }}</span></td>
+                                <td class="text-nowrap">
                                     <a href="{{ route('labor.contract-templates.builder', $template) }}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-pencil-square"></i> {{ __('Edit Fields') }}
                                     </a>
@@ -82,13 +89,13 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">{{ __('No templates yet.') }}</td>
+                                <td colspan="6" class="text-center text-muted py-5"><i class="bi bi-file-earmark-x d-block fs-1 mb-2 opacity-50"></i>{{ __('No templates yet.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            {{ $templates->links() }}
+            @if($templates->hasPages())<div class="px-3 pt-3">{{ $templates->links() }}</div>@endif
         </div>
     </div>
 

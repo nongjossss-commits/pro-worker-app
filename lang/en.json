@@ -3271,5 +3271,17 @@
     "This tab no longer exists.": "This tab no longer exists.",
     "Will be added to": "Will be added to",
     "created": "created",
-    "— waiting to be added to an employer card": "— waiting to be added to an employer card"
+    "— waiting to be added to an employer card": "— waiting to be added to an employer card",
+    "Download Selected": "Download Selected",
+    "Edited": "Edited",
+    "Export file (.json)": "Export file (.json)",
+    "Import Templates": "Import Templates",
+    "No history recorded yet.": "No history recorded yet.",
+    "This creates new templates — it never overwrites an existing one. A template whose name is already used here is skipped. Any image/stamp/signature fields need to be re-uploaded manually afterward in the builder.": "This creates new templates — it never overwrites an existing one. A template whose name is already used here is skipped. Any image/stamp/signature fields need to be re-uploaded manually afterward in the builder.",
+    "Tick templates in the list below first": "Tick templates in the list below first",
+    "Total edits": "Total edits",
+    "Unknown User": "Unknown User",
+    "awaiting signature": "awaiting signature",
+    "complete": "complete",
+    "issued": "issued"
 }

@@ -2222,5 +2222,17 @@
     "This tab no longer exists.": "ဤ tab မရှိတော့ပါ",
     "Will be added to": "ထည့်မည့်နေရာ",
     "created": "ဖန်တီးသည့်ရက်",
-    "— waiting to be added to an employer card": "— အလုပ်ရှင်ကတ်ထဲ ထည့်ရန် စောင့်နေသည်"
+    "— waiting to be added to an employer card": "— အလုပ်ရှင်ကတ်ထဲ ထည့်ရန် စောင့်နေသည်",
+    "Download Selected": "ရွေးထားသည်များ ဒေါင်းလုဒ်",
+    "Edited": "ပြင်ဆင်ခဲ့",
+    "Export file (.json)": "ထုတ်ယူထားသောဖိုင် (.json)",
+    "Import Templates": "Template များ တင်သွင်းရန်",
+    "No history recorded yet.": "မှတ်တမ်း မရှိသေးပါ",
+    "This creates new templates — it never overwrites an existing one. A template whose name is already used here is skipped. Any image/stamp/signature fields need to be re-uploaded manually afterward in the builder.": "Template အသစ် ဖန်တီးမည် — ရှိပြီးသားကို အစားမထိုးပါ · အမည်တူ template ကို ကျော်မည် · ပုံ/တံဆိပ်/လက်မှတ် အကွက်များကို builder တွင် ပြန်တင်ရမည်",
+    "Tick templates in the list below first": "အောက်ပါစာရင်းမှ template များကို အရင်ရွေးပါ",
+    "Total edits": "ပြင်ဆင်မှု စုစုပေါင်း",
+    "Unknown User": "အသုံးပြုသူ မသိ",
+    "awaiting signature": "လက်မှတ် စောင့်ဆဲ",
+    "complete": "ပြီးပြည့်စုံ",
+    "issued": "စောင်"
 }

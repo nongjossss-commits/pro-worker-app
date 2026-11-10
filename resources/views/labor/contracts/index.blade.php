@@ -3,12 +3,21 @@
 @section('title', __('Contract History'))
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold mb-0">{{ __('Contract History') }} (ประวัติการเบิกสัญญา)</h4>
-        <a href="{{ route('labor.contracts.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>{{ __('Issue Contract') }}
-        </a>
+@include('labor.contracts._pwc_styles')
+<div class="container-fluid pwc">
+    <div class="pwc-hero">
+        <div class="pwc-hero-main">
+            <div class="pwc-hero-icon"><i class="bi bi-journal-text"></i></div>
+            <div>
+                <h4 class="pwc-hero-title">{{ __('Contract History') }}</h4>
+                @if(app()->getLocale() !== 'th')<p class="pwc-hero-sub">ประวัติการเบิกสัญญา</p>@endif
+            </div>
+        </div>
+        <div class="pwc-hero-actions">
+            <a href="{{ route('labor.contracts.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>{{ __('Issue Contract') }}
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -63,7 +72,7 @@
         .ct-team.is-on .ct-team-check { visibility: visible; }
         .ct-team-hint { font-size: .8rem; color: var(--bs-secondary-color); }
 
-        /* Contract cards: the full table needs ~1100px; anything narrower
+        /* Contract cards: the full table needs ~1250px; anything narrower
            (phone, tablet, laptop with the sidebar) shows one card per contract
            — number + status on top, the details as "label … value", then the
            signed-copy slot across the card and the buttons at the bottom.
@@ -71,7 +80,7 @@
         .ct-list { container-type: inline-size; }
         .ct-selectall { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; }
         .ct-selectall-text { display: none; }
-        @container (max-width: 1099.98px) {
+        @container (max-width: 1249.98px) {
             .ct-list .table-responsive { overflow: visible; }
             .ct-table { display: block; width: 100%; }
             .ct-table > thead { display: block; }
@@ -124,7 +133,7 @@
             .ct-table > tbody > tr.ct-empty > td { text-align: center; }
         }
         /* two cards side by side once there is room (tablet / small laptop) */
-        @container (min-width: 640px) and (max-width: 1099.98px) {
+        @container (min-width: 640px) and (max-width: 1249.98px) {
             .ct-table > tbody { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .ct-table > tbody > tr.ct-empty { grid-column: 1 / -1; }
         }
@@ -145,6 +154,7 @@
                         <span class="ct-team-total">{{ $row['total'] }}</span>
                         <span class="ct-team-unit">{{ __('issued') }}</span>
                     </div>
+                    <div class="pwc-progress" title="{{ $row['total'] > 0 ? round($row['complete'] / $row['total'] * 100) : 0 }}%"><span style="width: {{ $row['total'] > 0 ? round($row['complete'] / $row['total'] * 100, 1) : 0 }}%"></span></div>
                     <div class="ct-team-stats">
                         <span class="text-success"><i class="bi bi-patch-check-fill"></i> {{ $row['complete'] }} {{ __('complete') }}</span>
                         <span class="text-muted"><i class="bi bi-hourglass-split"></i> {{ $row['total'] - $row['complete'] }} {{ __('awaiting signature') }}</span>
@@ -170,7 +180,7 @@
         <div class="mb-3"></div>
     @endif
 
-    <div class="card shadow-sm border-0 mb-3">
+    <div class="card pwc-panel pwc-filter mb-3">
         <div class="card-body">
             <form method="GET" action="{{ route('labor.contracts.index') }}" class="row g-2 align-items-end">
                 <div class="col-md-4">
@@ -224,7 +234,7 @@
 
     @if($searchSummary)
         {{-- Searching for an employer → its contracts per team (signed / waiting) --}}
-        <div class="card shadow-sm border-0 mb-3 ct-search-summary">
+        <div class="card pwc-panel mb-3 ct-search-summary">
             <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2 small">
                 <span class="fw-semibold"><i class="bi bi-search me-1"></i>{{ __('":q" — :count contract(s)', ['q' => request('q'), 'count' => number_format($searchSummary['total'])]) }}</span>
                 <span class="badge rounded-pill text-bg-success">{{ __(':n complete', ['n' => $searchSummary['signed']]) }}</span>
@@ -240,10 +250,10 @@
          small laptop with the sidebar open) each contract becomes a card —
          see the "Contract cards" styles above. data-mobile-table="scroll":
          this page has its own cards, not the generic phone cards. --}}
-    <div class="card shadow-sm border-0 ct-list">
+    <div class="card pwc-panel ct-list">
         <div class="table-responsive" data-mobile-table="scroll">
-            <table class="table table-hover align-middle mb-0 ct-table">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0 ct-table pwc-table">
+                <thead>
                     <tr>
                         <th style="width: 1%;">
                             <label class="ct-selectall mb-0">
@@ -275,24 +285,31 @@
                                    name="ids[]" value="{{ $contract->id }}"
                                    data-has-signed="{{ $contract->signed_copy_path ? '1' : '0' }}">
                         </td>
-                        <td class="font-monospace ct-no">{{ $contract->contract_no }}</td>
+                        <td class="ct-no"><span class="pwc-no"><i class="bi bi-hash"></i>{{ $contract->contract_no }}</span></td>
                         <td class="ct-field" data-label="{{ __('Employer') }}">
-                            <div>
-                                {{ $contract->employer_name_snapshot ?? '-' }}
-                                @if($contract->employer_ref_snapshot)
-                                    <div class="small text-muted">{{ __('Employer ID') }}: {{ $contract->employer_ref_snapshot }}</div>
-                                @endif
+                            @php
+                                $empName = $contract->employer_name_snapshot ?? '-';
+                                $empShort = trim(preg_replace('/^(บริษัท|ห้างหุ้นส่วนจำกัด|ห้างหุ้นส่วน|หจก\.?|บจก\.?|Company|Co\.,?)\s*/u', '', $empName)) ?: $empName;
+                            @endphp
+                            <div class="pwc-who">
+                                <span class="pwc-avatar" style="--h: {{ crc32($empName) % 360 }}" aria-hidden="true">{{ mb_substr($empShort, 0, 1) }}</span>
+                                <div class="text-start">
+                                    <div class="pwc-who-name">{{ $empName }}</div>
+                                    @if($contract->employer_ref_snapshot)
+                                        <div class="pwc-who-sub">{{ __('Employer ID') }}: {{ $contract->employer_ref_snapshot }}</div>
+                                    @endif
+                                </div>
                             </div>
                         </td>
-                        <td class="ct-field" data-label="{{ __('Template') }}">{{ $contract->template->name ?? '-' }}</td>
-                        <td class="ct-field" data-label="{{ __('Issued By') }}">{{ $contract->issuer->name ?? '-' }} @if($contract->issuer?->staff_code) ({{ $contract->issuer->staff_code }}) @endif</td>
-                        <td class="ct-field" data-label="{{ __('Team') }}">{{ $contract->team->name ?? '-' }}</td>
-                        <td class="text-nowrap ct-field" data-label="{{ __('Issued At') }}">{{ $contract->issued_at->format('d/m/Y H:i') }}</td>
+                        <td class="ct-field" data-label="{{ __('Template') }}"><span class="pwc-meta"><i class="bi bi-file-earmark-text"></i>{{ $contract->template->name ?? '-' }}</span></td>
+                        <td class="ct-field" data-label="{{ __('Issued By') }}"><span class="pwc-meta"><i class="bi bi-person-badge"></i><span>{{ $contract->issuer->name ?? '-' }} @if($contract->issuer?->staff_code) <span class="text-body-secondary">({{ $contract->issuer->staff_code }})</span> @endif</span></span></td>
+                        <td class="ct-field" data-label="{{ __('Team') }}">@if($contract->team)<span class="pwc-tag"><i class="bi bi-people-fill"></i>{{ $contract->team->name }}</span>@else - @endif</td>
+                        <td class="text-nowrap ct-field" data-label="{{ __('Issued At') }}"><span class="pwc-meta"><i class="bi bi-calendar3"></i>{{ $contract->issued_at->format('d/m/Y') }} <span class="text-body-secondary">{{ $contract->issued_at->format('H:i') }}</span></span></td>
                         <td class="ct-status">
                             @if($contract->signed_copy_path)
-                                <span class="badge bg-success">{{ __('Complete Contract') }}</span>
+                                <span class="pwc-status is-done">{{ __('Complete Contract') }}</span>
                             @else
-                                <span class="badge bg-secondary">{{ __('Awaiting signed copy') }}</span>
+                                <span class="pwc-status is-wait">{{ __('Awaiting signed copy') }}</span>
                             @endif
                         </td>
                         <td class="ct-signed">
@@ -341,16 +358,16 @@
                             </form>
                         </td>
                         <td class="text-end ct-actions">
-                            <a href="{{ route('labor.contracts.view', $contract) }}" target="_blank" class="btn btn-sm btn-outline-primary" title="{{ __('Preview') }}">
+                            <a href="{{ route('labor.contracts.view', $contract) }}" target="_blank" class="btn btn-sm btn-outline-primary pwc-iconbtn" title="{{ __('Preview') }}">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-primary" title="{{ __('Download PDF') }}" data-bs-toggle="modal" data-bs-target="#downloadChoiceModal" data-download-url="{{ route('labor.contracts.download', $contract) }}">
+                            <button type="button" class="btn btn-sm btn-outline-primary pwc-iconbtn" title="{{ __('Download PDF') }}" data-bs-toggle="modal" data-bs-target="#downloadChoiceModal" data-download-url="{{ route('labor.contracts.download', $contract) }}">
                                 <i class="bi bi-download"></i>
                             </button>
                             {{-- Issuer-only, same rule as show.blade.php — see
                                  LaborContractController::assertCanEditContract(). --}}
                             @if(auth()->id() === $contract->issued_by)
-                            <a href="{{ route('labor.contracts.edit', $contract) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('Edit') }}">
+                            <a href="{{ route('labor.contracts.edit', $contract) }}" class="btn btn-sm btn-outline-secondary pwc-iconbtn" title="{{ __('Edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             @endif
@@ -358,14 +375,14 @@
                     </tr>
                     @empty
                     <tr class="ct-empty">
-                        <td colspan="10" class="text-center text-muted py-4">{{ __('No contracts issued yet.') }}</td>
+                        <td colspan="10" class="text-center text-muted py-5"><i class="bi bi-journal-x d-block fs-1 mb-2 opacity-50"></i>{{ __('No contracts issued yet.') }}</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
         @if($contracts->hasPages())
-        <div class="card-footer bg-white">{{ $contracts->links() }}</div>
+        <div class="card-footer">{{ $contracts->links() }}</div>
         @endif
     </div>
 </div>
@@ -374,7 +391,7 @@
      carries a hardcoded "View Selected" button wired to an Employee-only
      modal function that doesn't exist here). Only one action needed
      (download), so no Actions dropdown either — just the bar itself. --}}
-<div id="contractBulkBar" class="align-items-center gap-2 p-2 bg-light border rounded shadow-lg"
+<div id="contractBulkBar" class="align-items-center gap-2 p-2 bg-light border rounded shadow-lg pwc pwc-bulkbar"
      style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1060; width: auto; min-width: 360px;">
     <div class="form-check mb-0 d-inline-block me-2">
         {{ __('Selected') }} (<span id="contractBulkCount">0</span>)
