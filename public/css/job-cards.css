@@ -1,0 +1,148 @@
+/*
+ * Job cards — Workflow / Registration Resolution / Renewal Resolution
+ * (2026-11-11). Visual layer only: the employer cards and the employee cards
+ * inside them get rounded corners, layered shadows (raised / "embossed"),
+ * a coloured accent strip and a gentle lift on hover, so each card reads as
+ * its own object instead of flat boxes stacked on each other. Every button,
+ * label, colour meaning (active / inactive / MOU colour / status) and
+ * behaviour is unchanged. Colours follow the brand (--bs-primary) and theme.
+ */
+
+.production-order-card-container,
+.employer-card-container {
+    --jc-r: 1.1rem;
+
+    --jc-ring: rgba(15, 23, 42, .07);
+    --jc-shadow:
+        0 1px 1px rgba(15, 23, 42, .04),
+        0 4px 10px -4px rgba(15, 23, 42, .10),
+        0 18px 34px -20px rgba(15, 23, 42, .28);
+    --jc-shadow-hover:
+        0 1px 2px rgba(15, 23, 42, .05),
+        0 10px 22px -8px rgba(15, 23, 42, .16),
+        0 26px 48px -24px rgba(var(--bs-primary-rgb), .35);
+    --jc-accent: var(--bs-primary);
+    margin-bottom: 1.6rem !important;
+}
+
+/* ---------- employer card ---------- */
+.production-order-card-container > .card,
+.employer-card-container > .card {
+    border-radius: var(--jc-r) !important;
+    border: 1px solid var(--jc-ring) !important;
+    box-shadow: var(--jc-shadow) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .0), rgba(var(--bs-primary-rgb), .018)),
+        var(--bs-card-bg, #ffffff);
+    transition: box-shadow .22s ease, transform .22s ease, border-color .22s ease;
+}
+.production-order-card-container > .card:hover,
+.employer-card-container > .card:hover {
+    box-shadow: var(--jc-shadow-hover) !important;
+    transform: translateY(-2px);
+}
+/* coloured strip on the left = this card is active (Registration/Renewal
+   used a thick orange outline for that; Workflow cards with their own MOU
+   colour keep it) */
+.employer-card-container > .card.border-primary,
+.production-order-card-container > .card:not(.grayscale-mode):not([style*="border-left"]) {
+    border-color: rgba(var(--bs-primary-rgb), .18) !important;
+    border-width: 1px !important;
+    box-shadow: var(--jc-shadow) !important;
+}
+.employer-card-container > .card.border-primary:hover,
+.production-order-card-container > .card:not(.grayscale-mode):not([style*="border-left"]):hover {
+    box-shadow: var(--jc-shadow-hover) !important;
+}
+/* the strip itself: drawn above the header/body so nothing paints over it */
+.employer-card-container > .card.border-primary::before,
+.production-order-card-container > .card:not(.grayscale-mode):not([style*="border-left"])::before {
+    content: ''; position: absolute; left: -1px; top: 18px; bottom: 18px; width: 5px; z-index: 3;
+    border-radius: 0 6px 6px 0; pointer-events: none;
+    background: linear-gradient(180deg, var(--bs-primary-light, var(--jc-accent)), var(--jc-accent));
+    box-shadow: 2px 0 8px rgba(var(--bs-primary-rgb), .35);
+}
+.production-order-card-container > .card.bg-success::before { background: linear-gradient(180deg, #34d399, var(--bs-success)); box-shadow: none; }
+
+/* header: same radius on top, soft sheen, no hard line */
+.production-order-card-container > .card > .card-header,
+.employer-card-container > .card > .card-header {
+    border-top-left-radius: var(--jc-r) !important;
+    border-top-right-radius: var(--jc-r) !important;
+    border-bottom-color: rgba(15, 23, 42, .06) !important;
+    background:
+        radial-gradient(120% 160% at 100% 0%, rgba(var(--bs-primary-rgb), .07), transparent 55%),
+        linear-gradient(180deg, var(--bs-card-bg, #ffffff), var(--bs-card-bg, #ffffff)) !important;
+}
+.production-order-card-container > .card.grayscale-mode > .card-header,
+.employer-card-container > .card.grayscale-mode > .card-header { background: var(--bs-tertiary-bg) !important; }
+/* completed Workflow card keeps its green tint */
+.production-order-card-container > .card.bg-success > .card-header { background: rgba(var(--bs-success-rgb), .08) !important; }
+
+/* the open card stands out a little more */
+.production-order-card-container > .card:has(> .accordion-collapse.show),
+.employer-card-container > .card:has(.accordion-collapse.show) {
+    border-color: rgba(var(--bs-primary-rgb), .30) !important;
+    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), .07), var(--jc-shadow-hover) !important;
+    transform: none;
+}
+/* employee area inside the employer card: a recessed tray with rounded bottom */
+.production-order-card-container .accordion-collapse > .accordion-body,
+.production-order-card-container .accordion-collapse > div:first-child,
+.employer-card-container .accordion-collapse > .accordion-body,
+.employer-card-container .accordion-collapse > div:first-child {
+    border-bottom-left-radius: var(--jc-r);
+    border-bottom-right-radius: var(--jc-r);
+}
+.production-order-card-container .accordion-collapse,
+.employer-card-container .accordion-collapse {
+    background: linear-gradient(180deg, rgba(15, 23, 42, .025), transparent 40px);
+    border-bottom-left-radius: var(--jc-r);
+    border-bottom-right-radius: var(--jc-r);
+}
+
+/* the running number in the corner becomes a small badge */
+.production-order-card-container .employer-sequence-number,
+.employer-card-container .employer-sequence-number {
+    top: 10px !important; right: 12px !important;
+    min-width: 28px; height: 28px; padding: 0 .45rem; border-radius: 999px;
+    display: grid; place-items: center;
+    font-size: .8rem !important; color: var(--bs-secondary-color) !important;
+    background: var(--bs-tertiary-bg); border: 1px solid var(--bs-border-color-translucent);
+}
+
+/* status tab above Registration/Renewal cards ("เตรียมการ" …) */
+.employer-card-container > .card > .position-absolute.rounded-top {
+    border-top-left-radius: .75rem !important; border-top-right-radius: .75rem !important;
+    border-color: rgba(15, 23, 42, .08) !important;
+    box-shadow: 0 -6px 14px -10px rgba(15, 23, 42, .35) !important;
+}
+
+/* pills in the header (totals, step counters, team chips) get softer corners */
+.production-order-card-container .card-header .badge,
+.employer-card-container .card-header .badge { border-radius: .55rem; }
+.production-order-card-container .card-header .btn,
+.employer-card-container .card-header .btn { border-radius: .65rem; }
+.production-order-card-container .card-header .btn.rounded-circle,
+.employer-card-container .card-header .btn.rounded-circle,
+.production-order-card-container .card-header .btn.rounded-pill,
+.employer-card-container .card-header .btn.rounded-pill { border-radius: 999px; }
+
+/* ---------- employee cards inside ---------- */
+.item-card-outer > .card,
+.employee-card-outer > .card {
+    border-radius: 1rem !important;
+    box-shadow: 0 1px 1px rgba(15, 23, 42, .04), 0 6px 16px -10px rgba(15, 23, 42, .22) !important;
+    transition: box-shadow .2s ease, transform .2s ease;
+}
+.item-card-outer > .card:hover,
+.employee-card-outer > .card:hover {
+    box-shadow: 0 2px 4px rgba(15, 23, 42, .05), 0 14px 28px -14px rgba(15, 23, 42, .32) !important;
+    transform: translateY(-1px);
+}
+.item-card-outer, .employee-card-outer { margin-bottom: .9rem !important; }
+
+@media (prefers-reduced-motion: reduce) {
+    .production-order-card-container > .card, .employer-card-container > .card,
+    .item-card-outer > .card, .employee-card-outer > .card { transition: none; transform: none !important; }
+}

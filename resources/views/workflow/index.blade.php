@@ -3,6 +3,7 @@
 @section('title', 'Workflow Dashboard')
 
 @section('content')
+@include('partials._job_cards_style')
 <x-help-button manual="workflow" title="{{ __('Workflow') }}" />
 @php
     $user = auth()->user();

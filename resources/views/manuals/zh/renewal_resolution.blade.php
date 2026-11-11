@@ -130,7 +130,7 @@
 
 <h5>15. 三种方式添加员工</h5>
 <div class="manual-step">
-    <strong>添加员工</strong>提供:<strong>选择现有员工</strong>(按姓名 / 护照 / RA 编号 / 工作证 / 身份证号 / 员工编号搜索)、<strong>新建</strong>(带重复提示)、<strong>从 Excel 导入</strong>。添加的员工只加入当前标签页,各标签页互相独立。
+    <strong>添加员工</strong>提供:<strong>选择现有员工</strong>(按姓名 / 护照 / RA 编号 / 工作证 / 身份证号 / 员工编号搜索)、<strong>新建</strong>(带重复提示)、<strong>从 Excel 导入</strong>。添加的员工只加入当前标签页,各标签页互相独立。 · 直接在工作卡片上填写<strong>RA 号码</strong>或<strong>Outsource 登录邮箱</strong>时，保存前同样会提示 —— 其他员工已使用的邮箱无法保存
 </div>
 
 <h5>16. 已通知离职的员工</h5>

@@ -3,6 +3,7 @@
 @section('title', 'Renewal Resolution')
 
 @section('content')
+@include('partials._job_cards_style')
 <x-help-button manual="renewal_resolution" title="{{ __('Renewal Resolution') }}" />
 <style>
     .cursor-pointer { cursor: pointer; }

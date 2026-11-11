@@ -130,7 +130,7 @@
 
 <h5>15. Add employees — 3 ways</h5>
 <div class="manual-step">
-    <strong>Add Employee</strong> offers: <strong>select existing</strong> (search by name / passport / RA number / work permit / ID / employee code), <strong>create new</strong> (with duplicate warning), <strong>import from Excel</strong>. Added employees join only the open tab; tabs stay independent.
+    <strong>Add Employee</strong> offers: <strong>select existing</strong> (search by name / passport / RA number / work permit / ID / employee code), <strong>create new</strong> (with duplicate warning), <strong>import from Excel</strong>. Added employees join only the open tab; tabs stay independent. · Typing the <strong>RA number</strong> or the <strong>Outsource login e-mail</strong> straight on a job card shows the same warning before saving — an e-mail another employee already uses cannot be saved
 </div>
 
 <h5>16. Notified-out employees</h5>

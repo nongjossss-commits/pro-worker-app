@@ -138,7 +138,7 @@
 
 <h5>14. Duplicate employee check</h5>
 <div class="manual-step">
-    When adding a new employee (Add Employee window, Excel import) the system compares passport / work permit / pink card / ID number / RA number with existing employees and warns before saving.
+    When adding a new employee (Add Employee window, Excel import) the system compares passport / work permit / pink card / ID number / RA number with existing employees and warns before saving. · Typing the <strong>RA number</strong> or the <strong>Outsource login e-mail</strong> straight on a job card shows the same warning before saving — an e-mail another employee already uses cannot be saved
 </div>
 
 <h5>15. Notify In / Change Employer — notified-out employees</h5>

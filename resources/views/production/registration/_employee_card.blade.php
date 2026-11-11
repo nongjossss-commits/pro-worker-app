@@ -309,9 +309,13 @@
                 </div>
                 </div>
 
+            {{-- Info panel: appointment · outsource login · RA / request / reference no. ·
+                 remarks · insurance in one framed grid, same idea as Workflow's .wf-panel
+                 (layout only — CSS in production/registration/_employee_card_panel_style). --}}
+            <div class="reg-panel">
             {{-- Outsource Login Information --}}
             @can('edit-employees')
-            <div class="ms-md-2" x-data="{
+            <div class="ms-md-2 rp-login-wrap" x-data="{
                 isEditing: false,
                 email: @js($employee->email ?? ''),
                 originalEmail: @js($employee->email ?? ''),
@@ -319,7 +323,13 @@
                 originalPassword: @js($employee->password ?? ''),
                 outsource_code: @js($employee->outsource_code ?? ''),
                 originalOutsourceCode: @js($employee->outsource_code ?? ''),
+                // Duplicate warning first (same popup as the Edit form) — partials/_duplicate_field_check
                 saveOutsourceLogin() {
+                    if (this.email === this.originalEmail) { this._saveOutsourceLoginNow(); return; }
+                    window.checkEmployeeFieldDuplicates({ employeeEmail: this.email }, {{ $employee->id }})
+                        .then(ok => { if (ok) this._saveOutsourceLoginNow(); });
+                },
+                _saveOutsourceLoginNow() {
                     let body = {
                         email: this.email,
                         password: this.password,
@@ -361,7 +371,7 @@
                     });
                 }
             }">
-                <div style="min-width: 250px;">
+                <div class="rp-cred" style="min-width: 250px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;"><i class="bi bi-lock-fill"></i> {{ __('ข้อมูลการเข้าสู่ระบบ Outsource') }}</small>
 
                     <div x-show="!isEditing" class="d-flex align-items-center gap-2 position-relative">
@@ -430,7 +440,7 @@
                     $isRenewalContext = request()->is('production/renewal*');
                     $modulePath = $isRenewalContext ? 'production/renewal/' . $currentTab->id : 'production/registration/' . $currentTab->id;
                 @endphp
-                <div class="mt-2" style="min-width: 250px;" x-data="{
+                <div class="mt-2 rp-appt" style="min-width: 250px;" x-data="{
                     isAppCompleted: {{ $isAppCompleted ? 'true' : 'false' }},
                     dateValue: @js($appValue),
                     displayValue: @js($appDisplay),
@@ -548,8 +558,8 @@
 
             </div>
             @endcan
-            <div class="d-flex flex-column gap-2 ms-md-2">
-            <div class="d-flex gap-2 align-items-start">
+            <div class="d-flex flex-column gap-2 ms-md-2 rp-col">
+            <div class="d-flex gap-2 align-items-start rp-row">
             {{-- REMARKS SECTION --}}
             @php
                 $isRenewal = request()->is('production/renewal*');
@@ -560,7 +570,7 @@
                     ? route('production.renewal.remarks', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id])
                     : route('production.registration.remarks', ['employee' => $employee->id, 'resolutionTab' => $currentTab->id]);
             @endphp
-            <div x-data="{
+            <div class="rp-remark" x-data="{
                 isEditing: false,
                 remarkText: {{ json_encode($remarkText ?? '') }},
                 tempRemarkText: '',
@@ -639,7 +649,7 @@
             </div>
 
             {{-- INSURANCE TYPE SECTION --}}
-            <div x-data="{
+            <div class="rp-ins" x-data="{
                 isEditing: false,
                 insuranceType: @js($employee->insurance_type ?? ''),
                 tempInsuranceType: @js($employee->insurance_type ?? ''),
@@ -772,9 +782,10 @@
                  outer HTML attribute stays intact. Same reason we still
                  avoid raw '{{ … }}' — this preserves quotes/backslashes/unicode
                  in the RA number and request number values. --}}
-            <div class="d-flex flex-column gap-2" x-data="{
+            <div class="d-flex flex-column gap-2 rp-fields" x-data="{
                 isEditing: false,
                 nameList: @js($employee->name_list_number ?? ''),
+                savedNameList: @js($employee->name_list_number ?? ''),
                 reqNo: @js($currentRequestNumber ?? ''),
                 refId: @js($employee->employee_reference_id ?? ''),
                 updateMethod: @js($updateMethod),
@@ -813,7 +824,13 @@
                         }
                     });
                 },
+                // Duplicate warning for the RA number first (same popup as the Edit form)
                 saveFields() {
+                    if (this.nameList === this.savedNameList) { this._saveFieldsNow(); return; }
+                    window.checkEmployeeFieldDuplicates({ name_list_number: this.nameList }, {{ $employee->id }})
+                        .then(ok => { if (ok) this._saveFieldsNow(); });
+                },
+                _saveFieldsNow() {
                     let formData = new FormData();
                     formData.append('_method', 'PUT');
                     formData.append('_token', '{{ csrf_token() }}');
@@ -858,6 +875,7 @@
                     .then(responses => Promise.all(responses.map(res => res.json())))
                     .then(dataArray => {
                         showToast('{{ __('Saved successfully') }}', 'success');
+                        this.savedNameList = this.nameList;
                         this.isEditing = false;
                     })
                     .catch(err => {
@@ -866,7 +884,7 @@
                     });
                 }
             }">
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2 rp-ra">
                     {{-- Field 1: Name List (Renamed to RA) --}}
                     <div style="min-width: 140px; max-width: 250px; flex-grow: 1;">
                         <small class="text-muted d-block" style="font-size: 0.7rem;">เลข RA จากระบบ outsource</small>
@@ -894,7 +912,7 @@
                 </div>
 
                 {{-- Field 2: Request No --}}
-                <div style="min-width: 140px; max-width: 250px;">
+                <div class="rp-req" style="min-width: 140px; max-width: 250px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขที่คำขอ</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="reqDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="reqNo || '-'"></div>
@@ -906,7 +924,7 @@
                 </div>
 
                 {{-- Field 3: Ref ID --}}
-                <div style="min-width: 140px; max-width: 250px;">
+                <div class="rp-ref" style="min-width: 140px; max-width: 250px;">
                     <small class="text-muted d-block" style="font-size: 0.7rem;">เลขอ้างอิงคนงาน</small>
                     <div x-show="!isEditing" class="d-flex align-items-center justify-content-between small text-dark border rounded px-2 py-1 bg-light overflow-hidden" style="min-height: 31px;">
                         <div x-ref="refDisplay" x-init="fitText($el)" class="text-nowrap overflow-hidden flex-grow-1" x-text="refId || '-'"></div>
@@ -920,6 +938,7 @@
 
 
             </div>
+            </div>{{-- /.reg-panel --}}
 
             </div>
 
@@ -1218,3 +1237,5 @@
     </div>
     </div>
 </div>
+
+@include('production.registration._employee_card_panel_style')

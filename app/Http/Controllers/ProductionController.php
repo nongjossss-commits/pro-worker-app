@@ -489,7 +489,10 @@ class ProductionController extends Controller
         }
 
         $request->validate([
-            'email' => 'nullable|string|max:255',
+            // Same rule as WorkflowController::updateCredentials(): an e-mail
+            // already used by another employee is refused (it is the one
+            // "blocking" duplicate in the Edit form too) — 2026-11-11.
+            'email' => ['nullable', 'string', 'max:255', \Illuminate\Validation\Rule::unique('employees', 'email')->ignore($employee->id)],
             'password' => 'nullable|string|max:255',
             'outsource_code' => 'nullable|string|max:255',
         ]);

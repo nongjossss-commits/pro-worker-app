@@ -101,7 +101,7 @@
 
 <h5>11. Duplicate check + Job Check Mode</h5>
 <div class="manual-step">
-    Adding a new employee warns when passport / work permit / pink card / ID number / RA number matches an existing employee. This menu is one of the 4 menus covered by <strong>Job Check Mode</strong> (see the Workflow manual).
+    Adding a new employee warns when passport / work permit / pink card / ID number / RA number matches an existing employee. This menu is one of the 4 menus covered by <strong>Job Check Mode</strong> (see the Workflow manual). · Typing the <strong>RA number</strong> or the <strong>Outsource login e-mail</strong> straight on a job card shows the same warning before saving — an e-mail another employee already uses cannot be saved
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>Tips</h4>

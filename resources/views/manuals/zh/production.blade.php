@@ -101,7 +101,7 @@
 
 <h5>11. 重复检查 + 工作核查模式</h5>
 <div class="manual-step">
-    新增员工时若 护照 / 工作证 / 粉卡 / 身份证号 / RA 编号 与现有员工相同会提示。本菜单是<strong>工作核查模式</strong>覆盖的 4 个菜单之一(详见 Workflow 手册)。
+    新增员工时若 护照 / 工作证 / 粉卡 / 身份证号 / RA 编号 与现有员工相同会提示。本菜单是<strong>工作核查模式</strong>覆盖的 4 个菜单之一(详见 Workflow 手册)。 · 直接在工作卡片上填写<strong>RA 号码</strong>或<strong>Outsource 登录邮箱</strong>时，保存前同样会提示 —— 其他员工已使用的邮箱无法保存
 </div>
 
 <h4><i class="bi bi-lightbulb me-2"></i>使用小贴士</h4>

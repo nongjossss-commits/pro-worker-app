@@ -617,7 +617,8 @@ class SalesLeadController extends Controller
                 if ($slEmp->employee_id) {
                     continue; // already an existing, known employee — nothing new being created
                 }
-                foreach (['employeePassport' => 'เลขพาสปอร์ต', 'employeeWorkPermit' => 'เลขที่ใบอนุญาตทำงาน'] as $column => $label) {
+                // same identity fields as EmployeeController::checkDuplicate() (2026-11-11: was passport + work permit only)
+                foreach (['employeePassport' => 'เลขพาสปอร์ต', 'employeeWorkPermit' => 'เลขที่ใบอนุญาตทำงาน', 'pinkCardNo' => 'เลขบัตรชมพู', 'employee_id_number' => 'เลขประจำตัว', 'name_list_number' => 'เลข RA'] as $column => $label) {
                     $value = trim((string) $slEmp->{$column});
                     if ($value === '') {
                         continue;

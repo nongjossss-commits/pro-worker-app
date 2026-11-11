@@ -2204,6 +2204,7 @@
     <script src="{{ asset('js/upload-size-guard.js') }}?v={{ @filemtime(public_path('js/upload-size-guard.js')) }}"></script>
     <script>window.MobileTableCardsText = {!! json_encode(['selectAll' => __('Select all')], JSON_UNESCAPED_UNICODE) !!};</script>
     <script src="{{ asset('js/mobile-table-cards.js') }}?v={{ @filemtime(public_path('js/mobile-table-cards.js')) }}"></script>
+    @include('partials._duplicate_field_check')
     @stack('scripts')
 
 {{-- Global: Clean up stale Bootstrap modal backdrops that get stuck due to CSS display:none hack --}}

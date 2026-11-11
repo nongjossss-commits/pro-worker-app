@@ -377,6 +377,7 @@
                 <div class="ms-md-4 wf-cred" x-data="{
                     isEditing: false,
                     email: {{ json_encode($item->employee->email ?? '') }},
+                    savedEmail: {{ json_encode($item->employee->email ?? '') }},
                     outsource_code: {{ json_encode($item->employee->outsource_code ?? '') }},
                     copy(el, text) {
                         if (!text) return;
@@ -386,7 +387,13 @@
                             setTimeout(() => el.innerHTML = originalHtml, 1000);
                         });
                     },
+                    // Duplicate warning first (same popup as the Edit form) — partials/_duplicate_field_check
                     save() {
+                        if (this.email === this.savedEmail) { this._saveNow(); return; }
+                        window.checkEmployeeFieldDuplicates({ employeeEmail: this.email }, {{ $item->employee->id ?? 'null' }})
+                            .then(ok => { if (ok) this._saveNow(); });
+                    },
+                    _saveNow() {
                         fetch('/workflow/item/{{ $item->id }}/update-credentials', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
@@ -401,6 +408,7 @@
                         .then(data => {
                             if(data.success) {
                                 this.isEditing = false;
+                                this.savedEmail = this.email;
                                 Swal.fire({
                                     toast: true,
                                     position: 'top-end',
@@ -553,6 +561,7 @@
                     <div class="d-flex flex-column gap-2 wf-fields" x-data="{
                         isEditing: false,
                         nameList: @js($item->employee->name_list_number ?? ''),
+                        savedNameList: @js($item->employee->name_list_number ?? ''),
                         reqNo: @js($item->request_number ?? ''),
                         refId: @js($item->employee->employee_reference_id ?? ''),
                         updateMethod: 'item_update',
@@ -590,7 +599,13 @@
                                 }
                             });
                         },
+                        // Duplicate warning for the RA number first (same popup as the Edit form)
                         saveFields() {
+                            if (this.nameList === this.savedNameList) { this._saveFieldsNow(); return; }
+                            window.checkEmployeeFieldDuplicates({ name_list_number: this.nameList }, {{ $item->employee->id ?? 'null' }})
+                                .then(ok => { if (ok) this._saveFieldsNow(); });
+                        },
+                        _saveFieldsNow() {
                             let formData = new FormData();
                             formData.append('_method', 'PUT');
                             formData.append('_token', '{{ csrf_token() }}');
@@ -633,6 +648,7 @@
                                 } else {
                                     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '{{ __('Saved successfully') }}', showConfirmButton: false, timer: 1500 });
                                 }
+                                this.savedNameList = this.nameList;
                                 this.isEditing = false;
                             })
                             .catch(err => {
