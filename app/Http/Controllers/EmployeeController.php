@@ -56,14 +56,14 @@ class EmployeeController extends Controller
 
         $employee->update([
             'terminated_at' => $validated['termination_date'],
-            'termination_reason' => $validated['termination_reason'],
+            'termination_reason' => ($validated['termination_reason'] ?? null),
         ]);
 
         ActivityLogHelper::logAction('terminate', 'แจ้งออกลูกจ้าง ' . $employee->getRawOriginal('employeeNameEn') . ' จากนายจ้าง ' . $employerName, Employee::class, $employee->id, [
             'employer_id' => $employee->employer_id,
             'employer_name' => $employerName,
             'termination_date' => $validated['termination_date'],
-            'termination_reason' => $validated['termination_reason'],
+            'termination_reason' => ($validated['termination_reason'] ?? null),
         ]);
 
         return back()->with('success', 'Employee terminated successfully.');

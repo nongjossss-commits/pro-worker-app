@@ -75,14 +75,15 @@ class EmployeeObserver
             $this->syncRenewalStatus($employee);
         }
 
-        // 3. Auto-cancel pending notify_out items when the employee moves to a different employer.
-        // Rationale: notify_out from old employer is no longer relevant if the employee has been
-        // transferred to a new employer (via change-employer workflow, sales transition, manual edit,
-        // or any other path). The notify_out card represents leaving the OLD employer — once the
-        // employee is under a NEW employer, that card should disappear from the notify_out menu.
-        if ($employee->isDirty('employer_id')) {
-            $this->autoCancelStaleNotifyOuts($employee);
-        }
+        // 3. (Removed 2026-11-15) Pending notify_out jobs are NO LONGER auto-cancelled
+        // when the employee moves to another employer. Notifying out can take days:
+        // staff press "Terminate" straight away so the employee can be added to
+        // "แจ้งเข้า / เปลี่ยนนายจ้าง" under the new employer, while the old employer's
+        // notify_out job (and every other Workflow job in progress) stays on its card
+        // until someone finishes or cancels it by hand. Finishing it after the move
+        // does not mark the employee resigned again — see
+        // WorkflowController::finalizeOneItem(). Registration / Renewal Resolution
+        // cards still follow the employee to the new employer (unchanged).
 
         // 4. Bump activity timestamp on all non-finalized production_items for this employee.
         // ProductionItem::$touches = ['order'] cascades to bump the parent order's updated_at,
@@ -123,35 +124,6 @@ class EmployeeObserver
                 ->update(['updated_at' => $now]);
         } catch (\Throwable $e) {
             Log::warning("bumpRelatedProductionItems failed for employee {$employee->id}: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Cancel any pending (not completed / not cancelled) notify_out items for this employee.
-     * Triggered when employee.employer_id changes — the old notify_out card is stale.
-     */
-    protected function autoCancelStaleNotifyOuts(Employee $employee): void
-    {
-        try {
-            // Find pending notify_out items for this employee where the order belongs to a DIFFERENT employer
-            // than the one the employee now belongs to (i.e. the "from" employer of the notify_out).
-            \App\Models\ProductionItem::where('employee_id', $employee->id)
-                ->whereNotIn('status', ['completed', 'cancelled'])
-                ->whereHas('order', function ($q) use ($employee) {
-                    $q->where('status', '!=', 'cancelled')
-                      ->whereHas('workType', fn($wt) => $wt->where('slug', 'notify_out'));
-                    // Only cancel items whose order employer != employee's new employer
-                    // (otherwise the notify_out is still happening from the same employer)
-                    if ($employee->employer_id) {
-                        $q->where('employer_id', '!=', $employee->employer_id);
-                    }
-                })
-                ->update([
-                    'status' => 'cancelled',
-                    'remarks' => DB::raw("CONCAT(COALESCE(remarks, ''), ' [Auto-cancelled: employee moved to another employer on " . now()->format('Y-m-d H:i') . "]')"),
-                ]);
-        } catch (\Throwable $e) {
-            Log::warning("autoCancelStaleNotifyOuts failed for employee {$employee->id}: " . $e->getMessage());
         }
     }
 

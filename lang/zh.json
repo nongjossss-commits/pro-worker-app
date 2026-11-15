@@ -2234,5 +2234,6 @@
     "Unknown User": "未知用户",
     "awaiting signature": "待签署",
     "complete": "已完成",
-    "issued": "份"
+    "issued": "份",
+    "Now with employer: :name": "现雇主：:name"
 }

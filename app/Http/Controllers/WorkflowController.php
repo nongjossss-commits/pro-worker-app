@@ -2331,7 +2331,14 @@ class WorkflowController extends Controller
         // For 'notify_in' (Change Employer), we DELAY the update by 24 hours.
         // So we DO NOT update the employee record here. The Scheduled Job will handle it.
         if (in_array($slug, ['mou_import', 'mou_renewal'])) {
-            if ($item->employee) {
+            // A renewal job kept open at the OLD employer after the employee was
+            // notified out and is already working for another employer must not
+            // pull them back (2026-11-15 — jobs are no longer auto-cancelled on a move).
+            $movedAway = $slug === 'mou_renewal' && $item->employee
+                && !$item->employee->terminated_at
+                && $item->employee->employer_id
+                && (int) $item->employee->employer_id !== (int) $item->order->employer_id;
+            if ($item->employee && !$movedAway) {
                 $item->employee->update([
                     'employer_id' => $item->order->employer_id,
                     'status' => 'active',
@@ -2345,7 +2352,11 @@ class WorkflowController extends Controller
             if (!$item->notify_out_date) {
                 throw new \Exception('NOTIFY_OUT_DATE_REQUIRED');
             }
-            if ($item->employee) {
+            // Only while the employee is still with THIS card's employer. If they were
+            // already notified out by hand and moved to a new employer while this job
+            // was still open (it is kept open on purpose — see EmployeeObserver), the
+            // job just completes; the employee stays active at the new employer.
+            if ($item->employee && (int) $item->employee->employer_id === (int) $item->order->employer_id) {
                 $item->employee->update([
                     'terminated_at' => $item->notify_out_date,
                     'termination_reason' => $item->notify_out_reason ?: null,
@@ -3368,7 +3379,11 @@ class WorkflowController extends Controller
                 'employer_id' => $order->employer_id,
                 'terminated_at' => null,
                 'termination_reason' => null,
-                'status' => 'active',
+                // Keep a Registration / Renewal Resolution status (registration_pending,
+                // renewal_pending, …) — resetting it to 'active' dropped the employee out
+                // of those menus instead of moving their card to the new employer
+                // (2026-11-15). Only a "resigned" (or empty) status becomes active.
+                'status' => in_array($emp->status, [null, '', 'resigned'], true) ? 'active' : $emp->status,
             ]);
 
             ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $emp->getRawOriginal('employeeNameEn') . ' จาก ' . $oldEmployerName . ' ไป ' . $newEmployerName . ' (แจ้งเข้า/เปลี่ยนนายจ้างใน Workflow)', Employee::class, $emp->id, [

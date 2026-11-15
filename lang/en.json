@@ -3283,5 +3283,6 @@
     "Unknown User": "Unknown User",
     "awaiting signature": "awaiting signature",
     "complete": "complete",
-    "issued": "issued"
+    "issued": "issued",
+    "Now with employer: :name": "Now with employer: :name"
 }

@@ -205,6 +205,28 @@
                             {{ $empNameTh }}
                         </div>
 
+                        {{-- The employee was notified out / moved to another employer while this
+                             job is still open — the job stays here until it is finished (2026-11-15). --}}
+                        @php
+                            $cardEmp = $item->employee;
+                            $movedTo = ($cardEmp && $order && $cardEmp->employer_id && (int) $cardEmp->employer_id !== (int) $order->employer_id)
+                                ? ($cardEmp->employer?->employerNameTh ?: $cardEmp->employer?->employerNameEn) : null;
+                        @endphp
+                        @if($cardEmp && !$isCompleted && ($cardEmp->terminated_at || $movedTo))
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            @if($cardEmp->terminated_at)
+                                <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle" style="font-size: 0.68rem;">
+                                    <i class="bi bi-box-arrow-right me-1"></i>{{ __('Notified out :date', ['date' => $cardEmp->terminated_at->format('d/m/Y')]) }}
+                                </span>
+                            @endif
+                            @if($movedTo)
+                                <span class="badge rounded-pill bg-info-subtle text-info-emphasis border border-info-subtle text-wrap text-start" style="font-size: 0.68rem;">
+                                    <i class="bi bi-arrow-left-right me-1"></i>{{ __('Now with employer: :name', ['name' => $movedTo]) }}
+                                </span>
+                            @endif
+                        </div>
+                        @endif
+
                         {{-- Employer Info (Requested Feature) --}}
                         @if($order && $order->employer)
                         <div class="small text-primary mt-1">

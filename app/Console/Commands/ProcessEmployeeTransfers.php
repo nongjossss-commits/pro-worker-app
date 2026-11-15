@@ -89,7 +89,9 @@ class ProcessEmployeeTransfers extends Command
 
                     $employee->update([
                         'employer_id' => $order->employer_id,
-                        'status' => 'active',
+                        // keep a Registration / Renewal Resolution status — see
+                        // WorkflowController::rejoinNotifiedOutEmployee() (2026-11-15)
+                        'status' => in_array($employee->status, [null, '', 'resigned'], true) ? 'active' : $employee->status,
                         'terminated_at' => null,
                         'termination_reason' => null,
                         'termination_date' => null

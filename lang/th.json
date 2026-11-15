@@ -3333,5 +3333,6 @@
     "Unknown User": "ไม่ทราบผู้ใช้",
     "awaiting signature": "รอลงนาม",
     "complete": "สมบูรณ์",
-    "issued": "ฉบับ"
+    "issued": "ฉบับ",
+    "Now with employer: :name": "ตอนนี้อยู่กับนายจ้าง: :name"
 }

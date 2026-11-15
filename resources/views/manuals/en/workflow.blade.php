@@ -143,7 +143,7 @@
 
 <h5>15. Notify In / Change Employer — notified-out employees</h5>
 <div class="manual-step">
-    Adding an employee from the "Notified-Out Employees" list to the <strong>Notify In / Change Employer</strong> tab moves them to the new employer and clears the notified-out status immediately.
+    Adding an employee from the "Notified-Out Employees" list to the <strong>Notify In / Change Employer</strong> tab moves them to the new employer and clears the notified-out status immediately. · <strong>Jobs still open in Workflow at the old employer (e.g. an unfinished notify-out) stay on their cards</strong> until someone finishes or cancels them — the card shows "Notified out" / "Now with employer: …" · finishing that notify-out job later keeps the employee active at the new employer (not notified out again) · Registration / Renewal Resolution: the employee's card stays under the old employer after the notify-out (it does not disappear) until they are added to "Notify In / Change Employer" under a new employer, then it moves to the new employer's card with its progress
 </div>
 
 <h5>16. Cross-date appointment search</h5>

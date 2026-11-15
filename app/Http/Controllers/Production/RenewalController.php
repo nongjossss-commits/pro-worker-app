@@ -1340,19 +1340,14 @@ class RenewalController extends Controller
         // operator / insurance filters are plain Employee-column filters,
         // so they apply identically via the same query builder.
         $linkedQuery = $employer->employees()
-            // A dual-linked employee who has since been "แจ้งออก" (notified
-            // out / terminated) from THIS employer, but not yet
-            // re-registered anywhere else, must not keep showing up here —
-            // notify_out sets terminated_at but deliberately never touches
-            // the EmployeeRenewalLink row (add-only rule, see
-            // EmployeeObserver::syncRenewalStatus()'s docblock), so without
-            // this guard their data kept rendering under their old
-            // employer's Renewal list indefinitely. Matches the guard the
-            // aggregate/count queries in this same controller already have
-            // (search this file for "terminated_at") and what
-            // RegistrationController's own employee queries get for free
-            // from their status filter.
-            ->whereNull('terminated_at')
+            // 2026-11-15 (owner's rule): a dual-linked employee who was
+            // "แจ้งออก" (notified out) stays listed under their old employer —
+            // same as the tab's own renewal employees and Registration — until
+            // they are added to "แจ้งเข้า / เปลี่ยนนายจ้าง" under a new employer,
+            // which moves the card there (employees are grouped by their
+            // current employer_id). Before, they vanished the moment they were
+            // notified out. The aggregate/count queries in this controller still
+            // leave notified-out employees out of the "active" numbers.
             ->whereHas('renewalLinks', function ($q) {
                 $q->where('resolution_tab_id', $this->currentTab->id);
             })
@@ -1611,7 +1606,7 @@ class RenewalController extends Controller
         $linkedItems = collect();
         if (empty($renewalFilters)) {
             $linkedQuery = $employer->employees()
-                ->whereNull('terminated_at') // see fetchEmployees()'s matching guard for the full rationale
+                // listed like in fetchEmployees() — notified-out employees stay until moved (2026-11-15)
                 ->whereHas('renewalLinks', function ($q) {
                     $q->where('resolution_tab_id', $this->currentTab->id);
                 })

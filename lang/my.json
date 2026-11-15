@@ -2234,5 +2234,6 @@
     "Unknown User": "အသုံးပြုသူ မသိ",
     "awaiting signature": "လက်မှတ် စောင့်ဆဲ",
     "complete": "ပြီးပြည့်စုံ",
-    "issued": "စောင်"
+    "issued": "စောင်",
+    "Now with employer: :name": "ယခု အလုပ်ရှင်: :name"
 }
