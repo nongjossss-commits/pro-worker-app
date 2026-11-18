@@ -53,7 +53,7 @@
             '<strong>Tick checkbox:</strong> select multiple employees',
             '<strong>Bulk bar:</strong> floats at the bottom',
             '<strong>Transfer Employer:</strong> select the destination employer',
-            '<strong>Effect:</strong> these employees\' notify_out entries are auto-cancelled',
+            '<strong>Effect:</strong> their open notify-out jobs at the old employer stay until finished by hand',
         ],
     ])
 
@@ -62,7 +62,7 @@
             <li>Tick the checkbox for the employees you want to move</li>
             <li>Bulk bar → "Actions" → <strong>"Transfer Employer"</strong></li>
             <li>Select the destination employer → confirm</li>
-            <li>The system transfers them + auto-cancels their notify_out entries</li>
+            <li>The system transfers them — open notify-out jobs stay at the old employer until finished by hand</li>
         </ol>
     </div>
 </section>

@@ -53,7 +53,7 @@
             '<strong>勾选框:</strong> 选择多名雇员',
             '<strong>批量操作栏:</strong> 浮现于底部',
             '<strong>转移雇主:</strong> 选择目标雇主',
-            '<strong>影响:</strong> 这些雇员的 notify_out 记录会自动取消',
+            '<strong>影响:</strong> 原雇主处未完成的 notify_out 工作会保留，直到手动完成',
         ],
     ])
 
@@ -62,7 +62,7 @@
             <li>勾选要转移的雇员</li>
             <li>批量操作栏 → "Actions" → <strong>"转移雇主"</strong></li>
             <li>选择目标雇主 → 确认</li>
-            <li>系统会执行转移 + 自动取消这些雇员的 notify_out 记录</li>
+            <li>系统会执行转移 —— 未完成的 notify_out 工作保留在原雇主处，直到手动完成</li>
         </ol>
     </div>
 </section>

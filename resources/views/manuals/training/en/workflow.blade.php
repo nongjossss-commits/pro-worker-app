@@ -45,7 +45,7 @@
     </div>
 
     <div class="slide-tip">
-        💡 <strong>Tip:</strong> a card with <strong>recent activity</strong> moves to the top every time you refresh
+        💡 <strong>Tip:</strong> employer cards keep a fixed order by <strong>Employer ID</strong> — ticking or editing never moves a card · cards with no employees in progress turn grey and go to the end
     </div>
 </section>
 
@@ -134,7 +134,7 @@
     </div>
 
     <div class="slide-tip">
-        💡 <strong>Tip:</strong> if the employee is transferring employer (not actually resigning) → the notify_out entry is auto-cancelled
+        💡 <strong>Tip:</strong> if the employee is changing employer (not actually resigning) → the old employer's notify-out job <strong>stays open</strong> until someone finishes or cancels it (the card shows "Now with employer: …")
     </div>
 </section>
 
@@ -252,11 +252,11 @@
     <h2 class="slide-title">Frequently Asked Questions</h2>
 
     <dl class="slide-faq">
-        <dt>Q: Why doesn't my card move to the top?</dt>
-        <dd>A: The system only reorders cards on <strong>refresh</strong> or when you come back from another menu — the UI doesn't jump around mid-task (to avoid being distracting)</dd>
+        <dt>Q: How are employer cards ordered?</dt>
+        <dd>A: By <strong>Employer ID</strong> (A→Z), always the same — editing an employee never moves the card · cards with no employees in progress / cancelled go to the end and return to their place as soon as an employee is added</dd>
 
-        <dt>Q: An employee disappeared from the Notify Out tab?</dt>
-        <dd>A: Auto-cancelled when they were transferred to a new employer — notify_out means "leaving the old employer", which no longer applies</dd>
+        <dt>Q: The notify-out job of an employee who moved employer is still in the tab?</dt>
+        <dd>A: Yes — it is <strong>no longer auto-cancelled</strong>. The old employer's notify-out job stays until someone finishes or cancels it (the card shows "Now with employer: …") · finishing it keeps the employee working at the new employer, not notified out again</dd>
 
         <dt>Q: Caretaker sees some cards but not others?</dt>
         <dd>A: Caretaker only sees employers assigned to them</dd>

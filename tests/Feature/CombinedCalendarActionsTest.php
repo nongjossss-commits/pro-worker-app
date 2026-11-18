@@ -137,4 +137,23 @@ class CombinedCalendarActionsTest extends TestCase
         $this->assertStringContainsString("route('appointments.edit-kit')", $layout);
         $this->assertStringContainsString('document.body.appendChild(editModal)', $layout, 'menu edit popups open above the calendar');
     }
+
+    public function test_cards_use_fixed_columns_and_the_floating_selection_bar_has_the_main_tools(): void
+    {
+        // 2026-11-19: time + buttons always in the same right-hand column
+        $this->resolutionAppointment('registration');
+        $html = $this->actingAs($this->admin)->getJson(route('appointments.by-date', ['date' => now()->toDateString()]))->json('html');
+        $this->assertStringContainsString('class="appt-row"', $html);
+        $this->assertStringContainsString('class="appt-side"', $html);
+
+        // floating bar at the bottom centre with the same tools as the menus' bars
+        $page = $this->get(route('notifications.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('id="apptBulkBar"', $page);
+        foreach (['advanced-edit', 'advanced-export', 'download', 'generate-pdf'] as $action) {
+            $this->assertStringContainsString('data-action="' . $action . '"', $page, $action);
+        }
+        $this->assertStringContainsString('id="apptViewSelectedBtn"', $page);
+        // Select All decides its target once (it used to re-read itself mid-loop and stop after one or two)
+        $this->assertStringContainsString('const target = selectAllCb.checked;', $page);
+    }
 }

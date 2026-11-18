@@ -105,7 +105,7 @@
         'callouts' => [
             '<strong>Employer card:</strong> groups together all of that employer\'s employees',
             '<strong>Checkbox steps:</strong> tick to record a step as done',
-            '<strong>Most recent card floats to the top:</strong> tick something, then refresh → that card moves to the top',
+            '<strong>Cards ordered by Employer ID:</strong> ticking or editing keeps the card where it is',
         ],
     ])
 

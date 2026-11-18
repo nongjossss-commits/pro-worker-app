@@ -197,8 +197,8 @@
     <dt>Q: Can I delete a Step that's currently in use?</dt>
     <dd>A: No — the jobs inside it would get stuck; move them to another Step first</dd>
 
-    <dt>Q: An employee's notify_out entry disappeared from the tab on its own?</dt>
-    <dd>A: The system <strong>auto-cancels</strong> a pending notify_out when the employee is transferred to a new employer — because notify_out means "leaving the old employer", which no longer applies. You can view the history in the "Activity Logs" menu, or create a new notify_out under the new employer if needed</dd>
+    <dt>Q: The notify-out job of an employee who moved employer is still in the tab?</dt>
+    <dd>A: Yes — it is <strong>no longer auto-cancelled</strong>. The old employer's notify-out job stays until someone finishes or cancels it (the card shows "Now with employer: …") · finishing it keeps the employee working at the new employer, not notified out again</dd>
 
     <dt>Q: Can I do a manual notify_out from the Employees menu?</dt>
     <dd>A: Yes — Employees menu → "Notify Out" button → enter the date + reason (Workflow isn't required; you can do it directly there if you need it done quickly)</dd>

@@ -46,9 +46,12 @@
                 </div>
 
                 <div class="flex-grow-1" style="min-width:0;">
-                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-1">
+                    {{-- Two fixed columns (2026-11-19): details left, time + buttons always in
+                         the same spot on the right — before, a long location line pushed the
+                         buttons under the text on some cards and not others. Phones: stacked. --}}
+                    <div class="appt-row">
                         {{-- long names / addresses wrap instead of running off a phone screen --}}
-                        <div style="min-width:0; overflow-wrap:anywhere;">
+                        <div class="appt-info" style="min-width:0; overflow-wrap:anywhere;">
                             <span class="badge {{ $badgeClass }} mb-1">{{ $item->source_label }}</span>
                             <div class="fw-bold d-flex align-items-center gap-1">
                                 <span>{{ $item->title_en }} {{ $item->name_en ?: '-' }}</span>
@@ -75,12 +78,12 @@
                                 <div class="small text-muted"><i class="bi bi-geo-alt"></i> {{ $item->appointment_location }}</div>
                             @endif
                         </div>
-                        <div class="text-end">
-                            <div class="small text-muted mb-1">{{ optional($item->appointment_date)->format('H:i') }}</div>
+                        <div class="appt-side">
+                            <div class="appt-time"><i class="bi bi-clock me-1"></i>{{ optional($item->appointment_date)->format('H:i') }}</div>
                             {{-- Work right here, like each menu's own calendar: edit the
                                  employee, mark the appointment done (with undo). --}}
                             @can('edit-employees')
-                            <div class="d-flex justify-content-end flex-wrap gap-1 mb-1 appt-actions">
+                            <div class="appt-actions">
                                 @if($item->employee_id)
                                 <button type="button" class="btn btn-sm btn-outline-secondary" data-appt-edit title="{{ __('Edit Employee') }}">
                                     <i class="bi bi-pencil me-1"></i>{{ __('Edit') }}
@@ -95,12 +98,14 @@
                                 </button>
                             </div>
                             @endcan
-                            <a href="{{ $item->link }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                {{ __('Go to record') }} <i class="bi bi-box-arrow-up-right"></i>
-                            </a>
-                            @if($item->employee_id)
-                                <x-share-handle type="employee" :id="$item->employee_id" :name="$item->name_en" :context="$item->share_context ?? null" />
-                            @endif
+                            <div class="appt-links">
+                                <a href="{{ $item->link }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    {{ __('Go to record') }} <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                                @if($item->employee_id)
+                                    <x-share-handle type="employee" :id="$item->employee_id" :name="$item->name_en" :context="$item->share_context ?? null" />
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>

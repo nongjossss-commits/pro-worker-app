@@ -81,7 +81,7 @@
 
 <div class="manual-warn">
     <strong>Transferring an employer:</strong> a transferred employee's <strong>employer_id changes</strong>.
-    The system will <strong>auto-cancel</strong> that employee's pending "notify out" record immediately (if any)
+    That employee's pending "notify out" job at the old employer <strong>stays open</strong> until someone finishes or cancels it (the card shows "Now with employer: …")
 </div>
 
 <h4><i class="bi bi-question-circle me-2"></i>Frequently Asked Questions</h4>
@@ -89,8 +89,8 @@
     <dt>Q: Why do I see fewer employees than expected?</dt>
     <dd>A: Check the user's permissions — if they're a Caretaker, they only see employees for the employers they manage</dd>
 
-    <dt>Q: After transferring an employer, the employee immediately disappeared from the "notify out" menu?</dt>
-    <dd>A: That's correct — when employer_id changes, the system auto-cancels that employee's pending "notify out" record, since "notify out" was for leaving the old employer and no longer applies</dd>
+    <dt>Q: After transferring an employer, the old employer's "notify out" job is still there?</dt>
+    <dd>A: Yes — it is no longer cancelled automatically. It stays until someone finishes or cancels it · finishing it keeps the employee working at the new employer, not notified out again</dd>
 
     <dt>Q: Do deleted (trashed) employees show up in this menu?</dt>
     <dd>A: No — check the "Central Trash" menu instead; they can be restored from there</dd>

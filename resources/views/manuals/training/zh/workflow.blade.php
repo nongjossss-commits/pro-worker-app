@@ -45,7 +45,7 @@
     </div>
 
     <div class="slide-tip">
-        💡 <strong>小贴士:</strong> 有<strong>最新动态</strong>的卡片，每次刷新时都会浮动至最上方
+        💡 <strong>小贴士:</strong> 雇主卡片固定按<strong>雇主编号</strong>排序 —— 勾选或编辑后卡片不会移动 · 没有进行中员工的卡片变为灰色并排在最后
     </div>
 </section>
 
@@ -134,7 +134,7 @@
     </div>
 
     <div class="slide-tip">
-        💡 <strong>小贴士:</strong> 如果雇员是转换雇主(并非真正离职) → notify_out 会自动取消
+        💡 <strong>小贴士:</strong> 如果雇员是转换雇主(并非真正离职) → 原雇主的离职通知工作会<strong>继续保留</strong>，直到有人手动完成或取消(卡片显示「现雇主：…」)
     </div>
 </section>
 
@@ -252,11 +252,11 @@
     <h2 class="slide-title">常见问题</h2>
 
     <dl class="slide-faq">
-        <dt>Q: 为什么我的卡片没有浮动到最上方?</dt>
-        <dd>A: 系统只在<strong>刷新</strong>或从其他菜单返回时才会重新排序 —— 处理过程中界面不会跳动(避免干扰操作)</dd>
+        <dt>Q: 雇主卡片如何排序?</dt>
+        <dd>A: 固定按<strong>雇主编号</strong>(A→Z)排序 —— 编辑员工资料后卡片不会移动 · 没有进行中员工 / 已取消的卡片排在最后，加入员工后即回到原来位置</dd>
 
-        <dt>Q: 雇员从 Notify Out 标签中消失了?</dt>
-        <dd>A: 转换雇主时会自动取消 —— notify_out 表示"脱离旧雇主"，转换后已不再适用</dd>
+        <dt>Q: 已转换雇主的雇员，其 notify_out 工作仍在标签中?</dt>
+        <dd>A: 是的 —— 系统<strong>不再自动取消</strong>。原雇主的 notify_out 工作会保留，直到有人手动完成或取消(卡片显示「现雇主：…」)· 完成后雇员仍在新雇主处在职，不会再次被标记离职</dd>
 
         <dt>Q: Caretaker 用户为什么有些卡片能看到、有些看不到?</dt>
         <dd>A: Caretaker 只能看到分配给自己的雇主</dd>

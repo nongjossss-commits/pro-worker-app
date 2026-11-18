@@ -260,9 +260,14 @@ class ProductionController extends Controller
             //      EmployeeObserver bumps related items when the employee record
             //      is edited, so any activity surfaces the employer card on the
             //      next page load.
+            // Fixed order by employer code (รหัสนายจ้าง) instead of "most recently
+            // touched first" — cards no longer jump when an employee is edited
+            // (2026-11-19, same as WorkflowController::index()).
             $orders = $query->orderByRaw("CASE WHEN active_items_count = 0 THEN 1 ELSE 0 END ASC")
                             ->orderByRaw("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END ASC")
-                            ->latest('updated_at')
+                            ->orderByRaw("CASE WHEN COALESCE((SELECT employers.employerId FROM employers WHERE employers.id = production_orders.employer_id), '') = '' THEN 1 ELSE 0 END ASC")
+                            ->orderByRaw("(SELECT employers.employerId FROM employers WHERE employers.id = production_orders.employer_id) ASC")
+                            ->orderBy('production_orders.id')
                             ->paginate($perPage)
                             ->withQueryString();
 

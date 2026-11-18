@@ -472,12 +472,14 @@ class RenewalController extends Controller
             LIMIT 1
         ) ASC", [$tabId]);
 
-        $employerQuery->orderByRaw("(
-            SELECT MAX(production_orders.updated_at)
-            FROM production_orders
-            WHERE production_orders.employer_id = employers.id
-            AND production_orders.resolution_tab_id = ?
-        ) DESC", [$tabId]);
+        // Then a FIXED order: employer code (รหัสนายจ้าง) A→Z, then the employer's
+        // id (2026-11-19). It used to be "most recently touched first", so editing
+        // an employee made the card jump to the top and staff lost track of which
+        // employers were done. Empty cards still go last (greyed, rule 1 above) and
+        // move back into their place once they get active employees again.
+        $employerQuery->orderByRaw("CASE WHEN COALESCE(employers.employerId, '') = '' THEN 1 ELSE 0 END ASC")
+            ->orderBy('employers.employerId')
+            ->orderBy('employers.id');
 
         $perPage = $request->input('per_page', 20);
         $perPage = in_array((int)$perPage, [20, 25, 50, 100]) ? (int)$perPage : 20;

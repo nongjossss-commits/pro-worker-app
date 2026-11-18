@@ -246,15 +246,19 @@ class WorkflowController extends Controller
         }
 
         // Sort priority:
-        //   1. Orders with zero active employees → bottom (empty cards go last)
+        //   1. Orders with zero active employees → bottom (empty cards go last, greyed)
         //   2. Cancelled orders → bottom
-        //   3. Most recently touched orders → top. ProductionItem::$touches bumps
-        //      the parent order's updated_at on every item change, and
-        //      EmployeeObserver bumps related items when the employee record is
-        //      edited, so the employer card surfaces on the next page load.
+        //   3. Employer code (รหัสนายจ้าง, employers.employerId) A→Z, then the card's
+        //      own id — a FIXED order (2026-11-19). It used to be "most recently
+        //      touched first", so editing an employee made the card jump to the top
+        //      and staff lost track of which employers they had already worked
+        //      through. A card that gets active employees again simply moves back
+        //      up into its place in this order.
         $orders = $query->orderByRaw("CASE WHEN active_items_count = 0 THEN 1 ELSE 0 END ASC")
                         ->orderByRaw("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END ASC")
-                        ->latest('updated_at')
+                        ->orderByRaw("CASE WHEN COALESCE((SELECT employers.employerId FROM employers WHERE employers.id = production_orders.employer_id), '') = '' THEN 1 ELSE 0 END ASC")
+                        ->orderByRaw("(SELECT employers.employerId FROM employers WHERE employers.id = production_orders.employer_id) ASC")
+                        ->orderBy('production_orders.id')
                         ->paginate($perPage)
                         ->withQueryString();
 

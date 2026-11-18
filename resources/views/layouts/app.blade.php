@@ -1163,6 +1163,18 @@
          and the headers wrap. Computers keep the 68% dialog as before. --}}
     <style>
         .appt-reminder-dialog { max-width: 68%; }
+        /* Combined calendar cards: details | time + buttons (fixed right column) */
+        #reminderDayAppointmentsContent .appt-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem 1rem; align-items: start; }
+        #reminderDayAppointmentsContent .appt-side { display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; }
+        #reminderDayAppointmentsContent .appt-time { font-size: .8rem; font-weight: 600; color: var(--bs-secondary-color); white-space: nowrap; }
+        #reminderDayAppointmentsContent .appt-actions,
+        #reminderDayAppointmentsContent .appt-links { display: flex; justify-content: flex-end; align-items: center; gap: .35rem; flex-wrap: nowrap; }
+        #reminderDayAppointmentsContent .appt-side .btn { white-space: nowrap; }
+        @media (max-width: 575.98px) {
+            #reminderDayAppointmentsContent .appt-row { grid-template-columns: minmax(0, 1fr); }
+            #reminderDayAppointmentsContent .appt-side { align-items: flex-start; }
+            #reminderDayAppointmentsContent .appt-actions, #reminderDayAppointmentsContent .appt-links { justify-content: flex-start; flex-wrap: wrap; }
+        }
         #reminderDayAppointmentsContent .appt-when-done { display: none; }
         #reminderDayAppointmentsContent .appointment-card.is-done { opacity: .6; }
         #reminderDayAppointmentsContent .appointment-card.is-done .appt-when-done { display: inline-flex; }
@@ -1264,6 +1276,11 @@
                                      buttons inside the swapped content still work because
                                      they're handled by the existing document.body-level
                                      delegated listeners (see layouts/_app_scripts.blade.php). --}}
+                                {{-- "Select all" for the cards shown; the tools appear in a floating
+                                     bar at the bottom centre once someone is ticked — same as the
+                                     other menus (2026-11-19). The bar (#apptBulkBar) is moved to
+                                     <body> on load so it sits above this popup. --}}
+                                @can('edit-employees')
                                 <div class="px-3 py-2 bg-white border-bottom d-flex align-items-center gap-2 flex-wrap">
                                     <div class="form-check mb-0">
                                         <input class="form-check-input" type="checkbox" id="reminderSelectAllCb">
@@ -1271,22 +1288,8 @@
                                             {{ __('Select All') }} (<span id="reminderSelectedCount">0</span>)
                                         </label>
                                     </div>
-                                    <div class="vr"></div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-secondary dropdown-toggle" id="reminderBulkBtn" type="button" data-bs-toggle="dropdown" disabled>
-                                            <i class="bi bi-lightning-fill me-1"></i>{{ __('Actions') }}
-                                        </button>
-                                        <ul class="dropdown-menu shadow">
-                                            <li><a class="dropdown-item reminder-action" data-action="generate-pdf" href="#">
-                                                <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>{{ __('Automated PDF') }}</a></li>
-                                            <li><a class="dropdown-item reminder-action" data-action="advanced-export" href="#">
-                                                <i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>{{ __('Advanced Export') }}</a></li>
-                                        </ul>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" id="reminderClearBtn" disabled>
-                                        <i class="bi bi-x-circle me-1"></i>{{ __('Clear Selection') }}
-                                    </button>
                                 </div>
+                                @endcan
                                 <div class="card-body p-0 overflow-auto bg-light position-relative" style="min-height: 300px;">
                                     <div x-show="isLoading" class="position-absolute w-100 h-100 bg-white bg-opacity-75" style="z-index: 10;">
                                         <div class="w-100 h-100 d-flex justify-content-center align-items-center">
@@ -1311,6 +1314,43 @@
         </div>
     </div>
 
+    {{-- Combined calendar: floating selection bar (bottom centre, like the other menus' bars) --}}
+    @can('edit-employees')
+    <div id="apptBulkBar" class="appt-bulk-bar align-items-center gap-2 p-2 bg-body border rounded-pill shadow-lg" style="display: none;">
+        <span class="fw-bold small px-2 text-nowrap"><i class="bi bi-check2-square me-1 text-primary"></i>{{ __('Selected') }} (<span id="apptBulkCount">0</span>)</span>
+        <div class="vr"></div>
+        <div class="dropup">
+            <button class="btn btn-sm btn-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-lightning-fill me-1"></i>{{ __('Actions') }}
+            </button>
+            <ul class="dropdown-menu shadow">
+                <li><a class="dropdown-item reminder-action" data-action="advanced-edit" href="#"><i class="bi bi-pencil-square me-2"></i>{{ __('Advanced Edit') }}</a></li>
+                <li><a class="dropdown-item reminder-action" data-action="advanced-export" href="#"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>{{ __('Advanced Export') }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item reminder-action" data-action="download" href="#"><i class="bi bi-download me-2"></i>{{ __('Download Files') }}</a></li>
+                @can('manage-tickets')
+                <li><a class="dropdown-item reminder-action" data-action="generate-pdf" href="#"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>{{ __('Automated PDF') }}</a></li>
+                @endcan
+            </ul>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" id="reminderClearBtn">
+            <i class="bi bi-x-circle me-1"></i>{{ __('Clear Selection') }}
+        </button>
+        <button type="button" class="btn btn-sm btn-info text-white rounded-pill" id="apptViewSelectedBtn">
+            <i class="bi bi-eye me-1"></i>{{ __('View Selected') }}
+        </button>
+    </div>
+    <style>
+        .appt-bulk-bar { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 1070; max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; }
+        /* while the calendar is open, the page's own selection bar stays out of the way */
+        body.appt-calendar-open .bulk-action-bar { display: none !important; }
+        @media (max-width: 575.98px) {
+            .appt-bulk-bar { left: 10px; right: 10px; bottom: 12px; transform: none; max-width: none; border-radius: 1rem !important; justify-content: center; }
+            .appt-bulk-bar > .vr { display: none; }
+        }
+    </style>
+    @endcan
+
     {{-- Self-contained modal + its own @push('scripts') for the column
          picker/submit logic — reused as-is, no extra variables needed. --}}
     @include('employees.modals.advanced_export')
@@ -1324,44 +1364,70 @@
         //    appointment day-list (day_appointments_list.blade.php). ──
         document.addEventListener('DOMContentLoaded', function () {
             const modalEl = document.getElementById('appointmentReminderModal');
-            if (!modalEl) return;
+            const bar = document.getElementById('apptBulkBar');
+            if (!modalEl || !bar) return;
+            document.body.appendChild(bar); // above the calendar popup
 
             const selectAllCb = document.getElementById('reminderSelectAllCb');
             const countSpan = document.getElementById('reminderSelectedCount');
-            const bulkBtn = document.getElementById('reminderBulkBtn');
+            const barCount = document.getElementById('apptBulkCount');
             const clearBtn = document.getElementById('reminderClearBtn');
             const listContainer = document.getElementById('reminderDayAppointmentsContent');
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            const isOpen = () => modalEl.classList.contains('show');
 
+            // the cards currently shown (the search box hides the others)
+            const shownBoxes = () => [...listContainer.querySelectorAll('.employee-checkbox')]
+                .filter(box => box.closest('.appointment-card')?.offsetParent !== null);
+
+            let bulkChanging = false;
             function syncToolbar() {
+                if (bulkChanging) return;
                 const ids = window.getGlobalSelectedIds ? window.getGlobalSelectedIds() : [];
-                countSpan.textContent = ids.length;
-                bulkBtn.disabled = ids.length === 0;
-                clearBtn.disabled = ids.length === 0;
-
-                const visibleBoxes = listContainer.querySelectorAll('.employee-checkbox');
-                const visibleChecked = listContainer.querySelectorAll('.employee-checkbox:checked');
-                selectAllCb.checked = visibleBoxes.length > 0 && visibleBoxes.length === visibleChecked.length;
+                countSpan && (countSpan.textContent = ids.length);
+                barCount.textContent = ids.length;
+                // hidden while another popup (export / download / view selected …) is open on top
+                const otherOpen = [...document.querySelectorAll('.modal.show')].some(m => m !== modalEl);
+                bar.style.display = (isOpen() && ids.length && !otherOpen) ? 'flex' : 'none';
+                const boxes = shownBoxes();
+                if (selectAllCb) {
+                    const checked = boxes.filter(b => b.checked).length;
+                    selectAllCb.checked = boxes.length > 0 && checked === boxes.length;
+                    selectAllCb.indeterminate = checked > 0 && checked < boxes.length;
+                }
             }
 
-            // Re-sync whenever any checkbox changes anywhere (covers both
-            // this modal's own list and the global sessionStorage-backed
-            // selection state changing from elsewhere).
             document.body.addEventListener('change', function (e) {
-                if (e.target.classList && e.target.classList.contains('employee-checkbox')) {
-                    syncToolbar();
-                }
+                if (e.target.classList && e.target.classList.contains('employee-checkbox')) syncToolbar();
             });
-            modalEl.addEventListener('shown.bs.modal', syncToolbar);
+            modalEl.addEventListener('shown.bs.modal', function () { document.body.classList.add('appt-calendar-open'); syncToolbar(); });
+            modalEl.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('appt-calendar-open'); bar.style.display = 'none'; });
+            document.addEventListener('shown.bs.modal', function (e) { if (e.target !== modalEl) syncToolbar(); });
+            document.addEventListener('hidden.bs.modal', function (e) { if (e.target !== modalEl) syncToolbar(); });
+            // a newly loaded day / search result: tick the people already selected
+            new MutationObserver(function () {
+                const ids = new Set((window.getGlobalSelectedIds ? window.getGlobalSelectedIds() : []).map(String));
+                listContainer.querySelectorAll('.employee-checkbox').forEach(b => { b.checked = ids.has(String(b.value)); });
+                syncToolbar();
+            }).observe(listContainer, { childList: true, subtree: true });
 
-            selectAllCb.addEventListener('change', function () {
-                const boxes = listContainer.querySelectorAll('.employee-checkbox');
-                boxes.forEach(function (box) {
-                    if (box.checked !== selectAllCb.checked) {
-                        box.checked = selectAllCb.checked;
-                        box.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                });
+            // Select All: decide the target ONCE, then tick/untick every card shown.
+            // (Before, each tick re-synced this checkbox mid-loop and the rest of
+            // the loop read that new value — so it only ever selected one or two.)
+            selectAllCb && selectAllCb.addEventListener('change', function () {
+                const target = selectAllCb.checked;
+                bulkChanging = true;
+                try {
+                    shownBoxes().forEach(function (box) {
+                        if (box.checked !== target) {
+                            box.checked = target;
+                            box.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                } finally {
+                    bulkChanging = false;
+                }
+                syncToolbar();
             });
 
             clearBtn.addEventListener('click', function () {
@@ -1369,7 +1435,25 @@
                 listContainer.querySelectorAll('.employee-checkbox').forEach(function (box) { box.checked = false; });
                 syncToolbar();
             });
+            document.getElementById('apptViewSelectedBtn').addEventListener('click', function () {
+                if (window.openViewSelectedModal) window.openViewSelectedModal();
+            });
 
+            function postForm(action, fields, ids, idName) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = action;
+                [['_token', csrfToken]].concat(fields).forEach(function ([n, v]) {
+                    const i = document.createElement('input'); i.type = 'hidden'; i.name = n; i.value = v; form.appendChild(i);
+                });
+                ids.forEach(function (id) {
+                    const i = document.createElement('input'); i.type = 'hidden'; i.name = idName; i.value = id; form.appendChild(i);
+                });
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            // Same tools as the menus' own selection bars (e.g. Workflow).
             document.querySelectorAll('.reminder-action').forEach(function (btn) {
                 btn.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -1377,25 +1461,23 @@
                     const ids = window.getGlobalSelectedIds ? window.getGlobalSelectedIds() : [];
                     if (!ids.length) return;
 
-                    if (action === 'generate-pdf') {
-                        const form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = '{{ route('admin.pdf-templates.generate.modal', [], false) }}';
-                        [['_token', csrfToken], ['redirect_url', window.location.href]].forEach(function ([n, v]) {
-                            const i = document.createElement('input'); i.type = 'hidden'; i.name = n; i.value = v; form.appendChild(i);
-                        });
-                        ids.forEach(function (id) {
-                            const i = document.createElement('input'); i.type = 'hidden'; i.name = 'employees[]'; i.value = id; form.appendChild(i);
-                        });
-                        document.body.appendChild(form);
-                        form.submit();
+                    if (action === 'advanced-edit') {
+                        postForm('{{ route('employees.bulk_edit.select_fields', [], false) }}', [['redirect_to', window.location.href]], ids, 'employee_ids[]');
+                    } else if (action === 'generate-pdf') {
+                        postForm('{{ route('admin.pdf-templates.generate.modal', [], false) }}', [['redirect_url', window.location.href]], ids, 'employees[]');
+                    } else if (action === 'download') {
+                        if (window.openBulkDownloadModal) window.openBulkDownloadModal(ids);
                     } else if (action === 'advanced-export') {
-                        const el = document.getElementById('export_employee_ids');
-                        const src = document.getElementById('export_source_menu');
+                        // some pages carry their own copy of this popup too — fill the copy we open
+                        const exportModal = document.getElementById('advancedExportModal');
+                        if (!exportModal) return;
+                        const el = exportModal.querySelector('#export_employee_ids');
+                        const src = exportModal.querySelector('#export_source_menu');
                         if (el) el.value = JSON.stringify(ids);
                         if (src) src.value = 'appointment_reminder';
-                        const exportModal = document.getElementById('advancedExportModal');
-                        if (exportModal) bootstrap.Modal.getOrCreateInstance(exportModal).show();
+                        // last in the page so it opens above the calendar (same layer)
+                        document.body.appendChild(exportModal);
+                        bootstrap.Modal.getOrCreateInstance(exportModal).show();
                     }
                 });
             });

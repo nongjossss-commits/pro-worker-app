@@ -81,7 +81,7 @@
 
 <div class="manual-warn">
     <strong>转移雇主:</strong> 被转移雇员的 <strong>employer_id 会发生变化</strong>，
-    系统会立即<strong>自动取消</strong>该雇员尚未处理的"离职通知(notify_out)"记录(如有)
+    原雇主处尚未完成的"离职通知(notify_out)"工作会<strong>继续保留</strong>，直到有人手动完成或取消(卡片显示「现雇主：…」)
 </div>
 
 <h4><i class="bi bi-question-circle me-2"></i>常见问题</h4>
@@ -89,8 +89,8 @@
     <dt>Q: 为什么看到的雇员数量比预期少?</dt>
     <dd>A: 请检查该用户的权限 —— 如果是 Caretaker 角色，只能看到自己所负责雇主的雇员</dd>
 
-    <dt>Q: 转移雇主后，雇员立即从 notify_out 菜单中消失了?</dt>
-    <dd>A: 这是正常的 —— 当 employer_id 变更时，系统会自动取消该雇员待处理的 notify_out 记录，因为 notify_out 是用于"脱离旧雇主"，转移后已不再适用</dd>
+    <dt>Q: 转换雇主后，原雇主的 notify_out 工作仍然存在?</dt>
+    <dd>A: 是的 —— 系统不再自动取消。该工作会保留到有人手动完成或取消 · 完成后雇员仍在新雇主处在职，不会再次被标记离职</dd>
 
     <dt>Q: 已删除(回收站中)的雇员会显示在此菜单中吗?</dt>
     <dd>A: 不会 —— 请前往"回收站"(Central Trash)菜单查看，可以从那里恢复</dd>
