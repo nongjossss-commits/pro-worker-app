@@ -125,8 +125,12 @@ class RoleAndPermissionSeeder extends Seeder
         // (Gate::before stops at the first non-null result, and Spatie's own
         // check would grant them directly from the role before ours is reached).
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        // Also never 'move-attachments' / 'view-attachment-archive': Admin gets
+        // those only when a Super Admin ticks them per user (AppServiceProvider's
+        // Gate::before). 'view-attachment-archive' is created by a migration, so
+        // it already exists when this runs and used to be swept in (2026-11-19).
         $adminRole->syncPermissions(
-            Permission::whereNotIn('name', ['view-labor-ledger', 'manage-labor-ledger'])->get()
+            Permission::whereNotIn('name', ['view-labor-ledger', 'manage-labor-ledger', 'move-attachments', 'view-attachment-archive'])->get()
         );
 
         // FIX: Corrected all $this.command typos to $this->command

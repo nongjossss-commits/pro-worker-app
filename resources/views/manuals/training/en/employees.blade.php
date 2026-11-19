@@ -44,7 +44,7 @@
     </div>
 
     <div class="slide-tip">
-        💡 <strong>Tip:</strong> the default list shows active employees only, but a <strong>search</strong> also finds notified-out / cancelled employees (with a status badge); the full list of notified-out employees is in the "Notified-Out Employees" menu
+        💡 <strong>Tip:</strong> the default list shows active employees only, and a search does not include notified-out employees either (they are in the "Notified-Out Employees" menu) — typing a notified-out person's name adds them to the suggestions as <strong>"Notified out (date)"</strong>; click to open that menu on them
     </div>
 </section>
 
@@ -195,7 +195,7 @@
     <div class="slide-instructions">
         <ol>
             <li>Every way of creating an employee compares passport / work permit / pink card / ID number / RA number</li>
-            <li>Search finds every status — cards show a Terminated / Registration Cancelled badge</li>
+            <li>Notified-out employees are not in this list, but the suggestions show them as "Notified out (date)" — click to open the Notified-Out Employees menu on that person</li>
             <li><strong>Move Attachment Files</strong> (Super Admin): swap / move / merge PDFs for the selected employees</li>
             <li>Work permit types are managed by the Super Admin in Settings</li>
         </ol>
@@ -228,7 +228,7 @@
         <dd>A: Check the Employee Cap — the system limits the count based on the subscription; contact Super Admin if you need it raised</dd>
 
         <dt>Q: An employee is missing from the list?</dt>
-        <dd>A: Check the "Notified-Out Employees" menu — they may have been notified out/had their contract end, or been deleted into "Central Trash"</dd>
+        <dd>A: Type the name in the search box — if they were notified out, the suggestions show "Notified out (date)"; click to open the "Notified-Out Employees" menu · deleted records are in "Central Trash" · if they finished Notify In / Change Employer but are still notified out at the old employer, tell the system administrator</dd>
 
         <dt>Q: Caretaker sees fewer employees than expected?</dt>
         <dd>A: Caretaker only sees employees of employers assigned to them</dd>

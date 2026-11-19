@@ -227,6 +227,15 @@
                         </div>
                         @endif
 
+                        {{-- แจ้งเข้า บต.52/55/56: the team this employee had in "แจ้งเข้า / เปลี่ยนนายจ้าง" (2026-11-19) --}}
+                        @if($item->source_item_id && ($srcTeam = $item->sourceItem?->group_name ?: $item->group_name))
+                            <div class="mt-1">
+                                <span class="badge rounded-pill" style="font-size: 0.7rem; background:#f3e8ff; border:1px solid #c084fc; color:#6b21a8;">
+                                    <i class="bi bi-people-fill me-1"></i>{{ __('Team (change employer): :team', ['team' => $srcTeam]) }}
+                                </span>
+                            </div>
+                        @endif
+
                         {{-- Employer Info (Requested Feature) --}}
                         @if($order && $order->employer)
                         <div class="small text-primary mt-1">

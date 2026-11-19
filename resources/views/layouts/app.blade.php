@@ -1397,8 +1397,15 @@
                 }
             }
 
+            // Count AFTER the selection is saved: the global store (layouts/
+            // _app_scripts) saves a tick in its own body 'change' listener and
+            // then fires 'global-selection-updated'. Listening to 'change' here
+            // ran BEFORE that save whenever this listener was first in line, so
+            // the counts showed the previous number — tick 1 → 0, tick 3 → 2
+            // (2026-11-19). The deferred 'change' hook is only a safety net.
+            document.addEventListener('global-selection-updated', syncToolbar);
             document.body.addEventListener('change', function (e) {
-                if (e.target.classList && e.target.classList.contains('employee-checkbox')) syncToolbar();
+                if (e.target.classList && e.target.classList.contains('employee-checkbox')) setTimeout(syncToolbar, 0);
             });
             modalEl.addEventListener('shown.bs.modal', function () { document.body.classList.add('appt-calendar-open'); syncToolbar(); });
             modalEl.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('appt-calendar-open'); bar.style.display = 'none'; });

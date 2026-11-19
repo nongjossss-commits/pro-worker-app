@@ -2235,5 +2235,10 @@
     "awaiting signature": "待签署",
     "complete": "已完成",
     "issued": "份",
-    "Now with employer: :name": "现雇主：:name"
+    "Now with employer: :name": "现雇主：:name",
+    "Cancelled — shown because you searched for this employee": "已取消 —— 因搜索此员工而显示",
+    "Finished — shown because you searched for this employee": "已完成 —— 因搜索此员工而显示",
+    "From another card: :name": "来自其他卡片：:name",
+    "Team (change employer): :team": "团队（变更雇主）：:team",
+    "Open in Notified-Out Employees": "在已通知离职员工页面打开"
 }

@@ -101,6 +101,7 @@ class FinancialHubTest extends TestCase
     public function can_create_manual_bill_and_redirects()
     {
         $response = $this->actingAs($this->user)->post(route('finance.store'), [
+            'document_type' => 'invoice', // required since bills split into Quotation / Invoice
             'employer_id' => $this->employer->id,
             'description' => 'Test Manual Bill',
             'amount' => 1500,

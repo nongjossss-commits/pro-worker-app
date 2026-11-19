@@ -80,6 +80,12 @@
             // the form so the list shows that one record, not every name match.
             setPick(item.pick || null);
             closeDropdown();
+            // A suggestion that lives on another page (e.g. a notified-out employee
+            // offered from the Employees menu) carries its own link.
+            if (item.url) {
+                window.location.href = item.url;
+                return;
+            }
             if (input.form) {
                 if (typeof input.form.requestSubmit === 'function') {
                     input.form.requestSubmit();

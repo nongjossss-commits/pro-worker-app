@@ -15,6 +15,7 @@ use Spatie\Permission\Models\Permission;
 
 class RegistrationFinanceFixTest extends TestCase
 {
+    protected $tab;
     use RefreshDatabase;
 
     protected $adminUser;
@@ -23,6 +24,12 @@ class RegistrationFinanceFixTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Registration / Renewal became multi-tab menus (one ResolutionTab per
+        // resolution) - every route now carries {resolutionTab}. One tab here,
+        // set as the default route parameter, so route(...) keeps working.
+        $this->tab = \App\Models\ResolutionTab::create(['name' => 'Test registration', 'type' => 'registration', 'slug' => 'test-registration', 'sort_order' => 1, 'is_default' => true]);
+        \Illuminate\Support\Facades\URL::defaults(['resolutionTab' => $this->tab->id]);
 
         // 1. Create Role & Permission
         $role = Role::firstOrCreate(['name' => 'admin']);
@@ -40,20 +47,20 @@ class RegistrationFinanceFixTest extends TestCase
         ]);
 
         // 4. Create Registration Step (needed for some logic possibly)
-        RegistrationStep::create(['name' => 'Step 1', 'order' => 1]);
+        RegistrationStep::create(['resolution_tab_id' => $this->tab->id, 'name' => 'Step 1', 'order' => 1]);
     }
 
     public function test_financial_tab_excludes_employees_already_in_order()
     {
         // Target 1: Should be visible (Not in order)
-        $targetVisible = Employee::factory()->create([
+        $targetVisible = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'status' => 'registration_pending',
             'employeeNameTh' => 'Visible Candidate'
         ]);
 
         // Target 2: Should be hidden (Already in order)
-        $targetHidden = Employee::factory()->create([
+        $targetHidden = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'status' => 'registration_pending',
             'employeeNameTh' => 'Hidden Candidate'
@@ -63,6 +70,7 @@ class RegistrationFinanceFixTest extends TestCase
         $order = ProductionOrder::create([
             'employer_id' => $this->employer->id,
             'status' => 'registration_resolution',
+            'resolution_tab_id' => $this->tab->id, // bills are per tab
             'financial_data' => []
         ]);
 

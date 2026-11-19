@@ -25,10 +25,17 @@ class RoleAndPermissionSeederTest extends TestCase
         $this->assertDatabaseHas('permissions', ['name' => 'manage-users']);
         $this->assertDatabaseHas('permissions', ['name' => 'view-employees']);
 
-        // 4. Assert that the admin role has all permissions
+        // 4. The admin role has every permission EXCEPT the opt-in ones that a
+        //    Super Admin grants per user (AppServiceProvider's Gate::before):
+        //    the two Labor ledger tiers (users.labor_access_level), and
+        //    move-attachments / view-attachment-archive (ticked per user).
+        //    Holding any of these at role level would bypass that opt-in.
+        $optIn = ['manage-labor-ledger', 'view-labor-ledger', 'move-attachments', 'view-attachment-archive'];
         $adminRole = Role::whereName('admin')->first();
-        $allPermissionsCount = Permission::count();
-        $this->assertCount($allPermissionsCount, $adminRole->permissions);
+        $this->assertEqualsCanonicalizing(
+            Permission::whereNotIn('name', $optIn)->pluck('name')->all(),
+            $adminRole->permissions->pluck('name')->all()
+        );
 
         // 5. Assert that the test user was assigned the admin role
         $user = User::whereEmail('test@example.com')->first();

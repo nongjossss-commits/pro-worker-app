@@ -61,33 +61,19 @@ class WorkflowAccessTest extends TestCase
     /** @test */
     public function employer_can_only_see_own_orders()
     {
-        // Employer Profile linked to User
+        // Since 2026-09-02 (bb53bd5d) employer accounts have no access to the
+        // Workflow menu at all — WorkflowController's role gate allows only
+        // admin / super-admin / staff / caretaker. Not even their own cards.
         $myEmployer = Employer::factory()->create(['user_id' => $this->employerUser->id]);
-
-        // Create My Order
-        $myOrder = ProductionOrder::create([
+        ProductionOrder::create([
             'employer_id' => $myEmployer->id,
             'work_type_id' => $this->workType->id,
             'status' => 'active',
             'created_by' => $this->admin->id
         ]);
 
-        // Create Other Order
-        $otherEmployer = Employer::factory()->create();
-        $otherOrder = ProductionOrder::create([
-            'employer_id' => $otherEmployer->id,
-            'work_type_id' => $this->workType->id,
-            'status' => 'active',
-            'created_by' => $this->admin->id
-        ]);
-
-        $response = $this->actingAs($this->employerUser)->get(route('workflow.index', ['tab' => 'test_wf']));
-
-        $response->assertStatus(200);
-        $response->assertSee($myOrder->project_name); // Should see own
-        $response->assertDontSee($otherOrder->project_name); // Should NOT see other
+        $this->actingAs($this->employerUser)->get(route('workflow.index', ['tab' => 'test_wf']))->assertForbidden();
     }
-
     /** @test */
     public function caretaker_can_only_see_assigned_employers_orders()
     {
@@ -146,7 +132,8 @@ class WorkflowAccessTest extends TestCase
     /** @test */
     public function employer_is_read_only_by_default()
     {
-        // Create an item for the employer
+        // Employer accounts are blocked from the Workflow menu (see above) —
+        // the card endpoint as well, so nothing is readable, let alone editable.
         $myEmployer = Employer::factory()->create(['user_id' => $this->employerUser->id]);
         $order = ProductionOrder::create([
             'employer_id' => $myEmployer->id,
@@ -159,28 +146,14 @@ class WorkflowAccessTest extends TestCase
             'status' => 'pending'
         ]);
 
-        // 1. Check Index - "Add Employee" button should be hidden
-        $response = $this->actingAs($this->employerUser)->get(route('workflow.index', ['tab' => 'test_wf']));
-        $response->assertDontSee('Add Employee'); // Main button text
-
-        // 2. Check Item Card HTML - "Finish", "Cancel" buttons hidden
-        // We fetch the item card specifically via the AJAX endpoint logic or just check the view if possible.
-        // Controller `getItemHtml` returns the partial.
-        $response = $this->actingAs($this->employerUser)->get("/workflow/item/{$item->id}/card");
-        $response->assertStatus(200);
-
-        $response->assertDontSee('Finish');
-        $response->assertDontSee('Cancel Item');
-        $response->assertDontSee('Manage Team');
-
-        // Should NOT see Delete button
-        $response->assertDontSee('Delete');
+        $this->actingAs($this->employerUser)->get(route('workflow.index', ['tab' => 'test_wf']))->assertForbidden();
+        $this->actingAs($this->employerUser)->get("/workflow/item/{$item->id}/card")->assertForbidden();
     }
-
     /** @test */
     public function employer_with_permission_can_manage()
     {
-        // Give permission
+        // Even holding manage-own-workflow, an employer account stays out —
+        // the role gate comes first.
         $this->employerUser->givePermissionTo('manage-own-workflow');
 
         $myEmployer = Employer::factory()->create(['user_id' => $this->employerUser->id]);
@@ -195,10 +168,7 @@ class WorkflowAccessTest extends TestCase
             'status' => 'pending'
         ]);
 
-        $response = $this->actingAs($this->employerUser)->get(route('workflow.index', ['tab' => 'test_wf']));
-        $response->assertSee('Add Employee');
-
-        $response = $this->actingAs($this->employerUser)->get("/workflow/item/{$item->id}/card");
-        $response->assertSee('Finish'); // or whatever unique string identifies the button
+        $this->actingAs($this->employerUser)->get(route('workflow.index', ['tab' => 'test_wf']))->assertForbidden();
+        $this->actingAs($this->employerUser)->get("/workflow/item/{$item->id}/card")->assertForbidden();
     }
 }

@@ -26,13 +26,36 @@
                 {{-- data-status + data-terminated drive the Select-All
                      filter in _index_scripts.blade.php so cancelled and
                      terminated rows are skipped. --}}
-                <div class="item-card-wrapper mb-3 {{ $item->status === 'cancelled' ? 'status-cancelled' : '' }}"
+                @php
+                    // found by a person search although finished > 24h ago / cancelled
+                    $revealedBySearch = ($searchingPeople ?? false)
+                        && ($item->status === 'cancelled'
+                            || ($item->status === 'completed' && (! $item->completed_at || $item->completed_at->lt(now()->subHours(24)))));
+                @endphp
+                <div class="item-card-wrapper mb-3 {{ $item->status === 'cancelled' ? 'status-cancelled' : '' }} {{ $revealedBySearch ? 'search-reveal' : '' }}"
                      data-status="{{ $item->status }}"
                      data-terminated="{{ ($item->employee && $item->employee->terminated_at) ? 'true' : 'false' }}">
+                    @if($revealedBySearch)
+                        <div class="search-reveal-note {{ $item->status === 'cancelled' ? 'is-cancelled' : 'is-done' }}">
+                            <i class="bi {{ $item->status === 'cancelled' ? 'bi-x-circle-fill' : 'bi-check-circle-fill' }} me-1"></i>
+                            {{ $item->status === 'cancelled' ? __('Cancelled — shown because you searched for this employee') : __('Finished — shown because you searched for this employee') }}
+                            @if($item->status === 'completed' && $item->completed_at)
+                                <span class="opacity-75">({{ $item->completed_at->format('d/m/Y') }})</span>
+                            @endif
+                        </div>
+                    @endif
+                    @php $itemOrder = ($item->production_order_id === $order->id || ! $item->relationLoaded('order')) ? $order : ($item->order ?? $order); @endphp
+                    @if($itemOrder->id !== $order->id)
+                        {{-- team filter across this employer's cards (แจ้งเข้า บต.52/55/56) --}}
+                        <div class="search-reveal-note is-other-card">
+                            <i class="bi bi-diagram-2 me-1"></i>{{ __('From another card: :name', ['name' => $itemOrder->project_name ?: ('#' . $itemOrder->id)]) }}
+                            @if($itemOrder->status === 'completed')<span class="opacity-75">· {{ __('Finished') }}</span>@endif
+                        </div>
+                    @endif
                     @include('workflow.partials._item_card', [
                         'item' => $item,
                         'steps' => $steps,
-                        'order' => $order,
+                        'order' => $itemOrder,
                         'isHistory' => $isHistory ?? false
                     ])
                 </div>

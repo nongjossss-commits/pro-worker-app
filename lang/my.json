@@ -2235,5 +2235,10 @@
     "awaiting signature": "လက်မှတ် စောင့်ဆဲ",
     "complete": "ပြီးပြည့်စုံ",
     "issued": "စောင်",
-    "Now with employer: :name": "ယခု အလုပ်ရှင်: :name"
+    "Now with employer: :name": "ယခု အလုပ်ရှင်: :name",
+    "Cancelled — shown because you searched for this employee": "ပယ်ဖျက်ပြီး — ဤဝန်ထမ်းကို ရှာသောကြောင့် ပြသည်",
+    "Finished — shown because you searched for this employee": "ပြီးဆုံးပြီး — ဤဝန်ထမ်းကို ရှာသောကြောင့် ပြသည်",
+    "From another card: :name": "အခြားကတ်မှ: :name",
+    "Team (change employer): :team": "အဖွဲ့ (အလုပ်ရှင်ပြောင်း): :team",
+    "Open in Notified-Out Employees": "အလုပ်ထွက်ကြောင်း အကြောင်းကြားပြီး ဝန်ထမ်းစာမျက်နှာတွင် ဖွင့်ရန်"
 }

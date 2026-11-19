@@ -13,6 +13,7 @@ use Spatie\Permission\Models\Role;
 
 class RenewalResolutionTest extends TestCase
 {
+    protected $tab;
     use RefreshDatabase;
 
     protected $user;
@@ -21,6 +22,12 @@ class RenewalResolutionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Registration / Renewal became multi-tab menus (one ResolutionTab per
+        // resolution) - every route now carries {resolutionTab}. One tab here,
+        // set as the default route parameter, so route(...) keeps working.
+        $this->tab = \App\Models\ResolutionTab::create(['name' => 'Test renewal', 'type' => 'renewal', 'slug' => 'test-renewal', 'sort_order' => 1, 'is_default' => true]);
+        \Illuminate\Support\Facades\URL::defaults(['resolutionTab' => $this->tab->id]);
 
         // Create Admin User
         $this->user = User::factory()->create();
@@ -45,7 +52,7 @@ class RenewalResolutionTest extends TestCase
     {
         // Create an employee with specific expiry
         $targetDate = now()->addDays(30)->format('Y-m-d');
-        $employee = Employee::factory()->create([
+        $employee = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'workPermitExpiryDate' => $targetDate,
             'status' => 'active'
@@ -60,7 +67,7 @@ class RenewalResolutionTest extends TestCase
         $response->assertSessionHas('success');
 
         // Check Config
-        $this->assertEquals($targetDate, SystemConfig::where('key', 'renewal_target_expiry_date')->value('value'));
+        $this->assertEquals($targetDate, SystemConfig::where('key', 'renewal_target_expiry_date_' . $this->tab->id)->value('value'));
 
         // Check Employee Status Updated
         $this->assertEquals('renewal_pending', $employee->fresh()->status);
@@ -70,10 +77,10 @@ class RenewalResolutionTest extends TestCase
     {
         // Set Config First
         $targetDate = '2025-12-31';
-        SystemConfig::create(['key' => 'renewal_target_expiry_date', 'value' => $targetDate]);
+        SystemConfig::create(['key' => 'renewal_target_expiry_date_' . $this->tab->id, 'value' => $targetDate]); // per-tab key
 
         // Create Employee (Not matching)
-        $employee = Employee::factory()->create([
+        $employee = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'workPermitExpiryDate' => '2024-01-01',
             'status' => 'active'
@@ -90,10 +97,10 @@ class RenewalResolutionTest extends TestCase
     {
         // Set Config First
         $targetDate = '2025-12-31';
-        SystemConfig::create(['key' => 'renewal_target_expiry_date', 'value' => $targetDate]);
+        SystemConfig::create(['key' => 'renewal_target_expiry_date_' . $this->tab->id, 'value' => $targetDate]); // per-tab key
 
         // Create Employee (Matching Date but MOU)
-        $employee = Employee::factory()->create([
+        $employee = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'workPermitExpiryDate' => $targetDate,
             'workPermitMOUGroup' => 'MOU 2025',

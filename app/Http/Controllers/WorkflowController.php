@@ -197,8 +197,11 @@ class WorkflowController extends Controller
             $filter = $request->filter;
             $query->whereHas('items', function($q) use ($filter) {
                 if ($filter === 'not_started') {
+                    // "ยังไม่เริ่ม" = not finished and step 1 not ticked — same
+                    // rule as every scoreboard count (finished employees are
+                    // never "not started", 2026-11-19).
                     $q->where('status', 'pending')
-                      ->doesntHave('completedWorkTypeSteps');
+                      ->whereDoesntHave('completedWorkTypeSteps', fn ($s) => $s->where('order', 1));
                 } elseif ($filter === 'cancelled') {
                     $q->where('status', 'cancelled');
                 } elseif ($filter === 'completed') {
@@ -303,6 +306,32 @@ class WorkflowController extends Controller
                 'active_items_count' => $activeCount
             ];
             $order->teamNames = $orderTeamNamesMap->get($order->id, []);
+        }
+
+        // "แจ้งเข้า บต.52/55/56": one employer can have several cards (employees
+        // arrive at different times) — the team chips list every team across all
+        // of that employer's cards in this tab, finished ones included, and
+        // filtering by a team gathers those employees from every card
+        // (see fetchOrderItems()) (2026-11-19).
+        if ($activeTab && $activeTab->isNotifyInReport() && $orders->count()) {
+            $teamsByEmployer = ProductionItem::query()
+                ->join('production_orders', 'production_orders.id', '=', 'production_items.production_order_id')
+                ->where('production_orders.work_type_id', $activeTab->id)
+                ->where('production_orders.status', '!=', 'cancelled')
+                ->whereNull('production_orders.deleted_at')
+                ->whereIn('production_orders.employer_id', $orders->pluck('employer_id')->unique())
+                ->where('production_items.status', '!=', 'cancelled')
+                ->whereNotNull('production_items.group_name')
+                ->where('production_items.group_name', '!=', '')
+                ->select('production_orders.employer_id', 'production_items.group_name')
+                ->distinct()
+                ->orderBy('production_items.group_name')
+                ->get()
+                ->groupBy('employer_id')
+                ->map(fn ($rows) => $rows->pluck('group_name')->unique()->values()->all());
+            foreach ($orders as $order) {
+                $order->teamNames = $teamsByEmployer->get($order->employer_id, []);
+            }
         }
 
         // 4. Calculate Scoreboard Stats (For the Active Tab)
@@ -419,7 +448,7 @@ class WorkflowController extends Controller
 
                 $stats['completed'] = (clone $baseItemQuery)->where('status', 'completed')->count();
                 $stats['not_started'] = (clone $baseItemQuery)
-                    ->whereIn('status', ['pending', 'completed'])
+                    ->where('status', 'pending')
                     ->whereHas('order', fn($o) => $o->where('status', '!=', 'cancelled'))
                     ->whereDoesntHave('completedWorkTypeSteps', function($q) {
                         $q->where('order', 1);
@@ -531,7 +560,10 @@ class WorkflowController extends Controller
                                     ->whereHas('employer')
                                     ->count(),
             'total_employees' => (clone $itemsQuery)->count(),
-            'not_started' => (clone $itemsQuery)->whereIn('status', ['pending', 'completed'])
+            // "ยังไม่เริ่ม" counts only employees still in progress — it used to
+            // include FINISHED ones who never ticked step 1 (every one, ever),
+            // so the number never matched the list the filter shows (2026-11-19).
+            'not_started' => (clone $itemsQuery)->where('status', 'pending')
                                            ->whereHas('order', fn($q) => $q->where('status', '!=', 'cancelled'))
                                            ->whereDoesntHave('completedWorkTypeSteps', function($q) {
                                                $q->where('order', 1);
@@ -1070,29 +1102,55 @@ class WorkflowController extends Controller
         }
 
         // Query Items
-        $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
+        $query = ProductionItem::with(['employee', 'completedWorkTypeSteps', 'sourceItem:id,group_name'])
             ->where('production_order_id', $orderId);
+
+        // "แจ้งเข้า บต.52/55/56" + team filter: gather the selected team(s) from
+        // EVERY card of this employer in the tab (in progress or finished) — staff
+        // follow a team even though its people arrived on different cards.
+        $acrossCards = $order->workType && $order->workType->isNotifyInReport()
+            && is_array($request->team_filter) && count(array_filter($request->team_filter));
+        if ($acrossCards) {
+            $cardIds = ProductionOrder::where('employer_id', $order->employer_id)
+                ->where('work_type_id', $order->work_type_id)
+                ->where('status', '!=', 'cancelled')
+                ->pluck('id');
+            $query = ProductionItem::with(['employee', 'completedWorkTypeSteps', 'sourceItem:id,group_name', 'order'])
+                ->whereIn('production_order_id', $cardIds);
+        }
 
         // We fetch all items including cancelled ones, and use CSS classes (e.g. .status-cancelled)
         // to hide them on the frontend unless toggled.
+
+        // Searching for a person (an exact pick, or text that is not the card's own
+        // employer): show the match even if finished long ago (green card) or
+        // cancelled (grey card), labelled as found by the search — otherwise the
+        // card opened empty and staff couldn't tell why (2026-11-19). Without a
+        // person search the card shows exactly what it always did.
+        $searchEmployerId = (int) $order->employer_id;
+        $searchingPeople = $request->filled('employee_pick_id')
+            || collect(\App\Services\TwoStageSearch::terms($request))
+                ->contains(fn ($t) => ! \App\Services\TwoStageSearch::employerMatches($searchEmployerId, $t));
 
         // 1. History Filter (Default: Hide completed > 24h)
         // Unless we are filtering specifically for "Completed", we keep this rule.
         // But if user clicks "Completed" pill, they might expect ALL completed?
         // Usually history is separate. Let's stick to standard rule: Active List shows recent completions only.
-        $query->where(function($q) {
-            $q->where('status', '!=', 'completed')
-              ->orWhere(function($sub) {
-                  $sub->where('status', 'completed')
-                      ->where('completed_at', '>=', now()->subHours(24));
-              });
-        });
+        if (! $searchingPeople && ! $acrossCards) {
+            $query->where(function($q) {
+                $q->where('status', '!=', 'completed')
+                  ->orWhere(function($sub) {
+                      $sub->where('status', 'completed')
+                          ->where('completed_at', '>=', now()->subHours(24));
+                  });
+            });
+        }
 
         // 2. Apply Dashboard Filters (from Request)
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
             if ($filter === 'not_started') {
-                 $query->whereIn('status', ['pending', 'completed'])
+                 $query->where('status', 'pending')
                        ->whereDoesntHave('completedWorkTypeSteps', function($q) {
                            $q->where('order', 1);
                        });
@@ -1185,7 +1243,7 @@ class WorkflowController extends Controller
             })
             ->exists();
 
-        return view('workflow.partials.order_items', compact('order', 'groupedItems', 'hasHistory', 'steps'));
+        return view('workflow.partials.order_items', compact('order', 'groupedItems', 'hasHistory', 'steps', 'searchingPeople'));
     }
 
     /**
@@ -1408,6 +1466,8 @@ class WorkflowController extends Controller
                         'production_order_id' => $order->id,
                         'employee_id' => $src->employee_id,
                         'source_item_id' => $src->id,
+                        // the team set in "แจ้งเข้า / เปลี่ยนนายจ้าง" comes along (2026-11-19)
+                        'group_name' => $src->group_name ?: null,
                         'status' => 'pending',
                     ]);
                 }
@@ -1450,6 +1510,8 @@ class WorkflowController extends Controller
                         'production_order_id' => $order->id,
                         'employee_id' => $src->employee_id,
                         'source_item_id' => $src->id,
+                        // the team set in "แจ้งเข้า / เปลี่ยนนายจ้าง" comes along (2026-11-19)
+                        'group_name' => $src->group_name ?: null,
                         'status' => 'pending',
                     ]);
                 }
@@ -1619,7 +1681,7 @@ class WorkflowController extends Controller
                 }
 
                 // Not Started: Pending + No Step 1
-                if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+                if ($item->status === 'pending' && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
                     $stats['not_started']++;
                 }
 
@@ -1684,7 +1746,7 @@ class WorkflowController extends Controller
                 $completed++;
             }
 
-            if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+            if ($item->status === 'pending' && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
                 $notStarted++;
             }
 
@@ -3069,7 +3131,7 @@ class WorkflowController extends Controller
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
             if ($filter === 'not_started') {
-                $query->whereIn('status', ['pending', 'completed'])
+                $query->where('status', 'pending')
                       ->whereDoesntHave('completedWorkTypeSteps', function($q) {
                           $q->where('order', 1);
                       });
@@ -3329,7 +3391,7 @@ class WorkflowController extends Controller
                     $completed++;
                 }
 
-                if (in_array($item->status, ['pending', 'completed']) && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
+                if ($item->status === 'pending' && $stepOneId && !$item->completedWorkTypeSteps->contains('id', $stepOneId)) {
                     $notStarted++;
                 }
 

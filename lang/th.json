@@ -3334,5 +3334,10 @@
     "awaiting signature": "รอลงนาม",
     "complete": "สมบูรณ์",
     "issued": "ฉบับ",
-    "Now with employer: :name": "ตอนนี้อยู่กับนายจ้าง: :name"
+    "Now with employer: :name": "ตอนนี้อยู่กับนายจ้าง: :name",
+    "Cancelled — shown because you searched for this employee": "ยกเลิกแล้ว — แสดงเพราะค้นหาลูกจ้างคนนี้",
+    "Finished — shown because you searched for this employee": "เสร็จสิ้นแล้ว — แสดงเพราะค้นหาลูกจ้างคนนี้",
+    "From another card: :name": "จากการ์ดอื่น: :name",
+    "Team (change employer): :team": "ทีม (เปลี่ยนนายจ้าง): :team",
+    "Open in Notified-Out Employees": "เปิดในหน้าลูกจ้างที่ถูกแจ้งออก"
 }

@@ -55,8 +55,12 @@ class EmployeeSearchPickTest extends TestCase
         Employee::factory()->create(['employer_id' => $employer->id, 'employeeNameEn' => 'Gone Worker', 'terminated_at' => now()->subDay()]);
 
         // A notified-out employee belongs only on the History page — never
-        // suggested, never found, by box 1 on the active Employees page.
-        $this->assertEmpty($this->getJson(route('employees.preview_search_combined', ['q' => 'Gone Worker']))->json());
+        // picked or found by box 1 on the active Employees page. Since
+        // 2026-11-19 the suggestions do mention them — as a link to the
+        // History page (no pick), so staff don't think the record is missing.
+        $rows = collect($this->getJson(route('employees.preview_search_combined', ['q' => 'Gone Worker']))->json());
+        $this->assertEmpty($rows->pluck('pick')->filter()->all());
+        $this->assertTrue($rows->every(fn ($r) => str_contains($r['url'] ?? '', '/employees/history')));
         $this->assertSame(0, $this->cardCount($this->get(route('employees.index', ['employer_filter_name' => 'Gone Worker']))->getContent()));
         // Plain browsing still hides them.
         $this->assertSame(0, $this->cardCount($this->get(route('employees.index'))->getContent()));

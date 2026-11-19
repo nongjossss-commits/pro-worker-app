@@ -94,6 +94,12 @@
     .hide-cancelled .status-cancelled {
         display: none !important;
     }
+    /* a cancelled / long-finished employee found by a person search stays visible, labelled */
+    .hide-cancelled .status-cancelled.search-reveal { display: block !important; }
+    .search-reveal-note { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .25rem; margin: 0 0 .4rem .25rem; padding: .2rem .7rem; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+    .search-reveal-note.is-done { color: var(--bs-success-text-emphasis); background: var(--bs-success-bg-subtle); border: 1px solid var(--bs-success-border-subtle); }
+    .search-reveal-note.is-other-card { color: var(--bs-primary-text-emphasis); background: var(--bs-primary-bg-subtle); border: 1px solid var(--bs-primary-border-subtle); }
+    .search-reveal-note.is-cancelled { color: var(--bs-secondary-text-emphasis); background: var(--bs-secondary-bg-subtle); border: 1px solid var(--bs-secondary-border-subtle); }
 </style>
 
 <div class="container-fluid py-4">

@@ -331,9 +331,40 @@ public function previewSearch(Request $request)
     // Box 1: employers / job owners / employees; box 2: employees inside box 1's
     // result (App\Services\TwoStageSearch). Scoped to active (non-notified-out)
     // employees, same as index() — a suggestion must never offer a record the
-    // list itself would then hide.
-    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at')));
+    // list itself would then hide. Notified-out matches are offered separately,
+    // as links to their own page (notifiedOutSuggestions()).
+    $results = \App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at'));
+    return response()->json(array_merge($results, $this->notifiedOutSuggestions($request, $q)));
     }
+
+/**
+ * Employees menu search: people who match but were notified out (they only
+ * live on the "ลูกจ้างที่ถูกแจ้งออก" page) — offered under the suggestions,
+ * tagged with the date, opening that page on the person. Before, the box just
+ * said "nothing found" and staff thought the employee was missing (2026-11-19).
+ */
+private function notifiedOutSuggestions(Request $request, string $q): array
+{
+    if (! \App\Services\TwoStageSearch::isBoxOne($request) || $request->filled('employer_filter_id')) {
+        return [];
+    }
+    $query = Employee::whereNotNull('terminated_at')->with('employer:id,employerNameTh,employerNameEn');
+    \App\Services\TwoStageSearch::whereEmployee($query, $q);
+
+    return $query->orderByDesc('terminated_at')->limit(4)
+        ->get(['employees.id', 'employeeNameTh', 'employeeNameEn', 'employeeTitleEn', 'employeeTitleTh', 'employeePhoto', 'employeePassport', 'employeeWorkPermit', 'employees.employer_id', 'terminated_at'])
+        ->map(function (Employee $emp) {
+            $row = \App\Services\TwoStageSearch::employeeSuggestion($emp, false);
+            unset($row['pick']);
+            $row['group'] = __('Notified out :date', ['date' => $emp->terminated_at->format('d/m/Y')]);
+            $row['sub_label'] = trim($row['sub_label'] . ' · ' . __('Open in Notified-Out Employees'), ' ·');
+            $row['url'] = route('employees.history', [
+                'employer_filter_name' => $emp->employeeNameEn ?: $emp->employeeNameTh,
+                'employee_pick_id' => $emp->id,
+            ]);
+            return $row;
+        })->all();
+}
 
 /**
  * Live-search preview for box 1 of index() — full power, same as
@@ -351,8 +382,9 @@ public function previewSearchCombined(Request $request)
 
     // Box 1: employers / job owners / employees; box 2: employees inside box 1's
     // result (App\Services\TwoStageSearch). Scoped to active employees — see
-    // previewSearch() above.
-    return response()->json(\App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at')));
+    // previewSearch() above (notified-out matches offered as links).
+    $results = \App\Services\TwoStageSearch::preview($request, $q, fn () => Employee::whereNull('terminated_at'));
+    return response()->json(array_merge($results, $this->notifiedOutSuggestions($request, $q)));
     }
 
 /**

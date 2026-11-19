@@ -13,6 +13,7 @@ use Spatie\Permission\Models\Permission;
 
 class RegistrationNotStartedFilterTest extends TestCase
 {
+    protected $tab;
     use RefreshDatabase;
 
     protected $adminUser;
@@ -21,6 +22,12 @@ class RegistrationNotStartedFilterTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Registration / Renewal became multi-tab menus (one ResolutionTab per
+        // resolution) - every route now carries {resolutionTab}. One tab here,
+        // set as the default route parameter, so route(...) keeps working.
+        $this->tab = \App\Models\ResolutionTab::create(['name' => 'Test registration', 'type' => 'registration', 'slug' => 'test-registration', 'sort_order' => 1, 'is_default' => true]);
+        \Illuminate\Support\Facades\URL::defaults(['resolutionTab' => $this->tab->id]);
 
         // Setup User & Permissions
         $role = Role::firstOrCreate(['name' => 'admin']);
@@ -33,8 +40,8 @@ class RegistrationNotStartedFilterTest extends TestCase
 
         // Setup Steps
         $this->steps = collect([
-            RegistrationStep::create(['name' => 'Step 1', 'order' => 1]),
-            RegistrationStep::create(['name' => 'Step 2', 'order' => 2]),
+            RegistrationStep::create(['resolution_tab_id' => $this->tab->id, 'name' => 'Step 1', 'order' => 1]),
+            RegistrationStep::create(['resolution_tab_id' => $this->tab->id, 'name' => 'Step 2', 'order' => 2]),
         ]);
     }
 
@@ -42,7 +49,7 @@ class RegistrationNotStartedFilterTest extends TestCase
     {
         // Employer 1: Has PENDING employee with NO steps (Should be shown)
         $employer1 = Employer::factory()->create(['employerNameTh' => 'Pending Employer']);
-        $emp1 = Employee::factory()->create([
+        $emp1 = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $employer1->id,
             'status' => 'registration_pending'
         ]);
@@ -50,7 +57,7 @@ class RegistrationNotStartedFilterTest extends TestCase
 
         // Employer 2: Has COMPLETED employee with NO steps (Will be shown because of current logic whereIn registration_completed and doesn't have step 1)
         $employer2 = Employer::factory()->create(['employerNameTh' => 'Completed Employer']);
-        $emp2 = Employee::factory()->create([
+        $emp2 = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $employer2->id,
             'status' => 'registration_completed'
         ]);
@@ -58,7 +65,7 @@ class RegistrationNotStartedFilterTest extends TestCase
 
         // Employer 3: Has PENDING employee WITH steps (Should be HIDDEN)
         $employer3 = Employer::factory()->create(['employerNameTh' => 'Started Employer']);
-        $emp3 = Employee::factory()->create([
+        $emp3 = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $employer3->id,
             'status' => 'registration_pending'
         ]);
@@ -84,13 +91,13 @@ class RegistrationNotStartedFilterTest extends TestCase
     public function test_not_started_count_is_correct()
     {
         // 1. Pending, No Steps (Counted)
-        $emp1 = Employee::factory()->create(['status' => 'registration_pending']);
+        $emp1 = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 'status' => 'registration_pending']);
 
         // 2. Completed, No Steps (Counted - Current Logic)
-        $emp2 = Employee::factory()->create(['status' => 'registration_completed']);
+        $emp2 = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 'status' => 'registration_completed']);
 
         // 3. Pending, Has Steps (Not Counted)
-        $started = Employee::factory()->create(['status' => 'registration_pending']);
+        $started = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 'status' => 'registration_pending']);
         $started->registrationSteps()->attach($this->steps[0]->id, ['completed_at' => now()]);
 
         // Act

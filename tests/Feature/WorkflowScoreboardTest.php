@@ -24,6 +24,9 @@ beforeEach(function () {
 
     // Seed User
     $this->user = User::factory()->create();
+    // Workflow is a staff-only menu (role gate since 2026-09-02)
+    \Spatie\Permission\Models\Role::findOrCreate('admin');
+    $this->user->assignRole('admin');
     $this->actingAs($this->user);
 });
 
@@ -182,4 +185,28 @@ test('dashboard stats exclude orders from deleted employers', function () {
     // Expect: Not Started = 1 (Active only)
     expect($stats['not_started'])->toBe(1)
         ->and($stats['total_employees'])->toBe(1);
+});
+
+test('not started never counts finished employees and matches the filter', function () {
+    // 2026-11-19: "ยังไม่เริ่ม" used to also count FINISHED employees who never
+    // ticked step 1 (all of them, ever) — the number never matched the list
+    // the "not started" filter shows.
+    $workType = WorkType::where('slug', 'notify_in')->first();
+    $step1 = WorkTypeStep::create(['work_type_id' => $workType->id, 'name' => 'Step 1', 'order' => 1]);
+    $order = ProductionOrder::create([
+        'employer_id' => $this->employer->id, 'work_type_id' => $workType->id, 'status' => 'active',
+        'type' => 'employer', 'project_name' => 'Mixed Project', 'created_by' => $this->user->id,
+    ]);
+    ProductionItem::create(['production_order_id' => $order->id, 'status' => 'pending']); // not started
+    $started = ProductionItem::create(['production_order_id' => $order->id, 'status' => 'pending']);
+    $started->completedWorkTypeSteps()->attach($step1->id);
+    ProductionItem::create(['production_order_id' => $order->id, 'status' => 'completed', 'completed_at' => now()->subMonths(3)]); // finished, no steps
+    ProductionItem::create(['production_order_id' => $order->id, 'status' => 'completed', 'completed_at' => now()->subHour()]);    // finished, no steps
+
+    expect($this->get(route('workflow.index'))->viewData('stats')['not_started'])->toBe(1);
+    expect($this->get(route('workflow.index', ['tab' => 'notify_in']))->viewData('stats')['not_started'])->toBe(1);
+
+    // the card still shows up under the "not started" filter
+    $this->get(route('workflow.index', ['tab' => 'notify_in', 'filter' => 'not_started']))
+        ->assertOk()->assertSee('Mixed Project');
 });

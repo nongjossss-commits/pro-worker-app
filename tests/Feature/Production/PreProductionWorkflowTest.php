@@ -26,6 +26,9 @@ class PreProductionWorkflowTest extends TestCase
         parent::setUp();
 
         $this->user = User::factory()->create();
+        // Workflow / Pre-Production are staff-only menus (role gate since 2026-09-02)
+        \Spatie\Permission\Models\Role::findOrCreate('admin');
+        $this->user->assignRole('admin');
         $this->employer = Employer::factory()->create();
 
         // Create a WorkType (e.g., Notify In)

@@ -18,6 +18,9 @@ class CardVisibilityTest extends TestCase
     public function email_edit_fields_have_conditional_visibility()
     {
         $user = User::factory()->create();
+        // Workflow is a staff-only menu (role gate since 2026-09-02)
+        \Spatie\Permission\Models\Role::findOrCreate('admin');
+        $user->assignRole('admin');
         $employer = Employer::factory()->create();
         $employee = Employee::factory()->create(['employer_id' => $employer->id]);
 

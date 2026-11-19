@@ -23,6 +23,9 @@ beforeEach(function () {
 
     // Seed User
     $this->user = User::factory()->create();
+    // Workflow is a staff-only menu (role gate since 2026-09-02)
+    \Spatie\Permission\Models\Role::findOrCreate('admin');
+    $this->user->assignRole('admin');
     $this->actingAs($this->user);
 });
 

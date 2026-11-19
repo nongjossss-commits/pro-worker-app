@@ -13,6 +13,7 @@ use Spatie\Permission\Models\Permission;
 
 class RegistrationResolutionTest extends TestCase
 {
+    protected $tab;
     use RefreshDatabase;
 
     protected $adminUser;
@@ -22,6 +23,12 @@ class RegistrationResolutionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Registration / Renewal became multi-tab menus (one ResolutionTab per
+        // resolution) - every route now carries {resolutionTab}. One tab here,
+        // set as the default route parameter, so route(...) keeps working.
+        $this->tab = \App\Models\ResolutionTab::create(['name' => 'Test registration', 'type' => 'registration', 'slug' => 'test-registration', 'sort_order' => 1, 'is_default' => true]);
+        \Illuminate\Support\Facades\URL::defaults(['resolutionTab' => $this->tab->id]);
 
         // 1. Create Role & Permission
         $role = Role::firstOrCreate(['name' => 'admin']);
@@ -40,9 +47,9 @@ class RegistrationResolutionTest extends TestCase
 
         // 4. Create Steps
         $this->steps = collect([
-            RegistrationStep::create(['name' => 'Step A', 'order' => 1]),
-            RegistrationStep::create(['name' => 'Step B', 'order' => 2]),
-            RegistrationStep::create(['name' => 'Step C', 'order' => 3]),
+            RegistrationStep::create(['resolution_tab_id' => $this->tab->id, 'name' => 'Step A', 'order' => 1]),
+            RegistrationStep::create(['resolution_tab_id' => $this->tab->id, 'name' => 'Step B', 'order' => 2]),
+            RegistrationStep::create(['resolution_tab_id' => $this->tab->id, 'name' => 'Step C', 'order' => 3]),
         ]);
     }
 
@@ -58,14 +65,14 @@ class RegistrationResolutionTest extends TestCase
     public function test_search_functionality()
     {
         // Create matching employee
-        Employee::factory()->create([
+        Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'employeeNameTh' => 'Somchai Test',
             'status' => 'registration_pending'
         ]);
 
         // Create non-matching employee
-        Employee::factory()->create([
+        Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'employeeNameTh' => 'John Doe',
             'status' => 'registration_pending'
@@ -83,7 +90,7 @@ class RegistrationResolutionTest extends TestCase
 
     public function test_highest_step_counting_logic()
     {
-        $employee = Employee::factory()->create([
+        $employee = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'status' => 'registration_pending'
         ]);
@@ -114,7 +121,7 @@ class RegistrationResolutionTest extends TestCase
 
     public function test_update_progress_returns_correct_stats()
     {
-        $employee = Employee::factory()->create([
+        $employee = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'status' => 'registration_pending'
         ]);
@@ -152,19 +159,19 @@ class RegistrationResolutionTest extends TestCase
 
     public function test_financial_tab_loads_only_registration_employees()
     {
-        $target = Employee::factory()->create([
+        $target = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'status' => 'registration_pending',
             'employeeNameTh' => 'Target Registration'
         ]);
 
-        $active = Employee::factory()->create([
+        $active = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'status' => 'active',
             'employeeNameTh' => 'Active Regular'
         ]);
 
-        $renewal = Employee::factory()->create([
+        $renewal = Employee::factory()->create(['resolution_tab_id' => $this->tab->id, 
             'employer_id' => $this->employer->id,
             'status' => 'renewal_pending',
             'employeeNameTh' => 'Renewal Candidate'

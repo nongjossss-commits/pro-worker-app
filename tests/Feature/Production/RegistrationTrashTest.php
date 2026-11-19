@@ -12,6 +12,7 @@ use Spatie\Permission\Models\Permission;
 
 class RegistrationTrashTest extends TestCase
 {
+    protected $tab;
     use RefreshDatabase;
 
     protected $adminUser;
@@ -19,6 +20,12 @@ class RegistrationTrashTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Registration / Renewal became multi-tab menus (one ResolutionTab per
+        // resolution) - every route now carries {resolutionTab}. One tab here,
+        // set as the default route parameter, so route(...) keeps working.
+        $this->tab = \App\Models\ResolutionTab::create(['name' => 'Test registration', 'type' => 'registration', 'slug' => 'test-registration', 'sort_order' => 1, 'is_default' => true]);
+        \Illuminate\Support\Facades\URL::defaults(['resolutionTab' => $this->tab->id]);
 
         $role = Role::firstOrCreate(['name' => 'admin']);
         $role->givePermissionTo(Permission::create(['name' => 'edit-employees']));
@@ -30,7 +37,7 @@ class RegistrationTrashTest extends TestCase
     public function test_can_fetch_trash_items()
     {
         // Create deleted employees (enough to trigger pagination)
-        Employee::factory()->count(15)->create([
+        Employee::factory()->count(15)->create(['resolution_tab_id' => $this->tab->id,
             'status' => 'registration_pending',
             'deleted_at' => now()
         ]);
@@ -48,7 +55,7 @@ class RegistrationTrashTest extends TestCase
     public function test_trash_pagination_returns_partial()
     {
         // Create 15 deleted employees (assuming pagination is 10)
-        Employee::factory()->count(15)->create([
+        Employee::factory()->count(15)->create(['resolution_tab_id' => $this->tab->id,
             'status' => 'registration_pending',
             'deleted_at' => now()
         ]);

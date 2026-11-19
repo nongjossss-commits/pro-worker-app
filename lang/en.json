@@ -3284,5 +3284,10 @@
     "awaiting signature": "awaiting signature",
     "complete": "complete",
     "issued": "issued",
-    "Now with employer: :name": "Now with employer: :name"
+    "Now with employer: :name": "Now with employer: :name",
+    "Cancelled — shown because you searched for this employee": "Cancelled — shown because you searched for this employee",
+    "Finished — shown because you searched for this employee": "Finished — shown because you searched for this employee",
+    "From another card: :name": "From another card: :name",
+    "Team (change employer): :team": "Team (change employer): :team",
+    "Open in Notified-Out Employees": "Open in Notified-Out Employees"
 }
