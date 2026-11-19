@@ -26,6 +26,10 @@ use Illuminate\Support\Facades\DB;
  * The fix is the same as the 24-hour mover: employer = that card's employer,
  * notify-out cleared, a Registration/Renewal status kept, logged.
  *
+ * Also (2026-11-19): employees notified out while an OPEN change-employer job
+ * at another employer exists (left from before the rule that now moves them
+ * at once) - moved to that job's employer; the job itself is left as it is.
+ *
  * Shows the list only; nothing changes unless run with --apply.
  */
 class RepairMissedNotifyInTransfers extends Command
@@ -68,6 +72,30 @@ class RepairMissedNotifyInTransfers extends Command
             $cases->push(compact('item', 'emp', 'order'));
         }
 
+        // Also: notified out while an OPEN (not yet finished) change-employer job at
+        // another employer exists — the rule since 2026-11-19 moves them right away
+        // (EmployeeObserver / WorkflowController::rejoinNotifiedOutEmployee()); this
+        // catches the ones left from before. Their latest open job decides.
+        $open = ProductionItem::query()
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereHas('order', fn ($o) => $o->withoutGlobalScope('employerTenancy')->where('work_type_id', $notifyIn->id)->where('status', '!=', 'cancelled'))
+            ->whereHas('employee', fn ($e) => $e->withoutGlobalScope('employerTenancy')->whereNotNull('terminated_at'))
+            ->with(['order' => fn ($o) => $o->withoutGlobalScope('employerTenancy')->with('employer'), 'employee' => fn ($e) => $e->withoutGlobalScope('employerTenancy')->with('employer')])
+            ->orderByDesc('id')
+            ->get();
+        foreach ($open->groupBy('employee_id') as $employeeId => $rows) {
+            if ($cases->contains(fn ($c) => (int) $c['emp']->id === (int) $employeeId)) {
+                continue;
+            }
+            $item = $rows->first();
+            $emp = $item->employee;
+            $order = $item->order;
+            if (! $emp || ! $order || ! $emp->terminated_at || (int) $emp->employer_id === (int) $order->employer_id) {
+                continue;
+            }
+            $cases->push(compact('item', 'emp', 'order') + ['open' => true]);
+        }
+
         if ($cases->isEmpty()) {
             $this->info('Nothing to repair.');
             return self::SUCCESS;
@@ -77,7 +105,7 @@ class RepairMissedNotifyInTransfers extends Command
             $c['emp']->id . ' ' . ($c['emp']->getRawOriginal('employeeNameEn') ?: $c['emp']->getRawOriginal('employeeNameTh')),
             (optional($c['emp']->employer)->getRawOriginal('employerNameTh') ?? '-') . ' (' . $c['emp']->terminated_at->format('d/m/Y') . ')',
             optional($c['order']->employer)->getRawOriginal('employerNameTh') ?? '-',
-            $c['item']->completed_at->format('d/m/Y'),
+            ! empty($c['open']) ? 'still in progress' : $c['item']->completed_at->format('d/m/Y'),
         ])->all());
 
         if (! $this->option('apply')) {
@@ -99,9 +127,11 @@ class RepairMissedNotifyInTransfers extends Command
                     'termination_reason' => null,
                     'status' => in_array($emp->status, [null, '', 'resigned'], true) ? 'active' : $emp->status,
                 ]);
-                $c['item']->update(['is_transfer_processed' => true]);
+                if (empty($c['open'])) {
+                    $c['item']->update(['is_transfer_processed' => true]);
+                }
 
-                ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $emp->getRawOriginal('employeeNameEn') . ' จาก ' . $oldName . ' ไป ' . $newName . ' (ซ่อมข้อมูล: งานแจ้งเข้า/เปลี่ยนนายจ้างเสร็จแล้วแต่ยังไม่ได้ย้าย)', Employee::class, $emp->id, [
+                ActivityLogHelper::logAction('transfer', 'ย้ายลูกจ้าง ' . $emp->getRawOriginal('employeeNameEn') . ' จาก ' . $oldName . ' ไป ' . $newName . (empty($c['open']) ? ' (ซ่อมข้อมูล: งานแจ้งเข้า/เปลี่ยนนายจ้างเสร็จแล้วแต่ยังไม่ได้ย้าย)' : ' (ซ่อมข้อมูล: ถูกแจ้งออกขณะมีงานแจ้งเข้า/เปลี่ยนนายจ้างค้างอยู่)'), Employee::class, $emp->id, [
                     'old_employer_id' => $oldId,
                     'old_employer_name' => $oldName,
                     'new_employer_id' => $order->employer_id,

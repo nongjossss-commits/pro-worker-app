@@ -1243,6 +1243,12 @@ class WorkflowController extends Controller
             })
             ->exists();
 
+        // "แจ้งออก" ⇄ "แจ้งเข้า / เปลี่ยนนายจ้าง" notes on the cards — one query for the batch
+        \App\Support\ChangeEmployerLinks::flush();
+        if (in_array($order->workType?->slug, ['notify_in', 'notify_out'], true)) {
+            \App\Support\ChangeEmployerLinks::prime(collect($groupedItems)->flatten()->pluck('employee_id'));
+        }
+
         return view('workflow.partials.order_items', compact('order', 'groupedItems', 'hasHistory', 'steps', 'searchingPeople'));
     }
 
@@ -2935,6 +2941,7 @@ class WorkflowController extends Controller
         }
 
         // Render just the card partial
+        \App\Support\ChangeEmployerLinks::flush();
         $html = view('workflow.partials._item_card', compact('item', 'steps', 'order'))->render();
 
         return response()->json(['html' => $html]);
@@ -3436,7 +3443,15 @@ class WorkflowController extends Controller
     public static function rejoinNotifiedOutEmployee($empId, ProductionOrder $order): void
     {
         $emp = Employee::find($empId);
-        if ($emp && $emp->terminated_at) {
+        // Also when the employee is not notified out YET but is being notified out:
+        // an open "แจ้งออก" job at another employer. The employee record moves now
+        // (so the Employees menu finds them under the new employer); that notify-out
+        // job stays on its card until someone finishes it (it no longer marks them
+        // resigned once they have moved — finalizeOneItem()) (2026-11-19).
+        $beingNotifiedOut = $emp && ! $emp->terminated_at
+            && (int) $emp->employer_id !== (int) $order->employer_id
+            && self::openChangeEmployerJob($emp->id, 'notify_out', $order->employer_id);
+        if ($emp && ($emp->terminated_at || $beingNotifiedOut)) {
             $oldEmployerId = $emp->employer_id;
             $oldEmployerName = optional($emp->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
             $newEmployerName = optional($order->employer)->getRawOriginal('employerNameTh') ?? 'N/A';
@@ -3459,5 +3474,28 @@ class WorkflowController extends Controller
                 'new_employer_name' => $newEmployerName,
             ]);
         }
+    }
+
+    /**
+     * The employee's open (not finished / cancelled) job of this kind on a
+     * card that is not cancelled — Workflow or Pre-Production — optionally
+     * only on cards of employers other than $notEmployerId. Latest first.
+     */
+    public static function openChangeEmployerJob($empId, string $slug, $notEmployerId = null): ?ProductionItem
+    {
+        return ProductionItem::query()
+            ->where('employee_id', $empId)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->whereHas('order', function ($o) use ($slug, $notEmployerId) {
+                $o->withoutGlobalScope('employerTenancy')
+                  ->where('status', '!=', 'cancelled')
+                  ->whereHas('workType', fn ($w) => $w->where('slug', $slug));
+                if ($notEmployerId) {
+                    $o->where('employer_id', '!=', $notEmployerId);
+                }
+            })
+            ->with(['order' => fn ($o) => $o->withoutGlobalScope('employerTenancy')->with('employer')])
+            ->latest('id')
+            ->first();
     }
 }

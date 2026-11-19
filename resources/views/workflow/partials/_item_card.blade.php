@@ -212,6 +212,26 @@
                             $movedTo = ($cardEmp && $order && $cardEmp->employer_id && (int) $cardEmp->employer_id !== (int) $order->employer_id)
                                 ? ($cardEmp->employer?->employerNameTh ?: $cardEmp->employer?->employerNameEn) : null;
                         @endphp
+                        @php
+                            // "แจ้งออก" ⇄ "แจ้งเข้า / เปลี่ยนนายจ้าง": the same employee's other open
+                            // job at another employer (App\Support\ChangeEmployerLinks, 2026-11-19)
+                            $otherJob = \App\Support\ChangeEmployerLinks::counterpart($item, $order);
+                            $otherEmployer = $otherJob ? ($otherJob->order->employer?->employerNameTh ?: $otherJob->order->employer?->employerNameEn) : null;
+                            $otherIsPrep = $otherJob && $otherJob->order->status === 'pre_production';
+                        @endphp
+                        @if($otherJob)
+                        <div class="mt-1">
+                            @if($order->workType?->slug === 'notify_out')
+                                <span class="badge rounded-pill text-wrap text-start" style="font-size: 0.7rem; background:#fff7e6; border:1px solid #f59e0b; color:#92400e;">
+                                    <i class="bi bi-box-arrow-in-right me-1"></i>{{ __('Changing employer — being notified in at: :name', ['name' => $otherEmployer ?: '-']) }}@if($otherIsPrep) ({{ __('Pre-Production') }})@endif
+                                </span>
+                            @else
+                                <span class="badge rounded-pill text-wrap text-start" style="font-size: 0.7rem; background:#fff7e6; border:1px solid #f59e0b; color:#92400e;">
+                                    <i class="bi bi-box-arrow-right me-1"></i>{{ __('Notify-out job still open at the old employer: :name', ['name' => $otherEmployer ?: '-']) }}@if($otherIsPrep) ({{ __('Pre-Production') }})@endif
+                                </span>
+                            @endif
+                        </div>
+                        @endif
                         @if($cardEmp && !$isCompleted && ($cardEmp->terminated_at || $movedTo))
                         <div class="d-flex flex-wrap gap-1 mt-1">
                             @if($cardEmp->terminated_at)

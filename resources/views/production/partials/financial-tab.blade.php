@@ -1495,7 +1495,9 @@ class="row">
 
                                 <!-- Summary Display -->
                                 <div class="d-flex justify-content-between small mb-3 bg-light p-2 rounded border flex-wrap gap-1">
-                                    <div><span class="text-muted">Total:</span> <span class="fw-bold" x-text="formatCurrency(editingTransaction.amount)"></span></div>
+                                    <div><span class="text-muted">Total:</span> <span class="fw-bold" x-text="formatCurrency(editingTransaction.amount)"></span>
+                                        <span class="text-muted" x-show="editExtraTotal > 0" x-cloak>(<span x-text="formatCurrency((parseFloat(editingTransaction.amount) || 0) - editExtraTotal)"></span> + {{ __('Additional charges') }} <span x-text="formatCurrency(editExtraTotal)"></span>)</span>
+                                    </div>
                                     <div x-show="editingTransaction.discount_amount > 0"><span class="text-muted">Discount:</span> <span class="fw-bold text-warning" x-text="'-' + formatCurrency(editingTransaction.discount_amount)"></span></div>
                                     <div><span class="text-muted">Paid:</span> <span class="fw-bold text-success" x-text="formatCurrency(editingTransaction.paid_amount || 0)"></span></div>
                                     <div><span class="text-muted">Remaining:</span> <span class="fw-bold text-danger" x-text="formatCurrency(Math.max(0, editingTransaction.amount - (parseFloat(editingTransaction.discount_amount) || 0) - (editingTransaction.paid_amount || 0)))"></span></div>
@@ -1607,7 +1609,20 @@ class="row">
                                         <button type="button" class="btn btn-sm btn-outline-info w-100 mt-2" @click="addExtraCharge()">
                                             <i class="bi bi-plus-lg me-1"></i>{{ __('เพิ่มเข้าบิลนี้') }}
                                         </button>
-                                        <div class="form-text" style="font-size: 0.7rem;">{{ __('จะบวกเข้ายอด Total ของบิลนี้ทันที และเติมหมายเหตุให้อัตโนมัติ — กด Update ด้านล่างเพื่อบันทึก') }}</div>
+                                        <div class="form-text" style="font-size: 0.7rem;">{{ __('Each one is its own line on this bill, the printed bill and individual collection — press Update below to save.') }}</div>
+                                        {{-- this bill's additional charges, one line each (2026-11-20) --}}
+                                        <div class="mt-2" x-show="editExtraCharges.length > 0" x-cloak>
+                                            <template x-for="c in editExtraCharges" :key="c.id">
+                                                <div class="d-flex align-items-center gap-2 border rounded bg-white px-2 py-1 mb-1 small">
+                                                    <i class="bi bi-plus-circle text-info"></i>
+                                                    <span class="flex-grow-1 text-truncate" x-text="c.description"></span>
+                                                    <span class="fw-bold" x-text="formatCurrency(c.amount)"></span>
+                                                    <span class="badge bg-success-subtle text-success-emphasis" x-show="extraChargeCollected(c.id) > 0" x-text="'{{ __('Received') }} ' + formatCurrency(extraChargeCollected(c.id))"></span>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="removeExtraCharge(c)" :disabled="extraChargeCollected(c.id) > 0"
+                                                        :title="extraChargeCollected(c.id) > 0 ? '{{ __('Money was already received for this additional charge — delete that payment first.') }}' : '{{ __('Remove') }}'"><i class="bi bi-x-lg"></i></button>
+                                                </div>
+                                            </template>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1652,7 +1667,28 @@ class="row">
                                 </div>
                              </div>
                              <div class="col-md-6 border-start">
-                                <label class="form-label small fw-bold mb-1">Edit Employees</label>
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <label class="form-label small fw-bold mb-0">Edit Employees</label>
+                                    <button type="button" class="btn btn-sm py-0" :class="editAddOpen ? 'btn-primary' : 'btn-outline-primary'" @click="editAddOpen = !editAddOpen; editAddSearch = ''" style="font-size: 0.75rem;">
+                                        <i class="bi me-1" :class="editAddOpen ? 'bi-x-lg' : 'bi-person-plus'"></i><span x-text="editAddOpen ? '{{ __('Close') }}' : '{{ __('Add employees') }}'"></span>
+                                    </button>
+                                </div>
+                                {{-- "+ Add employees": priced employees not on any bill of this tab yet (2026-11-20) --}}
+                                <div class="border border-primary-subtle rounded p-2 mb-2 bg-primary-subtle bg-opacity-25" x-show="editAddOpen" x-cloak>
+                                    <div class="small text-muted mb-1" style="font-size: 0.72rem;">{{ __('Employees who have a price and are not on any bill yet — press + to put them on this bill.') }}</div>
+                                    <input type="text" class="form-control form-control-sm mb-1" placeholder="{{ __('Search by name, passport, work permit, ID no., RA no., reference no....') }}" x-model="editAddSearch">
+                                    <div style="max-height: 220px; overflow-y: auto;">
+                                        <template x-for="item in editAddableItems" :key="'add-' + item.id">
+                                            <div class="d-flex align-items-center gap-2 bg-white border rounded px-2 py-1 mb-1" style="font-size: 0.8rem;">
+                                                <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 22px; height: 22px; object-fit: cover;">
+                                                <span class="fw-bold text-truncate flex-grow-1" x-text="item.name_en ? ((item.title_en ? item.title_en + ' ' : '') + item.name_en) : item.name"></span>
+                                                <span class="badge bg-light text-dark border" x-show="pricingMode === 'per_head'" x-text="formatCurrency(getItemPrice(item.id))"></span>
+                                                <button type="button" class="btn btn-sm btn-success py-0 px-2" @click="addEmployeeToBill(item.id)" title="{{ __('Add to this bill') }}"><i class="bi bi-plus-lg"></i></button>
+                                            </div>
+                                        </template>
+                                        <div class="text-center text-muted small py-2" x-show="editAddableItems.length === 0">{{ __('No employees with a price are waiting for a bill.') }}</div>
+                                    </div>
+                                </div>
                                 <ul class="nav nav-pills nav-pills-sm custom-nav-pills mb-2" style="font-size: 0.75rem;">
                                     <li class="nav-item flex-fill text-center">
                                         <button class="nav-link w-100 py-0" :class="{ 'active': editTransactionEmployeeFilter === 'active' }" @click="editTransactionEmployeeFilter = 'active'" type="button">Active</button>
@@ -1669,16 +1705,20 @@ class="row">
                                     </div>
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = [...new Set([...selectedTransactionItems, ...editModalItems.map(i => i.id)])]; recalcEditAmount()">All</button>
-                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = []; recalcEditAmount()">None</button>
+                                        <button type="button" class="btn btn-outline-secondary py-0" style="font-size: 0.7rem;" @click="selectedTransactionItems = selectedTransactionItems.filter(v => itemHasCollected(v)); recalcEditAmount()">None</button>
                                     </div>
                                 </div>
                                 <div class="border rounded bg-light" style="max-height: max(250px, calc(100vh - 330px)); overflow-y: auto;">
                                     <div class="list-group list-group-flush">
                                         <!-- Show ALL items for edit (Available + Currently Attached) -->
                                         <template x-for="item in editModalItems" :key="item.id">
-                                            <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center bg-white" style="font-size: 0.8rem;">
-                                                <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcEditAmount()">
-                                                <span class="badge bg-light text-dark border ms-auto" x-text="billItemPrice(item.id, editingTransaction)" style="font-size: 0.65rem;"></span>
+                                            <label class="list-group-item py-1 px-2 d-flex gap-2 align-items-center flex-wrap" style="font-size: 0.8rem;"
+                                                   :class="isLeavingBill(item) ? 'bg-danger-subtle' : (item.attached ? 'bg-white' : 'bg-success-subtle')">
+                                                {{-- someone already paid for on this bill can't be ticked off (2026-11-20) --}}
+                                                <input class="form-check-input mt-0" type="checkbox" :value="item.id" x-model="selectedTransactionItems" @change="recalcEditAmount()"
+                                                       :disabled="item.attached && itemHasCollected(item.id) && selectedTransactionItems.some(v => v == item.id)"
+                                                       :title="itemHasCollected(item.id) ? '{{ __('Money was already received for this person on this bill — delete those payments first.') }}' : ''">
+                                                <span class="badge bg-light text-dark border ms-auto" x-text="formatCurrency(editItemPrice(item.id))" style="font-size: 0.65rem;"></span>
                                                 <div class="d-flex align-items-center gap-2 overflow-hidden w-100">
                                                     <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 24px; height: 24px; object-fit: cover;">
                                                     <div class="d-flex flex-column" style="line-height: 1.1; min-width: 0;">
@@ -1724,7 +1764,19 @@ class="row">
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <span x-show="isItemAttached(item.id)" class="badge bg-success ms-auto flex-shrink-0" style="font-size: 0.6em;">Linked</span>
+                                                <span x-show="isItemAttached(item.id) && !isLeavingBill(item)" class="badge bg-success ms-auto flex-shrink-0" style="font-size: 0.6em;">Linked</span>
+                                                <span x-show="!item.attached" class="badge bg-primary ms-auto flex-shrink-0" style="font-size: 0.6em;">{{ __('New') }}</span>
+                                                <span x-show="editTierOverrides[item.id] && !isLeavingBill(item)" class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.6em;" x-text="'{{ __('New price') }} ' + formatCurrency(editItemPrice(item.id))"></span>
+                                                {{-- ticked off: leaves this bill on Update — or pick another price tier and keep them on it --}}
+                                                {{-- x-show on a plain wrapper: Bootstrap's d-flex is !important and would keep it visible --}}
+                                                <div class="w-100" x-show="isLeavingBill(item)" x-cloak>
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap ps-4">
+                                                        <span class="small text-danger"><i class="bi bi-box-arrow-right me-1"></i>{{ __('Leaves this installment when you press Update — back to "not billed yet"') }}</span>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 ms-auto" x-show="pricingMode === 'per_head' && pricingTiers.length > 0" @click.prevent="chooseTierForItem(item)" style="font-size: 0.72rem;">
+                                                            <i class="bi bi-pencil-square me-1"></i>{{ __('Change price tier') }}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </label>
                                         </template>
                                     </div>
@@ -1737,6 +1789,12 @@ class="row">
             </div>
         </div>
     </div>
+
+    <div class="d-none" x-ref="ftText" data-text="{{ json_encode([
+        'pickTierTitle' => __('Pick the price tier for this employee'),
+        'pickTierOk' => __('Use this price'),
+        'cancel' => __('Cancel'),
+    ], JSON_UNESCAPED_UNICODE) }}"></div>
 
     <!-- Individual Collection Modal — one screen for one collection round: type what
          each person paid now, press save once → their entries + ONE Payment
@@ -1807,10 +1865,12 @@ class="row">
                             <div class="ic-person" :class="{ 'is-paid': item.isFullyPaid, 'has-draft': draftAmount(item.id) > 0 }">
                                 <div class="ic-row">
                                     <div class="ic-who">
-                                        <img :src="item.photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.name_en || item.name || 'User') + '&background=random'" alt="">
+                                        <img x-show="!item.isExtra" :src="item.photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.name_en || item.name || 'User') + '&background=random'" alt="">
+                                        <span x-show="item.isExtra" class="d-inline-flex align-items-center justify-content-center rounded-circle bg-info-subtle text-info-emphasis flex-shrink-0" style="width: 36px; height: 36px;"><i class="bi bi-plus-circle-fill"></i></span>
                                         <div class="ic-who-text">
                                             <div class="ic-name" x-text="item.displayName"></div>
-                                            <div class="ic-meta">
+                                            <div class="ic-meta" x-show="item.isExtra"><span class="ic-chip">{{ __('Additional charge') }}</span></div>
+                                            <div class="ic-meta" x-show="!item.isExtra">
                                                 <span x-show="item.nationality" x-text="item.nationality"></span>
                                                 <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'"><span class="ic-chip">{{ __('Passport') }}</span></template>
                                                 <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'"><span class="ic-chip" x-text="item.insurance_type"></span></template>

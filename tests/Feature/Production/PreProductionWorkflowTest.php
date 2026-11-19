@@ -186,4 +186,30 @@ class PreProductionWorkflowTest extends TestCase
             'status' => 'pre_production'
         ]);
     }
+
+    /** @test */
+    public function not_started_never_counts_finished_employees()
+    {
+        // 2026-11-19: same rule as Workflow — "ยังไม่เริ่ม" = not finished and
+        // step 1 not ticked; finished employees used to be counted as well.
+        $order = ProductionOrder::create([
+            'employer_id' => $this->employer->id, 'work_type_id' => $this->workType->id, 'type' => 'employer',
+            'project_name' => 'Prep Mixed', 'status' => 'pre_production', 'created_by' => $this->user->id,
+        ]);
+        $mk = fn ($status) => ProductionItem::create([
+            'production_order_id' => $order->id,
+            'employee_id' => Employee::factory()->create(['employer_id' => $this->employer->id])->id,
+            'status' => $status,
+            'completed_at' => $status === 'completed' ? now()->subMonths(2) : null,
+        ]);
+        $mk('pending');                                                   // not started
+        $mk('pending')->completedWorkTypeSteps()->attach($this->preparationStep->id); // started
+        $mk('completed');                                                 // finished, never ticked
+        $mk('completed');
+
+        $this->assertSame(1, $this->actingAs($this->user)->get(route('production.index'))->viewData('stats')['not_started']);
+        $this->assertSame(1, $this->actingAs($this->user)->get(route('production.index', ['tab' => 'notify_in']))->viewData('stats')['not_started']);
+        $this->actingAs($this->user)->get(route('production.index', ['tab' => 'notify_in', 'filter' => 'not_started']))
+            ->assertOk()->assertSee($this->employer->employerNameTh);
+    }
 }

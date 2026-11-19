@@ -18,6 +18,66 @@
         });
     }
 
+    // ── Full-text preview of a suggestion (2026-11-19) ─────────────────────
+    // Long names / employer names are cut off with "…" in the dropdown. Hover
+    // a suggestion (or move to it with the arrow keys) and, if anything in it
+    // is cut off, a box pops up next to it with the whole text — so the right
+    // person / company can be told apart before picking, without widening the
+    // search box. One shared box for every search box on the page.
+    let previewBox = null;
+    function ensurePreviewBox() {
+        if (previewBox) return previewBox;
+        const style = document.createElement('style');
+        style.textContent = '.live-search-preview{position:fixed;z-index:2100;pointer-events:none;max-width:min(560px,calc(100vw - 16px));'
+            + 'background:var(--bs-body-bg,#fff);color:var(--bs-body-color,#212529);border:1px solid var(--bs-border-color,#dee2e6);'
+            + 'border-radius:.6rem;box-shadow:0 .6rem 1.6rem rgba(0,0,0,.18);padding:.55rem .75rem;font-size:.875rem;line-height:1.4;'
+            + 'white-space:normal;overflow-wrap:anywhere;opacity:0;transition:opacity .12s ease;}'
+            + '.live-search-preview.show{opacity:1;}'
+            + '.live-search-preview .lsp-label{font-weight:700;}'
+            + '.live-search-preview .lsp-sub{color:var(--bs-secondary-color,#6c757d);margin-top:.15rem;font-size:.8125rem;}';
+        document.head.appendChild(style);
+        previewBox = document.createElement('div');
+        previewBox.className = 'live-search-preview';
+        previewBox.setAttribute('role', 'tooltip');
+        previewBox.style.display = 'none';
+        document.body.appendChild(previewBox);
+        return previewBox;
+    }
+    function isCutOff(el) {
+        return !!el && el.scrollWidth > el.clientWidth + 1;
+    }
+    function hidePreview() {
+        if (!previewBox) return;
+        previewBox.classList.remove('show');
+        previewBox.style.display = 'none';
+    }
+    function showPreview(node, item) {
+        if (!node || !item) { hidePreview(); return; }
+        const cut = [...node.querySelectorAll('.text-truncate')].some(isCutOff);
+        if (!cut) { hidePreview(); return; }
+        const box = ensurePreviewBox();
+        box.innerHTML = '<div class="lsp-label">' + escapeHtml(item.label) + '</div>'
+            + (item.sub_label ? '<div class="lsp-sub">' + escapeHtml(item.sub_label) + '</div>' : '');
+        box.style.display = 'block';
+        box.style.left = '0px';
+        box.style.top = '0px';
+        const r = node.getBoundingClientRect();
+        const b = box.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight, gap = 6;
+        // beside the dropdown when there is room, otherwise just under (or over) the row
+        let left, top;
+        if (r.right + gap + b.width <= vw - 8) {
+            left = r.right + gap;
+            top = Math.min(Math.max(8, r.top), vh - b.height - 8);
+        } else {
+            left = Math.min(Math.max(8, r.left), vw - b.width - 8);
+            top = (r.bottom + gap + b.height <= vh - 8) ? r.bottom + gap : Math.max(8, r.top - gap - b.height);
+        }
+        box.style.left = left + 'px';
+        box.style.top = top + 'px';
+        box.classList.add('show');
+    }
+
     function initLiveSearchInput(input) {
         if (input.dataset.liveSearchInit) return;
         input.dataset.liveSearchInit = '1';
@@ -42,6 +102,7 @@
         }
 
         function closeDropdown() {
+            hidePreview();
             dropdown.classList.add('d-none');
             dropdown.innerHTML = '';
             items = [];
@@ -54,6 +115,9 @@
             if (idx >= 0 && nodes[idx]) {
                 nodes[idx].classList.add('active-result');
                 nodes[idx].scrollIntoView({ block: 'nearest' });
+                showPreview(nodes[idx], items[idx]); // arrow keys show the full text too
+            } else {
+                hidePreview();
             }
             activeIndex = idx;
         }
@@ -216,6 +280,31 @@
             }
         });
 
+        // hover a suggestion → full text if it is cut off. mousemove (not only
+        // mouseover) so it comes back after the list was scrolled under the pointer.
+        let previewNode = null;
+        let usingKeys = false; // arrow keys move the highlight (and scroll the list)
+        dropdown.addEventListener('mousemove', function (e) {
+            usingKeys = false;
+            const node = e.target.closest('.live-search-result-item');
+            if (!node || (node === previewNode && previewBox && previewBox.style.display !== 'none')) return;
+            previewNode = node;
+            showPreview(node, items[parseInt(node.dataset.index, 10)]);
+        });
+        dropdown.addEventListener('mouseleave', function () { previewNode = null; if (!usingKeys) hidePreview(); });
+        dropdown.addEventListener('scroll', function () {
+            previewNode = null;
+            hidePreview();
+            // the list scrolled to follow the arrow keys → show the highlighted row again
+            if (usingKeys && activeIndex >= 0) {
+                const node = dropdown.querySelectorAll('.live-search-result-item')[activeIndex];
+                requestAnimationFrame(function () { showPreview(node, items[activeIndex]); });
+            }
+        });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') usingKeys = true;
+        });
+
         dropdown.addEventListener('mousedown', function (e) {
             const node = e.target.closest('.live-search-result-item');
             if (!node) return;
@@ -238,8 +327,9 @@
         window.addEventListener('resize', function () {
             if (!dropdown.classList.contains('d-none')) positionDropdown();
         });
-        window.addEventListener('scroll', function () {
+        window.addEventListener('scroll', function (e) {
             if (!dropdown.classList.contains('d-none')) positionDropdown();
+            if (e.target !== dropdown) hidePreview();
         }, true);
     }
 

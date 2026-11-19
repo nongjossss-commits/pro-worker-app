@@ -75,6 +75,23 @@ class EmployeeObserver
             $this->syncRenewalStatus($employee);
         }
 
+        // 2.5 Notified out (by hand, by finishing a "แจ้งออก" job, import, …) while
+        // the employee already sits on an open "แจ้งเข้า / เปลี่ยนนายจ้าง" card of
+        // ANOTHER employer → they are changing employer, not leaving: move them to
+        // that employer now, so the Employees menu finds them there. Same move as
+        // being added to that card after the notify-out (2026-11-19). The old
+        // employer's "แจ้งออก" job, if any, stays on its card until finished.
+        if ($employee->wasChanged('terminated_at') && $employee->terminated_at && ! $employee->getOriginal('terminated_at')) {
+            try {
+                $changeJob = \App\Http\Controllers\WorkflowController::openChangeEmployerJob($employee->id, 'notify_in', $employee->employer_id);
+                if ($changeJob && $changeJob->order) {
+                    \App\Http\Controllers\WorkflowController::rejoinNotifiedOutEmployee($employee->id, $changeJob->order);
+                }
+            } catch (\Throwable $e) {
+                Log::error("Change-employer move after notify-out failed for employee {$employee->id}: " . $e->getMessage());
+            }
+        }
+
         // 3. (Removed 2026-11-15) Pending notify_out jobs are NO LONGER auto-cancelled
         // when the employee moves to another employer. Notifying out can take days:
         // staff press "Terminate" straight away so the employee can be added to

@@ -24,6 +24,7 @@ class FinancialTransaction extends Model
         'status', // pending, partial, paid, overdue
         'notes',
         'line_items',
+        'extra_charges', // [{id, description, amount}] — ค่าใช้จ่ายเพิ่มเติม, part of amount (2026-11-20)
         'bank_account_id',
         'withholding_tax_amount',
         'wht_document_path',
@@ -37,6 +38,7 @@ class FinancialTransaction extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'line_items' => 'array',
+        'extra_charges' => 'array',
         'discount_amount' => 'decimal:2',
         'credit_amount' => 'decimal:2',
         'paid_amount' => 'decimal:2',
@@ -60,6 +62,12 @@ class FinancialTransaction extends Model
                 $transaction->fully_paid_at = now();
             }
         });
+    }
+
+    /** Total of this bill's "ค่าใช้จ่ายเพิ่มเติม" lines (already included in `amount`). */
+    public function extraChargesTotal(): float
+    {
+        return round(collect($this->extra_charges ?? [])->sum(fn ($c) => (float) ($c['amount'] ?? 0)), 2);
     }
 
     public function productionOrder()

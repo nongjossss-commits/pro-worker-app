@@ -81,9 +81,14 @@ if (typeof window.financialManager === 'undefined') {
             selectedFile: null,
             editingPaymentId: null,
             newPayment: { amount: '', paid_at: '', bank_account_id: '', notes: '', slip_path: null },
-            // Ad-hoc extra charge added onto the bill being edited in Payment History (e.g. "ค่าอาหารกลางวัน") —
-            // folds straight into editingTransaction.amount/notes, saved by the existing Update button.
+            // "ค่าใช้จ่ายเพิ่มเติม" typed into the bill being edited in Payment History (e.g. "ค่ารถ") —
+            // becomes its own line (editingTransaction.extra_charges), part of the amount, saved by Update (2026-11-20).
             newExtraCharge: { description: '', amount: '' },
+            // Edit Employees (Payment History): the add-employees list is open; a new price tier picked
+            // for an employee of this bill ({itemId: {tier, price}}) (2026-11-20).
+            editAddOpen: false,
+            editAddSearch: '',
+            editTierOverrides: {},
             paymentSlipFile: null,
             isSavingPayment: false,
 
@@ -626,7 +631,11 @@ if (typeof window.financialManager === 'undefined') {
                         hasPrice = !!this.getTierForItem(item.id);
                     }
 
-                    if (isAttached || (hasPrice && !isUsed)) {
+                    // The list shows the employees of THIS bill (and the ones just ticked in
+                    // "+ Add employees"); employees not on it are offered in that add list
+                    // instead (editAddableItems) (2026-11-20).
+                    const isPicked = this.selectedTransactionItems.some(v => v == item.id);
+                    if (isAttached || (isPicked && hasPrice && !isUsed)) {
                          list.push({
                             id: item.id,
                             name: item.name,
@@ -649,40 +658,140 @@ if (typeof window.financialManager === 'undefined') {
                     }
                 });
 
-                // 2. Candidates — skip in per-head mode (matches availableItems behavior;
-                // candidates without tier shouldn't show until tier is set).
+                // 2. Candidates (lump-sum pricing only) — same: on the bill or just picked
                 if (this.pricingMode !== 'per_head') {
                     this.employees.forEach(emp => {
-                        if (itemsByEmpId[emp.id]) return; // Already has item
-                        if (usedEmployeeIds.has(emp.id) && !attachedEmployeeIds.has(emp.id)) return; // Used elsewhere (and not in current tx)
-
+                        if (itemsByEmpId[emp.id]) return;
+                        if (!attachedEmployeeIds.has(emp.id) && !this.selectedTransactionItems.includes('emp_' + emp.id)) return;
+                        if (usedEmployeeIds.has(emp.id) && !attachedEmployeeIds.has(emp.id)) return;
                         const isCancelled = this.isCancelledStatus(emp.status);
                         if (this.editTransactionEmployeeFilter === 'active' && isCancelled) return;
                         if (this.editTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
-
-                        list.push({
-                            id: 'emp_' + emp.id,
-                            name: emp.name,
-                            photo: emp.photo,
-                            name_en: emp.name_en,
-                            title_en: emp.title_en,
-                            nationality: emp.nationality,
-                            insurance_type: emp.insurance_type,
-                            passport: emp.passport,
-                            has_visa: emp.has_visa,
-                            last_step_name: emp.last_step_name,
-                            status: emp.status,
-                            work_permit: emp.work_permit,
-                            id_number: emp.id_number,
-                            ra_number: emp.ra_number,
-                            reference_id: emp.reference_id,
-                            type: 'employee',
-                            attached: attachedEmployeeIds.has(emp.id)
-                        });
+                        list.push({ ...this._editRow(emp), id: 'emp_' + emp.id, type: 'employee', attached: attachedEmployeeIds.has(emp.id) });
                     });
                 }
 
                 return list.filter(i => this.matchesEmployeeSearch(i, this.editTransactionSearch));
+            },
+
+            _editRow(src) {
+                return {
+                    name: src.name, photo: src.photo, name_en: src.name_en, title_en: src.title_en,
+                    nationality: src.nationality, insurance_type: src.insurance_type, passport: src.passport,
+                    has_visa: src.has_visa, last_step_name: src.last_step_name, status: src.status,
+                    work_permit: src.work_permit, id_number: src.id_number, ra_number: src.ra_number,
+                    reference_id: src.reference_id,
+                };
+            },
+
+            /**
+             * "+ Add employees" in Edit Employees: employees who have a price (per-head:
+             * a tier) and are on no other bill of this tab, not on this one yet and not
+             * picked yet — tick one to put it on this bill (saved by Update) (2026-11-20).
+             */
+            get editAddableItems() {
+                if (!this.activeGroupId) return [];
+                const itemIdToEmpId = new Map();
+                this.productionItems.forEach(it => { if (it.employee_id != null) itemIdToEmpId.set(it.id, it.employee_id); });
+                const empOf = (item) => item.employee_id != null ? item.employee_id : (itemIdToEmpId.get(item.id) || itemIdToEmpId.get(parseInt(item.id)));
+                const onThis = new Set(), onThisEmp = new Set(), used = new Set(), usedEmp = new Set();
+                (this.editingTransaction.items || []).forEach(i => { onThis.add(i.id); const e = empOf(i); if (e != null) onThisEmp.add(e); });
+                this.filteredTransactions.forEach(t => {
+                    if (this.editingTransaction.id && t.id === this.editingTransaction.id) return;
+                    (t.items || []).forEach(i => { used.add(i.id); const e = empOf(i); if (e != null) usedEmp.add(e); });
+                });
+                const picked = new Set(this.selectedTransactionItems.map(String));
+                const list = [];
+                const itemsByEmpId = {};
+                this.productionItems.forEach(item => {
+                    if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
+                    if (this.isCancelledStatus(item.status)) return;
+                    if (onThis.has(item.id) || (item.employee_id != null && onThisEmp.has(item.employee_id))) return;
+                    if (used.has(item.id) || (item.employee_id != null && usedEmp.has(item.employee_id))) return;
+                    if (picked.has(String(item.id))) return;
+                    if (this.pricingMode === 'per_head' && !this.getTierForItem(item.id)) return;
+                    list.push({ ...this._editRow(item), id: item.id, type: 'item' });
+                });
+                if (this.pricingMode !== 'per_head') {
+                    this.employees.forEach(emp => {
+                        if (itemsByEmpId[emp.id] || onThisEmp.has(emp.id) || usedEmp.has(emp.id)) return;
+                        if (this.isCancelledStatus(emp.status) || picked.has('emp_' + emp.id)) return;
+                        list.push({ ...this._editRow(emp), id: 'emp_' + emp.id, type: 'employee' });
+                    });
+                }
+                return list.filter(i => this.matchesEmployeeSearch(i, this.editAddSearch));
+            },
+
+            addEmployeeToBill(id) {
+                if (!this.selectedTransactionItems.some(v => v == id)) this.selectedTransactionItems.push(id);
+                this.recalcEditAmount();
+            },
+
+            /** Money already collected for this person on this bill (individual collection). */
+            itemHasCollected(itemId) {
+                return (this.editingTransaction.itemPayments || this.editingTransaction.item_payments || [])
+                    .some(p => p.production_item_id == itemId && !p.extra_charge_id);
+            },
+
+            /** Ticked off in Edit Employees → leaves this bill on Update. */
+            isLeavingBill(item) {
+                return !!item.attached && !this.selectedTransactionItems.some(v => v == item.id);
+            },
+
+            /** Pick another price tier for an employee of this bill (per-head). */
+            chooseTierForItem(item) {
+                const tiers = this.pricingTiers || [];
+                if (!tiers.length) return;
+                const inputOptions = {};
+                tiers.forEach((t, i) => { inputOptions[i] = this.formatCurrency(parseFloat(t.price || 0)) + (t.note ? ' — ' + t.note : ''); });
+                const current = this.editTierOverrides[item.id] ? this.editTierOverrides[item.id].tier : tiers.indexOf(this.getTierForItem(item.id));
+                this._safeFire({
+                    title: this.ftText('pickTierTitle'),
+                    text: (item.name_en ? ((item.title_en ? item.title_en + ' ' : '') + item.name_en) : item.name) || '',
+                    input: 'select',
+                    inputOptions,
+                    inputValue: current >= 0 ? String(current) : '',
+                    showCancelButton: true,
+                    confirmButtonText: this.ftText('pickTierOk'),
+                    cancelButtonText: this.ftText('cancel'),
+                }).then(r => {
+                    if (!r.isConfirmed || r.value === '' || r.value == null) return;
+                    const idx = parseInt(r.value, 10);
+                    this.editTierOverrides = { ...this.editTierOverrides, [item.id]: { tier: idx, price: parseFloat(tiers[idx].price || 0) } };
+                    this.addEmployeeToBill(item.id); // stays on the bill, at the new price
+                });
+            },
+
+            /** Price of one employee on the bill being edited — a newly picked tier wins. */
+            editItemPrice(itemId) {
+                const o = this.editTierOverrides[itemId];
+                if (o) return o.price;
+                return this.billItemPrice(itemId, this.editingTransaction);
+            },
+
+            ftText(key) {
+                try { return JSON.parse(this.$refs.ftText.dataset.text)[key] || key; } catch (e) { return key; }
+            },
+
+            /** ค่าใช้จ่ายเพิ่มเติม of the bill being edited. */
+            get editExtraCharges() {
+                return Array.isArray(this.editingTransaction.extra_charges) ? this.editingTransaction.extra_charges : [];
+            },
+            get editExtraTotal() {
+                return this.editExtraCharges.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
+            },
+            extraChargeCollected(chargeId) {
+                return (this.editingTransaction.itemPayments || this.editingTransaction.item_payments || [])
+                    .filter(p => p.extra_charge_id === chargeId).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+            },
+            removeExtraCharge(charge) {
+                if (this.extraChargeCollected(charge.id) > 0) return;
+                this.editingTransaction.extra_charges = this.editExtraCharges.filter(c => c.id !== charge.id);
+                if (this.pricingMode === 'per_head') {
+                    this.recalcEditAmount();
+                } else {
+                    this.editingTransaction.amount = Math.max(0, (parseFloat(this.editingTransaction.amount) || 0) - (parseFloat(charge.amount) || 0));
+                }
             },
 
             isItemAttached(itemId) {
@@ -719,10 +828,11 @@ if (typeof window.financialManager === 'undefined') {
                  if (this.pricingMode === 'per_head') {
                     let total = 0;
                     this.selectedTransactionItems.forEach(val => {
-                         total += this.billItemPrice(val, this.editingTransaction);
+                         total += this.editItemPrice(val);
                     });
-                    // Update editingTransaction.amount dynamically
-                    this.editingTransaction.amount = total;
+                    // employees + this bill's additional charges (they used to be dropped
+                    // here as soon as anyone was ticked / unticked) (2026-11-20)
+                    this.editingTransaction.amount = Math.round((total + this.editExtraTotal) * 100) / 100;
                 }
             },
 
@@ -849,6 +959,10 @@ if (typeof window.financialManager === 'undefined') {
                 this.newPayment = { amount: defaultAmount, paid_at: today, bank_account_id: '', notes: '', slip_path: null };
                 this.paymentSlipFile = null;
                 this.newExtraCharge = { description: '', amount: '' };
+                this.editingTransaction.extra_charges = Array.isArray(t.extra_charges) ? t.extra_charges.map(c => ({ ...c })) : [];
+                this.editAddOpen = false;
+                this.editAddSearch = '';
+                this.editTierOverrides = {};
 
                 if (t.items) {
                     this.selectedTransactionItems = t.items.map(i => i.id);
@@ -952,12 +1066,16 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             addExtraCharge() {
-                const amt = parseFloat(this.newExtraCharge.amount) || 0;
+                const amt = Math.round((parseFloat(this.newExtraCharge.amount) || 0) * 100) / 100;
                 if (amt <= 0) return;
                 const label = (this.newExtraCharge.description || '').trim() || 'ค่าใช้จ่ายเพิ่มเติม';
-                this.editingTransaction.amount = (parseFloat(this.editingTransaction.amount) || 0) + amt;
-                const line = '+ ' + label + ': ' + this.formatCurrency(amt);
-                this.editingTransaction.notes = this.editingTransaction.notes ? (this.editingTransaction.notes + '\n' + line) : line;
+                const id = 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                this.editingTransaction.extra_charges = [...this.editExtraCharges, { id, description: label, amount: amt }];
+                if (this.pricingMode === 'per_head') {
+                    this.recalcEditAmount();
+                } else {
+                    this.editingTransaction.amount = Math.round(((parseFloat(this.editingTransaction.amount) || 0) + amt) * 100) / 100;
+                }
                 this.newExtraCharge = { description: '', amount: '' };
             },
 
@@ -1097,6 +1215,19 @@ if (typeof window.financialManager === 'undefined') {
 
                 const byId = new Map(this.productionItems.map(it => [it.id, it]));
 
+                // ค่าใช้จ่ายเพิ่มเติม are collected like a person — one row each, after the
+                // employees, keyed 'x:<id>' (entries carry extra_charge_id) (2026-11-20)
+                const extraRows = (Array.isArray(this.editingTransaction.extra_charges) ? this.editingTransaction.extra_charges : []).map(c => {
+                    const key = 'x:' + c.id;
+                    const price = parseFloat(c.amount) || 0;
+                    const paid = this.itemPaidSoFar(key);
+                    return {
+                        id: key, isExtra: true, extraChargeId: c.id,
+                        name: c.description, displayName: c.description,
+                        price, paid, remaining: Math.max(0, price - paid), isFullyPaid: price > 0 && paid >= price,
+                    };
+                });
+
                 return this.editingTransaction.items
                     .map(att => {
                         const display = byId.get(att.id) || byId.get(parseInt(att.id)) || att;
@@ -1121,7 +1252,8 @@ if (typeof window.financialManager === 'undefined') {
                                 ? ((display.title_en ? display.title_en + ' ' : '') + display.name_en)
                                 : (display.name || display.employeeNameTh || '-'),
                         };
-                    });
+                    })
+                    .concat(extraRows);
             },
 
             get individualEffectiveAmount() {
@@ -1138,8 +1270,8 @@ if (typeof window.financialManager === 'undefined') {
                 const worth = this.individualEffectiveAmount;
                 return worth > 0 ? Math.min(100, Math.round(this.individualCollectedTotal / worth * 100)) : 0;
             },
-            get individualPeopleCount() { return this.individualAllItems.length; },
-            get individualPaidPeople() { return this.individualAllItems.filter(i => i.isFullyPaid).length; },
+            get individualPeopleCount() { return this.individualAllItems.filter(i => !i.isExtra).length; },
+            get individualPaidPeople() { return this.individualAllItems.filter(i => !i.isExtra && i.isFullyPaid).length; },
 
             draftFor(itemId) {
                 if (!this.individualDrafts[itemId]) this.individualDrafts[itemId] = { amount: '', notes: '' };
@@ -1157,7 +1289,9 @@ if (typeof window.financialManager === 'undefined') {
             get individualDraftRows() {
                 return this.individualAllItems
                     .filter(i => !i.isFullyPaid && this.draftAmount(i.id) > 0)
-                    .map(i => ({ production_item_id: i.id, amount: this.draftAmount(i.id), notes: this.individualDrafts[i.id].notes || '' }));
+                    .map(i => i.isExtra
+                        ? { extra_charge_id: i.extraChargeId, amount: this.draftAmount(i.id), notes: this.individualDrafts[i.id].notes || '' }
+                        : { production_item_id: i.id, amount: this.draftAmount(i.id), notes: this.individualDrafts[i.id].notes || '' });
             },
             get individualDraftCount() { return this.individualDraftRows.length; },
             get individualDraftTotal() { return this.individualDraftRows.reduce((sum, r) => sum + r.amount, 0); },
@@ -1174,6 +1308,7 @@ if (typeof window.financialManager === 'undefined') {
             freshIndividualDrafts() {
                 const drafts = {};
                 (this.editingTransaction.items || []).forEach(i => { drafts[i.id] = { amount: '', notes: '' }; });
+                (this.editingTransaction.extra_charges || []).forEach(c => { drafts['x:' + c.id] = { amount: '', notes: '' }; });
                 return drafts;
             },
 
@@ -1189,21 +1324,26 @@ if (typeof window.financialManager === 'undefined') {
                 const pay = (this.editingTransaction.payments || []).find(p => p.id == entry.financial_payment_id);
                 return !!(pay && pay.receipt_generated_at);
             },
+            /** Row key of an entry: the person's item id, or 'x:<id>' for an additional charge. */
+            entryKey(entry) {
+                return entry.extra_charge_id ? 'x:' + entry.extra_charge_id : entry.production_item_id;
+            },
             entryPersonName(entry) {
-                const item = this.individualAllItems.find(i => i.id == entry.production_item_id);
+                const key = this.entryKey(entry);
+                const item = this.individualAllItems.find(i => i.id == key);
                 return item ? item.displayName : '-';
             },
 
             /** Sum of every per-employee entry recorded for this item, this transaction. */
             itemPaidSoFar(itemId) {
-                const entries = (this.editingTransaction.itemPayments || []).filter(p => p.production_item_id == itemId);
+                const entries = (this.editingTransaction.itemPayments || []).filter(p => this.entryKey(p) == itemId);
                 return entries.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
             },
 
             /** Past entries for one employee, newest first — for the expandable history row. */
             itemHistoryEntries(itemId) {
                 return (this.editingTransaction.itemPayments || [])
-                    .filter(p => p.production_item_id == itemId)
+                    .filter(p => this.entryKey(p) == itemId)
                     .slice()
                     .sort((a, b) => new Date(b.paid_at) - new Date(a.paid_at) || b.id - a.id);
             },
@@ -1407,6 +1547,8 @@ if (typeof window.financialManager === 'undefined') {
                 if (this.selectedFile) formData.append('slip_file', this.selectedFile);
                 if (this.editingTransaction.wht_file) formData.append('wht_document', this.editingTransaction.wht_file);
 
+                // the whole list is sent, even when empty, so ticking everyone off is saved too
+                formData.append('sync_items', '1');
                 this.selectedTransactionItems.forEach(val => {
                     if (String(val).startsWith('emp_')) {
                         formData.append('employee_ids[]', val.replace('emp_', ''));
@@ -1414,6 +1556,12 @@ if (typeof window.financialManager === 'undefined') {
                         formData.append('item_ids[]', val);
                     }
                 });
+                formData.append('extra_charges_json', JSON.stringify(this.editExtraCharges));
+                const tierChanges = {};
+                Object.keys(this.editTierOverrides).forEach(id => {
+                    if (this.selectedTransactionItems.some(v => v == id) && !String(id).startsWith('emp_')) tierChanges[id] = this.editTierOverrides[id];
+                });
+                if (Object.keys(tierChanges).length) formData.append('item_tiers_json', JSON.stringify(tierChanges));
 
                 fetch(`/production/transactions/${this.editingTransaction.id}`, {
                     method: 'POST',

@@ -41,7 +41,26 @@ window.FinancialSecurity = {
                     input: 'password',
                     inputAttributes: {
                         autocapitalize: 'off',
-                        autocorrect: 'off'
+                        autocorrect: 'off',
+                        // Not the login form — keep the browser from filling in the
+                        // saved login password (it showed up as a row of dots) (2026-11-20)
+                        autocomplete: 'new-password',
+                        name: 'finance-menu-code',
+                        'data-lpignore': 'true',
+                        'data-1p-ignore': 'true'
+                    },
+                    inputValue: '',
+                    didOpen: () => {
+                        // a password manager may still fill it a moment later — empty
+                        // it unless the user has started typing, and put the cursor in
+                        const field = Swal.getInput();
+                        if (!field) return;
+                        let typed = false;
+                        field.addEventListener('keydown', () => { typed = true; });
+                        const clear = () => { if (!typed) field.value = ''; };
+                        clear();
+                        [60, 250, 600].forEach(ms => setTimeout(clear, ms));
+                        field.focus();
                     },
                     showCancelButton: true,
                     confirmButtonText: 'Unlock',

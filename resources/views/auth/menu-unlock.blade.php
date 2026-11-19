@@ -14,7 +14,7 @@
             <label for="password" class="auth-label">{{ __('Menu Password') }}</label>
             <div class="auth-input-wrap">
                 <i class="bi bi-key"></i>
-                <input id="password" type="password" name="password" required autofocus autocomplete="current-password"
+                <input id="password" type="password" name="password" required autofocus autocomplete="new-password" data-lpignore="true" data-1p-ignore="true"
                        class="auth-input @error('password') is-invalid @enderror" placeholder="••••••••">
                 <button type="button" class="auth-toggle" data-toggle-password="password" aria-label="{{ __('Show password') }}"><i class="bi bi-eye"></i></button>
             </div>

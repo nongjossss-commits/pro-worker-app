@@ -222,8 +222,33 @@ class FinancialController extends Controller
             }
         }
 
+        // ค่าใช้จ่ายเพิ่มเติม / employees taken off / a new price tier for one
+        // employee — checked BEFORE anything is saved (2026-11-20).
+        $extraCharges = $this->parseExtraCharges($request);
+        if ($extraCharges instanceof \Illuminate\Http\JsonResponse) {
+            return $extraCharges;
+        }
+        $tierChanges = $this->parseItemTierChanges($request);
+        if ($tierChanges instanceof \Illuminate\Http\JsonResponse) {
+            return $tierChanges;
+        }
+        if ($tierChanges) {
+            $savedTiers = $transaction->financialGroup()->first()?->financial_data['pricing_tiers'] ?? [];
+            foreach ($tierChanges as $c) {
+                if (! isset($savedTiers[$c['tier']]) || abs((float) ($savedTiers[$c['tier']]['price'] ?? 0) - $c['price']) > 0.005) {
+                    return response()->json(['success' => false, 'message' => __('The price tiers have changes that are not saved yet — save the pricing settings first, then pick the price again.')], 422);
+                }
+            }
+        }
+        if ($blocked = $this->billEditBlockReason($transaction, $request, $extraCharges)) {
+            return response()->json(['success' => false, 'message' => $blocked], 422);
+        }
+
         $this->applyTransactionFields($transaction, $request);
         $this->applyTransactionFiles($transaction, $request);
+        if ($extraCharges !== null) {
+            $transaction->extra_charges = $extraCharges ?: null;
+        }
         // Auto-update status ทำงานเฉพาะเมื่อ user ไม่ได้ระบุ status มาเอง (เช่น flag เป็น 'overdue')
         // ป้องกันการเขียนทับ explicit status ของ user
         if (!$request->has('status')) {
@@ -232,6 +257,9 @@ class FinancialController extends Controller
         $transaction->save();
 
         $this->syncTransactionItems($transaction, $request);
+        if ($tierChanges) {
+            $this->applyItemTierChanges($transaction, $tierChanges);
+        }
 
         $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
         return response()->json(['success' => true, 'transaction' => $transaction]);
@@ -616,6 +644,14 @@ class FinancialController extends Controller
         if ($others + (float) $validated['amount'] > $this->billEffectiveAmount($entry->transaction) + 0.005) {
             return response()->json(['success' => false, 'message' => __('The total is more than what is left on this bill.')], 422);
         }
+        // An additional charge can't be collected for more than it is (2026-11-20).
+        if ($entry->extra_charge_id) {
+            $charge = collect($entry->transaction->extra_charges ?? [])->firstWhere('id', $entry->extra_charge_id);
+            $otherForCharge = $entry->transaction->itemPayments()->where('id', '!=', $entry->id)->where('extra_charge_id', $entry->extra_charge_id)->sum('amount');
+            if ($charge && $otherForCharge + (float) $validated['amount'] > (float) $charge['amount'] + 0.005) {
+                return response()->json(['success' => false, 'message' => __('More than is left on the additional charge ":name".', ['name' => $charge['description']])], 422);
+            }
+        }
 
         $transaction = null;
         DB::transaction(function () use ($entry, $validated, &$transaction) {
@@ -729,7 +765,9 @@ class FinancialController extends Controller
             'bank_account_id' => 'nullable|exists:bank_accounts,id',
             'notes' => 'nullable|string',
             'rows' => 'nullable|array',
-            'rows.*.production_item_id' => 'required|integer',
+            // a person on the bill, or one of its additional charges (2026-11-20)
+            'rows.*.production_item_id' => 'nullable|integer|required_without:rows.*.extra_charge_id',
+            'rows.*.extra_charge_id' => 'nullable|string|max:40',
             'rows.*.amount' => 'required|numeric|min:0.01',
             'rows.*.notes' => 'nullable|string',
         ]);
@@ -742,8 +780,21 @@ class FinancialController extends Controller
 
         $rows = collect($validated['rows'] ?? []);
         $attached = $transaction->items()->pluck('production_items.id')->map(fn ($id) => (int) $id)->all();
-        if ($rows->contains(fn ($row) => !in_array((int) $row['production_item_id'], $attached, true))) {
+        $personRows = $rows->filter(fn ($row) => empty($row['extra_charge_id']));
+        if ($personRows->contains(fn ($row) => !in_array((int) $row['production_item_id'], $attached, true))) {
             return response()->json(['success' => false, 'message' => 'This employee is not attached to this bill.'], 422);
+        }
+        // Additional-charge rows: must be a charge of this bill, and not more than is left on it.
+        $charges = collect($transaction->extra_charges ?? [])->keyBy('id');
+        foreach ($rows->filter(fn ($row) => !empty($row['extra_charge_id']))->groupBy('extra_charge_id') as $chargeId => $chargeRows) {
+            $charge = $charges->get($chargeId);
+            if (!$charge) {
+                return response()->json(['success' => false, 'message' => __('This additional charge is not on this bill.')], 422);
+            }
+            $already = (float) $transaction->itemPayments()->where('extra_charge_id', $chargeId)->sum('amount');
+            if ($already + (float) $chargeRows->sum('amount') > (float) $charge['amount'] + 0.005) {
+                return response()->json(['success' => false, 'message' => __('More than is left on the additional charge ":name".', ['name' => $charge['description']])], 422);
+            }
         }
 
         $pending = $transaction->itemPayments()->whereNull('financial_payment_id')->get();
@@ -764,7 +815,8 @@ class FinancialController extends Controller
             $ids = $pending->pluck('id')->all();
             foreach ($rows as $row) {
                 $ids[] = $transaction->itemPayments()->create([
-                    'production_item_id' => $row['production_item_id'],
+                    'production_item_id' => empty($row['extra_charge_id']) ? $row['production_item_id'] : null,
+                    'extra_charge_id' => $row['extra_charge_id'] ?? null,
                     'amount' => $row['amount'],
                     'paid_at' => $paidAt,
                     'notes' => $row['notes'] ?? null,
@@ -1202,7 +1254,153 @@ class FinancialController extends Controller
         'discount_amount'         => 'nullable|numeric|min:0',
         'discount_description'    => 'nullable|string|max:255',
         'payment_collection_mode' => 'nullable|in:lump_sum,per_employee',
+        'sync_items'              => 'nullable|boolean',  // the employee list was sent (may be empty)
+        'extra_charges_json'      => 'nullable|string',   // [{id, description, amount}]
+        'item_tiers_json'         => 'nullable|string',   // {itemId: {tier, price}}
     ];
+
+    /**
+     * ค่าใช้จ่ายเพิ่มเติม sent with the bill: null = not sent (leave as is),
+     * [] = none, or the cleaned list. JsonResponse when something is wrong.
+     */
+    private function parseExtraCharges(Request $request)
+    {
+        if (! $request->has('extra_charges_json')) {
+            return null;
+        }
+        $raw = json_decode((string) $request->input('extra_charges_json'), true);
+        if (! is_array($raw)) {
+            return response()->json(['success' => false, 'message' => __('Invalid additional charges.')], 422);
+        }
+        $out = [];
+        foreach ($raw as $i => $c) {
+            $amount = round((float) ($c['amount'] ?? 0), 2);
+            $desc = trim((string) ($c['description'] ?? ''));
+            if ($amount <= 0 || mb_strlen($desc) > 255) {
+                return response()->json(['success' => false, 'message' => __('Each additional charge needs an amount above 0.')], 422);
+            }
+            $id = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) ($c['id'] ?? '')) ?: ('x' . now()->format('YmdHis') . '_' . $i);
+            $out[] = ['id' => substr($id, 0, 40), 'description' => $desc !== '' ? $desc : __('Additional charge'), 'amount' => $amount];
+        }
+
+        return $out;
+    }
+
+    /** {itemId: {tier, price}} — a new price tier for an employee on this bill. */
+    private function parseItemTierChanges(Request $request)
+    {
+        if (! $request->filled('item_tiers_json')) {
+            return [];
+        }
+        $raw = json_decode((string) $request->input('item_tiers_json'), true);
+        if (! is_array($raw)) {
+            return response()->json(['success' => false, 'message' => __('Invalid price tier change.')], 422);
+        }
+        $out = [];
+        foreach ($raw as $itemId => $c) {
+            if (! is_numeric($itemId) || ! isset($c['tier']) || ! is_numeric($c['tier'])) {
+                return response()->json(['success' => false, 'message' => __('Invalid price tier change.')], 422);
+            }
+            $out[(int) $itemId] = ['tier' => (int) $c['tier'], 'price' => round((float) ($c['price'] ?? -1), 2)];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Why this edit of the bill can't be saved — or null when it can:
+     *  - an employee taken off the bill already has money recorded for them
+     *    here (individual collection) → delete those entries first
+     *  - an additional charge removed while money was recorded against it
+     *  - a per-head bill left with no employee at all (delete the bill instead)
+     *  - the new total is below what has already been received
+     */
+    private function billEditBlockReason(FinancialTransaction $transaction, Request $request, ?array $extraCharges): ?string
+    {
+        $syncing = $request->boolean('sync_items') || $request->has('item_ids') || $request->has('employee_ids');
+        if ($syncing) {
+            $keep = array_map('intval', $this->parseIdList($request->input('item_ids')));
+            $removed = $transaction->items()->pluck('production_items.id')->map(fn ($id) => (int) $id)
+                ->reject(fn ($id) => in_array($id, $keep, true))->values();
+            if ($removed->isNotEmpty()) {
+                $paidFor = $transaction->itemPayments()->whereIn('production_item_id', $removed)->pluck('production_item_id')->unique();
+                if ($paidFor->isNotEmpty()) {
+                    $names = ProductionItem::with('employee')->whereIn('id', $paidFor)->get()
+                        ->map(fn ($i) => $i->employee?->getRawOriginal('employeeNameEn') ?: $i->employee?->getRawOriginal('employeeNameTh') ?: ('#' . $i->id))
+                        ->implode(', ');
+                    return __('Money was already received for :names on this bill — delete those payments first, then take them off.', ['names' => $names]);
+                }
+            }
+            $group = $transaction->financialGroup()->first();
+            $perHead = (($group?->financial_data['pricing_mode'] ?? 'per_head') === 'per_head');
+            $adding = ! empty($this->parseIdList($request->input('employee_ids')));
+            if ($perHead && empty($keep) && ! $adding && $transaction->items()->exists()) {
+                return __('A per-head bill needs at least one employee. To stop using this bill, delete it instead.');
+            }
+        }
+
+        if ($extraCharges !== null) {
+            $keptIds = collect($extraCharges)->pluck('id')->all();
+            $gone = collect($transaction->extra_charges ?? [])->pluck('id')->reject(fn ($id) => in_array($id, $keptIds, true));
+            if ($gone->isNotEmpty() && $transaction->itemPayments()->whereIn('extra_charge_id', $gone)->exists()) {
+                return __('Money was already received for this additional charge — delete that payment first.');
+            }
+        }
+
+        if ($request->has('amount')) {
+            $amount = (float) $request->input('amount');
+            $extras = $extraCharges !== null ? collect($extraCharges)->sum('amount') : $transaction->extraChargesTotal();
+            if ($amount + 0.005 < $extras) {
+                return __('The bill total is less than its additional charges.');
+            }
+            $discount = (float) ($request->has('discount_amount') ? $request->input('discount_amount') : $transaction->discount_amount);
+            $effective = $amount - $discount - (float) ($transaction->credit_amount ?? 0);
+            $received = (float) $transaction->payments()->sum('amount');
+            if ($received > 0 && $effective + 0.005 < $received) {
+                return __('The new total (:total) is less than what was already received (:received).', [
+                    'total' => number_format($effective, 2), 'received' => number_format($received, 2),
+                ]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Put employees of this bill on another price tier: moved in the tab's
+     * pricing tiers, and the bill uses that tier's price for them. The price
+     * sent must still be the tier's saved price (else: settings not saved).
+     */
+    private function applyItemTierChanges(FinancialTransaction $transaction, array $changes): void
+    {
+        $group = $transaction->financialGroup()->first();
+        if (! $group) {
+            return;
+        }
+        $data = $group->financial_data ?? [];
+        $tiers = $data['pricing_tiers'] ?? [];
+        $onBill = $transaction->items()->get()->keyBy('id');
+
+        foreach ($changes as $itemId => $c) {
+            $item = $onBill->get($itemId);
+            if (! $item || ! isset($tiers[$c['tier']])) {
+                continue;
+            }
+            $aliases = array_filter([(string) $itemId, 'emp_' . $itemId, $item->employee_id ? 'emp_' . $item->employee_id : null]);
+            foreach ($tiers as $k => $t) {
+                $tiers[$k]['item_ids'] = array_values(array_filter($t['item_ids'] ?? [], fn ($id) => ! in_array((string) $id, $aliases, true)));
+            }
+            $tiers[$c['tier']]['item_ids'][] = (int) $itemId;
+            foreach ($tiers as $k => $t) {
+                $tiers[$k]['count'] = count($t['item_ids'] ?? []);
+            }
+            $transaction->items()->updateExistingPivot($itemId, ['unit_price' => (float) ($tiers[$c['tier']]['price'] ?? 0)]);
+        }
+
+        $data['pricing_tiers'] = $tiers;
+        $group->financial_data = $data;
+        $group->save();
+    }
 
     /** Field ที่ apply ตรงๆ จาก request → transaction (apply เฉพาะ field ที่ส่งมาใน request) */
     private const TRANSACTION_FILLABLE_FIELDS = [
@@ -1301,7 +1499,7 @@ class FinancialController extends Controller
      */
     private function syncTransactionItems(FinancialTransaction $transaction, Request $request): void
     {
-        if (!$request->has('item_ids') && !$request->has('employee_ids')) {
+        if (!$request->boolean('sync_items') && !$request->has('item_ids') && !$request->has('employee_ids')) {
             return;
         }
 

@@ -20,6 +20,7 @@ class FinancialTransactionItemPayment extends Model
     protected $fillable = [
         'financial_transaction_id',
         'production_item_id',
+        'extra_charge_id', // an extra charge of the bill instead of a person (2026-11-20)
         'financial_payment_id',
         'amount',
         'paid_at',

@@ -1801,7 +1801,7 @@
     @include('components.document-scanner')
 
     @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/central-delete-handler.js', 'resources/js/duplicate-check.js'])
-    <script src="{{ asset('js/financial-security.js') }}"></script>
+    <script src="{{ asset('js/financial-security.js') }}?v={{ @filemtime(public_path('js/financial-security.js')) }}"></script>
     <script src="{{ asset('js/live-search-filter.js') }}?v={{ @filemtime(public_path('js/live-search-filter.js')) }}"></script>
     {{-- Tick-order checkboxes (Advanced Export / Edit / Download) --}}
     <script>window.OrderedChecksText = {!! json_encode([

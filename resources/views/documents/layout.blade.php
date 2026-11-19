@@ -694,10 +694,24 @@
                                         <td class="text-right"><strong>{{ $showTotal ? number_format($subtotal, 2) : '—' }}</strong></td>
                                     </tr>
                                 @endforeach
+                                {{-- ค่าใช้จ่ายเพิ่มเติม: one row each — part of this bill's amount (2026-11-20) --}}
+                                    @foreach(($t->extra_charges ?? []) as $xc)
+                                        <tr>
+                                            <td class="text-center">{{ $lineIdx++ }}</td>
+                                            <td><strong>{{ $xc['description'] ?? 'ค่าใช้จ่ายเพิ่มเติม' }}</strong><br><span class="text-muted" style="font-size: 11px;">Additional charge / ค่าใช้จ่ายเพิ่มเติม</span></td>
+                                            <td class="text-center">1</td>
+                                            <td class="text-right">{{ number_format((float) ($xc['amount'] ?? 0), 2) }}</td>
+                                            <td class="text-right"><strong>{{ $showTotal ? number_format((float) ($xc['amount'] ?? 0), 2) : '—' }}</strong></td>
+                                        </tr>
+                                    @endforeach
                             @else
                                 {{-- Fixed mode or no items --}}
                                 @php
                                     $lineItems = is_array($t->line_items ?? null) ? $t->line_items : [];
+                                    // ค่าใช้จ่ายเพิ่มเติม print as their own rows; the work rows show the rest.
+                                    // A receipt for part of the bill keeps its single summed row (unchanged).
+                                    $extraRows = $isReceiptContext ? [] : (is_array($t->extra_charges ?? null) ? $t->extra_charges : []);
+                                    $amount = $amount - collect($extraRows)->sum(fn($xc) => (float) ($xc['amount'] ?? 0));
                                     // Only split into named rows when they actually sum to the amount being
                                     // printed on this document — a partially paid receipt, or a bill that
                                     // later got an extra charge added on top of its amount, keeps the single
@@ -730,6 +744,15 @@
                                         <td class="text-right"><strong>{{ $showTotal ? number_format($amount, 2) : '—' }}</strong></td>
                                     </tr>
                                 @endif
+                                @foreach($extraRows as $xc)
+                                    <tr>
+                                        <td class="text-center">{{ $lineIdx++ }}</td>
+                                        <td><strong>{{ $xc['description'] ?? 'ค่าใช้จ่ายเพิ่มเติม' }}</strong><br><span class="text-muted" style="font-size: 11px;">Additional charge / ค่าใช้จ่ายเพิ่มเติม</span></td>
+                                        <td class="text-center">1</td>
+                                        <td class="text-right">{{ number_format((float) ($xc['amount'] ?? 0), 2) }}</td>
+                                        <td class="text-right"><strong>{{ $showTotal ? number_format((float) ($xc['amount'] ?? 0), 2) : '—' }}</strong></td>
+                                    </tr>
+                                @endforeach
                             @endif
                         @endforeach
                     @else

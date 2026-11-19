@@ -131,11 +131,11 @@
                                                     <label class="form-label fw-bold">Access Password (Optional)</label>
                                                     <div class="input-group mb-2">
                                                         <span class="input-group-text"><i class="bi bi-key"></i></span>
-                                                        <input type="password" class="form-control" name="password" placeholder="Set new password">
+                                                        <input type="password" class="form-control" name="password" placeholder="Set new password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true">
                                                     </div>
                                                     <div class="input-group">
                                                         <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
-                                                        <input type="password" class="form-control" name="password_confirmation" placeholder="Confirm password">
+                                                        <input type="password" class="form-control" name="password_confirmation" placeholder="Confirm password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true">
                                                     </div>
                                                     <div class="form-text">Leave blank to keep existing password (if any).</div>
                                                 </div>
