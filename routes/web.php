@@ -618,6 +618,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware('menu:finance')->group(function() {
         Route::get('production/{id}/finance-tab', [\App\Http\Controllers\ProductionController::class, 'fetchFinanceTab'])->name('production.finance_tab');
+        // the bill's Payment History panel, as the "View" page shows it — Finance menu's quick-pay button (2026-11-21)
+        Route::get('production/transactions/{transaction}/panel', [\App\Http\Controllers\ProductionController::class, 'financePanel'])->name('production.transactions.panel');
     });
 
     // Financial group CRUD (used by registration, renewal, workflow, AND sales — no menu:finance lock)

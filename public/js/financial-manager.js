@@ -93,6 +93,7 @@ if (typeof window.financialManager === 'undefined') {
             editAddOpen: false,
             editAddSearch: '',
             editTierOverrides: {},
+            editStatusAsOpened: null,
             paymentSlipFile: null,
             isSavingPayment: false,
 
@@ -800,6 +801,110 @@ if (typeof window.financialManager === 'undefined') {
                 try { return JSON.parse(this.$refs.ftText.dataset.text)[key] || key; } catch (e) { return key; }
             },
 
+            /** Other bills of this panel changed by the same save (money moved between bills). */
+            applyOtherTransactions(list) {
+                (list || []).forEach(o => {
+                    const i = this.transactions.findIndex(t => t.id === o.id);
+                    if (i !== -1) this.transactions[i] = o;
+                });
+            },
+
+            /** Label of a payment row the system made when a price was lowered (2026-11-21). */
+            paymentKindLabel(pay) {
+                return pay && pay.kind ? this.ftText('kind_' + pay.kind) : '';
+            },
+
+            /** Money received minus what the bill is worth with the changes typed so far. */
+            get editOverpaidBy() {
+                const t = this.editingTransaction;
+                const worth = (parseFloat(t.amount) || 0) - (parseFloat(t.discount_amount) || 0) - (parseFloat(t.credit_amount) || 0);
+                const over = (parseFloat(t.paid_amount) || 0) - worth;
+                return over > 0.005 ? Math.round(over * 100) / 100 : 0;
+            },
+
+            /** Received for this person on this bill (individual collection). */
+            itemCollectedAmount(itemId) {
+                return (this.editingTransaction.itemPayments || this.editingTransaction.item_payments || [])
+                    .filter(p => p.production_item_id == itemId && !p.extra_charge_id)
+                    .reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+            },
+
+            /**
+             * The bill now holds more money than it is worth (a price was lowered):
+             * the user picks keep as income / refund / move to another bill of this
+             * employer / count toward others on this bill. Resolves to the extra
+             * form fields for updateTransaction(), or null when cancelled.
+             */
+            askOverpayment(info) {
+                const T = (k) => this.ftText(k);
+                const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                const money = (v) => esc(this.formatCurrency(v));
+                let banks = [];
+                try { banks = JSON.parse(this.$refs.ftText.dataset.banks || '[]'); } catch (e) { banks = []; }
+                const targets = info.targets || [];
+                const okTargets = targets.filter(b => b.ok);
+                const today = new Date().toISOString().slice(0, 10);
+                const lines = (info.lines || []).map(l => `<li>${esc(l.name)} — <b>${money(l.excess)}</b></li>`).join('');
+                const opt = (val, label, hint, disabled) => `
+                    <label class="d-flex gap-2 align-items-start border rounded p-2 mb-2 text-start ${disabled ? 'opacity-50' : ''}" style="cursor:${disabled ? 'not-allowed' : 'pointer'}">
+                        <input type="radio" name="ovpAction" value="${val}" class="form-check-input mt-1" ${disabled ? 'disabled' : ''}>
+                        <span><span class="fw-bold">${esc(label)}</span><br><span class="small text-muted">${esc(hint)}</span></span>
+                    </label>`;
+                const html = `
+                    <div class="text-start small">
+                        <div class="alert alert-warning py-2 mb-2">${esc(info.message)}</div>
+                        <div class="d-flex justify-content-between"><span>${esc(T('ovpReceived'))}</span><b>${money(info.received)}</b></div>
+                        <div class="d-flex justify-content-between"><span>${esc(T('ovpNewTotal'))}</span><b>${money(info.new_total)}</b></div>
+                        <div class="d-flex justify-content-between text-danger mb-2"><span>${esc(T('ovpExtra'))}</span><b>${money(info.excess)}</b></div>
+                        ${lines ? `<div class="mb-2">${esc(T('ovpWho'))}<ul class="mb-0">${lines}</ul></div>` : ''}
+                        ${opt('keep', T('ovpKeep'), T('ovpKeepHint'), false)}
+                        ${opt('refund', T('ovpRefund'), T('ovpRefundHint'), false)}
+                        ${opt('transfer', T('ovpTransfer'), okTargets.length ? T('ovpTransferHint') : T('ovpTransferNone'), !okTargets.length)}
+                        ${info.can_reallocate ? opt('reallocate', T('ovpReallocate'), T('ovpReallocateHint'), false) : ''}
+                        <div id="ovpRefundBox" class="border rounded p-2 mb-2 bg-light" style="display:none">
+                            <label class="form-label small mb-0">${esc(T('ovpRefundDate'))}</label>
+                            <input type="date" id="ovpDate" class="form-control form-control-sm mb-1" value="${today}">
+                            <label class="form-label small mb-0">${esc(T('ovpRefundBank'))}</label>
+                            <select id="ovpBank" class="form-select form-select-sm"><option value="">${esc(T('ovpNoBank'))}</option>${banks.map(b => `<option value="${b.id}">${esc(b.label)}</option>`).join('')}</select>
+                        </div>
+                        <div id="ovpTransferBox" class="border rounded p-2 mb-2 bg-light" style="display:none">
+                            <label class="form-label small mb-0">${esc(T('ovpTarget'))}</label>
+                            <select id="ovpTarget" class="form-select form-select-sm">${targets.map(b => `<option value="${b.id}" ${b.ok ? '' : 'disabled'}>${esc(b.label)} — ${esc(T('ovpOwes'))} ${money(b.outstanding)}</option>`).join('')}</select>
+                        </div>
+                        <label class="form-label small mb-0">${esc(T('ovpNote'))}</label>
+                        <input type="text" id="ovpNote" maxlength="255" class="form-control form-control-sm">
+                    </div>`;
+                return this._safeFire({
+                    title: T('ovpTitle'),
+                    html,
+                    width: 620,
+                    showCancelButton: true,
+                    confirmButtonText: T('ovpOk'),
+                    cancelButtonText: T('cancel'),
+                    didOpen: (popup) => {
+                        popup.querySelectorAll('input[name="ovpAction"]').forEach(r => r.addEventListener('change', () => {
+                            popup.querySelector('#ovpRefundBox').style.display = r.value === 'refund' && r.checked ? '' : 'none';
+                            popup.querySelector('#ovpTransferBox').style.display = r.value === 'transfer' && r.checked ? '' : 'none';
+                        }));
+                        const first = okTargets[0];
+                        if (first) popup.querySelector('#ovpTarget').value = String(first.id);
+                    },
+                    preConfirm: () => {
+                        const popup = Swal.getPopup();
+                        const picked = popup.querySelector('input[name="ovpAction"]:checked');
+                        if (!picked) { Swal.showValidationMessage(T('ovpPick')); return false; }
+                        const out = { overpayment_action: picked.value, overpayment_note: popup.querySelector('#ovpNote').value.trim() };
+                        if (picked.value === 'refund') {
+                            out.overpayment_date = popup.querySelector('#ovpDate').value;
+                            out.overpayment_bank_account_id = popup.querySelector('#ovpBank').value;
+                            if (!out.overpayment_date) { Swal.showValidationMessage(T('ovpRefundDate')); return false; }
+                        }
+                        if (picked.value === 'transfer') out.overpayment_target_id = popup.querySelector('#ovpTarget').value;
+                        return out;
+                    },
+                }).then(r => (r.isConfirmed ? r.value : null));
+            },
+
             /** ค่าใช้จ่ายเพิ่มเติม of the bill being edited. */
             get editExtraCharges() {
                 return Array.isArray(this.editingTransaction.extra_charges) ? this.editingTransaction.extra_charges : [];
@@ -968,6 +1073,7 @@ if (typeof window.financialManager === 'undefined') {
                 this.editingTransaction.wht_file = null;
                 this.editingTransaction.payment_collection_mode = t.payment_collection_mode || 'lump_sum';
                 this.editingTransaction.itemPayments = t.item_payments || [];
+                this.editStatusAsOpened = t.status;
 
                 // Reset per-employee collection UI state for the newly opened bill.
                 this.expandedRoundId = null;
@@ -1176,9 +1282,10 @@ if (typeof window.financialManager === 'undefined') {
             },
 
             deletePayment(paymentId) {
+                const pay = (this.editingTransaction.payments || []).find(p => p.id == paymentId);
                 this._safeFire({
-                    title: 'Delete this payment?',
-                    text: 'This will revert the paid amount and bank balances.',
+                    title: pay && pay.kind ? this.ftText('undoKindTitle') : 'Delete this payment?',
+                    text: pay && pay.kind ? this.ftText('undoKindText') : 'This will revert the paid amount and bank balances.',
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Yes, delete it!'
@@ -1188,12 +1295,14 @@ if (typeof window.financialManager === 'undefined') {
                             method: 'DELETE',
                             headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' }
                         })
-                        .then(res => { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+                        .then(res => res.json().catch(() => ({})).then(data => { if (!res.ok) throw new Error(data.message || ('HTTP ' + res.status)); return data; }))
                         .then(data => {
                             if(data.success) {
                                 const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                                 if(idx !== -1) this.transactions[idx] = data.transaction;
+                                this.applyOtherTransactions(data.other_transactions);
                                 this.editingTransaction = { ...data.transaction, itemPayments: data.transaction.item_payments || [] };
+                                this.editStatusAsOpened = data.transaction.status;
                                 Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 3000 });
                             } else {
                                 throw new Error(data.message || 'Error deleting payment');
@@ -1558,13 +1667,17 @@ if (typeof window.financialManager === 'undefined') {
                 .finally(() => this.isFinalizingCollection = false);
             },
 
-            updateTransaction() {
+            updateTransaction(extra = null) {
                 const formData = new FormData();
                 formData.append('_method', 'PUT');
                 if (this.editingTransaction.amount !== undefined) {
                     formData.append('amount', this.editingTransaction.amount);
                 }
-                formData.append('status', this.editingTransaction.status);
+                // Status follows the money (server) unless it was changed here by hand (2026-11-21).
+                if (this.editingTransaction.status !== this.editStatusAsOpened) {
+                    formData.append('status', this.editingTransaction.status);
+                }
+                if (extra) Object.keys(extra).forEach(k => { if (extra[k] !== null && extra[k] !== undefined && extra[k] !== '') formData.append(k, extra[k]); });
                 formData.append('notes', this.editingTransaction.notes || '');
                 formData.append('bank_account_id', this.editingTransaction.bank_account_id || '');
                 formData.append('wht_status', this.editingTransaction.wht_status || 'not_required');
@@ -1599,15 +1712,23 @@ if (typeof window.financialManager === 'undefined') {
                 })
                 .then(res => res.json().then(data => ({ ok: res.ok, data })))
                 .then(({ ok, data }) => {
+                    // more money received than the bill is now worth → ask what to do with it
+                    if (!ok && data.code === 'overpaid') {
+                        this.askOverpayment(data).then(choice => { if (choice) this.updateTransaction(choice); });
+                        return null;
+                    }
                     if (!ok) throw new Error(data.message || ('HTTP ' + (data.status || '')));
                     return data;
                 })
                 .then(data => {
+                    if (!data) return;
                     if(data.success) {
                         const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                         if(idx !== -1) this.transactions[idx] = data.transaction;
+                        this.applyOtherTransactions(data.other_transactions);
 
                         this.editingTransaction = { ...data.transaction, itemPayments: data.transaction.item_payments || [] };
+                        this.editStatusAsOpened = data.transaction.status;
 
                         if (data.transaction.items) {
                             data.transaction.items.forEach(newItem => {

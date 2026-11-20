@@ -76,6 +76,17 @@ class ProductionItem extends Model
     }
 
     /**
+     * Items an employer card can show: a draft (no employee record yet) or one
+     * whose employee is not in the trash. Deleting an employee from the
+     * Employees menu leaves their job items behind; those used to keep the card
+     * counted as active ("9 TOTAL") while it opened empty (2026-11-21).
+     */
+    public function scopeShownOnCard(Builder $query): Builder
+    {
+        return $query->where(fn ($q) => $q->whereNull('production_items.employee_id')->orWhereHas('employee'));
+    }
+
+    /**
      * Mirrors Employee::employerTenancy (app/Models/Employee.php) — same
      * "employer role sees only their own employer_id, caretaker role sees
      * only employers they're assigned to as caretaker" restriction — but

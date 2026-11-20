@@ -454,252 +454,118 @@
 </div>
 
 {{-- =============================================================
-     Quick Payment Modal
-     Shared modal used by every "cash-coin" button in the Recent
-     Transactions table. Submits directly to the existing
-     storePayment endpoint so we reuse the well-tested code path
-     that recomputes paid_amount + status + bank balance.
+     Quick Payment — the bill's own "Payment History & Details"
+     Every "cash-coin" button in the Recent Transactions table opens
+     the SAME Payment History & Details screen as the bill's View
+     page (production/{id}/edit?tab=financial): lump sum or
+     individual collection, edit employees / prices, documents — so
+     both places work exactly alike (2026-11-21). The panel is loaded
+     on click (ProductionController::financePanel) into a hidden host;
+     only its Payment History popup is shown. The page reloads when
+     that popup closes so the row totals are fresh.
      ============================================================= --}}
 @php
-    // Pull bank accounts for the payment method select. Silently skip if
-    // the table isn't there yet on a fresh install.
+    // Company bank accounts for the Issue Bill Options modal below. Silently
+    // skip if the table isn't there yet on a fresh install.
     try {
-        $qpBanks = \App\Models\BankAccount::orderBy('bank_name')->get(['id','bank_name','account_number','account_name','account_type']);
+        $qpBanks = \App\Models\BankAccount::orderBy('bank_name')->get(['id','bank_name','bank_code','account_number','account_name','account_type']);
     } catch (\Throwable $e) {
         $qpBanks = collect();
     }
 @endphp
-<div class="modal fade" id="quickPaymentModal" tabindex="-1" aria-labelledby="quickPaymentLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<div id="qpPanelHost" style="position:absolute; width:0; height:0; overflow:visible;"></div>
+<div class="modal fade" id="qpLoadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form id="quickPaymentForm" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-header bg-success-subtle">
-                    <h5 class="modal-title" id="quickPaymentLabel">
-                        <i class="bi bi-cash-coin me-1"></i> {{ __('Record Payment (Quick)') }}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
-                </div>
-                <div class="modal-body">
-                    {{-- Context card --}}
-                    <div class="card bg-light border-0 mb-3">
-                        <div class="card-body py-2">
-                            <div class="row g-2 small">
-                                <div class="col-6">
-                                    <div class="text-muted">{{ __('Bill No.') }}</div>
-                                    <div class="fw-bold" id="qpBillNo">—</div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-muted">{{ __('Employer / Project') }}</div>
-                                    <div class="fw-bold" id="qpEmployer">—</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="text-muted">{{ __('Bill Amount') }}</div>
-                                    <div id="qpBillAmount">—</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="text-muted">{{ __('Already Paid') }}</div>
-                                    <div id="qpPaidSoFar">—</div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="text-muted">{{ __('Outstanding') }}</div>
-                                    <div class="text-danger fw-bold" id="qpOutstanding">—</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">{{ __('Amount Paid') }} <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" min="0.01" name="amount" id="qpAmount" class="form-control" required>
-                            <div class="form-text">
-                                <a href="#" id="qpFillOutstandingBtn" class="text-decoration-none">
-                                    <i class="bi bi-arrow-return-left"></i> {{ __('Fill outstanding balance') }}
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">{{ __('Paid On') }} <span class="text-danger">*</span></label>
-                            <input type="date" name="paid_at" id="qpPaidAt" class="form-control" required value="{{ now()->format('Y-m-d') }}">
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold">{{ __('Bank Account') }}</label>
-                            <select name="bank_account_id" class="form-select">
-                                <option value="">— {{ __('None (skip bank balance update)') }} —</option>
-                                @foreach($qpBanks as $bank)
-                                    <option value="{{ $bank->id }}">
-                                        {{ $bank->account_type === 'personal' ? '👤' : '🏢' }} {{ $bank->bank_name }} — {{ $bank->account_name ?? $bank->account_number }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold">{{ __('Slip / Receipt Image') }}</label>
-                            <input type="file" name="slip_file" class="form-control" accept="image/*,.pdf">
-                            <div class="form-text small">{{ __('Optional — JPG / PNG / PDF, max 5MB') }}</div>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold">{{ __('Notes') }}</label>
-                            <textarea name="notes" class="form-control" rows="2" placeholder="{{ __('e.g., Transfer via mobile banking') }}"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success" id="qpSubmitBtn">
-                        <i class="bi bi-check-lg"></i> {{ __('Save Payment') }}
-                    </button>
-                </div>
-            </form>
+            <div class="modal-body text-center py-4" id="qpLoadingBody">
+                <div class="spinner-border text-success" role="status"></div>
+                <div class="small text-muted mt-2">{{ __('Opening payment history...') }}</div>
+            </div>
         </div>
     </div>
 </div>
-
 <script>
-// Wrap in DOMContentLoaded + lazy modal init so bootstrap (loaded via Vite
-// later in the layout) is guaranteed to be available by the time a button
-// is actually clicked. Event delegation also lets buttons rendered by
-// pagination or AJAX refreshes keep working without re-binding.
-document.addEventListener('DOMContentLoaded', function () {
-    const modalEl = document.getElementById('quickPaymentModal');
-    if (!modalEl) return;
-    const form = document.getElementById('quickPaymentForm');
-    if (!form) return;
-    const fmt = (n) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    let currentTxnId = null;
-    let currentOutstanding = 0;
-    let modalInstance = null;
-
-    function getModal() {
-        // bootstrap may not exist at DOMContentLoaded (module scripts still
-        // parsing) — poll on first click.
-        if (!modalInstance) {
-            if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
-                alert('{{ __('Bootstrap not loaded yet — please try again in a moment.') }}');
-                return null;
-            }
-            modalInstance = new bootstrap.Modal(modalEl);
+(function () {
+    let fmScript = null;
+    function ensureFinancialManager() {
+        if (!fmScript) {
+            fmScript = new Promise((resolve, reject) => {
+                if (typeof window.financialManager === 'function') { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = '{{ asset("js/financial-manager.js") }}?v={{ @filemtime(public_path("js/financial-manager.js")) }}';
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
         }
-        return modalInstance;
+        return fmScript;
     }
 
-    // Delegate the click so newly rendered rows (pagination / AJAX) still work.
+    const sameId = (a, b) => String(a) === String(b);
+
+    async function openQuickPay(txnId) {
+        const host = document.getElementById('qpPanelHost');
+        const loadingEl = document.getElementById('qpLoadingModal');
+        const loading = bootstrap.Modal.getOrCreateInstance(loadingEl);
+        document.getElementById('qpLoadingBody').innerHTML = '<div class="spinner-border text-success" role="status"></div><div class="small text-muted mt-2">{{ __('Opening payment history...') }}</div>';
+        // Bootstrap ignores hide() while the show animation runs — wait for it.
+        const shown = loadingEl.classList.contains('show') ? Promise.resolve()
+            : new Promise(res => loadingEl.addEventListener('shown.bs.modal', res, { once: true }));
+        loading.show();
+        try {
+            const [html] = await Promise.all([
+                fetch('/production/transactions/' + encodeURIComponent(txnId) + '/panel', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'text/html' },
+                    credentials: 'same-origin',
+                }).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }),
+                ensureFinancialManager(),
+            ]);
+
+            if (window.Alpine && host.firstElementChild) Alpine.destroyTree(host);
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            doc.querySelectorAll('script').forEach(s => s.remove());
+            host.innerHTML = doc.body.innerHTML;
+            if (window.Alpine) Alpine.initTree(host);
+
+            const root = host.querySelector('[x-data]');
+            const fm = root && window.Alpine ? Alpine.$data(root) : null;
+            if (!fm) throw new Error('panel');
+            const t = (fm.transactions || []).find(x => sameId(x.id, txnId));
+            if (!t) throw new Error('bill');
+            if (t.production_financial_group_id && !sameId(fm.activeGroupId, t.production_financial_group_id)) {
+                const g = (fm.financialGroups || []).find(x => sameId(x.id, t.production_financial_group_id));
+                if (g) fm.switchGroup(g.id);
+            }
+
+            await shown;
+            loadingEl.addEventListener('hidden.bs.modal', function onHidden() {
+                loadingEl.removeEventListener('hidden.bs.modal', onHidden);
+                fm.openPayModal(t);
+                const payEl = fm.$refs.payModal;
+                payEl.addEventListener('hidden.bs.modal', function onPayHidden(e) {
+                    if (e.target !== payEl) return; // inner popups bubble up too
+                    payEl.removeEventListener('hidden.bs.modal', onPayHidden);
+                    window.location.reload();
+                });
+            });
+            loading.hide();
+        } catch (err) {
+            console.error('[quickPay] could not open the payment history:', err);
+            document.getElementById('qpLoadingBody').innerHTML =
+                '<i class="bi bi-exclamation-triangle-fill text-danger fs-3 d-block mb-2"></i>' +
+                '<div class="small mb-3">{{ __('Could not open the payment history. Please try again, or open the bill with the View button.') }}</div>' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>';
+        }
+    }
+
+    // Delegated, so rows rendered later (pagination / AJAX) work too.
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('.js-quick-pay-btn');
         if (!btn) return;
-        currentTxnId = btn.dataset.txnId;
-        currentOutstanding = parseFloat(btn.dataset.outstanding) || 0;
-        const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-        setText('qpBillNo', btn.dataset.txnLabel || '—');
-        setText('qpEmployer', btn.dataset.employer || '—');
-        setText('qpBillAmount', fmt(btn.dataset.amount));
-        setText('qpPaidSoFar', fmt(btn.dataset.paid));
-        setText('qpOutstanding', fmt(currentOutstanding));
-        form.reset();
-        const paidAtEl = document.getElementById('qpPaidAt');
-        if (paidAtEl) paidAtEl.value = new Date().toISOString().slice(0, 10);
-        const modal = getModal();
-        if (modal) modal.show();
-    });
-
-    // "Fill outstanding" convenience button
-    const fillBtn = document.getElementById('qpFillOutstandingBtn');
-    if (fillBtn) {
-        fillBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.getElementById('qpAmount').value = currentOutstanding.toFixed(2);
-        });
-    }
-
-    // Submit — hits the existing storePayment endpoint that recomputes
-    // paid_amount, transitions status, and updates the bank balance
-    // inside one DB transaction.
-    form.addEventListener('submit', function (e) {
         e.preventDefault();
-        if (!currentTxnId) return;
-
-        // No bank account selected — that payment won't post into the
-        // ledger at all, so confirm the user really means to record it
-        // that way rather than silently accepting it (or, previously,
-        // silently blocking it behind a required Notes field).
-        const bankAccountSelect = form.querySelector('[name="bank_account_id"]');
-        if (bankAccountSelect && !bankAccountSelect.value) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: '{{ __('No bank account selected') }}',
-                    text: '{{ __('You have not selected a bank account. This payment will not be posted to any bank balance. Save it anyway?') }}',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: '{{ __('Save anyway') }}',
-                    cancelButtonText: '{{ __('Cancel') }}',
-                }).then(function (result) {
-                    if (result.isConfirmed) submitQuickPayment();
-                });
-            } else if (confirm('{{ __('You have not selected a bank account. This payment will not be posted to any bank balance. Save it anyway?') }}')) {
-                submitQuickPayment();
-            }
-            return;
-        }
-
-        submitQuickPayment();
+        openQuickPay(btn.dataset.txnId);
     });
-
-    function submitQuickPayment() {
-        const submitBtn = document.getElementById('qpSubmitBtn');
-        submitBtn.disabled = true;
-        const originalHtml = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __('Saving...') }}';
-
-        const formData = new FormData(form);
-        // The CSRF token is inside the form via @csrf; also send it as a
-        // header for belt-and-braces since some middleware setups only
-        // check the header.
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-            || formData.get('_token');
-
-        fetch('/production/transactions/' + currentTxnId + '/payments', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken || '',
-            },
-            credentials: 'same-origin',
-            body: formData
-        })
-        .then(async function (res) {
-            let data = {};
-            try { data = await res.json(); } catch (_) {}
-            if (!res.ok) {
-                const msg = data.message || data.error || ('HTTP ' + res.status + ' ' + res.statusText);
-                throw new Error(msg);
-            }
-            return data;
-        })
-        .then(function (data) {
-            if (data.success) {
-                if (typeof showToast === 'function') {
-                    showToast('{{ __("Payment recorded") }}', 'success');
-                }
-                const modal = getModal();
-                if (modal) modal.hide();
-                setTimeout(function () { window.location.reload(); }, 400);
-            } else {
-                throw new Error(data.message || 'Save failed');
-            }
-        })
-        .catch(function (err) {
-            alert('{{ __("Error saving payment:") }} ' + err.message);
-            console.error('[quickPayment] save failed:', err);
-        })
-        .finally(function () {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalHtml;
-        });
-    }
-});
+})();
 </script>
 
 {{-- =============================================================

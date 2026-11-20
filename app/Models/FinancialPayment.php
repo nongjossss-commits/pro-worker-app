@@ -12,6 +12,8 @@ class FinancialPayment extends Model
     protected $fillable = [
         'financial_transaction_id',
         'amount',
+        'kind',              // null = money received; refund | transfer_out | transfer_in | adjustment (2026-11-21)
+        'linked_payment_id', // transfer_out <-> transfer_in
         'paid_at',
         'bank_account_id',
         'slip_path',
@@ -25,6 +27,12 @@ class FinancialPayment extends Model
         'paid_at' => 'datetime',
         'receipt_generated_at' => 'datetime',
     ];
+
+    /** Made by the system when a price was lowered after payment — not money received (2026-11-21). */
+    public function isAdjustment(): bool
+    {
+        return $this->kind !== null && $this->kind !== '';
+    }
 
     public function transaction()
     {

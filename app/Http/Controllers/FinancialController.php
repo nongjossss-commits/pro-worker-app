@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 
 class FinancialController extends Controller
 {
+    use Concerns\ResolvesBillOverpayment;
+
     /**
      * WHT Inbox — แสดง transactions ที่รับเงินแล้ว (paid_amount > 0) แต่ยังไม่ได้รับใบหัก ณ ที่จ่าย
      *
@@ -244,25 +246,48 @@ class FinancialController extends Controller
             return response()->json(['success' => false, 'message' => $blocked], 422);
         }
 
-        $this->applyTransactionFields($transaction, $request);
-        $this->applyTransactionFiles($transaction, $request);
-        if ($extraCharges !== null) {
-            $transaction->extra_charges = $extraCharges ?: null;
-        }
-        // Auto-update status ทำงานเฉพาะเมื่อ user ไม่ได้ระบุ status มาเอง (เช่น flag เป็น 'overdue')
-        // ป้องกันการเขียนทับ explicit status ของ user
-        if (!$request->has('status')) {
-            $this->autoUpdateTransactionStatus($transaction);
-        }
-        $transaction->save();
-
-        $this->syncTransactionItems($transaction, $request);
-        if ($tierChanges) {
-            $this->applyItemTierChanges($transaction, $tierChanges);
+        // A lower price after money was received: the operator chooses what happens
+        // to the extra money (keep / refund / move to another bill / count toward
+        // others on this bill) — asked for with code "overpaid" (2026-11-21).
+        $plan = $this->overpaymentPlan($transaction, $request, $extraCharges, $tierChanges);
+        if ($plan['excess'] > 0) {
+            if (! $request->filled('overpayment_action')) {
+                return $this->overpaidResponse($transaction, $plan);
+            }
+            if ($why = $this->overpaymentActionError($transaction, $plan, $request)) {
+                return $plan['legacy']
+                    ? response()->json(['success' => false, 'message' => $why], 422)
+                    : $this->overpaidResponse($transaction, $plan, $why);
+            }
         }
 
-        $transaction->load(['items.employee', 'payments', 'bankAccount', 'itemPayments']);
-        return response()->json(['success' => true, 'transaction' => $transaction]);
+        // All or nothing — the bill, its people / prices and the money moved.
+        DB::transaction(function () use ($transaction, $request, $extraCharges, $tierChanges, $plan) {
+            $this->applyTransactionFields($transaction, $request);
+            $this->applyTransactionFiles($transaction, $request);
+            if ($extraCharges !== null) {
+                $transaction->extra_charges = $extraCharges ?: null;
+            }
+            // Status follows the money unless the user picked one themselves (e.g. 'overdue').
+            if (!$request->has('status')) {
+                $this->recalcBillStatus($transaction);
+            }
+            $transaction->save();
+
+            $this->syncTransactionItems($transaction, $request);
+            if ($tierChanges) {
+                $this->applyItemTierChanges($transaction, $tierChanges);
+            }
+            if ($plan['excess'] > 0) {
+                $this->applyOverpayment($transaction, $plan, $request);
+            }
+        });
+
+        $transaction->load(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments']);
+        $others = ($plan['excess'] > 0 && $request->input('overpayment_action') === 'transfer')
+            ? FinancialTransaction::with(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments'])->whereKey((int) $request->input('overpayment_target_id'))->get()
+            : collect();
+        return response()->json(['success' => true, 'transaction' => $transaction, 'other_transactions' => $others]);
     }
 
     /**
@@ -403,6 +428,10 @@ class FinancialController extends Controller
         $payment = FinancialPayment::with('transaction')->findOrFail($paymentId);
         $transaction = $payment->transaction;
 
+        if ($payment->isAdjustment()) {
+            return response()->json(['success' => false, 'message' => __('This entry was made by the system when a price was lowered — delete it to undo it.')], 422);
+        }
+
         // A per-employee round's total comes from its entries — edit those instead.
         if (FinancialTransactionItemPayment::where('financial_payment_id', $payment->id)->exists()) {
             return response()->json(['success' => false, 'message' => __('This total comes from each person\'s entries — change those instead.')], 422);
@@ -520,6 +549,17 @@ class FinancialController extends Controller
         $transaction = $payment->transaction;
         $slipPath = $payment->slip_path; // เก็บ path ไว้ลบหลัง DB commit สำเร็จ
 
+        // Refund / transfer / adjustment made when a price was lowered: undone as a
+        // whole (a transfer's other half too) (2026-11-21).
+        if ($payment->isAdjustment()) {
+            $bills = DB::transaction(fn () => $this->undoOverpaymentRow($payment));
+            $transaction->refresh()->load(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments']);
+            $others = FinancialTransaction::with(['items.employee', 'payments.bankAccount', 'bankAccount', 'itemPayments'])
+                ->whereKey(array_diff(array_keys($bills), [$transaction->id]))->get();
+
+            return response()->json(['success' => true, 'transaction' => $transaction, 'other_transactions' => $others]);
+        }
+
         // A per-employee round whose receipt / tax invoice was issued is final.
         if ($payment->receipt_generated_at && FinancialTransactionItemPayment::where('financial_payment_id', $payment->id)->exists()) {
             return response()->json(['success' => false, 'message' => __('A receipt or tax invoice has been issued for this payment, so it can no longer be changed.')], 422);
@@ -632,6 +672,9 @@ class FinancialController extends Controller
         if ($locked = $this->lockedEntryResponse($entry)) {
             return $locked;
         }
+        if ($entry->payment && $entry->payment->isAdjustment()) {
+            return response()->json(['success' => false, 'message' => __('This entry was made by the system when a price was lowered — delete it to undo it.')], 422);
+        }
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0.01',
@@ -689,6 +732,9 @@ class FinancialController extends Controller
 
         if ($locked = $this->lockedEntryResponse($entry)) {
             return $locked;
+        }
+        if ($entry->payment && $entry->payment->isAdjustment()) {
+            return response()->json(['success' => false, 'message' => __('This entry was made by the system when a price was lowered — delete it to undo it.')], 422);
         }
 
         $roundPaymentId = $entry->financial_payment_id;
@@ -788,7 +834,7 @@ class FinancialController extends Controller
         $charges = collect($transaction->extra_charges ?? [])->keyBy('id');
         foreach ($rows->filter(fn ($row) => !empty($row['extra_charge_id']))->groupBy('extra_charge_id') as $chargeId => $chargeRows) {
             $charge = $charges->get($chargeId);
-            if (!$charge) {
+            if (!$charge || ($charge['kind'] ?? null) === 'overpayment') {
                 return response()->json(['success' => false, 'message' => __('This additional charge is not on this bill.')], 422);
             }
             $already = (float) $transaction->itemPayments()->where('extra_charge_id', $chargeId)->sum('amount');
@@ -1030,6 +1076,11 @@ class FinancialController extends Controller
             return response()->json(['success' => false, 'message' => __('A fully paid bill cannot be deleted. To correct the amount, issue a credit note.')], 422);
         }
 
+        // Money moved from / to another bill: undo that first, or the other bill's total breaks.
+        if ($transaction->payments->contains(fn ($p) => in_array($p->kind, ['transfer_in', 'transfer_out'], true))) {
+            return response()->json(['success' => false, 'message' => __('This bill has money moved from or to another bill — delete that entry first.')], 422);
+        }
+
         // Individually collected bill with an issued receipt / tax invoice: final.
         if ($transaction->payment_collection_mode === 'per_employee' && $transaction->payments->contains(fn ($p) => $p->receipt_generated_at)) {
             return response()->json(['success' => false, 'message' => __('A receipt or tax invoice has been issued for this payment, so it can no longer be changed.')], 422);
@@ -1257,6 +1308,12 @@ class FinancialController extends Controller
         'sync_items'              => 'nullable|boolean',  // the employee list was sent (may be empty)
         'extra_charges_json'      => 'nullable|string',   // [{id, description, amount}]
         'item_tiers_json'         => 'nullable|string',   // {itemId: {tier, price}}
+        // what to do with money received above the bill's new total (2026-11-21)
+        'overpayment_action'      => 'nullable|in:keep,refund,transfer,reallocate',
+        'overpayment_note'        => 'nullable|string|max:255',
+        'overpayment_date'        => 'nullable|date',
+        'overpayment_bank_account_id' => 'nullable|exists:bank_accounts,id',
+        'overpayment_target_id'   => 'nullable|integer',
     ];
 
     /**
@@ -1280,7 +1337,11 @@ class FinancialController extends Controller
                 return response()->json(['success' => false, 'message' => __('Each additional charge needs an amount above 0.')], 422);
             }
             $id = preg_replace('/[^A-Za-z0-9_\-]/', '', (string) ($c['id'] ?? '')) ?: ('x' . now()->format('YmdHis') . '_' . $i);
-            $out[] = ['id' => substr($id, 0, 40), 'description' => $desc !== '' ? $desc : __('Additional charge'), 'amount' => $amount];
+            $line = ['id' => substr($id, 0, 40), 'description' => $desc !== '' ? $desc : __('Additional charge'), 'amount' => $amount];
+            if (($c['kind'] ?? null) === 'overpayment') {
+                $line['kind'] = 'overpayment'; // "overpayment kept as income" line (2026-11-21)
+            }
+            $out[] = $line;
         }
 
         return $out;
@@ -1353,13 +1414,11 @@ class FinancialController extends Controller
             if ($amount + 0.005 < $extras) {
                 return __('The bill total is less than its additional charges.');
             }
+            // Below what was already received is allowed now — the extra money is
+            // handled by overpaymentPlan() (2026-11-21). Below the credit notes is not.
             $discount = (float) ($request->has('discount_amount') ? $request->input('discount_amount') : $transaction->discount_amount);
-            $effective = $amount - $discount - (float) ($transaction->credit_amount ?? 0);
-            $received = (float) $transaction->payments()->sum('amount');
-            if ($received > 0 && $effective + 0.005 < $received) {
-                return __('The new total (:total) is less than what was already received (:received).', [
-                    'total' => number_format($effective, 2), 'received' => number_format($received, 2),
-                ]);
+            if ((float) ($transaction->credit_amount ?? 0) > 0 && $amount - $discount + 0.005 < (float) $transaction->credit_amount) {
+                return __('The new total is less than the credit notes issued for this bill (:credit).', ['credit' => number_format((float) $transaction->credit_amount, 2)]);
             }
         }
 
@@ -1471,23 +1530,6 @@ class FinancialController extends Controller
                 Storage::disk('public')->delete($transaction->wht_document_path);
             }
             $transaction->wht_document_path = $request->file('wht_document')->store('financial_slips/wht', 'public');
-        }
-    }
-
-    /**
-     * อัพเดต status อัตโนมัติตาม paid_amount vs amount
-     *  - paid >= amount  → paid
-     *  - 0 < paid < amount → partial
-     *  - paid == 0 → pending
-     */
-    private function autoUpdateTransactionStatus(FinancialTransaction $transaction): void
-    {
-        if ($transaction->paid_amount > 0 && $transaction->paid_amount >= $transaction->amount && $transaction->status !== 'paid') {
-            $transaction->status = 'paid';
-        } elseif ($transaction->paid_amount > 0 && $transaction->paid_amount < $transaction->amount && $transaction->status !== 'partial') {
-            $transaction->status = 'partial';
-        } elseif ($transaction->paid_amount == 0 && $transaction->status !== 'pending') {
-            $transaction->status = 'pending';
         }
     }
 

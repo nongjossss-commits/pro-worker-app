@@ -390,6 +390,9 @@ class ProductionDocumentController extends Controller
         // Fetch the specific payment
         $payment = \App\Models\FinancialPayment::with('transaction')->findOrFail($paymentId);
 
+        // A refund / transfer / adjustment is not money received — no receipt for it (2026-11-21).
+        abort_if($payment->isAdjustment(), 422, __('No receipt for an entry made when a price was lowered.'));
+
         // Mark as generated
         if (!$payment->receipt_generated_at) {
             $payment->update(['receipt_generated_at' => now()]);

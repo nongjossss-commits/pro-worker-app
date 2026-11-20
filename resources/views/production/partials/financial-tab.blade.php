@@ -1326,16 +1326,17 @@ class="row">
                                 <template x-for="pay in editingTransaction.payments" :key="pay.id">
                                     <div class="list-group-item py-2 px-3">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <div class="fw-bold text-success" x-text="formatCurrency(pay.amount)"></div>
+                                            <div class="fw-bold" :class="parseFloat(pay.amount) < 0 ? 'text-danger' : 'text-success'" x-text="formatCurrency(pay.amount)"></div>
                                             <div class="text-muted small" x-text="formatDate(pay.paid_at)"></div>
                                         </div>
+                                        <div x-show="pay.kind" x-cloak><span class="badge bg-warning-subtle text-warning-emphasis mb-1" x-text="paymentKindLabel(pay)"></span></div>
                                         <div class="small text-muted mb-1 d-flex justify-content-between align-items-center">
                                             <span x-text="pay.bank_account ? pay.bank_account.bank_name : 'No Account'"></span>
                                             <div class="d-flex gap-1 align-items-center">
                                                 <template x-if="pay.receipt_generated_at">
                                                     <span class="badge bg-success" style="font-size: 0.6rem;" title="Document Generated"><i class="bi bi-check-circle"></i> Generated</span>
                                                 </template>
-                                                <template x-if="!pay.receipt_generated_at">
+                                                <template x-if="!pay.receipt_generated_at && !pay.kind">
                                                     <span class="badge bg-secondary" style="font-size: 0.6rem;" title="Not Generated"><i class="bi bi-dash-circle"></i> Not Generated</span>
                                                 </template>
                                                 <a x-show="pay.slip_path" :href="'/storage/' + pay.slip_path" target="_blank" class="badge bg-success text-decoration-none" title="ดูไฟล์"><i class="bi bi-eye-fill"></i></a>
@@ -1345,7 +1346,7 @@ class="row">
                                         <div class="d-flex justify-content-between align-items-center mt-2">
                                             <div class="small fst-italic text-muted text-truncate" style="max-width: 40%;" x-text="pay.notes"></div>
                                             <div class="d-flex gap-1">
-                                                <div class="btn-group">
+                                                <div class="btn-group" x-show="!pay.kind">
                                                     <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
                                                         Doc
                                                     </button>
@@ -1361,7 +1362,7 @@ class="row">
                                                     </ul>
                                                 </div>
                                                 <div class="btn-group">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="editPayment(pay)">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="editPayment(pay)" x-show="!pay.kind">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
                                                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deletePayment(pay.id)">
@@ -1411,14 +1412,15 @@ class="row">
                                                 <i class="bi bi-camera"></i>
                                             </button>
                                         </div>
-                                        <div x-show="editingPaymentId && newPayment.slip_path && !paymentSlipFile" class="mt-1 d-flex gap-1">
+                                        {{-- x-show on a plain wrapper: Bootstrap's d-flex is !important and kept these visible --}}
+                                        <div x-show="editingPaymentId && newPayment.slip_path && !paymentSlipFile"><div class="mt-1 d-flex gap-1">
                                             <a :href="'/storage/' + newPayment.slip_path" target="_blank" class="btn btn-success btn-sm py-0 px-2" title="ดูไฟล์">
                                                 <i class="bi bi-eye-fill"></i> ดูไฟล์
                                             </a>
                                             <a href="#" @click.prevent="viewPDF('/storage/' + newPayment.slip_path, 'View Slip')" class="btn btn-danger btn-sm py-0 px-2" title="ดู PDF">
                                                 <i class="bi bi-file-earmark-pdf-fill"></i> PDF
                                             </a>
-                                        </div>
+                                        </div></div>
                                         <div x-show="paymentSlipFile" class="mt-1 small text-warning">
                                             <i class="bi bi-info-circle"></i> เลือกไฟล์ใหม่แล้ว
                                         </div>
@@ -1463,11 +1465,12 @@ class="row">
                                     <template x-for="pay in editingTransaction.payments" :key="pay.id">
                                         <div class="ic-round" :class="pay.receipt_generated_at ? 'is-locked' : ''">
                                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                <span class="fw-bold text-success fs-6" x-text="formatCurrency(pay.amount)"></span>
+                                                <span class="fw-bold fs-6" :class="parseFloat(pay.amount) < 0 ? 'text-danger' : 'text-success'" x-text="formatCurrency(pay.amount)"></span>
+                                                <span class="badge bg-warning-subtle text-warning-emphasis" x-show="pay.kind" x-text="paymentKindLabel(pay)"></span>
                                                 <span class="small text-body-secondary" x-text="formatDate(pay.paid_at)"></span>
                                                 <span class="small text-body-secondary text-truncate" x-text="pay.bank_account ? pay.bank_account.bank_name : '{{ __('No account') }}'"></span>
                                                 <span class="ms-auto ic-lock" x-show="pay.receipt_generated_at"><i class="bi bi-lock-fill me-1"></i>{{ __('Document issued — cannot be changed') }}</span>
-                                                <span class="ms-auto ic-open" x-show="!pay.receipt_generated_at">{{ __('No document yet') }}</span>
+                                                <span class="ms-auto ic-open" x-show="!pay.receipt_generated_at && !pay.kind">{{ __('No document yet') }}</span>
                                             </div>
                                             <div class="small fst-italic text-body-secondary text-truncate" x-show="pay.notes" x-text="pay.notes"></div>
                                             <div class="d-flex align-items-center gap-1 mt-2 flex-wrap">
@@ -1480,7 +1483,7 @@ class="row">
                                                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" x-show="!pay.receipt_generated_at" @click="deletePayment(pay.id)" title="{{ __('Delete') }}"><i class="bi bi-trash"></i></button>
                                                 </div>
                                             </div>
-                                            <div class="ic-docs">
+                                            <div class="ic-docs" x-show="!pay.kind">
                                                 <div class="ic-doc-date">
                                                     <label class="form-label">{{ __('Document date') }}</label>
                                                     <input type="date" class="form-control form-control-sm" :max="todayYmd()" x-init="docDatePicker($el)" :value="paymentDocDate(pay)" @input="paymentDocDates[pay.id] = $event.target.value">
@@ -1493,8 +1496,8 @@ class="row">
                                                     <div class="ic-entry">
                                                         <span class="text-truncate flex-grow-1" x-text="entryPersonName(entry)"></span>
                                                         <span class="text-body-secondary text-truncate ic-entry-note" x-show="entry.notes" x-text="entry.notes"></span>
-                                                        <span class="fw-bold text-success" x-text="formatCurrency(entry.amount)"></span>
-                                                        <span class="ic-actions" x-show="!pay.receipt_generated_at">
+                                                        <span class="fw-bold" :class="parseFloat(entry.amount) < 0 ? 'text-danger' : 'text-success'" x-text="formatCurrency(entry.amount)"></span>
+                                                        <span class="ic-actions" x-show="!pay.receipt_generated_at && !pay.kind">
                                                             <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" @click="openEntryEdit(entry)" title="{{ __('Edit') }}"><i class="bi bi-pencil"></i></button>
                                                             <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="deleteItemPaymentEntry(entry)" title="{{ __('Delete') }}"><i class="bi bi-trash"></i></button>
                                                         </span>
@@ -1523,6 +1526,10 @@ class="row">
                                     <div x-show="editingTransaction.discount_amount > 0"><span class="text-muted">Discount:</span> <span class="fw-bold text-warning" x-text="'-' + formatCurrency(editingTransaction.discount_amount)"></span></div>
                                     <div><span class="text-muted">Paid:</span> <span class="fw-bold text-success" x-text="formatCurrency(editingTransaction.paid_amount || 0)"></span></div>
                                     <div><span class="text-muted">Remaining:</span> <span class="fw-bold text-danger" x-text="formatCurrency(Math.max(0, editingTransaction.amount - (parseFloat(editingTransaction.discount_amount) || 0) - (editingTransaction.paid_amount || 0)))"></span></div>
+                                </div>
+                                {{-- a price lowered below what was already received: asked on Update (2026-11-21) --}}
+                                <div class="alert alert-warning py-1 px-2 small mb-3" x-show="editOverpaidBy > 0" x-cloak>
+                                    <i class="bi bi-exclamation-triangle me-1"></i>{{ __('Received more than the new total by') }} <strong x-text="formatCurrency(editOverpaidBy)"></strong> — {{ __('when you press Update you choose to keep it as income, refund it, or use it for another bill.') }}
                                 </div>
 
                                 <!-- Read-only breakdown of fixed-total items used to build this installment -->
@@ -1638,6 +1645,7 @@ class="row">
                                                 <div class="d-flex align-items-center gap-2 border rounded bg-white px-2 py-1 mb-1 small">
                                                     <i class="bi bi-plus-circle text-info"></i>
                                                     <span class="flex-grow-1 text-truncate" x-text="c.description"></span>
+                                                    <span class="badge bg-warning-subtle text-warning-emphasis" x-show="c.kind === 'overpayment'">{{ __('Kept as income') }}</span>
                                                     <span class="fw-bold" x-text="formatCurrency(c.amount)"></span>
                                                     <span class="badge bg-success-subtle text-success-emphasis" x-show="extraChargeCollected(c.id) > 0" x-text="'{{ __('Received') }} ' + formatCurrency(extraChargeCollected(c.id))"></span>
                                                     <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" @click="removeExtraCharge(c)" :disabled="extraChargeCollected(c.id) > 0"
@@ -1793,6 +1801,13 @@ class="row">
                                                 <span x-show="item.cancelled" class="badge bg-secondary flex-shrink-0" style="font-size: 0.6em;" title="{{ __('Cancelled after being priced — stays on its bill') }}"><i class="bi bi-x-circle me-1"></i>{{ __('Cancelled') }}</span>
                                                 <span x-show="item.deleted" class="badge bg-danger flex-shrink-0" style="font-size: 0.6em;" title="{{ __('Deleted (in the trash) after being billed — stays on its bill') }}"><i class="bi bi-trash3 me-1"></i>{{ __('Deleted') }}</span>
                                                 <span x-show="editTierOverrides[item.id] && !isLeavingBill(item)" class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.6em;" x-text="'{{ __('New price') }} ' + formatCurrency(editItemPrice(item.id))"></span>
+                                                <span x-show="itemHasCollected(item.id)" class="badge bg-success-subtle text-success-emphasis flex-shrink-0" style="font-size: 0.6em;" x-text="'{{ __('Received') }} ' + formatCurrency(itemCollectedAmount(item.id))"></span>
+                                                {{-- the price can change even after money was received (2026-11-21) --}}
+                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 flex-shrink-0" style="font-size: 0.65rem;"
+                                                        x-show="pricingMode === 'per_head' && pricingTiers.length > 0 && !isLeavingBill(item) && selectedTransactionItems.some(v => v == item.id)"
+                                                        @click.prevent="chooseTierForItem(item)" title="{{ __('Change price tier') }}">
+                                                    <i class="bi bi-pencil-square me-1"></i>{{ __('Change price') }}
+                                                </button>
                                                 {{-- ticked off: leaves this bill on Update — or pick another price tier and keep them on it --}}
                                                 {{-- x-show on a plain wrapper: Bootstrap's d-flex is !important and would keep it visible --}}
                                                 <div class="w-100" x-show="isLeavingBill(item)" x-cloak>
@@ -1820,7 +1835,36 @@ class="row">
         'pickTierTitle' => __('Pick the price tier for this employee'),
         'pickTierOk' => __('Use this price'),
         'cancel' => __('Cancel'),
-    ], JSON_UNESCAPED_UNICODE) }}"></div>
+        // money received above the bill's new total (2026-11-21)
+        'ovpTitle' => __('More money received than the new total'),
+        'ovpReceived' => __('Received on this bill'),
+        'ovpNewTotal' => __('New bill total'),
+        'ovpExtra' => __('Extra money'),
+        'ovpWho' => __('Paid more than their new price:'),
+        'ovpKeep' => __('Keep it as extra income'),
+        'ovpKeepHint' => __('A line "Overpayment kept as income" is added to this bill — nothing is paid back.'),
+        'ovpRefund' => __('Refund it to the customer'),
+        'ovpRefundHint' => __('Recorded as money paid back (an expense in the books when a bank account is picked).'),
+        'ovpTransfer' => __('Use it for another bill of this employer'),
+        'ovpTransferHint' => __('Taken off this bill and counted as paid on the bill you pick — no money moves in the bank.'),
+        'ovpTransferNone' => __('No other unpaid bill of this employer owes enough.'),
+        'ovpReallocate' => __('Count it toward others on this bill'),
+        'ovpReallocateHint' => __('The extra paid for this person goes to people on this bill who still owe.'),
+        'ovpRefundDate' => __('Date the money was paid back'),
+        'ovpRefundBank' => __('Paid back from account'),
+        'ovpNoBank' => __('— No account (not posted to the books) —'),
+        'ovpTarget' => __('Bill to use it for'),
+        'ovpOwes' => __('owes'),
+        'ovpNote' => __('Note (optional)'),
+        'ovpOk' => __('Save'),
+        'ovpPick' => __('Choose what to do with the extra money.'),
+        'kind_refund' => __('Refund to the customer'),
+        'kind_transfer_out' => __('Moved to another bill'),
+        'kind_transfer_in' => __('Moved from another bill'),
+        'kind_adjustment' => __('Moved within this bill'),
+        'undoKindTitle' => __('Undo this entry?'),
+        'undoKindText' => __('It was made when a price was lowered. Undoing it puts the money back as it was (a move between bills is undone on both bills).'),
+    ], JSON_UNESCAPED_UNICODE) }}" data-banks="{{ json_encode(\App\Models\BankAccount::where('is_active', true)->get()->map(fn ($b) => ['id' => $b->id, 'label' => trim($b->bank_name . ' ' . ($b->account_number ? '(' . $b->account_number . ')' : ''))])->values(), JSON_UNESCAPED_UNICODE) }}"></div>
 
     <!-- Individual Collection Modal — one screen for one collection round: type what
          each person paid now, press save once → their entries + ONE Payment

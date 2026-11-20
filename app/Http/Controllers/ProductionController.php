@@ -87,9 +87,11 @@ class ProductionController extends Controller
         // If Active Tab is NULL: Calculate Global Stats Only, do not fetch Orders.
         if (!$activeTab) {
              // Efficient Global Stats
+             // only people the card can show — an employee in the trash is not
+             // listed on the card, so not counted either (2026-11-21)
              $baseItemsQuery = ProductionItem::whereHas('order', function($q) {
                  $q->where('status', 'pre_production');
-             });
+             })->whereHas('employee');
 
              $stats['total_projects'] = ProductionOrder::where('status', 'pre_production')->count();
              $stats['total_employees'] = (clone $baseItemsQuery)->count();
@@ -207,6 +209,7 @@ class ProductionController extends Controller
             if ($request->has('filter') && $request->filter) {
                 $filter = $request->filter;
                 $query->whereHas('items', function($q) use ($filter) {
+                    $q->whereHas('employee'); // a card the filter finds must list someone (2026-11-21)
                     if ($filter === 'not_started') {
                         $q->where('status', 'pending')
                           ->whereDoesntHave('completedWorkTypeSteps', function($subQ) {
@@ -245,12 +248,16 @@ class ProductionController extends Controller
             }
 
             // SORTING
+            // Counted the same way the card lists people (fetchEmployees()): an item
+            // whose employee is in the trash is not shown, so it must not keep the
+            // card "active" — such a card looked full ("9 TOTAL") but opened empty.
+            // Now it is greyed out and goes to the bottom like any empty card (2026-11-21).
             $query->withCount([
                 'items as active_items_count' => function ($q) {
-                    $q->whereNotIn('status', ['cancelled', 'completed']);
+                    $q->whereNotIn('status', ['cancelled', 'completed'])->whereHas('employee');
                 },
                 'items as cancelled_items_count' => function ($q) {
-                    $q->where('status', 'cancelled');
+                    $q->where('status', 'cancelled')->whereHas('employee');
                 }
             ]);
 
@@ -394,7 +401,7 @@ class ProductionController extends Controller
                 // per-item drill-down (narrow to items an operator
                 // actually handles), not a re-check of criteria already
                 // used to pick the orders, so it stays.
-                $baseItemQuery = ProductionItem::whereIn('production_order_id', $matchingOrderIds);
+                $baseItemQuery = ProductionItem::whereIn('production_order_id', $matchingOrderIds)->whereHas('employee');
 
                 // Apply operator filter to items
                 if ($request->has('operator_filter') && $request->operator_filter) {
@@ -1175,6 +1182,25 @@ class ProductionController extends Controller
      */
     public function edit(Request $request, $id)
     {
+        return view('production.edit', $this->editFinanceData($id));
+    }
+
+    /**
+     * The finance panel of the bill's order exactly as the "View" page
+     * (edit ?tab=financial) shows it — the Finance menu's quick-pay button
+     * loads it and opens this bill's Payment History & Details, so both work
+     * the same way (2026-11-21).
+     */
+    public function financePanel($transaction)
+    {
+        $txn = \App\Models\FinancialTransaction::findOrFail($transaction);
+
+        return view('production.partials.financial-tab', $this->editFinanceData($txn->production_order_id));
+    }
+
+    /** production / employeeCount / employees for the finance panel of an order. */
+    private function editFinanceData($id): array
+    {
         // 1. Find Order (without Financial Groups strictly linked to it)
         $production = ProductionOrder::with([
             'employer',
@@ -1215,8 +1241,7 @@ class ProductionController extends Controller
             $emp->financialStatus = $employeeFinancialStatus[$emp->id] ?? null;
         }
 
-        // 4. Return View
-        return view('production.edit', compact('production', 'employeeCount', 'employees'));
+        return compact('production', 'employeeCount', 'employees');
     }
 
     public function create(Request $request)
@@ -1388,7 +1413,8 @@ class ProductionController extends Controller
         $activeTab = $order->workType;
 
         $query = ProductionItem::with(['employee', 'completedWorkTypeSteps'])
-            ->where('production_order_id', $orderId);
+            ->where('production_order_id', $orderId)
+            ->whereHas('employee'); // an employee in the trash is not listed (nor counted — index())
 
         // We fetch all items including cancelled ones, and use CSS classes (e.g. .status-cancelled)
         // to hide them on the frontend unless toggled.
@@ -1618,7 +1644,8 @@ class ProductionController extends Controller
         foreach ($orders as $order) {
             $query = ProductionItem::with(['completedWorkTypeSteps' => function($q) {
                 $q->orderByDesc('order');
-            }])->where('production_order_id', $order->id);
+            }])->where('production_order_id', $order->id)
+              ->whereHas('employee'); // same people the card lists (2026-11-21)
 
             // Same two-stage rule as the order's employee list (fetchEmployees).
             \App\Services\TwoStageSearch::applyInsideEmployer($query, $order->employer_id, $request, 'employee', function ($q, $term) use ($order) {

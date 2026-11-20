@@ -24,6 +24,7 @@
     <li><strong>筛选栏</strong> —— 按步骤、雇主、工作类型筛选</li>
     <li><strong>工作卡片</strong> —— 显示当前所选步骤中的所有工作</li>
     <li><strong>"Auto-apply MOU" 按钮</strong> —— 用于系统自动处理的 MOU 续签工作</li>
+    <li><strong>没有进行中雇员的雇主卡片</strong>（全部完成/取消，或<strong>雇员已删除到回收站</strong>）—— 显示为灰色、数量为 0，始终排在最后 · 有进行中雇员的卡片排在前面（按雇主编号）· 已删除的人不计数，从回收站恢复后会自动回来</li>
 </ol>
 
 <h4><i class="bi bi-list-check me-2"></i>使用步骤</h4>

@@ -24,6 +24,7 @@
     <li><strong>Filter bar</strong> — filter by step, employer, job type</li>
     <li><strong>Job cards</strong> — shows all jobs currently in the selected step</li>
     <li><strong>"Auto-apply MOU" button</strong> — for MOU renewal jobs the system handles automatically</li>
+    <li><strong>Employer cards with nobody in progress</strong> (everyone finished / cancelled, or the <strong>employees were deleted to the trash</strong>) — greyed out, count 0, always at the bottom · cards with people in progress come first (by employer code) · deleted people are not counted and come back when restored from the trash</li>
 </ol>
 
 <h4><i class="bi bi-list-check me-2"></i>How to use it</h4>

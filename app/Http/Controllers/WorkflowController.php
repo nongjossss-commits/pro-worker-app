@@ -196,6 +196,7 @@ class WorkflowController extends Controller
         if ($request->has('filter') && $request->filter) {
             $filter = $request->filter;
             $query->whereHas('items', function($q) use ($filter) {
+                $q->shownOnCard();
                 if ($filter === 'not_started') {
                     // "ยังไม่เริ่ม" = not finished and step 1 not ticked — same
                     // rule as every scoreboard count (finished employees are
@@ -234,12 +235,14 @@ class WorkflowController extends Controller
         }
 
         // SORTING: Active items (not cancelled/completed) first, then updated_at
+        // Only items the card can show (ProductionItem::shownOnCard — not an
+        // employee in the trash), else an empty card counted as active (2026-11-21).
         $query->withCount([
             'items as active_items_count' => function ($q) {
-                $q->whereNotIn('status', ['cancelled', 'completed']);
+                $q->whereNotIn('status', ['cancelled', 'completed'])->shownOnCard();
             },
             'items as cancelled_items_count' => function ($q) {
-                $q->where('status', 'cancelled');
+                $q->where('status', 'cancelled')->shownOnCard();
             }
         ]);
 
@@ -424,7 +427,7 @@ class WorkflowController extends Controller
                 // per-item drill-down (narrow to items an operator
                 // actually handles), not a re-check of criteria already
                 // used to pick the orders, so it stays.
-                $baseItemQuery = ProductionItem::whereIn('production_order_id', $matchingOrderIds);
+                $baseItemQuery = ProductionItem::whereIn('production_order_id', $matchingOrderIds)->shownOnCard();
 
                 // Apply operator filter to items
                 if ($request->has('operator_filter') && $request->operator_filter) {
@@ -551,7 +554,7 @@ class WorkflowController extends Controller
             $q->where('status', '!=', 'pre_production')
               ->whereIn('work_type_id', $validWorkTypeIds)
               ->whereHas('employer');
-        });
+        })->shownOnCard();
 
         // 3. Global Scoreboard Stats
         $stats = [
@@ -1103,7 +1106,8 @@ class WorkflowController extends Controller
 
         // Query Items
         $query = ProductionItem::with(['employee', 'completedWorkTypeSteps', 'sourceItem:id,group_name'])
-            ->where('production_order_id', $orderId);
+            ->where('production_order_id', $orderId)
+            ->shownOnCard(); // not someone whose employee record is in the trash (2026-11-21)
 
         // "แจ้งเข้า บต.52/55/56" + team filter: gather the selected team(s) from
         // EVERY card of this employer in the tab (in progress or finished) — staff
@@ -1116,7 +1120,8 @@ class WorkflowController extends Controller
                 ->where('status', '!=', 'cancelled')
                 ->pluck('id');
             $query = ProductionItem::with(['employee', 'completedWorkTypeSteps', 'sourceItem:id,group_name', 'order'])
-                ->whereIn('production_order_id', $cardIds);
+                ->whereIn('production_order_id', $cardIds)
+                ->shownOnCard();
         }
 
         // We fetch all items including cancelled ones, and use CSS classes (e.g. .status-cancelled)
@@ -3340,7 +3345,7 @@ class WorkflowController extends Controller
         foreach ($orders as $order) {
             $query = ProductionItem::with(['completedWorkTypeSteps' => function($q) {
                 $q->orderByDesc('order');
-            }])->where('production_order_id', $order->id);
+            }])->where('production_order_id', $order->id)->shownOnCard();
 
             // Apply Search Filter Logic for items
             if ($search) {
