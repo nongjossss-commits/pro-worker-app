@@ -3316,5 +3316,7 @@
     "The new total (:total) is less than what was already received (:received).": "The new total (:total) is less than what was already received (:received).",
     "The price tiers have changes that are not saved yet — save the pricing settings first, then pick the price again.": "The price tiers have changes that are not saved yet — save the pricing settings first, then pick the price again.",
     "This additional charge is not on this bill.": "This additional charge is not on this bill.",
-    "Use this price": "Use this price"
+    "Use this price": "Use this price",
+    "Cancelled after being priced — stays on its bill": "Cancelled after being priced — stays on its bill",
+    "Deleted (in the trash) after being billed — stays on its bill": "Deleted (in the trash) after being billed — stays on its bill"
 }

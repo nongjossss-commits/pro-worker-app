@@ -2267,5 +2267,7 @@
     "The new total (:total) is less than what was already received (:received).": "新的总额（:total）低于已收款（:received）",
     "The price tiers have changes that are not saved yet — save the pricing settings first, then pick the price again.": "价格档有尚未保存的更改 —— 请先保存价格设置，再重新选择价格",
     "This additional charge is not on this bill.": "此额外费用不在此账单中",
-    "Use this price": "使用此价格"
+    "Use this price": "使用此价格",
+    "Cancelled after being priced — stays on its bill": "定价后被取消 —— 仍保留在原账单中",
+    "Deleted (in the trash) after being billed — stays on its bill": "开账单后被删除（在回收站中）—— 仍保留在原账单中"
 }

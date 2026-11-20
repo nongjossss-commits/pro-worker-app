@@ -2267,5 +2267,7 @@
     "The new total (:total) is less than what was already received (:received).": "စုစုပေါင်းအသစ် (:total) သည် လက်ခံပြီးငွေ (:received) ထက် နည်းနေသည်",
     "The price tiers have changes that are not saved yet — save the pricing settings first, then pick the price again.": "ဈေးနှုန်းအဆင့်များတွင် မသိမ်းရသေးသော ပြောင်းလဲမှုများ ရှိသည် — ဈေးနှုန်း ဆက်တင်ကို အရင်သိမ်းပြီး ဈေးနှုန်းကို ပြန်ရွေးပါ",
     "This additional charge is not on this bill.": "ဤထပ်တိုး အသုံးစရိတ်သည် ဤငွေတောင်းခံလွှာတွင် မပါပါ",
-    "Use this price": "ဤဈေးနှုန်းကို သုံးရန်"
+    "Use this price": "ဤဈေးနှုန်းကို သုံးရန်",
+    "Cancelled after being priced — stays on its bill": "ဈေးနှုန်းသတ်မှတ်ပြီးနောက် ပယ်ဖျက်ခံရသည် — မူလငွေတောင်းခံလွှာတွင် ဆက်ရှိနေသည်",
+    "Deleted (in the trash) after being billed — stays on its bill": "ငွေတောင်းခံပြီးနောက် ဖျက်ခံရသည် (အမှိုက်ပုံးတွင်) — မူလငွေတောင်းခံလွှာတွင် ဆက်ရှိနေသည်"
 }

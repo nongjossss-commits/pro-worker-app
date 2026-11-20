@@ -125,6 +125,15 @@ class ProductionItem extends Model
         return $this->belongsTo(Employee::class);
     }
 
+    /**
+     * The employee even when moved to the trash — for bills that still list
+     * them (shown as deleted) (2026-11-20).
+     */
+    public function employeeWithTrashed()
+    {
+        return $this->belongsTo(Employee::class, 'employee_id')->withTrashed();
+    }
+
     public function operator()
     {
         return $this->belongsTo(User::class, 'operator_id');

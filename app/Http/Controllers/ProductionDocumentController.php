@@ -163,6 +163,10 @@ class ProductionDocumentController extends Controller
                 $items = $items->filter(function($item) use ($transactionItemIds) {
                     return $transactionItemIds->contains($item->id);
                 });
+                // deleted (to the trash) after being billed: still on the bill (2026-11-20)
+                $items = $items->concat(
+                    \App\Models\ProductionItem::onlyTrashed()->whereIn('id', $transactionItemIds)->get()
+                );
             }
 
             // Per-employee "paid so far" — only meaningful for bills collected
@@ -195,7 +199,8 @@ class ProductionDocumentController extends Controller
 
             $index = 1;
             foreach ($items as $item) {
-                $emp = $item->employee;
+                $emp = $item->employee ?? ($item->employee_id ? $item->employeeWithTrashed : null);
+                $deletedMark = ($item->trashed() || ($emp && $emp->trashed())) ? ' (ถูกลบ / Deleted)' : '';
                 // A "draft" person — identity typed in directly for a
                 // manual bill's quotation, no real Employee record. Same
                 // ProductionItem row, same tier-matching below (keyed off
@@ -254,7 +259,7 @@ class ProductionDocumentController extends Controller
                             'index' => $index++,
                             'image' => $emp->employeePhoto,
                             'prefix' => $emp->employeeTitleEn ?: $emp->titleTh,
-                            'name' => trim($emp->employeeNameEn ?: $emp->employeeNameTh),
+                            'name' => trim($emp->employeeNameEn ?: $emp->employeeNameTh) . $deletedMark,
                             'nationality' => $emp->employeeNationality,
                             'price' => $price,
                             'paid_so_far' => isset($itemPaidSoFar[$item->id]) ? (float) $itemPaidSoFar[$item->id] : null,
@@ -269,7 +274,7 @@ class ProductionDocumentController extends Controller
                             'index' => $index++,
                             'image' => $draft['photo'] ?? null,
                             'prefix' => $draft['title_en'] ?? '',
-                            'name' => trim(($draft['name_en'] ?? '') ?: ($draft['name_th'] ?? '')),
+                            'name' => trim(($draft['name_en'] ?? '') ?: ($draft['name_th'] ?? '')) . $deletedMark,
                             'nationality' => $draft['nationality'] ?? '',
                             'price' => $price,
                             'paid_so_far' => isset($itemPaidSoFar[$item->id]) ? (float) $itemPaidSoFar[$item->id] : null,

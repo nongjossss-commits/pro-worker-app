@@ -118,7 +118,8 @@
     window.appToast = function (message, icon) {
         if (!hasSwal()) { nativeAlert(message); return; }
         Swal.fire({
-            toast: true, position: 'top-end', icon: icon || 'success', title: message,
+            // top-centre while a popup is open — top-right sat right on its close (×) button (2026-11-20)
+            toast: true, position: document.querySelector('.modal.show') ? 'top' : 'top-end', icon: icon || 'success', title: message,
             showConfirmButton: false, timer: 2500, timerProgressBar: true,
         });
     };

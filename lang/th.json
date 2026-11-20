@@ -3366,5 +3366,7 @@
     "The new total (:total) is less than what was already received (:received).": "ยอดใหม่ (:total) น้อยกว่ายอดที่รับชำระแล้ว (:received)",
     "The price tiers have changes that are not saved yet — save the pricing settings first, then pick the price again.": "ระดับราคามีการแก้ไขที่ยังไม่ได้บันทึก — บันทึกการตั้งค่าราคาก่อน แล้วเลือกราคาใหม่อีกครั้ง",
     "This additional charge is not on this bill.": "ค่าใช้จ่ายเพิ่มเติมนี้ไม่ได้อยู่ในงวดนี้",
-    "Use this price": "ใช้ราคานี้"
+    "Use this price": "ใช้ราคานี้",
+    "Cancelled after being priced — stays on its bill": "ถูกยกเลิกหลังตั้งราคาแล้ว — ยังอยู่ในงวดเดิม",
+    "Deleted (in the trash) after being billed — stays on its bill": "ถูกลบ (อยู่ในถังขยะ) หลังวางบิลแล้ว — ยังอยู่ในงวดเดิม"
 }

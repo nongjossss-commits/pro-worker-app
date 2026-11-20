@@ -2,6 +2,10 @@
 if (typeof window.financialManager === 'undefined') {
     window.financialManager = function(initialData) {
         return {
+            // One id per finance panel: a page can hold several (e.g. Renewal with more than one
+            // employer's finance open). Fixed ids / radio names were shared between them, so a
+            // click went to another panel's hidden radio (2026-11-20).
+            uid: 'fm' + Math.random().toString(36).slice(2, 9),
             // --- Groups (Tabs) ---
             financialGroups: initialData.financialGroups || [],
             activeGroupId: null,
@@ -340,6 +344,22 @@ if (typeof window.financialManager === 'undefined') {
                 return status.endsWith('cancelled') || status === 'cancelled';
             },
 
+            /**
+             * A person of this order who was cancelled — the job item, the whole card,
+             * or (Registration / Renewal bills) the employee in that menu. The server
+             * works it out (is_cancelled, financial-tab.blade.php) (2026-11-20).
+             */
+            isItemCancelled(item) {
+                return !!(item && (item.is_cancelled || this.isCancelledStatus(item.status)));
+            },
+            /** Deleted (to the trash) after being billed — only listed on that bill (2026-11-20). */
+            isItemDeleted(item) {
+                return !!(item && item.is_deleted);
+            },
+            isItemIdCancelled(itemId) {
+                return this.isItemCancelled(this.productionItems.find(p => p.id == itemId));
+            },
+
             // Shared search-matching for every employee-picker list in this
             // component (Price Tier modal, New Transaction, Edit Transaction)
             // — matches name (Thai + English), passport, work permit,
@@ -418,7 +438,8 @@ if (typeof window.financialManager === 'undefined') {
 
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
 
-                    const isCancelled = this.isCancelledStatus(item.status);
+                    if (this.isItemDeleted(item)) return;
+                    const isCancelled = this.isItemCancelled(item);
                     if (this.tierEmployeeFilter === 'active' && isCancelled) return;
                     if (this.tierEmployeeFilter === 'cancelled' && !isCancelled) return;
 
@@ -505,7 +526,8 @@ if (typeof window.financialManager === 'undefined') {
                         itemsByEmpId[item.employee_id] = item.id;
                     }
 
-                    const isCancelled = this.isCancelledStatus(item.status);
+                    if (this.isItemDeleted(item)) return;
+                    const isCancelled = this.isItemCancelled(item);
                     if (this.newTransactionEmployeeFilter === 'active' && isCancelled) return;
                     if (this.newTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
 
@@ -622,9 +644,13 @@ if (typeof window.financialManager === 'undefined') {
                     const isAttached = attachedItemIds.has(item.id) || (item.employee_id != null && attachedEmployeeIds.has(item.employee_id));
                     const isUsed = usedItemIds.has(item.id) || (item.employee_id != null && usedEmployeeIds.has(item.employee_id));
 
-                    const isCancelled = this.isCancelledStatus(item.status);
-                    if (this.editTransactionEmployeeFilter === 'active' && isCancelled) return;
+                    // Someone cancelled AFTER being put on this bill stays listed here (labelled
+                    // cancelled, amount unchanged) — "Cancelled" narrows the list to them (2026-11-20).
+                    const isCancelled = this.isItemCancelled(item);
+                    const isPicked = this.selectedTransactionItems.some(v => v == item.id);
+                    if (this.isItemDeleted(item) && !isAttached) return;
                     if (this.editTransactionEmployeeFilter === 'cancelled' && !isCancelled) return;
+                    if (this.editTransactionEmployeeFilter === 'active' && isCancelled && !isAttached && !isPicked) return;
 
                     let hasPrice = true;
                     if (this.pricingMode === 'per_head') {
@@ -634,7 +660,6 @@ if (typeof window.financialManager === 'undefined') {
                     // The list shows the employees of THIS bill (and the ones just ticked in
                     // "+ Add employees"); employees not on it are offered in that add list
                     // instead (editAddableItems) (2026-11-20).
-                    const isPicked = this.selectedTransactionItems.some(v => v == item.id);
                     if (isAttached || (isPicked && hasPrice && !isUsed)) {
                          list.push({
                             id: item.id,
@@ -653,7 +678,9 @@ if (typeof window.financialManager === 'undefined') {
                             ra_number: item.ra_number,
                             reference_id: item.reference_id,
                             type: 'item',
-                            attached: isAttached
+                            attached: isAttached,
+                            cancelled: isCancelled,
+                            deleted: this.isItemDeleted(item)
                         });
                     }
                 });
@@ -705,18 +732,18 @@ if (typeof window.financialManager === 'undefined') {
                 const itemsByEmpId = {};
                 this.productionItems.forEach(item => {
                     if (item.employee_id) itemsByEmpId[item.employee_id] = item.id;
-                    if (this.isCancelledStatus(item.status)) return;
+                    if (this.isItemDeleted(item)) return;
                     if (onThis.has(item.id) || (item.employee_id != null && onThisEmp.has(item.employee_id))) return;
                     if (used.has(item.id) || (item.employee_id != null && usedEmp.has(item.employee_id))) return;
                     if (picked.has(String(item.id))) return;
                     if (this.pricingMode === 'per_head' && !this.getTierForItem(item.id)) return;
-                    list.push({ ...this._editRow(item), id: item.id, type: 'item' });
+                    list.push({ ...this._editRow(item), id: item.id, type: 'item', cancelled: this.isItemCancelled(item) });
                 });
                 if (this.pricingMode !== 'per_head') {
                     this.employees.forEach(emp => {
                         if (itemsByEmpId[emp.id] || onThisEmp.has(emp.id) || usedEmp.has(emp.id)) return;
-                        if (this.isCancelledStatus(emp.status) || picked.has('emp_' + emp.id)) return;
-                        list.push({ ...this._editRow(emp), id: 'emp_' + emp.id, type: 'employee' });
+                        if (picked.has('emp_' + emp.id)) return;
+                        list.push({ ...this._editRow(emp), id: 'emp_' + emp.id, type: 'employee', cancelled: this.isCancelledStatus(emp.status) });
                     });
                 }
                 return list.filter(i => this.matchesEmployeeSearch(i, this.editAddSearch));
@@ -916,7 +943,7 @@ if (typeof window.financialManager === 'undefined') {
 
                         const Toast = Swal.mixin({
                             toast: true,
-                            position: 'top-end',
+                            position: 'top',
                             showConfirmButton: false,
                             timer: 3000,
                             timerProgressBar: true
@@ -1035,7 +1062,7 @@ if (typeof window.financialManager === 'undefined') {
                         this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '', slip_path: null };
                         this.paymentSlipFile = null;
 
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Added', showConfirmButton: false, timer: 3000 });
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Payment Added', showConfirmButton: false, timer: 3000 });
                     } else {
                         throw new Error(data.message || 'Error adding payment');
                     }
@@ -1045,7 +1072,7 @@ if (typeof window.financialManager === 'undefined') {
                     this.isSavingPayment = false;
                     // Clear file input element เสมอ ทั้งใน success และ error path กัน file ค้าง
                     this.paymentSlipFile = null;
-                    const fileInput = document.getElementById('paymentSlipInput');
+                    const fileInput = document.getElementById('paymentSlipInput-' + this.uid);
                     if (fileInput) fileInput.value = '';
                 });
             },
@@ -1061,7 +1088,7 @@ if (typeof window.financialManager === 'undefined') {
                 };
                 this.paymentSlipFile = null;
                 // clear file input if possible
-                const fileInput = document.getElementById('paymentSlipInput');
+                const fileInput = document.getElementById('paymentSlipInput-' + this.uid);
                 if (fileInput) fileInput.value = '';
             },
 
@@ -1086,7 +1113,7 @@ if (typeof window.financialManager === 'undefined') {
                 if (defaultAmount < 0) defaultAmount = 0;
                 this.newPayment = { amount: defaultAmount, paid_at: new Date().toISOString().split('T')[0], bank_account_id: '', notes: '', slip_path: null };
                 this.paymentSlipFile = null;
-                const fileInput = document.getElementById('paymentSlipInput');
+                const fileInput = document.getElementById('paymentSlipInput-' + this.uid);
                 if (fileInput) fileInput.value = '';
             },
 
@@ -1139,7 +1166,7 @@ if (typeof window.financialManager === 'undefined') {
 
                         this.cancelEditPayment();
 
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Updated', showConfirmButton: false, timer: 3000 });
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Payment Updated', showConfirmButton: false, timer: 3000 });
                     } else {
                         throw new Error(data.message || 'Error updating payment');
                     }
@@ -1167,7 +1194,7 @@ if (typeof window.financialManager === 'undefined') {
                                 const idx = this.transactions.findIndex(t => t.id === data.transaction.id);
                                 if(idx !== -1) this.transactions[idx] = data.transaction;
                                 this.editingTransaction = { ...data.transaction, itemPayments: data.transaction.item_payments || [] };
-                                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 3000 });
+                                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 3000 });
                             } else {
                                 throw new Error(data.message || 'Error deleting payment');
                             }
@@ -1235,6 +1262,8 @@ if (typeof window.financialManager === 'undefined') {
                         const paid = this.itemPaidSoFar(att.id);
                         return {
                             id: att.id,
+                            cancelled: this.isItemCancelled(display),
+                            deleted: this.isItemDeleted(display),
                             name: display.name || display.employeeNameTh || '-',
                             name_en: display.name_en,
                             title_en: display.title_en,
@@ -1428,7 +1457,7 @@ if (typeof window.financialManager === 'undefined') {
                         const idx = list.findIndex(p => p.id === data.entry.id);
                         if (idx !== -1) list[idx] = data.entry;
                         if (data.transaction) this._applyCollectionResult(data.transaction);
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: this.icText('updated'), showConfirmButton: false, timer: 2500 });
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: this.icText('updated'), showConfirmButton: false, timer: 2500 });
                     })
                     .catch(err => this._safeFire({ title: 'Error', text: err.message, icon: 'error' }));
                 });
@@ -1459,7 +1488,7 @@ if (typeof window.financialManager === 'undefined') {
                             const idx2 = this.transactions.findIndex(t => t.id === data.transaction.id);
                             if (idx2 !== -1) this.transactions[idx2] = { ...this.transactions[idx2], ...data.transaction };
                         }
-                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 2500 });
+                        Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Payment Deleted', showConfirmButton: false, timer: 2500 });
                     })
                     .catch(err => Swal.fire('Error', err.message, 'error'));
                 });
@@ -1523,7 +1552,7 @@ if (typeof window.financialManager === 'undefined') {
                     // Back to the bill: the new Payment is right there in its list.
                     bootstrap.Modal.getOrCreateInstance(this.$refs.individualCollectionModal).hide();
 
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: this.icText('saved') + ': ' + this.formatCurrency(data.payment_amount), showConfirmButton: false, timer: 3500 });
+                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: this.icText('saved') + ': ' + this.formatCurrency(data.payment_amount), showConfirmButton: false, timer: 3500 });
                 })
                 .catch(err => this._safeFire({ title: 'Error', text: err.message, icon: 'error' }))
                 .finally(() => this.isFinalizingCollection = false);
@@ -1598,7 +1627,7 @@ if (typeof window.financialManager === 'undefined') {
 
                         const Toast = Swal.mixin({
                             toast: true,
-                            position: 'top-end',
+                            position: 'top',
                             showConfirmButton: false,
                             timer: 3000,
                             timerProgressBar: true
@@ -1651,7 +1680,7 @@ if (typeof window.financialManager === 'undefined') {
                                 const newGroup = { ...data.group, transactions: [] };
                                 this.financialGroups = [...this.financialGroups, newGroup];
                                 this.switchGroup(newGroup.id);
-                                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'สร้างแท็บ "' + name + '" แล้ว', showConfirmButton: false, timer: 2000 });
+                                Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'สร้างแท็บ "' + name + '" แล้ว', showConfirmButton: false, timer: 2000 });
                             }
                         })
                         .catch(err => Swal.fire('Error', err.message, 'error'));
@@ -1752,7 +1781,7 @@ if (typeof window.financialManager === 'undefined') {
                                      // Trigger reactivity
                                      this.financialGroups = [...this.financialGroups];
                                  }
-                                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'เปลี่ยนชื่อเป็น "' + newName + '" แล้ว', showConfirmButton: false, timer: 2000 });
+                                 Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'เปลี่ยนชื่อเป็น "' + newName + '" แล้ว', showConfirmButton: false, timer: 2000 });
                             } else {
                                 throw new Error(data.message || 'ไม่สามารถเปลี่ยนชื่อแท็บได้');
                             }
@@ -1859,7 +1888,7 @@ if (typeof window.financialManager === 'undefined') {
                     if (!result.isConfirmed) return;
                     this.pricingTiers.splice(index, 1);
                     this.updateTotal();
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบ ' + tierLabel + ' แล้ว — อย่าลืมกด Save Pricing', showConfirmButton: false, timer: 2500 });
+                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'ลบ ' + tierLabel + ' แล้ว — อย่าลืมกด Save Pricing', showConfirmButton: false, timer: 2500 });
                 });
             },
             editTierNote(index) {
@@ -1926,7 +1955,7 @@ if (typeof window.financialManager === 'undefined') {
                     if (this.pricingTiers[index]) {
                         this.pricingTiers[index].note = newNote;
                     }
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'อัพเดตหมายเหตุแล้ว — อย่าลืมกด Save Pricing', showConfirmButton: false, timer: 2500 });
+                    Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'อัพเดตหมายเหตุแล้ว — อย่าลืมกด Save Pricing', showConfirmButton: false, timer: 2500 });
                 });
             },
             get tierCountSum() {
@@ -2336,7 +2365,7 @@ if (typeof window.financialManager === 'undefined') {
 
                         const Toast = Swal.mixin({
                             toast: true,
-                            position: 'top-end',
+                            position: 'top',
                             showConfirmButton: false,
                             timer: 3000,
                             timerProgressBar: true

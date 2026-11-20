@@ -24,13 +24,32 @@
     $tabStepIds = $production->resolution_tab_id
         ? \App\Models\RegistrationStep::where('resolution_tab_id', $production->resolution_tab_id)->pluck('id')
         : null;
+
+    // Cancelled AFTER being priced / billed: the employee stays on their bills
+    // (amount unchanged), shown as cancelled. Cancelled = the job item was
+    // cancelled, the whole card was cancelled, or — for a Registration /
+    // Renewal resolution bill, whose items stay "pending" — the employee was
+    // cancelled in that menu (2026-11-20).
+    $financeCardCancelled = str_ends_with((string) $production->status, 'cancelled');
+    $resolutionCancelStatus = str_starts_with((string) $production->status, 'registration_resolution') ? 'registration_cancelled'
+        : (str_starts_with((string) $production->status, 'renewal_resolution') ? 'renewal_cancelled' : null);
+
+    // Deleted (to the trash) after being billed: still listed on their bill,
+    // shown as deleted — the job item or the employee itself (2026-11-20).
+    $financeItems = $production->items->concat(
+        \App\Models\ProductionItem::onlyTrashed()
+            ->where('production_order_id', $production->id)
+            ->whereHas('transactions')
+            ->with('employeeWithTrashed')
+            ->get()
+    );
 @endphp
 <div x-data="financialManager({
     financialGroups: {{ json_encode($production->financialGroups) }},
     transactions: {{ json_encode($production->financialGroups->pluck('transactions')->flatten()) }},
-    productionItems: {{ json_encode($production->items->map(function($item) use ($tabStepIds) {
+    productionItems: {{ json_encode($financeItems->map(function($item) use ($tabStepIds, $financeCardCancelled, $resolutionCancelStatus) {
         $lastStepName = null;
-        $emp = $item->employee;
+        $emp = $item->employee ?? ($item->employee_id ? $item->employeeWithTrashed : null);
         $tempData = $item->new_employee_data;
 
         if ($emp) {
@@ -55,6 +74,9 @@
             'employee_id' => $item->employee_id,
             'last_step_name' => $lastStepName,
             'status' => $item->status,
+            'is_deleted' => $item->trashed() || ($emp && $emp->trashed()),
+            'is_cancelled' => $item->status === 'cancelled' || $financeCardCancelled
+                || ($resolutionCancelStatus && $emp && $emp->status === $resolutionCancelStatus),
             // Extra searchable identifiers — see matchesEmployeeSearch() in
             // financial-manager.js. Temp (not-yet-created) employees have
             // none of these yet, so they simply won't match on them.
@@ -501,8 +523,8 @@ class="row">
                 <div class="d-grid gap-2">
                      <!-- Quotation Dropdown (Updated) -->
                      <div class="form-check form-switch mb-1" style="padding-left: 2.5em;" title="{{ __('When off, the quotation shows a per-unit price with no grand total — for when the exact headcount isn\'t committed yet.') }}">
-                        <input class="form-check-input" type="checkbox" role="switch" id="quotationShowTotalSwitch" x-model="quotationShowTotal">
-                        <label class="form-check-label small" for="quotationShowTotalSwitch">{{ __('Quotation: Show Grand Total') }}</label>
+                        <input class="form-check-input" type="checkbox" role="switch" :id="'quotationShowTotalSwitch-' + uid" x-model="quotationShowTotal">
+                        <label class="form-check-label small" :for="'quotationShowTotalSwitch-' + uid">{{ __('Quotation: Show Grand Total') }}</label>
                     </div>
                      <div class="btn-group">
                         <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle text-start" data-bs-toggle="dropdown" aria-expanded="false">
@@ -1128,10 +1150,10 @@ class="row">
                                 <div class="mb-2" x-show="pricingMode === 'per_head'" x-cloak>
                                     <label class="form-label small fw-bold mb-1">{{ __('Collection Mode') }}</label>
                                     <div class="btn-group w-100" role="group">
-                                        <input type="radio" class="btn-check" name="newTransactionCollectionMode" id="newTxnCollectionModeLump" value="lump_sum" x-model="newTransaction.payment_collection_mode">
-                                        <label class="btn btn-outline-success btn-sm" for="newTxnCollectionModeLump">{{ __('Lump Sum') }}</label>
-                                        <input type="radio" class="btn-check" name="newTransactionCollectionMode" id="newTxnCollectionModeIndividual" value="per_employee" x-model="newTransaction.payment_collection_mode">
-                                        <label class="btn btn-outline-success btn-sm" for="newTxnCollectionModeIndividual">{{ __('Individual') }}</label>
+                                        <input type="radio" class="btn-check" :name="'newTransactionCollectionMode-' + uid" :id="'newTxnCollectionModeLump-' + uid" value="lump_sum" x-model="newTransaction.payment_collection_mode">
+                                        <label class="btn btn-outline-success btn-sm" :for="'newTxnCollectionModeLump-' + uid">{{ __('Lump Sum') }}</label>
+                                        <input type="radio" class="btn-check" :name="'newTransactionCollectionMode-' + uid" :id="'newTxnCollectionModeIndividual-' + uid" value="per_employee" x-model="newTransaction.payment_collection_mode">
+                                        <label class="btn btn-outline-success btn-sm" :for="'newTxnCollectionModeIndividual-' + uid">{{ __('Individual') }}</label>
                                     </div>
                                     <div class="form-text" style="font-size: 0.7rem;">{{ __('Individual: each employee pays their own share, tracked and receipted separately from the amount below.') }}</div>
                                     <div class="form-text" style="font-size: 0.7rem;">{{ __('You can change this until the first payment is collected. After that the bill stays collected this way.') }}</div>
@@ -1285,10 +1307,10 @@ class="row">
                             <div class="mb-3" x-show="pricingMode === 'per_head'" x-cloak>
                                 <label class="form-label small fw-bold mb-1">{{ __('Collection Mode') }}</label>
                                 <div class="btn-group w-100" role="group">
-                                    <input type="radio" class="btn-check" name="collectionMode" id="collectionModeLump" value="lump_sum" x-model="editingTransaction.payment_collection_mode" :disabled="paymentCollectionModeLocked">
-                                    <label class="btn btn-outline-success btn-sm" for="collectionModeLump">{{ __('Lump Sum') }}</label>
-                                    <input type="radio" class="btn-check" name="collectionMode" id="collectionModeIndividual" value="per_employee" x-model="editingTransaction.payment_collection_mode" :disabled="paymentCollectionModeLocked">
-                                    <label class="btn btn-outline-success btn-sm" for="collectionModeIndividual">{{ __('Individual') }}</label>
+                                    <input type="radio" class="btn-check" :name="'collectionMode-' + uid" :id="'collectionModeLump-' + uid" value="lump_sum" x-model="editingTransaction.payment_collection_mode" :disabled="paymentCollectionModeLocked">
+                                    <label class="btn btn-outline-success btn-sm" :for="'collectionModeLump-' + uid">{{ __('Lump Sum') }}</label>
+                                    <input type="radio" class="btn-check" :name="'collectionMode-' + uid" :id="'collectionModeIndividual-' + uid" value="per_employee" x-model="editingTransaction.payment_collection_mode" :disabled="paymentCollectionModeLocked">
+                                    <label class="btn btn-outline-success btn-sm" :for="'collectionModeIndividual-' + uid">{{ __('Individual') }}</label>
                                 </div>
                                 <div class="form-text" style="font-size: 0.7rem;" x-show="!paymentCollectionModeLocked">{{ __('Individual: each employee pays their own share, tracked and receipted separately from the amount below.') }}</div>
                                 <div class="form-text" style="font-size: 0.7rem;" x-show="!paymentCollectionModeLocked">{{ __('You can change this until the first payment is collected. After that the bill stays collected this way.') }}</div>
@@ -1384,8 +1406,8 @@ class="row">
                                     <div class="mb-2">
                                         <label class="form-label small mb-0">Slip / หลักฐานการจ่ายเงิน</label>
                                         <div class="input-group input-group-sm">
-                                            <input type="file" id="paymentSlipInput" class="form-control form-control-sm" onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)" @change="handlePaymentSlipSelect" accept="image/*,application/pdf" multiple>
-                                            <button type="button" class="btn btn-outline-secondary" title="สแกน/ถ่ายรูป" onclick="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'paymentSlipInput' } }))">
+                                            <input type="file" :id="'paymentSlipInput-' + uid" class="form-control form-control-sm" onchange="if(window.interceptFileSelect) window.interceptFileSelect(event)" @change="handlePaymentSlipSelect" accept="image/*,application/pdf" multiple>
+                                            <button type="button" class="btn btn-outline-secondary" title="สแกน/ถ่ายรูป" @click="document.dispatchEvent(new CustomEvent('open-document-scanner', { detail: { inputId: 'paymentSlipInput-' + uid } }))">
                                                 <i class="bi bi-camera"></i>
                                             </button>
                                         </div>
@@ -1682,6 +1704,8 @@ class="row">
                                             <div class="d-flex align-items-center gap-2 bg-white border rounded px-2 py-1 mb-1" style="font-size: 0.8rem;">
                                                 <img :src="item.photo || 'https://ui-avatars.com/api/?name=User&background=random'" class="rounded-circle flex-shrink-0" style="width: 22px; height: 22px; object-fit: cover;">
                                                 <span class="fw-bold text-truncate flex-grow-1" x-text="item.name_en ? ((item.title_en ? item.title_en + ' ' : '') + item.name_en) : item.name"></span>
+                                                <span x-show="item.cancelled" class="badge bg-secondary flex-shrink-0" style="font-size: 0.6em;" title="{{ __('Cancelled after being priced — stays on its bill') }}"><i class="bi bi-x-circle me-1"></i>{{ __('Cancelled') }}</span>
+                                                <span x-show="item.deleted" class="badge bg-danger flex-shrink-0" style="font-size: 0.6em;" title="{{ __('Deleted (in the trash) after being billed — stays on its bill') }}"><i class="bi bi-trash3 me-1"></i>{{ __('Deleted') }}</span>
                                                 <span class="badge bg-light text-dark border" x-show="pricingMode === 'per_head'" x-text="formatCurrency(getItemPrice(item.id))"></span>
                                                 <button type="button" class="btn btn-sm btn-success py-0 px-2" @click="addEmployeeToBill(item.id)" title="{{ __('Add to this bill') }}"><i class="bi bi-plus-lg"></i></button>
                                             </div>
@@ -1766,6 +1790,8 @@ class="row">
                                                 </div>
                                                 <span x-show="isItemAttached(item.id) && !isLeavingBill(item)" class="badge bg-success ms-auto flex-shrink-0" style="font-size: 0.6em;">Linked</span>
                                                 <span x-show="!item.attached" class="badge bg-primary ms-auto flex-shrink-0" style="font-size: 0.6em;">{{ __('New') }}</span>
+                                                <span x-show="item.cancelled" class="badge bg-secondary flex-shrink-0" style="font-size: 0.6em;" title="{{ __('Cancelled after being priced — stays on its bill') }}"><i class="bi bi-x-circle me-1"></i>{{ __('Cancelled') }}</span>
+                                                <span x-show="item.deleted" class="badge bg-danger flex-shrink-0" style="font-size: 0.6em;" title="{{ __('Deleted (in the trash) after being billed — stays on its bill') }}"><i class="bi bi-trash3 me-1"></i>{{ __('Deleted') }}</span>
                                                 <span x-show="editTierOverrides[item.id] && !isLeavingBill(item)" class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.6em;" x-text="'{{ __('New price') }} ' + formatCurrency(editItemPrice(item.id))"></span>
                                                 {{-- ticked off: leaves this bill on Update — or pick another price tier and keep them on it --}}
                                                 {{-- x-show on a plain wrapper: Bootstrap's d-flex is !important and would keep it visible --}}
@@ -1871,6 +1897,8 @@ class="row">
                                             <div class="ic-name" x-text="item.displayName"></div>
                                             <div class="ic-meta" x-show="item.isExtra"><span class="ic-chip">{{ __('Additional charge') }}</span></div>
                                             <div class="ic-meta" x-show="!item.isExtra">
+                                                <span class="ic-chip" x-show="item.deleted" style="background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis);"><i class="bi bi-trash3 me-1"></i>{{ __('Deleted') }}</span>
+                                                <span class="ic-chip" x-show="item.cancelled" style="background: var(--bs-secondary-bg-subtle); color: var(--bs-secondary-text-emphasis);"><i class="bi bi-x-circle me-1"></i>{{ __('Cancelled') }}</span>
                                                 <span x-show="item.nationality" x-text="item.nationality"></span>
                                                 <template x-if="item.passport && item.passport !== '-' && item.passport !== 'No' && item.passport !== 'ไม่มี'"><span class="ic-chip">{{ __('Passport') }}</span></template>
                                                 <template x-if="item.insurance_type && item.insurance_type !== '-' && item.insurance_type !== 'No' && item.insurance_type !== 'ไม่มี'"><span class="ic-chip" x-text="item.insurance_type"></span></template>

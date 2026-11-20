@@ -82,7 +82,9 @@ class FinancialTransaction extends Model
 
     public function items()
     {
-        return $this->belongsToMany(ProductionItem::class, 'financial_transaction_items')->withPivot('unit_price');
+        // withTrashed: someone deleted (to the trash) after being billed stays on
+        // the bill, shown as deleted — and saving the bill no longer drops them (2026-11-20).
+        return $this->belongsToMany(ProductionItem::class, 'financial_transaction_items')->withPivot('unit_price')->withTrashed();
     }
 
     public function bankAccount()
